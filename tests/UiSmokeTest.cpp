@@ -1,6 +1,7 @@
 #include "UiShell.h"
 #include "ComponentWorkspace.h"
 #include "IconCatalog.h"
+#include "LightTheme.h"
 #include <QApplication>
 #include <QDialog>
 #include <QDir>
@@ -112,7 +113,7 @@ int main(int argc, char **argv)
     QFontDatabase::addApplicationFont("C:/Windows/Fonts/msyh.ttc");
     QApplication::setFont(QFont("Microsoft YaHei", 9));
 #endif
-    QApplication::setStyle("Fusion");
+    applyLightTheme(app);
     UiSmokeTest tests;
     return QTest::qExec(&tests, argc, argv);
 }

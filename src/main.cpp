@@ -1,4 +1,5 @@
 #include "UiShell.h"
+#include "LightTheme.h"
 #include <QApplication>
 #include <QFile>
 #include <QJsonDocument>
@@ -11,7 +12,7 @@ int main(int argc, char *argv[])
     QApplication app(argc, argv);
     QApplication::setApplicationName("Aspen Plus UI Shell");
     QApplication::setApplicationVersion("0.1.0");
-    QApplication::setStyle("Fusion");
+    applyLightTheme(app);
 
     QFile catalogFile(":/ui/aspen-plus.json");
     if (!catalogFile.open(QIODevice::ReadOnly)) {
