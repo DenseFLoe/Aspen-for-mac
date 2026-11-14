@@ -1,6 +1,7 @@
 #include "UiShell.h"
 #include "IconCatalog.h"
 #include "ComponentWorkspace.h"
+#include "RecoveredWorkspace.h"
 #include <QFile>
 #include <QJsonDocument>
 #include <QSignalBlocker>
@@ -96,6 +97,18 @@ QMenu *UiShell::makeMenu(const QJsonArray &entries, QWidget *parent)
     return menu;
 }
 
+bool UiShell::openRecovered(const QString &name)
+{
+    if (!recovered_) return false;
+    for (const auto &value:recovered_->catalog().value("pages").toArray()) {
+        const auto page=value.toObject();
+        if (page.value("name").toString()!=name) continue;
+        if (!recovered_->showPage(page.value("id").toString())) return false;
+        documents_->setCurrentIndex(1); return true;
+    }
+    return false;
+}
+
 QToolButton *UiShell::makeButton(const QJsonObject &spec, QWidget *parent, bool iconOnly)
 {
     auto *button = new QToolButton(parent);
@@ -121,11 +134,13 @@ QToolButton *UiShell::makeButton(const QJsonObject &spec, QWidget *parent, bool 
     if (large) { button->setMinimumHeight(65); button->setProperty("largeRibbon", true); }
     else button->setMaximumHeight(24);
     const auto id = spec.value("id").toString();
+    const QMap<QString,QString> staticTargets{{"setup","MMSetup_Setup"},{"methods","MMProp_Spec_Input"},{"property-sets","MMPropSets_Input"}};
+    if (staticTargets.contains(id)) connect(button,&QToolButton::clicked,this,[this,target=staticTargets[id]] { openRecovered(target); });
     if (id == "components") connect(button, &QToolButton::clicked, this, [this] {
-        if (components_) components_->showPage("specifications");
+        if (components_) { documents_->setCurrentIndex(0); components_->showPage("specifications"); }
     });
     if (id == "draw-structure") connect(button, &QToolButton::clicked, this, [this] {
-        if (components_) components_->showPage("molecular-structure");
+        if (components_) { documents_->setCurrentIndex(0); components_->showPage("molecular-structure"); }
     });
     auto items = spec.value("items").toArray();
     const auto menuRef = spec.value("menu").toString();
@@ -305,17 +320,23 @@ QWidget *UiShell::makeNavigator()
             addNodes(componentCatalog.value("navigation").toArray(), item);
             item->setExpanded(true);
         } else {
-            item->setToolTip(0, QString::fromUtf8("此工作区尚未采集"));
+            item->setToolTip(0, QString::fromUtf8("更多静态页面见“全部资源”"));
+            const QMap<QString,QString> targets{{QString::fromUtf8("设置"),"MMSetup_Setup"},{QString::fromUtf8("方法"),"MMProp_Spec_Input"},{QString::fromUtf8("物性组"),"MMPropSets_Input"}};
+            item->setData(0,Qt::UserRole+2,targets.value(node.value("label").toString()));
         }
     }
     navigation_->setCurrentItem(initial);
     connect(navigation_, &QTreeWidget::currentItemChanged, this, [this](QTreeWidgetItem *item) {
         if (!item || !components_) return;
         const auto id = item->data(0, Qt::UserRole).toString();
-        if (!id.isEmpty()) components_->showPage(id);
+        if (!item->data(0,Qt::UserRole+2).toString().isEmpty()) openRecovered(item->data(0,Qt::UserRole+2).toString());
+        if (!id.isEmpty()) { documents_->setCurrentIndex(0); components_->showPage(id); }
     });
     connect(navigation_, &QTreeWidget::itemClicked, this, [this](QTreeWidgetItem *item) {
-        if (components_) components_->showPage(item->data(0, Qt::UserRole).toString());
+        if (!item->data(0,Qt::UserRole+2).toString().isEmpty()) openRecovered(item->data(0,Qt::UserRole+2).toString());
+        if (components_ && !item->data(0, Qt::UserRole).toString().isEmpty()) {
+            documents_->setCurrentIndex(0); components_->showPage(item->data(0, Qt::UserRole).toString());
+        }
     });
     connect(components_, &ComponentWorkspace::pageChanged, this, [this](const QString &id) {
         const QSignalBlocker blocker(navigation_);
@@ -327,7 +348,62 @@ QWidget *UiShell::makeNavigator()
             }
         }
     });
-    layout->addWidget(navigation_, 1);
+    auto *navTabs = new QTabWidget(panel);
+    navTabs->setObjectName("NavigationTabs");
+    navTabs->addTab(navigation_, QString::fromUtf8("已核对"));
+    auto *recoveryPanel = new QWidget(navTabs);
+    auto *recoveryLayout = new QVBoxLayout(recoveryPanel);
+    recoveryLayout->setContentsMargins(0,0,0,0);
+    auto *query = new QLineEdit(recoveryPanel);
+    query->setObjectName("RecoverySearch");
+    query->setPlaceholderText(QString::fromUtf8("搜索页面、按钮、菜单"));
+    recoveryLayout->addWidget(query);
+    auto *tree = new QTreeWidget(recoveryPanel);
+    tree->setObjectName("RecoveredNavigation"); tree->setHeaderHidden(true); tree->setIndentation(12);
+    QMap<QString,QTreeWidgetItem *> modules;
+    for (const auto &v : recovered_->catalog().value("modules").toArray()) {
+        const auto m=v.toObject();
+        auto *item = new QTreeWidgetItem(tree,{m.value("label").toString()});
+        item->setToolTip(0,m.value("id").toString()); modules[m.value("id").toString()]=item;
+    }
+    for (const auto &v : recovered_->catalog().value("pages").toArray()) {
+        const auto p=v.toObject(); auto *parent=modules.value(p.value("module").toString());
+        if (!parent) continue;
+        auto *item=new QTreeWidgetItem(parent,{p.value("title").toString()});
+        item->setData(0,Qt::UserRole,p.value("id").toString());
+        item->setData(0,Qt::UserRole+1,p.value("search").toString()+" "+p.value("name").toString());
+        item->setToolTip(0,p.value("name").toString()+"\n"+p.value("source").toObject().value("resource").toString());
+    }
+    for (const auto &pair : {qMakePair(QString("dialog:"),recovered_->nativeDialogs()),qMakePair(QString("menu:"),recovered_->menuCatalog())}) {
+        auto *group = new QTreeWidgetItem(tree,{pair.first=="dialog:"?QString::fromUtf8("传统对话框"):QString::fromUtf8("菜单")});
+        QMap<QString,QTreeWidgetItem *> files;
+        for (int i=0;i<pair.second.size();++i) {
+            const auto p=pair.second[i].toObject(); const auto source=p.value("file").toString().section('/',-1);
+            if (!files.contains(source)) files[source]=new QTreeWidgetItem(group,{source});
+            auto title=p.value("title").toString();
+            if (title.isEmpty()) title=p.value("resource").toString();
+            auto *item=new QTreeWidgetItem(files[source],{title+" ["+QString::number(p.value("language").toInt())+"]"});
+            item->setData(0,Qt::UserRole,pair.first+QString::number(i));
+            item->setData(0,Qt::UserRole+1,QString::fromUtf8(QJsonDocument(p).toJson(QJsonDocument::Compact)));
+        }
+    }
+    auto openRecovered = [this](QTreeWidgetItem *item) {
+        if (item && recovered_->showPage(item->data(0,Qt::UserRole).toString())) documents_->setCurrentIndex(1);
+    };
+    connect(tree,&QTreeWidget::currentItemChanged,this,[openRecovered](QTreeWidgetItem *item) { openRecovered(item); });
+    connect(tree,&QTreeWidget::itemClicked,this,openRecovered);
+    connect(query,&QLineEdit::textChanged,tree,[tree](const QString &text) {
+        std::function<bool(QTreeWidgetItem *)> filter;
+        filter=[&](QTreeWidgetItem *item) {
+            bool found=item->text(0).contains(text,Qt::CaseInsensitive)||item->data(0,Qt::UserRole+1).toString().contains(text,Qt::CaseInsensitive);
+            for (int i=0;i<item->childCount();++i) found=filter(item->child(i))||found;
+            item->setHidden(!found); if (item->childCount()) item->setExpanded(!text.isEmpty()&&found); return found;
+        };
+        for (int i=0;i<tree->topLevelItemCount();++i) filter(tree->topLevelItem(i));
+    });
+    recoveryLayout->addWidget(tree,1);
+    navTabs->addTab(recoveryPanel,QString::fromUtf8("全部资源"));
+    layout->addWidget(navTabs, 1);
     for (const auto &value : catalog_.value("modes").toArray()) {
         auto *mode = makeButton(buttonSpec(value.toString()), panel);
         mode->setObjectName(value.toString() == QString::fromUtf8("物性") ? "ActiveMode" : "NavigationMode");
@@ -350,7 +426,11 @@ QWidget *UiShell::makeComponentPage()
     QFile file(":/ui/components.json");
     file.open(QIODevice::ReadOnly);
     components_ = new ComponentWorkspace(QJsonDocument::fromJson(file.readAll()).object());
-    return components_;
+    documents_=new QStackedWidget;
+    documents_->addWidget(components_);
+    recovered_=new RecoveredWorkspace;
+    documents_->addWidget(recovered_);
+    return documents_;
 }
 
 QWidget *UiShell::makeFilePanel(const QJsonObject &entry)

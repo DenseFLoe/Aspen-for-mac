@@ -1,8 +1,10 @@
 # Aspen Plus UI Shell
 
-基于 Aspen Plus V15 中文界面的 Qt 6 / C++17 桌面界面外壳。现已接入 **97 个原版图标、17 个“物性 → 组分”导航页面及 39 个页内标签**，并保存 31 张原版界面裁图用于核对。原有文件侧栏、四个功能区和已观察菜单继续可用。
+基于 Aspen Plus V15 中文界面的 Qt 6 / C++17 桌面界面外壳。保留 **97 个原版图标、17 个已核对的组分页面、39 个页内标签**和 31 张参考裁图；新增 **47 个模块、2,947 份静态布局、289 个传统对话框和 106 份菜单树**的可搜索目录与 Qt 预览。布局数包含页签和控件片段，不代表同等数量的完整业务页面。
 
 左侧导航、功能区“组分/绘制结构”、页面选择菜单和页内标签会切换实际 Qt 页面。每页保留独立的控件和标签状态；注释可在本次运行期间编辑。“查找”打开化合物查询界面预览。当前版本没有 Aspen 计算引擎、物性数据库或文件保存功能，不产生模拟结果，注释退出后不保存。
+
+左侧“全部资源”按模块浏览，可搜索页面、按钮和菜单；“设置、方法、物性组”入口直接打开恢复布局。预览使用静态文字、层级、坐标、页签引用和表头，数据控件只读，动态内容显示待恢复提示。每页保留来源资源信息；扫描方法、完整清单、与原实现的差异和本轮动态抽查阻碍见 [界面资源恢复报告](docs/ui-resource-recovery.md)。
 
 本机 V15 四个 APED 主库的 **6,345,071 个数值单元**已导出明文，另保留 1,464,605 条 API 参数视图、完整 active 关系表以及 TDE、SQLite、Access 附属数据。数据、来源清单和核验报告位于本地 `.local/property-database/plaintext-export/`，尚未接入本应用。复现、跨平台恢复及尚未解析的旧格式文件见 [明文导出说明](docs/plaintext-database-export.md)；早期调查保留在 [调查记录](docs/property-database-investigation.md)。
 
@@ -31,7 +33,7 @@ ctest --test-dir build --output-on-failure
 open build/AspenPlusUIShell.app
 ```
 
-只构建程序时可加 `-DBUILD_TESTING=OFF`。Qt 官方安装器用户将 `CMAKE_PREFIX_PATH` 改为对应 `macos` 目录。测试默认使用 offscreen 平台，覆盖图标装载、17 页导航、可用标签、注释状态、弹窗关闭和最小窗口。设置 `ASPEN_CAPTURE_DIR` 可保存各页渲染图到本机目录。macOS 发布打包、签名、公证仍未配置。
+只构建程序时可加 `-DBUILD_TESTING=OFF`。Qt 官方安装器用户将 `CMAKE_PREFIX_PATH` 改为对应 `macos` 目录。测试默认使用 offscreen 平台，覆盖全部恢复布局/对话框/菜单的创建、47 个模块导航、资源搜索、功能区入口，以及原有图标、17 页导航、标签、注释状态、弹窗关闭和最小窗口。设置 `ASPEN_CAPTURE_DIR` 可保存代表页面渲染图到本机目录。macOS 发布打包、签名、公证仍未配置。
 
 ## 结构
 
@@ -39,10 +41,14 @@ open build/AspenPlusUIShell.app
 | --- | --- |
 | `src/UiShell.cpp` | 功能区、导航树和文件侧栏 |
 | `src/ComponentWorkspace.cpp` | 页面构造器、切换状态和查询弹窗 |
+| `src/RecoveredWorkspace.cpp` | 静态布局、对话框和菜单的按需 Qt 渲染 |
 | `ui/components.json` | 17 页、39 标签及空案例控件数据 |
+| `ui/recovered/` | 47 模块布局、按钮/菜单清单、来源与比对报告 |
 | `ui/aspen-plus.json` | 功能区、按钮、菜单清单 |
 | `ui/icons/` | 无损 PNG 图集及逐图来源清单 |
 | `docs/reference/` | 31 张原版裁图和校验清单 |
 | `tests/UiSmokeTest.cpp` | 导航和资源集成检查 |
+| `tools/scan_aspen_ui.py` / `tools/build_ui_catalog.py` | 原生/托管资源扫描及便携清单生成 |
+| `tests/test_ui_resources.py` | BAML、Unicode 资源、对话框及菜单解析检查 |
 
 原版截图与图标版权归原权利人；本仓库不为这些图像授予新的许可。原始程序二进制、工具、构建产物及完整本机会话截图均不进入版本控制。

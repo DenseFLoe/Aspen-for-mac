@@ -15,10 +15,14 @@ qt_add_executable(AspenPlusUIShell
     src/ComponentWorkspace.cpp
     src/ComponentWorkspace.h
     src/LightTheme.h
+    src/RecoveredWorkspace.cpp
+    src/RecoveredWorkspace.h
 )
+file(GLOB RECOVERED_UI_FILES CONFIGURE_DEPENDS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "ui/recovered/*.json")
+list(FILTER RECOVERED_UI_FILES EXCLUDE REGEX "/(buttons|unresolved|sources|summary|scan-errors|scan-files|coverage|validation)\\.json$")
 qt_add_resources(AspenPlusUIShell "ui_catalog"
     PREFIX "/"
-    FILES ui/aspen-plus.json ui/components.json ui/shell.qss ui/icons/aspen-v15.png ui/icons/manifest.json
+    FILES ui/aspen-plus.json ui/components.json ui/shell.qss ui/icons/aspen-v15.png ui/icons/manifest.json ${RECOVERED_UI_FILES}
 )
 target_link_libraries(AspenPlusUIShell PRIVATE Qt6::Widgets)
 set_target_properties(AspenPlusUIShell PROPERTIES
@@ -40,16 +44,17 @@ if(BUILD_TESTING)
         src/IconCatalog.cpp src/IconCatalog.h
         src/ComponentWorkspace.cpp src/ComponentWorkspace.h
         src/LightTheme.h
+        src/RecoveredWorkspace.cpp src/RecoveredWorkspace.h
     )
     target_include_directories(UiSmokeTest PRIVATE src)
     target_link_libraries(UiSmokeTest PRIVATE Qt6::Widgets Qt6::Test)
     qt_add_resources(UiSmokeTest "test_ui_catalog"
         PREFIX "/"
-        FILES ui/aspen-plus.json ui/components.json ui/shell.qss ui/icons/aspen-v15.png ui/icons/manifest.json
+        FILES ui/aspen-plus.json ui/components.json ui/shell.qss ui/icons/aspen-v15.png ui/icons/manifest.json ${RECOVERED_UI_FILES}
     )
     if(MSVC)
         target_compile_options(UiSmokeTest PRIVATE /utf-8)
     endif()
     add_test(NAME ui-smoke COMMAND UiSmokeTest)
-    set_tests_properties(ui-smoke PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen" TIMEOUT 60)
+    set_tests_properties(ui-smoke PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen" TIMEOUT 300)
 endif()

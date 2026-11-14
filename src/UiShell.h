@@ -9,6 +9,7 @@ class QStackedWidget;
 class QToolButton;
 class ComponentWorkspace;
 class QTreeWidget;
+class RecoveredWorkspace;
 
 // UI-only shell: navigation works; simulation commands have no backend.
 class UiShell final : public QMainWindow
@@ -21,6 +22,9 @@ private:
     QStackedWidget *pages_ = nullptr;
     ComponentWorkspace *components_ = nullptr;
     QTreeWidget *navigation_ = nullptr;
+    RecoveredWorkspace *recovered_ = nullptr;
+    QStackedWidget *documents_ = nullptr;
+    bool openRecovered(const QString &name);
     QToolButton *makeButton(const QJsonObject &spec, QWidget *parent, bool iconOnly = false);
     QMenu *makeMenu(const QJsonArray &entries, QWidget *parent);
     QWidget *makeWorkspace();
