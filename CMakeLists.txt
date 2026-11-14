@@ -10,10 +10,12 @@ qt_add_executable(AspenPlusUIShell
     src/main.cpp
     src/UiShell.cpp
     src/UiShell.h
+    src/IconCatalog.cpp
+    src/IconCatalog.h
 )
 qt_add_resources(AspenPlusUIShell "ui_catalog"
     PREFIX "/"
-    FILES ui/aspen-plus.json ui/shell.qss
+    FILES ui/aspen-plus.json ui/shell.qss ui/icons/aspen-v15.png ui/icons/manifest.json
 )
 target_link_libraries(AspenPlusUIShell PRIVATE Qt6::Widgets)
 set_target_properties(AspenPlusUIShell PROPERTIES

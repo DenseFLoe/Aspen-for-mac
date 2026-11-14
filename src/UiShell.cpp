@@ -1,4 +1,5 @@
 #include "UiShell.h"
+#include "IconCatalog.h"
 #include <QAction>
 #include <QBoxLayout>
 #include <QFrame>
@@ -32,38 +33,7 @@ QJsonObject buttonSpec(const QString &label)
     return {{"label", label}};
 }
 
-// Original geometric symbols, not assets extracted from the installed product.
-QIcon commandIcon(const QString &kind, QWidget *widget)
-{
-    if (kind == "save") return widget->style()->standardIcon(QStyle::SP_DialogSaveButton);
-    if (kind == "run") return widget->style()->standardIcon(QStyle::SP_MediaPlay);
-    if (kind == "back") return widget->style()->standardIcon(QStyle::SP_ArrowBack);
-    if (kind == "next") return widget->style()->standardIcon(QStyle::SP_ArrowForward);
-    if (kind == "help") return widget->style()->standardIcon(QStyle::SP_MessageBoxQuestion);
-    QPixmap pixmap(32, 32);
-    pixmap.fill(Qt::transparent);
-    QPainter painter(&pixmap);
-    painter.setRenderHint(QPainter::Antialiasing);
-    painter.setPen(QPen(QColor("#487a9e"), 1.5));
-    painter.setBrush(QColor("#e9f4ff"));
-    if (kind == "science") {
-        QPolygonF flask;
-        flask << QPointF(13, 4) << QPointF(20, 4) << QPointF(20, 13)
-              << QPointF(27, 26) << QPointF(6, 26) << QPointF(13, 13);
-        painter.drawPolygon(flask);
-        painter.fillRect(QRectF(11, 20, 11, 4), QColor("#69b7c8"));
-    } else if (kind == "grid") {
-        painter.drawRoundedRect(QRectF(4, 5, 24, 22), 2, 2);
-        for (int p = 12; p <= 20; p += 8) {
-            painter.drawLine(p, 5, p, 27);
-            painter.drawLine(4, p, 28, p);
-        }
-    } else {
-        painter.drawRoundedRect(QRectF(7, 4, 19, 24), 2, 2);
-        for (int y = 11; y <= 23; y += 6) painter.drawLine(11, y, 22, y);
-    }
-    return QIcon(pixmap);
-}
+
 }
 
 UiShell::UiShell(const QJsonObject &catalog, QWidget *parent)
@@ -134,8 +104,10 @@ QToolButton *UiShell::makeButton(const QJsonObject &spec, QWidget *parent, bool 
     button->setAutoRaise(true);
     button->setEnabled(spec.value("enabled").toBool(true));
     const bool large = spec.value("large").toBool();
-    button->setIcon(commandIcon(spec.value("icon").toString(), button));
-    button->setIconSize(large ? QSize(28, 28) : QSize(16, 16));
+    auto icon = aspenIcon(spec.value("id").toString());
+    if (icon.isNull()) icon = aspenIcon(spec.value("icon").toString());
+    button->setIcon(icon);
+    button->setIconSize(large ? QSize(32, 32) : QSize(16, 16));
     button->setToolButtonStyle(iconOnly ? Qt::ToolButtonIconOnly
         : large ? Qt::ToolButtonTextUnderIcon : Qt::ToolButtonTextBesideIcon);
     if (large) button->setMinimumHeight(65);
@@ -270,10 +242,10 @@ QWidget *UiShell::makeNavigator()
     for (const auto &value : catalog_.value("navigation").toArray()) {
         const auto node = value.toObject();
         auto *item = new QTreeWidgetItem(tree, {node.value("label").toString()});
-        item->setIcon(0, style()->standardIcon(QStyle::SP_DirIcon));
+        item->setIcon(0, aspenIcon("folder"));
         for (const auto &child : node.value("children").toArray()) {
             auto *childItem = new QTreeWidgetItem(item, {child.toString()});
-            childItem->setIcon(0, style()->standardIcon(QStyle::SP_FileIcon));
+            childItem->setIcon(0, aspenIcon("form-complete"));
             if (child.toString() == QString::fromUtf8("规定")) tree->setCurrentItem(childItem);
         }
         item->setExpanded(node.value("expanded").toBool());
