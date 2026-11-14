@@ -4,7 +4,7 @@
 
 左侧导航、功能区“组分/绘制结构”、页面选择菜单和页内标签会切换实际 Qt 页面。每页保留独立的控件和标签状态；注释可在本次运行期间编辑。“查找”打开化合物查询界面预览。当前版本没有 Aspen 计算引擎、物性数据库或文件保存功能，不产生模拟结果，注释退出后不保存。
 
-本机 V15 的物性库已完成提取可行性调查，验证了四库元数据和 266 条明文参数导出。调查结论、适用范围与复现脚本见 [物性数据库调查](docs/property-database-investigation.md)。导出数据保留在本地，尚未接入本应用。
+本机 V15 四个 APED 主库的 **6,345,071 个数值单元**已导出明文，另保留 1,464,605 条 API 参数视图、完整 active 关系表以及 TDE、SQLite、Access 附属数据。数据、来源清单和核验报告位于本地 `.local/property-database/plaintext-export/`，尚未接入本应用。复现、跨平台恢复及尚未解析的旧格式文件见 [明文导出说明](docs/plaintext-database-export.md)；早期调查保留在 [调查记录](docs/property-database-investigation.md)。
 
 ## 页面范围
 

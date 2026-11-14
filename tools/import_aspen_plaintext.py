@@ -8,6 +8,7 @@ import base64
 import json
 import itertools
 import sqlite3
+import uuid
 from pathlib import Path
 
 from export_aspen_catalogs import sha256
@@ -58,7 +59,7 @@ def restore(source, destination):
     try:
         if (source / "schema.sql").is_file():
             execute_sql_file(connection, source / "schema.sql")
-        for table in manifest["tables"]:
+        for table in sorted(manifest["tables"], key=lambda t: t["table"] == "sqlite_sequence"):
             path = source / table["file"]
             if sha256(path) != table["sha256"]:
                 raise ValueError("Checksum mismatch: " + table["file"])
@@ -76,7 +77,14 @@ def restore(source, destination):
                                        ",".join(identifier(n) + " " + t for n, t in zip(names, types)) + ")")
                 else:
                     ddl = next(item["sql"] for item in manifest["schema"] if item["type"] == "table" and item["name"] == name)
-                    connection.execute(ddl)
+                    if name == "sqlite_sequence":
+                        if not connection.execute("SELECT 1 FROM sqlite_master WHERE name='sqlite_sequence'").fetchone():
+                            temporary = "export_sequence_" + uuid.uuid4().hex
+                            connection.execute("CREATE TABLE " + temporary + " (id INTEGER PRIMARY KEY AUTOINCREMENT)")
+                            connection.execute("DROP TABLE " + temporary)
+                        connection.execute("DELETE FROM sqlite_sequence")
+                    else:
+                        connection.execute(ddl)
                     names = [c["name"] for c in table["columns"]]
                 prefix = "INSERT INTO " + identifier(name) + " (" + ",".join(map(identifier, names)) + ") VALUES ("
                 with path.open(encoding="utf-8") as stream:
@@ -98,6 +106,10 @@ def restore(source, destination):
             print(f"Restored {name}: {actual}", flush=True)
         if (source / "post-schema.sql").is_file():
             execute_sql_file(connection, source / "post-schema.sql")
+        elif "database" not in manifest:
+            for item in manifest["schema"]:
+                if item["type"] != "table" and item.get("sql"):
+                    connection.execute(item["sql"])
         if "database" in manifest:
             for table, column in (("active_CompoundProperty", "cpId"),
                                   ("active_DatabankCompounds", "dbcCompoundPropId"),

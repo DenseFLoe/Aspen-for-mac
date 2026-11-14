@@ -2,6 +2,39 @@
 
 导出产物保存在本机 `.local/property-database/plaintext-export/`，不随源代码上传。数据来源为本机 Aspen V15 安装；导出工具不附带 Aspen DLL、数据库二进制、密码、密钥或许可证内容。当前程序仍是 UI 外壳，尚未接入计算引擎。
 
+## 本次范围与结果
+
+2026 年 11 月 14 日，本机四个在线 APED 数据库、四个 TDE/TIIS 文件，以及安装目录中发现的附属数据库和物性数据文件。
+
+| APED 数据库 | 子库 | 原始数值单元 | API 参数记录 | 无子库引用但有存值的参数集 |
+| --- | ---: | ---: | ---: | ---: |
+| APV150 | 42 | 2,548,216 | 634,304 | 6,719 |
+| NISTV150 | 4 | 3,718,633 | 790,083 | 190,707 |
+| APESV150 | 6 | 57,243 | 19,239 | 2,284 |
+| FACTV150 | 1 | 20,979 | 20,979 | 0 |
+| 合计 | 53 | 6,345,071 | 1,464,605 | 199,710 |
+
+112 张 active 表全部导出。每个数值单元的 `(数据库, cp_id, element_index)` 与在线 SQL 的排序结果逐个核对，完全覆盖且无重复，全部解码为有限数字。NIST 的 42 条 API 空返回均在原库三张值表中没有存值，关系记录仍保留，未伪造为零。
+
+| 附属数据库 | 表数 | 行数 |
+| --- | ---: | ---: |
+| TDE9i | 2 | 42,606 |
+| TIIS | 28 | 960,121 |
+| TDE9m | 43 | 337,302 |
+| TDE9r | 16 | 970,771 |
+
+另外导出 7 份 SQLite 文件及 1 份 Access 文件（包含安装目录与 ProgramData 的同源副本，**不应把重复副本当作新增化学物质**），以及 189 份文本数据文件。`support/inventory.json` 为 220 个发现的文件逐项记录来源、校验、输出位置和状态；其中主库与 TDE 的 8 个源文件指向上述专用导出。
+
+16 份结构化数据库导出均已使用独立 SQLite 文件重新导入，各表行数一致且 `PRAGMA integrity_check` 全部为 `ok`。检查保留原有 SQLite 索引和自增序列；无原装 Aspen 参与恢复。导出数据库和数据包仅本地留存，GitHub 只保存自写工具、测试和说明。
+
+**不能把本次结果描述为所有安装文件均已语义解码。** 还有 15 份旧二进制文件仅做了可逆的十六进制保存；其中 5 份属于 Aspen Plus / AprSystem：`bps.dat`、`dmo.dat`、`flowtran.dat`、`aspcost.dat`、`sdffil.sdf`。其余 10 份是 HYSYS / Energy Analyzer 的 `.mdf` 模型文件，不是已导出的 SQL Server MDF。它们未获得经过验证的结构和数值解释，不能直接作为计算参数读取。`opaque_binary_preserved_as_hex` 是待解析状态，绝不等同于明文物性数据。安装包备份、程序内嵌常量、尚未安装或远程数据库也不在全量保证范围内。
+
+## 数值表示核验
+
+使用 API 的 `LabelIJArray`、`LabelJIArray` 重建方向展开后，1,411,994 条 API 数组在 14 位有效数字下逐位置一致；52,611 条仍不同，完整差异清单保存在各库 `api-layout-differences.jsonl`。不得把这些差异简单判为解密失败或自动覆盖：已确认 API 的对称展开、补缺失值行为会改变数组形态，仍有差异的部分需要按物性类别继续解释。底层所有索引和十进制值均独立保留。多重集比较报告是初筛，顺序比较报告是后续更严格的检查；两者都不是物性公式正确性的证明。
+
+92 个十进制值在 .NET Framework 与 Python 的二进制浮点解析中出现末位差异，均在核验容差内；完整 `value_text` 原样保留。主库来自在线读取，关系表与 API 不是跨进程的同一时点事务快照；本次记录了计数、单元身份和文件哈希，未修改源库。
+
 ## 两种 APED 数据表示
 
 - `aped/<数据库>/values/constant-values.jsonl`：每个原始数值单元一行，保留 `cp_id`、`element_index`、**原始明文十进制字符串 `value_text`** 和数值预览 `value`。覆盖有子库引用及没有子库引用的记录，不按化学名称合并。数据库名是身份的一部分。
@@ -38,6 +71,28 @@ foreach($db in 'APV150','NISTV150','APESV150','FACTV150') {
 
 逐参数接口返回空值会记录在 `failures.jsonl` 并返回非零退出码；必须与三张实际值表核对，以区分本来无数值的关系记录与读取失败，不能仅删除失败项。
 
+完成四库导出后进行一次性核验：
+
+```powershell
+& .local-tools/research/venv/Scripts/python.exe tools/verify_aspen_plaintext.py `
+    --root $root --evidence .local/property-database/new-encoded-evidence --live-sql
+& .local-tools/research/venv/Scripts/python.exe tools/audit_aspen_vectors.py --root $root
+```
+
+核验工具将编码数值表移至独立 evidence 目录，以完整明文值替换交付目录中的同名表，并更新校验清单；不要在已核验目录重复运行该步骤。`--live-sql` 用于逐单元核对原库身份。
+
+普通 SQLite 与附属数据的导出：
+
+```powershell
+foreach($name in 'TDE9i.sqlite','TIIS.sqlite') {
+    & .local-tools/research/venv/Scripts/python.exe tools/export_aspen_catalogs.py `
+        --sqlite "C:/Program Files/AspenTech/AprSystem V15.0/GUI/Xeq/$name" --output "$root/auxiliary/$name"
+}
+& .local-tools/research/venv/Scripts/python.exe tools/export_aspen_support.py --output "$root/support"
+```
+
+附属导出中断时可加 `--resume` 校验和复用已完成的文件；存在未完成的单库目录时应保留其现场并选择新输出位置。
+
 将安装目录的 `TDE9m.sqlite`、`TDE9r.sqlite`、`TIIS.sqlite` 复制到 `.local/` 下独立的临时目录后运行：
 
 ```powershell
@@ -48,7 +103,7 @@ foreach($db in 'APV150','NISTV150','APESV150','FACTV150') {
 
 ## 在 Mac 上恢复和使用
 
-恢复工具只需要 Python 标准库，不依赖 Aspen 或 SQL Server；目的文件必须不存在。先完成明文关系表核验，再恢复 APED。
+恢复工具只需要 Python 3.11+ 标准库，不依赖 Aspen 或 SQL Server；目的文件必须不存在。先完成明文关系表核验，再恢复 APED。
 
 ```sh
 python3 tools/import_aspen_plaintext.py /data/aped/APV150/storage /data/APV150.sqlite
