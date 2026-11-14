@@ -1,5 +1,10 @@
 #include "UiShell.h"
 #include "IconCatalog.h"
+#include "ComponentWorkspace.h"
+#include <QFile>
+#include <QJsonDocument>
+#include <QSignalBlocker>
+#include <functional>
 #include <QAction>
 #include <QBoxLayout>
 #include <QFrame>
@@ -10,9 +15,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QMenu>
-#include <QPainter>
 #include <QPixmap>
-#include <QPolygonF>
 #include <QScrollArea>
 #include <QShortcut>
 #include <QSizePolicy>
@@ -26,6 +29,7 @@
 #include <QTabWidget>
 #include <QToolButton>
 #include <QTreeWidget>
+#include <QTreeWidgetItemIterator>
 
 namespace {
 QJsonObject buttonSpec(const QString &label)
@@ -40,7 +44,7 @@ UiShell::UiShell(const QJsonObject &catalog, QWidget *parent)
     : QMainWindow(parent), catalog_(catalog)
 {
     setWindowTitle(QString::fromUtf8("Simulation 2 — Aspen Plus 界面研究"));
-    resize(1180, 730);
+    resize(1101, 650);
     setMinimumSize(800, 540);
     pages_ = new QStackedWidget(this);
     pages_->addWidget(makeWorkspace());
@@ -110,7 +114,19 @@ QToolButton *UiShell::makeButton(const QJsonObject &spec, QWidget *parent, bool 
     button->setIconSize(large ? QSize(32, 32) : QSize(16, 16));
     button->setToolButtonStyle(iconOnly ? Qt::ToolButtonIconOnly
         : large ? Qt::ToolButtonTextUnderIcon : Qt::ToolButtonTextBesideIcon);
-    if (large) button->setMinimumHeight(65);
+    if (iconOnly) {
+        button->setFixedSize(23, 23);
+        if (icon.isNull()) { button->setText({}); button->setArrowType(Qt::DownArrow); }
+    }
+    if (large) { button->setMinimumHeight(65); button->setProperty("largeRibbon", true); }
+    else button->setMaximumHeight(24);
+    const auto id = spec.value("id").toString();
+    if (id == "components") connect(button, &QToolButton::clicked, this, [this] {
+        if (components_) components_->showPage("specifications");
+    });
+    if (id == "draw-structure") connect(button, &QToolButton::clicked, this, [this] {
+        if (components_) components_->showPage("molecular-structure");
+    });
     auto items = spec.value("items").toArray();
     const auto menuRef = spec.value("menu").toString();
     if (!menuRef.isEmpty()) items = catalog_.value("menus").toObject().value(menuRef).toArray();
@@ -145,9 +161,27 @@ QWidget *UiShell::makeRibbon(const QJsonObject &ribbon)
         grid->setSpacing(0);
         int column = 0;
         int line = 0;
+        QToolButton *corner = nullptr;
         for (const auto &item : group.value("controls").toArray()) {
             const auto spec = item.toObject();
             auto *button = makeButton(spec, frame);
+            QFont ribbonFont = button->font();
+            ribbonFont.setPixelSize(11);
+            button->setFont(ribbonFont);
+            if (spec.value("id").toString() == "run-settings") {
+                corner = button;
+                corner->setText("↘");
+                corner->setToolButtonStyle(Qt::ToolButtonTextOnly);
+                corner->setFixedSize(13, 13);
+                continue;
+            }
+            int textWidth = 0;
+            for (const auto &lineText : button->text().split('\n'))
+                textWidth = qMax(textWidth, button->fontMetrics().horizontalAdvance(lineText));
+            const int iconWidth = button->icon().isNull() ? 0 : button->iconSize().width();
+            const int width = spec.value("large").toBool() ? qMax(iconWidth, textWidth) + 10
+                : textWidth + iconWidth + (iconWidth ? 5 : 0) + 8;
+            button->setFixedWidth(width + (button->menu() ? 10 : 0));
             if (spec.value("large").toBool()) {
                 if (line != 0) { ++column; line = 0; }
                 grid->addWidget(button, 0, column++, 3, 1);
@@ -160,7 +194,11 @@ QWidget *UiShell::makeRibbon(const QJsonObject &ribbon)
         auto *title = new QLabel(group.value("label").toString(), frame);
         title->setObjectName("GroupTitle");
         title->setAlignment(Qt::AlignCenter);
-        vertical->addWidget(title);
+        auto *caption = new QHBoxLayout;
+        caption->setContentsMargins(0, 0, 0, 0);
+        caption->addWidget(title, 1);
+        if (corner) caption->addWidget(corner);
+        vertical->addLayout(caption);
         row->addWidget(frame);
     }
     row->addStretch();
@@ -177,7 +215,7 @@ QWidget *UiShell::makeWorkspace()
     auto *workspace = new QWidget;
     auto *column = new QVBoxLayout(workspace);
     column->setContentsMargins(0, 0, 0, 0);
-    column->setSpacing(2);
+    column->setSpacing(0);
     auto *quick = new QWidget(workspace);
     quick->setObjectName("QuickBar");
     auto *quickRow = new QHBoxLayout(quick);
@@ -192,14 +230,14 @@ QWidget *UiShell::makeWorkspace()
     search->setReadOnly(true);
     search->setMaximumWidth(240);
     quickRow->addWidget(search);
-    quickRow->addWidget(makeButton(buttonSpec(QString::fromUtf8("搜索")), quick, true));
+    quickRow->addWidget(makeButton({{"label", QString::fromUtf8("搜索")}, {"icon", "search"}}, quick, true));
     quickRow->addWidget(makeButton(buttonSpec(QString::fromUtf8("最小化功能区")), quick, true));
-    quickRow->addWidget(makeButton({{"label", QString::fromUtf8("帮助")}, {"icon", "help"}}, quick, true));
+    quickRow->addWidget(makeButton({{"label", QString::fromUtf8("帮助")}, {"icon", "quick-help"}}, quick, true));
     column->addWidget(quick);
 
     auto *ribbon = new QTabWidget(workspace);
     ribbon->setObjectName("Ribbon");
-    ribbon->setFixedHeight(133);
+    ribbon->setFixedHeight(122);
     auto *file = makeButton(buttonSpec(QString::fromUtf8("文件")), ribbon);
     file->setToolButtonStyle(Qt::ToolButtonTextOnly);
     file->setObjectName("FileButton");
@@ -213,9 +251,10 @@ QWidget *UiShell::makeWorkspace()
 
     auto *splitter = new QSplitter(Qt::Horizontal, workspace);
     splitter->setChildrenCollapsible(false);
+    auto *componentPage = makeComponentPage();
     splitter->addWidget(makeNavigator());
-    splitter->addWidget(makeComponentPage());
-    splitter->setSizes({205, 955});
+    splitter->addWidget(componentPage);
+    splitter->setSizes({198, 900});
     splitter->setStretchFactor(1, 1);
     column->addWidget(splitter, 1);
     return workspace;
@@ -236,25 +275,70 @@ QWidget *UiShell::makeNavigator()
     filter->setToolButtonStyle(Qt::ToolButtonTextOnly);
     filter->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     layout->addWidget(filter);
-    auto *tree = new QTreeWidget(panel);
-    tree->setHeaderHidden(true);
-    tree->setIndentation(16);
+    navigation_ = new QTreeWidget(panel);
+    navigation_->setObjectName("PropertiesNavigation");
+    navigation_->setHeaderHidden(true);
+    navigation_->setIndentation(16);
+    navigation_->setIconSize(QSize(16, 16));
+    QFile file(":/ui/components.json");
+    file.open(QIODevice::ReadOnly);
+    const auto componentCatalog = QJsonDocument::fromJson(file.readAll()).object();
+    QTreeWidgetItem *initial = nullptr;
+    std::function<void(const QJsonArray &, QTreeWidgetItem *)> addNodes;
+    addNodes = [this, &addNodes, &initial](const QJsonArray &nodes, QTreeWidgetItem *parent) {
+        for (const auto &value : nodes) {
+            const auto node = value.toObject();
+            auto *item = new QTreeWidgetItem(parent, {node.value("label").toString()});
+            item->setIcon(0, aspenIcon(node.value("icon").toString("folder")));
+            item->setData(0, Qt::UserRole, node.value("page").toString());
+            if (node.value("page").toString() == "specifications") initial = item;
+            addNodes(node.value("children").toArray(), item);
+        }
+    };
     for (const auto &value : catalog_.value("navigation").toArray()) {
         const auto node = value.toObject();
-        auto *item = new QTreeWidgetItem(tree, {node.value("label").toString()});
-        item->setIcon(0, aspenIcon("folder"));
-        for (const auto &child : node.value("children").toArray()) {
-            auto *childItem = new QTreeWidgetItem(item, {child.toString()});
-            childItem->setIcon(0, aspenIcon("form-complete"));
-            if (child.toString() == QString::fromUtf8("规定")) tree->setCurrentItem(childItem);
+        auto *item = new QTreeWidgetItem(navigation_, {node.value("label").toString()});
+        const bool components = node.value("label").toString() == QString::fromUtf8("组分");
+        item->setIcon(0, aspenIcon(components ? "folder-incomplete" : "folder"));
+        if (components) {
+            item->setData(0, Qt::UserRole, "specifications");
+            addNodes(componentCatalog.value("navigation").toArray(), item);
+            item->setExpanded(true);
+        } else {
+            item->setToolTip(0, QString::fromUtf8("此工作区尚未采集"));
         }
-        item->setExpanded(node.value("expanded").toBool());
     }
-    layout->addWidget(tree, 1);
+    navigation_->setCurrentItem(initial);
+    connect(navigation_, &QTreeWidget::currentItemChanged, this, [this](QTreeWidgetItem *item) {
+        if (!item || !components_) return;
+        const auto id = item->data(0, Qt::UserRole).toString();
+        if (!id.isEmpty()) components_->showPage(id);
+    });
+    connect(navigation_, &QTreeWidget::itemClicked, this, [this](QTreeWidgetItem *item) {
+        if (components_) components_->showPage(item->data(0, Qt::UserRole).toString());
+    });
+    connect(components_, &ComponentWorkspace::pageChanged, this, [this](const QString &id) {
+        const QSignalBlocker blocker(navigation_);
+        for (QTreeWidgetItemIterator it(navigation_); *it; ++it) {
+            if ((*it)->parent() && (*it)->data(0, Qt::UserRole).toString() == id) {
+                navigation_->setCurrentItem(*it);
+                navigation_->scrollToItem(*it);
+                break;
+            }
+        }
+    });
+    layout->addWidget(navigation_, 1);
     for (const auto &value : catalog_.value("modes").toArray()) {
         auto *mode = makeButton(buttonSpec(value.toString()), panel);
         mode->setObjectName(value.toString() == QString::fromUtf8("物性") ? "ActiveMode" : "NavigationMode");
         mode->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        const QStringList modeIcons{"mode-properties", "mode-simulation", "mode-safety", "mode-energy"};
+        const QStringList modeLabels{QString::fromUtf8("物性"), QString::fromUtf8("模拟"), QString::fromUtf8("安全分析"), QString::fromUtf8("能量分析")};
+        const int modeIndex = modeLabels.indexOf(value.toString());
+        mode->setIcon(aspenIcon(modeIcons.value(modeIndex)));
+        mode->setIconSize(QSize(24, 24));
+        mode->setMinimumHeight(34);
+        mode->setMaximumHeight(34);
         layout->addWidget(mode);
     }
     layout->addWidget(makeButton(buttonSpec(QString::fromUtf8("导航选项")), panel, true));
@@ -263,55 +347,10 @@ QWidget *UiShell::makeNavigator()
 
 QWidget *UiShell::makeComponentPage()
 {
-    auto *page = new QWidget;
-    page->setObjectName("ComponentPage");
-    auto *column = new QVBoxLayout(page);
-    column->setContentsMargins(6, 2, 6, 6);
-    auto *titleRow = new QHBoxLayout;
-    titleRow->addWidget(new QLabel(QString::fromUtf8("组分 - 规定"), page));
-    titleRow->addWidget(makeButton(buttonSpec("×"), page));
-    titleRow->addWidget(makeButton(buttonSpec("+"), page));
-    titleRow->addStretch();
-    // The document tab overflow was visible but not expanded during observation.
-    titleRow->addWidget(makeButton(buttonSpec(QString::fromUtf8("所有选项卡")), page));
-    column->addLayout(titleRow);
-    auto *tabs = new QTabBar(page);
-    for (const auto &value : catalog_.value("componentTabs").toArray()) tabs->addTab(value.toString());
-    tabs->setExpanding(false);
-    // These are observed tabs, but their contents are outside this menu-only pass.
-    for (int i = 1; i < tabs->count(); ++i) tabs->setTabEnabled(i, false);
-    column->addWidget(tabs);
-    column->addSpacing(12);
-    column->addWidget(new QLabel(QString::fromUtf8("选择组分"), page));
-    const auto headers = catalog_.value("componentColumns").toArray();
-    auto *table = new QTableWidget(1, static_cast<int>(headers.size()), page);
-    QStringList labels;
-    for (const auto &label : headers) labels << label.toString();
-    table->setHorizontalHeaderLabels(labels);
-    table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    table->setVerticalHeaderLabels({"*"});
-    table->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    table->setSelectionMode(QAbstractItemView::NoSelection);
-    table->setFixedHeight(62);
-    column->addWidget(table);
-    auto *buttons = new QHBoxLayout;
-    for (const auto &value : catalog_.value("componentButtons").toArray()) {
-        auto *button = makeButton(value.toObject(), page);
-        button->setObjectName("FormButton");
-        button->setToolButtonStyle(Qt::ToolButtonTextOnly);
-        buttons->addWidget(button);
-    }
-    buttons->addStretch();
-    auto *controls = new QWidget(page);
-    controls->setLayout(buttons);
-    auto *scroll = new QScrollArea(page);
-    scroll->setWidget(controls);
-    scroll->setWidgetResizable(true);
-    scroll->setFixedHeight(58);
-    scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    column->addWidget(scroll);
-    column->addStretch();
-    return page;
+    QFile file(":/ui/components.json");
+    file.open(QIODevice::ReadOnly);
+    components_ = new ComponentWorkspace(QJsonDocument::fromJson(file.readAll()).object());
+    return components_;
 }
 
 QWidget *UiShell::makeFilePanel(const QJsonObject &entry)

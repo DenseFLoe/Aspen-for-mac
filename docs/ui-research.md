@@ -1,5 +1,7 @@
 # Aspen Plus V15：按钮和菜单初步观察
 
+> 本文件为上一轮历史记录。当前图标与组分页实现见 [后续采集记录](components-research.md) 和 [图片来源](ui-assets.md)；以下“未编译/占位图标”描述仅适用于初步版本。
+
 观察日期：2026-11-14（Asia/Shanghai）。应用：Aspen Plus V15，文件版本 41.0.0.614，中文界面。观察会话标题为 `Simulation 2 - Aspen Plus V15 - aspenONE`。来源是本机可见窗口和 Windows 辅助功能树，不是厂商源码、安装包反编译或文档中的假设。
 
 ## 研究边界
