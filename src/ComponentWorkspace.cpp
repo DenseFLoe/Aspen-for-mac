@@ -18,6 +18,7 @@
 #include <QScrollArea>
 #include <QSpinBox>
 #include <QStackedWidget>
+#include <QTabBar>
 #include <QTabWidget>
 #include <QTableWidget>
 #include <QTextEdit>
@@ -100,6 +101,8 @@ ComponentWorkspace::ComponentWorkspace(const QJsonObject &catalog, QWidget *pare
             auto *tabs = new QTabWidget(page);
             tabs->setObjectName("tabs-" + id);
             tabs->setDocumentMode(true);
+            // The stylesheet supplies the pane border; avoid a second native baseline.
+            tabs->tabBar()->setDrawBase(false);
             tabs->setUsesScrollButtons(true);
             auto *info = new QLabel(tabs);
             info->setPixmap(aspenIcon("info").pixmap(16, 16));

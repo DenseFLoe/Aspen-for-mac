@@ -14,6 +14,7 @@ qt_add_executable(AspenPlusUIShell
     src/IconCatalog.h
     src/ComponentWorkspace.cpp
     src/ComponentWorkspace.h
+    src/LightTheme.h
 )
 qt_add_resources(AspenPlusUIShell "ui_catalog"
     PREFIX "/"
@@ -38,6 +39,7 @@ if(BUILD_TESTING)
         tests/UiSmokeTest.cpp src/UiShell.cpp src/UiShell.h
         src/IconCatalog.cpp src/IconCatalog.h
         src/ComponentWorkspace.cpp src/ComponentWorkspace.h
+        src/LightTheme.h
     )
     target_include_directories(UiSmokeTest PRIVATE src)
     target_link_libraries(UiSmokeTest PRIVATE Qt6::Widgets Qt6::Test)
