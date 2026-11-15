@@ -77,6 +77,7 @@ def parse_baml(data, known):
         raise ValueError('Not an MSBAML stream')
     r.take(12)
     types, attrs, strings = {}, {}, {}
+    assemblies, type_assemblies, attr_owners = {}, {}, {}
     nodes, stack, contexts, records = [], [], [], Counter()
     def typename(i):
         return types.get(i, known['types'].get(str(-i), f'type#{i}'))
@@ -99,10 +100,13 @@ def parse_baml(data, known):
         else:
             raise ValueError(f'Unsupported BAML record {kind} at {offset}')
         p = Reader(payload)
-        if kind in (29, 30):
-            tid, _ = p.unpack('hh'); types[tid] = p.string()
+        if kind == 28:
+            aid, = p.unpack('h'); assemblies[aid] = p.string().split(',')[0]
+        elif kind in (29, 30):
+            tid, aid = p.unpack('hh'); types[tid] = p.string(); type_assemblies[tid] = aid & 0xfff
         elif kind == 31:
             aid, owner, _ = p.unpack('hhB'); attrs[aid] = typename(owner).split('.')[-1]+'.'+p.string()
+            attr_owners[aid] = owner
         elif kind == 32:
             sid, = p.unpack('h'); strings[sid] = p.string()
         elif kind in (3, 48, 40):
@@ -155,6 +159,18 @@ def parse_baml(data, known):
         for key, value in list(node['properties'].items()):
             if isinstance(value, dict) and value.get('extension') == 'StaticExtension':
                 value['member'] = attrname(value['valueId'])
+                owner = attr_owners.get(value['valueId'])
+                if owner is not None:
+                    value['declaringType'] = typename(owner)
+                    if type_assemblies.get(owner) in assemblies:
+                        value['assembly'] = assemblies[type_assemblies[owner]]
+            elif isinstance(value, dict) and value.get('extension') in ('StaticResourceExtension', 'DynamicResourceExtension'):
+                if value['flags'] & 0x4000:
+                    value['type'] = typename(value['valueId'])
+                elif value['flags'] & 0x2000:
+                    value['member'] = attrname(value['valueId'])
+                elif value['valueId'] in strings:
+                    value['key'] = strings[value['valueId']]
     return {'nodes': nodes, 'recordTypes': dict(records)}
 
 

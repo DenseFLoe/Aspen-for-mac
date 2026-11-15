@@ -108,7 +108,7 @@ private slots:
     {
         RecoveredWorkspace workspace;
         const auto pages=workspace.catalog().value("pages").toArray();
-        QCOMPARE(pages.size(),2947);
+        QCOMPARE(pages.size(),3086);
         for (const auto &value:pages) {
             const auto id=value.toObject().value("id").toString();
             QVERIFY2(workspace.showPage(id),qPrintable(id));

@@ -331,7 +331,7 @@ QWidget *RecoveredWorkspace::renderNodes(const QJsonArray &nodes, int index, int
         auto *check = new QCheckBox(caption(p)); check->setChecked(p.value("IsChecked").toBool()); widget = check;
     } else if (type.contains("Button")) {
         auto *button = new QPushButton(caption(p)); button->setAutoDefault(false); widget=button;
-        for (const auto &property:{"SmallImage","LargeImage","ImageSource"}) {
+        for (const auto &property:{"SmallImage","LargeImage","ImageSource","Source"}) {
             const auto icon=aspenIcon(renderingId_+":"+QString::number(index)+":"+property);
             if (!icon.isNull()) { button->setIcon(icon); break; }
         }

@@ -1,5 +1,15 @@
 # Aspen Plus V15 静态界面资源恢复
 
+## 2026-11-15 补充恢复
+
+目录筛选扩大到扫描范围内所有以 `AspenTech.AspenPlus.` 开头的产品布局类型，不再仅限 `WPFForms` 目录；相同语言优先保留原有 WPFForms 副本。新增 139 份布局、12 个模块，当前为 **3,086 份布局、59 个模块、4,212 次按钮控件出现、117 份菜单树**。新增范围包括对象 ID 对话框、模型库、塔内件、自定义模型、分子绘图和打印预览。原有布局 ID 和图片映射保持兼容。
+
+图片恢复器现在读取 BAML 声明的资源程序集、静态属性的字面量路径、常量字段初始化和 CommonImages 属性绑定；仅解析元数据及已识别的 IL 字节模式，不执行程序集。当前恢复 **437 份去重位图、685 处图片引用**，在这份目录内可识别的位图引用未解决数为 0。24 处同名 `Source` 属性属于数据绑定/资源字典，另列在 `nonImageSources`，不误算为缺失图片。字面量图片保留来源与原始 SHA-256；不能据此声称所有运行时生成图形、WPF 矢量或主题都已复刻。
+
+剩余 11 个 ContentType 在完整 7,966 份 BAML 扫描中仍无独立布局；继续保留缺失记录，不编造资源。当前运行时变量引用为 15,535 个。以下各节的 2,947 / 47 等数字为 2026-11-14 基线。
+
+格式补充依据：[Microsoft WPF BAML records](https://github.com/dotnet/wpf/blob/main/src/Microsoft.DotNet.Wpf/src/PresentationFramework/System/Windows/Markup/BamlRecords.cs)。静态资源键区分字符串 ID、类型 ID 和成员 ID；图像查找不执行动态绑定或计算。
+
 本轮按“批量扫描 → 清单 → 布局恢复 → 外壳比对 → 动态抽查”的顺序处理。扫描对象是本机安装的 Aspen Plus V15.0、AprSystem V15.0、Aspen Properties V15.0，日期为 2026-11-14（Asia/Shanghai）。安装文件只读，未载入或执行原程序程序集中的代码。
 
 ## 扫描结果与计数口径

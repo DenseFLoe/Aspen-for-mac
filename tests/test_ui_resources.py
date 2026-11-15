@@ -7,6 +7,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
 from scan_aspen_ui import parse_baml, parse_dialog, parse_menu, managed_entries
+from build_ui_catalog import select_layouts
 
 
 def w(text):
@@ -25,6 +26,28 @@ def variable(kind, payload):
 
 
 class ResourceTests(unittest.TestCase):
+    def test_product_dialogs_outside_wpfforms_and_language_priority(self):
+        def layout(file, cls):
+            return {'file':file, 'nodes':[{'type':cls}]}
+        common='AspenTech.AspenPlus.Dialog'
+        forms=layout('GUI/WPFForms/en-US/A.resources.dll',common)
+        external=layout('GUI/Modules/A.dll','AspenTech.AspenPlus.ModelLibrary.NameDialog')
+        selected=select_layouts([forms, layout('GUI/en-US/A.resources.dll',common), external,
+                                layout('GUI/Vendor.dll','Vendor.Template')])
+        self.assertEqual(len(selected),2)
+        self.assertIs(selected[common],forms)
+        self.assertIs(selected['AspenTech.AspenPlus.ModelLibrary.NameDialog'],external)
+
+    def test_baml_static_resource_string_keys_are_not_member_ids(self):
+        known={'types':{'1':'Image','603':'StaticResourceExtension'},'properties':{'1':'Image.Source'}}
+        data=struct.pack('<I',12)+'MSBAML'.encode('utf-16-le')+b'\0'*12+b'\x01'+b'\0'*6
+        data+=variable(32,struct.pack('<h',7)+s('copyIcon'))
+        data+=b'\x03'+struct.pack('<hB',-1,0)
+        data+=b'\x23'+struct.pack('<hHh',-1,603,7)+b'\x04\x02'
+        reference=parse_baml(data,known)['nodes'][0]['properties']['Image.Source']
+        self.assertEqual(reference['key'],'copyIcon')
+        self.assertNotIn('member',reference)
+
     def test_resource_set_utf16_names_utf8_values_and_opaque_objects(self):
         def encoded(data):
             n=len(data); prefix=bytearray()

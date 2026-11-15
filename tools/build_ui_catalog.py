@@ -29,6 +29,26 @@ def rank(file):
     return 3 if '/zh-hans/' in file else 2 if '/en-us/' in file else 0 if '/ru-ru/' in file or '/ja-jp/' in file else 1
 
 
+def select_layouts(layouts):
+    """Include product dialogs/controls outside WPFForms, excluding vendor templates.
+
+    Prefer the existing WPFForms copy at equal language priority so stable page
+    identities and source-node image references do not change unnecessarily.
+    """
+    selected = {}
+    def priority(layout):
+        return (rank(layout['file']), '/WPFForms/' in layout['file'])
+    for layout in layouts:
+        if not layout['nodes']:
+            continue
+        cls = layout['nodes'][0]['type']
+        if not cls.startswith('AspenTech.AspenPlus.'):
+            continue
+        if cls not in selected or priority(layout) > priority(selected[cls]):
+            selected[cls] = layout
+    return selected
+
+
 def build(source, target):
     files = {x['path']:x for x in load(source,'files')}
     translations, priorities = {}, {}
@@ -47,13 +67,7 @@ def build(source, target):
         candidates[cls+'.'+re.sub(r'[^\w]', '_', member)].add(key)
     aliases={k:next(iter(v)) for k,v in candidates.items() if len(v)==1 and k not in translations}
     layouts = load(source, 'layouts')
-    selected = {}
-    for layout in layouts:
-        # Product form resources are distinct from shared control templates.
-        if '/WPFForms/' not in layout['file'] or not layout['nodes']: continue
-        cls = layout['nodes'][0]['type']
-        if not cls.startswith('AspenTech.AspenPlus.'): continue
-        if cls not in selected or rank(layout['file']) > rank(selected[cls]['file']): selected[cls] = layout
+    selected = select_layouts(layouts)
     pages, types, buttons, unresolved, sources, wpf_menus = [], {}, [], [], {}, []
     grouped = defaultdict(list)
     for cls, layout in sorted(selected.items()):
