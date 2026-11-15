@@ -56,6 +56,12 @@ private:
     QStackedWidget *pages_ = nullptr;
     ComponentWorkspace *components_ = nullptr;
     QTreeWidget *navigation_ = nullptr;
+    QTreeWidget *simulationNavigation_ = nullptr;
+    QStackedWidget *navigationPages_ = nullptr;
+    bool simulationMode_ = false;
+    QWidget *makeSimulationRibbon();
+    QWidget *makeSimulationNavigator();
+    void syncSimulationNavigation();
     RecoveredWorkspace *recovered_ = nullptr;
     ObjectWorkspace *objects_ = nullptr;
     void syncObjectNavigation();

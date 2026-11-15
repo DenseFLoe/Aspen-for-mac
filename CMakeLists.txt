@@ -13,6 +13,8 @@ qt_add_executable(AspenPlusUIShell
     src/UiShellProject.cpp src/ProjectDocument.cpp src/ProjectDocument.h src/WidgetState.cpp src/WidgetState.h
     src/UiShellActions.cpp
     src/UiShellObjects.cpp
+    src/UiShellSimulation.cpp
+    src/ModelPalette.cpp
     src/ObjectWorkspace.cpp
     src/ObjectWorkspace.h
     src/UiShell.h
@@ -52,6 +54,7 @@ if(BUILD_TESTING)
         src/UiShellProject.cpp src/ProjectDocument.cpp src/ProjectDocument.h src/WidgetState.cpp src/WidgetState.h
         src/UiShellActions.cpp
         src/UiShellObjects.cpp src/ObjectWorkspace.cpp src/ObjectWorkspace.h
+        src/UiShellSimulation.cpp src/ModelPalette.cpp
         src/IconCatalog.cpp src/IconCatalog.h
         src/ComponentWorkspace.cpp src/ComponentWorkspace.h
         src/LightTheme.h

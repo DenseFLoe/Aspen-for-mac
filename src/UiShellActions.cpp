@@ -156,8 +156,10 @@ void UiShell::dispatch(const QString &requested)
         for (auto *button:findChildren<QToolButton *>())
             if (button->menu() && (button->text()==QString::fromUtf8("所有项") || button->text()==QString::fromUtf8("仅输入"))) button->setText(action.mid(18));
     }
+    else if (action=="model-palette") {objects_->setModelPaletteVisible(true);}
     else if (action.startsWith("catalog:")) {
         pages_->setCurrentIndex(0);
+        navigationPages_->setCurrentIndex(0);
         findChild<QTabWidget *>("NavigationTabs")->setCurrentIndex(1);
         auto *search=findChild<QLineEdit *>("RecoverySearch"); search->setText(action.mid(8)); search->setFocus();
     } else if (action=="window-back" || action=="window-forward") {

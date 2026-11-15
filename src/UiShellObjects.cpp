@@ -11,9 +11,23 @@
 #include <QLabel>
 #include <QToolButton>
 #include <QStyle>
+#include <QTabWidget>
+#include <QTabBar>
 
 void UiShell::setWorkspaceMode(bool simulation)
 {
+    const bool changed=simulationMode_!=simulation;simulationMode_=simulation;
+    if(navigationPages_) navigationPages_->setCurrentIndex(simulation?1:0);
+    if(auto *label=findChild<QLabel *>("Incomplete"))label->setText(simulation?QString::fromUtf8("流程未完成"):QString::fromUtf8("所需输入不完整"));
+    if(auto *label=findChild<QLabel *>("FlowsheetContext"))label->setVisible(simulation);
+    if(auto *label=findChild<QLabel *>("DatabaseStatus"))label->setVisible(!simulation);
+    if(auto *ribbon=findChild<QTabWidget *>("Ribbon")) {
+        for(int i=0;i<ribbon->count();++i) if(ribbon->widget(i)->property("simulationOnly").toBool()) ribbon->setTabVisible(i,simulation);
+        if(changed) {
+            for(int i=0;i<ribbon->count();++i) if(ribbon->widget(i)->property("ribbonId").toString()==(simulation?"flowsheet-modify":"home"))ribbon->setCurrentIndex(i);
+        }
+    }
+
     if(auto *label=findChild<QLabel *>("NavigationHeading")) label->setText(simulation?QString::fromUtf8("模拟"):QString::fromUtf8("物性"));
     for(auto *button:findChildren<QToolButton *>()) {
         if(!button->property("workspaceMode").isValid()) continue;
@@ -25,6 +39,7 @@ void UiShell::setWorkspaceMode(bool simulation)
 void UiShell::syncObjectNavigation()
 {
     if(!navigation_ || !objects_) return;
+    syncSimulationNavigation();
     components_->setUserComponents(objects_->objects());
     const QSignalBlocker blocker(navigation_);
     const auto selected=navigation_->currentItem()?navigation_->currentItem()->data(0,Qt::UserRole+3).toString():QString();
@@ -86,7 +101,7 @@ bool UiShell::dispatchObjectAction(const QString &action)
     else return false;
     if(!kind.isEmpty()) {
         if(QStringList{"blocks","streams","reactions","sensitivity","design-specs","calculators","optimizations","column-designs","column-adjustments","pumparounds"}.contains(kind)) setWorkspaceMode(true);
-        else if(QStringList{"chemistry","units","analysis","user-components"}.contains(kind)) setWorkspaceMode(false);
+        else if(QStringList{"chemistry","user-components"}.contains(kind)) setWorkspaceMode(false);
     }
     pages_->setCurrentIndex(0);documents_->setCurrentWidget(objects_); return true;
 }

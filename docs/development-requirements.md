@@ -8,6 +8,10 @@
 
 工作分支 `codex/project-database` 已继承最新对象交互与要求；`main` 保持原状态。阶段 0 的集成基线和首批参考场景、阶段 1 保存与撤销实现及检查见 [项目保存记录](project-persistence.md)。用户确认旧 UI 外壳在 Mac 初步使用时基本有响应；本轮新功能的 Mac 实机验收仍待执行。保存 `127fd28`、数据库 `a389c41`、保存修复 `7c68541`、打包修复 `eefc17f` 均已上传。阶段 0–2 的代码实现及 Windows／macOS 自动检查通过，最终 [macOS Actions](https://github.com/DenseFLoe/Aspen-for-mac/actions/runs/43686255862) 包含包内插件与保存自检。运行数据和边界见 [只读数据库接入](runtime-property-database.md)；Mac 本轮实机验收仍未完成，不把自动构建标为实机通过。
 
+## 界面对齐插入任务（2026-11-15）
+
+用户要求优先对齐“模拟 / 主工艺流程”截图。本次在 `codex/simulation-ui-parity`，基于 `codex/project-database@25e90c3`，修正模式切换、导航、流程图功能区、指标条和模型选项板。项目保存、只读数据库和原资产保留规则继续适用。此任务不将后续计算阶段标记完成；验证与边界见 [模拟界面对齐记录](simulation-ui-parity.md)。
+
 ## 当前基线
 
 以下为制定时的快照，后续开发开始前应重新核对分支和检查状态。

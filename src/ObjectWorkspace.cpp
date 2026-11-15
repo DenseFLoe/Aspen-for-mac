@@ -9,6 +9,7 @@
 #include <QFile>
 #include <QFormLayout>
 #include <QGraphicsPathItem>
+#include <QGraphicsPixmapItem>
 #include <QGraphicsRectItem>
 #include <QGraphicsScene>
 #include <QGraphicsSimpleTextItem>
@@ -30,6 +31,8 @@
 #include <QToolButton>
 #include <QUuid>
 #include <functional>
+
+QIcon flowsheetModelIcon(const QString &type, bool threeDimensional);
 
 class FlowsheetView final : public QGraphicsView
 {
@@ -87,7 +90,7 @@ ObjectWorkspace::ObjectWorkspace(QWidget *parent) : QWidget(parent)
     auto *layout=new QVBoxLayout(this); layout->setContentsMargins(3,0,3,3);
     documents_=new QTabWidget(this); documents_->setObjectName("ObjectDocuments");
     documents_->setDocumentMode(true); documents_->setTabsClosable(true); documents_->setMovable(true);
-    documents_->setUsesScrollButtons(true); layout->addWidget(documents_);
+    documents_->setUsesScrollButtons(true); metrics_=makeMetrics(); layout->addWidget(metrics_); layout->addWidget(documents_,1);
     manager_=new QWidget(documents_); manager_->setObjectName("ObjectManager");
     auto *managerLayout=new QVBoxLayout(manager_);
     heading_=new QLabel(manager_); managerLayout->addWidget(heading_);
@@ -127,25 +130,13 @@ ObjectWorkspace::ObjectWorkspace(QWidget *parent) : QWidget(parent)
 
     flowsheet_=new QWidget(documents_); auto *flowLayout=new QVBoxLayout(flowsheet_);
     flowLayout->setContentsMargins(0,0,0,0); canvas_=new FlowsheetView(flowsheet_); flowLayout->addWidget(canvas_,1);
-    placementNotice_=new QLabel(QString::fromUtf8("选择模型后单击画布放置；双击对象编辑输入。"),flowsheet_); flowLayout->addWidget(placementNotice_);
-    auto *palette=new QHBoxLayout;
-    auto *select=new QPushButton(QString::fromUtf8("选择"),flowsheet_); select->setObjectName("FlowSelect"); palette->addWidget(select);
-    connect(select,&QPushButton::clicked,this,[this]{beginPlacement({},{});});
-    for(const auto &kind:{QString("streams"),QString("blocks")}) {
-        auto *types=new QComboBox(flowsheet_); types->setObjectName("Palette-"+kind);
-        for(const auto &type:definition(kind).value("types").toArray()) {
-            const auto t=type.toObject(); types->addItem(t.value("label").toString(t.value("id").toString()),t.value("id").toString());
-        }
-        auto *add=new QPushButton(kind=="blocks"?QString::fromUtf8("放置模块"):QString::fromUtf8("连接流股"),flowsheet_);
-        add->setObjectName("Place-"+kind); palette->addWidget(types); palette->addWidget(add);
-        connect(add,&QPushButton::clicked,this,[this,kind,types]{beginPlacement(kind,types->currentData().toString());});
-    }
-    palette->addStretch(); flowLayout->addLayout(palette);
+    placementNotice_=new QLabel(flowsheet_); placementNotice_->hide(); flowLayout->addWidget(placementNotice_);
+    modelPalette_=makeModelPalette(); layout->addWidget(modelPalette_);
     documents_->addTab(flowsheet_,QString::fromUtf8("主工艺流程"));
     documents_->tabBar()->setTabButton(1,QTabBar::RightSide,nullptr);
     canvas_->place=[this](QPointF p,const QString &key){placeAt(p,key);};
     canvas_->open=[this](const QString &key){openObject(key);};
-    canvas_->remove=[this](const QString &key){requestDelete(key);};
+    canvas_->remove=[this](const QString &key){if(!flowsheetLocked_)requestDelete(key);};
     canvas_->moved=[this](const QString &key,QPointF p){moveBlock(key,p);};
     canvas_->cancel=[this]{beginPlacement({},{});};
     connect(documents_,&QTabWidget::tabCloseRequested,this,[this](int index){
@@ -153,10 +144,14 @@ ObjectWorkspace::ObjectWorkspace(QWidget *parent) : QWidget(parent)
         closeObject(view->property("objectKey").toString());
     });
     connect(documents_,&QTabWidget::currentChanged,this,[this](int){
+        const bool flow=documents_->currentWidget()==flowsheet_;
+        metrics_->setVisible(flow); modelPalette_->setVisible(flow);
+        emit flowsheetActivated(flow);
         const auto key=currentObject();
         if(entries_.contains(key) && entries_[key].view)
             emit objectActivated(key,entries_[key].view->currentPage());
     });
+    metrics_->hide();modelPalette_->hide();
     showCollection("property-sets");
 }
 
@@ -245,7 +240,7 @@ void ObjectWorkspace::showCollection(const QString &kind,const QString &parent) 
     if(definition(kind).isEmpty() || (!parent.isEmpty() && !entries_.contains(parent))) return;
     const auto parents=definition(kind).value("parentTypes").toArray();
     if((parents.isEmpty() && !parent.isEmpty()) || (!parents.isEmpty() && !parents.contains(object(parent).value("type")))) return;
-    kind_=kind; parent_=parent; refreshManager(); documents_->setCurrentWidget(manager_); emit collectionActivated(kind,parent);
+    kind_=kind; parent_=parent; refreshManager(); documents_->setTabVisible(documents_->indexOf(manager_),true);documents_->setCurrentWidget(manager_); emit collectionActivated(kind,parent);
 }
 bool ObjectWorkspace::openObject(const QString &key,const QString &page) {
     if(!entries_.contains(key)) return false;
@@ -405,15 +400,27 @@ void ObjectWorkspace::requestDelete(const QString &key) {
     connect(buttons,&QDialogButtonBox::accepted,dialog,[this,key,dialog]{removeObject(key);dialog->accept();});
     connect(buttons,&QDialogButtonBox::rejected,dialog,&QDialog::reject); dialog->open();
 }
-void ObjectWorkspace::showFlowsheet() {documents_->setCurrentWidget(flowsheet_);refreshCanvas();}
+void ObjectWorkspace::showFlowsheet() {
+    documents_->setTabVisible(documents_->indexOf(manager_),false);
+    documents_->setCurrentWidget(flowsheet_);metrics_->show();modelPalette_->show();refreshCanvas();
+    emit flowsheetActivated(true);
+}
+void ObjectWorkspace::setFlowsheetZoom(int percent) {canvas_->resetTransform();canvas_->scale(percent/100.0,percent/100.0);}
+void ObjectWorkspace::setThreeDimensionalIcons(bool enabled) {threeDimensionalIcons_=enabled;refreshCanvas();}
+void ObjectWorkspace::setFlowsheetLocked(bool locked) {flowsheetLocked_=locked;modelPalette_->setEnabled(!locked);beginPlacement({},{});refreshCanvas();}
+
 void ObjectWorkspace::beginPlacement(const QString &kind,const QString &type) {
+    if(flowsheetLocked_ && !kind.isEmpty()) return;
+    for(auto *button:findChildren<QToolButton *>()) if(button->property("modelTile").toBool()) button->setChecked(kind=="blocks" && button->property("paletteType").toString()==type);
     placementKind_=kind;placementType_=type;streamPending_=false;canvas_->placing=!kind.isEmpty();
     canvas_->setCursor(kind.isEmpty()?Qt::ArrowCursor:Qt::CrossCursor);
+    placementNotice_->setVisible(!kind.isEmpty());
+    if(kind.isEmpty()) canvas_->setToolTip({});
     placementNotice_->setText(kind=="streams"?QString::fromUtf8("依次单击起点和终点；单击模块可连接，Esc 取消。"):
         kind=="blocks"?QString::fromUtf8("单击画布放置 %1；Esc 退出放置。").arg(type):QString::fromUtf8("拖动模块调整位置；双击对象编辑输入。"));
 }
 void ObjectWorkspace::placeAt(const QPointF &point,const QString &attachment) {
-    if(placementKind_.isEmpty()) return;
+    if(flowsheetLocked_ || placementKind_.isEmpty()) return;
     const QPointF position(qMax(40.0,point.x()),qMax(30.0,point.y()));
     if(placementKind_=="streams" && !streamPending_) {
         streamStart_=position;streamStartKey_=object(attachment).value("kind")=="blocks"?attachment:QString();streamPending_=true;
@@ -430,7 +437,7 @@ void ObjectWorkspace::placeAt(const QPointF &point,const QString &attachment) {
     refreshCanvas();transaction.unblock();emit objectsChanged();
 }
 void ObjectWorkspace::moveBlock(const QString &key,const QPointF &position) {
-    if(!entries_.contains(key) || object(key).value("kind")!="blocks") return;
+    if(flowsheetLocked_ || !entries_.contains(key) || object(key).value("kind")!="blocks") return;
     entries_[key].data["x"]=qMax(40.0,position.x());entries_[key].data["y"]=qMax(30.0,position.y());refreshCanvas(); emit objectsChanged();
 }
 void ObjectWorkspace::refreshCanvas() {
@@ -438,10 +445,11 @@ void ObjectWorkspace::refreshCanvas() {
     for(const auto &key:order_) {
         const auto d=entries_[key].data;
         if(d.value("kind")=="blocks") {
-            auto *box=canvas_->scene()->addRect(-40,-24,80,48,QPen(QColor("#476580")),QBrush(QColor("#e5f0fa")));
+            auto *box=canvas_->scene()->addRect(-40,-28,80,70,QPen(Qt::NoPen),QBrush(Qt::NoBrush));
             box->setPos(d.value("x").toDouble(),d.value("y").toDouble());box->setData(0,key);box->setData(1,"block");
-            box->setFlags(QGraphicsItem::ItemIsMovable|QGraphicsItem::ItemIsSelectable);
-            auto *label=new QGraphicsSimpleTextItem(d.value("name").toString()+"\n"+d.value("type").toString(),box);label->setPos(-34,-19);
+            box->setFlag(QGraphicsItem::ItemIsSelectable);box->setFlag(QGraphicsItem::ItemIsMovable,!flowsheetLocked_);
+            auto *symbol=new QGraphicsPixmapItem(flowsheetModelIcon(d.value("type").toString(),threeDimensionalIcons_).pixmap(64,56),box);symbol->setPos(-32,-28);
+            auto *label=new QGraphicsSimpleTextItem(d.value("name").toString(),box);label->setPos(-label->boundingRect().width()/2,29);
         } else if(d.value("kind")=="streams" && d.contains("startX")) {
             QPointF from(d.value("startX").toDouble(),d.value("startY").toDouble()),to(d.value("endX").toDouble(),d.value("endY").toDouble());
             const auto start=object(d.value("from").toString()),end=object(d.value("to").toString());
