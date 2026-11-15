@@ -9,6 +9,13 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS Widgets Sql)
 if(APPLE AND NOT Qt6_VERSION VERSION_EQUAL "6.8.3")
     message(FATAL_ERROR "macOS currently requires Qt 6.8.3 (QTBUG-149612). See docs/macos-accessibility.md.")
 endif()
+# Qt 6.8.3's wrapper unconditionally falls back to AGL, which newer SDKs
+# removed. Qt Widgets uses Cocoa/OpenGL; omit only that missing legacy framework.
+if(APPLE AND TARGET WrapOpenGL::WrapOpenGL AND NOT WrapOpenGL_AGL)
+    get_target_property(aspen_opengl_links WrapOpenGL::WrapOpenGL INTERFACE_LINK_LIBRARIES)
+    list(REMOVE_ITEM aspen_opengl_links "-framework AGL")
+    set_property(TARGET WrapOpenGL::WrapOpenGL PROPERTY INTERFACE_LINK_LIBRARIES "${aspen_opengl_links}")
+endif()
 qt_standard_project_setup()
 if(APPLE)
     enable_language(OBJCXX)
