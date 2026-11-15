@@ -9,7 +9,7 @@ Mac arm64 打包复制版在数据库窗口选择合成 SQLite 后，两次读�
 Qt [QTBUG-149612](https://qt-project.atlassian.net/browse/QTBUG-149612) 记录了相同栈顶和表格查询触发路径。原生表格占位节点共享父接口 ID；某些版本释放这些节点时错误删除接口，造成后续选中项访问失效。Qt 已提交[所有权修复 b74d6cb3c](https://github.com/qt/qtbase/commit/b74d6cb3c)。本次采用可验证的依赖隔离修复：macOS 固定为 Qt **6.8.3**，其 [Cocoa 节点析构实现](https://github.com/qt/qtbase/blob/v6.8.3/src/plugins/platforms/cocoa/qcocoaaccessibilityelement.mm) 不含该回归的接口删除逻辑。不是宣称旧 Qt 没有其他缺陷；后续升级到含上游修复的版本需要重新通过本文原生和实机检查。
 
 - CMake 拒绝其他 macOS Qt 版本，CI 使用固定的 Qt 官方二进制安装，不再跟随 Homebrew 的 Qt 更新。
-- 打包要求显式 Qt 前缀，校验 qmake 版本；应用检查构建/运行 Qt 版本一致。
+- 打包要求显式 Qt 前缀，校验 qmake 版本；应用检查构建/运行 Qt 版本一致。Qt 6.8.3 的导出目标还携带旧 Carbon AGL 链接，本项目移除这项 Cocoa 应用不使用的依赖，兼容新版 Xcode SDK。
 - 保持原生可访问性开启，没有关闭 VoiceOver、删掉表格语义或给 Qt 注入运行时补丁。
 - 新增 `--accessibility-self-check`，从复制后的应用包加载 Cocoa 插件，查询真实原生节点、替换占位单元、切换行列和释放窗口。包内 Cocoa 检查失败时不生成成功 ZIP。
 - 新增数据库窗口测试：合成库只读哈希不变、重复查询、空结果、参数 200/2 条翻页、来源、加入/移除、缺库和关闭重开。与原测试共用合成夹具。
@@ -53,4 +53,10 @@ qmake 必须输出 `6.8.3`。不要沿用已使用其他 Qt 版本配置的构�
 
 ## 里程碑
 
-本次代码提交：Windows Qt 6.8.3 / MinGW 构建通过，原有 ui-smoke 通过（78.83 秒），新增 database-accessibility 通过（0.70 秒），Python 运行库构建 2 项回归通过。macOS CI 上传后执行并另记结果；Mac 外部扫描与真实库验收保持待验证。
+- 依赖隔离与回归：`0dc275b0bc3c1778918bc448cad4432250c0bee0`。
+- 最终应用与构建代码：`beefe3ac34ca3efcc80e82eeb91025c7fffcc807`（含新版 SDK 的 AGL 链接兼容修正）。
+- Windows Qt 6.8.3 / MinGW：构建通过，完整 CTest **2/2**（74.08 秒）；Python 运行库构建回归 **2/2**。测试仅使用合成库。
+- [macOS arm64 Actions](https://github.com/DenseFLoe/Aspen-for-mac/actions/runs/43695487433) 全部通过：Python **13/13**、资源目录核验、构建、CTest **3/3**（18.79 秒）。其中原生 `database-accessibility-cocoa` 通过（0.93 秒），并非 offscreen 替代。
+- 新目录复制包的 `--self-check` 和 `--accessibility-self-check` 均通过，日志确认 `Cocoa accessibility lifecycle passed; Qt 6.8.3`。构建产物和数据库未上传仓库。
+- 本地与远端代码文件树一致；原工作区源码、原始数据库导出及归档未修改。此文档记录提交只更新检查结果。
+- **仍待验收**：用户 Mac 上原先触发崩溃的外部 AX 扫描、原生文件选择、真实运行库查询。当前证据支持隔离已知 Qt 缺陷；未对原始崩溃包做逐帧根因确认。
