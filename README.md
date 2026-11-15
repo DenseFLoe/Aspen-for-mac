@@ -2,7 +2,7 @@
 
 **开发强制原则：已提取的数据库及其压缩归档必须长期保留，不得在开发、清理或重建时删除、覆盖。** `.local/` 中的数据资产不是缓存；保护路径、归档核验和未来接入规则见 [数据库永久保留原则](docs/database-preservation.md) 和 [AGENTS.md](AGENTS.md)。
 
-云端与本地分支的功能阶段、同步状态及开发基线见 [分支功能标注](docs/branch-status.md)（2026-11-15 核对）。
+应用统一以 `main` 为开发主线，包含项目保存、只读组分检索、模拟界面对齐及 macOS 可访问性修复；独立数据库提取工具分支继续保留，其余开发分支在合入并验证后清理。云端与本地分支的同步状态、整合验证和剩余边界见 [分支功能标注](docs/branch-status.md)（2026-11-15 核对）。
 
 后续开发顺序、阶段验收与近期交付范围见 [开发要求与实施顺序](docs/development-requirements.md)。近期优先完成项目保存与真实组分检索，再推进字段、单位、流程图规则及计算能力。
 
@@ -29,7 +29,7 @@
 
 ## Mac 构建与测试
 
-依赖：CMake 3.21+、Qt Widgets / Test / Sql、C++17 编译器。macOS 固定 Qt 6.8.3，以隔离 Cocoa 可访问性所有权回归；安装、原生检查和复验见 [Mac 崩溃修复记录](docs/macos-accessibility.md)。其他平台仍支持 Qt 6.5+。用户已确认上一版在 Mac 编译；本轮代码在 Windows Qt 6.8.3 / MinGW 13.1 编译及 CTest 通过。新增 macOS GitHub Actions 配置，运行结果以 Actions 为准。
+依赖：CMake 3.21+、Qt Widgets / Test / Sql、C++17 编译器。macOS 固定 Qt 6.8.3，以隔离 Cocoa 可访问性所有权回归；安装、原生检查和复验见 [Mac 崩溃修复记录](docs/macos-accessibility.md)。其他平台仍支持 Qt 6.5+。启用测试还需要 Qt GuiPrivate 私有开发头文件；请安装同一 Qt 版本的配套组件。用户已确认上一版在 Mac 编译；本轮代码在 Windows Qt 6.8.3 / MinGW 13.1 编译及 CTest 通过。新增 macOS GitHub Actions 配置，运行结果以 Actions 为准。
 
 ```sh
 brew install cmake ninja
