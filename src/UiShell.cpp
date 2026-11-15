@@ -48,7 +48,7 @@ UiShell::UiShell(const QJsonObject &catalog, QWidget *parent)
     QFile interactions(":/ui/interactions.json"); interactions.open(QIODevice::ReadOnly);
     interactions_=QJsonDocument::fromJson(interactions.readAll()).object();
     setWindowTitle(QString::fromUtf8("Simulation 2 — Aspen Plus 界面研究"));
-    resize(1101, 650);
+    resize(1300, 740);
     setMinimumSize(800, 540);
     pages_ = new QStackedWidget(this);
     pages_->addWidget(makeWorkspace());
@@ -59,15 +59,18 @@ UiShell::UiShell(const QJsonObject &catalog, QWidget *parent)
     incomplete->setObjectName("Incomplete");
     statusBar()->addWidget(incomplete);
     statusBar()->addWidget(makeButton({{"id","next"},{"label",QString::fromUtf8("检查状态")}}, this));
-    statusBar()->addPermanentWidget(makeButton(buttonSpec("100%"), this));
-    statusBar()->addPermanentWidget(makeButton(buttonSpec("−"), this));
+    auto *zoomLabel=new QLabel("100%",this);zoomLabel->setObjectName("ZoomLabel");statusBar()->addPermanentWidget(zoomLabel);
+    auto *minus=makeButton(buttonSpec("−"),this);statusBar()->addPermanentWidget(minus);
     auto *zoom = new QSlider(Qt::Horizontal, this);
-    zoom->setRange(0, 100);
-    zoom->setValue(50);
+    zoom->setObjectName("FlowsheetZoom");
+    zoom->setRange(25,200);
+    zoom->setValue(100);
     zoom->setFixedWidth(100);
-    zoom->setEnabled(false); // Display only; viewport transformations are out of scope.
+    connect(zoom,&QSlider::valueChanged,this,[this,zoomLabel](int value){objects_->setFlowsheetZoom(value);zoomLabel->setText(QString::number(value)+"%");});
+    connect(minus,&QToolButton::clicked,zoom,[zoom]{zoom->setValue(zoom->value()-10);});
     statusBar()->addPermanentWidget(zoom);
-    statusBar()->addPermanentWidget(makeButton(buttonSpec("+"), this));
+    auto *plus=makeButton(buttonSpec("+"),this);statusBar()->addPermanentWidget(plus);
+    connect(plus,&QToolButton::clicked,zoom,[zoom]{zoom->setValue(zoom->value()+10);});
 
     initializeProject();
     auto *escape = new QShortcut(QKeySequence(Qt::Key_Escape), this);
@@ -235,6 +238,7 @@ QWidget *UiShell::makeWorkspace()
     quickRow->setSpacing(0);
     for (const auto &item : catalog_.value("quickAccess").toArray())
         quickRow->addWidget(makeButton(item.toObject(), quick, true));
+    auto *context=new QLabel(QString::fromUtf8("工艺流程"),quick);context->setObjectName("FlowsheetContext");context->hide();quickRow->addWidget(context);
     quickRow->addStretch();
     auto *search = new QLineEdit(quick);
     search->setPlaceholderText(QString::fromUtf8("Aspen Knowledge中搜索"));
@@ -257,8 +261,23 @@ QWidget *UiShell::makeWorkspace()
     connect(file, &QToolButton::clicked, this, [this] { pages_->setCurrentIndex(1); });
     for (const auto &value : catalog_.value("ribbons").toArray()) {
         const auto spec = value.toObject();
-        ribbon->addTab(makeRibbon(spec), spec.value("label").toString());
+        auto *page=makeRibbon(spec);page->setProperty("ribbonId",spec.value("id").toString());
+        ribbon->addTab(page, spec.value("label").toString());
     }
+    auto placeholderRibbon=[this](const QString &label) {
+        QJsonObject control{{"label",label},{"enabled",false}};
+        QJsonObject group{{"label",label},{"controls",QJsonArray{control}}};
+        return makeRibbon(QJsonObject{{"groups",QJsonArray{group}}});
+    };
+    int insertion=1;
+    for(const auto &label:QStringList{QString::fromUtf8("经济"),QString::fromUtf8("间歇"),QString::fromUtf8("动态"),QString::fromUtf8("联立方程")}) {
+        auto *page=placeholderRibbon(label);page->setProperty("simulationOnly",true);
+        int index=ribbon->insertTab(insertion++,page,label);ribbon->setTabVisible(index,false);
+    }
+    auto *modify=makeSimulationRibbon();modify->setProperty("simulationOnly",true);modify->setProperty("ribbonId","flowsheet-modify");
+    int modifyIndex=ribbon->addTab(modify,QString::fromUtf8("修改"));ribbon->setTabVisible(modifyIndex,false);
+    auto *format=placeholderRibbon(QString::fromUtf8("字体与线条"));
+    format->setProperty("simulationOnly",true);ribbon->setTabVisible(ribbon->addTab(format,QString::fromUtf8("格式")),false);
     column->addWidget(ribbon);
 
     auto *splitter = new QSplitter(Qt::Horizontal, workspace);
@@ -266,7 +285,7 @@ QWidget *UiShell::makeWorkspace()
     auto *componentPage = makeComponentPage();
     splitter->addWidget(makeNavigator());
     splitter->addWidget(componentPage);
-    splitter->setSizes({198, 900});
+    splitter->setSizes({198, 1100});
     splitter->setStretchFactor(1, 1);
     column->addWidget(splitter, 1);
     return workspace;
@@ -275,6 +294,7 @@ QWidget *UiShell::makeWorkspace()
 QWidget *UiShell::makeNavigator()
 {
     auto *panel = new QWidget;
+    panel->setObjectName("NavigatorPanel");
     panel->setMinimumWidth(160);
     auto *layout = new QVBoxLayout(panel);
     layout->setContentsMargins(3, 2, 2, 2);
@@ -285,6 +305,7 @@ QWidget *UiShell::makeNavigator()
     heading->addWidget(makeButton({{"label", QString::fromUtf8("收起导航")}, {"icon", "back"}}, panel, true));
     layout->addLayout(heading);
     auto *filter = makeButton({{"label", QString::fromUtf8("所有项")}, {"menu", "navigation-filter"}}, panel);
+    filter->setObjectName("NavigationFilter");
     filter->setToolButtonStyle(Qt::ToolButtonTextOnly);
     filter->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     layout->addWidget(filter);
@@ -425,7 +446,8 @@ QWidget *UiShell::makeNavigator()
     });
     recoveryLayout->addWidget(tree,1);
     navTabs->addTab(recoveryPanel,QString::fromUtf8("全部资源"));
-    layout->addWidget(navTabs, 1);
+    navigationPages_=new QStackedWidget(panel);navigationPages_->addWidget(navTabs);navigationPages_->addWidget(makeSimulationNavigator());
+    layout->addWidget(navigationPages_,1);
     for (const auto &value : catalog_.value("modes").toArray()) {
         auto *mode = makeButton(buttonSpec(value.toString()), panel);
         mode->setObjectName(value.toString() == QString::fromUtf8("物性") ? "ActiveMode" : "NavigationMode");
@@ -461,6 +483,7 @@ QWidget *UiShell::makeComponentPage()
     objects_=new ObjectWorkspace(documents_);
     documents_->addWidget(objects_);
     connect(objects_,&ObjectWorkspace::objectsChanged,this,&UiShell::syncObjectNavigation);
+    connect(objects_,&ObjectWorkspace::flowsheetActivated,this,[this](bool active){if(active && navigationPages_)setWorkspaceMode(true);});
     connect(objects_,&ObjectWorkspace::actionRequested,this,&UiShell::dispatch,Qt::QueuedConnection);
     connect(objects_,&ObjectWorkspace::objectActivated,this,[this](const QString &key,const QString &page){
         remember("object:"+key+":"+page);

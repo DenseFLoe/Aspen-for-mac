@@ -34,6 +34,7 @@
 #include <QLineEdit>
 #include <QScrollArea>
 #include <QScrollBar>
+#include <QSlider>
 #include <QGroupBox>
 #include <QTabBar>
 #include <QTabWidget>
@@ -237,7 +238,7 @@ private slots:
         QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);
         shell.dispatch("flowsheet");QTest::qWait(30);
         auto *canvas=objects->findChild<QGraphicsView *>("FlowsheetCanvas");QVERIFY(canvas);
-        objects->findChild<QPushButton *>("Place-blocks")->click();
+        objects->findChild<QToolButton *>("Model-Mixer")->click();
         const auto point=canvas->mapToScene(QPoint(140,100));
         QTest::mouseClick(canvas->viewport(),Qt::LeftButton,Qt::NoModifier,QPoint(140,100));
         QCOMPARE(objects->objects().size(),1);const auto mixer=objects->objects()[0].toObject().value("key").toString();
@@ -509,6 +510,33 @@ private slots:
         QVERIFY(workspace->height() > 250);
         if (!captureDir.isEmpty()) QVERIFY(shell.grab().save(captureDir + "/narrow-800.png"));
     }
+    void simulationWorkspaceParity() {
+        QFile file(":/ui/aspen-plus.json");QVERIFY(file.open(QIODevice::ReadOnly));
+        QFile style(":/ui/shell.qss");QVERIFY(style.open(QIODevice::ReadOnly));qApp->setStyleSheet(QString::fromUtf8(style.readAll()));
+        UiShell shell(QJsonDocument::fromJson(file.readAll()).object());shell.show();shell.dispatch("flowsheet");QTest::qWait(60);
+        auto *objects=shell.findChild<ObjectWorkspace *>();auto *tree=shell.findChild<QTreeWidget *>("SimulationNavigation");
+        QVERIFY(tree->isVisible());QCOMPARE(tree->topLevelItemCount(),15);QVERIFY(!shell.findChild<QTreeWidget *>("PropertiesNavigation")->isVisible());
+        auto *ribbon=shell.findChild<QTabWidget *>("Ribbon");QCOMPARE(ribbon->tabText(ribbon->currentIndex()),QString::fromUtf8("修改"));
+        auto *tabs=objects->findChild<QTabWidget *>("ObjectDocuments");QVERIFY(!tabs->isTabVisible(0));
+        auto *categories=objects->findChild<QTabWidget *>("ModelCategories");QCOMPARE(categories->count(),11);
+        auto *palette=objects->findChild<QWidget *>("ModelPalette");QVERIFY(palette->isVisible());
+        const auto capture=qEnvironmentVariable("ASPEN_CAPTURE_DIR");
+        if(!capture.isEmpty()) {QDir().mkpath(capture);QVERIFY(shell.grab().save(capture+"/simulation-parity.png"));}
+        // Each advertised model remains reachable from a category, with its original type identity.
+        for(const auto &v:objects->definition("blocks").value("types").toArray()) QVERIFY(objects->findChild<QToolButton *>("Model-"+v.toObject().value("id").toString()));
+        categories->setCurrentIndex(2);objects->findChild<QToolButton *>("Model-Heater")->click();objects->placeAt({180,120});
+        QCOMPARE(objects->objects().size(),1);const auto key=objects->objects()[0].toObject().value("key").toString();QCOMPARE(objects->object(key).value("type").toString(),QString("Heater"));
+        auto *lock=shell.findChild<QToolButton *>("LockFlowsheet");lock->click();objects->beginPlacement("blocks","Mixer");objects->placeAt({300,120});QCOMPARE(objects->objects().size(),1);
+        lock->click();objects->findChild<QToolButton *>("StreamPaletteButton")->click();objects->placeAt({40,120});objects->placeAt({180,120},key);QCOMPARE(objects->objects().size(),2);
+        objects->findChild<QPushButton *>("FlowSelect")->click();
+        shell.findChild<QSlider *>("FlowsheetZoom")->setValue(134);QCOMPARE(objects->findChild<QGraphicsView *>("FlowsheetCanvas")->transform().m11(),1.34);
+        objects->setModelPaletteVisible(false);QVERIFY(!palette->isVisible());shell.dispatch("model-palette");QVERIFY(palette->isVisible());
+        shell.dispatch("components");QVERIFY(!tree->isVisible());QVERIFY(shell.findChild<QTreeWidget *>("PropertiesNavigation")->isVisible());
+        shell.dispatch("flowsheet");QVERIFY(tree->isVisible());QCOMPARE(objects->objects().size(),2);
+        for(const auto size:{QSize(1101,650),QSize(800,540)}) {shell.resize(size);QTest::qWait(30);QVERIFY(objects->findChild<QGraphicsView *>("FlowsheetCanvas")->height()>150);QVERIFY(categories->width()>350);}
+        if(!capture.isEmpty()) QVERIFY(shell.grab().save(capture+"/simulation-narrow.png"));
+    }
+
 };
 
 int main(int argc, char **argv)

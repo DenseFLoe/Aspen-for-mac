@@ -46,6 +46,10 @@ public:
     void beginPlacement(const QString &kind, const QString &type);
     void placeAt(const QPointF &position, const QString &attachment={});
     void moveBlock(const QString &key, const QPointF &position);
+    void setFlowsheetZoom(int percent);
+    void setFlowsheetLocked(bool locked);
+    void setModelPaletteVisible(bool visible);
+    void setThreeDimensionalIcons(bool enabled);
 signals:
     void objectsChanged();
     void inputsChanged();
@@ -53,6 +57,7 @@ signals:
     void objectActivated(const QString &key, const QString &page);
     void collectionActivated(const QString &kind, const QString &parent);
     void actionRequested(const QString &action);
+    void flowsheetActivated(bool active);
 private:
     struct Entry {
         QJsonObject data;
@@ -77,6 +82,10 @@ private:
     QString placementKind_, placementType_, streamStartKey_;
     QPointF streamStart_;
     bool streamPending_=false;
+    bool flowsheetLocked_=false, threeDimensionalIcons_=true;
+    QWidget *modelPalette_=nullptr, *metrics_=nullptr;
+    QWidget *makeModelPalette();
+    QWidget *makeMetrics();
     QString selectedKey() const;
     void refreshManager();
     void refreshButtons();
