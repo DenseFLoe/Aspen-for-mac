@@ -1,4 +1,10 @@
 #include "RecoveredWorkspace.h"
+#include "IconCatalog.h"
+#include <QAbstractButton>
+#include <QButtonGroup>
+#include <QScopedValueRollback>
+#include <QScrollBar>
+#include <QSignalBlocker>
 #include <QBoxLayout>
 #include <QCheckBox>
 #include <QComboBox>
@@ -110,6 +116,7 @@ RecoveredWorkspace::RecoveredWorkspace(QWidget *parent) : QWidget(parent)
 {
     setObjectName("RecoveredWorkspace");
     catalog_ = readObject(":/ui/recovered/index.json");
+    interactions_ = readObject(":/ui/interactions.json");
     dialogs_ = readArray(":/ui/recovered/native-dialogs.json");
     menus_ = readArray(":/ui/recovered/menus.json");
     for (const auto &value : catalog_.value("pages").toArray()) {
@@ -120,7 +127,7 @@ RecoveredWorkspace::RecoveredWorkspace(QWidget *parent) : QWidget(parent)
     title_ = new QLabel(this); title_->setObjectName("RecoveredTitle");
     title_->setTextInteractionFlags(Qt::TextSelectableByMouse);
     layout->addWidget(title_);
-    notice_ = new QLabel(QString::fromUtf8("静态界面预览 · 计算、数据列表和条件状态尚未连接"),this);
+    notice_ = new QLabel(QString::fromUtf8("界面工作区 · 编辑保留于本次会话；未连接计算引擎"),this);
     notice_->setWordWrap(true); layout->addWidget(notice_);
     scroll_ = new QScrollArea(this); scroll_->setWidgetResizable(true);
     scroll_->setObjectName("RecoveredScroll"); layout->addWidget(scroll_,1);
@@ -129,7 +136,62 @@ RecoveredWorkspace::RecoveredWorkspace(QWidget *parent) : QWidget(parent)
 
 QString RecoveredWorkspace::idForType(const QString &type) const
 {
-    return catalog_.value("types").toObject().value(type).toString();
+    const auto exact = catalog_.value("types").toObject().value(type).toString();
+    // Legacy COM ProgIDs also name forms present in the portable WPF catalog.
+    return exact.isEmpty() ? idForName(type.section('.', -1)) : exact;
+}
+
+QString RecoveredWorkspace::idForName(const QString &name) const
+{
+    for (const auto &value : catalog_.value("pages").toArray()) {
+        const auto p = value.toObject();
+        if (p.value("name").toString() == name) return p.value("id").toString();
+    }
+    return {};
+}
+
+void RecoveredWorkspace::setGlobalUnits(const QString &units)
+{
+    globalUnits_ = units;
+    for (auto *combo : findChildren<QComboBox *>()) {
+        if (!combo->property("globalUnits").toBool()) continue;
+        const QSignalBlocker blocker(combo);
+        combo->setCurrentText(units);
+    }
+}
+
+void RecoveredWorkspace::saveState()
+{
+    if (current_.isEmpty() || !scroll_->widget()) return;
+    QVariantMap values;
+    const auto widgets = scroll_->widget()->findChildren<QWidget *>();
+    for (auto *w : widgets) {
+        const auto key = w->property("stateKey").toString();
+        if (key.isEmpty()) continue;
+        if (auto *t = qobject_cast<QTabWidget *>(w)) values[key] = t->currentIndex();
+        else if (auto *c = qobject_cast<QComboBox *>(w)) values[key] = c->currentIndex();
+        else if (auto *e = qobject_cast<QLineEdit *>(w)) values[key] = e->text();
+        else if (auto *e = qobject_cast<QTextEdit *>(w)) values[key] = e->toPlainText();
+        else if (auto *b = qobject_cast<QAbstractButton *>(w); b && b->isCheckable()) values[key] = b->isChecked();
+        else if (auto *s = qobject_cast<QSpinBox *>(w)) values[key] = s->value();
+    }
+    state_[current_] = values;
+}
+
+void RecoveredWorkspace::restoreState(QWidget *view)
+{
+    const auto values = state_.value(current_);
+    for (auto *w : view->findChildren<QWidget *>()) {
+        const auto key = w->property("stateKey").toString();
+        if (!values.contains(key) || w->property("globalUnits").toBool()) continue;
+        const auto value = values.value(key);
+        if (auto *t = qobject_cast<QTabWidget *>(w)) t->setCurrentIndex(value.toInt());
+        else if (auto *c = qobject_cast<QComboBox *>(w)) c->setCurrentIndex(value.toInt());
+        else if (auto *e = qobject_cast<QLineEdit *>(w)) e->setText(value.toString());
+        else if (auto *e = qobject_cast<QTextEdit *>(w)) e->setPlainText(value.toString());
+        else if (auto *b = qobject_cast<QAbstractButton *>(w); b && b->isCheckable()) b->setChecked(value.toBool());
+        else if (auto *s = qobject_cast<QSpinBox *>(w)) s->setValue(value.toInt());
+    }
 }
 
 QJsonObject RecoveredWorkspace::pageSpec(const QString &id)
@@ -150,6 +212,7 @@ QJsonObject RecoveredWorkspace::pageSpec(const QString &id)
 
 bool RecoveredWorkspace::showPage(const QString &id)
 {
+    saveState();
     QWidget *view = nullptr;
     QJsonObject spec;
     if (id.startsWith("dialog:")) {
@@ -169,14 +232,49 @@ bool RecoveredWorkspace::showPage(const QString &id)
     const auto source = spec.value("source").toObject();
     title_->setToolTip(source.isEmpty() ? spec.value("file").toString() : source.value("file").toString()+"\n"+source.value("resource").toString());
     scroll_->setWidget(view); // Deletes previous canvas; thousands of pages stay lazy.
+    restoreState(view);
+    setGlobalUnits(globalUnits_);
+    emit pageChanged(id);
     return true;
 }
 
 QWidget *RecoveredWorkspace::renderPage(const QJsonObject &spec, int depth)
 {
     if (depth > 8) return new QLabel(QString::fromUtf8("页面引用超过预览深度"));
-    const auto nodes = spec.value("nodes").toArray();
-    return nodes.isEmpty() ? new QWidget : renderNodes(nodes,0,0,depth);
+    QScopedValueRollback<QString> context(renderScope_, renderScope_ + "/" + spec.value("id").toString());
+    QScopedValueRollback<QString> identity(renderingId_, spec.value("id").toString());
+    auto nodes = spec.value("nodes").toArray();
+    const auto overrides = interactions_.value("forms").toObject().value(spec.value("name").toString()).toObject();
+    for (int i=0; i<nodes.size(); ++i) {
+        auto n = nodes[i].toObject(); auto p = n.value("p").toObject();
+        const auto config = overrides.value(p.value("Name").toString()).toObject();
+        for (auto it=config.begin(); it!=config.end(); ++it) p[it.key()] = it.value();
+        n["p"] = p; nodes[i] = n;
+    }
+    auto *view=nodes.isEmpty() ? new QWidget : renderNodes(nodes,0,0,depth);
+    // Radio buttons in different WPF panels can share one named group.
+    QMap<QString,QButtonGroup *> groups;
+    for (auto *radio:view->findChildren<QRadioButton *>()) {
+        const auto name=radio->property("radioGroup").toString();
+        if (name.isEmpty()) continue;
+        if (!groups.contains(name)) groups[name]=new QButtonGroup(view);
+        groups[name]->addButton(radio);
+    }
+    if (spec.value("name").toString()=="MMProp_Spec_Input_Global") {
+        auto *filter=view->findChild<QComboBox *>("cboGPProcessType");
+        auto *base=view->findChild<QComboBox *>("MMComboBox4");
+        if (filter && base) {
+            QStringList common;
+            for(int i=0;i<base->count();++i) common.append(base->itemText(i));
+            connect(filter,&QComboBox::currentTextChanged,base,[base,common](const QString &value) {
+                base->clear();
+                if (value=="COMMON") { base->addItems(common); base->setCurrentIndex(-1); }
+                base->setEnabled(value=="COMMON");
+                base->setToolTip(value=="COMMON"?QString():QString::fromUtf8("此过滤器的方法集合尚待原版核对"));
+            });
+        }
+    }
+    return view;
 }
 
 QWidget *RecoveredWorkspace::renderNodes(const QJsonArray &nodes, int index, int depth, int pageDepth)
@@ -203,14 +301,17 @@ QWidget *RecoveredWorkspace::renderNodes(const QJsonArray &nodes, int index, int
         auto *tabs = new QTabWidget; tabs->setUsesScrollButtons(true);
         for (int child : children) {
             const auto item = nodes[child].toObject(); const auto props = item.value("p").toObject();
-            const auto reference = props.value("ContentType").toObject().value("type").toString();
+            auto reference = props.value("ContentType").toObject().value("type").toString();
+            if (reference.isEmpty()) reference = props.value("ContentProgId").toString();
+            if (reference.isEmpty()) reference = props.value("ContentPage").toString();
             const auto ref = idForType(reference);
             QWidget *body = nullptr;
             if (!ref.isEmpty()) body = renderPage(pageSpec(ref),pageDepth+1);
             else if (!reference.isEmpty() || !props.value("ContentProgId").toString().isEmpty()) body = new QLabel(QString::fromUtf8("此页未找到独立静态布局，需运行时组件提供内容"));
             else body = renderNodes(nodes,child,depth+1,pageDepth);
             auto *scroller = new QScrollArea; scroller->setWidgetResizable(true); scroller->setWidget(body);
-            tabs->addTab(scroller,caption(props).isEmpty()?QString::fromUtf8("未命名页签"):caption(props));
+            const auto tabIndex = tabs->addTab(scroller,caption(props).isEmpty()?QString::fromUtf8("未命名页签"):caption(props));
+            tabs->setTabEnabled(tabIndex, props.value("IsEnabled").toBool(true));
         }
         widget = tabs;
     } else if (type.contains("ListPicker")) {
@@ -225,23 +326,61 @@ QWidget *RecoveredWorkspace::renderNodes(const QJsonArray &nodes, int index, int
             }
         }
     } else if (type.contains("RadioButton") || type=="MMOptionButton") {
-        widget = new QRadioButton(caption(p)); widget->setEnabled(false);
+        auto *radio = new QRadioButton(caption(p)); radio->setChecked(p.value("IsChecked").toBool()); radio->setProperty("radioGroup",p.value("GroupName").toString()); widget = radio;
     } else if (type.contains("CheckBox") && !type.contains("GroupBox") && (index>0 || children.isEmpty())) {
-        widget = new QCheckBox(caption(p)); widget->setEnabled(false);
+        auto *check = new QCheckBox(caption(p)); check->setChecked(p.value("IsChecked").toBool()); widget = check;
     } else if (type.contains("Button")) {
-        auto *button = new QPushButton(caption(p)); button->setAutoDefault(false); button->setEnabled(false); widget=button;
+        auto *button = new QPushButton(caption(p)); button->setAutoDefault(false); widget=button;
+        for (const auto &property:{"SmallImage","LargeImage","ImageSource"}) {
+            const auto icon=aspenIcon(renderingId_+":"+QString::number(index)+":"+property);
+            if (!icon.isNull()) { button->setIcon(icon); break; }
+        }
+        for (int child:children) {
+            if (nodes[child].toObject().value("type").toString()=="Image")
+                button->setIcon(aspenIcon(renderingId_+":"+QString::number(child)+":Source"));
+        }
+        const auto action = p.value("Action").toString();
+        if (!action.isEmpty()) connect(button,&QPushButton::clicked,this,[this,action] { emit actionRequested(action); });
+        else if (p.value("IsCancel").toBool() || QStringList{"btnClose","buttonCancel","CancelButton"}.contains(p.value("Name").toString()))
+            connect(button,&QPushButton::clicked,this,&RecoveredWorkspace::closeRequested);
+        else { button->setEnabled(false); button->setToolTip(QString::fromUtf8("此操作需要运行时数据或计算服务")); }
     } else if (type.contains("Combo") || type.contains("DropDown")) {
-        auto *combo=new QComboBox; combo->setEnabled(false); widget=combo;
+        auto *combo=new QComboBox;
+        for (const auto &value : p.value("Options").toArray()) combo->addItem(value.toString());
+        for (int child : children) {
+            const auto item=nodes[child].toObject();
+            if (item.value("type").toString()=="ComboBoxItem" || item.value("type").toString()=="ComboBoxDataItem") {
+                const auto cp=item.value("p").toObject();
+                combo->addItem(cp.value("DisplayText").toString(caption(cp)),cp.value("Value").toVariant());
+            }
+        }
+        combo->setEnabled(combo->count()>0);
+        combo->setCurrentIndex(p.value("SelectedIndex").toInt(-1));
+        if (p.contains("SelectedText")) combo->setCurrentText(p.value("SelectedText").toString());
+        if (p.value("GlobalUnits").toBool()) {
+            combo->setProperty("globalUnits",true); combo->setCurrentText(globalUnits_);
+            connect(combo,&QComboBox::currentTextChanged,this,[this](const QString &value) { globalUnits_=value; emit globalUnitsChanged(value); });
+        }
+        widget=combo;
     } else if (type=="MMVariableEdit") {
         widget=new QWidget; auto *row=new QHBoxLayout(widget); row->setContentsMargins(0,0,0,0); row->setSpacing(2);
-        auto *edit=new QLineEdit; edit->setReadOnly(true); row->addWidget(edit,1);
+        auto *edit=new QLineEdit(p.value("Text").toString()); edit->setReadOnly(!p.value("Editable").toBool());
+        edit->setMaxLength(number(p,"MaxLength",32767));
+        edit->setProperty("stateKey",renderScope_+":"+QString::number(index)+":value"); row->addWidget(edit,1);
         if (p.value("UnitsVisibility").toString()!="Collapsed" && p.contains("UnitsWidth")) {
             auto *units=new QComboBox; units->setEnabled(false); units->setMinimumWidth(45); row->addWidget(units,1);
         }
     } else if (type.contains("SpinBox")) {
-        auto *spin=new QSpinBox; spin->setSpecialValueText(" "); spin->setEnabled(false); widget=spin;
+        auto *spin=new QSpinBox; spin->setRange(number(p,"Minimum",0),number(p,"Maximum",9999)); spin->setValue(p.value("Value").toInt()); widget=spin;
+    } else if (type=="MMDescription" || type=="RichTextBox" || (type=="TextBox" && p.value("AcceptsReturn").toBool())) {
+        auto *edit=new QTextEdit(p.value("Text").toString()); edit->setAcceptRichText(false); edit->setMinimumHeight(80); widget=edit;
     } else if (type.contains("TextBox") || type.contains("EditBox") || type.contains("Numeric") || type.endsWith("Edit")) {
-        auto *edit=new QLineEdit(p.value("Text").toString()); edit->setReadOnly(true); widget=edit;
+        auto *edit=new QLineEdit(p.value("Text").toString()); edit->setReadOnly(!p.value("Editable").toBool(!p.contains("VariablePath"))); edit->setMaxLength(number(p,"MaxLength",32767)); widget=edit;
+    } else if (type=="Image" || type=="AutoDisabledImage") {
+        auto *label=new QLabel; const auto icon=aspenIcon(renderingId_+":"+QString::number(index)+":Source");
+        if (!icon.isNull()) label->setPixmap(icon.pixmap(QSize(number(p,"Width",512),number(p,"Height",256))));
+        else label->setText(QString::fromUtf8("图像尚未恢复"));
+        widget=label;
     } else if ((type.contains("Label") || type.contains("TextBlock") || type == "AccessText") && (index>0 || children.isEmpty())) {
         auto *label = new QLabel(caption(p)); label->setWordWrap(true); widget=label;
     } else if (type.startsWith("MMScrollArea") && !type.endsWith("Field")) {
@@ -271,11 +410,15 @@ QWidget *RecoveredWorkspace::renderNodes(const QJsonArray &nodes, int index, int
             w->setParent(canvas); canvas->items.append({w,nodes[child].toObject().value("p").toObject()});
         }
         layout->addWidget(canvas); widget=group;
-    } else if (type == "StackPanel" || type == "WrapPanel" || type == "DockPanel") {
+    } else if (type == "StackPanel" || type == "WrapPanel" || type == "DockPanel" || type == "MMOptionGroup") {
         widget=new QWidget;
         QBoxLayout *layout = p.value("Orientation").toString()=="Horizontal" ? static_cast<QBoxLayout *>(new QHBoxLayout(widget)) : new QVBoxLayout(widget);
         layout->setContentsMargins(0,0,0,0);
         for (int child : children) layout->addWidget(renderNodes(nodes,child,depth+1,pageDepth));
+        if (type=="MMOptionGroup") {
+            auto *group=new QButtonGroup(widget);
+            for (auto *radio:widget->findChildren<QRadioButton *>()) group->addButton(radio);
+        }
     } else if (type == "Grid" && !children.isEmpty()) {
         widget=new QWidget; auto *layout=new QGridLayout(widget); layout->setContentsMargins(0,0,0,0);
         layout->setSpacing(3); layout->setAlignment(Qt::AlignTop|Qt::AlignLeft);
@@ -334,6 +477,10 @@ QWidget *RecoveredWorkspace::renderNodes(const QJsonArray &nodes, int index, int
             layout->addWidget(control,number(props,"Row",0),number(props,"Column",0),qMax(1,number(props,"RowSpan",1)),qMax(1,number(props,"ColumnSpan",1)));
         }
     } else {
+        const auto reference=idForName(type);
+        if (index>0 && !reference.isEmpty() && reference!=renderingId_ && children.isEmpty()) {
+            widget=renderPage(pageSpec(reference),pageDepth+1);
+        } else {
         auto *canvas=new ResourceCanvas;
         for (int child : children) {
             auto *w=renderNodes(nodes,child,depth+1,pageDepth); w->setParent(canvas);
@@ -343,14 +490,17 @@ QWidget *RecoveredWorkspace::renderNodes(const QJsonArray &nodes, int index, int
         if (children.isEmpty()) {
             auto *l=new QVBoxLayout(canvas); auto *label=new QLabel(QString::fromUtf8("运行时控件：")+type); label->setWordWrap(true); l->addWidget(label);
         }
+        }
     }
     widget->setObjectName(p.value("Name").toString());
+    widget->setProperty("stateKey",renderScope_+":"+QString::number(index));
+    if (p.contains("IsEnabled")) widget->setEnabled(p.value("IsEnabled").toBool());
     widget->setProperty("resourceType",type);
     widget->setProperty("sourceNode",index);
-    widget->setToolTip(type+(p.contains("VariablePath")?"\n"+p.value("VariablePath").toString():QString()));
+    if (widget->toolTip().isEmpty()) widget->setToolTip(type+(p.contains("VariablePath")?"\n"+p.value("VariablePath").toString():QString()));
     widget->setMinimumSize(number(p,"MinWidth",index==0?600:0),number(p,"MinHeight",index==0?400:0));
-    if (p.contains("Width")) widget->setMinimumWidth(number(p,"Width",0));
-    if (p.contains("Height")) widget->setMinimumHeight(number(p,"Height",0));
+    if (p.contains("Width") && number(p,"Width",0)>0) widget->setFixedWidth(number(p,"Width",0));
+    if (p.contains("Height") && number(p,"Height",0)>0) widget->setFixedHeight(number(p,"Height",0));
     if (!children.isEmpty()) widget->setMinimumSize(widget->minimumSize().expandedTo(widget->minimumSizeHint()));
     return widget;
 }
@@ -390,13 +540,19 @@ QWidget *RecoveredWorkspace::renderMenu(const QJsonObject &spec)
     auto *view=new QWidget; auto *layout=new QVBoxLayout(view);
     auto *bar=new QHBoxLayout;
     std::function<void(QMenu *,const QJsonArray &)> add;
-    add=[&add](QMenu *menu,const QJsonArray &items) {
+    add=[this,&add](QMenu *menu,const QJsonArray &items) {
         for (const auto &v:items) {
             const auto e=v.toObject(); const auto label=e.value("text").toString();
             if (label.isEmpty()) { menu->addSeparator(); continue; }
             QAction *action;
             if (e.contains("items")) { auto *sub=menu->addMenu(label); add(sub,e.value("items").toArray()); action=sub->menuAction(); }
-            else action=menu->addAction(label);
+            else {
+                action=menu->addAction(label);
+                auto clean=label.section('\t',0,0); clean.remove('&');
+                const auto command=interactions_.value("menuCommands").toObject().value(clean).toString();
+                if (!command.isEmpty()) connect(action,&QAction::triggered,this,[this,command] { emit actionRequested(command); });
+                else connect(action,&QAction::triggered,this,[this,clean] { emit actionRequested("unavailable:"+clean); });
+            }
             action->setEnabled(!(e.value("state").toInt()&3));
             if (e.value("state").toInt()&8) { action->setCheckable(true); action->setChecked(true); }
         }

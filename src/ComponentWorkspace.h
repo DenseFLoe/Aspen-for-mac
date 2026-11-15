@@ -20,6 +20,7 @@ public:
 
 signals:
     void pageChanged(const QString &id);
+    void actionRequested(const QString &action);
 
 private:
     QJsonObject catalog_;

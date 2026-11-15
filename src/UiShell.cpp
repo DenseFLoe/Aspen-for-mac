@@ -44,6 +44,8 @@ QJsonObject buttonSpec(const QString &label)
 UiShell::UiShell(const QJsonObject &catalog, QWidget *parent)
     : QMainWindow(parent), catalog_(catalog)
 {
+    QFile interactions(":/ui/interactions.json"); interactions.open(QIODevice::ReadOnly);
+    interactions_=QJsonDocument::fromJson(interactions.readAll()).object();
     setWindowTitle(QString::fromUtf8("Simulation 2 — Aspen Plus 界面研究"));
     resize(1101, 650);
     setMinimumSize(800, 540);
@@ -55,7 +57,7 @@ UiShell::UiShell(const QJsonObject &catalog, QWidget *parent)
     auto *incomplete = new QLabel(QString::fromUtf8("所需输入不完整"), this);
     incomplete->setObjectName("Incomplete");
     statusBar()->addWidget(incomplete);
-    statusBar()->addWidget(makeButton(buttonSpec(QString::fromUtf8("检查状态")), this));
+    statusBar()->addWidget(makeButton({{"id","next"},{"label",QString::fromUtf8("检查状态")}}, this));
     statusBar()->addPermanentWidget(makeButton(buttonSpec("100%"), this));
     statusBar()->addPermanentWidget(makeButton(buttonSpec("−"), this));
     auto *zoom = new QSlider(Qt::Horizontal, this);
@@ -80,7 +82,6 @@ QMenu *UiShell::makeMenu(const QJsonArray &entries, QWidget *parent)
             continue;
         }
         QString label = entry.value("label").toString();
-        if (entry.value("checked").toBool()) label.prepend(QString::fromUtf8("✓  "));
         QAction *action = nullptr;
         const auto children = entry.value("items").toArray();
         if (!children.isEmpty()) {
@@ -89,8 +90,10 @@ QMenu *UiShell::makeMenu(const QJsonArray &entries, QWidget *parent)
             action = menu->addMenu(submenu);
         } else {
             action = menu->addAction(label);
-            // No triggered handler: selecting a leaf only dismisses the menu.
+            const auto command=entry.value("action").toString(entry.value("id").toString());
+            connect(action,&QAction::triggered,this,[this,command,label] { dispatch(command.isEmpty()?"unavailable:"+label:command); });
         }
+        if (entry.contains("checked")) { action->setCheckable(true); action->setChecked(entry.value("checked").toBool()); }
         action->setEnabled(entry.value("enabled").toBool(true));
         action->setObjectName(entry.value("id").toString());
     }
@@ -102,9 +105,9 @@ bool UiShell::openRecovered(const QString &name)
     if (!recovered_) return false;
     for (const auto &value:recovered_->catalog().value("pages").toArray()) {
         const auto page=value.toObject();
-        if (page.value("name").toString()!=name) continue;
+        if (page.value("name").toString()!=name && page.value("id").toString()!=name) continue;
         if (!recovered_->showPage(page.value("id").toString())) return false;
-        documents_->setCurrentIndex(1); return true;
+        documents_->setCurrentIndex(1); pages_->setCurrentIndex(0); return true;
     }
     return false;
 }
@@ -134,14 +137,7 @@ QToolButton *UiShell::makeButton(const QJsonObject &spec, QWidget *parent, bool 
     if (large) { button->setMinimumHeight(65); button->setProperty("largeRibbon", true); }
     else button->setMaximumHeight(24);
     const auto id = spec.value("id").toString();
-    const QMap<QString,QString> staticTargets{{"setup","MMSetup_Setup"},{"methods","MMProp_Spec_Input"},{"property-sets","MMPropSets_Input"}};
-    if (staticTargets.contains(id)) connect(button,&QToolButton::clicked,this,[this,target=staticTargets[id]] { openRecovered(target); });
-    if (id == "components") connect(button, &QToolButton::clicked, this, [this] {
-        if (components_) { documents_->setCurrentIndex(0); components_->showPage("specifications"); }
-    });
-    if (id == "draw-structure") connect(button, &QToolButton::clicked, this, [this] {
-        if (components_) { documents_->setCurrentIndex(0); components_->showPage("molecular-structure"); }
-    });
+    if (!id.isEmpty()) connect(button,&QToolButton::clicked,this,[this,id] { dispatch(id); });
     auto items = spec.value("items").toArray();
     const auto menuRef = spec.value("menu").toString();
     if (!menuRef.isEmpty()) items = catalog_.value("menus").toObject().value(menuRef).toArray();
@@ -152,7 +148,6 @@ QToolButton *UiShell::makeButton(const QJsonObject &spec, QWidget *parent, bool 
     if (spec.value("selected").toBool()) {
         button->setCheckable(true);
         button->setChecked(true);
-        // Keep observed state: buttons do not change the original model's run mode.
         connect(button, &QToolButton::clicked, button, [button] { button->setChecked(true); });
     }
     return button;
@@ -246,8 +241,8 @@ QWidget *UiShell::makeWorkspace()
     search->setMaximumWidth(240);
     quickRow->addWidget(search);
     quickRow->addWidget(makeButton({{"label", QString::fromUtf8("搜索")}, {"icon", "search"}}, quick, true));
-    quickRow->addWidget(makeButton(buttonSpec(QString::fromUtf8("最小化功能区")), quick, true));
-    quickRow->addWidget(makeButton({{"label", QString::fromUtf8("帮助")}, {"icon", "quick-help"}}, quick, true));
+    quickRow->addWidget(makeButton({{"id","ribbon-collapse"},{"label", QString::fromUtf8("最小化功能区")}}, quick, true));
+    quickRow->addWidget(makeButton({{"id","quick-help"},{"label", QString::fromUtf8("帮助")}}, quick, true));
     column->addWidget(quick);
 
     auto *ribbon = new QTabWidget(workspace);
@@ -326,25 +321,48 @@ QWidget *UiShell::makeNavigator()
         }
     }
     navigation_->setCurrentItem(initial);
+    for (int i=0;i<navigation_->topLevelItemCount();++i) {
+        auto *root=navigation_->topLevelItem(i);
+        const auto definition=interactions_.value("navigation").toObject().value(root->text(0)).toObject();
+        if (definition.isEmpty()) continue;
+        root->setData(0,Qt::UserRole+3,definition.value("action").toString());
+        for (const auto &v:definition.value("children").toArray()) {
+            const auto child=v.toObject(); auto *item=new QTreeWidgetItem(root,{child.value("label").toString()});
+            item->setIcon(0,aspenIcon("folder")); item->setData(0,Qt::UserRole+3,child.value("action").toString());
+        }
+    }
     connect(navigation_, &QTreeWidget::currentItemChanged, this, [this](QTreeWidgetItem *item) {
         if (!item || !components_) return;
         const auto id = item->data(0, Qt::UserRole).toString();
+        if (!item->data(0,Qt::UserRole+3).toString().isEmpty()) { dispatch(item->data(0,Qt::UserRole+3).toString()); return; }
         if (!item->data(0,Qt::UserRole+2).toString().isEmpty()) openRecovered(item->data(0,Qt::UserRole+2).toString());
         if (!id.isEmpty()) { documents_->setCurrentIndex(0); components_->showPage(id); }
     });
     connect(navigation_, &QTreeWidget::itemClicked, this, [this](QTreeWidgetItem *item) {
+        if (!item->data(0,Qt::UserRole+3).toString().isEmpty()) { dispatch(item->data(0,Qt::UserRole+3).toString()); return; }
         if (!item->data(0,Qt::UserRole+2).toString().isEmpty()) openRecovered(item->data(0,Qt::UserRole+2).toString());
         if (components_ && !item->data(0, Qt::UserRole).toString().isEmpty()) {
             documents_->setCurrentIndex(0); components_->showPage(item->data(0, Qt::UserRole).toString());
         }
     });
     connect(components_, &ComponentWorkspace::pageChanged, this, [this](const QString &id) {
+        remember("component:"+id);
         const QSignalBlocker blocker(navigation_);
         for (QTreeWidgetItemIterator it(navigation_); *it; ++it) {
             if ((*it)->parent() && (*it)->data(0, Qt::UserRole).toString() == id) {
                 navigation_->setCurrentItem(*it);
                 navigation_->scrollToItem(*it);
                 break;
+            }
+        }
+    });
+    connect(recovered_,&RecoveredWorkspace::pageChanged,this,[this](const QString &id) {
+        remember("page:"+id);
+        const QSignalBlocker blocker(navigation_);
+        for (QTreeWidgetItemIterator it(navigation_);*it;++it) {
+            const auto route=(*it)->data(0,Qt::UserRole+3).toString();
+            if (route.startsWith("page:") && recovered_->idForName(route.mid(5))==id) {
+                navigation_->setCurrentItem(*it); navigation_->scrollToItem(*it); break;
             }
         }
     });
@@ -411,6 +429,7 @@ QWidget *UiShell::makeNavigator()
         const QStringList modeIcons{"mode-properties", "mode-simulation", "mode-safety", "mode-energy"};
         const QStringList modeLabels{QString::fromUtf8("物性"), QString::fromUtf8("模拟"), QString::fromUtf8("安全分析"), QString::fromUtf8("能量分析")};
         const int modeIndex = modeLabels.indexOf(value.toString());
+        connect(mode,&QToolButton::clicked,this,[this,modeIndex] { dispatch(QStringList{"components","catalog:Flowsheet","catalog:Safety","catalog:Energy"}.value(modeIndex)); });
         mode->setIcon(aspenIcon(modeIcons.value(modeIndex)));
         mode->setIconSize(QSize(24, 24));
         mode->setMinimumHeight(34);
@@ -429,7 +448,11 @@ QWidget *UiShell::makeComponentPage()
     documents_=new QStackedWidget;
     documents_->addWidget(components_);
     recovered_=new RecoveredWorkspace;
+    connect(components_,&ComponentWorkspace::actionRequested,this,&UiShell::dispatch);
+    connect(recovered_,&RecoveredWorkspace::actionRequested,this,&UiShell::dispatch,Qt::QueuedConnection);
+    connect(recovered_,&RecoveredWorkspace::globalUnitsChanged,this,&UiShell::setUnits);
     documents_->addWidget(recovered_);
+    documents_->addWidget(new QWidget(documents_));
     return documents_;
 }
 

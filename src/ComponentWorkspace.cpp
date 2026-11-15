@@ -210,11 +210,16 @@ QWidget *ComponentWorkspace::makeElement(const QJsonObject &spec)
         for (const auto &value : spec.value("items").toArray()) {
             const auto item = value.isString() ? QJsonObject{{"label", value.toString()}} : value.toObject();
             auto *button = formButton(item.value("label").toString(), widget);
+            button->setIcon(aspenIcon(item.value("id").toString()));
             button->setEnabled(item.value("enabled").toBool(true));
             button->setObjectName(item.value("id").toString());
             const auto action = item.value("action").toString();
             if (!action.isEmpty()) connect(button, &QPushButton::clicked, this, [this, action] { dispatch(action); });
-            else button->setToolTip(QString::fromUtf8("界面预览：此命令尚未连接业务处理"));
+            else {
+                const auto id=item.value("id").toString();
+                if (!id.isEmpty()) connect(button,&QPushButton::clicked,this,[this,id] { emit actionRequested(id); });
+                else button->setEnabled(false);
+            }
             row->addWidget(button);
         }
         row->addStretch();
@@ -277,6 +282,7 @@ QWidget *ComponentWorkspace::makeElement(const QJsonObject &spec)
     } else if (type == "databanks") {
         widget = new QGroupBox(QString::fromUtf8("纯组分数据库和搜索顺序"));
         auto *row = new QHBoxLayout(widget);
+        QList<QPushButton *> commands;
         for (const auto &key : {QString("available"), QString("selected")}) {
             auto *column = new QVBoxLayout;
             column->addWidget(new QLabel(key == "available" ? QString::fromUtf8("可用数据库") : QString::fromUtf8("所选数据库")));
@@ -293,12 +299,31 @@ QWidget *ComponentWorkspace::makeElement(const QJsonObject &spec)
                 auto *button = formButton(text, widget);
                 button->setMinimumWidth(40);
                 button->setMaximumWidth(42);
-                button->setEnabled(false); // No database mutation in this UI shell.
+                commands.append(button);
                 arrows->addWidget(button);
             }
             arrows->addStretch();
             row->addLayout(arrows);
         }
+        auto *available=widget->findChild<QListWidget *>("available-databanks");
+        auto *selected=widget->findChild<QListWidget *>("selected-databanks");
+        const auto update=[available,selected,commands] {
+            commands[0]->setEnabled(available->currentRow()>=0); commands[1]->setEnabled(available->count()>0);
+            commands[2]->setEnabled(selected->currentRow()>=0); commands[3]->setEnabled(selected->count()>0);
+            commands[4]->setEnabled(selected->currentRow()>0); commands[5]->setEnabled(selected->currentRow()>=0 && selected->currentRow()+1<selected->count());
+        };
+        for(int i=0;i<4;++i) connect(commands[i],&QPushButton::clicked,widget,[available,selected,i,update] {
+            auto *from=i<2?available:selected; auto *to=i<2?selected:available;
+            if (i%2) { while(from->count()) to->addItem(from->takeItem(0)); }
+            else if (from->currentRow()>=0) to->addItem(from->takeItem(from->currentRow()));
+            update();
+        });
+        for(int i=4;i<6;++i) connect(commands[i],&QPushButton::clicked,widget,[selected,i,update] {
+            const int current=selected->currentRow(), target=current+(i==4?-1:1);
+            if (current>=0 && target>=0 && target<selected->count()) { auto *item=selected->takeItem(current); selected->insertItem(target,item); selected->setCurrentRow(target); }
+            update();
+        });
+        connect(available,&QListWidget::currentRowChanged,widget,update); connect(selected,&QListWidget::currentRowChanged,widget,update); update();
         row->addStretch();
     } else {
         widget = new QLabel(label);
@@ -312,7 +337,7 @@ QWidget *ComponentWorkspace::makeElement(const QJsonObject &spec)
 void ComponentWorkspace::dispatch(const QString &action)
 {
     if (action == "find-compound") showFindDialog();
-    else showPage(action);
+    else if (!showPage(action)) emit actionRequested(action);
 }
 
 void ComponentWorkspace::showFindDialog()
@@ -363,11 +388,12 @@ void ComponentWorkspace::showFindDialog()
         status->setText(QString::fromUtf8("未执行检索：当前版本仅实现界面，无化合物数据库连接。"));
     });
     tabs->addTab(compound, QString::fromUtf8("化合物"));
-    for (const auto &text : {QString::fromUtf8("数据库"), QString("PubChem")}) {
-        const int index = tabs->addTab(new QWidget(tabs), text);
-        tabs->setTabEnabled(index, false); // Contents not observed in this capture.
-        tabs->setTabToolTip(index, QString::fromUtf8("此弹窗标签尚未采集"));
-    }
+    tabs->addTab(makeElement({{"type","databanks"}}), QString::fromUtf8("数据库"));
+    auto *pubchem=new QWidget(tabs); auto *pubchemLayout=new QVBoxLayout(pubchem);
+    pubchemLayout->addWidget(new QLabel(QString::fromUtf8("PubChem 在线检索需要网络服务连接。"),pubchem));
+    auto *openPubchem=formButton(QString::fromUtf8("查看 PubChem 查询页面"),pubchem);
+    connect(openPubchem,&QPushButton::clicked,this,[this] { emit actionRequested("dialog:PubChemTab"); });
+    pubchemLayout->addWidget(openPubchem); pubchemLayout->addStretch(); tabs->addTab(pubchem,"PubChem");
     layout->addWidget(tabs, 1);
     auto *close = formButton(QString::fromUtf8("关闭"), &dialog);
     layout->addWidget(close, 0, Qt::AlignRight);

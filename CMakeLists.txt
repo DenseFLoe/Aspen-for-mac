@@ -9,6 +9,7 @@ qt_standard_project_setup()
 qt_add_executable(AspenPlusUIShell
     src/main.cpp
     src/UiShell.cpp
+    src/UiShellActions.cpp
     src/UiShell.h
     src/IconCatalog.cpp
     src/IconCatalog.h
@@ -19,10 +20,11 @@ qt_add_executable(AspenPlusUIShell
     src/RecoveredWorkspace.h
 )
 file(GLOB RECOVERED_UI_FILES CONFIGURE_DEPENDS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "ui/recovered/*.json")
+file(GLOB RECOVERED_IMAGE_FILES CONFIGURE_DEPENDS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "ui/icons/recovered/*.png")
 list(FILTER RECOVERED_UI_FILES EXCLUDE REGEX "/(buttons|unresolved|sources|summary|scan-errors|scan-files|coverage|validation)\\.json$")
 qt_add_resources(AspenPlusUIShell "ui_catalog"
     PREFIX "/"
-    FILES ui/aspen-plus.json ui/components.json ui/shell.qss ui/icons/aspen-v15.png ui/icons/manifest.json ${RECOVERED_UI_FILES}
+    FILES ui/aspen-plus.json ui/components.json ui/interactions.json ui/shell.qss ui/icons/aspen-v15.png ui/icons/manifest.json ui/icons/recovered.json ${RECOVERED_IMAGE_FILES} ${RECOVERED_UI_FILES}
 )
 target_link_libraries(AspenPlusUIShell PRIVATE Qt6::Widgets)
 set_target_properties(AspenPlusUIShell PROPERTIES
@@ -41,6 +43,7 @@ if(BUILD_TESTING)
     find_package(Qt6 REQUIRED COMPONENTS Test)
     qt_add_executable(UiSmokeTest
         tests/UiSmokeTest.cpp src/UiShell.cpp src/UiShell.h
+        src/UiShellActions.cpp
         src/IconCatalog.cpp src/IconCatalog.h
         src/ComponentWorkspace.cpp src/ComponentWorkspace.h
         src/LightTheme.h
@@ -50,7 +53,7 @@ if(BUILD_TESTING)
     target_link_libraries(UiSmokeTest PRIVATE Qt6::Widgets Qt6::Test)
     qt_add_resources(UiSmokeTest "test_ui_catalog"
         PREFIX "/"
-        FILES ui/aspen-plus.json ui/components.json ui/shell.qss ui/icons/aspen-v15.png ui/icons/manifest.json ${RECOVERED_UI_FILES}
+        FILES ui/aspen-plus.json ui/components.json ui/interactions.json ui/shell.qss ui/icons/aspen-v15.png ui/icons/manifest.json ui/icons/recovered.json ${RECOVERED_IMAGE_FILES} ${RECOVERED_UI_FILES}
     )
     if(MSVC)
         target_compile_options(UiSmokeTest PRIVATE /utf-8)
