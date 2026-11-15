@@ -228,7 +228,7 @@ ObjectWorkspace::ObjectWorkspace(QWidget *parent) : QWidget(parent)
 
     flowsheet_=new QWidget(documents_); auto *flowLayout=new QVBoxLayout(flowsheet_);
     flowLayout->setContentsMargins(0,0,0,0); canvas_=new FlowsheetView(flowsheet_); flowLayout->addWidget(canvas_,1);
-    placementNotice_=new QLabel(flowsheet_); placementNotice_->hide(); flowLayout->addWidget(placementNotice_);
+    placementNotice_=new QLabel(flowsheet_); placementNotice_->setObjectName("FlowPlacementNotice"); placementNotice_->hide(); flowLayout->addWidget(placementNotice_);
     modelPalette_=makeModelPalette(); layout->addWidget(modelPalette_);
     documents_->addTab(flowsheet_,QString::fromUtf8("主工艺流程"));
     documents_->tabBar()->setTabButton(1,QTabBar::RightSide,nullptr);
@@ -658,6 +658,7 @@ void ObjectWorkspace::placeAt(const QPointF &point,const QString &attachment) {
     if(placementKind_=="streams") {
         d["startX"]=streamStart_.x();d["startY"]=streamStart_.y();d["endX"]=position.x();d["endY"]=position.y();
         d["from"]=streamStartKey_;d["to"]=object(attachment).value("kind")=="blocks"?attachment:QString();streamPending_=false;
+        placementNotice_->setText(QString::fromUtf8("依次单击起点和终点；单击模块可连接，Esc 取消。"));
     }
     refreshCanvas();transaction.unblock();emit objectsChanged();
 }

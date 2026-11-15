@@ -176,7 +176,9 @@ private slots:
         QCOMPARE(objects->objects().size(),0);QVERIFY(!objects->findChild<QMenu *>("FlowsheetContextMenu"));
         QVERIFY(objects->findChild<QPushButton *>("FlowSelect")->isChecked());QCOMPARE(canvas->cursor().shape(),Qt::ArrowCursor);
         objects->beginPlacement("blocks","Mixer");QTest::keyClick(canvas,Qt::Key_Escape);QCOMPARE(canvas->cursor().shape(),Qt::ArrowCursor);
-        objects->beginPlacement("streams","MATERIAL");objects->placeAt({220,200});objects->placeAt({500,280});objects->beginPlacement({},{});
+        objects->beginPlacement("streams","MATERIAL");auto *notice=objects->findChild<QLabel *>("FlowPlacementNotice");QVERIFY(notice);
+        const auto startHint=notice->text();objects->placeAt({220,200});QVERIFY(notice->text()!=startHint);
+        objects->placeAt({500,280});QCOMPARE(notice->text(),startHint);objects->beginPlacement({},{});
         const auto stream=objects->objects().last().toObject().value("key").toString();
         auto context=[&](QPoint point) {
             QContextMenuEvent event(QContextMenuEvent::Mouse,point,canvas->viewport()->mapToGlobal(point));QCoreApplication::sendEvent(canvas->viewport(),&event);
