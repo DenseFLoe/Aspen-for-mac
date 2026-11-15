@@ -182,6 +182,12 @@ void ComponentWorkspace::setUserComponents(const QJsonArray &objects)
         table->item(row,0)->setText(d.value("name").toString());table->item(row,0)->setData(Qt::UserRole+5,true);
         if(table->columnCount()>1) table->item(row,1)->setText(d.value("type").toString());
     }
+    for(const auto &value:databaseComponents_) {
+        const auto c=value.toObject();const int r=qMax(0,table->rowCount()-1);table->insertRow(r);
+        const QStringList cells{c.value("database").toString()+":"+c.value("compoundId").toString(),QString::fromUtf8("数据库组分"),c.value("name").toString(),c.value("alias").toString(),c.value("cas").toString()};
+        for(int col=0;col<table->columnCount();++col) table->setItem(r,col,new QTableWidgetItem(cells.value(col)));
+        table->item(r,0)->setData(Qt::UserRole+5,true);table->item(r,0)->setToolTip(c.value("datasetId").toString());
+    }
     table->setFixedHeight(qMin(240,32+24*table->rowCount()));
     table->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 }
@@ -334,16 +340,18 @@ QWidget *ComponentWorkspace::makeElement(const QJsonObject &spec)
             commands[2]->setEnabled(selected->currentRow()>=0); commands[3]->setEnabled(selected->count()>0);
             commands[4]->setEnabled(selected->currentRow()>0); commands[5]->setEnabled(selected->currentRow()>=0 && selected->currentRow()+1<selected->count());
         };
-        for(int i=0;i<4;++i) connect(commands[i],&QPushButton::clicked,widget,[available,selected,i,update] {
+        for(int i=0;i<4;++i) connect(commands[i],&QPushButton::clicked,widget,[this,available,selected,i,update] {
+            QSignalBlocker transaction(this);
             auto *from=i<2?available:selected; auto *to=i<2?selected:available;
             if (i%2) { while(from->count()) to->addItem(from->takeItem(0)); }
             else if (from->currentRow()>=0) to->addItem(from->takeItem(from->currentRow()));
-            update();
+            update();transaction.unblock();emit inputsChanged();
         });
-        for(int i=4;i<6;++i) connect(commands[i],&QPushButton::clicked,widget,[selected,i,update] {
+        for(int i=4;i<6;++i) connect(commands[i],&QPushButton::clicked,widget,[this,selected,i,update] {
+            QSignalBlocker transaction(this);
             const int current=selected->currentRow(), target=current+(i==4?-1:1);
             if (current>=0 && target>=0 && target<selected->count()) { auto *item=selected->takeItem(current); selected->insertItem(target,item); selected->setCurrentRow(target); }
-            update();
+            update();transaction.unblock();emit inputsChanged();
         });
         connect(available,&QListWidget::currentRowChanged,widget,update); connect(selected,&QListWidget::currentRowChanged,widget,update); update();
         row->addStretch();
@@ -362,66 +370,7 @@ void ComponentWorkspace::dispatch(const QString &action)
     else if (!showPage(action)) emit actionRequested(action);
 }
 
-void ComponentWorkspace::showFindDialog()
-{
-    QDialog dialog(this);
-    dialog.setWindowTitle(QString::fromUtf8("查找化合物"));
-    dialog.setObjectName("FindCompoundDialog");
-    dialog.resize(720, 580);
-    auto *layout = new QVBoxLayout(&dialog);
-    auto *tabs = new QTabWidget(&dialog);
-    auto *compound = new QWidget(tabs);
-    auto *column = new QVBoxLayout(compound);
-    auto *criteria = new QGroupBox(QString::fromUtf8("搜索准则"), compound);
-    auto *form = new QFormLayout(criteria);
-    auto *modes = new QWidget(criteria);
-    auto *modeRow = new QHBoxLayout(modes);
-    for (const auto &text : {QString::fromUtf8("开头为"), QString::fromUtf8("包含"), QString::fromUtf8("等于")}) {
-        auto *radio = new QRadioButton(text, modes);
-        radio->setChecked(text == QString::fromUtf8("包含"));
-        modeRow->addWidget(radio);
-    }
-    form->addRow(modes);
-    auto *query = new QLineEdit(criteria);
-    query->setObjectName("compound-query");
-    form->addRow(QString::fromUtf8("名称、别名或 CASRN："), query);
-    auto *category = new QComboBox(criteria);
-    category->addItem(QString::fromUtf8("全部"));
-    form->addRow(QString::fromUtf8("化合物类："), category);
-    for (const auto &label : {QString::fromUtf8("分子量："), QString::fromUtf8("沸点：")}) {
-        auto *range = new QWidget(criteria);
-        auto *row = new QHBoxLayout(range);
-        row->setContentsMargins(0, 0, 0, 0);
-        row->addWidget(new QLabel(QString::fromUtf8("从")));
-        row->addWidget(new QLineEdit(range));
-        row->addWidget(new QLabel(QString::fromUtf8("与")));
-        row->addWidget(new QLineEdit(range));
-        form->addRow(label, range);
-    }
-    column->addWidget(criteria);
-    auto *search = formButton(QString::fromUtf8("立即查找"), compound);
-    column->addWidget(search, 0, Qt::AlignLeft);
-    auto *results = new QTableWidget(0, 8, compound);
-    results->setHorizontalHeaderLabels({QString::fromUtf8("化合物名称"), QString::fromUtf8("别名"), QString::fromUtf8("数据库"), QString::fromUtf8("替换名称"), "MW", "BP <C>", QString::fromUtf8("CAS 编号"), QString::fromUtf8("化合物类")});
-    column->addWidget(results, 1);
-    auto *status = new QLabel(QString::fromUtf8("界面预览：未连接化合物数据库"), compound);
-    column->addWidget(status);
-    connect(search, &QPushButton::clicked, status, [status] {
-        status->setText(QString::fromUtf8("未执行检索：当前版本仅实现界面，无化合物数据库连接。"));
-    });
-    tabs->addTab(compound, QString::fromUtf8("化合物"));
-    tabs->addTab(makeElement({{"type","databanks"}}), QString::fromUtf8("数据库"));
-    auto *pubchem=new QWidget(tabs); auto *pubchemLayout=new QVBoxLayout(pubchem);
-    pubchemLayout->addWidget(new QLabel(QString::fromUtf8("PubChem 在线检索需要网络服务连接。"),pubchem));
-    auto *openPubchem=formButton(QString::fromUtf8("查看 PubChem 查询页面"),pubchem);
-    connect(openPubchem,&QPushButton::clicked,this,[this] { emit actionRequested("dialog:PubChemTab"); });
-    pubchemLayout->addWidget(openPubchem); pubchemLayout->addStretch(); tabs->addTab(pubchem,"PubChem");
-    layout->addWidget(tabs, 1);
-    auto *close = formButton(QString::fromUtf8("关闭"), &dialog);
-    layout->addWidget(close, 0, Qt::AlignRight);
-    connect(close, &QPushButton::clicked, &dialog, &QDialog::accept);
-    dialog.exec();
-}
+void ComponentWorkspace::showFindDialog() { emit actionRequested("database-search"); }
 
 QJsonObject ComponentWorkspace::sessionState() const { return WidgetState::capture(const_cast<ComponentWorkspace *>(this)); }
 void ComponentWorkspace::restoreSessionState(const QJsonObject &state) {

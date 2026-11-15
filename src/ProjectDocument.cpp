@@ -19,6 +19,11 @@ QString ProjectDocument::validate(const QJsonObject &s) {
        !s.value("objects").isArray() || !s.value("components").isArray() ||
        !s.value("dependencies").isObject() || !s.value("unverifiedInputs").isObject())
         return QString::fromUtf8("项目字段不完整或类型无效。");
+    const auto unverified=s.value("unverifiedInputs").toObject();
+    if(!unverified.value("recovered").isObject() || !unverified.value("components").isObject())
+        return QString::fromUtf8("未验证输入结构无效。");
+    for(const auto &v:unverified.value("recovered").toObject())
+        if(!v.isObject()) return QString::fromUtf8("页面输入结构无效。");
     QFile f(":/ui/object-types.json"); f.open(QIODevice::ReadOnly);
     const auto definitions=QJsonDocument::fromJson(f.readAll()).object().value("collections").toArray();
     QMap<QString,QJsonObject> objects, kinds;
@@ -34,6 +39,8 @@ QString ProjectDocument::validate(const QJsonObject &s) {
            !QRegularExpression("^[A-Za-z0-9][A-Za-z0-9_-]{0,7}$").match(name).hasMatch() ||
            !d.value("inputs").isObject() || !d.value("parent").isString())
             return QString::fromUtf8("项目含重复身份、未知对象类型或无效输入。");
+        for(const auto &input:d.value("inputs").toObject())
+            if(!input.isObject()) return QString::fromUtf8("对象页面输入结构无效。");
         for(const auto &field:{"x","y","startX","startY","endX","endY"})
             if(d.contains(field) && !d.value(field).isDouble()) return QString::fromUtf8("无效的流程图坐标。");
         objects[key]=d; names.insert(identity);
@@ -56,7 +63,7 @@ QString ProjectDocument::validate(const QJsonObject &s) {
     for(const auto &v:s.value("components").toArray()) {
         const auto c=v.toObject(); const auto key=c.value("database").toString()+":"+c.value("compoundId").toString();
         if(c.value("database").toString().isEmpty() || c.value("compoundId").toString().isEmpty() ||
-           c.value("name").toString().isEmpty() || c.value("datasetId").toString().isEmpty() || componentIds.contains(key))
+           c.value("name").toString().isEmpty() || c.value("datasetId").toString().isEmpty() || c.value("datasetId")!=s.value("dependencies").toObject().value("propertyDatabase") || componentIds.contains(key))
             return QString::fromUtf8("组分身份或数据来源无效。");
         componentIds.insert(key);
     }
@@ -77,6 +84,7 @@ bool ProjectDocument::save(const QString &path, QString *error) {
     QSaveFile file(path); file.setDirectWriteFallback(false);
     if(!file.open(QIODevice::WriteOnly)) { *error=file.errorString(); return false; }
     const auto bytes=QJsonDocument(state_).toJson();
+    if(bytes.size()>64*1024*1024) { *error=QString::fromUtf8("项目文件超过 64 MiB 限制。");file.cancelWriting();return false; }
     if(file.write(bytes)!=bytes.size() || !file.commit()) { *error=file.errorString(); return false; }
     fileName_=path; saved_=state_; emit changed(); return true;
 }

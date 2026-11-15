@@ -449,12 +449,14 @@ QWidget *RecoveredWorkspace::renderNodes(const QJsonArray &nodes, int index, int
                     if(table->item(row,col) && !table->item(row,col)->text().isEmpty()) { table->insertRow(table->rowCount()); break; }
             });
             table->setContextMenuPolicy(Qt::CustomContextMenu);
-            connect(table,&QWidget::customContextMenuRequested,table,[table](const QPoint &point){
+            connect(table,&QWidget::customContextMenuRequested,table,[this,table](const QPoint &point){
                 const auto index=table->indexAt(point); if(!index.isValid()) return;
                 QMenu menu(table); auto *remove=menu.addAction(QString::fromUtf8("删除此行"));
-                connect(remove,&QAction::triggered,table,[table,index]{
+                connect(remove,&QAction::triggered,table,[this,table,index]{
+                    QSignalBlocker transaction(this);
                     table->removeRow(index.row());
                     if(table->rowCount()==0) table->insertRow(0);
+                    saveState();transaction.unblock();emit inputsChanged();
                 });
                 menu.exec(table->viewport()->mapToGlobal(point));
             });

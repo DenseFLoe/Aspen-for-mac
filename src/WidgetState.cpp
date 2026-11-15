@@ -21,7 +21,9 @@ QString key(QWidget *w,QWidget *root) {
         }
         path.prepend(QString::fromLatin1(p->metaObject()->className())+":"+p->objectName()+":"+QString::number(ordinal));
     }
-    return path.join('/');
+    // QStackedWidget raises pages and changes QObject child order. Freeze the
+    // adapter key during the initial default capture, before any navigation.
+    const auto result=path.join('/');w->setProperty("stateKey",result);return result;
 }
 bool internal(QWidget *w,QWidget *root) {
     if(w->property("projectDerived").toBool()) return true;
@@ -76,6 +78,7 @@ void WidgetState::observe(QWidget *root,QObject *receiver,const std::function<vo
         else if(auto *t=qobject_cast<QTableWidget *>(w)) {
             QObject::connect(t,&QTableWidget::itemChanged,receiver,changed);
             QObject::connect(t->model(),&QAbstractItemModel::rowsRemoved,receiver,changed);
+            QObject::connect(t->model(),&QAbstractItemModel::rowsInserted,receiver,changed);
         } else if(auto *l=qobject_cast<QListWidget *>(w)) {
             QObject::connect(l->model(),&QAbstractItemModel::rowsInserted,receiver,changed);
             QObject::connect(l->model(),&QAbstractItemModel::rowsRemoved,receiver,changed);

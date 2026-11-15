@@ -1,5 +1,9 @@
 #include "UiShell.h"
 #include "ProjectDocument.h"
+#include "PropertyDatabase.h"
+#include <QSqlDatabase>
+#include <QSqlQuery>
+#include <QSqlError>
 #include <QTemporaryDir>
 #include <QMessageBox>
 #include "ComponentWorkspace.h"
@@ -41,7 +45,78 @@
 class UiSmokeTest : public QObject
 {
     Q_OBJECT
+private:
+    QString databaseFixture(const QString &directory) {
+        const auto path=directory+"/catalog.sqlite";
+        {
+            auto db=QSqlDatabase::addDatabase("QSQLITE","fixture-writer");db.setDatabaseName(path);if(!db.open()) return {};
+            QSqlQuery q(db);
+            const QStringList statements{
+                "CREATE TABLE metadata(key TEXT,value TEXT)",
+                "INSERT INTO metadata VALUES ('schema_version','1'),('dataset_id','aspen-v15-synthetic-test'),('validation','query-only-unverified-for-calculation')",
+                "CREATE TABLE compounds(db TEXT,id TEXT,name TEXT,alias TEXT,cas TEXT)",
+                "INSERT INTO compounds VALUES ('TEST','1','TEST-WATER','H2O','7732-18-5')",
+                "CREATE TABLE identifiers(db TEXT,compound_id TEXT,kind TEXT,value TEXT)",
+                "INSERT INTO identifiers VALUES ('TEST','1','NAME','TEST-WATER'),('TEST','1','ALIAS','H2O'),('TEST','1','CASRN','7732-18-5'),('TEST','1','SYNONYM','A%_literal')",
+                "CREATE TABLE parameters(db TEXT,cp_id INTEGER,compound_id TEXT,property_id INTEGER)",
+                "INSERT INTO parameters VALUES ('TEST',7,'1',3)",
+                "CREATE TABLE properties(db TEXT,id INTEGER,name TEXT,description TEXT,units TEXT,metadata TEXT)",
+                "INSERT INTO properties VALUES ('TEST',3,'FAKE','Synthetic parameter','[]','{}')",
+                "CREATE TABLE parameter_values(db TEXT,cp_id INTEGER,element_index INTEGER,value_text TEXT)",
+                "INSERT INTO parameter_values VALUES ('TEST',7,100,'123.456789012345678901')",
+                "CREATE TABLE refs(db TEXT,dbc_id INTEGER,cp_id INTEGER,bank_id INTEGER)",
+                "INSERT INTO refs VALUES ('TEST',11,7,9)",
+                "CREATE TABLE databanks(db TEXT,id INTEGER,name TEXT)",
+                "INSERT INTO databanks VALUES ('TEST',9,'SYNTHETIC')",
+                "CREATE TABLE citations(db TEXT,id INTEGER,record TEXT)",
+                "CREATE TABLE citation_links(db TEXT,dbc_id INTEGER,citation_id INTEGER)",
+                "CREATE TABLE notes(db TEXT,dbc_id INTEGER,note TEXT)",
+                "INSERT INTO notes VALUES ('TEST',11,'Synthetic provenance')",
+                "CREATE TABLE data_info(db TEXT,dbc_id INTEGER,record TEXT)",
+                "CREATE TABLE sources(db TEXT,table_name TEXT,file TEXT,sha256 TEXT,row_count INTEGER)",
+                "INSERT INTO sources VALUES ('TEST','active_Compounds','synthetic.jsonl','test-only',1)"
+            };
+            for(const auto &sql:statements) if(!q.exec(sql)) {qWarning()<<q.lastError();return {};}
+        }
+        QSqlDatabase::removeDatabase("fixture-writer");return path;
+    }
 private slots:
+    void databaseReadOnlyAndProjectIntegration() {
+        QTemporaryDir temp;const auto path=databaseFixture(temp.path());QVERIFY(!path.isEmpty());QString error;
+        const auto before=QSqlDatabase::connectionNames();PropertyDatabase database;QVERIFY2(database.open(path,&error),qPrintable(error));
+        for(const auto &name:QSqlDatabase::connectionNames()) if(!before.contains(name)) {QSqlQuery write(QSqlDatabase::database(name));QVERIFY(!write.exec("DELETE FROM compounds"));}
+        for(const auto &term:{"TEST-WATER","h2o","7732-18-5","A%_literal"}) QCOMPARE(database.search(term,&error).size(),1);
+        QCOMPARE(database.search("' OR 1=1 --",&error).size(),0);QVERIFY(error.isEmpty());
+        const auto parameters=database.parameters("TEST","1",0,&error);QCOMPARE(parameters.size(),1);
+        QCOMPARE(parameters[0].toObject().value("valueText").toString(),QString("123.456789012345678901"));
+        QCOMPARE(database.provenance("TEST",11,&error).value("notes").toArray()[0].toString(),QString("Synthetic provenance"));
+        QFile file(":/ui/aspen-plus.json");QVERIFY(file.open(QIODevice::ReadOnly));const auto spec=QJsonDocument::fromJson(file.readAll()).object();UiShell shell(spec);
+        QVERIFY(shell.openPropertyDatabase(path,&error));shell.dispatch("database-search");auto *dialog=shell.findChild<QDialog *>("FindCompoundDialog");QVERIFY(dialog);
+        dialog->findChild<QLineEdit *>("compound-query")->setText("7732-18-5");dialog->findChild<QPushButton *>("SearchDatabase")->click();
+        QCOMPARE(dialog->findChild<QTableWidget *>("DatabaseResults")->rowCount(),1);
+        const auto capture=qEnvironmentVariable("ASPEN_CAPTURE_DIR");if(!capture.isEmpty()) {QDir().mkpath(capture);QTest::qWait(40);QVERIFY(dialog->grab().save(capture+"/database-query.png"));}
+        dialog->findChild<QPushButton *>("AddDatabaseComponent")->click();QCOMPARE(shell.project()->state().value("components").toArray().size(),1);
+        dialog->findChild<QPushButton *>("AddDatabaseComponent")->click();QCOMPARE(shell.project()->state().value("components").toArray().size(),1);
+        const auto component=shell.project()->state().value("components").toArray()[0];QVERIFY(shell.saveProject(temp.filePath("test.afmp"),&error));
+        auto *selected=dialog->findChild<QListWidget *>("SelectedDatabaseComponents");selected->setCurrentRow(0);dialog->findChild<QPushButton *>("RemoveDatabaseComponent")->click();QCOMPARE(shell.project()->state().value("components").toArray().size(),0);
+        shell.project()->undo();QCOMPARE(shell.project()->state().value("components").toArray()[0],component);dialog->reject();
+        UiShell other(spec);QVERIFY(other.loadProject(temp.filePath("test.afmp"),&error));QCOMPARE(other.project()->state().value("components").toArray()[0],component);
+        QVERIFY(other.findChild<QLabel *>("DatabaseStatus")->text().contains(QString::fromUtf8("未连接")));
+        QVERIFY(!database.open(temp.filePath("missing.sqlite"),&error));QVERIFY(!QFile::exists(temp.filePath("missing.sqlite")));QVERIFY(!error.isEmpty());
+        {auto db=QSqlDatabase::addDatabase("QSQLITE","fixture-version");db.setDatabaseName(path);QVERIFY(db.open());QSqlQuery q(db);QVERIFY(q.exec("UPDATE metadata SET value='999' WHERE key='schema_version'"));}
+        QSqlDatabase::removeDatabase("fixture-version");QVERIFY(!database.open(path,&error));QVERIFY(error.contains(QString::fromUtf8("版本")));
+        {auto db=QSqlDatabase::addDatabase("QSQLITE","fixture-version");db.setDatabaseName(path);QVERIFY(db.open());QSqlQuery q(db);QVERIFY(q.exec("UPDATE metadata SET value='1' WHERE key='schema_version'"));QVERIFY(q.exec("UPDATE metadata SET value='aspen-v15-other-version' WHERE key='dataset_id'"));}
+        QSqlDatabase::removeDatabase("fixture-version");QVERIFY(other.openPropertyDatabase(path,&error));QVERIFY(other.findChild<QLabel *>("DatabaseStatus")->text().contains(QString::fromUtf8("不符")));
+        other.dispatch("database-search");auto *mismatch=other.findChild<QDialog *>("FindCompoundDialog");QVERIFY(mismatch);mismatch->findChild<QLineEdit *>("compound-query")->setText("TEST-WATER");mismatch->findChild<QPushButton *>("SearchDatabase")->click();const auto old=other.project()->state();mismatch->findChild<QPushButton *>("AddDatabaseComponent")->click();QCOMPARE(other.project()->state(),old);mismatch->reject();
+    }
+    void realDatabaseSmoke() {
+        const auto path=qEnvironmentVariable("ASPEN_TEST_DATABASE");if(path.isEmpty()) QSKIP("Local protected data is not distributed to CI");
+        PropertyDatabase database;QString error;QVERIFY2(database.open(path,&error),qPrintable(error));
+        const auto water=database.search("7732-18-5",&error);QVERIFY2(!water.isEmpty(),qPrintable(error));
+        bool found=false;for(const auto &v:water) {const auto c=v.toObject();if(c.value("database")!="APV150") continue;
+            QCOMPARE(c.value("cas").toString(),QString("7732-18-5"));const auto p=database.parameters("APV150",c.value("compoundId").toString(),0,&error,500);QVERIFY2(!p.isEmpty(),qPrintable(error));found=true;}
+        QVERIFY(found);QVERIFY(!database.search("ETHANOL",&error).isEmpty());
+    }
     void projectRoundTripAndUndo()
     {
         QFile catalog(":/ui/aspen-plus.json"); QVERIFY(catalog.open(QIODevice::ReadOnly));
@@ -92,10 +167,16 @@ private slots:
         const auto key=w->createObject("property-sets","P1","PropertySet");QVERIFY(w->openObject(key));
         auto *tabs=w->findChild<QTabWidget *>("ObjectDocuments");auto *view=qobject_cast<RecoveredWorkspace *>(tabs->currentWidget());QVERIFY(view);
         auto *notes=view->findChild<QTextEdit *>("commentsDescription");QVERIFY(notes);notes->setPlainText(QString::fromUtf8("持久输入"));
+        auto *grid=view->findChild<QTableWidget *>("grdSelection");QVERIFY(grid);grid->setItem(0,0,new QTableWidgetItem("TEMP"));
         const auto after=shell.project()->state();shell.project()->undo();QVERIFY(shell.project()->state()!=after);shell.project()->redo();
+        shell.dispatch("methods");auto *method= shell.findChild<RecoveredWorkspace *>()->findChild<QComboBox *>("MMComboBox4");QVERIFY(method);method->setCurrentText("NRTL");QCOMPARE(method->currentText(),QString("NRTL"));
+        auto *components=shell.findChild<ComponentWorkspace *>();QVERIFY(components->showPage("specifications"));components->currentTabs()->setCurrentIndex(4);components->currentTabs()->currentWidget()->findChild<QTextEdit *>("comments-editor")->setPlainText("project notes");
         QVERIFY2(shell.saveProject(temp.filePath("input.afmp"),&error),qPrintable(error));
         UiShell other(spec);QVERIFY(other.loadProject(temp.filePath("input.afmp"),&error));auto *ow=other.findChild<ObjectWorkspace *>();QVERIFY(ow->openObject(key));
         auto *ov=qobject_cast<RecoveredWorkspace *>(ow->findChild<QTabWidget *>("ObjectDocuments")->currentWidget());QCOMPARE(ov->findChild<QTextEdit *>("commentsDescription")->toPlainText(),QString::fromUtf8("持久输入"));
+        QCOMPARE(ov->findChild<QTableWidget *>("grdSelection")->item(0,0)->text(),QString("TEMP"));
+        other.dispatch("methods");QCOMPARE(other.findChild<RecoveredWorkspace *>()->findChild<QComboBox *>("MMComboBox4")->currentText(),QString("NRTL"));
+        auto *oc=other.findChild<ComponentWorkspace *>();QVERIFY(oc->showPage("specifications"));oc->currentTabs()->setCurrentIndex(4);QCOMPARE(oc->currentTabs()->currentWidget()->findChild<QTextEdit *>("comments-editor")->toPlainText(),QString("project notes"));
     }
     void objectLifecycleAndIndependentInputs()
     {
@@ -275,7 +356,7 @@ private slots:
         shell.dispatch("quick-below"); QCOMPARE(quick->parentWidget()->layout()->indexOf(quick),1);
         shell.dispatch("quick-below"); QCOMPARE(quick->parentWidget()->layout()->indexOf(quick),0);
         shell.dispatch("find-component");
-        auto *find=shell.findChild<QDialog *>("dialog-FindComounds"); QVERIFY(find); find->reject();
+        auto *find=shell.findChild<QDialog *>("FindCompoundDialog"); QVERIFY(find); find->reject();
         shell.dispatch("clean-parameters");
         auto *dialog=shell.findChild<QDialog *>("dialog-CleanParametersDialog"); QVERIFY(dialog); QVERIFY(dialog->isVisible()); dialog->reject();
         shell.dispatch("user-components");
@@ -438,19 +519,10 @@ private slots:
         QVERIFY(!workspace->showPage("unknown-page"));
         QCOMPARE(workspace->currentPage(), QString("specifications"));
 
-        // Modal wiring: Find opens; close ends the modal loop without a backend.
+        // Real query dialog is available even when the local data is absent.
         tabs->setCurrentIndex(0);
-        auto *find = tabs->findChild<QPushButton *>("find-component");
-        QVERIFY(find);
-        bool dialogSeen = false;
-        QTimer::singleShot(30, [&dialogSeen] {
-            if (auto *dialog = qobject_cast<QDialog *>(QApplication::activeModalWidget())) {
-                dialogSeen = dialog->objectName() == "FindCompoundDialog";
-                dialog->reject();
-            }
-        });
-        find->click();
-        QVERIFY(dialogSeen);
+        auto *find=tabs->findChild<QPushButton *>("find-component");QVERIFY(find);find->click();
+        auto *queryDialog=shell.findChild<QDialog *>("FindCompoundDialog");QVERIFY(queryDialog);QVERIFY(queryDialog->isVisible());queryDialog->reject();
 
         shell.resize(800, 540);
         QVERIFY(workspace->showPage("petroleum-analysis"));

@@ -1,5 +1,6 @@
 #pragma once
 #include <QJsonObject>
+#include <QJsonArray>
 #include <QMap>
 #include <QWidget>
 
@@ -19,6 +20,7 @@ public:
     QStringList pageIds() const;
     QJsonObject sessionState() const;
     void restoreSessionState(const QJsonObject &state);
+    void setDatabaseComponents(const QJsonArray &components) { databaseComponents_=components; }
     void setUserComponents(const QJsonArray &objects);
 
 signals:
@@ -28,6 +30,7 @@ signals:
 
 private:
     QJsonObject catalog_, defaults_;
+    QJsonArray databaseComponents_;
     QStackedWidget *stack_ = nullptr;
     QLabel *title_ = nullptr;
     QMap<QString, QWidget *> pages_;

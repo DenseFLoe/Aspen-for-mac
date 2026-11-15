@@ -6,6 +6,9 @@
 #include <QJsonObject>
 #include <QJsonParseError>
 #include <QMessageBox>
+#include <QSqlDatabase>
+#include <QTemporaryDir>
+#include <QDebug>
 
 int main(int argc, char *argv[])
 {
@@ -31,6 +34,16 @@ int main(int argc, char *argv[])
         app.setStyleSheet(QString::fromUtf8(stylesheet.readAll()));
 
     UiShell window(document.object());
+    // Exercise the deployed Qt SQL plugin and project IO without a desktop.
+    if(app.arguments().contains("--self-check")) {
+        auto database=QSqlDatabase::addDatabase("QSQLITE","package-check");
+        database.setDatabaseName(":memory:");
+        if(!database.open()) {qCritical()<<"SQLite plugin could not open a database";return 2;}
+        QTemporaryDir temporary;QString problem;
+        if(!temporary.isValid() || !window.saveProject(temporary.filePath("roundtrip.afmp"),&problem) ||
+            !window.loadProject(temporary.filePath("roundtrip.afmp"),&problem)) {qCritical()<<problem;return 3;}
+        return 0;
+    }
     window.show();
     return app.exec();
 }

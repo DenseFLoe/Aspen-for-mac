@@ -3,12 +3,13 @@ project(AspenPlusUIShell VERSION 0.1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-find_package(Qt6 6.5 REQUIRED COMPONENTS Widgets)
+find_package(Qt6 6.5 REQUIRED COMPONENTS Widgets Sql)
 qt_standard_project_setup()
 
 qt_add_executable(AspenPlusUIShell
     src/main.cpp
     src/UiShell.cpp
+    src/PropertyDatabase.cpp src/PropertyDatabase.h src/DatabaseDialog.cpp src/DatabaseDialog.h
     src/UiShellProject.cpp src/ProjectDocument.cpp src/ProjectDocument.h src/WidgetState.cpp src/WidgetState.h
     src/UiShellActions.cpp
     src/UiShellObjects.cpp
@@ -30,7 +31,7 @@ qt_add_resources(AspenPlusUIShell "ui_catalog"
     PREFIX "/"
     FILES ui/aspen-plus.json ui/components.json ui/interactions.json ui/object-types.json ui/shell.qss ui/icons/aspen-v15.png ui/icons/manifest.json ui/icons/recovered.json ${RECOVERED_IMAGE_FILES} ${RECOVERED_UI_FILES}
 )
-target_link_libraries(AspenPlusUIShell PRIVATE Qt6::Widgets)
+target_link_libraries(AspenPlusUIShell PRIVATE Qt6::Sql Qt6::Widgets)
 set_target_properties(AspenPlusUIShell PROPERTIES
     WIN32_EXECUTABLE TRUE
     MACOSX_BUNDLE TRUE
@@ -47,6 +48,7 @@ if(BUILD_TESTING)
     find_package(Qt6 REQUIRED COMPONENTS Test)
     qt_add_executable(UiSmokeTest
         tests/UiSmokeTest.cpp src/UiShell.cpp src/UiShell.h
+        src/PropertyDatabase.cpp src/PropertyDatabase.h src/DatabaseDialog.cpp src/DatabaseDialog.h
         src/UiShellProject.cpp src/ProjectDocument.cpp src/ProjectDocument.h src/WidgetState.cpp src/WidgetState.h
         src/UiShellActions.cpp
         src/UiShellObjects.cpp src/ObjectWorkspace.cpp src/ObjectWorkspace.h
@@ -57,7 +59,7 @@ if(BUILD_TESTING)
     )
     target_include_directories(UiSmokeTest PRIVATE src)
     set_target_properties(UiSmokeTest PROPERTIES WIN32_EXECUTABLE FALSE)
-    target_link_libraries(UiSmokeTest PRIVATE Qt6::Widgets Qt6::Test)
+    target_link_libraries(UiSmokeTest PRIVATE Qt6::Sql Qt6::Widgets Qt6::Test)
     qt_add_resources(UiSmokeTest "test_ui_catalog"
         PREFIX "/"
         FILES ui/aspen-plus.json ui/components.json ui/interactions.json ui/object-types.json ui/shell.qss ui/icons/aspen-v15.png ui/icons/manifest.json ui/icons/recovered.json ${RECOVERED_IMAGE_FILES} ${RECOVERED_UI_FILES}

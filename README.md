@@ -8,13 +8,13 @@
 
 基于 Aspen Plus V15 中文界面的 Qt 6 / C++17 桌面界面外壳。保留 **97 个原版图标、17 个已核对的组分页面、39 个页内标签**和 31 张参考裁图；新增 **59 个模块、3,086 份静态布局、289 个传统对话框和 117 份菜单树**的可搜索目录与 Qt 预览。布局数包含页签和控件片段，不代表同等数量的完整业务页面。
 
-左侧导航、功能区和菜单可跳转页面及资源窗口，支持后退/前进、单位联动、数据库列表移动排序及向导导航。恢复页面的输入、勾选和注释可随项目保存；补充 437 份去重原版图像、685 处图像引用。原版直接核实的下拉列表、动态状态及未完成边界见 [交互补齐记录](docs/ui-interactions.md)。本分支新增自有 `.afmp` 项目保存、打开、另存为与基础撤销重做；对象身份、父子关系、连线和现有页面输入可跨会话恢复。当前没有 Aspen 计算引擎，不产生模拟结果；真实物性数据库检索正在接入。保存格式、验证与边界见 [项目保存记录](docs/project-persistence.md)。
+左侧导航、功能区和菜单可跳转页面及资源窗口，支持后退/前进、单位联动、数据库列表移动排序及向导导航。恢复页面的输入、勾选和注释可随项目保存；补充 437 份去重原版图像、685 处图像引用。原版直接核实的下拉列表、动态状态及未完成边界见 [交互补齐记录](docs/ui-interactions.md)。本分支新增自有 `.afmp` 项目保存、打开、另存为与基础撤销重做；对象身份、父子关系、连线和现有页面输入可跨会话恢复。当前没有 Aspen 计算引擎，不产生模拟结果；已接入只读真实组分检索、来源查看与项目组分保存。保存格式、验证与边界见 [项目保存记录](docs/project-persistence.md)。
 
 新增对象工作区：15 类集合、95 种对象类型（含 67 种模块）支持新建、独立输入页签、重命名、复制后解决 ID 冲突及删除；导航节点、对象列表和页签同步更新。模拟模式支持放置模块、双击打开输入、拖动模块和连接流股；RadFrac 支持新增设计规范、调整变量和中段回流子对象。用户组分向导完成后增加组分行及对象节点，输入可随项目保存。实际原版观察、已测试流程与剩余边界见 [对象交互记录](docs/ui-object-interactions.md)。
 
 左侧“全部资源”按模块浏览，可搜索页面、按钮和菜单。对象输入表格支持填写及增删行；未知动态列表可暂存手工输入，但不包含原版候选项校验。模型专属条件、运行时控件和未接入命令仍有缺口，不能将静态布局数量视为交互完成率。每页保留来源资源信息；扫描方法、完整清单和上一轮边界见 [界面资源恢复报告](docs/ui-resource-recovery.md)。
 
-本机 V15 四个 APED 主库的 **6,345,071 个数值单元**已导出明文，另保留 1,464,605 条 API 参数视图、完整 active 关系表以及 TDE、SQLite、Access 附属数据。数据、来源清单和核验报告位于本地 `.local/property-database/plaintext-export/`，尚未接入本应用。复现、跨平台恢复及尚未解析的旧格式文件见 [明文导出说明](docs/plaintext-database-export.md)；早期调查保留在 [调查记录](docs/property-database-investigation.md)。
+本机 V15 四个 APED 主库的 **6,345,071 个数值单元**已导出明文，另保留 1,464,605 条 API 参数视图、完整 active 关系表以及 TDE、SQLite、Access 附属数据。数据、来源清单和核验报告位于本地 `.local/property-database/plaintext-export/`，本分支从新目录的运行库只读检索。使用方法与范围见 [只读数据库接入](docs/runtime-property-database.md)。复现、跨平台恢复及尚未解析的旧格式文件见 [明文导出说明](docs/plaintext-database-export.md)；早期调查保留在 [调查记录](docs/property-database-investigation.md)。
 
 ## 页面范围
 
@@ -29,7 +29,7 @@
 
 ## Mac 构建与测试
 
-依赖：CMake 3.21+、Qt 6.5+ Widgets / Test、C++17 编译器。用户已确认上一版在 Mac 编译；本轮代码在 Windows Qt 6.8.3 / MinGW 13.1 编译及 CTest 通过。新增 macOS GitHub Actions 配置，运行结果以 Actions 为准。
+依赖：CMake 3.21+、Qt 6.5+ Widgets / Test / Sql、C++17 编译器。用户已确认上一版在 Mac 编译；本轮代码在 Windows Qt 6.8.3 / MinGW 13.1 编译及 CTest 通过。新增 macOS GitHub Actions 配置，运行结果以 Actions 为准。
 
 ```sh
 brew install qt cmake ninja
@@ -41,7 +41,7 @@ ctest --test-dir build --output-on-failure
 open build/AspenPlusUIShell.app
 ```
 
-只构建程序时可加 `-DBUILD_TESTING=OFF`。Qt 官方安装器用户将 `CMAKE_PREFIX_PATH` 改为对应 `macos` 目录。测试默认使用 offscreen 平台，覆盖全部恢复布局/对话框/菜单的创建、59 个模块导航、资源搜索、功能区入口，以及原有图标、17 页导航、标签、注释状态、弹窗关闭和最小窗口。设置 `ASPEN_CAPTURE_DIR` 可保存代表页面渲染图到本机目录。macOS 发布打包、签名、公证仍未配置。
+只构建程序时可加 `-DBUILD_TESTING=OFF`。Qt 官方安装器用户将 `CMAKE_PREFIX_PATH` 改为对应 `macos` 目录。测试默认使用 offscreen 平台，覆盖全部恢复布局/对话框/菜单的创建、59 个模块导航、资源搜索、功能区入口，以及原有图标、17 页导航、标签、注释状态、弹窗关闭和最小窗口。设置 `ASPEN_CAPTURE_DIR` 可保存代表页面渲染图到本机目录。可运行 `sh tools/package_macos.sh build` 在新目录生成含 Qt / SQLite 依赖的本地 Mac 应用包；正式签名、公证仍未配置。
 
 ## 结构
 

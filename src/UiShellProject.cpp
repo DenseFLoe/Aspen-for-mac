@@ -1,5 +1,9 @@
 #include "UiShell.h"
 #include "ProjectDocument.h"
+#include "PropertyDatabase.h"
+#include "DatabaseDialog.h"
+#include <QLabel>
+#include <QSettings>
 #include "ObjectWorkspace.h"
 #include "ComponentWorkspace.h"
 #include "RecoveredWorkspace.h"
@@ -14,6 +18,10 @@
 #include <QScopedValueRollback>
 
 void UiShell::initializeProject() {
+    database_=new PropertyDatabase(this);
+    QString error; const auto dbPath=qEnvironmentVariable("ASPEN_PROPERTY_DATABASE",QSettings("AspenForMac","UIShell").value("databasePath").toString());
+    if(!dbPath.isEmpty()) database_->open(dbPath,&databaseError_);
+    auto *dbStatus=new QLabel(this);dbStatus->setObjectName("DatabaseStatus");statusBar()->addPermanentWidget(dbStatus);
     project_=new ProjectDocument(this); project_->setObjectName("ProjectDocument");
     connect(objects_,&ObjectWorkspace::objectsChanged,this,&UiShell::captureProject);
     connect(objects_,&ObjectWorkspace::inputsChanged,this,&UiShell::captureProject);
@@ -21,6 +29,9 @@ void UiShell::initializeProject() {
     connect(recovered_,&RecoveredWorkspace::inputsChanged,this,&UiShell::captureProject);
     connect(project_,&ProjectDocument::restored,this,&UiShell::restoreProject);
     connect(project_,&ProjectDocument::changed,this,[this] {
+        components_->setDatabaseComponents(project_->state().value("components").toArray());
+        components_->setUserComponents(objects_->objects());
+        updateDatabaseStatus();
         const auto name=project_->fileName().isEmpty()?QString::fromUtf8("未命名项目"):QFileInfo(project_->fileName()).fileName();
         setWindowTitle(name+(project_->isModified()?" *":"")+QString::fromUtf8(" — Aspen for Mac"));
         for(const auto &id:{"undo","quick-undo"}) if(auto *b=findChild<QToolButton *>(id)) b->setEnabled(project_->canUndo());
@@ -69,6 +80,7 @@ bool UiShell::confirmProjectReplacement() {
 }
 void UiShell::closeEvent(QCloseEvent *event) { if(confirmProjectReplacement()) event->accept(); else event->ignore(); }
 bool UiShell::projectAction(const QString &action) {
+    if(action=="database-search" || action=="find-component" || action=="dialog:FindComounds") {showDatabaseSearch();return true;}
     if(action=="undo" || action=="quick-undo") project_->undo();
     else if(action=="redo" || action=="quick-redo") project_->redo();
     else if(action=="file-save" || action=="save" || action=="quick-save") saveProjectDialog(false);
@@ -79,4 +91,19 @@ bool UiShell::projectAction(const QString &action) {
     } else if(action=="file-new" || action=="new-simulation" || action=="file-close" || action=="new") {if(confirmProjectReplacement()) {project_->reset();pages_->setCurrentIndex(0);}}
     else return false;
     return true;
+}
+
+bool UiShell::openPropertyDatabase(const QString &path,QString *error) {
+    const bool result=database_->open(path,error);databaseError_=*error;updateDatabaseStatus();return result;
+}
+void UiShell::updateDatabaseStatus() {
+    auto *label=findChild<QLabel *>("DatabaseStatus");if(!label || !project_) return;
+    const auto expected=project_->state().value("dependencies").toObject().value("propertyDatabase").toString();
+    label->setText(!database_->isOpen()?(databaseError_.isEmpty()?QString::fromUtf8("物性库未连接；组分身份仍可保存"):databaseError_):
+        !expected.isEmpty() && expected!=database_->datasetId()?QString::fromUtf8("物性库版本与项目不符；请连接原数据版本"):QString::fromUtf8("物性库只读 · 未接入计算"));
+    label->setToolTip(database_->isOpen()?database_->path()+"\n"+database_->datasetId():QString::fromUtf8("在组分查找窗口选择 catalog.sqlite"));
+}
+void UiShell::showDatabaseSearch() {
+    auto *dialog=new DatabaseDialog(database_,project_,this);dialog->setAttribute(Qt::WA_DeleteOnClose);
+    connect(dialog,&DatabaseDialog::databaseChanged,this,[this] {databaseError_.clear();updateDatabaseStatus();});dialog->open();
 }

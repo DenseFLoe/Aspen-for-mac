@@ -13,6 +13,7 @@ class RecoveredWorkspace;
 class QDialog;
 class ObjectWorkspace;
 class ProjectDocument;
+class PropertyDatabase;
 class QCloseEvent;
 
 // UI-only shell: navigation works; simulation commands have no backend.
@@ -22,6 +23,7 @@ public:
     explicit UiShell(const QJsonObject &catalog, QWidget *parent = nullptr);
     void dispatch(const QString &action);
     ProjectDocument *project() const { return project_; }
+    bool openPropertyDatabase(const QString &path, QString *error);
     bool saveProject(const QString &path, QString *error);
     bool loadProject(const QString &path, QString *error);
 protected:
@@ -29,6 +31,10 @@ protected:
 
 private:
     ProjectDocument *project_=nullptr;
+    PropertyDatabase *database_=nullptr;
+    QString databaseError_;
+    void showDatabaseSearch();
+    void updateDatabaseStatus();
     bool restoringProject_=false;
     void initializeProject();
     void captureProject();
