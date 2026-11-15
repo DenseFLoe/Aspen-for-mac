@@ -1,5 +1,15 @@
 # Aspen project workflow
 
+## �����ʲ����ñ���ԭ��ǿ��ִ�У�
+
+- ����ȡ�� Aspen V15 ���ݿ�����Ҫ���ڱ����Ķ�����Ŀ�ʲ������ǻ��桢��ʱ�ļ�����������ɵĹ������**��Ŀ�������ع�����������֧�л�������������ɾ������ա����ǻ�����Щ�ʲ���**
+- �ܱ�����Χ���� `.local/property-database/plaintext-export/` �������ݰ���`.local/property-database/archives/` �µĹ鵵����У��/�����¼���Լ� `.local/property-database/DO_NOT_DELETE.md` ������������������Ŀ¼�ṹ��Ԫ���ݡ��ָ����ߺ�ԭʼʮ������ֵ��
+- `.local/` �� Git ����ֻ��ʾ���ݲ��ϴ�������ʾ������ɾ������ֹ�Թ��������л������Щ�ʲ��� `git clean -fdx`��`git clean -ffdx`��Ҳ��ֹ�ݹ��������� `.local/` �� `.local/property-database/`�������ű�������ȷ�ų��ܱ���·����
+- ѹ���鵵����ɾ��ԭĿ¼����Ȩ�������������ָ���Ǩ�ƻ�鵵����ʹ����·�������ø����������ݡ����ݰ��͹鵵���������ر��棬�����Զ����� Git ���ϴ� GitHub��
+- ֻ���û������Ծ����ܱ���·����ȷҪ��ɾ���򸲸ǣ��ſ�ִ�ж�Ӧ����������ġ�������Ŀ�������¹�������������֧����������Ȩ����� `docs/database-preservation.md`��
+
+## Repository workflow
+
 - Target repository: `https://github.com/DenseFLoe/Aspen-for-mac.git`.
 - Before changing repository content, fetch and inspect the existing default branch and any applicable repository instructions. Preserve existing remote history and user changes.
 - Commit each meaningful, verified milestone and push its working branch promptly. Report the branch, commit SHA, checks, and push result. If access or a push fails, keep local work safe and report the exact blocker; do not claim it was uploaded.
