@@ -34,13 +34,47 @@ bool PropertyDatabase::open(const QString &path,QString *error) {
     return valid;
 }
 QJsonArray PropertyDatabase::search(const QString &text,QString *error,int limit) {
+    return search(text,error,SearchOptions{},limit);
+}
+QJsonArray PropertyDatabase::databanks(QString *error) {
+    error->clear();QJsonArray result;
+    if(!isOpen()) { *error=QString::fromUtf8("未连接运行数据库。");return result; }
+    QSqlQuery query(connection_);
+    if(!query.exec("SELECT db,id,name FROM databanks ORDER BY db,name,id")) { *error=query.lastError().text();return result; }
+    while(query.next()) result.append(QJsonObject{{"database",query.value(0).toString()},{"bankId",query.value(1).toInt()},{"name",query.value(2).toString()}});
+    return result;
+}
+QJsonArray PropertyDatabase::search(const QString &text,QString *error,const SearchOptions &options,int limit) {
     error->clear(); QJsonArray results;
     if(!isOpen()) { *error=QString::fromUtf8("未连接运行数据库。"); return results; }
-    if(text.trimmed().isEmpty()) return results;
+    if(text.trimmed().isEmpty() || (options.restrictDatabanks && options.databanks.isEmpty())) return results;
     auto escaped=text.trimmed(); escaped.replace('\\',"\\\\"); escaped.replace('%',"\\%"); escaped.replace('_',"\\_");
     QSqlQuery query(connection_);
-    query.prepare("SELECT c.db,c.id,c.name,c.alias,c.cas FROM compounds c WHERE c.name IS NOT NULL AND EXISTS (SELECT 1 FROM identifiers i WHERE i.db=c.db AND i.compound_id=c.id AND i.kind IN ('NAME','ALIAS','CASRN','SYNONYM') AND i.value LIKE ? ESCAPE '\\') ORDER BY CASE WHEN EXISTS (SELECT 1 FROM identifiers exact WHERE exact.db=c.db AND exact.compound_id=c.id AND exact.kind IN ('NAME','ALIAS','CASRN','SYNONYM') AND exact.value=? COLLATE NOCASE) THEN 0 ELSE 1 END,c.name,c.db,c.id LIMIT ?");
-    query.addBindValue("%"+escaped+"%");query.addBindValue(text.trimmed());query.addBindValue(qBound(1,limit,501));
+    QString sql="WITH ";
+    if(!options.databanks.isEmpty()) {
+        QStringList values;for(int i=0;i<options.databanks.size();++i)values<<"(?,?,?)";
+        sql+="search_banks(db,bank_id,priority) AS (VALUES "+values.join(',')+"), ";
+    }
+    // Start with this compound's indexed parameters; otherwise SQLite may scan
+    // all references in a master database for every matching compound.
+    const QString bankPriority="SELECT MIN(sb.priority) FROM parameters p CROSS JOIN refs r CROSS JOIN search_banks sb WHERE p.db=c.db AND p.compound_id=c.id AND r.db=p.db AND r.cp_id=p.cp_id AND sb.db=r.db AND sb.bank_id=r.bank_id";
+    // Materialize text matches before applying source filters so a selective
+    // name/CAS query never evaluates parameter provenance for the whole catalog.
+    sql+="matches AS MATERIALIZED (SELECT c.db,c.id,c.name,c.alias,c.cas FROM compounds c WHERE c.name IS NOT NULL AND EXISTS (SELECT 1 FROM identifiers i WHERE i.db=c.db AND i.compound_id=c.id AND i.kind IN ('NAME','ALIAS','CASRN','SYNONYM') AND ";
+    sql+=options.mode==MatchMode::Equals?"i.value=? COLLATE NOCASE)":"i.value LIKE ? ESCAPE '\\')";
+    sql+=") SELECT c.db,c.id,c.name,c.alias,c.cas";
+    if(!options.databanks.isEmpty())sql+=",("+bankPriority+") AS bank_priority";
+    sql+=" FROM matches c WHERE 1";
+    if(options.restrictDatabanks) {
+        sql+=" AND ("+bankPriority+") IS NOT NULL";
+    }
+    sql+=" ORDER BY CASE WHEN EXISTS (SELECT 1 FROM identifiers exact WHERE exact.db=c.db AND exact.compound_id=c.id AND exact.kind IN ('NAME','ALIAS','CASRN','SYNONYM') AND exact.value=? COLLATE NOCASE) THEN 0 ELSE 1 END,";
+    if(!options.databanks.isEmpty())sql+="bank_priority IS NULL,bank_priority,";
+    sql+="c.name,c.db,c.id LIMIT ?";
+    query.prepare(sql);
+    for(int i=0;i<options.databanks.size();++i){const auto b=options.databanks[i].toObject();query.addBindValue(b.value("database").toString());query.addBindValue(b.value("bankId").toInt());query.addBindValue(i);}
+    query.addBindValue(options.mode==MatchMode::Equals?text.trimmed():(options.mode==MatchMode::Contains?"%":"")+escaped+"%");
+    query.addBindValue(text.trimmed());query.addBindValue(qBound(1,limit,501));
     if(!query.exec()) { *error=query.lastError().text(); return results; }
     while(query.next()) results.append(QJsonObject{{"database",query.value(0).toString()},{"compoundId",query.value(1).toString()},
         {"name",query.value(2).toString()},{"alias",query.value(3).toString()},{"cas",query.value(4).toString()},

@@ -67,6 +67,7 @@ UiShell::UiShell(const QJsonObject &catalog, QWidget *parent)
     zoom->setValue(100);
     zoom->setFixedWidth(100);
     connect(zoom,&QSlider::valueChanged,this,[this,zoomLabel](int value){objects_->setFlowsheetZoom(value);zoomLabel->setText(QString::number(value)+"%");});
+    connect(objects_,&ObjectWorkspace::flowsheetZoomChanged,this,[zoom,zoomLabel](int value){const QSignalBlocker blocker(zoom);zoom->setValue(value);zoomLabel->setText(QString::number(value)+"%");});
     connect(minus,&QToolButton::clicked,zoom,[zoom]{zoom->setValue(zoom->value()-10);});
     statusBar()->addPermanentWidget(zoom);
     auto *plus=makeButton(buttonSpec("+"),this);statusBar()->addPermanentWidget(plus);
@@ -228,6 +229,7 @@ QWidget *UiShell::makeRibbon(const QJsonObject &ribbon)
 QWidget *UiShell::makeWorkspace()
 {
     auto *workspace = new QWidget;
+    auto *componentPage = makeComponentPage();
     auto *column = new QVBoxLayout(workspace);
     column->setContentsMargins(0, 0, 0, 0);
     column->setSpacing(0);
@@ -246,7 +248,8 @@ QWidget *UiShell::makeWorkspace()
     search->setReadOnly(true);
     search->setMaximumWidth(240);
     quickRow->addWidget(search);
-    quickRow->addWidget(makeButton({{"label", QString::fromUtf8("搜索")}, {"icon", "search"}}, quick, true));
+    auto *knowledgeSearch=makeButton({{"label", QString::fromUtf8("搜索")}, {"icon", "search"},{"enabled",false}}, quick, true);
+    knowledgeSearch->setToolTip(QString::fromUtf8("Aspen Knowledge 服务尚未接入"));quickRow->addWidget(knowledgeSearch);
     quickRow->addWidget(makeButton({{"id","ribbon-collapse"},{"label", QString::fromUtf8("最小化功能区")}}, quick, true));
     quickRow->addWidget(makeButton({{"id","quick-help"},{"label", QString::fromUtf8("帮助")}}, quick, true));
     column->addWidget(quick);
@@ -282,7 +285,6 @@ QWidget *UiShell::makeWorkspace()
 
     auto *splitter = new QSplitter(Qt::Horizontal, workspace);
     splitter->setChildrenCollapsible(false);
-    auto *componentPage = makeComponentPage();
     splitter->addWidget(makeNavigator());
     splitter->addWidget(componentPage);
     splitter->setSizes({198, 1100});
@@ -302,7 +304,18 @@ QWidget *UiShell::makeNavigator()
     auto *heading = new QHBoxLayout;
     auto *modeHeading=new QLabel(QString::fromUtf8("物性"),panel);modeHeading->setObjectName("NavigationHeading");
     heading->addWidget(modeHeading,1);
-    heading->addWidget(makeButton({{"label", QString::fromUtf8("收起导航")}, {"icon", "back"}}, panel, true));
+    auto *collapse=makeButton({{"label", QString::fromUtf8("收起导航")}, {"icon", "back"}}, panel, true);
+    collapse->setObjectName("CollapseNavigator");heading->addWidget(collapse);
+    connect(collapse,&QToolButton::clicked,panel,[panel,collapse] {
+        const bool collapsed=!panel->property("collapsed").toBool();panel->setProperty("collapsed",collapsed);
+        auto *splitter=qobject_cast<QSplitter *>(panel->parentWidget());
+        if(collapsed && splitter) panel->setProperty("expandedSizes",QVariant::fromValue(splitter->sizes()));
+        for(auto *child:panel->findChildren<QWidget *>(QString(),Qt::FindDirectChildrenOnly))if(child!=collapse)child->setVisible(!collapsed);
+        panel->setMinimumWidth(collapsed?28:160);panel->setMaximumWidth(collapsed?28:QWIDGETSIZE_MAX);
+        collapse->setIcon(aspenIcon(collapsed?"next":"back"));
+        const auto label=collapsed?QString::fromUtf8("展开导航"):QString::fromUtf8("收起导航");collapse->setToolTip(label);collapse->setAccessibleName(label);
+        if(!collapsed && splitter)splitter->setSizes(panel->property("expandedSizes").value<QList<int>>());
+    });
     layout->addLayout(heading);
     auto *filter = makeButton({{"label", QString::fromUtf8("所有项")}, {"menu", "navigation-filter"}}, panel);
     filter->setObjectName("NavigationFilter");
@@ -383,13 +396,7 @@ QWidget *UiShell::makeNavigator()
     });
     connect(recovered_,&RecoveredWorkspace::pageChanged,this,[this](const QString &id) {
         remember("page:"+id);
-        const QSignalBlocker blocker(navigation_);
-        for (QTreeWidgetItemIterator it(navigation_);*it;++it) {
-            const auto route=(*it)->data(0,Qt::UserRole+3).toString();
-            if (route.startsWith("page:") && recovered_->idForName(route.mid(5))==id) {
-                navigation_->setCurrentItem(*it); navigation_->scrollToItem(*it); break;
-            }
-        }
+        selectNavigationRoute("page:"+id);
     });
     auto *navTabs = new QTabWidget(panel);
     navTabs->setObjectName("NavigationTabs");
@@ -463,7 +470,7 @@ QWidget *UiShell::makeNavigator()
         mode->setMaximumHeight(34);
         layout->addWidget(mode);
     }
-    layout->addWidget(makeButton(buttonSpec(QString::fromUtf8("导航选项")), panel, true));
+    layout->addWidget(makeButton({{"label",QString::fromUtf8("导航选项")},{"enabled",false}}, panel, true));
     return panel;
 }
 
@@ -487,10 +494,7 @@ QWidget *UiShell::makeComponentPage()
     connect(objects_,&ObjectWorkspace::actionRequested,this,&UiShell::dispatch,Qt::QueuedConnection);
     connect(objects_,&ObjectWorkspace::objectActivated,this,[this](const QString &key,const QString &page){
         remember("object:"+key+":"+page);
-        if (!navigation_) return;
-        const QSignalBlocker blocker(navigation_);
-        for(QTreeWidgetItemIterator it(navigation_);*it;++it)
-            if((*it)->data(0,Qt::UserRole+11).toString()==key) {navigation_->setCurrentItem(*it);break;}
+        selectNavigationRoute("object:"+key+":"+page);
     });
     connect(objects_,&ObjectWorkspace::collectionActivated,this,[this](const QString &kind,const QString &parent){remember("objects:"+kind+":"+parent);});
     connect(objects_,&ObjectWorkspace::objectsRemoved,this,[this](const QStringList &keys){
@@ -569,6 +573,7 @@ QWidget *UiShell::makeFilePage()
         const auto entry = value.toObject();
         auto railSpec = entry;
         railSpec.remove("items");
+        if(!entry.value("items").toArray().isEmpty()) railSpec.remove("id");
         auto *button = makeButton(railSpec, rail);
         // Backstage rows switch visible command panels, rather than launch commands.
         button->setObjectName("FileEntry");

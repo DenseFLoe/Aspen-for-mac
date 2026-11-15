@@ -19,6 +19,7 @@ class ObjectWorkspace final : public QWidget
     Q_OBJECT
 public:
     explicit ObjectWorkspace(QWidget *parent=nullptr);
+    ~ObjectWorkspace() override;
     QJsonArray definitions() const { return definitions_; }
     QJsonArray objects() const;
     QJsonArray projectObjects();
@@ -48,8 +49,11 @@ public:
     void moveBlock(const QString &key, const QPointF &position);
     void setFlowsheetZoom(int percent);
     void setFlowsheetLocked(bool locked);
+    bool flowsheetLocked() const { return flowsheetLocked_; }
     void setModelPaletteVisible(bool visible);
     void setThreeDimensionalIcons(bool enabled);
+    QString selectedFlowsheetObject() const;
+    void transformSelectedBlock(const QString &operation);
 signals:
     void objectsChanged();
     void inputsChanged();
@@ -58,6 +62,8 @@ signals:
     void collectionActivated(const QString &kind, const QString &parent);
     void actionRequested(const QString &action);
     void flowsheetActivated(bool active);
+    void flowsheetSelectionChanged();
+    void flowsheetZoomChanged(int percent);
 private:
     struct Entry {
         QJsonObject data;
@@ -83,6 +89,7 @@ private:
     QPointF streamStart_;
     bool streamPending_=false;
     bool flowsheetLocked_=false, threeDimensionalIcons_=true;
+    bool labelsHidden_=false;
     QWidget *modelPalette_=nullptr, *metrics_=nullptr;
     QWidget *makeModelPalette();
     QWidget *makeMetrics();
@@ -92,4 +99,9 @@ private:
     void refreshCanvas();
     void refreshTitles();
     void nameDialog(const QString &kind, const QString &parent, const QString &key);
+    void showFlowsheetMenu(const QPoint &position);
+    void requestDeleteObjects(const QStringList &keys);
+    void moveBlocks(const QMap<QString,QPointF> &positions);
+    void selectFlowsheetObject(const QString &key);
+    void fitFlowsheet();
 };

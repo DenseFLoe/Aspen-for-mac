@@ -3,6 +3,8 @@
 #include "RecoveredWorkspace.h"
 #include "ComponentWorkspace.h"
 #include "IconCatalog.h"
+#include <QAction>
+#include <QMenu>
 #include <QSignalBlocker>
 #include <QStackedWidget>
 #include <QTreeWidget>
@@ -13,6 +15,41 @@
 #include <QStyle>
 #include <QTabWidget>
 #include <QTabBar>
+
+void UiShell::applyNavigationFilter()
+{
+    for(auto *tree:{navigation_,simulationNavigation_}) {
+        if(!tree) continue;
+        for(QTreeWidgetItemIterator it(tree);*it;++it) {
+            const auto label=(*it)->text(0);
+            const auto route=(*it)->data(0,Qt::UserRole+3).toString();
+            const bool objectName=route.startsWith("object:") && route.count(':')==1;
+            const bool result=!objectName && (label.contains(QString::fromUtf8("结果")) || label==QString::fromUtf8("所选方法") || route.contains("Results",Qt::CaseInsensitive));
+            (*it)->setHidden(inputsOnly_ && result);
+        }
+    }
+    if(auto *button=findChild<QToolButton *>("NavigationFilter")) {
+        button->setText(inputsOnly_?QString::fromUtf8("仅输入"):QString::fromUtf8("所有项"));
+        for(auto *action:button->menu()->actions()) {action->setCheckable(true);action->setChecked(action->text()==button->text());}
+    }
+}
+
+void UiShell::selectNavigationRoute(const QString &route)
+{
+    for(auto *tree:{navigation_,simulationNavigation_}) {
+        if(!tree) continue;
+        const QSignalBlocker blocker(tree);
+        QTreeWidgetItem *fallback=nullptr;
+        for(QTreeWidgetItemIterator it(tree);*it;++it) {
+            const auto candidate=(*it)->data(0,Qt::UserRole+3).toString();
+            if(candidate==route || (candidate.startsWith("page:") && route.startsWith("page:") && recovered_->idForName(candidate.mid(5))==recovered_->idForName(route.mid(5)))) {
+                fallback=*it;break;
+            }
+            if(route.startsWith("object:") && candidate==route.section(':',0,1)) fallback=*it;
+        }
+        if(fallback) {tree->setCurrentItem(fallback);tree->scrollToItem(fallback);}
+    }
+}
 
 void UiShell::setWorkspaceMode(bool simulation)
 {
@@ -87,6 +124,7 @@ void UiShell::syncObjectNavigation()
     }
     for(QTreeWidgetItemIterator it(navigation_);*it;++it)
         if((*it)->data(0,Qt::UserRole+3).toString()==selected) {navigation_->setCurrentItem(*it);break;}
+    applyNavigationFilter();
 }
 
 bool UiShell::dispatchObjectAction(const QString &action)
@@ -103,5 +141,6 @@ bool UiShell::dispatchObjectAction(const QString &action)
         if(QStringList{"blocks","streams","reactions","sensitivity","design-specs","calculators","optimizations","column-designs","column-adjustments","pumparounds"}.contains(kind)) setWorkspaceMode(true);
         else if(QStringList{"chemistry","user-components"}.contains(kind)) setWorkspaceMode(false);
     }
+    selectNavigationRoute(action);
     pages_->setCurrentIndex(0);documents_->setCurrentWidget(objects_); return true;
 }

@@ -62,6 +62,9 @@ private:
     QWidget *makeSimulationRibbon();
     QWidget *makeSimulationNavigator();
     void syncSimulationNavigation();
+    bool inputsOnly_ = false;
+    void applyNavigationFilter();
+    void selectNavigationRoute(const QString &route);
     RecoveredWorkspace *recovered_ = nullptr;
     ObjectWorkspace *objects_ = nullptr;
     void syncObjectNavigation();

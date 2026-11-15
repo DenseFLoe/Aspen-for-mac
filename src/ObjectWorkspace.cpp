@@ -4,6 +4,7 @@
 #include <QAction>
 #include <QBoxLayout>
 #include <QComboBox>
+#include <QContextMenuEvent>
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QFile>
@@ -21,10 +22,14 @@
 #include <QLineEdit>
 #include <QMenu>
 #include <QMouseEvent>
+#include <QPainter>
 #include <QPainterPath>
+#include <QPainterPathStroker>
 #include <QPushButton>
 #include <QRegularExpression>
 #include <QSignalBlocker>
+#include <QShortcut>
+#include <QStyleOptionGraphicsItem>
 #include <QTableWidget>
 #include <QTabBar>
 #include <QTabWidget>
@@ -33,6 +38,42 @@
 #include <functional>
 
 QIcon flowsheetModelIcon(const QString &type, bool threeDimensional);
+
+class BlockGraphicsItem final : public QGraphicsRectItem
+{
+public:
+    BlockGraphicsItem():QGraphicsRectItem(-40,-36,80,84) {setPen(Qt::NoPen);setBrush(Qt::NoBrush);}
+    QRectF boundingRect() const override {return QGraphicsRectItem::boundingRect().adjusted(-3,-3,3,3);}
+    void paint(QPainter *painter,const QStyleOptionGraphicsItem *option,QWidget *widget) override {
+        auto appearance=*option;appearance.state&=~QStyle::State_Selected;
+        QGraphicsRectItem::paint(painter,&appearance,widget);
+        if(!isSelected())return;
+        painter->save();painter->setPen(Qt::NoPen);painter->setBrush(Qt::black);
+        const auto r=rect();const QList<QPointF> points{r.topLeft(),r.topRight(),r.bottomLeft(),r.bottomRight(),
+            {r.center().x(),r.top()},{r.center().x(),r.bottom()},{r.left(),r.center().y()},{r.right(),r.center().y()}};
+        for(const auto &p:points)painter->drawRect(QRectF(p-QPointF(2,2),QSizeF(4,4)));
+        painter->restore();
+    }
+};
+
+// Keep thin stream strokes easy to select without changing their visible width.
+class StreamGraphicsItem final : public QGraphicsPathItem
+{
+public:
+    explicit StreamGraphicsItem(const QPainterPath &path):QGraphicsPathItem(path) {}
+    QPainterPath shape() const override {
+        QPainterPathStroker stroke;stroke.setWidth(10);return stroke.createStroke(path());
+    }
+    QRectF boundingRect() const override {return shape().boundingRect();}
+    void paint(QPainter *painter,const QStyleOptionGraphicsItem *option,QWidget *widget) override {
+        auto appearance=*option;appearance.state&=~QStyle::State_Selected;
+        QGraphicsPathItem::paint(painter,&appearance,widget);
+        if(!isSelected())return;
+        painter->save();painter->setPen(QPen(QColor("#368b3e"),1));painter->setBrush(Qt::white);
+        const auto route=path();for(int i=0;i<route.elementCount();++i){const auto p=route.elementAt(i);painter->drawRect(QRectF(p.x-2.5,p.y-2.5,5,5));}
+        painter->restore();
+    }
+};
 
 class FlowsheetView final : public QGraphicsView
 {
@@ -45,41 +86,93 @@ public:
     }
     bool placing=false;
     std::function<void(QPointF,QString)> place;
-    std::function<void(QString)> open, remove;
+    std::function<void(QString)> open, rename, copy, cut;
+    std::function<void(QStringList)> remove;
     std::function<void()> cancel;
-    std::function<void(QString,QPointF)> moved;
+    std::function<void()> paste;
+    std::function<void(QPoint)> menu;
+    std::function<void(QMap<QString,QPointF>)> moved;
+    bool locked=false;
+    QStringList selectedKeys() const {
+        QStringList keys;
+        for(auto *item:scene()->selectedItems()) {
+            const auto key=item->data(0).toString();
+            if(!key.isEmpty() && !keys.contains(key)) keys.append(key);
+        }
+        return keys;
+    }
     QString keyAt(const QPoint &position) const {
         auto *item=itemAt(position);
         while(item && item->data(0).toString().isEmpty()) item=item->parentItem();
         return item?item->data(0).toString():QString();
     }
 protected:
+    bool event(QEvent *event) override {
+        if(event->type()==QEvent::ShortcutOverride && static_cast<QKeyEvent *>(event)->key()==Qt::Key_Escape) {event->accept();return true;}
+        return QGraphicsView::event(event);
+    }
     void mousePressEvent(QMouseEvent *event) override {
+        suppressContextMenu_=false;
+        if(placing && event->button()==Qt::RightButton) {
+            cancel();suppressContextMenu_=true;event->accept();return;
+        }
         if(placing && event->button()==Qt::LeftButton) {
             const auto key=keyAt(event->position().toPoint());
             place(mapToScene(event->position().toPoint()),key); event->accept(); return;
         }
         QGraphicsView::mousePressEvent(event);
+        dragStart_.clear();
+        if(event->button()==Qt::LeftButton && !locked)
+            for(auto *item:scene()->selectedItems())
+                if(item->data(1).toString()=="block")dragStart_[item->data(0).toString()]=item->pos();
+    }
+    void contextMenuEvent(QContextMenuEvent *event) override {
+        if(suppressContextMenu_) {suppressContextMenu_=false;event->accept();return;}
+        if(placing) {cancel();event->accept();return;}
+        QPoint point=event->pos();
+        if(event->reason()==QContextMenuEvent::Keyboard) {
+            const auto selected=scene()->selectedItems();
+            point=selected.isEmpty()?viewport()->rect().center():mapFromScene(selected.first()->sceneBoundingRect().center());
+        }
+        menu(point);event->accept();
     }
     void mouseDoubleClickEvent(QMouseEvent *event) override {
         const auto key=keyAt(event->position().toPoint());
-        if(!placing && !key.isEmpty()) { open(key); event->accept(); return; }
+        if(event->button()==Qt::LeftButton && !placing && !key.isEmpty()) { open(key); event->accept(); return; }
         QGraphicsView::mouseDoubleClickEvent(event);
     }
     void mouseReleaseEvent(QMouseEvent *event) override {
         QGraphicsView::mouseReleaseEvent(event);
-        QList<QPair<QString,QPointF>> positions;
+        if(event->button()!=Qt::LeftButton || locked || placing) return;
+        QMap<QString,QPointF> positions;
         for(auto *item:scene()->selectedItems())
-            if(item->data(1).toString()=="block") positions.append({item->data(0).toString(),item->pos()});
-        for(const auto &p:positions) moved(p.first,p.second);
+            if(const auto key=item->data(0).toString();dragStart_.contains(key) && item->pos()!=dragStart_.value(key))positions[key]=item->pos();
+        dragStart_.clear();
+        if(!positions.isEmpty())moved(positions);
     }
     void keyPressEvent(QKeyEvent *event) override {
-        if(event->key()==Qt::Key_Escape) { cancel(); return; }
-        if(event->key()==Qt::Key_Delete && !scene()->selectedItems().isEmpty()) {
-            remove(scene()->selectedItems().first()->data(0).toString()); return;
+        const auto keys=selectedKeys();
+        if(event->key()==Qt::Key_Escape) {if(placing)cancel();else scene()->clearSelection();event->accept();return;}
+        if(event->key()==Qt::Key_Menu || (event->key()==Qt::Key_F10 && event->modifiers()==Qt::ShiftModifier)) {
+            if(placing)cancel();else {
+                const auto selected=scene()->selectedItems();
+                menu(selected.isEmpty()?viewport()->rect().center():mapFromScene(selected.first()->sceneBoundingRect().center()));
+            }
+            event->accept();return;
         }
+        if(placing) {QGraphicsView::keyPressEvent(event);return;}
+        if(event->matches(QKeySequence::SelectAll)) {for(auto *item:scene()->items())if(item->flags().testFlag(QGraphicsItem::ItemIsSelectable))item->setSelected(true);event->accept();return;}
+        if(event->matches(QKeySequence::Copy)) {if(keys.size()==1)copy(keys.first());event->accept();return;}
+        if(event->matches(QKeySequence::Cut)) {if(!locked && keys.size()==1)cut(keys.first());event->accept();return;}
+        if(event->matches(QKeySequence::Paste)) {if(!locked)paste();event->accept();return;}
+        if(event->key()==Qt::Key_Delete || event->key()==Qt::Key_Backspace) {if(!locked && !keys.isEmpty())remove(keys);event->accept();return;}
+        if(keys.size()==1 && (event->key()==Qt::Key_Return || event->key()==Qt::Key_Enter)) {open(keys.first());event->accept();return;}
+        if(keys.size()==1 && event->key()==Qt::Key_F2) {if(!locked)rename(keys.first());event->accept();return;}
         QGraphicsView::keyPressEvent(event);
     }
+private:
+    QMap<QString,QPointF> dragStart_;
+    bool suppressContextMenu_=false;
 };
 
 ObjectWorkspace::ObjectWorkspace(QWidget *parent) : QWidget(parent)
@@ -114,7 +207,12 @@ ObjectWorkspace::ObjectWorkspace(QWidget *parent) : QWidget(parent)
     connect(buttons_["rename"],&QPushButton::clicked,this,[this]{requestRename(selectedKey());});
     connect(buttons_["delete"],&QPushButton::clicked,this,[this]{requestDelete(selectedKey());});
     connect(table_,&QTableWidget::itemSelectionChanged,this,&ObjectWorkspace::refreshButtons);
-    connect(table_,&QTableWidget::cellDoubleClicked,this,[this](int,int){openObject(selectedKey());});
+    connect(table_,&QTableWidget::cellActivated,this,[this](int,int){openObject(selectedKey());});
+    const QList<QPair<QKeySequence,QString>> tableKeys{{QKeySequence::Copy,"copy"},{QKeySequence::Paste,"paste"},{QKeySequence(Qt::Key_Delete),"delete"},{QKeySequence(Qt::Key_F2),"rename"}};
+    for(const auto &binding:tableKeys) {
+        auto *shortcut=new QShortcut(binding.first,table_);shortcut->setContext(Qt::WidgetShortcut);
+        connect(shortcut,&QShortcut::activated,this,[this,binding]{buttons_[binding.second]->click();});
+    }
     table_->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(table_,&QWidget::customContextMenuRequested,this,[this](const QPoint &point){
         if(auto *item=table_->itemAt(point)) table_->selectRow(item->row());
@@ -136,9 +234,15 @@ ObjectWorkspace::ObjectWorkspace(QWidget *parent) : QWidget(parent)
     documents_->tabBar()->setTabButton(1,QTabBar::RightSide,nullptr);
     canvas_->place=[this](QPointF p,const QString &key){placeAt(p,key);};
     canvas_->open=[this](const QString &key){openObject(key);};
-    canvas_->remove=[this](const QString &key){if(!flowsheetLocked_)requestDelete(key);};
-    canvas_->moved=[this](const QString &key,QPointF p){moveBlock(key,p);};
+    canvas_->remove=[this](const QStringList &keys){if(!flowsheetLocked_)requestDeleteObjects(keys);};
+    canvas_->rename=[this](const QString &key){if(!flowsheetLocked_)requestRename(key);};
+    canvas_->copy=[this](const QString &key){copyObject(key);};
+    canvas_->cut=[this](const QString &key){if(!flowsheetLocked_){copyObject(key);removeObject(key);}};
+    canvas_->paste=[this]{if(!flowsheetLocked_)requestPaste();};
+    canvas_->menu=[this](QPoint p){showFlowsheetMenu(p);};
+    canvas_->moved=[this](const QMap<QString,QPointF> &positions){moveBlocks(positions);};
     canvas_->cancel=[this]{beginPlacement({},{});};
+    connect(canvas_->scene(),&QGraphicsScene::selectionChanged,this,&ObjectWorkspace::flowsheetSelectionChanged);
     connect(documents_,&QTabWidget::tabCloseRequested,this,[this](int index){
         auto *view=documents_->widget(index); if(view==manager_ || view==flowsheet_) return;
         closeObject(view->property("objectKey").toString());
@@ -153,6 +257,13 @@ ObjectWorkspace::ObjectWorkspace(QWidget *parent) : QWidget(parent)
     });
     metrics_->hide();modelPalette_->hide();
     showCollection("property-sets");
+}
+
+ObjectWorkspace::~ObjectWorkspace() {
+    // QWidget tears down its children after the derived destructor has finished.
+    // A selected scene emits selectionChanged while deleting its items, and tab
+    // teardown can also emit signals. Stop callbacks while this type is still alive.
+    for(auto *child:findChildren<QObject *>())QObject::disconnect(child,nullptr,this,nullptr);
 }
 
 QJsonArray ObjectWorkspace::objects() const {
@@ -306,6 +417,11 @@ void ObjectWorkspace::requestRename(const QString &key) {
 void ObjectWorkspace::copyObject(const QString &key) {
     if(!entries_.contains(key)) return;
     const auto &entry=entries_[key]; clipboard_=entry.data;
+    if(clipboard_.value("kind")=="streams") {
+        const auto from=object(clipboard_.value("from").toString()),to=object(clipboard_.value("to").toString());
+        if(!from.isEmpty()){clipboard_["startX"]=from.value("x").toDouble()+40;clipboard_["startY"]=from.value("y");}
+        if(!to.isEmpty()){clipboard_["endX"]=to.value("x").toDouble()-40;clipboard_["endY"]=to.value("y");}
+    }
     clipboardValues_=entry.view?entry.view->sessionState():entry.values;
     clipboardChildren_={};clipboardChildValues_.clear();
     QStringList parents{key};
@@ -317,9 +433,11 @@ void ObjectWorkspace::copyObject(const QString &key) {
     refreshButtons();
 }
 void ObjectWorkspace::requestPaste() {
-    if(clipboard_.isEmpty() || clipboard_.value("kind")!=kind_) return;
+    const bool onFlowsheet=documents_->currentWidget()==flowsheet_;
+    if(clipboard_.isEmpty() || (onFlowsheet && (flowsheetLocked_ || !QStringList{"blocks","streams"}.contains(clipboard_.value("kind").toString()))) ||
+       (!onFlowsheet && clipboard_.value("kind")!=kind_)) return;
     const auto source=clipboard_;const auto values=clipboardValues_;const auto children=clipboardChildren_;const auto childValues=clipboardChildValues_;
-    const auto kind=kind_,parent=parent_;
+    const auto kind=onFlowsheet?source.value("kind").toString():kind_,parent=onFlowsheet?QString():parent_;
     auto *dialog=new QDialog(this);dialog->setAttribute(Qt::WA_DeleteOnClose);dialog->setObjectName("ObjectPasteDialog");
     dialog->setWindowTitle(QString::fromUtf8("解决 ID 冲突"));dialog->resize(500,280);
     auto *layout=new QHBoxLayout(dialog);auto *list=new QTableWidget(1,2,dialog);list->setObjectName("PasteConflictTable");
@@ -344,10 +462,16 @@ void ObjectWorkspace::requestPaste() {
         connect(buttons,&QDialogButtonBox::accepted,editor,[dialog,editor,name,list,confirm]{dialog->setProperty("resolvedName",name->text().trimmed().toUpper());list->item(0,1)->setText(QString::fromUtf8("新 ID：")+name->text().trimmed().toUpper());confirm->setEnabled(true);editor->accept();});
         connect(buttons,&QDialogButtonBox::rejected,editor,&QDialog::reject);update();editor->open();name->selectAll();name->setFocus();
     });
-    connect(confirm,&QPushButton::clicked,dialog,[this,dialog,kind,parent,source,values,children,childValues]{
+    connect(confirm,&QPushButton::clicked,dialog,[this,dialog,kind,parent,source,values,children,childValues,onFlowsheet]{
+        if(onFlowsheet && flowsheetLocked_)return;
         QSignalBlocker transaction(this);
         const auto created=createObject(kind,dialog->property("resolvedName").toString(),source.value("type").toString(),parent);if(created.isEmpty()) return;
-        for(const auto &field:{"startX","startY","endX","endY","from","to"}) if(source.contains(field)) entries_[created].data[field]=source.value(field);
+        for(const auto &field:{"startX","startY","endX","endY","from","to","iconRotation","iconFlipHorizontal","iconFlipVertical"}) if(source.contains(field)) entries_[created].data[field]=source.value(field);
+        // A copied stream gets its own free endpoints; it must not silently duplicate connections.
+        if(kind=="streams") {
+            entries_[created].data["from"]="";entries_[created].data["to"]="";
+            for(const auto &field:{"startX","startY","endX","endY"})if(source.contains(field))entries_[created].data[field]=source.value(field).toDouble()+30;
+        }
         if(kind=="blocks") {entries_[created].data["x"]=source.value("x").toDouble()+30;entries_[created].data["y"]=source.value("y").toDouble()+30;}
         refreshCanvas();
         setObjectState(created,values);QMap<QString,QString> mapping{{source.value("key").toString(),created}};
@@ -356,7 +480,8 @@ void ObjectWorkspace::requestPaste() {
             if(!child.isEmpty()) {mapping[d.value("key").toString()]=child;setObjectState(child,childValues.value(d.value("key").toString()));}
         }
         transaction.unblock(); emit objectsChanged();
-        dialog->accept();openObject(created);
+        dialog->accept();
+        if(onFlowsheet){showFlowsheet();selectFlowsheetObject(created);canvas_->setFocus();}else openObject(created);
     });
     connect(cancel,&QPushButton::clicked,dialog,&QDialog::reject);dialog->open();
 }
@@ -391,13 +516,28 @@ void ObjectWorkspace::nameDialog(const QString &kind,const QString &parent,const
     update(); dialog->resize(340,160); dialog->open(); name->selectAll(); name->setFocus();
 }
 void ObjectWorkspace::requestDelete(const QString &key) {
-    if(!entries_.contains(key)) return;
+    requestDeleteObjects({key});
+}
+void ObjectWorkspace::requestDeleteObjects(const QStringList &keys) {
+    QStringList existing,names;for(const auto &key:keys)if(entries_.contains(key)){existing.append(key);names.append(object(key).value("name").toString());}
+    if(existing.isEmpty())return;
+    const bool onFlowsheet=documents_->currentWidget()==flowsheet_;
+    if(onFlowsheet && flowsheetLocked_)return;
     auto *dialog=new QDialog(this); dialog->setAttribute(Qt::WA_DeleteOnClose); dialog->setObjectName("ObjectDeleteDialog"); dialog->setWindowTitle(QString::fromUtf8("删除对象"));
-    auto *layout=new QVBoxLayout(dialog); layout->addWidget(new QLabel(QString::fromUtf8("删除 %1 及其子对象？").arg(object(key).value("name").toString()),dialog));
+    auto *layout=new QVBoxLayout(dialog); layout->addWidget(new QLabel(QString::fromUtf8("删除 %1 及其子对象？").arg(names.join(", ")),dialog));
     auto *buttons=new QDialogButtonBox(QDialogButtonBox::Yes|QDialogButtonBox::Cancel,dialog); layout->addWidget(buttons);
     buttons->button(QDialogButtonBox::Yes)->setText(QString::fromUtf8("删除")); buttons->button(QDialogButtonBox::Cancel)->setText(QString::fromUtf8("取消"));
     buttons->button(QDialogButtonBox::Cancel)->setDefault(true);
-    connect(buttons,&QDialogButtonBox::accepted,dialog,[this,key,dialog]{removeObject(key);dialog->accept();});
+    connect(buttons,&QDialogButtonBox::accepted,dialog,[this,existing,dialog,onFlowsheet]{
+        if(onFlowsheet && flowsheetLocked_)return;
+        QStringList removed;
+        for(const auto &v:objects()) {
+            auto key=v.toObject().value("key").toString(),ancestor=key;
+            while(!ancestor.isEmpty()){if(existing.contains(ancestor)){removed.append(key);break;}ancestor=object(ancestor).value("parent").toString();}
+        }
+        QSignalBlocker transaction(this);for(const auto &key:existing)removeObject(key);transaction.unblock();
+        emit objectsRemoved(removed);emit objectsChanged();dialog->accept();
+    });
     connect(buttons,&QDialogButtonBox::rejected,dialog,&QDialog::reject); dialog->open();
 }
 void ObjectWorkspace::showFlowsheet() {
@@ -405,14 +545,99 @@ void ObjectWorkspace::showFlowsheet() {
     documents_->setCurrentWidget(flowsheet_);metrics_->show();modelPalette_->show();refreshCanvas();
     emit flowsheetActivated(true);
 }
-void ObjectWorkspace::setFlowsheetZoom(int percent) {canvas_->resetTransform();canvas_->scale(percent/100.0,percent/100.0);}
+void ObjectWorkspace::setFlowsheetZoom(int percent) {
+    percent=qBound(25,percent,200);canvas_->resetTransform();canvas_->scale(percent/100.0,percent/100.0);emit flowsheetZoomChanged(percent);
+}
 void ObjectWorkspace::setThreeDimensionalIcons(bool enabled) {threeDimensionalIcons_=enabled;refreshCanvas();}
-void ObjectWorkspace::setFlowsheetLocked(bool locked) {flowsheetLocked_=locked;modelPalette_->setEnabled(!locked);beginPlacement({},{});refreshCanvas();}
+void ObjectWorkspace::setFlowsheetLocked(bool locked) {flowsheetLocked_=locked;canvas_->locked=locked;modelPalette_->setEnabled(!locked);beginPlacement({},{});refreshCanvas();}
+
+QString ObjectWorkspace::selectedFlowsheetObject() const {
+    const auto keys=canvas_->selectedKeys();return keys.size()==1?keys.first():QString();
+}
+void ObjectWorkspace::selectFlowsheetObject(const QString &key) {
+    canvas_->scene()->clearSelection();
+    for(auto *item:canvas_->scene()->items())if(item->data(0).toString()==key){item->setSelected(true);break;}
+}
+void ObjectWorkspace::transformSelectedBlock(const QString &operation) {
+    const auto key=selectedFlowsheetObject();
+    if(flowsheetLocked_ || object(key).value("kind")!="blocks")return;
+    auto &d=entries_[key].data;
+    if(operation=="rotate")d["iconRotation"]=(d.value("iconRotation").toInt()+90)%360;
+    else if(operation=="flip-horizontal")d["iconFlipHorizontal"]=!d.value("iconFlipHorizontal").toBool();
+    else if(operation=="flip-vertical")d["iconFlipVertical"]=!d.value("iconFlipVertical").toBool();
+    else return;
+    refreshCanvas();emit objectsChanged();
+}
+void ObjectWorkspace::fitFlowsheet() {
+    const auto bounds=canvas_->scene()->itemsBoundingRect().adjusted(-35,-35,35,35);
+    if(canvas_->scene()->items().isEmpty())return;
+    setFlowsheetZoom(qRound(100*qMin(canvas_->viewport()->width()/bounds.width(),canvas_->viewport()->height()/bounds.height())));
+    canvas_->centerOn(bounds.center());
+}
+void ObjectWorkspace::showFlowsheetMenu(const QPoint &position) {
+    const auto key=canvas_->keyAt(position);
+    if(!key.isEmpty() && !canvas_->selectedKeys().contains(key))selectFlowsheetObject(key);
+    else if(key.isEmpty())canvas_->scene()->clearSelection();
+    canvas_->setFocus();
+    auto *menu=new QMenu(this);menu->setObjectName("FlowsheetContextMenu");menu->setAttribute(Qt::WA_DeleteOnClose);
+    connect(menu,&QMenu::aboutToHide,menu,&QObject::deleteLater);
+    const auto keys=canvas_->selectedKeys();const bool single=keys.size()==1,editable=!flowsheetLocked_;
+    auto add=[this,menu](const QString &id,const QString &label,bool enabled,const std::function<void()> &callback={}) {
+        auto *action=menu->addAction(label);action->setObjectName(id);action->setEnabled(enabled);
+        if(callback)connect(action,&QAction::triggered,this,callback);
+        return action;
+    };
+    auto unavailable=[&](const QString &label){auto *a=add({},label,false);a->setToolTip(QString::fromUtf8("此操作尚未接入。"));};
+    auto disabledSubmenu=[&](const QString &label){auto *sub=menu->addMenu(label);sub->setEnabled(false);sub->setToolTip(QString::fromUtf8("此操作尚未接入。"));};
+    if(key.isEmpty()) {
+        const int zoom=qRound(canvas_->transform().m11()*100);
+        add("FlowZoomIn",QString::fromUtf8("放大"),zoom<200,[this,zoom]{setFlowsheetZoom(zoom+10);});
+        add("FlowZoomOut",QString::fromUtf8("缩小"),zoom>25,[this,zoom]{setFlowsheetZoom(zoom-10);});
+        add("FlowZoomFit",QString::fromUtf8("缩放到适当大小"),!canvas_->scene()->items().isEmpty(),[this]{fitFlowsheet();});
+        menu->addSeparator();
+        auto *labels=add("FlowHideLabels",QString::fromUtf8("隐藏标签"),true,[this]{labelsHidden_=!labelsHidden_;refreshCanvas();});labels->setCheckable(true);labels->setChecked(labelsHidden_);
+        add("FlowCenter",QString::fromUtf8("中心视图"),true,[this]{canvas_->centerOn(canvas_->scene()->items().isEmpty()?canvas_->sceneRect().center():canvas_->scene()->itemsBoundingRect().center());});
+        unavailable(QString::fromUtf8("平移"));unavailable(QString::fromUtf8("流程视图"));menu->addSeparator();
+        add("FlowRedraw",QString::fromUtf8("重画"),true,[this]{refreshCanvas();});
+        add("FlowSelectAll",QString::fromUtf8("全选"),!canvas_->scene()->items().isEmpty(),[this]{for(auto *item:canvas_->scene()->items())if(item->flags().testFlag(QGraphicsItem::ItemIsSelectable))item->setSelected(true);});
+        menu->addSeparator();unavailable(QString::fromUtf8("分页预览"));unavailable(QString::fromUtf8("重置分页符"));menu->addSeparator();
+        unavailable(QString::fromUtf8("查找对象…"));
+        const bool canPaste=editable && QStringList{"blocks","streams"}.contains(clipboard_.value("kind").toString());
+        add("FlowPaste",QString::fromUtf8("粘贴"),canPaste,[this]{requestPaste();});unavailable(QString::fromUtf8("打印预览"));
+    } else {
+        const bool block=object(key).value("kind")=="blocks";
+        add("FlowInput",QString::fromUtf8("输入…"),single,[this,key]{openObject(key);});
+        unavailable(QString::fromUtf8("结果…"));if(block)unavailable(QString::fromUtf8("流股结果…"));unavailable(QString::fromUtf8("调和…"));
+        if(block){menu->addSeparator();unavailable(QString::fromUtf8("更改工段…"));unavailable(QString::fromUtf8("移动选择…"));menu->addSeparator();}
+        else {disabledSubmenu(QString::fromUtf8("分析…"));unavailable(QString::fromUtf8("更改流股类型…"));}
+        unavailable(QString::fromUtf8("禁用"));
+        if(block){menu->addSeparator();unavailable(QString::fromUtf8("转换成…"));unavailable(QString::fromUtf8("成本"));}
+        else {unavailable(QString::fromUtf8("打断流股"));unavailable(QString::fromUtf8("插入模块"));}
+        menu->addSeparator();
+        add("FlowCut",QString::fromUtf8("剪切"),editable && single,[this,key]{if(!flowsheetLocked_){copyObject(key);removeObject(key);}})->setShortcut(QKeySequence::Cut);
+        add("FlowCopy",QString::fromUtf8("复制"),single,[this,key]{copyObject(key);})->setShortcut(QKeySequence::Copy);
+        add("FlowRename",block?QString::fromUtf8("重命名模块"):QString::fromUtf8("重命名流股"),editable && single,[this,key]{if(!flowsheetLocked_)requestRename(key);});
+        if(block) {
+            menu->addSeparator();auto *rotate=menu->addMenu(QString::fromUtf8("旋转图标"));rotate->setEnabled(editable && single);
+            const QList<QPair<QString,QString>> transforms{{"rotate",QString::fromUtf8("旋转 90°")},{"flip-horizontal",QString::fromUtf8("水平翻转")},{"flip-vertical",QString::fromUtf8("垂直翻转")}};
+            for(const auto &t:transforms){auto *a=rotate->addAction(t.second);a->setObjectName("FlowTransform-"+t.first);connect(a,&QAction::triggered,this,[this,t]{transformSelectedBlock(t.first);});}
+            unavailable(QString::fromUtf8("交换图标"));
+        } else {disabledSubmenu(QString::fromUtf8("重新连接"));unavailable(QString::fromUtf8("对齐模块"));unavailable(QString::fromUtf8("重排流股"));}
+        disabledSubmenu(QString::fromUtf8("隐藏"));
+        if(!block)unavailable(QString::fromUtf8("流股颜色和样式"));
+        // Delete is also available from the keyboard and keeps the existing confirmation/undo path.
+        menu->addSeparator();add("FlowDelete",QString::fromUtf8("删除"),editable,[this,keys]{if(!flowsheetLocked_)requestDeleteObjects(keys);})->setShortcut(QKeySequence::Delete);
+    }
+    menu->popup(canvas_->viewport()->mapToGlobal(position));
+}
 
 void ObjectWorkspace::beginPlacement(const QString &kind,const QString &type) {
     if(flowsheetLocked_ && !kind.isEmpty()) return;
     for(auto *button:findChildren<QToolButton *>()) if(button->property("modelTile").toBool()) button->setChecked(kind=="blocks" && button->property("paletteType").toString()==type);
     placementKind_=kind;placementType_=type;streamPending_=false;canvas_->placing=!kind.isEmpty();
+    if(auto *select=findChild<QPushButton *>("FlowSelect")){select->setCheckable(true);select->setChecked(kind.isEmpty());}
+    if(auto *stream=findChild<QToolButton *>("StreamPaletteButton")){stream->setCheckable(true);stream->setChecked(kind=="streams");}
+    if(documents_->currentWidget()==flowsheet_)canvas_->setFocus(Qt::OtherFocusReason);
     canvas_->setCursor(kind.isEmpty()?Qt::ArrowCursor:Qt::CrossCursor);
     placementNotice_->setVisible(!kind.isEmpty());
     if(kind.isEmpty()) canvas_->setToolTip({});
@@ -437,32 +662,52 @@ void ObjectWorkspace::placeAt(const QPointF &point,const QString &attachment) {
     refreshCanvas();transaction.unblock();emit objectsChanged();
 }
 void ObjectWorkspace::moveBlock(const QString &key,const QPointF &position) {
-    if(flowsheetLocked_ || !entries_.contains(key) || object(key).value("kind")!="blocks") return;
-    entries_[key].data["x"]=qMax(40.0,position.x());entries_[key].data["y"]=qMax(30.0,position.y());refreshCanvas(); emit objectsChanged();
+    moveBlocks({{key,position}});
+}
+void ObjectWorkspace::moveBlocks(const QMap<QString,QPointF> &positions) {
+    if(flowsheetLocked_)return;
+    bool changed=false,clamped=false;
+    for(auto it=positions.cbegin();it!=positions.cend();++it) {
+        if(!entries_.contains(it.key()) || object(it.key()).value("kind")!="blocks")continue;
+        auto &d=entries_[it.key()].data;const QPointF p(qMax(40.0,it.value().x()),qMax(30.0,it.value().y()));
+        clamped=clamped || p!=it.value();
+        if(QPointF(d.value("x").toDouble(),d.value("y").toDouble())==p)continue;
+        d["x"]=p.x();d["y"]=p.y();changed=true;
+    }
+    if(changed || clamped)refreshCanvas();
+    if(changed)emit objectsChanged();
 }
 void ObjectWorkspace::refreshCanvas() {
+    const auto selection=canvas_->selectedKeys();
+    const QSignalBlocker blocker(canvas_->scene());
     canvas_->scene()->clear();
     for(const auto &key:order_) {
         const auto d=entries_[key].data;
         if(d.value("kind")=="blocks") {
-            auto *box=canvas_->scene()->addRect(-40,-28,80,70,QPen(Qt::NoPen),QBrush(Qt::NoBrush));
+            auto *box=new BlockGraphicsItem;canvas_->scene()->addItem(box);
             box->setPos(d.value("x").toDouble(),d.value("y").toDouble());box->setData(0,key);box->setData(1,"block");
             box->setFlag(QGraphicsItem::ItemIsSelectable);box->setFlag(QGraphicsItem::ItemIsMovable,!flowsheetLocked_);
             auto *symbol=new QGraphicsPixmapItem(flowsheetModelIcon(d.value("type").toString(),threeDimensionalIcons_).pixmap(64,56),box);symbol->setPos(-32,-28);
-            auto *label=new QGraphicsSimpleTextItem(d.value("name").toString(),box);label->setPos(-label->boundingRect().width()/2,29);
+            symbol->setTransformOriginPoint(32,28);symbol->setRotation(d.value("iconRotation").toInt()%360);
+            QTransform reflection;reflection.translate(32,28);reflection.scale(d.value("iconFlipHorizontal").toBool()?-1:1,d.value("iconFlipVertical").toBool()?-1:1);reflection.translate(-32,-28);symbol->setTransform(reflection);
+            symbol->setAcceptedMouseButtons(Qt::NoButton);
+            auto *label=new QGraphicsSimpleTextItem(d.value("name").toString(),box);label->setPos(-label->boundingRect().width()/2,34);label->setAcceptedMouseButtons(Qt::NoButton);label->setVisible(!labelsHidden_);
+            box->setSelected(selection.contains(key));box->setToolTip(d.value("name").toString()+" ("+d.value("type").toString()+")");
         } else if(d.value("kind")=="streams" && d.contains("startX")) {
             QPointF from(d.value("startX").toDouble(),d.value("startY").toDouble()),to(d.value("endX").toDouble(),d.value("endY").toDouble());
             const auto start=object(d.value("from").toString()),end=object(d.value("to").toString());
             if(!start.isEmpty()) from={start.value("x").toDouble()+40,start.value("y").toDouble()};
             if(!end.isEmpty()) to={end.value("x").toDouble()-40,end.value("y").toDouble()};
             QPainterPath path(from);const qreal middle=(from.x()+to.x())/2;path.lineTo(middle,from.y());path.lineTo(middle,to.y());path.lineTo(to);
-            auto *line=canvas_->scene()->addPath(path,QPen(QColor("#32618a"),2));line->setData(0,key);line->setFlag(QGraphicsItem::ItemIsSelectable);line->setZValue(-1);
-            auto *label=new QGraphicsSimpleTextItem(d.value("name").toString(),line);label->setPos(middle+3,(from.y()+to.y())/2-18);
+            auto *line=new StreamGraphicsItem(path);canvas_->scene()->addItem(line);line->setPen(QPen(QColor("#32618a"),2));line->setData(0,key);line->setFlag(QGraphicsItem::ItemIsSelectable);line->setZValue(-1);
+            auto *label=new QGraphicsSimpleTextItem(d.value("name").toString(),line);label->setPos(middle+3,(from.y()+to.y())/2-18);label->setAcceptedMouseButtons(Qt::NoButton);label->setVisible(!labelsHidden_);
             const qreal direction=to.x()>=middle?1:-1;
             QPainterPath arrow;arrow.moveTo(to+QPointF(-7*direction,-4));arrow.lineTo(to);arrow.lineTo(to+QPointF(-7*direction,4));
             auto *head=new QGraphicsPathItem(arrow,line);head->setPen(QPen(QColor("#32618a"),2));
+            head->setAcceptedMouseButtons(Qt::NoButton);line->setSelected(selection.contains(key));line->setToolTip(d.value("name").toString()+" ("+d.value("type").toString()+")");
         }
     }
+    emit flowsheetSelectionChanged();
 }
 
 QJsonArray ObjectWorkspace::projectObjects() {
@@ -479,7 +724,7 @@ QJsonArray ObjectWorkspace::projectObjects() {
 void ObjectWorkspace::restoreProjectObjects(const QJsonArray &objects) {
     const auto selected=currentObject();
     const auto page=entries_.contains(selected) && entries_[selected].view?entries_[selected].view->currentPage():QString();
-    const QSignalBlocker blocked(this);
+    QSignalBlocker blocked(this);
     for(const auto &key:order_) closeObject(key);
     entries_.clear(); order_.clear(); clipboard_={}; clipboardValues_.clear(); clipboardChildren_={}; clipboardChildValues_.clear();
     beginPlacement({},{});
@@ -492,4 +737,5 @@ void ObjectWorkspace::restoreProjectObjects(const QJsonArray &objects) {
     if(!parent_.isEmpty() && !entries_.contains(parent_)) {parent_.clear();kind_="blocks";}
     refreshManager(); refreshCanvas();
     if(entries_.contains(selected)) openObject(selected,page);
+    blocked.unblock();emit flowsheetSelectionChanged();
 }

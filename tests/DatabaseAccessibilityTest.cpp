@@ -102,6 +102,10 @@ private slots:
             term->setText("7732-18-5");
             search->click();
             QCOMPARE(results->rowCount(), 1);
+            dialog.findChild<QPushButton *>("ShowDatabaseParameters")->click();
+            auto *details=dialog.findChild<QDialog *>("DatabaseParameterDialog");
+            QVERIFY(details && details->isVisible());
+            QCoreApplication::processEvents();
             QCOMPARE(parameters->rowCount(), 200);
             inspect(results);
             inspect(parameters);
@@ -122,7 +126,12 @@ private slots:
             previous->click();
             QCOMPARE(parameters->rowCount(), 200);
             inspect(parameters);
+            details->reject();
             dialog.findChild<QPushButton *>("AddDatabaseComponent")->click();
+            dialog.findChild<QPushButton *>("ManageDatabaseComponents")->click();
+            auto *selectionDialog=dialog.findChild<QDialog *>("DatabaseSelectionDialog");
+            QVERIFY(selectionDialog && selectionDialog->isVisible());
+            QCoreApplication::processEvents();
             auto *selected = dialog.findChild<QListWidget *>("SelectedDatabaseComponents");
             QCOMPARE(selected->count(), 1);
             selected->setCurrentRow(0);
@@ -132,6 +141,7 @@ private slots:
 #endif
             dialog.findChild<QPushButton *>("RemoveDatabaseComponent")->click();
             QCOMPARE(selected->count(), 0);
+            selectionDialog->reject();
             for (const auto &query : {"no-such-compound", "", "H2O", "TEST-WATER"}) {
                 term->setText(query);
                 search->click();

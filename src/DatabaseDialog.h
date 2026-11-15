@@ -1,6 +1,7 @@
 #pragma once
 #include <QDialog>
 #include <QJsonArray>
+#include <QJsonObject>
 class PropertyDatabase;
 class ProjectDocument;
 class QLineEdit;
@@ -9,6 +10,8 @@ class QTableWidget;
 class QTextEdit;
 class QPushButton;
 class QListWidget;
+class QButtonGroup;
+class QEvent;
 
 class DatabaseDialog final : public QDialog {
     Q_OBJECT
@@ -23,11 +26,21 @@ private:
     QLabel *status_, *path_;
     QTableWidget *results_, *parameters_;
     QTextEdit *source_;
-    QListWidget *selected_;
-    QPushButton *add_, *previous_, *next_;
-    QJsonArray matches_, parameterRows_;
+    QListWidget *selected_, *availableBanks_, *selectedBanks_;
+    QButtonGroup *matchMode_;
+    QDialog *details_, *selectionDialog_;
+    QPushButton *add_, *detailsButton_, *remove_, *previous_, *next_;
+    QJsonArray matches_, parameterRows_, allBanks_;
+    QJsonObject detailCompound_;
     int offset_=0;
     void search();
+    void clearResults();
+    void clearDetails();
+    void addSelection();
+    void updateActions();
+    void refreshDatabanks();
+    void openDetails();
+    bool eventFilter(QObject *watched,QEvent *event) override;
     void showParameters();
     void refreshSelection();
     void showSource();

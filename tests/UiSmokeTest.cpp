@@ -12,6 +12,9 @@
 #include "LightTheme.h"
 #include "RecoveredWorkspace.h"
 #include "ObjectWorkspace.h"
+#include <QContextMenuEvent>
+#include <QGraphicsItem>
+#include <QRadioButton>
 #include <QDialogButtonBox>
 #include <QGraphicsView>
 #include <QGraphicsScene>
@@ -49,6 +52,197 @@ class UiSmokeTest : public QObject
     Q_OBJECT
 
 private slots:
+    void databaseInteractionParity() {
+        QTemporaryDir temp;const auto path=databaseFixture(temp.path());QVERIFY(!path.isEmpty());
+        {
+            auto db=QSqlDatabase::addDatabase("QSQLITE","parity-fixture");db.setDatabaseName(path);QVERIFY(db.open());QSqlQuery q(db);
+            for(const auto &sql:{
+                "INSERT INTO compounds VALUES ('TEST','2','TEST-ETHANOL','ETHANOL','64-17-5')",
+                "INSERT INTO identifiers VALUES ('TEST','2','NAME','TEST-ETHANOL'),('TEST','2','ALIAS','ETHANOL')",
+                "INSERT INTO parameters VALUES ('TEST',8,'2',3)",
+                "INSERT INTO refs VALUES ('TEST',12,8,10)",
+                "INSERT INTO databanks VALUES ('TEST',10,'SECOND')"})QVERIFY2(q.exec(sql),qPrintable(q.lastError().text()));
+        }
+        QSqlDatabase::removeDatabase("parity-fixture");
+        PropertyDatabase database;QString error;QVERIFY(database.open(path,&error));
+        PropertyDatabase::SearchOptions options;options.mode=PropertyDatabase::MatchMode::StartsWith;
+        QCOMPARE(database.search("WATER",&error,options).size(),0);QCOMPARE(database.search("test-w",&error,options).size(),1);
+        options.mode=PropertyDatabase::MatchMode::Equals;QCOMPARE(database.search("TEST-W",&error,options).size(),0);QCOMPARE(database.search("h2o",&error,options).size(),1);QCOMPARE(database.search("A%_literal",&error,options).size(),1);
+        const QJsonObject firstBank{{"database","TEST"},{"bankId",9}},secondBank{{"database","TEST"},{"bankId",10}};
+        options.mode=PropertyDatabase::MatchMode::Contains;options.databanks={firstBank,secondBank};options.restrictDatabanks=true;
+        auto matches=database.search("TEST-",&error,options);QVERIFY2(error.isEmpty(),qPrintable(error));QCOMPARE(matches.size(),2);QCOMPARE(matches[0].toObject().value("compoundId").toString(),QString("1"));
+        options.databanks={secondBank,firstBank};matches=database.search("TEST-",&error,options);QCOMPARE(matches[0].toObject().value("compoundId").toString(),QString("2"));
+        options.databanks={firstBank};QCOMPARE(database.search("ETHANOL",&error,options).size(),0);QCOMPARE(database.search("WATER",&error,options).size(),1);
+        options.databanks={};QCOMPARE(database.search("WATER",&error,options).size(),0);
+
+        QFile file(":/ui/aspen-plus.json");QVERIFY(file.open(QIODevice::ReadOnly));UiShell shell(QJsonDocument::fromJson(file.readAll()).object());shell.show();QVERIFY(shell.openPropertyDatabase(path,&error));shell.dispatch("database-search");
+        auto *dialog=shell.findChild<QDialog *>("FindCompoundDialog");QVERIFY(dialog);QTest::qWait(30);
+        auto *query=dialog->findChild<QLineEdit *>("compound-query");auto *results=dialog->findChild<QTableWidget *>("DatabaseResults");auto *add=dialog->findChild<QPushButton *>("AddDatabaseComponent");auto *tabs=dialog->findChild<QTabWidget *>("FindCompoundTabs");
+        QVERIFY(query && results && add && tabs);QCOMPARE(results->columnCount(),8);QVERIFY(!add->isEnabled());QCOMPARE(tabs->count(),3);QVERIFY(!tabs->isTabEnabled(2));
+        query->setText("7732-18-5");query->setFocus();QTest::keyClick(query,Qt::Key_Return);QCOMPARE(results->rowCount(),1);QVERIFY(add->isEnabled());
+        const auto capture=qEnvironmentVariable("ASPEN_CAPTURE_DIR");if(!capture.isEmpty()){QDir().mkpath(capture);QVERIFY(dialog->grab().save(capture+"/compound-search-parity.png"));}
+        dialog->findChild<QPushButton *>("ShowDatabaseParameters")->click();auto *details=dialog->findChild<QDialog *>("DatabaseParameterDialog");QVERIFY(details->isVisible());auto *parameters=details->findChild<QTableWidget *>("DatabaseParameters");QCOMPARE(parameters->rowCount(),1);parameters->selectRow(0);QVERIFY(details->findChild<QTextEdit *>("ParameterProvenance")->toPlainText().contains("123.456789012345678901"));
+        if(!capture.isEmpty())QVERIFY(details->grab().save(capture+"/compound-parameters-parity.png"));QTest::keyClick(details,Qt::Key_Escape);QVERIFY(!details->isVisible());QVERIFY(dialog->isVisible());
+        results->setFocus();QTest::keyClick(results,Qt::Key_Return);QCOMPARE(shell.project()->state().value("components").toArray().size(),1);QVERIFY(!add->isEnabled());
+        query->setText("no-such-component");QCOMPARE(parameters->rowCount(),0);QVERIFY(details->findChild<QTextEdit *>("ParameterProvenance")->toPlainText().isEmpty());QCOMPARE(results->rowCount(),0);QVERIFY(!add->isEnabled());QVERIFY(!dialog->findChild<QPushButton *>("ShowDatabaseParameters")->isEnabled());
+        dialog->findChild<QPushButton *>("NewDatabaseSearch")->click();QVERIFY(query->text().isEmpty());QVERIFY(query->hasFocus());
+        dialog->findChild<QPushButton *>("ManageDatabaseComponents")->click();auto *selection=dialog->findChild<QDialog *>("DatabaseSelectionDialog");QVERIFY(selection->isVisible());auto *selected=selection->findChild<QListWidget *>("SelectedDatabaseComponents");auto *remove=selection->findChild<QPushButton *>("RemoveDatabaseComponent");QVERIFY(!remove->isEnabled());selected->setCurrentRow(0);QVERIFY(remove->isEnabled());QTest::keyClick(selected,Qt::Key_Delete);QCOMPARE(shell.project()->state().value("components").toArray().size(),0);QVERIFY(!remove->isEnabled());selection->reject();
+        const int compoundWidth=dialog->width();tabs->setCurrentIndex(1);QVERIFY(dialog->width()<compoundWidth);QVERIFY(dialog->width()>=dialog->minimumSizeHint().width());QVERIFY(!dialog->findChild<QPushButton *>("FindAddDatabank")->isEnabled());if(!capture.isEmpty())QVERIFY(dialog->grab().save(capture+"/compound-databanks-parity.png"));
+        dialog->findChild<QPushButton *>("FindRemoveAllDatabanks")->click();QCOMPARE(dialog->findChild<QListWidget *>("FindSelectedDatabanks")->count(),0);
+        tabs->setCurrentIndex(0);QCOMPARE(dialog->width(),compoundWidth);query->setText("WATER");dialog->findChild<QPushButton *>("SearchDatabase")->click();QCOMPARE(results->rowCount(),0);
+        tabs->setCurrentIndex(1);dialog->findChild<QPushButton *>("FindAddAllDatabanks")->click();tabs->setCurrentIndex(0);dialog->findChild<QPushButton *>("SearchDatabase")->click();QCOMPARE(results->rowCount(),1);
+        QTest::qWait(20);const auto resultPoint=results->visualItemRect(results->item(0,0)).center();
+        QTest::mouseClick(results->viewport(),Qt::LeftButton,Qt::NoModifier,resultPoint);
+        QTest::mouseDClick(results->viewport(),Qt::LeftButton,Qt::NoModifier,resultPoint);QCOMPARE(shell.project()->state().value("components").toArray().size(),1);
+        QTest::keyClick(dialog,Qt::Key_Escape);QVERIFY(!dialog->isVisible());
+    }
+
+    void flowsheetGroupDragIsOneUndoStep()
+    {
+        QFile file(":/ui/aspen-plus.json");QVERIFY(file.open(QIODevice::ReadOnly));
+        UiShell shell(QJsonDocument::fromJson(file.readAll()).object());shell.show();
+        auto *objects=shell.findChild<ObjectWorkspace *>();auto *document=shell.findChild<ProjectDocument *>();
+        const auto first=objects->createObject("blocks","M1","Mixer"),second=objects->createObject("blocks","M2","Mixer");
+        shell.dispatch("flowsheet");QTest::qWait(30);objects->setFlowsheetZoom(100);
+        auto *canvas=objects->findChild<QGraphicsView *>("FlowsheetCanvas");canvas->setFocus();
+        QTest::keySequence(canvas,QKeySequence::SelectAll);QCOMPARE(canvas->scene()->selectedItems().size(),2);
+        QSignalSpy mutations(objects,&ObjectWorkspace::objectsChanged),selection(objects,&ObjectWorkspace::flowsheetSelectionChanged);
+        const auto from=canvas->mapFromScene(QPointF(100,100)),to=canvas->mapFromScene(QPointF(140,130));
+        QTest::mousePress(canvas->viewport(),Qt::LeftButton,Qt::NoModifier,from);
+        QTest::mouseMove(canvas->viewport(),to,30);QTest::mouseRelease(canvas->viewport(),Qt::LeftButton,Qt::NoModifier,to);
+        QCOMPARE(objects->object(first).value("x").toInt(),140);QCOMPARE(objects->object(second).value("x").toInt(),270);
+        QCOMPARE(mutations.count(),1);QCOMPARE(canvas->scene()->selectedItems().size(),2);
+        document->undo();QCOMPARE(objects->object(first).value("x").toInt(),100);QCOMPARE(objects->object(second).value("x").toInt(),230);
+        QVERIFY(selection.count()>0);QCOMPARE(canvas->scene()->selectedItems().size(),2);
+        // Undoing a deletion must notify ribbon listeners even though restoration itself is blocked.
+        objects->removeObject(first);selection.clear();document->undo();QVERIFY(selection.count()>0);QVERIFY(!objects->object(first).isEmpty());
+    }
+
+    void flowsheetContextMenusAndKeyboard()
+    {
+        QFile file(":/ui/aspen-plus.json");QVERIFY(file.open(QIODevice::ReadOnly));
+        UiShell shell(QJsonDocument::fromJson(file.readAll()).object());shell.show();
+        auto *objects=shell.findChild<ObjectWorkspace *>();auto *document=shell.findChild<ProjectDocument *>();
+        const auto first=objects->createObject("blocks","M1","Mixer");
+        const auto second=objects->createObject("blocks","M2","Mixer");
+        shell.dispatch("flowsheet");QTest::qWait(30);
+        auto *canvas=objects->findChild<QGraphicsView *>("FlowsheetCanvas");objects->setFlowsheetZoom(100);
+        const auto at=canvas->mapFromScene(QPointF(100,100));
+        auto context=[&](QPoint point) {
+            QContextMenuEvent event(QContextMenuEvent::Mouse,point,canvas->viewport()->mapToGlobal(point));
+            QCoreApplication::sendEvent(canvas->viewport(),&event);
+            return objects->findChild<QMenu *>("FlowsheetContextMenu");
+        };
+        auto dismiss=[](QMenu *menu){menu->close();QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);};
+        const auto before=document->state();QSignalSpy mutations(objects,&ObjectWorkspace::objectsChanged);
+        QTest::mouseClick(canvas->viewport(),Qt::LeftButton,Qt::NoModifier,at);
+        QCOMPARE(document->state(),before);QCOMPARE(mutations.count(),0);QCOMPARE(objects->selectedFlowsheetObject(),first);
+        auto *menu=context(at);QVERIFY(menu);QVERIFY(menu->isVisible());
+        const auto capture=qEnvironmentVariable("ASPEN_CAPTURE_DIR");if(!capture.isEmpty()){QDir().mkpath(capture);shell.grab().save(capture+"/flowsheet-device-selected.png");menu->grab().save(capture+"/flowsheet-device-menu.png");}
+        QCOMPARE(objects->selectedFlowsheetObject(),first);QVERIFY(menu->findChild<QAction *>("FlowInput")->isEnabled());
+        auto *rotate=menu->findChild<QAction *>("FlowTransform-rotate");QVERIFY(rotate);rotate->trigger();dismiss(menu);
+        QCOMPARE(objects->object(first).value("iconRotation").toInt(),90);QCOMPARE(objects->selectedFlowsheetObject(),first);
+        QTest::keySequence(canvas,QKeySequence::Undo);
+        QCOMPARE(objects->object(first).value("iconRotation").toInt(),0);QCOMPARE(objects->selectedFlowsheetObject(),first);
+        QTest::keyClick(canvas,Qt::Key_F2);
+        auto *rename=objects->findChild<QDialog *>("ObjectNameDialog");QVERIFY(rename);rename->findChild<QLineEdit *>("ObjectId")->setText("RENAMED");
+        rename->findChild<QDialogButtonBox *>()->button(QDialogButtonBox::Ok)->click();QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);
+        QCOMPARE(objects->object(first).value("name").toString(),QString("RENAMED"));
+        // The label must resolve to the same owner as its icon.
+        menu=context(canvas->mapFromScene(QPointF(100,139)));QVERIFY(menu);QCOMPARE(objects->selectedFlowsheetObject(),first);dismiss(menu);
+        canvas->setFocus();QTest::keyClick(canvas,Qt::Key_Menu);menu=objects->findChild<QMenu *>("FlowsheetContextMenu");QVERIFY(menu);dismiss(menu);
+        QTest::keySequence(canvas,QKeySequence::SelectAll);QCOMPARE(canvas->scene()->selectedItems().size(),2);
+        menu=context(at);QVERIFY(menu);QCOMPARE(canvas->scene()->selectedItems().size(),2);
+        QVERIFY(!menu->findChild<QAction *>("FlowCopy")->isEnabled());QVERIFY(!menu->findChild<QAction *>("FlowCut")->isEnabled());dismiss(menu);
+        QTest::keyClick(canvas,Qt::Key_Delete);auto *deletion=objects->findChild<QDialog *>("ObjectDeleteDialog");QVERIFY(deletion);
+        deletion->reject();QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);QCOMPARE(objects->objects().size(),2);
+        objects->setFlowsheetLocked(true);menu=context(canvas->mapFromScene(QPointF(230,100)));QVERIFY(menu);
+        QVERIFY(!menu->findChild<QAction *>("FlowDelete")->isEnabled());QVERIFY(!menu->findChild<QAction *>("FlowRename")->isEnabled());dismiss(menu);
+        QTest::keyClick(canvas,Qt::Key_Delete);QVERIFY(!objects->findChild<QDialog *>("ObjectDeleteDialog"));
+        QTest::keyClick(canvas,Qt::Key_Escape);QVERIFY(canvas->scene()->selectedItems().isEmpty());
+        QVERIFY(!objects->object(second).isEmpty());
+        QTemporaryDir temp;QString error;QVERIFY2(shell.saveProject(temp.filePath("menus.afmp"),&error),qPrintable(error));
+    }
+
+    void flowsheetStreamHitTargetsAndCancel()
+    {
+        QFile file(":/ui/aspen-plus.json");QVERIFY(file.open(QIODevice::ReadOnly));
+        UiShell shell(QJsonDocument::fromJson(file.readAll()).object());shell.show();shell.dispatch("flowsheet");QTest::qWait(30);
+        auto *objects=shell.findChild<ObjectWorkspace *>();auto *canvas=objects->findChild<QGraphicsView *>("FlowsheetCanvas");objects->setFlowsheetZoom(100);
+        objects->beginPlacement("streams","MATERIAL");objects->placeAt({200,200});
+        const auto blank=canvas->mapFromScene(QPointF(550,180));
+        QTest::mouseClick(canvas->viewport(),Qt::RightButton,Qt::NoModifier,blank);
+        QContextMenuEvent canceled(QContextMenuEvent::Mouse,blank,canvas->viewport()->mapToGlobal(blank));QCoreApplication::sendEvent(canvas->viewport(),&canceled);
+        QCOMPARE(objects->objects().size(),0);QVERIFY(!objects->findChild<QMenu *>("FlowsheetContextMenu"));
+        QVERIFY(objects->findChild<QPushButton *>("FlowSelect")->isChecked());QCOMPARE(canvas->cursor().shape(),Qt::ArrowCursor);
+        objects->beginPlacement("blocks","Mixer");QTest::keyClick(canvas,Qt::Key_Escape);QCOMPARE(canvas->cursor().shape(),Qt::ArrowCursor);
+        objects->beginPlacement("streams","MATERIAL");objects->placeAt({220,200});objects->placeAt({500,280});objects->beginPlacement({},{});
+        const auto stream=objects->objects().last().toObject().value("key").toString();
+        auto context=[&](QPoint point) {
+            QContextMenuEvent event(QContextMenuEvent::Mouse,point,canvas->viewport()->mapToGlobal(point));QCoreApplication::sendEvent(canvas->viewport(),&event);
+            return objects->findChild<QMenu *>("FlowsheetContextMenu");
+        };
+        auto dismiss=[](QMenu *menu){menu->close();QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);};
+        auto *menu=context(canvas->mapFromScene(QPointF(280,204)));QVERIFY(menu);QCOMPARE(objects->selectedFlowsheetObject(),stream);
+        const auto capture=qEnvironmentVariable("ASPEN_CAPTURE_DIR");if(!capture.isEmpty()){QDir().mkpath(capture);shell.grab().save(capture+"/flowsheet-stream-selected.png");menu->grab().save(capture+"/flowsheet-stream-menu.png");}
+        QCOMPARE(menu->findChild<QAction *>("FlowRename")->text(),QString::fromUtf8("重命名流股"));dismiss(menu);
+        QTest::keySequence(canvas,QKeySequence::Copy);menu=context(blank);QVERIFY(menu);
+        if(!capture.isEmpty())menu->grab().save(capture+"/flowsheet-background-menu.png");
+        auto *paste=menu->findChild<QAction *>("FlowPaste");QVERIFY(paste);QVERIFY(paste->isEnabled());paste->trigger();dismiss(menu);
+        auto *conflict=objects->findChild<QDialog *>("ObjectPasteDialog");QVERIFY(conflict);conflict->findChild<QPushButton *>("PasteEditId")->click();
+        auto *id=conflict->findChild<QDialog *>("PasteIdDialog");QVERIFY(id);id->findChild<QLineEdit *>("ObjectId")->setText("S_COPY");
+        id->findChild<QDialogButtonBox *>()->button(QDialogButtonBox::Ok)->click();conflict->findChild<QPushButton *>("PasteConfirm")->click();QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);
+        QCOMPARE(objects->objects().size(),2);QVERIFY(objects->currentObject().isEmpty());
+        const auto clone=objects->object(objects->selectedFlowsheetObject());QCOMPARE(clone.value("name").toString(),QString("S_COPY"));
+        QVERIFY(clone.value("from").toString().isEmpty());QCOMPARE(clone.value("startX").toInt(),250);
+        QTest::keyClick(canvas,Qt::Key_Return);QCOMPARE(objects->currentObject(),clone.value("key").toString());
+    }
+
+void shellNavigationAndCommandFeedback()
+{
+    QFile file(":/ui/aspen-plus.json");QVERIFY(file.open(QIODevice::ReadOnly));
+    UiShell shell(QJsonDocument::fromJson(file.readAll()).object());shell.show();QTest::qWait(30);
+    auto *objects=shell.findChild<ObjectWorkspace *>();
+    const auto key=objects->createObject("blocks","COL1","RadFrac");QVERIFY(!key.isEmpty());
+    shell.dispatch("flowsheet");
+    auto *tree=shell.findChild<QTreeWidget *>("SimulationNavigation");
+    auto findRoute=[tree](const QString &route) {for(QTreeWidgetItemIterator it(tree);*it;++it)if((*it)->data(0,Qt::UserRole+3).toString()==route)return *it;return static_cast<QTreeWidgetItem *>(nullptr);};
+    auto *object=findRoute("object:"+key);QVERIFY(object);QVERIFY(object->childCount()>1);
+    auto *children=findRoute("objects:pumparounds:"+key);QVERIFY(children);
+    const auto type=objects->definition("pumparounds").value("types").toArray().first().toObject().value("id").toString();
+    const auto child=objects->createObject("pumparounds","P1",type,key);QVERIFY(!child.isEmpty());
+    QVERIFY(findRoute("object:"+child));
+    shell.dispatch("object:"+child);QVERIFY(tree->currentItem()->data(0,Qt::UserRole+3).toString().startsWith("object:"+child));
+    auto *results=findRoute("catalog:Results");QVERIFY(results);
+    shell.dispatch(QString::fromUtf8("navigation-filter:仅输入"));QVERIFY(results->isHidden());
+    QVERIFY(!objects->createObject("blocks","M1","Mixer").isEmpty());QVERIFY(findRoute("catalog:Results")->isHidden());
+    shell.dispatch("catalog:Sensor");QCOMPARE(shell.findChild<QLabel *>("NavigationHeading")->text(),QString::fromUtf8("物性"));
+    shell.dispatch("flowsheet");QVERIFY(tree->isVisible());
+    auto *ribbon=shell.findChild<QTabWidget *>("Ribbon");QCOMPARE(ribbon->tabText(ribbon->currentIndex()),QString::fromUtf8("修改"));
+    shell.dispatch(QString::fromUtf8("navigation-filter:所有项"));QVERIFY(!findRoute("catalog:Results")->isHidden());
+    auto *streams=findRoute("objects:streams");QVERIFY(streams);tree->setCurrentItem(streams);tree->setFocus();
+    QTest::keyClick(tree,Qt::Key_Down);QCOMPARE(tree->currentItem()->data(0,Qt::UserRole+3).toString(),QString("objects:blocks"));
+    QCOMPARE(objects->findChild<QTableWidget *>("ObjectTable")->rowCount(),2);
+    auto *zoom=shell.findChild<QSlider *>("FlowsheetZoom");shell.dispatch("zoom-in");QCOMPARE(zoom->value(),110);
+    shell.dispatch("zoom-out");QCOMPARE(zoom->value(),100);objects->setFlowsheetZoom(130);QCOMPARE(zoom->value(),130);
+    auto *collapse=shell.findChild<QToolButton *>("CollapseNavigator");QVERIFY(collapse);collapse->click();QVERIFY(!tree->isVisible());collapse->click();QVERIFY(tree->isVisible());
+    // Entering the New panel must not reset a modified project or prompt to save it.
+    const auto before=shell.project()->state();shell.dispatch("backstage");
+    QToolButton *newPanel=nullptr;for(auto *button:shell.findChildren<QToolButton *>("FileEntry"))if(button->text()==QString::fromUtf8("新建"))newPanel=button;
+    QVERIFY(newPanel);newPanel->click();QCOMPARE(shell.project()->state(),before);QVERIFY(!shell.findChild<QMessageBox *>());
+}
+
+void shellKeepsNativeTextUndo()
+{
+    QFile file(":/ui/aspen-plus.json");QVERIFY(file.open(QIODevice::ReadOnly));UiShell shell(QJsonDocument::fromJson(file.readAll()).object());shell.show();
+    auto *objects=shell.findChild<ObjectWorkspace *>();const auto key=objects->createObject("blocks","M1","Mixer");QVERIFY(!key.isEmpty());
+    shell.dispatch("components");auto *components=shell.findChild<ComponentWorkspace *>();components->currentTabs()->setCurrentIndex(4);
+    auto *edit=components->findChild<QTextEdit *>("comments-editor");QVERIFY(edit);edit->setFocus();QTest::keyClicks(edit,"comment");
+    QVERIFY(!edit->toPlainText().isEmpty());QTest::keySequence(edit,QKeySequence::Undo);QVERIFY(edit->toPlainText().isEmpty());
+    QCOMPARE(objects->objects().size(),1);QTest::keySequence(edit,QKeySequence::Redo);QCOMPARE(edit->toPlainText(),QString("comment"));
+    QCOMPARE(objects->objects().size(),1);
+}
+
     void databaseReadOnlyAndProjectIntegration() {
         QTemporaryDir temp;const auto path=databaseFixture(temp.path());QVERIFY(!path.isEmpty());QString error;
         const auto before=QSqlDatabase::connectionNames();PropertyDatabase database;QVERIFY2(database.open(path,&error),qPrintable(error));
@@ -66,7 +260,10 @@ private slots:
         dialog->findChild<QPushButton *>("AddDatabaseComponent")->click();QCOMPARE(shell.project()->state().value("components").toArray().size(),1);
         dialog->findChild<QPushButton *>("AddDatabaseComponent")->click();QCOMPARE(shell.project()->state().value("components").toArray().size(),1);
         const QJsonValue component=shell.project()->state().value("components").toArray().at(0);QVERIFY(shell.saveProject(temp.filePath("test.afmp"),&error));
+        dialog->findChild<QPushButton *>("ManageDatabaseComponents")->click();
+        auto *selectionDialog=dialog->findChild<QDialog *>("DatabaseSelectionDialog");QVERIFY(selectionDialog && selectionDialog->isVisible());
         auto *selected=dialog->findChild<QListWidget *>("SelectedDatabaseComponents");selected->setCurrentRow(0);dialog->findChild<QPushButton *>("RemoveDatabaseComponent")->click();QCOMPARE(shell.project()->state().value("components").toArray().size(),0);
+        selectionDialog->reject();
         shell.project()->undo();QCOMPARE(shell.project()->state().value("components").toArray()[0],component);dialog->reject();
         UiShell other(spec);QVERIFY(other.loadProject(temp.filePath("test.afmp"),&error));QCOMPARE(other.project()->state().value("components").toArray()[0],component);
         QVERIFY(other.findChild<QLabel *>("DatabaseStatus")->text().contains(QString::fromUtf8("未连接")));
@@ -548,6 +745,9 @@ int main(int argc, char **argv)
     QApplication::setFont(QFont("Microsoft YaHei", 9));
 #endif
     applyLightTheme(app);
+    if(!qEnvironmentVariable("ASPEN_CAPTURE_DIR").isEmpty()) {
+        QFile styles(":/ui/shell.qss");if(styles.open(QIODevice::ReadOnly))app.setStyleSheet(QString::fromUtf8(styles.readAll()));
+    }
     UiSmokeTest tests;
     return QTest::qExec(&tests, argc, argv);
 }

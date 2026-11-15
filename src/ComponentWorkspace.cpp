@@ -184,9 +184,11 @@ void ComponentWorkspace::setUserComponents(const QJsonArray &objects)
     }
     for(const auto &value:databaseComponents_) {
         const auto c=value.toObject();const int r=qMax(0,table->rowCount()-1);table->insertRow(r);
-        const QStringList cells{c.value("database").toString()+":"+c.value("compoundId").toString(),QString::fromUtf8("数据库组分"),c.value("name").toString(),c.value("alias").toString(),c.value("cas").toString()};
+        const auto displayId=c.value("alias").toString().isEmpty()?c.value("name").toString():c.value("alias").toString();
+        const QStringList cells{displayId,QString(),c.value("name").toString(),c.value("alias").toString(),c.value("cas").toString()};
         for(int col=0;col<table->columnCount();++col) table->setItem(r,col,new QTableWidgetItem(cells.value(col)));
-        table->item(r,0)->setData(Qt::UserRole+5,true);table->item(r,0)->setToolTip(c.value("datasetId").toString());
+        table->item(r,0)->setData(Qt::UserRole+5,true);table->item(r,0)->setToolTip(c.value("database").toString()+":"+c.value("compoundId").toString()+"\n"+c.value("datasetId").toString());
+        if(table->columnCount()>1)table->item(r,1)->setToolTip(QString::fromUtf8("组分类别尚未接入。"));
     }
     table->setFixedHeight(qMin(240,32+24*table->rowCount()));
     table->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);

@@ -10,11 +10,13 @@
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QLabel>
+#include <QInputDialog>
 #include <QLineEdit>
 #include <QListWidget>
 #include <QMenu>
 #include <QPushButton>
 #include <QScrollArea>
+#include <QSlider>
 #include <QStackedWidget>
 #include <QStatusBar>
 #include <QTabWidget>
@@ -148,16 +150,18 @@ void UiShell::dispatch(const QString &requested)
     else if (action.startsWith("wizard:")) openWizard(action.mid(7));
     else if (action.startsWith("units:")) setUnits(action.mid(6));
     else if (action.startsWith("navigation-filter:")) {
-        const bool inputs=action.mid(18)==QString::fromUtf8("仅输入");
-        for (QTreeWidgetItemIterator it(navigation_);*it;++it) {
-            const auto label=(*it)->text(0);
-            (*it)->setHidden(inputs && (label==QString::fromUtf8("结果") || label==QString::fromUtf8("所选方法")));
+        inputsOnly_=action.mid(18)==QString::fromUtf8("仅输入");
+        applyNavigationFilter();
+    }
+    else if (action=="zoom-in" || action=="zoom-out" || action=="zoom") {
+        if(auto *slider=findChild<QSlider *>("FlowsheetZoom")) {
+            if(action=="zoom") {bool ok=false;const int value=QInputDialog::getInt(this,QString::fromUtf8("缩放"),QString::fromUtf8("缩放比例 (%)"),slider->value(),slider->minimum(),slider->maximum(),10,&ok);if(ok)slider->setValue(value);}
+            else slider->setValue(slider->value()+(action=="zoom-in"?10:-10));
         }
-        for (auto *button:findChildren<QToolButton *>())
-            if (button->menu() && (button->text()==QString::fromUtf8("所有项") || button->text()==QString::fromUtf8("仅输入"))) button->setText(action.mid(18));
     }
     else if (action=="model-palette") {objects_->setModelPaletteVisible(true);}
     else if (action.startsWith("catalog:")) {
+        setWorkspaceMode(false);
         pages_->setCurrentIndex(0);
         navigationPages_->setCurrentIndex(0);
         findChild<QTabWidget *>("NavigationTabs")->setCurrentIndex(1);

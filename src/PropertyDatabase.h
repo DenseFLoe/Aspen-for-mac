@@ -6,6 +6,12 @@
 
 class PropertyDatabase final : public QObject {
 public:
+    enum class MatchMode { Contains, StartsWith, Equals };
+    struct SearchOptions {
+        MatchMode mode=MatchMode::Contains;
+        QJsonArray databanks;
+        bool restrictDatabanks=false;
+    };
     explicit PropertyDatabase(QObject *parent=nullptr);
     ~PropertyDatabase();
     PropertyDatabase(const PropertyDatabase &)=delete;
@@ -15,6 +21,8 @@ public:
     QString datasetId() const { return datasetId_; }
     QString path() const { return connection_.databaseName(); }
     QJsonArray search(const QString &text,QString *error,int limit=101);
+    QJsonArray search(const QString &text,QString *error,const SearchOptions &options,int limit=101);
+    QJsonArray databanks(QString *error);
     QJsonArray parameters(const QString &database,const QString &compoundId,int offset,QString *error,int limit=201);
     QJsonObject provenance(const QString &database,int referenceId,QString *error);
 private:
