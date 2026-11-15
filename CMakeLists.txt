@@ -4,7 +4,17 @@ project(AspenPlusUIShell VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Qt6 6.5 REQUIRED COMPONENTS Widgets Sql)
+# QTBUG-149612: newer Cocoa plugins can delete parent table interfaces.
+# Keep the tested runtime fixed until an upstream-fixed release passes native QA.
+if(APPLE AND NOT Qt6_VERSION VERSION_EQUAL "6.8.3")
+    message(FATAL_ERROR "macOS currently requires Qt 6.8.3 (QTBUG-149612). See docs/macos-accessibility.md.")
+endif()
 qt_standard_project_setup()
+if(APPLE)
+    enable_language(OBJCXX)
+    set(CMAKE_OBJCXX_STANDARD 17)
+    set(CMAKE_OBJCXX_STANDARD_REQUIRED ON)
+endif()
 
 qt_add_executable(AspenPlusUIShell
     src/main.cpp
@@ -43,6 +53,11 @@ if(MSVC)
     target_compile_options(AspenPlusUIShell PRIVATE /utf-8)
 endif()
 
+if(APPLE)
+    target_sources(AspenPlusUIShell PRIVATE src/CocoaAccessibilityCheck.mm src/CocoaAccessibilityCheck.h)
+    target_link_libraries(AspenPlusUIShell PRIVATE "-framework AppKit")
+endif()
+
 include(CTest)
 if(BUILD_TESTING)
     find_package(Qt6 REQUIRED COMPONENTS Test)
@@ -66,6 +81,27 @@ if(BUILD_TESTING)
     )
     if(MSVC)
         target_compile_options(UiSmokeTest PRIVATE /utf-8)
+    endif()
+    qt_add_executable(DatabaseAccessibilityTest
+        tests/DatabaseAccessibilityTest.cpp
+        src/DatabaseDialog.cpp src/DatabaseDialog.h
+        src/PropertyDatabase.cpp src/PropertyDatabase.h
+        src/ProjectDocument.cpp src/ProjectDocument.h
+    )
+    set_target_properties(DatabaseAccessibilityTest PROPERTIES WIN32_EXECUTABLE FALSE)
+    target_include_directories(DatabaseAccessibilityTest PRIVATE src tests)
+    target_link_libraries(DatabaseAccessibilityTest PRIVATE Qt6::Widgets Qt6::Sql Qt6::Test Qt6::GuiPrivate)
+    if(MSVC)
+        target_compile_options(DatabaseAccessibilityTest PRIVATE /utf-8)
+    endif()
+    add_test(NAME database-accessibility COMMAND DatabaseAccessibilityTest)
+    set_tests_properties(database-accessibility PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen" TIMEOUT 120)
+    if(APPLE)
+        target_sources(DatabaseAccessibilityTest PRIVATE src/CocoaAccessibilityCheck.mm)
+        target_link_libraries(DatabaseAccessibilityTest PRIVATE "-framework AppKit")
+        add_test(NAME database-accessibility-cocoa COMMAND DatabaseAccessibilityTest)
+        set_tests_properties(database-accessibility-cocoa PROPERTIES
+            ENVIRONMENT "QT_QPA_PLATFORM=cocoa" TIMEOUT 120)
     endif()
     add_test(NAME ui-smoke COMMAND UiSmokeTest)
     set_tests_properties(ui-smoke PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen" TIMEOUT 300)

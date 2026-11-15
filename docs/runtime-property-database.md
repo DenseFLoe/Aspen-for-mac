@@ -1,5 +1,7 @@
 # 只读物性数据库接入
 
+Mac 验收新增阻塞：`25e90c3` 打包复制版的数据库窗口在外部可访问性扫描时两次崩溃；真实运行库尚未提供。独立修复分支 `codex/mac-accessibility-fix` 固定 Qt 6.8.3 并补充 Cocoa 原生及包内回归，证据、检查结果和复验步骤见 [Mac 可访问性修复](macos-accessibility.md)。实机外部扫描和真实组分查询仍待验收。
+
 2026-11-15（北京时间），分支 `codex/project-database`。本轮实现阶段 2 的真实组分检索、来源查看和项目集成；不是物性公式或流程计算引擎。
 
 ## 本地运行数据
@@ -52,7 +54,7 @@ python3 tools/build_runtime_database.py /data/plaintext-export /data/runtime-v15
 依赖 Qt Widgets、Test、Sql（包含 SQLite 插件）。按 README 构建后运行：
 
 ```sh
-sh tools/package_macos.sh build "$(brew --prefix qt)"
+sh tools/package_macos.sh build "$QT_ROOT_DIR"
 ```
 
 脚本在 `build/macos-package.XXXXXX/` 新目录复制应用，部署 Qt 依赖，检查 SQLite 插件，并运行 `--self-check` 验证打包后插件加载和项目往返保存，再生成本地 ZIP。不会清理旧目录，不自动上传构建产物或数据库。GitHub Actions 执行同一依赖检查；该检查不替代 Mac 实机验收。正式签名、公证及安装体验仍在后续分发阶段。

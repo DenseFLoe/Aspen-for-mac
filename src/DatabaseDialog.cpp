@@ -45,7 +45,7 @@ DatabaseDialog::DatabaseDialog(PropertyDatabase *database,ProjectDocument *proje
     parameters_=table("DatabaseParameters",{QString::fromUtf8("物性"),"cp_id",QString::fromUtf8("元素索引"),QString::fromUtf8("原始十进制值"),QString::fromUtf8("单位元数据"),QString::fromUtf8("子库"),"dbc_id"},this);
     parameters_->setColumnWidth(3,240);parameters_->setColumnWidth(4,170);
     results_->setColumnWidth(0,220);results_->setColumnWidth(2,120);layout->addWidget(parameters_,2);
-    auto *paging=new QHBoxLayout;previous_=new QPushButton(QString::fromUtf8("上一页参数"),this);next_=new QPushButton(QString::fromUtf8("下一页参数"),this);paging->addWidget(previous_);paging->addWidget(next_);paging->addStretch();layout->addLayout(paging);
+    auto *paging=new QHBoxLayout;previous_=new QPushButton(QString::fromUtf8("上一页参数"),this);next_=new QPushButton(QString::fromUtf8("下一页参数"),this);previous_->setObjectName("PreviousDatabaseParameters");next_->setObjectName("NextDatabaseParameters");paging->addWidget(previous_);paging->addWidget(next_);paging->addStretch();layout->addLayout(paging);
     source_=new QTextEdit(this);source_->setObjectName("ParameterProvenance");source_->setReadOnly(true);source_->setMaximumHeight(150);source_->setPlaceholderText(QString::fromUtf8("选中参数查看文献、注释、单位和原始文件哈希。"));layout->addWidget(source_,1);
     auto *buttons=new QDialogButtonBox(QDialogButtonBox::Close,this);layout->addWidget(buttons);connect(buttons,&QDialogButtonBox::rejected,this,&QDialog::reject);
     connect(choose,&QPushButton::clicked,this,[this] {

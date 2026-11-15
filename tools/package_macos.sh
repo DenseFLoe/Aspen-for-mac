@@ -2,7 +2,12 @@
 # Package only into a newly reserved build directory. Never cleans local assets.
 set -eu
 build_dir=${1:-build}
-qt_prefix=${2:-$(brew --prefix qt)}
+qt_prefix=${2:-${QT_ROOT_DIR:?Pass the Qt 6.8.3 prefix as argument 2 or set QT_ROOT_DIR}}
+qt_version=$("$qt_prefix/bin/qmake" -query QT_VERSION)
+if test "$qt_version" != "6.8.3"; then
+    printf 'macOS packaging requires Qt 6.8.3 (QTBUG-149612); got %s\n' "$qt_version" >&2
+    exit 1
+fi
 test -d "$build_dir/AspenPlusUIShell.app"
 package_dir=$(mktemp -d "$build_dir/macos-package.XXXXXX")
 bundle="$package_dir/AspenPlusUIShell.app"
@@ -39,5 +44,8 @@ if grep -q '^ERROR:' "$package_dir/deployment.log"; then
 fi
 test -f "$bundle/Contents/PlugIns/sqldrivers/libqsqlite.dylib"
 QT_PLUGIN_PATH= QT_QPA_PLATFORM_PLUGIN_PATH= QT_QPA_PLATFORM=offscreen "$bundle/Contents/MacOS/AspenPlusUIShell" --self-check
+# Exercise the actual deployed Cocoa plugin, with its own autorelease pools.
+QT_PLUGIN_PATH= QT_QPA_PLATFORM_PLUGIN_PATH= QT_QPA_PLATFORM=cocoa "$bundle/Contents/MacOS/AspenPlusUIShell" --accessibility-self-check
+
 ditto -c -k --sequesterRsrc --keepParent "$bundle" "$package_dir/AspenPlusUIShell-macOS.zip"
 printf 'Local macOS package: %s\n' "$package_dir/AspenPlusUIShell-macOS.zip"

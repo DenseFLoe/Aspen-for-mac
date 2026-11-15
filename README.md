@@ -29,19 +29,19 @@
 
 ## Mac 构建与测试
 
-依赖：CMake 3.21+、Qt 6.5+ Widgets / Test / Sql、C++17 编译器。用户已确认上一版在 Mac 编译；本轮代码在 Windows Qt 6.8.3 / MinGW 13.1 编译及 CTest 通过。新增 macOS GitHub Actions 配置，运行结果以 Actions 为准。
+依赖：CMake 3.21+、Qt Widgets / Test / Sql、C++17 编译器。macOS 固定 Qt 6.8.3，以隔离 Cocoa 可访问性所有权回归；安装、原生检查和复验见 [Mac 崩溃修复记录](docs/macos-accessibility.md)。其他平台仍支持 Qt 6.5+。用户已确认上一版在 Mac 编译；本轮代码在 Windows Qt 6.8.3 / MinGW 13.1 编译及 CTest 通过。新增 macOS GitHub Actions 配置，运行结果以 Actions 为准。
 
 ```sh
-brew install qt cmake ninja
+brew install cmake ninja
 cmake -S . -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=Debug \
-  -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
+  -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR"
 cmake --build build
 ctest --test-dir build --output-on-failure
 open build/AspenPlusUIShell.app
 ```
 
-只构建程序时可加 `-DBUILD_TESTING=OFF`。Qt 官方安装器用户将 `CMAKE_PREFIX_PATH` 改为对应 `macos` 目录。测试默认使用 offscreen 平台，覆盖全部恢复布局/对话框/菜单的创建、59 个模块导航、资源搜索、功能区入口，以及原有图标、17 页导航、标签、注释状态、弹窗关闭和最小窗口。设置 `ASPEN_CAPTURE_DIR` 可保存代表页面渲染图到本机目录。可运行 `sh tools/package_macos.sh build` 在新目录生成含 Qt / SQLite 依赖的本地 Mac 应用包；正式签名、公证仍未配置。
+只构建程序时可加 `-DBUILD_TESTING=OFF`。先按修复记录安装 Qt 6.8.3，并将 `QT_ROOT_DIR` 设为其 `macos` 目录。常规测试使用 offscreen 平台；macOS 另强制运行 Cocoa 数据库可访问性回归。常规测试覆盖全部恢复布局/对话框/菜单的创建、59 个模块导航、资源搜索、功能区入口，以及原有图标、17 页导航、标签、注释状态、弹窗关闭和最小窗口。设置 `ASPEN_CAPTURE_DIR` 可保存代表页面渲染图到本机目录。可运行 `sh tools/package_macos.sh build "$QT_ROOT_DIR"` 在新目录生成含 Qt / SQLite 依赖的本地 Mac 应用包；正式签名、公证仍未配置。
 
 ## 结构
 

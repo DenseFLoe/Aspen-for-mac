@@ -1,4 +1,7 @@
 #include "UiShell.h"
+#ifdef Q_OS_MACOS
+#include "CocoaAccessibilityCheck.h"
+#endif
 #include "LightTheme.h"
 #include <QApplication>
 #include <QFile>
@@ -16,6 +19,21 @@ int main(int argc, char *argv[])
     QApplication::setApplicationName("Aspen Plus UI Shell");
     QApplication::setApplicationVersion("0.1.0");
     applyLightTheme(app);
+#ifdef Q_OS_MACOS
+    if (QString::fromLatin1(qVersion()) != QString::fromLatin1(QT_VERSION_STR)) {
+        qCritical() << "Qt build/runtime mismatch:" << QT_VERSION_STR << qVersion();
+        return 4;
+    }
+    if (app.arguments().contains("--accessibility-self-check")) {
+        QString problem;
+        if (!checkCocoaTableLifecycle(&problem)) {
+            qCritical().noquote() << problem;
+            return 5;
+        }
+        qInfo() << "Cocoa accessibility lifecycle passed; Qt" << qVersion();
+        return 0;
+    }
+#endif
 
     QFile catalogFile(":/ui/aspen-plus.json");
     if (!catalogFile.open(QIODevice::ReadOnly)) {
