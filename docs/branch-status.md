@@ -2,7 +2,7 @@
 
 核对日期：2026-11-15（北京时间）。仓库：`DenseFLoe/Aspen-for-mac`，云端默认分支为 `main`。**最新界面交互、明文数据库工具、永久保留规则和本次分支标注已整合到 main，本地与云端 main 同步。后续应用开发基于 main。**
 
-首次调查时，云端有 6 条分支、本地有 9 条，最新综合基线为 `codex/preserve-database-archive`（`3add176`），原云端 main 为 `1fe0e13`，原本地 main 为 `37ecc9c`。加入标注分支并同步清理后，现有 **7 条云端分支、8 条本地分支**；本地多出的 `codex/local-ui-interactions` 是从未上传的等内容副本，不是云端删除的分支。
+按用户要求，完成合并后的分支清理，**本地和云端均只保留 `main` 与 `codex/plaintext-database-export` 两条分支**。已合并的功能分支、标注分支、重复本地副本及相应远端引用均已删除；原功能提交继续保留在 main 历史中。
 
 ## 标注标准
 
@@ -10,29 +10,29 @@
 
 ## 分支清单
 
-“本地”指 `refs/heads/*`；“云端”指 GitHub 实时返回的分支，不把本机 `origin/*` 缓存当作真实云端分支。以下标注为本轮整合后的状态；除仅本地副本外，同名本地与云端分支提交一致。“本报告提交”指包含本次同步标注的 Git 提交，避免在文件中循环引用自身 SHA。
+“本地”指 `refs/heads/*`；“云端”指 GitHub 实时返回的分支，不把本机 `origin/*` 缓存当作真实云端分支。同名本地与云端分支提交一致。“本报告提交”指包含本次清理标注的 Git 提交，避免在文件中循环引用自身 SHA。
 
 | 功能标注 | 分支 | 本地提交 | 云端提交 | 功能与同步状态 |
 | --- | --- | --- | --- | --- |
 | **U4 / D2 / P1 综合最新** | `main` | 本报告提交 | 本报告提交 | 已整合原 main、最新交互、数据库工具、永久保留规则及分支标注；推荐应用开发基线 |
-| **U4 / D2 / P1 标注工作分支** | `codex/branch-function-audit` | 本报告提交 | 本报告提交 | 本次标注和同步说明的工作分支，已整合到 main |
-| **U4 / D2 / P1 已整合的功能基线** | `codex/preserve-database-archive` | `3add176` | `3add176` | 界面交互、数据库工具及永久保留规则已全部进入 main；保留原里程碑 |
-| **U4 / D2 已整合的交互版本** | `codex/ui-interactions` | `db4bf0b` | `db4bf0b` | 页面历史、菜单路由、会话内输入状态、单位联动、列表排序、向导导航及 173 份补充图像已进入 main |
-| **U4 / D2 等内容本地副本** | `codex/local-ui-interactions` | `df59d89` | 不存在 | 与 db4bf0b 的整个 Git 文件树相同，提交身份不同；没有额外未上传功能，本轮保留此从未上传的本地副本 |
-| **U3 / D2 上一界面阶段** | `codex/ui-resource-recovery` | `5ef0861` | `5ef0861` | 47 模块、2,947 份静态布局、289 个传统对话框、106 份菜单树的搜索及 Qt 预览；已整合到 main |
 | **U2 / D2 独立保留的提取工具基线** | `codex/plaintext-database-export` | `a9ed53c` | `a9ed53c` | 完整明文导出、覆盖核验、附属数据及便携恢复工具；工具已进入 main，本分支独立保留用于维护和复用，界面仍为早期 17 页/39 标签 |
-| **U2 / D1 数据调查历史** | `codex/property-database-investigation` | `45be18a` | `45be18a` | 数据库结构调查、API 可读性验证和样本提取；已整合到 main，保留调查里程碑 |
 
 ## 本轮分支清理
 
-按用户要求，同步删除云端已经不存在的两条本地分支及其旧 `origin/*` 引用：
+以下记录只用于追溯，不表示分支仍存在。删除前核对全部云端功能分支的提交已合入 main；本地重复副本以完整文件树比较确认没有额外功能。
 
-| 分支 | 删除前提交 | 整合后的状态 |
+| 分支 | 已核对的功能提交 | 清理结果 |
 | --- | --- | --- |
-| `codex/aspen-plus-icons-components` | `5bec246` | 本地分支、分支描述及旧远端引用已删除；提交仍完整保留在 main 历史中 |
-| `codex/aspen-plus-ui-menus` | `71b7215` | 本地分支、分支描述、失效 upstream 及旧远端引用已删除；提交仍完整保留在 main 历史中 |
+| `codex/branch-function-audit` | `f22531e` | 标注及本次清理说明进入 main，云端和本地分支及远端引用已删除；临时清理 workflow 不合入 main |
+| `codex/preserve-database-archive` | `3add176` | 云端和本地分支及远端引用已删除；功能和永久保留规则仍在 main |
+| `codex/property-database-investigation` | `45be18a` | 云端和本地分支及远端引用已删除；调查记录仍在 main |
+| `codex/ui-interactions` | `db4bf0b` | 云端和本地分支及远端引用已删除；最新交互功能仍在 main |
+| `codex/ui-resource-recovery` | `5ef0861` | 云端和本地分支及远端引用已删除；资源恢复功能仍在 main |
+| `codex/local-ui-interactions` | `df59d89` | 仅本地的重复副本已删除；其文件树与已合入的 db4bf0b 完全相同 |
+| `codex/aspen-plus-icons-components` | `5bec246` | 上一轮已删除本地分支、分支描述及旧远端引用；提交仍在 main 历史中 |
+| `codex/aspen-plus-ui-menus` | `71b7215` | 上一轮已删除本地分支、分支描述、失效 upstream 及旧远端引用；提交仍在 main 历史中 |
 
-其余真实云端分支保留。本次没有把从未上传的本地副本误判为云端删除记录。
+本次只删除分支引用及其配置，不清理 Git 对象，不运行 `git clean`，不删除任何数据库资产。数据库资产与分支生命周期独立。
 
 ## 提取工具分支的维护方式
 
@@ -61,7 +61,8 @@
                                         └─10d7a1c 永久保留规则
                                             └─3add176 文档编码修正
                                                 └─756b3ff 首次分支标注
-                                                    └─本报告提交 main 与标注分支同步
+                                                    └─f22531e main 整合及工具分支保留说明
+                                                        └─本报告提交 main 与提取工具分支保留
 ```
 
 `df59d89` 和 `db4bf0b` 的文件树均为 `d23f7428b9aafe020c1115aebe14c0a8bcde0e1f`。`db4bf0b..3add176` 只修改 `AGENTS.md`、`README.md`、`docs/plaintext-database-export.md` 并新增 `docs/database-preservation.md`；`src/`、`ui/`、`tests/`、`tools/` 和 `CMakeLists.txt` 无差异。
@@ -74,9 +75,9 @@ U4 仍是 Qt 界面外壳：未接入 Aspen 计算引擎、物性数据库检索
 
 ## 复核方式
 
-云端清单来自已认证 GitHub 连接器的完整分支查询及分支头提交读取。原云端 main 为本次整合分支的祖先；上传工作分支后，使用预期旧 SHA 约束 main 的快进更新，随后回读云端 SHA 并同步本地 main。全程不强推、不重写远端历史。
+云端清单来自已认证 GitHub 连接器的完整分支查询及分支头提交读取。连接器未提供分支删除接口，云端删除由临时工作分支上的一次性 GitHub Actions 任务执行：先核对保留分支和全部待删分支的提交，再使用原子推送及逐分支预期 SHA 删除指定引用；临时 workflow 不进入 main。删除后回读完整云端清单，并核对本地分支集合及同名提交一致。main 的文档更新采用快进，保留原有历史。
 
-本地通过 `for-each-ref`、`merge-base --is-ancestor`、`rev-parse <ref>^{tree}` 和指定目录的 `git diff` 核对提交关系、文件树等价性与保留范围；检查文档链接及暂存差异。整合的应用代码运行 9 项 Python 测试、资源目录核验、Windows Qt 构建与 CTest 界面测试；提取工具测试使用临时样例，不操作永久数据库资产。
+本地通过 `for-each-ref`、`merge-base --is-ancestor`、`rev-parse <ref>^{tree}` 和指定目录的 `git diff` 核对提交关系、文件树等价性与保留范围；检查文档链接及暂存差异。本次没有修改应用及提取工具代码，沿用上一轮通过的 9 项 Python 测试、资源目录核验、Windows Qt 构建与 CTest 界面测试；本轮验证分支清理流程、文档及数据库资产前后状态。
 
 本地分支的标注同时保存在 `.git/config` 的 `branch.<分支名>.description` 中，可用下列命令查看；GitHub 分支不支持同步这种描述，因此云端以本清单为准。后续分支变化后应重新核对，不能将本快照当作实时状态。
 
