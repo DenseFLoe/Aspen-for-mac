@@ -7,6 +7,7 @@
 #include <QFrame>
 #include <QGridLayout>
 #include <QLabel>
+#include <QMenu>
 #include <QScrollArea>
 #include <QSignalBlocker>
 #include <QStyle>
@@ -36,7 +37,10 @@ QWidget *UiShell::makeSimulationRibbon()
     connect(rotate,&QToolButton::clicked,this,[this]{objects_->transformSelectedBlock("rotate");});
     connect(flipHorizontal,&QToolButton::clicked,this,[this]{objects_->transformSelectedBlock("flip-horizontal");});
     connect(flipVertical,&QToolButton::clicked,this,[this]{objects_->transformSelectedBlock("flip-vertical");});
-    tool(flow,0,1,QString::fromUtf8("重新连接"));tool(flow,1,1,QString::fromUtf8("打断流股"));tool(flow,2,1,QString::fromUtf8("插入"));
+    auto *reconnect=tool(flow,0,1,QString::fromUtf8("重新连接"));reconnect->setObjectName("ReconnectFlowsheetStream");
+    auto *reconnectMenu=new QMenu(reconnect);reconnect->setMenu(reconnectMenu);reconnect->setPopupMode(QToolButton::InstantPopup);
+    for(const auto &end:QStringList{"from","to"}){auto *action=reconnectMenu->addAction(end=="from"?QString::fromUtf8("重新连接源"):QString::fromUtf8("重新连接目标"));connect(action,&QAction::triggered,this,[this,end]{objects_->beginReconnection(objects_->selectedFlowsheetObject(),end);});}
+    tool(flow,1,1,QString::fromUtf8("打断流股"));tool(flow,2,1,QString::fromUtf8("插入"));
     tool(flow,0,2,QString::fromUtf8("连接流股"));tool(flow,1,2,QString::fromUtf8("重排流股"));tool(flow,2,2,QString::fromUtf8("对齐"));
     auto *unit=group(QString::fromUtf8("单元操作"));auto *threeD=new QCheckBox(QString::fromUtf8("3D 图标"),content);threeD->setChecked(true);unit->addWidget(threeD,0,0);
     connect(threeD,&QCheckBox::toggled,this,[this](bool checked){objects_->setThreeDimensionalIcons(checked);});
@@ -48,9 +52,10 @@ QWidget *UiShell::makeSimulationRibbon()
     auto *all=new QCheckBox(QString::fromUtf8("全部显示"),content);all->setChecked(true);all->setEnabled(false);section->addWidget(all,1,0);
     auto *lock=new QToolButton(content);lock->setText(QString::fromUtf8("锁定工艺流程"));lock->setObjectName("LockFlowsheet");lock->setCheckable(true);section->addWidget(lock,2,0);
     connect(lock,&QToolButton::toggled,this,[this](bool locked){objects_->setFlowsheetLocked(locked);});
-    const auto updateTransforms=[this,rotate,flipHorizontal,flipVertical,lock] {
+    const auto updateTransforms=[this,rotate,flipHorizontal,flipVertical,lock,reconnect] {
         const bool enabled=!objects_->flowsheetLocked() && objects_->object(objects_->selectedFlowsheetObject()).value("kind").toString()=="blocks";
         for(auto *button:{rotate,flipHorizontal,flipVertical}) button->setEnabled(enabled);
+        reconnect->setEnabled(!objects_->flowsheetLocked() && objects_->object(objects_->selectedFlowsheetObject()).value("kind")=="streams");
     };
     connect(objects_,&ObjectWorkspace::flowsheetSelectionChanged,content,updateTransforms);
     connect(lock,&QToolButton::toggled,content,updateTransforms);

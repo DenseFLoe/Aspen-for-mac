@@ -49,7 +49,9 @@ void UiShell::captureProject() {
     QJsonObject recovered;
     const auto values=recovered_->sessionState();
     for(auto it=values.cbegin();it!=values.cend();++it) recovered[it.key()]=QJsonObject::fromVariantMap(it.value());
-    state["unverifiedInputs"]=QJsonObject{{"recovered",recovered},{"components",components_->sessionState()}};
+    auto inputs=state.value("unverifiedInputs").toObject();
+    inputs["recovered"]=recovered;inputs["components"]=components_->sessionState();
+    state["unverifiedInputs"]=inputs;
     project_->edit(state);
 }
 void UiShell::restoreProject() {

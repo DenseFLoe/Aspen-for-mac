@@ -33,6 +33,7 @@ qt_add_executable(AspenPlusUIShell
     src/PropertyDatabase.cpp src/PropertyDatabase.h src/DatabaseDialog.cpp src/DatabaseDialog.h
     src/UiShellProject.cpp src/ProjectDocument.cpp src/ProjectDocument.h src/WidgetState.cpp src/WidgetState.h
     src/UiShellActions.cpp
+    src/UiShellAssistants.cpp
     src/UiShellObjects.cpp
     src/UiShellSimulation.cpp
     src/ModelPalette.cpp
@@ -79,6 +80,7 @@ if(BUILD_TESTING)
         src/PropertyDatabase.cpp src/PropertyDatabase.h src/DatabaseDialog.cpp src/DatabaseDialog.h
         src/UiShellProject.cpp src/ProjectDocument.cpp src/ProjectDocument.h src/WidgetState.cpp src/WidgetState.h
         src/UiShellActions.cpp
+        src/UiShellAssistants.cpp
         src/UiShellObjects.cpp src/ObjectWorkspace.cpp src/ObjectWorkspace.h
         src/UiShellSimulation.cpp src/ModelPalette.cpp
         src/IconCatalog.cpp src/IconCatalog.h

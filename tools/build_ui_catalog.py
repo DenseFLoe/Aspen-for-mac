@@ -49,6 +49,30 @@ def select_layouts(layouts):
     return selected
 
 
+def menu_items(nodes, parent):
+    """Keep icon-only commands distinct from separators, at every depth."""
+    result=[]
+    for i,n in enumerate(nodes):
+        if n['parent']!=parent: continue
+        if n['type'] in ('MenuItem','ToolMenuItem','MenuTool','ButtonTool','Separator'):
+            p=n['p']; text=p.get('Header',p.get('Caption',p.get('Content','')))
+            command=p.get('Command',{})
+            item={'id':i,'text':text if isinstance(text,str) else '',
+                  'state':3 if str(p.get('IsEnabled',True)).lower()=='false' else 0,
+                  'type':0,'flags':0,'separator':n['type']=='Separator',
+                  'name':p.get('Name',''),'nodeType':n['type']}
+            if isinstance(command,dict) and command.get('member'): item['command']=command['member']
+            if isinstance(p.get('CommandParameter'),(str,int,float,bool)): item['parameter']=p['CommandParameter']
+            if isinstance(p.get('ToolTip'),str): item['tooltip']=p['ToolTip']
+            if 'IsChecked' in p: item['checked']=str(p['IsChecked']).lower()=='true'
+            children=menu_items(nodes,i)
+            if children: item['items']=children
+            result.append(item)
+        elif n['slot'] not in ('Resources','Style','Template'):
+            result.extend(menu_items(nodes,i))
+    return result
+
+
 def build(source, target):
     files = {x['path']:x for x in load(source,'files')}
     translations, priorities = {}, {}
@@ -92,23 +116,9 @@ def build(source, target):
                 buttons.append({'page':page_id, 'node':number, 'type':simple['type'],
                                 'name':props.get('Name',''), 'label':props.get('Content',props.get('Header',props.get('Caption',''))),
                                 'runtimeBinding':props.get('VariablePath','')})
-        def menu_items(parent):
-            result=[]
-            for i,n in enumerate(nodes):
-                if n['parent']!=parent: continue
-                if n['type'] in ('MenuItem','ToolMenuItem','MenuTool','ButtonTool','Separator'):
-                    p=n['p']; text=p.get('Header',p.get('Caption',p.get('Content','')))
-                    item={'id':i,'text':text if isinstance(text,str) else '',
-                          'state':3 if p.get('IsEnabled') is False else 0,'type':0,'flags':0}
-                    children=menu_items(i)
-                    if children: item['items']=children
-                    result.append(item)
-                elif n['slot'] not in ('Resources','Style','Template'):
-                    result.extend(menu_items(i))
-            return result
         for i,n in enumerate(nodes):
             if n['type'] not in ('ContextMenu','MenuTool','Menu'): continue
-            items=menu_items(i)
+            items=menu_items(nodes,i)
             if items:
                 wpf_menus.append({'file':layout['file'],'resource':layout['resource']+'#'+str(i),
                                   'title':n['p'].get('Caption',n['p'].get('Name','')),'language':0,

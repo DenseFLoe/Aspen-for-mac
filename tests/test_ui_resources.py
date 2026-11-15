@@ -7,7 +7,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
 from scan_aspen_ui import parse_baml, parse_dialog, parse_menu, managed_entries
-from build_ui_catalog import select_layouts
+from build_ui_catalog import select_layouts, menu_items
 
 
 def w(text):
@@ -26,6 +26,19 @@ def variable(kind, payload):
 
 
 class ResourceTests(unittest.TestCase):
+    def test_icon_only_nested_commands_are_not_separators(self):
+        nodes=[{'type':'Menu','parent':-1,'slot':'','p':{}},
+               {'type':'MenuItem','parent':0,'slot':'Items','p':{'Header':'Line'}},
+               {'type':'MenuItem','parent':1,'slot':'Items','p':{'Name':'width2','Command':{'member':'Commands.Width'},'CommandParameter':'2','IsEnabled':'False','IsChecked':'True'}},
+               {'type':'Separator','parent':1,'slot':'Items','p':{}}]
+        items=menu_items(nodes,0)[0]['items']
+        self.assertFalse(items[0]['separator'])
+        self.assertEqual(items[0]['command'],'Commands.Width')
+        self.assertEqual(items[0]['parameter'],'2')
+        self.assertEqual(items[0]['state'],3)
+        self.assertTrue(items[0]['checked'])
+        self.assertTrue(items[1]['separator'])
+
     def test_product_dialogs_outside_wpfforms_and_language_priority(self):
         def layout(file, cls):
             return {'file':file, 'nodes':[{'type':cls}]}

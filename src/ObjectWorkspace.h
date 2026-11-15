@@ -54,6 +54,9 @@ public:
     void setThreeDimensionalIcons(bool enabled);
     QString selectedFlowsheetObject() const;
     void transformSelectedBlock(const QString &operation);
+    void beginReconnection(const QString &key,const QString &end);
+    void setStreamAppearance(const QString &key,const QString &property,const QJsonValue &value);
+    void showStreamAppearance(const QString &key);
 signals:
     void objectsChanged();
     void inputsChanged();
@@ -86,6 +89,7 @@ private:
     QJsonArray clipboardChildren_;
     QMap<QString,QMap<QString,QVariantMap>> clipboardChildValues_;
     QString placementKind_, placementType_, streamStartKey_;
+    QString reconnectKey_,reconnectEnd_;
     QPointF streamStart_;
     bool streamPending_=false;
     bool flowsheetLocked_=false, threeDimensionalIcons_=true;

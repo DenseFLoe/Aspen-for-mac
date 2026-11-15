@@ -52,6 +52,96 @@ class UiSmokeTest : public QObject
     Q_OBJECT
 
 private slots:
+    void reconnectAndStreamAppearanceAreUndoable() {
+        QFile file(":/ui/aspen-plus.json");QVERIFY(file.open(QIODevice::ReadOnly));UiShell shell(QJsonDocument::fromJson(file.readAll()).object());shell.show();shell.dispatch("flowsheet");
+        auto *objects=shell.findChild<ObjectWorkspace *>();const auto a=objects->createObject("blocks","A","Mixer"),b=objects->createObject("blocks","B","Mixer");QVERIFY(!a.isEmpty() && !b.isEmpty());
+        objects->beginPlacement("streams","MATERIAL");objects->placeAt({140,100},a);objects->placeAt({300,200},{});objects->beginPlacement({},{});
+        QString stream;for(const auto &v:objects->objects())if(v.toObject().value("kind")=="streams")stream=v.toObject().value("key").toString();QVERIFY(!stream.isEmpty());
+        objects->beginReconnection(stream,"to");objects->placeAt({300,200},b);QCOMPARE(objects->object(stream).value("to").toString(),b);
+        shell.project()->undo();QVERIFY(objects->object(stream).value("to").toString().isEmpty());shell.project()->redo();QCOMPARE(objects->object(stream).value("to").toString(),b);
+        objects->beginReconnection(stream,"from");objects->beginPlacement({},{});QCOMPARE(objects->object(stream).value("from").toString(),a);
+        const auto beforeStyle=objects->object(stream);
+        objects->showStreamAppearance(stream);auto *style=objects->findChild<QDialog *>("StreamAppearanceDialog");QVERIFY(style);
+        style->findChild<QToolButton *>("StreamColor-2")->click();style->reject();QCOMPARE(objects->object(stream),beforeStyle);
+        QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);
+        objects->showStreamAppearance(stream);style=objects->findChild<QDialog *>("StreamAppearanceDialog");
+        style->findChild<QToolButton *>("StreamColor-2")->click();style->findChild<QToolButton *>("StreamWidth-4")->click();style->findChild<QToolButton *>("StreamStyle-3")->click();
+        const auto capture=qEnvironmentVariable("ASPEN_CAPTURE_DIR");if(!capture.isEmpty()){QDir().mkpath(capture);QVERIFY(style->grab().save(capture+"/stream-appearance.png"));}
+        style->findChild<QDialogButtonBox *>()->button(QDialogButtonBox::Ok)->click();QCOMPARE(objects->object(stream).value("lineColor").toString(),QString("#ff0000"));
+        shell.project()->undo();QCOMPARE(objects->object(stream),beforeStyle);
+        objects->setStreamAppearance(stream,"lineWidth",4);objects->setStreamAppearance(stream,"lineStyle",3);objects->setStreamAppearance(stream,"lineColor","#ff0000");
+        QCOMPARE(objects->object(stream).value("lineWidth").toInt(),4);shell.project()->undo();QVERIFY(!objects->object(stream).contains("lineColor"));shell.project()->redo();
+        objects->setFlowsheetLocked(true);objects->beginReconnection(stream,"to");objects->placeAt({400,100},a);objects->setStreamAppearance(stream,"lineWidth",5);QCOMPARE(objects->object(stream).value("to").toString(),b);QCOMPARE(objects->object(stream).value("lineWidth").toInt(),4);
+        QTemporaryDir temp;QString error;QVERIFY2(shell.saveProject(temp.filePath("flow.afmp"),&error),qPrintable(error));
+        QVERIFY2(shell.loadProject(temp.filePath("flow.afmp"),&error),qPrintable(error));QCOMPARE(objects->object(stream).value("lineColor").toString(),QString("#ff0000"));QCOMPARE(objects->object(stream).value("lineStyle").toInt(),3);
+    }
+
+    void assistantsAndComponentOrderPersist() {
+        QTemporaryDir temp;const auto db=databaseFixture(temp.path());QString error;
+        QFile file(":/ui/aspen-plus.json");QVERIFY(file.open(QIODevice::ReadOnly));const auto catalog=QJsonDocument::fromJson(file.readAll()).object();
+        UiShell shell(catalog);shell.show();QVERIFY(shell.openPropertyDatabase(db,&error));shell.dispatch("database-search");
+        auto *search=shell.findChild<QDialog *>("FindCompoundDialog");search->findChild<QLineEdit *>("compound-query")->setText("WATER");search->findChild<QPushButton *>("SearchDatabase")->click();
+        auto *results=search->findChild<QTableWidget *>("DatabaseResults");QTest::qWait(30);results->clearSelection();
+        QTest::mouseDClick(results->viewport(),Qt::LeftButton,Qt::NoModifier,results->visualItemRect(results->item(0,3)).center());
+        QCOMPARE(shell.project()->state().value("components").toArray().size(),1);
+        search->reject();QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);
+        shell.dispatch("component:specifications");
+        auto *componentPage=shell.findChild<ComponentWorkspace *>();
+        for(const char *id:{"electrolyte-wizard","sfe-assistant","user-components","reorder"}) {
+            auto *button=componentPage->findChild<QPushButton *>(id);QVERIFY(button);QVERIFY(button->isEnabled());
+        }
+        const auto original=shell.project()->state();
+        componentPage->findChild<QPushButton *>("electrolyte-wizard")->click();QTest::qWait(20);
+        auto *wizard=shell.findChild<QDialog *>("wizard-electrolyte");QVERIFY(wizard);
+        const auto capture=qEnvironmentVariable("ASPEN_CAPTURE_DIR");
+        if(!capture.isEmpty()){QDir().mkpath(capture);QVERIFY(wizard->grab().save(capture+"/electrolyte-welcome.png"));}
+        auto *steps=wizard->findChild<QStackedWidget *>("WizardSteps");QCOMPARE(steps->count(),5);
+        wizard->findChild<QComboBox *>("cboRefStateSelect")->setCurrentIndex(1);
+        wizard->findChild<QPushButton *>("WizardNext")->click();QCOMPARE(steps->currentIndex(),1);
+        auto *selected=steps->widget(1)->findChild<QListWidget *>("lstSelectedComp");QCOMPARE(selected->count(),1);
+        if(!capture.isEmpty())QVERIFY(wizard->grab().save(capture+"/electrolyte-selection.png"));
+        steps->widget(1)->findChild<QPushButton *>("btnClearAll")->click();QVERIFY(!wizard->findChild<QPushButton *>("WizardNext")->isEnabled());
+        steps->widget(1)->findChild<QPushButton *>("btnMoveAll")->click();QVERIFY(wizard->findChild<QPushButton *>("WizardNext")->isEnabled());
+        wizard->findChild<QPushButton *>("WizardCancel")->click();QCOMPARE(shell.project()->state(),original);QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);
+        shell.dispatch("electrolyte-wizard");wizard=shell.findChild<QDialog *>("wizard-electrolyte");steps=wizard->findChild<QStackedWidget *>("WizardSteps");
+        wizard->findChild<QComboBox *>("cboRefStateSelect")->setCurrentIndex(1);
+        for(int i=0;i<4;++i){QVERIFY(wizard->findChild<QPushButton *>("WizardNext")->isEnabled());wizard->findChild<QPushButton *>("WizardNext")->click();}
+        QCOMPARE(steps->currentIndex(),4);QVERIFY(wizard->findChild<QPushButton *>("WizardFinish")->isEnabled());
+        if(!capture.isEmpty())QVERIFY(wizard->grab().save(capture+"/electrolyte-summary.png"));
+        wizard->findChild<QPushButton *>("WizardFinish")->click();QVERIFY(shell.project()->state()!=original);
+        QCOMPARE(shell.project()->state().value("components"),original.value("components"));
+        shell.project()->undo();QCOMPARE(shell.project()->state(),original);shell.project()->redo();
+        shell.dispatch("units:SI");const auto path=temp.filePath("assistants.afmp");QVERIFY2(shell.saveProject(path,&error),qPrintable(error));
+        UiShell reopened(catalog);QVERIFY2(reopened.loadProject(path,&error),qPrintable(error));reopened.dispatch("electrolyte-wizard");
+        auto *restored=reopened.findChild<QDialog *>("wizard-electrolyte");QCOMPARE(restored->findChild<QComboBox *>("cboRefStateSelect")->currentIndex(),1);restored->reject();
+        componentPage->findChild<QPushButton *>("sfe-assistant")->click();QTest::qWait(20);
+        wizard=shell.findChild<QDialog *>("wizard-sfe");QVERIFY(wizard);steps=wizard->findChild<QStackedWidget *>("WizardSteps");
+        QVERIFY(!wizard->findChild<QPushButton *>("WizardNext")->isEnabled());steps->widget(0)->findChild<QPushButton *>("btnMoveAll")->click();
+        wizard->findChild<QPushButton *>("WizardNext")->click();QCOMPARE(steps->currentIndex(),1);
+        auto *solids=steps->widget(1)->findChild<QTableWidget *>("grdSolidComponent");QVERIFY(solids);QCOMPARE(solids->rowCount(),1);QCOMPARE(solids->columnCount(),2);
+        if(!capture.isEmpty())QVERIFY(wizard->grab().save(capture+"/sfe-solid-selection.png"));
+        solids->item(0,1)->setText("ICE");wizard->findChild<QPushButton *>("WizardBack")->click();wizard->findChild<QPushButton *>("WizardNext")->click();QCOMPARE(solids->item(0,1)->text(),QString("ICE"));
+        wizard->findChild<QPushButton *>("WizardFinish")->click();
+        // Ordering is transactional and stores identities, including equal aliases.
+        auto state=shell.project()->state();auto components=state.value("components").toArray();auto other=components[0].toObject();other["compoundId"]="second";components.append(other);state["components"]=components;shell.project()->edit(state);
+        componentPage->findChild<QPushButton *>("reorder")->click();QTest::qWait(20);
+        auto *order=shell.findChild<QDialog *>("dialog-ReorderComp");QVERIFY(order);auto *list=order->findChild<QListWidget *>("lvSelectedComps");list->setCurrentRow(1);order->findChild<QPushButton *>("btnUp")->click();
+        order->findChild<QDialogButtonBox *>()->button(QDialogButtonBox::Ok)->click();QCOMPARE(shell.project()->state().value("components").toArray()[0].toObject().value("compoundId").toString(),QString("second"));
+        shell.project()->undo();QCOMPARE(shell.project()->state().value("components"),state.value("components"));
+    }
+
+    void recoveredMenusKeepEveryLevel() {
+        RecoveredWorkspace workspace;const auto menus=workspace.menuCatalog();
+        for(int i=0;i<menus.size();++i) {
+            QVERIFY(workspace.showPage("menu:"+QString::number(i)));
+            std::function<void(const QJsonArray &)> check=[&](const QJsonArray &items){for(const auto &v:items){const auto e=v.toObject();const bool separator=e.contains("separator")?e.value("separator").toBool():e.value("text").toString().isEmpty() && !e.contains("items");
+                if(!separator){auto *action=workspace.findChild<QAction *>("RecoveredMenuItem-"+QString::number(e.value("id").toInt()));
+                    // Top-level submenus are represented by their toolbar button.
+                    if(!e.contains("items")){QVERIFY(action);QVERIFY(!action->isSeparator());}}
+                check(e.value("items").toArray());}};check(menus[i].toObject().value("items").toArray());
+        }
+    }
+
     void databaseInteractionParity() {
         QTemporaryDir temp;const auto path=databaseFixture(temp.path());QVERIFY(!path.isEmpty());
         {

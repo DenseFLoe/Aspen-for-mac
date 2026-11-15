@@ -53,6 +53,7 @@ void UiShell::notifyUnavailable(const QString &label)
 
 void UiShell::openDialog(const QString &name)
 {
+    if(name=="ReorderComp") {reorderComponents();return;}
     const auto id=recovered_->idForName(name);
     if (id.isEmpty()) { notifyUnavailable(name); return; }
     auto *dialog=new QDialog(this);
@@ -73,6 +74,7 @@ void UiShell::openDialog(const QString &name)
 
 void UiShell::openWizard(const QString &name)
 {
+    if(name=="electrolyte" || name=="sfe") {openPropertyAssistant(name);return;}
     const auto spec=interactions_.value("wizards").toObject().value(name).toObject();
     if (spec.isEmpty()) return;
     auto *dialog=new QDialog(this); dialog->setAttribute(Qt::WA_DeleteOnClose);

@@ -51,6 +51,8 @@ private:
     void remember(const QString &location);
     void openDialog(const QString &name);
     void openWizard(const QString &name);
+    void openPropertyAssistant(const QString &name);
+    void reorderComponents();
     void setUnits(const QString &units);
     void notifyUnavailable(const QString &label);
     QStackedWidget *pages_ = nullptr;

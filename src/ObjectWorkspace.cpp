@@ -4,6 +4,9 @@
 #include <QAction>
 #include <QBoxLayout>
 #include <QComboBox>
+#include <QCheckBox>
+#include <QButtonGroup>
+#include <QGridLayout>
 #include <QContextMenuEvent>
 #include <QDialog>
 #include <QDialogButtonBox>
@@ -622,9 +625,14 @@ void ObjectWorkspace::showFlowsheetMenu(const QPoint &position) {
             const QList<QPair<QString,QString>> transforms{{"rotate",QString::fromUtf8("旋转 90°")},{"flip-horizontal",QString::fromUtf8("水平翻转")},{"flip-vertical",QString::fromUtf8("垂直翻转")}};
             for(const auto &t:transforms){auto *a=rotate->addAction(t.second);a->setObjectName("FlowTransform-"+t.first);connect(a,&QAction::triggered,this,[this,t]{transformSelectedBlock(t.first);});}
             unavailable(QString::fromUtf8("交换图标"));
-        } else {disabledSubmenu(QString::fromUtf8("重新连接"));unavailable(QString::fromUtf8("对齐模块"));unavailable(QString::fromUtf8("重排流股"));}
+        } else {
+            auto *reconnect=menu->addMenu(QString::fromUtf8("重新连接"));reconnect->setEnabled(editable && single);
+            for(const auto &end:QStringList{"from","to"}){auto *a=reconnect->addAction(end=="from"?QString::fromUtf8("重新连接源"):QString::fromUtf8("重新连接目标"));a->setObjectName("FlowReconnect-"+end);connect(a,&QAction::triggered,this,[=]{beginReconnection(key,end);});}
+            unavailable(QString::fromUtf8("对齐模块"));
+            unavailable(QString::fromUtf8("重排流股"));
+        }
         disabledSubmenu(QString::fromUtf8("隐藏"));
-        if(!block)unavailable(QString::fromUtf8("流股颜色和样式"));
+        if(!block)add("FlowStreamAppearance",QString::fromUtf8("流股颜色和样式"),editable && single,[this,key]{showStreamAppearance(key);});
         // Delete is also available from the keyboard and keeps the existing confirmation/undo path.
         menu->addSeparator();add("FlowDelete",QString::fromUtf8("删除"),editable,[this,keys]{if(!flowsheetLocked_)requestDeleteObjects(keys);})->setShortcut(QKeySequence::Delete);
     }
@@ -634,7 +642,7 @@ void ObjectWorkspace::showFlowsheetMenu(const QPoint &position) {
 void ObjectWorkspace::beginPlacement(const QString &kind,const QString &type) {
     if(flowsheetLocked_ && !kind.isEmpty()) return;
     for(auto *button:findChildren<QToolButton *>()) if(button->property("modelTile").toBool()) button->setChecked(kind=="blocks" && button->property("paletteType").toString()==type);
-    placementKind_=kind;placementType_=type;streamPending_=false;canvas_->placing=!kind.isEmpty();
+    reconnectKey_.clear();reconnectEnd_.clear();placementKind_=kind;placementType_=type;streamPending_=false;canvas_->placing=!kind.isEmpty();
     if(auto *select=findChild<QPushButton *>("FlowSelect")){select->setCheckable(true);select->setChecked(kind.isEmpty());}
     if(auto *stream=findChild<QToolButton *>("StreamPaletteButton")){stream->setCheckable(true);stream->setChecked(kind=="streams");}
     if(documents_->currentWidget()==flowsheet_)canvas_->setFocus(Qt::OtherFocusReason);
@@ -645,6 +653,16 @@ void ObjectWorkspace::beginPlacement(const QString &kind,const QString &type) {
         kind=="blocks"?QString::fromUtf8("单击画布放置 %1；Esc 退出放置。").arg(type):QString::fromUtf8("拖动模块调整位置；双击对象编辑输入。"));
 }
 void ObjectWorkspace::placeAt(const QPointF &point,const QString &attachment) {
+    if(!reconnectKey_.isEmpty() && !flowsheetLocked_) {
+        const auto key=reconnectKey_,end=reconnectEnd_;
+        if(!entries_.contains(key)){beginPlacement({},{});return;}
+        // Reconnection targets a block or a free endpoint; clicking another
+        // stream must not silently disconnect the current one.
+        if(!attachment.isEmpty() && object(attachment).value("kind")!="blocks")return;
+        auto &data=entries_[key].data;data[end]=attachment;
+        data[end=="from"?"startX":"endX"]=qMax(40.0,point.x());data[end=="from"?"startY":"endY"]=qMax(30.0,point.y());
+        beginPlacement({},{});refreshCanvas();emit objectsChanged();return;
+    }
     if(flowsheetLocked_ || placementKind_.isEmpty()) return;
     const QPointF position(qMax(40.0,point.x()),qMax(30.0,point.y()));
     if(placementKind_=="streams" && !streamPending_) {
@@ -661,6 +679,39 @@ void ObjectWorkspace::placeAt(const QPointF &point,const QString &attachment) {
         placementNotice_->setText(QString::fromUtf8("依次单击起点和终点；单击模块可连接，Esc 取消。"));
     }
     refreshCanvas();transaction.unblock();emit objectsChanged();
+}
+void ObjectWorkspace::beginReconnection(const QString &key,const QString &end) {
+    if(flowsheetLocked_ || object(key).value("kind")!="streams" || !QStringList{"from","to"}.contains(end))return;
+    beginPlacement({},{});reconnectKey_=key;reconnectEnd_=end;canvas_->placing=true;canvas_->setCursor(Qt::CrossCursor);
+    placementNotice_->setText(end=="from"?QString::fromUtf8("单击新的源模块或空白位置；Esc 取消。"):QString::fromUtf8("单击新的目标模块或空白位置；Esc 取消。"));placementNotice_->show();canvas_->setFocus();
+}
+void ObjectWorkspace::setStreamAppearance(const QString &key,const QString &property,const QJsonValue &value) {
+    if(flowsheetLocked_ || object(key).value("kind")!="streams")return;
+    if(property=="lineColor"){if(!QColor(value.toString()).isValid())return;}
+    else if(property=="lineWidth" || property=="lineStyle"){if(value.toInt()<1 || value.toInt()>5)return;}
+    else return;
+    entries_[key].data[property]=value;refreshCanvas();emit objectsChanged();
+}
+void ObjectWorkspace::showStreamAppearance(const QString &key) {
+    if(flowsheetLocked_ || object(key).value("kind")!="streams")return;
+    const auto initial=object(key);
+    auto *dialog=new QDialog(this);dialog->setAttribute(Qt::WA_DeleteOnClose);dialog->setObjectName("StreamAppearanceDialog");dialog->setWindowTitle(QString::fromUtf8("颜色和样式"));
+    auto *column=new QVBoxLayout(dialog);column->addWidget(new QLabel(QString::fromUtf8("轮廓颜色"),dialog));
+    auto *colors=new QGridLayout;column->addLayout(colors);
+    const QStringList palette{"#000000","#808080","#ff0000","#808000","#008000","#008080","#000080","#800080","#e0e0e0","#c0c0c0","#800000","#ffff00","#00ff00","#00ffff","#0080ff","#ff00ff"};
+    auto *colorGroup=new QButtonGroup(dialog);auto *widthGroup=new QButtonGroup(dialog);auto *styleGroup=new QButtonGroup(dialog);
+    dialog->setProperty("lineColor",initial.value("lineColor").toString("#32618a"));
+    for(int i=0;i<palette.size();++i){auto *b=new QToolButton(dialog);b->setObjectName("StreamColor-"+QString::number(i));b->setCheckable(true);b->setFixedSize(22,22);b->setStyleSheet("background:"+palette[i]+"; border:1px solid #888;");b->setAccessibleName(palette[i]);colorGroup->addButton(b,i);colors->addWidget(b,i/8,i%8);if(palette[i]==dialog->property("lineColor").toString())b->setChecked(true);}
+    auto *samples=new QGridLayout;column->addLayout(samples);samples->addWidget(new QLabel(QString::fromUtf8("线宽")),0,0);samples->addWidget(new QLabel(QString::fromUtf8("样式")),0,1);
+    for(int i=1;i<=5;++i)for(int c=0;c<2;++c){QPixmap pix(90,18);pix.fill(Qt::white);QPainter painter(&pix);painter.setPen(QPen(Qt::black,c?2:i,c?Qt::PenStyle(i):Qt::SolidLine));painter.drawLine(4,9,86,9);painter.end();auto *b=new QToolButton(dialog);b->setIcon(QIcon(pix));b->setIconSize(pix.size());b->setCheckable(true);b->setObjectName((c?"StreamStyle-":"StreamWidth-")+QString::number(i));b->setAccessibleName((c?QString::fromUtf8("样式 "):QString::fromUtf8("线宽 "))+QString::number(i));(c?styleGroup:widthGroup)->addButton(b,i);b->setChecked(initial.value(c?"lineStyle":"lineWidth").toInt(c?1:2)==i);samples->addWidget(b,i,c);}
+    column->addWidget(new QLabel(QString::fromUtf8("预览")));auto *preview=new QLabel(dialog);preview->setObjectName("StreamAppearancePreview");column->addWidget(preview);
+    auto *defaults=new QCheckBox(QString::fromUtf8("使用默认颜色和样式"),dialog);defaults->setObjectName("UseDefaultCheckBox");defaults->setChecked(!initial.contains("lineColor") && !initial.contains("lineWidth") && !initial.contains("lineStyle"));column->addWidget(defaults);
+    const auto update=[=]{QPixmap pix(220,32);pix.fill(Qt::white);QPainter painter(&pix);painter.setPen(QPen(QColor(defaults->isChecked()?"#32618a":dialog->property("lineColor").toString()),defaults->isChecked()?2:widthGroup->checkedId(),defaults->isChecked()?Qt::SolidLine:Qt::PenStyle(styleGroup->checkedId())));painter.drawLine(5,16,215,16);painter.end();preview->setPixmap(pix);};
+    connect(colorGroup,&QButtonGroup::idClicked,dialog,[=](int id){dialog->setProperty("lineColor",palette[id]);defaults->setChecked(false);update();});
+    for(auto *group:{widthGroup,styleGroup})connect(group,&QButtonGroup::idClicked,dialog,[=]{defaults->setChecked(false);update();});
+    connect(defaults,&QCheckBox::toggled,dialog,update);update();
+    auto *buttons=new QDialogButtonBox(QDialogButtonBox::Ok|QDialogButtonBox::Cancel,dialog);column->addWidget(buttons);connect(buttons,&QDialogButtonBox::rejected,dialog,&QDialog::reject);
+    connect(buttons,&QDialogButtonBox::accepted,dialog,[=]{if(flowsheetLocked_ || !entries_.contains(key)){dialog->reject();return;}auto &data=entries_[key].data;if(defaults->isChecked()){data.remove("lineColor");data.remove("lineWidth");data.remove("lineStyle");}else{data["lineColor"]=dialog->property("lineColor").toString();data["lineWidth"]=widthGroup->checkedId();data["lineStyle"]=styleGroup->checkedId();}refreshCanvas();emit objectsChanged();dialog->accept();});dialog->open();
 }
 void ObjectWorkspace::moveBlock(const QString &key,const QPointF &position) {
     moveBlocks({{key,position}});
@@ -700,11 +751,12 @@ void ObjectWorkspace::refreshCanvas() {
             if(!start.isEmpty()) from={start.value("x").toDouble()+40,start.value("y").toDouble()};
             if(!end.isEmpty()) to={end.value("x").toDouble()-40,end.value("y").toDouble()};
             QPainterPath path(from);const qreal middle=(from.x()+to.x())/2;path.lineTo(middle,from.y());path.lineTo(middle,to.y());path.lineTo(to);
-            auto *line=new StreamGraphicsItem(path);canvas_->scene()->addItem(line);line->setPen(QPen(QColor("#32618a"),2));line->setData(0,key);line->setFlag(QGraphicsItem::ItemIsSelectable);line->setZValue(-1);
+            const QPen pen(QColor(d.value("lineColor").toString("#32618a")),qBound(1,d.value("lineWidth").toInt(2),5),Qt::PenStyle(qBound(1,d.value("lineStyle").toInt(1),5)));
+            auto *line=new StreamGraphicsItem(path);canvas_->scene()->addItem(line);line->setPen(pen);line->setData(0,key);line->setFlag(QGraphicsItem::ItemIsSelectable);line->setZValue(-1);
             auto *label=new QGraphicsSimpleTextItem(d.value("name").toString(),line);label->setPos(middle+3,(from.y()+to.y())/2-18);label->setAcceptedMouseButtons(Qt::NoButton);label->setVisible(!labelsHidden_);
             const qreal direction=to.x()>=middle?1:-1;
             QPainterPath arrow;arrow.moveTo(to+QPointF(-7*direction,-4));arrow.lineTo(to);arrow.lineTo(to+QPointF(-7*direction,4));
-            auto *head=new QGraphicsPathItem(arrow,line);head->setPen(QPen(QColor("#32618a"),2));
+            auto *head=new QGraphicsPathItem(arrow,line);head->setPen(QPen(pen.color(),pen.widthF()));
             head->setAcceptedMouseButtons(Qt::NoButton);line->setSelected(selection.contains(key));line->setToolTip(d.value("name").toString()+" ("+d.value("type").toString()+")");
         }
     }

@@ -1,4 +1,5 @@
 #include "DatabaseDialog.h"
+#include <QMouseEvent>
 #include "PropertyDatabase.h"
 #include "ProjectDocument.h"
 #include <QBoxLayout>
@@ -77,7 +78,7 @@ DatabaseDialog::DatabaseDialog(PropertyDatabase *database,ProjectDocument *proje
     auto *help=button(QString::fromUtf8("帮助"),"DatabaseSearchHelp",compounds);commands->addWidget(help);commands->addStretch();top->addLayout(commands);top->addStretch();
     auto *found=new QGroupBox(QString::fromUtf8("找到与指定条件匹配的化合物"),compounds);auto *foundLayout=new QVBoxLayout(found);foundLayout->setContentsMargins(8,12,8,8);
     results_=table("DatabaseResults",{QString::fromUtf8("化合物名称"),QString::fromUtf8("别名"),QString::fromUtf8("数据库"),QString::fromUtf8("替换名称"),"MW","BP <C>",QString::fromUtf8("CAS 编号"),QString::fromUtf8("化合物类")},found);
-    results_->setSelectionMode(QAbstractItemView::ExtendedSelection);results_->installEventFilter(this);
+    results_->setSelectionMode(QAbstractItemView::ExtendedSelection);results_->installEventFilter(this);results_->viewport()->installEventFilter(this);
     const QList<int> widths{125,80,78,85,44,58,90,82};for(int i=0;i<widths.size();++i)results_->setColumnWidth(i,widths[i]);
     foundLayout->addWidget(results_,1);auto *resultActions=new QHBoxLayout;
     add_=button(QString::fromUtf8("添加所选化合物"),"AddDatabaseComponent",found);resultActions->addWidget(add_);resultActions->addStretch();
@@ -185,6 +186,9 @@ void DatabaseDialog::updateActions() {
     detailsButton_->setEnabled(database_->isOpen() && results_->currentRow()>=0 && results_->currentRow()<matches_.size());remove_->setEnabled(selected_->currentRow()>=0);
 }
 void DatabaseDialog::addSelection() {
+    // Validate against the document, not a possibly stale button state during
+    // native double-click delivery (notably the Cocoa item-view path).
+    updateActions();
     if(!add_->isEnabled())return;auto state=project_->state();auto components=state.value("components").toArray();int added=0;
     auto indexes=results_->selectionModel()->selectedRows();std::sort(indexes.begin(),indexes.end(),[](const auto &a,const auto &b){return a.row()<b.row();});
     for(const auto &index:indexes){if(index.row()<0 || index.row()>=matches_.size())continue;const auto c=matches_[index.row()].toObject();bool exists=false;for(const auto &v:components)if(sameCompound(c,v.toObject())){exists=true;break;}if(!exists){components.append(c);++added;}}
@@ -206,6 +210,13 @@ void DatabaseDialog::showSource() {
     const int r=parameters_->currentRow();if(r<0 || r>=parameterRows_.size()){source_->clear();return;}const auto parameter=parameterRows_[r].toObject();QString error;auto provenance=database_->provenance(detailCompound_.value("database").toString(),parameter.value("referenceId").toInt(-1),&error);provenance["parameter"]=parameter;provenance["compound"]=detailCompound_;source_->setPlainText(error.isEmpty()?QString::fromUtf8(QJsonDocument(provenance).toJson()):error);
 }
 bool DatabaseDialog::eventFilter(QObject *watched,QEvent *event) {
+    if(watched==results_->viewport() && event->type()==QEvent::MouseButtonDblClick) {
+        auto *mouse=static_cast<QMouseEvent *>(event);
+        if(mouse->button()==Qt::LeftButton) {
+            const auto index=results_->indexAt(mouse->position().toPoint());
+            if(index.isValid()) {results_->selectRow(index.row());addSelection();return true;}
+        }
+    }
     if(watched==selected_ && event->type()==QEvent::KeyPress && static_cast<QKeyEvent *>(event)->key()==Qt::Key_Delete){remove_->click();return true;}
     if(watched==results_ && event->type()==QEvent::KeyPress){auto *key=static_cast<QKeyEvent *>(event);if(key->key()==Qt::Key_Return || key->key()==Qt::Key_Enter){addSelection();return true;}}
     return QDialog::eventFilter(watched,event);

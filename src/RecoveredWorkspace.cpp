@@ -64,6 +64,13 @@ bool isData(const QString &t)
 {
     return (t.contains("Grid") && t != "Grid") || t.contains("Plot") || t.contains("Chart");
 }
+bool flag(const QJsonObject &p,const QString &key,bool fallback=false)
+{
+    const auto value=p.value(key);
+    if(value.isBool())return value.toBool();
+    if(value.isString())return value.toString().compare("true",Qt::CaseInsensitive)==0;
+    return fallback;
+}
 
 // WPF MMTabPage children are usually positioned using Margin/Alignment. Keep
 // those coordinates in a scrollable canvas, without compressing to window size.
@@ -129,6 +136,7 @@ RecoveredWorkspace::RecoveredWorkspace(QWidget *parent) : QWidget(parent)
     title_->setTextInteractionFlags(Qt::TextSelectableByMouse);
     layout->addWidget(title_);
     notice_ = new QLabel(QString::fromUtf8("输入可随项目保存 · 字段语义尚未全部验证；未连接计算引擎"),this);
+    notice_->setObjectName("RecoveredNotice");
     notice_->setWordWrap(true); layout->addWidget(notice_);
     scroll_ = new QScrollArea(this); scroll_->setWidgetResizable(true);
     scroll_->setObjectName("RecoveredScroll"); layout->addWidget(scroll_,1);
@@ -183,6 +191,8 @@ void RecoveredWorkspace::saveState()
                 rows << QVariant(cells);
             }
             values[key] = rows;
+        } else if (auto *list=qobject_cast<QListWidget *>(w)) {
+            QStringList items;for(int i=0;i<list->count();++i)items<<list->item(i)->text();values[key]=items;
         }
     }
     state_[current_] = values;
@@ -212,6 +222,8 @@ void RecoveredWorkspace::restoreState(QWidget *view)
                 const auto cells=rows[r].toStringList();
                 for(int c=0;c<t->columnCount();++c) t->setItem(r,c,new QTableWidgetItem(cells.value(c)));
             }
+        } else if(auto *list=qobject_cast<QListWidget *>(w)) {
+            const QSignalBlocker blocker(list);list->clear();list->addItems(value.toStringList());
         }
     }
 }
@@ -351,7 +363,7 @@ QWidget *RecoveredWorkspace::renderNodes(const QJsonArray &nodes, int index, int
             else body = renderNodes(nodes,child,depth+1,pageDepth);
             auto *scroller = new QScrollArea; scroller->setWidgetResizable(true); scroller->setWidget(body);
             const auto tabIndex = tabs->addTab(scroller,caption(props).isEmpty()?QString::fromUtf8("未命名页签"):caption(props));
-            tabs->setTabEnabled(tabIndex, props.value("IsEnabled").toBool(true));
+            tabs->setTabEnabled(tabIndex, flag(props,"IsEnabled",true));
         }
         widget = tabs;
     } else if (type.contains("ListPicker")) {
@@ -366,9 +378,11 @@ QWidget *RecoveredWorkspace::renderNodes(const QJsonArray &nodes, int index, int
             }
         }
     } else if (type.contains("RadioButton") || type=="MMOptionButton") {
-        auto *radio = new QRadioButton(caption(p)); radio->setChecked(p.value("IsChecked").toBool()); radio->setProperty("radioGroup",p.value("GroupName").toString()); widget = radio;
+        auto *radio = new QRadioButton(caption(p)); radio->setChecked(flag(p,"IsChecked")); radio->setProperty("radioGroup",p.value("GroupName").toString()); widget = radio;
     } else if (type.contains("CheckBox") && !type.contains("GroupBox") && (index>0 || children.isEmpty())) {
-        auto *check = new QCheckBox(caption(p)); check->setChecked(p.value("IsChecked").toBool()); widget = check;
+        auto *check = new QCheckBox(caption(p)); check->setChecked(flag(p,"IsChecked"));
+        if(check->text().isEmpty())for(int child:children)if(!caption(nodes[child].toObject().value("p").toObject()).isEmpty())check->setText(caption(nodes[child].toObject().value("p").toObject()));
+        widget = check;
     } else if (type.contains("Button")) {
         auto *button = new QPushButton(caption(p)); button->setAutoDefault(false); widget=button;
         for (const auto &property:{"SmallImage","LargeImage","ImageSource","Source"}) {
@@ -462,10 +476,21 @@ QWidget *RecoveredWorkspace::renderNodes(const QJsonArray &nodes, int index, int
             });
         }
         widget=table;
+    } else if (type=="DataGrid") {
+        QStringList headers;
+        for(int i=index+1;i<nodes.size();++i) {
+            const auto child=nodes[i].toObject();int parent=child.value("parent").toInt(-1);
+            while(parent>index)parent=nodes[parent].toObject().value("parent").toInt(-1);
+            if(parent==index && child.value("type").toString().endsWith("Column"))headers<<caption(child.value("p").toObject());
+        }
+        auto *table=new QTableWidget(0,headers.size());table->setHorizontalHeaderLabels(headers);
+        table->horizontalHeader()->setStretchLastSection(true);table->setMinimumSize(120,100);
+        table->setEditTriggers(sessionEditable_?QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed:QAbstractItemView::NoEditTriggers);widget=table;
     } else if (isData(type) && children.isEmpty()) {
         auto *table=new QTableWidget(0,0); table->setMinimumSize(120,60); table->setEnabled(false); widget=table;
     } else if (type.contains("ListBox")) {
-        widget=new QListWidget; widget->setEnabled(false);
+        auto *list=new QListWidget;list->setSelectionMode(p.value("SelectionMode").toString()=="Extended"?QAbstractItemView::ExtendedSelection:QAbstractItemView::SingleSelection);
+        list->setEnabled(sessionEditable_);widget=list;
     } else if (type.contains("GroupBox")) {
         auto *group=new QGroupBox(caption(p)); auto *layout=new QVBoxLayout(group);
         auto *canvas=new ResourceCanvas;
@@ -559,7 +584,7 @@ QWidget *RecoveredWorkspace::renderNodes(const QJsonArray &nodes, int index, int
     }
     widget->setObjectName(p.value("Name").toString());
     widget->setProperty("stateKey",renderScope_+":"+QString::number(index));
-    if (p.contains("IsEnabled")) widget->setEnabled(p.value("IsEnabled").toBool());
+    if (p.contains("IsEnabled")) widget->setEnabled(flag(p,"IsEnabled"));
     widget->setProperty("resourceType",type);
     widget->setProperty("sourceNode",index);
     if (widget->toolTip().isEmpty()) widget->setToolTip(type+(p.contains("VariablePath")?"\n"+p.value("VariablePath").toString():QString()));
@@ -607,8 +632,12 @@ QWidget *RecoveredWorkspace::renderMenu(const QJsonObject &spec)
     std::function<void(QMenu *,const QJsonArray &)> add;
     add=[this,&add](QMenu *menu,const QJsonArray &items) {
         for (const auto &v:items) {
-            const auto e=v.toObject(); const auto label=e.value("text").toString();
-            if (label.isEmpty()) { menu->addSeparator(); continue; }
+            const auto e=v.toObject(); auto label=e.value("text").toString();
+            const bool separator=e.contains("separator")?e.value("separator").toBool():label.isEmpty() && !e.contains("items");
+            if (separator) { menu->addSeparator(); continue; }
+            if(label.isEmpty())label=e.value("tooltip").toString(e.value("parameter").toVariant().toString());
+            if(label.isEmpty())label=e.value("name").toString();
+            if(label.isEmpty())label=QString::fromUtf8("图形选项 %1").arg(e.value("id").toInt());
             QAction *action;
             if (e.contains("items")) { auto *sub=menu->addMenu(label); add(sub,e.value("items").toArray()); action=sub->menuAction(); }
             else {
@@ -619,13 +648,25 @@ QWidget *RecoveredWorkspace::renderMenu(const QJsonObject &spec)
                 else connect(action,&QAction::triggered,this,[this,clean] { emit actionRequested("unavailable:"+clean); });
             }
             action->setEnabled(!(e.value("state").toInt()&3));
+            action->setObjectName("RecoveredMenuItem-"+QString::number(e.value("id").toInt()));
+            action->setData(e);
+            action->setToolTip(e.value("command").toString());
+            if(e.contains("checked")){action->setCheckable(true);action->setChecked(e.value("checked").toBool());}
             if (e.value("state").toInt()&8) { action->setCheckable(true); action->setChecked(true); }
         }
     };
     for (const auto &v:spec.value("items").toArray()) {
-        const auto e=v.toObject(); auto *button=new QToolButton(view); button->setText(e.value("text").toString());
+        const auto e=v.toObject();
+        if(e.contains("separator")?e.value("separator").toBool():e.value("text").toString().isEmpty() && !e.contains("items"))continue;
+        auto *button=new QToolButton(view); button->setText(e.value("text").toString());
+        button->setEnabled(!(e.value("state").toInt()&3));
         if (e.contains("items")) { auto *menu=new QMenu(button); add(menu,e.value("items").toArray()); button->setMenu(menu); button->setPopupMode(QToolButton::InstantPopup); }
-        else button->setEnabled(false);
+        else {
+            // A context-menu resource can itself be a list of leaf commands.
+            // Keep those leaves in a menu too; previously they were inert buttons.
+            auto *menu=new QMenu(button);add(menu,QJsonArray{e});button->setMenu(menu);button->setPopupMode(QToolButton::InstantPopup);
+            if(button->text().isEmpty())button->setText(e.value("name").toString(QString::fromUtf8("图形选项")));
+        }
         bar->addWidget(button);
     }
     bar->addStretch(); layout->addLayout(bar); layout->addStretch(); return view;

@@ -173,6 +173,7 @@ void ComponentWorkspace::setUserComponents(const QJsonArray &objects)
 {
     auto *page=pages_.value("specifications"); if(!page) return;
     auto *table=page->findChild<QTableWidget *>(); if(!table) return;
+    const QSignalBlocker blocked(table);
     for(int row=table->rowCount()-1;row>=0;--row)
         if(table->item(row,0) && table->item(row,0)->data(Qt::UserRole+5).toBool()) table->removeRow(row);
     for(const auto &value:objects) {
