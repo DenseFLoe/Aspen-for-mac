@@ -1,6 +1,6 @@
 # 云端与本地分支功能标注
 
-> 当前开发（2026-11-15）：`codex/project-database` 从 `codex/development-requirements@a07bf11` 建立，包含对象交互 `2e17f09`；开发项目保存与只读组分检索。`main` 仍为 `7c19bc5`，下文“两条分支”是历史清理记录，不是当前清单。旧 UI 的 Mac 初步实机反馈已收到，新增功能验收见 [项目保存记录](project-persistence.md)。
+> 当前开发（2026-11-15）：`codex/project-database` 从 `codex/development-requirements@a07bf11` 建立，包含对象交互 `2e17f09`；项目保存 `127fd28`、只读组分检索 `a389c41`、保存边界及 Qt 测试修复 `7c68541` 均已上传。`main` 仍为 `7c19bc5`，下文“两条分支”是历史清理记录，不是当前清单。旧 UI 的 Mac 初步实机反馈已收到，新增功能验收见 [项目保存记录](project-persistence.md) 与 [数据库接入记录](runtime-property-database.md)。
 
 > 后续开发更新（2026-11-15）：本次 UI 静态补齐与对象交互在新分支 `codex/ui-object-interactions` 开发，基于 `main@7c19bc5`；静态里程碑 `384392b` 已上传。该分支未合并到 main。以下“两条分支”及 U4 清单是创建此新分支前的清理记录，保留作为历史基线；当前功能见 [对象交互记录](ui-object-interactions.md)。
 

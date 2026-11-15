@@ -42,7 +42,8 @@ python3 tools/build_runtime_database.py /data/plaintext-export /data/runtime-v15
 - 原始数据构建：四库源文件校验和、行数、关键外键关系和 SQLite 完整性检查通过；每个数值仍为原始字符串。
 - Windows：Qt 6.8.3 / MinGW 构建通过；Qt 集成测试验证真实 WATER/CAS 与 ETHANOL 查询。合成数据测试验证别名、通配符转义、SQL 注入式输入、只读写入拒绝、精确十进制、来源、加入／重复加入／移除／撤销、保存重开、缺库和版本错误。
 - Python 13 项测试通过，包含资源解析、既有明文恢复和新增运行库构建；新增检查覆盖拒绝覆盖输出目录、源哈希错误不发布和源文件前后一致。
-- 完整 Windows CTest 通过；最终提交的 macOS 构建、测试和应用包依赖检查在上传后记录。Mac 实机的文件选择、重开、数据库路径迁移和交互仍待验证。
+- 完整 Windows CTest 通过（最终应用代码 `7c68541`，81.21 秒）；数据库提交 `a389c41`、保存及测试修复 `7c68541`、打包修复 `eefc17f` 均已上传。最终代码 `eefc17fcc4741e0e44319a1aba51ede14d7b4e70` 的 [macOS Actions](https://github.com/DenseFLoe/Aspen-for-mac/actions/runs/43686255862) 全部通过，包含构建、合成数据与界面回归、包内 Qt／SQLite 插件加载和项目往返自检。真实本地数据库不上传 CI，真实查询由 Windows 本机验证。
+- Mac 实机的文件选择、重开、数据库路径迁移和交互仍待验证；此前用户反馈只覆盖旧 UI 的初步使用。
 
 运行库中的参数仅供查询，52,611 条 API 数组差异仍按原记录保留为未解释边界。组分加入项目不代表已完成物性方法、字段校验、单位换算、闪蒸或流程计算。
 
@@ -55,3 +56,5 @@ sh tools/package_macos.sh build "$(brew --prefix qt)"
 ```
 
 脚本在 `build/macos-package.XXXXXX/` 新目录复制应用，部署 Qt 依赖，检查 SQLite 插件，并运行 `--self-check` 验证打包后插件加载和项目往返保存，再生成本地 ZIP。不会清理旧目录，不自动上传构建产物或数据库。GitHub Actions 执行同一依赖检查；该检查不替代 Mac 实机验收。正式签名、公证及安装体验仍在后续分发阶段。
+
+打包修复 `eefc17f` 显式部署 Cocoa、offscreen、SQLite 及现有基础图像／样式插件，避免 Homebrew 的其他可选 Qt 模块混入；自检清空外部插件路径，使用包内插件。部署参数依据 [Qt macOS 部署说明](https://doc.qt.io/qt-6/macos-deployment.html)，部署日志出现错误时脚本失败，不生成成功交付结论。
