@@ -260,6 +260,7 @@ bool ObjectWorkspace::openObject(const QString &key,const QString &page) {
         connect(view,&RecoveredWorkspace::actionRequested,this,[this,key](const QString &action){
             if(action.startsWith("collection:")) showCollection(action.mid(11),key); else emit actionRequested(action);
         });
+        connect(view,&RecoveredWorkspace::inputsChanged,this,&ObjectWorkspace::inputsChanged);
         connect(view,&RecoveredWorkspace::pageChanged,this,[this,key](const QString &id){emit objectActivated(key,id);});
         connect(view,&RecoveredWorkspace::closeRequested,this,[this,key]{closeObject(key);});
         connect(view,&RecoveredWorkspace::globalUnitsChanged,this,[this](const QString &units){emit actionRequested("units:"+units);});
@@ -298,6 +299,7 @@ void ObjectWorkspace::refreshTitles() {
 void ObjectWorkspace::setObjectState(const QString &key,const QMap<QString,QVariantMap> &values) {
     if(!entries_.contains(key)) return; entries_[key].values=values;
     if(entries_[key].view) entries_[key].view->setSessionState(values);
+    emit inputsChanged();
 }
 void ObjectWorkspace::setGlobalUnits(const QString &units) {
     units_=units; for(auto &entry:entries_) if(entry.view) entry.view->setGlobalUnits(units);
@@ -348,6 +350,7 @@ void ObjectWorkspace::requestPaste() {
         connect(buttons,&QDialogButtonBox::rejected,editor,&QDialog::reject);update();editor->open();name->selectAll();name->setFocus();
     });
     connect(confirm,&QPushButton::clicked,dialog,[this,dialog,kind,parent,source,values,children,childValues]{
+        QSignalBlocker transaction(this);
         const auto created=createObject(kind,dialog->property("resolvedName").toString(),source.value("type").toString(),parent);if(created.isEmpty()) return;
         for(const auto &field:{"startX","startY","endX","endY","from","to"}) if(source.contains(field)) entries_[created].data[field]=source.value(field);
         if(kind=="blocks") {entries_[created].data["x"]=source.value("x").toDouble()+30;entries_[created].data["y"]=source.value("y").toDouble()+30;}
@@ -357,6 +360,7 @@ void ObjectWorkspace::requestPaste() {
             const auto d=v.toObject();const auto child=createObject(d.value("kind").toString(),d.value("name").toString(),d.value("type").toString(),mapping.value(d.value("parent").toString()));
             if(!child.isEmpty()) {mapping[d.value("key").toString()]=child;setObjectState(child,childValues.value(d.value("key").toString()));}
         }
+        transaction.unblock(); emit objectsChanged();
         dialog->accept();openObject(created);
     });
     connect(cancel,&QPushButton::clicked,dialog,&QDialog::reject);dialog->open();
@@ -415,6 +419,7 @@ void ObjectWorkspace::placeAt(const QPointF &point,const QString &attachment) {
         streamStart_=position;streamStartKey_=object(attachment).value("kind")=="blocks"?attachment:QString();streamPending_=true;
         placementNotice_->setText(QString::fromUtf8("选择流股终点；Esc 取消。")); return;
     }
+    QSignalBlocker transaction(this);
     const auto key=createObject(placementKind_,suggestedName(placementKind_),placementType_);
     if(key.isEmpty()) return;
     auto &d=entries_[key].data; d["x"]=position.x();d["y"]=position.y();
@@ -422,11 +427,11 @@ void ObjectWorkspace::placeAt(const QPointF &point,const QString &attachment) {
         d["startX"]=streamStart_.x();d["startY"]=streamStart_.y();d["endX"]=position.x();d["endY"]=position.y();
         d["from"]=streamStartKey_;d["to"]=object(attachment).value("kind")=="blocks"?attachment:QString();streamPending_=false;
     }
-    refreshCanvas();emit objectsChanged();
+    refreshCanvas();transaction.unblock();emit objectsChanged();
 }
 void ObjectWorkspace::moveBlock(const QString &key,const QPointF &position) {
     if(!entries_.contains(key) || object(key).value("kind")!="blocks") return;
-    entries_[key].data["x"]=qMax(40.0,position.x());entries_[key].data["y"]=qMax(30.0,position.y());refreshCanvas();
+    entries_[key].data["x"]=qMax(40.0,position.x());entries_[key].data["y"]=qMax(30.0,position.y());refreshCanvas(); emit objectsChanged();
 }
 void ObjectWorkspace::refreshCanvas() {
     canvas_->scene()->clear();
@@ -450,4 +455,33 @@ void ObjectWorkspace::refreshCanvas() {
             auto *head=new QGraphicsPathItem(arrow,line);head->setPen(QPen(QColor("#32618a"),2));
         }
     }
+}
+
+QJsonArray ObjectWorkspace::projectObjects() {
+    QJsonArray result;
+    for(const auto &key:order_) {
+        auto &entry=entries_[key];
+        if(entry.view) entry.values=entry.view->sessionState();
+        QJsonObject inputs;
+        for(auto it=entry.values.cbegin();it!=entry.values.cend();++it) inputs[it.key()]=QJsonObject::fromVariantMap(it.value());
+        auto data=entry.data; data["inputs"]=inputs; result.append(data);
+    }
+    return result;
+}
+void ObjectWorkspace::restoreProjectObjects(const QJsonArray &objects) {
+    const auto selected=currentObject();
+    const auto page=entries_.contains(selected) && entries_[selected].view?entries_[selected].view->currentPage():QString();
+    const QSignalBlocker blocked(this);
+    for(const auto &key:order_) closeObject(key);
+    entries_.clear(); order_.clear(); clipboard_={}; clipboardValues_.clear(); clipboardChildren_={}; clipboardChildValues_.clear();
+    beginPlacement({},{});
+    for(const auto &v:objects) {
+        Entry entry; entry.data=v.toObject(); const auto key=entry.data.value("key").toString();
+        const auto inputs=entry.data.take("inputs").toObject();
+        for(auto it=inputs.begin();it!=inputs.end();++it) entry.values[it.key()]=it.value().toObject().toVariantMap();
+        entries_[key]=entry; order_.append(key);
+    }
+    if(!parent_.isEmpty() && !entries_.contains(parent_)) {parent_.clear();kind_="blocks";}
+    refreshManager(); refreshCanvas();
+    if(entries_.contains(selected)) openObject(selected,page);
 }

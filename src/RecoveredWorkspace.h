@@ -26,6 +26,7 @@ public:
     QJsonArray nativeDialogs() const { return dialogs_; }
     QJsonArray menuCatalog() const { return menus_; }
 signals:
+    void inputsChanged();
     void actionRequested(const QString &action);
     void pageChanged(const QString &id);
     void globalUnitsChanged(const QString &units);

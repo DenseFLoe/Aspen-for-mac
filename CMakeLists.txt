@@ -9,6 +9,7 @@ qt_standard_project_setup()
 qt_add_executable(AspenPlusUIShell
     src/main.cpp
     src/UiShell.cpp
+    src/UiShellProject.cpp src/ProjectDocument.cpp src/ProjectDocument.h src/WidgetState.cpp src/WidgetState.h
     src/UiShellActions.cpp
     src/UiShellObjects.cpp
     src/ObjectWorkspace.cpp
@@ -46,6 +47,7 @@ if(BUILD_TESTING)
     find_package(Qt6 REQUIRED COMPONENTS Test)
     qt_add_executable(UiSmokeTest
         tests/UiSmokeTest.cpp src/UiShell.cpp src/UiShell.h
+        src/UiShellProject.cpp src/ProjectDocument.cpp src/ProjectDocument.h src/WidgetState.cpp src/WidgetState.h
         src/UiShellActions.cpp
         src/UiShellObjects.cpp src/ObjectWorkspace.cpp src/ObjectWorkspace.h
         src/IconCatalog.cpp src/IconCatalog.h

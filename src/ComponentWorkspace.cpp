@@ -1,4 +1,6 @@
 #include "ComponentWorkspace.h"
+#include "WidgetState.h"
+#include <QSignalBlocker>
 #include "IconCatalog.h"
 #include <QBoxLayout>
 #include <QButtonGroup>
@@ -124,6 +126,9 @@ ComponentWorkspace::ComponentWorkspace(const QJsonObject &catalog, QWidget *pare
         connect(action, &QAction::triggered, this, [this, id] { showPage(id); });
     }
     showPage("specifications");
+    if(auto *table=pages_.value("specifications")->findChild<QTableWidget *>()) table->setProperty("projectDerived",true);
+    defaults_=WidgetState::capture(this);
+    WidgetState::observe(this,this,[this] { emit inputsChanged(); });
 }
 
 bool ComponentWorkspace::showPage(const QString &id)
@@ -416,4 +421,10 @@ void ComponentWorkspace::showFindDialog()
     layout->addWidget(close, 0, Qt::AlignRight);
     connect(close, &QPushButton::clicked, &dialog, &QDialog::accept);
     dialog.exec();
+}
+
+QJsonObject ComponentWorkspace::sessionState() const { return WidgetState::capture(const_cast<ComponentWorkspace *>(this)); }
+void ComponentWorkspace::restoreSessionState(const QJsonObject &state) {
+    const QSignalBlocker blocked(this);
+    WidgetState::restore(this,defaults_); WidgetState::restore(this,state);
 }

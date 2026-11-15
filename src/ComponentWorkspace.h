@@ -17,14 +17,17 @@ public:
     QString currentPage() const;
     QTabWidget *currentTabs() const;
     QStringList pageIds() const;
+    QJsonObject sessionState() const;
+    void restoreSessionState(const QJsonObject &state);
     void setUserComponents(const QJsonArray &objects);
 
 signals:
+    void inputsChanged();
     void pageChanged(const QString &id);
     void actionRequested(const QString &action);
 
 private:
-    QJsonObject catalog_;
+    QJsonObject catalog_, defaults_;
     QStackedWidget *stack_ = nullptr;
     QLabel *title_ = nullptr;
     QMap<QString, QWidget *> pages_;

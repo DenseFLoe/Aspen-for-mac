@@ -69,6 +69,7 @@ UiShell::UiShell(const QJsonObject &catalog, QWidget *parent)
     statusBar()->addPermanentWidget(zoom);
     statusBar()->addPermanentWidget(makeButton(buttonSpec("+"), this));
 
+    initializeProject();
     auto *escape = new QShortcut(QKeySequence(Qt::Key_Escape), this);
     connect(escape, &QShortcut::activated, this, [this] { pages_->setCurrentIndex(0); if(objects_->isVisible()) objects_->beginPlacement({},{}); });
 }

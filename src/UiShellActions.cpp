@@ -41,6 +41,7 @@ void UiShell::setUnits(const QString &units)
         button->setText(units);
         for (auto *action:button->menu()->actions()) action->setChecked(action->text()==units);
     }
+    captureProject();
 }
 
 void UiShell::notifyUnavailable(const QString &label)
@@ -133,9 +134,11 @@ void UiShell::openWizard(const QString &name)
 
 void UiShell::dispatch(const QString &requested)
 {
+    if (projectAction(requested)) return;
     auto action=requested;
     const auto commands=interactions_.value("commands").toObject();
     if (commands.contains(action)) action=commands.value(action).toString();
+    if (projectAction(action)) return;
     if (dispatchObjectAction(action)) return;
     if (action.startsWith("component:")) {
         setWorkspaceMode(false);

@@ -1,4 +1,7 @@
 #include "UiShell.h"
+#include "ProjectDocument.h"
+#include <QTemporaryDir>
+#include <QMessageBox>
 #include "ComponentWorkspace.h"
 #include "IconCatalog.h"
 #include "LightTheme.h"
@@ -39,6 +42,61 @@ class UiSmokeTest : public QObject
 {
     Q_OBJECT
 private slots:
+    void projectRoundTripAndUndo()
+    {
+        QFile catalog(":/ui/aspen-plus.json"); QVERIFY(catalog.open(QIODevice::ReadOnly));
+        const auto spec=QJsonDocument::fromJson(catalog.readAll()).object();
+        QTemporaryDir temp; QVERIFY(temp.isValid()); const auto path=temp.filePath(QString::fromUtf8("中文 case.afmp"));
+        QString key, child, stream; QJsonObject saved; QString error;
+        {
+            UiShell shell(spec); auto *w=shell.findChild<ObjectWorkspace *>();
+            QVERIFY(!shell.project()->isModified());
+            key=w->createObject("blocks","COLUMN","RadFrac"); QVERIFY(!key.isEmpty());
+            const auto definitions=w->definitions();
+            for(const auto &v:definitions) { const auto d=v.toObject();
+                if(d.value("parentTypes").toArray().contains("RadFrac")) {
+                    child=w->createObject(d.value("id").toString(),"CHILD",d.value("types").toArray().first().toObject().value("id").toString(),key); break;
+                }
+            }
+            QVERIFY(!child.isEmpty());
+            w->beginPlacement("streams","MATERIAL"); w->placeAt({20,50}); w->placeAt({100,100},key);
+            for(const auto &v:w->objects()) if(v.toObject().value("kind")=="streams") stream=v.toObject().value("key").toString();
+            QVERIFY(!stream.isEmpty());
+            w->setObjectState(key,{{"unverified-page",{{"zero","0"},{"empty",""},{"precise","1.234567890123456789"},{"note",QString::fromUtf8("中文输入")}}}});
+            shell.dispatch("units:SI");
+            w->moveBlock(key,{377,222});
+            QCOMPARE(w->object(key).value("x").toInt(),377);
+            shell.project()->undo(); QCOMPARE(w->object(key).value("x").toInt(),100);
+            shell.project()->redo(); QCOMPARE(w->object(key).value("x").toInt(),377);
+            QVERIFY(w->renameObject(key,"RENAMED")); shell.project()->undo(); QCOMPARE(w->object(key).value("name").toString(),QString("COLUMN")); shell.project()->redo();
+            QVERIFY(w->removeObject(key)); QVERIFY(w->object(child).isEmpty()); QVERIFY(w->object(stream).value("to").toString().isEmpty());
+            shell.project()->undo(); QCOMPARE(w->object(child).value("parent").toString(),key); QCOMPARE(w->object(stream).value("to").toString(),key);
+            QVERIFY2(shell.saveProject(path,&error),qPrintable(error)); QVERIFY(!shell.project()->isModified()); saved=shell.project()->state();
+            auto invalid=saved; invalid["version"]=999; shell.project()->edit(invalid);
+            QVERIFY(!shell.saveProject(path,&error)); QFile unchanged(path); QVERIFY(unchanged.open(QIODevice::ReadOnly)); QCOMPARE(QJsonDocument::fromJson(unchanged.readAll()).object(),saved);
+        }
+        UiShell reopened(spec); QVERIFY2(reopened.loadProject(path,&error),qPrintable(error)); QCOMPARE(reopened.project()->state(),saved);
+        auto *w=reopened.findChild<ObjectWorkspace *>(); QCOMPARE(w->object(child).value("parent").toString(),key);
+        QCOMPARE(w->projectObjects(),saved.value("objects").toArray());
+        QFile corrupt(temp.filePath("bad.afmp")); QVERIFY(corrupt.open(QIODevice::WriteOnly));corrupt.write("{broken");corrupt.close();
+        QVERIFY(!reopened.loadProject(corrupt.fileName(),&error)); QCOMPARE(reopened.project()->state(),saved);
+        auto bad=saved;auto objs=bad.value("objects").toArray();auto obj=objs[0].toObject();obj["parent"]="missing";objs[0]=obj;bad["objects"]=objs;QVERIFY(!ProjectDocument::validate(bad).isEmpty());
+        w->createObject("blocks","NEW","Mixer");
+        QTimer::singleShot(0,[] { for(auto *widget:QApplication::topLevelWidgets()) if(auto *message=qobject_cast<QMessageBox *>(widget)) message->done(QMessageBox::Cancel); });
+        QVERIFY(!reopened.close()); QVERIFY(reopened.project()->isModified());
+    }
+    void projectLiveInputs()
+    {
+        QFile catalog(":/ui/aspen-plus.json"); QVERIFY(catalog.open(QIODevice::ReadOnly));const auto spec=QJsonDocument::fromJson(catalog.readAll()).object();
+        QTemporaryDir temp;QString error;UiShell shell(spec);auto *w=shell.findChild<ObjectWorkspace *>();
+        const auto key=w->createObject("property-sets","P1","PropertySet");QVERIFY(w->openObject(key));
+        auto *tabs=w->findChild<QTabWidget *>("ObjectDocuments");auto *view=qobject_cast<RecoveredWorkspace *>(tabs->currentWidget());QVERIFY(view);
+        auto *notes=view->findChild<QTextEdit *>("commentsDescription");QVERIFY(notes);notes->setPlainText(QString::fromUtf8("持久输入"));
+        const auto after=shell.project()->state();shell.project()->undo();QVERIFY(shell.project()->state()!=after);shell.project()->redo();
+        QVERIFY2(shell.saveProject(temp.filePath("input.afmp"),&error),qPrintable(error));
+        UiShell other(spec);QVERIFY(other.loadProject(temp.filePath("input.afmp"),&error));auto *ow=other.findChild<ObjectWorkspace *>();QVERIFY(ow->openObject(key));
+        auto *ov=qobject_cast<RecoveredWorkspace *>(ow->findChild<QTabWidget *>("ObjectDocuments")->currentWidget());QCOMPARE(ov->findChild<QTextEdit *>("commentsDescription")->toPlainText(),QString::fromUtf8("持久输入"));
+    }
     void objectLifecycleAndIndependentInputs()
     {
         QFile file(":/ui/aspen-plus.json"); QVERIFY(file.open(QIODevice::ReadOnly));

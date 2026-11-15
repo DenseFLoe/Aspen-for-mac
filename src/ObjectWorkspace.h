@@ -13,7 +13,7 @@ class QPushButton;
 class RecoveredWorkspace;
 class FlowsheetView;
 
-// UI session objects only: no Aspen engine, property database, or case file IO.
+// Object editing adapter; persistent snapshots belong to ProjectDocument.
 class ObjectWorkspace final : public QWidget
 {
     Q_OBJECT
@@ -21,6 +21,8 @@ public:
     explicit ObjectWorkspace(QWidget *parent=nullptr);
     QJsonArray definitions() const { return definitions_; }
     QJsonArray objects() const;
+    QJsonArray projectObjects();
+    void restoreProjectObjects(const QJsonArray &objects);
     QJsonObject object(const QString &key) const;
     QJsonObject definition(const QString &kind) const;
     QJsonObject typeDefinition(const QString &kind, const QString &type) const;
@@ -46,6 +48,7 @@ public:
     void moveBlock(const QString &key, const QPointF &position);
 signals:
     void objectsChanged();
+    void inputsChanged();
     void objectsRemoved(const QStringList &keys);
     void objectActivated(const QString &key, const QString &page);
     void collectionActivated(const QString &kind, const QString &parent);

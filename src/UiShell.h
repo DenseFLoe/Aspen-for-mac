@@ -12,6 +12,8 @@ class QTreeWidget;
 class RecoveredWorkspace;
 class QDialog;
 class ObjectWorkspace;
+class ProjectDocument;
+class QCloseEvent;
 
 // UI-only shell: navigation works; simulation commands have no backend.
 class UiShell final : public QMainWindow
@@ -19,8 +21,21 @@ class UiShell final : public QMainWindow
 public:
     explicit UiShell(const QJsonObject &catalog, QWidget *parent = nullptr);
     void dispatch(const QString &action);
+    ProjectDocument *project() const { return project_; }
+    bool saveProject(const QString &path, QString *error);
+    bool loadProject(const QString &path, QString *error);
+protected:
+    void closeEvent(QCloseEvent *event) override;
 
 private:
+    ProjectDocument *project_=nullptr;
+    bool restoringProject_=false;
+    void initializeProject();
+    void captureProject();
+    void restoreProject();
+    bool projectAction(const QString &action);
+    bool saveProjectDialog(bool saveAs);
+    bool confirmProjectReplacement();
     QJsonObject catalog_;
     QJsonObject interactions_;
     QStringList locations_;

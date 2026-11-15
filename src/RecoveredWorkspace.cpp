@@ -1,5 +1,6 @@
 #include "RecoveredWorkspace.h"
 #include "IconCatalog.h"
+#include "WidgetState.h"
 #include <QAbstractButton>
 #include <QButtonGroup>
 #include <QScopedValueRollback>
@@ -127,7 +128,7 @@ RecoveredWorkspace::RecoveredWorkspace(QWidget *parent) : QWidget(parent)
     title_ = new QLabel(this); title_->setObjectName("RecoveredTitle");
     title_->setTextInteractionFlags(Qt::TextSelectableByMouse);
     layout->addWidget(title_);
-    notice_ = new QLabel(QString::fromUtf8("界面工作区 · 编辑保留于本次会话；未连接计算引擎"),this);
+    notice_ = new QLabel(QString::fromUtf8("输入可随项目保存 · 字段语义尚未全部验证；未连接计算引擎"),this);
     notice_->setWordWrap(true); layout->addWidget(notice_);
     scroll_ = new QScrollArea(this); scroll_->setWidgetResizable(true);
     scroll_->setObjectName("RecoveredScroll"); layout->addWidget(scroll_,1);
@@ -223,8 +224,10 @@ QMap<QString, QVariantMap> RecoveredWorkspace::sessionState()
 
 void RecoveredWorkspace::setSessionState(const QMap<QString, QVariantMap> &state)
 {
-    state_=state;
-    if (scroll_->widget()) restoreState(scroll_->widget());
+    const QSignalBlocker blocked(this);
+    const auto page=current_;
+    current_.clear(); state_=state;
+    if(!page.isEmpty()) showPage(page);
 }
 
 QJsonObject RecoveredWorkspace::pageSpec(const QString &id)
@@ -267,6 +270,7 @@ bool RecoveredWorkspace::showPage(const QString &id)
     scroll_->setWidget(view); // Deletes previous canvas; thousands of pages stay lazy.
     restoreState(view);
     setGlobalUnits(globalUnits_);
+    WidgetState::observe(view,this,[this] { saveState(); emit inputsChanged(); });
     emit pageChanged(id);
     return true;
 }
