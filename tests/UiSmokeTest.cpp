@@ -97,7 +97,7 @@ private slots:
         const auto capture=qEnvironmentVariable("ASPEN_CAPTURE_DIR");if(!capture.isEmpty()) {QDir().mkpath(capture);QTest::qWait(40);QVERIFY(dialog->grab().save(capture+"/database-query.png"));}
         dialog->findChild<QPushButton *>("AddDatabaseComponent")->click();QCOMPARE(shell.project()->state().value("components").toArray().size(),1);
         dialog->findChild<QPushButton *>("AddDatabaseComponent")->click();QCOMPARE(shell.project()->state().value("components").toArray().size(),1);
-        const auto component=shell.project()->state().value("components").toArray()[0];QVERIFY(shell.saveProject(temp.filePath("test.afmp"),&error));
+        const QJsonValue component=shell.project()->state().value("components").toArray().at(0);QVERIFY(shell.saveProject(temp.filePath("test.afmp"),&error));
         auto *selected=dialog->findChild<QListWidget *>("SelectedDatabaseComponents");selected->setCurrentRow(0);dialog->findChild<QPushButton *>("RemoveDatabaseComponent")->click();QCOMPARE(shell.project()->state().value("components").toArray().size(),0);
         shell.project()->undo();QCOMPARE(shell.project()->state().value("components").toArray()[0],component);dialog->reject();
         UiShell other(spec);QVERIFY(other.loadProject(temp.filePath("test.afmp"),&error));QCOMPARE(other.project()->state().value("components").toArray()[0],component);
@@ -159,6 +159,17 @@ private slots:
         w->createObject("blocks","NEW","Mixer");
         QTimer::singleShot(0,[] { for(auto *widget:QApplication::topLevelWidgets()) if(auto *message=qobject_cast<QMessageBox *>(widget)) message->done(QMessageBox::Cancel); });
         QVERIFY(!reopened.close()); QVERIFY(reopened.project()->isModified());
+    }
+    void saveCommitsActiveTableEditor() {
+        QFile catalog(":/ui/aspen-plus.json");QVERIFY(catalog.open(QIODevice::ReadOnly));const auto spec=QJsonDocument::fromJson(catalog.readAll()).object();
+        UiShell shell(spec);shell.show();auto *w=shell.findChild<ObjectWorkspace *>();const auto key=w->createObject("property-sets","EDIT","PropertySet");shell.dispatch("object:"+key);QCoreApplication::processEvents();
+        auto *view=qobject_cast<RecoveredWorkspace *>(w->findChild<QTabWidget *>("ObjectDocuments")->currentWidget());QVERIFY(view);auto *grid=view->findChild<QTableWidget *>("grdSelection");QVERIFY(grid);
+        grid->setItem(0,0,new QTableWidgetItem("OLD"));grid->scrollToItem(grid->item(0,0));grid->setCurrentCell(0,0);grid->editItem(grid->item(0,0));QCoreApplication::processEvents();
+        auto *editor=grid->findChild<QLineEdit *>();QVERIFY(editor);editor->setFocus();editor->setText("UNCOMMITTED");QCOMPARE(grid->item(0,0)->text(),QString("OLD"));
+        QTemporaryDir temp;QString error;QVERIFY2(shell.saveProject(temp.filePath("active.afmp"),&error),qPrintable(error));
+        QCOMPARE(grid->item(0,0)->text(),QString("UNCOMMITTED"));UiShell other(spec);QVERIFY(other.loadProject(temp.filePath("active.afmp"),&error));auto *ow=other.findChild<ObjectWorkspace *>();QVERIFY(ow->openObject(key));
+        auto *restored=qobject_cast<RecoveredWorkspace *>(ow->findChild<QTabWidget *>("ObjectDocuments")->currentWidget());QCOMPARE(restored->findChild<QTableWidget *>("grdSelection")->item(0,0)->text(),QString("UNCOMMITTED"));
+        QVERIFY(!other.findChild<QToolButton *>("window-back")->isEnabled());
     }
     void projectLiveInputs()
     {
