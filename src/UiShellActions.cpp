@@ -1,6 +1,7 @@
 #include "UiShell.h"
 #include "ComponentWorkspace.h"
 #include "RecoveredWorkspace.h"
+#include "ObjectWorkspace.h"
 #include "IconCatalog.h"
 #include <QAction>
 #include <QBoxLayout>
@@ -35,7 +36,7 @@ void UiShell::remember(const QString &location)
 void UiShell::setUnits(const QString &units)
 {
     if (!QStringList{"ENG","MET","METCBAR","SI"}.contains(units)) return;
-    globalUnits_=units; recovered_->setGlobalUnits(units);
+    globalUnits_=units; recovered_->setGlobalUnits(units); objects_->setGlobalUnits(units);
     if (auto *button=findChild<QToolButton *>("unit-selector")) {
         button->setText(units);
         for (auto *action:button->menu()->actions()) action->setChecked(action->text()==units);
@@ -77,20 +78,22 @@ void UiShell::openWizard(const QString &name)
     auto *steps=new QStackedWidget(dialog); steps->setObjectName("WizardSteps");
     for (const auto &page:spec.value("pages").toArray()) {
         auto *workspace=new RecoveredWorkspace(steps);
+        workspace->setSessionEditable(name=="user-component");
         workspace->showPage(workspace->idForName(page.toString()));
         workspace->findChild<QLabel *>("RecoveredTitle")->hide();
         connect(workspace,&RecoveredWorkspace::actionRequested,this,&UiShell::dispatch,Qt::QueuedConnection);
         steps->addWidget(workspace);
     }
     layout->addWidget(steps,1);
-    auto *status=new QLabel(QString::fromUtf8("向导输入仅保留于本次窗口；生成组分或反应需要计算服务。"),dialog); status->setWordWrap(true); layout->addWidget(status);
+    auto *status=new QLabel(name=="user-component"?QString::fromUtf8("完成后将添加用户定义组分并保留本次会话的输入。"):
+        QString::fromUtf8("当前未连接反应生成或物性估算服务。"),dialog); status->setWordWrap(true); layout->addWidget(status);
     auto *row=new QHBoxLayout; row->addStretch();
     auto *back=new QPushButton(QString::fromUtf8("< 后退"),dialog); back->setObjectName("WizardBack");
     auto *next=new QPushButton(QString::fromUtf8("下一步 >"),dialog); next->setObjectName("WizardNext");
     auto *finish=new QPushButton(QString::fromUtf8("完成"),dialog); finish->setObjectName("WizardFinish"); finish->setEnabled(false);
     auto *cancel=new QPushButton(QString::fromUtf8("取消"),dialog);
     for(auto *b:{back,next,finish,cancel}) row->addWidget(b); layout->addLayout(row);
-    const auto update=[steps,back,next,name] {
+    const auto update=[this,steps,back,next,finish,name,status] {
         back->setEnabled(steps->currentIndex()>0);
         bool ready=steps->currentIndex()+1<steps->count();
         if (name=="sfe") ready=false; // Empty case has no species to select.
@@ -99,6 +102,13 @@ void UiShell::openWizard(const QString &name)
             ready=ready && id && !id->text().trimmed().isEmpty();
         }
         if (name=="electrolyte" && steps->currentIndex()>=1) ready=false; // Reaction generation is an engine operation.
+        if(name=="user-component") {
+            const auto *id=steps->widget(0)->findChild<QLineEdit *>("txtCompID");
+            const auto problem=objects_->nameError("user-components",id?id->text().trimmed():QString());
+            if(!problem.isEmpty()) ready=false;
+            finish->setEnabled(problem.isEmpty() && steps->currentIndex()==steps->count()-1);
+            status->setText(problem.isEmpty()?QString::fromUtf8("完成后将添加用户定义组分并保留本次会话的输入。"):problem);
+        }
         next->setEnabled(ready);
     };
     connect(back,&QPushButton::clicked,dialog,[steps] { steps->setCurrentIndex(steps->currentIndex()-1); });
@@ -106,6 +116,18 @@ void UiShell::openWizard(const QString &name)
     connect(steps,&QStackedWidget::currentChanged,dialog,update);
     if (auto *id=steps->widget(0)->findChild<QLineEdit *>("txtCompID")) connect(id,&QLineEdit::textChanged,dialog,update);
     connect(cancel,&QPushButton::clicked,dialog,&QDialog::reject);
+    connect(finish,&QPushButton::clicked,dialog,[this,name,steps,dialog]{
+        if(name!="user-component") return;
+        auto *id=steps->widget(0)->findChild<QLineEdit *>("txtCompID");if(!id) return;
+        const auto *type=steps->widget(0)->findChild<QComboBox *>("cboType");
+        const auto key=objects_->createObject("user-components",id->text(),QStringList{"CONVENTIONAL","SOLID","NONCONVENTIONAL"}.value(type?type->currentIndex():0,"CONVENTIONAL"));if(key.isEmpty()) return;
+        QMap<QString,QVariantMap> values;
+        for(int i=0;i<steps->count();++i) {
+            const auto state=qobject_cast<RecoveredWorkspace *>(steps->widget(i))->sessionState();
+            for(auto it=state.cbegin();it!=state.cend();++it) values[it.key()]=it.value();
+        }
+        objects_->setObjectState(key,values);dialog->accept();dispatch("object:"+key);
+    });
     update(); dialog->open();
 }
 
@@ -114,7 +136,9 @@ void UiShell::dispatch(const QString &requested)
     auto action=requested;
     const auto commands=interactions_.value("commands").toObject();
     if (commands.contains(action)) action=commands.value(action).toString();
+    if (dispatchObjectAction(action)) return;
     if (action.startsWith("component:")) {
+        setWorkspaceMode(false);
         pages_->setCurrentIndex(0); documents_->setCurrentIndex(0); components_->showPage(action.mid(10));
     } else if (action.startsWith("page:")) openRecovered(action.mid(5));
     else if (action.startsWith("dialog:")) openDialog(action.mid(7));

@@ -10,6 +10,9 @@ qt_add_executable(AspenPlusUIShell
     src/main.cpp
     src/UiShell.cpp
     src/UiShellActions.cpp
+    src/UiShellObjects.cpp
+    src/ObjectWorkspace.cpp
+    src/ObjectWorkspace.h
     src/UiShell.h
     src/IconCatalog.cpp
     src/IconCatalog.h
@@ -24,7 +27,7 @@ file(GLOB RECOVERED_IMAGE_FILES CONFIGURE_DEPENDS RELATIVE "${CMAKE_CURRENT_SOUR
 list(FILTER RECOVERED_UI_FILES EXCLUDE REGEX "/(buttons|unresolved|sources|summary|scan-errors|scan-files|coverage|validation)\\.json$")
 qt_add_resources(AspenPlusUIShell "ui_catalog"
     PREFIX "/"
-    FILES ui/aspen-plus.json ui/components.json ui/interactions.json ui/shell.qss ui/icons/aspen-v15.png ui/icons/manifest.json ui/icons/recovered.json ${RECOVERED_IMAGE_FILES} ${RECOVERED_UI_FILES}
+    FILES ui/aspen-plus.json ui/components.json ui/interactions.json ui/object-types.json ui/shell.qss ui/icons/aspen-v15.png ui/icons/manifest.json ui/icons/recovered.json ${RECOVERED_IMAGE_FILES} ${RECOVERED_UI_FILES}
 )
 target_link_libraries(AspenPlusUIShell PRIVATE Qt6::Widgets)
 set_target_properties(AspenPlusUIShell PROPERTIES
@@ -44,16 +47,18 @@ if(BUILD_TESTING)
     qt_add_executable(UiSmokeTest
         tests/UiSmokeTest.cpp src/UiShell.cpp src/UiShell.h
         src/UiShellActions.cpp
+        src/UiShellObjects.cpp src/ObjectWorkspace.cpp src/ObjectWorkspace.h
         src/IconCatalog.cpp src/IconCatalog.h
         src/ComponentWorkspace.cpp src/ComponentWorkspace.h
         src/LightTheme.h
         src/RecoveredWorkspace.cpp src/RecoveredWorkspace.h
     )
     target_include_directories(UiSmokeTest PRIVATE src)
+    set_target_properties(UiSmokeTest PROPERTIES WIN32_EXECUTABLE FALSE)
     target_link_libraries(UiSmokeTest PRIVATE Qt6::Widgets Qt6::Test)
     qt_add_resources(UiSmokeTest "test_ui_catalog"
         PREFIX "/"
-        FILES ui/aspen-plus.json ui/components.json ui/interactions.json ui/shell.qss ui/icons/aspen-v15.png ui/icons/manifest.json ui/icons/recovered.json ${RECOVERED_IMAGE_FILES} ${RECOVERED_UI_FILES}
+        FILES ui/aspen-plus.json ui/components.json ui/interactions.json ui/object-types.json ui/shell.qss ui/icons/aspen-v15.png ui/icons/manifest.json ui/icons/recovered.json ${RECOVERED_IMAGE_FILES} ${RECOVERED_UI_FILES}
     )
     if(MSVC)
         target_compile_options(UiSmokeTest PRIVATE /utf-8)

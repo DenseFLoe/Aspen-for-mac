@@ -20,6 +20,9 @@ public:
     QString idForType(const QString &type) const;
     QString idForName(const QString &name) const;
     void setGlobalUnits(const QString &units);
+    void setSessionEditable(bool editable) { sessionEditable_ = editable; }
+    QMap<QString, QVariantMap> sessionState();
+    void setSessionState(const QMap<QString, QVariantMap> &state);
     QJsonArray nativeDialogs() const { return dialogs_; }
     QJsonArray menuCatalog() const { return menus_; }
 signals:
@@ -39,6 +42,7 @@ private:
     QString renderScope_, renderingId_, globalUnits_ = "METCBAR";
     QJsonObject interactions_;
     QMap<QString, QVariantMap> state_;
+    bool sessionEditable_ = false;
     void saveState();
     void restoreState(QWidget *view);
     QJsonObject pageSpec(const QString &id);

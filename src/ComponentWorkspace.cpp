@@ -164,6 +164,23 @@ QWidget *ComponentWorkspace::makeContent(const QJsonObject &spec)
     return scroll;
 }
 
+void ComponentWorkspace::setUserComponents(const QJsonArray &objects)
+{
+    auto *page=pages_.value("specifications"); if(!page) return;
+    auto *table=page->findChild<QTableWidget *>(); if(!table) return;
+    for(int row=table->rowCount()-1;row>=0;--row)
+        if(table->item(row,0) && table->item(row,0)->data(Qt::UserRole+5).toBool()) table->removeRow(row);
+    for(const auto &value:objects) {
+        const auto d=value.toObject(); if(d.value("kind").toString()!="user-components") continue;
+        const int row=qMax(0,table->rowCount()-1); table->insertRow(row);
+        for(int col=0;col<table->columnCount();++col) table->setItem(row,col,new QTableWidgetItem);
+        table->item(row,0)->setText(d.value("name").toString());table->item(row,0)->setData(Qt::UserRole+5,true);
+        if(table->columnCount()>1) table->item(row,1)->setText(d.value("type").toString());
+    }
+    table->setFixedHeight(qMin(240,32+24*table->rowCount()));
+    table->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+}
+
 QWidget *ComponentWorkspace::makeElement(const QJsonObject &spec)
 {
     const auto type = spec.value("type").toString();

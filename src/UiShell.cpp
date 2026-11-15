@@ -2,6 +2,7 @@
 #include "IconCatalog.h"
 #include "ComponentWorkspace.h"
 #include "RecoveredWorkspace.h"
+#include "ObjectWorkspace.h"
 #include <QFile>
 #include <QJsonDocument>
 #include <QSignalBlocker>
@@ -69,7 +70,7 @@ UiShell::UiShell(const QJsonObject &catalog, QWidget *parent)
     statusBar()->addPermanentWidget(makeButton(buttonSpec("+"), this));
 
     auto *escape = new QShortcut(QKeySequence(Qt::Key_Escape), this);
-    connect(escape, &QShortcut::activated, this, [this] { pages_->setCurrentIndex(0); });
+    connect(escape, &QShortcut::activated, this, [this] { pages_->setCurrentIndex(0); if(objects_->isVisible()) objects_->beginPlacement({},{}); });
 }
 
 QMenu *UiShell::makeMenu(const QJsonArray &entries, QWidget *parent)
@@ -278,7 +279,8 @@ QWidget *UiShell::makeNavigator()
     layout->setContentsMargins(3, 2, 2, 2);
     layout->setSpacing(3);
     auto *heading = new QHBoxLayout;
-    heading->addWidget(new QLabel(QString::fromUtf8("物性"), panel), 1);
+    auto *modeHeading=new QLabel(QString::fromUtf8("物性"),panel);modeHeading->setObjectName("NavigationHeading");
+    heading->addWidget(modeHeading,1);
     heading->addWidget(makeButton({{"label", QString::fromUtf8("收起导航")}, {"icon", "back"}}, panel, true));
     layout->addLayout(heading);
     auto *filter = makeButton({{"label", QString::fromUtf8("所有项")}, {"menu", "navigation-filter"}}, panel);
@@ -331,6 +333,7 @@ QWidget *UiShell::makeNavigator()
             item->setIcon(0,aspenIcon("folder")); item->setData(0,Qt::UserRole+3,child.value("action").toString());
         }
     }
+    syncObjectNavigation();
     connect(navigation_, &QTreeWidget::currentItemChanged, this, [this](QTreeWidgetItem *item) {
         if (!item || !components_) return;
         const auto id = item->data(0, Qt::UserRole).toString();
@@ -429,7 +432,8 @@ QWidget *UiShell::makeNavigator()
         const QStringList modeIcons{"mode-properties", "mode-simulation", "mode-safety", "mode-energy"};
         const QStringList modeLabels{QString::fromUtf8("物性"), QString::fromUtf8("模拟"), QString::fromUtf8("安全分析"), QString::fromUtf8("能量分析")};
         const int modeIndex = modeLabels.indexOf(value.toString());
-        connect(mode,&QToolButton::clicked,this,[this,modeIndex] { dispatch(QStringList{"components","catalog:Flowsheet","catalog:Safety","catalog:Energy"}.value(modeIndex)); });
+        mode->setProperty("workspaceMode",modeIndex);
+        connect(mode,&QToolButton::clicked,this,[this,modeIndex] { dispatch(QStringList{"components","flowsheet","catalog:Safety","catalog:Energy"}.value(modeIndex)); });
         mode->setIcon(aspenIcon(modeIcons.value(modeIndex)));
         mode->setIconSize(QSize(24, 24));
         mode->setMinimumHeight(34);
@@ -453,6 +457,29 @@ QWidget *UiShell::makeComponentPage()
     connect(recovered_,&RecoveredWorkspace::globalUnitsChanged,this,&UiShell::setUnits);
     documents_->addWidget(recovered_);
     documents_->addWidget(new QWidget(documents_));
+    objects_=new ObjectWorkspace(documents_);
+    documents_->addWidget(objects_);
+    connect(objects_,&ObjectWorkspace::objectsChanged,this,&UiShell::syncObjectNavigation);
+    connect(objects_,&ObjectWorkspace::actionRequested,this,&UiShell::dispatch,Qt::QueuedConnection);
+    connect(objects_,&ObjectWorkspace::objectActivated,this,[this](const QString &key,const QString &page){
+        remember("object:"+key+":"+page);
+        if (!navigation_) return;
+        const QSignalBlocker blocker(navigation_);
+        for(QTreeWidgetItemIterator it(navigation_);*it;++it)
+            if((*it)->data(0,Qt::UserRole+11).toString()==key) {navigation_->setCurrentItem(*it);break;}
+    });
+    connect(objects_,&ObjectWorkspace::collectionActivated,this,[this](const QString &kind,const QString &parent){remember("objects:"+kind+":"+parent);});
+    connect(objects_,&ObjectWorkspace::objectsRemoved,this,[this](const QStringList &keys){
+        const auto current=locations_.value(locationIndex_);
+        for(int i=locations_.size()-1;i>=0;--i) {
+            const auto route=locations_[i];
+            if((route.startsWith("object:") && keys.contains(route.section(':',1,1))) ||
+                (route.startsWith("objects:") && keys.contains(route.section(':',2,2)))) locations_.removeAt(i);
+        }
+        locationIndex_=locations_.indexOf(current);
+        if(locationIndex_<0) locationIndex_=locations_.size()-1;
+        remember(locations_.value(locationIndex_));
+    });
     return documents_;
 }
 

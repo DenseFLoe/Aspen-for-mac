@@ -3,6 +3,11 @@
 #include "IconCatalog.h"
 #include "LightTheme.h"
 #include "RecoveredWorkspace.h"
+#include "ObjectWorkspace.h"
+#include <QDialogButtonBox>
+#include <QGraphicsView>
+#include <QGraphicsScene>
+#include <QTableWidget>
 #include <QApplication>
 #include <QBoxLayout>
 #include <QComboBox>
@@ -34,6 +39,127 @@ class UiSmokeTest : public QObject
 {
     Q_OBJECT
 private slots:
+    void objectLifecycleAndIndependentInputs()
+    {
+        QFile file(":/ui/aspen-plus.json"); QVERIFY(file.open(QIODevice::ReadOnly));
+        UiShell shell(QJsonDocument::fromJson(file.readAll()).object());shell.show();
+        auto *objects=shell.findChild<ObjectWorkspace *>();QVERIFY(objects);
+        auto *documents=objects->findChild<QTabWidget *>("ObjectDocuments");
+        auto *table=objects->findChild<QTableWidget *>("ObjectTable");
+        auto cleanDialogs=[] {QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);};
+        shell.dispatch("property-sets");
+        objects->findChild<QPushButton *>("Objectnew")->click();
+        auto *dialog=objects->findChild<QDialog *>("ObjectNameDialog");QVERIFY(dialog);
+        QCOMPARE(dialog->findChild<QLineEdit *>("ObjectId")->text(),QString("PS-1"));
+        dialog->reject();cleanDialogs();QCOMPARE(objects->objects().size(),0);
+        objects->findChild<QPushButton *>("Objectnew")->click();
+        dialog=objects->findChild<QDialog *>("ObjectNameDialog");
+        auto *id=dialog->findChild<QLineEdit *>("ObjectId");auto *ok=dialog->findChild<QDialogButtonBox *>()->button(QDialogButtonBox::Ok);
+        id->setText("bad name");QVERIFY(!ok->isEnabled());id->setText("PS-1");QVERIFY(ok->isEnabled());ok->click();cleanDialogs();
+        QCOMPARE(objects->objects().size(),1);QCOMPARE(documents->count(),3);QCOMPARE(table->rowCount(),1);
+        const auto first=objects->objects().first().toObject().value("key").toString();
+        auto *view=qobject_cast<RecoveredWorkspace *>(documents->currentWidget());QVERIFY(view);
+        auto *notes=view->findChild<QTextEdit *>("commentsDescription");QVERIFY(notes);notes->setPlainText("first object");
+        auto *selection=view->findChild<QTableWidget *>("grdSelection");QVERIFY(selection);QCOMPARE(selection->rowCount(),1);
+        selection->setItem(0,0,new QTableWidgetItem("TEMP"));QCOMPARE(selection->rowCount(),2);
+        const auto second=objects->createObject("property-sets","PS-2","PropertySet");QVERIFY(!second.isEmpty());
+        QVERIFY(objects->openObject(second));view=qobject_cast<RecoveredWorkspace *>(documents->currentWidget());
+        QCOMPARE(view->findChild<QTextEdit *>("commentsDescription")->toPlainText(),QString());
+        view->findChild<QTextEdit *>("commentsDescription")->setPlainText("second object");
+        QVERIFY(objects->openObject(first));view=qobject_cast<RecoveredWorkspace *>(documents->currentWidget());
+        QCOMPARE(view->findChild<QTextEdit *>("commentsDescription")->toPlainText(),QString("first object"));
+        objects->closeObject(first);cleanDialogs();QVERIFY(objects->openObject(first));
+        view=qobject_cast<RecoveredWorkspace *>(documents->currentWidget());
+        QCOMPARE(view->findChild<QTableWidget *>("grdSelection")->item(0,0)->text(),QString("TEMP"));
+        QVERIFY(objects->createObject("property-sets","ps-1","PropertySet").isEmpty());
+        objects->requestRename(first);dialog=objects->findChild<QDialog *>("ObjectNameDialog");
+        id=dialog->findChild<QLineEdit *>("ObjectId");ok=dialog->findChild<QDialogButtonBox *>()->button(QDialogButtonBox::Ok);
+        id->setText("ps-2");QVERIFY(!ok->isEnabled());id->setText("RENAMED");ok->click();cleanDialogs();
+        QVERIFY(documents->tabText(documents->currentIndex()).contains("RENAMED"));
+        bool inTree=false;for(QTreeWidgetItemIterator it(shell.findChild<QTreeWidget *>("PropertiesNavigation"));*it;++it)
+            if((*it)->text(0)=="RENAMED") inTree=true;QVERIFY(inTree);
+        objects->copyObject(first);objects->showCollection("property-sets");objects->requestPaste();
+        auto *conflict=objects->findChild<QDialog *>("ObjectPasteDialog");QVERIFY(conflict);QVERIFY(!conflict->findChild<QPushButton *>("PasteConfirm")->isEnabled());
+        conflict->findChild<QPushButton *>("PasteEditId")->click();
+        dialog=conflict->findChild<QDialog *>("PasteIdDialog");dialog->findChild<QLineEdit *>("ObjectId")->setText("COPY");
+        dialog->findChild<QDialogButtonBox *>()->button(QDialogButtonBox::Ok)->click();cleanDialogs();
+        QCOMPARE(objects->objects().size(),2);conflict->findChild<QPushButton *>("PasteConfirm")->click();cleanDialogs();
+        const auto copied=objects->currentObject();QVERIFY(copied!=first);
+        view=qobject_cast<RecoveredWorkspace *>(documents->currentWidget());
+        QCOMPARE(view->findChild<QTextEdit *>("commentsDescription")->toPlainText(),QString("first object"));
+        view->findChild<QTextEdit *>("commentsDescription")->setPlainText("copied notes");
+        objects->openObject(first);view=qobject_cast<RecoveredWorkspace *>(documents->currentWidget());
+        QCOMPARE(view->findChild<QTextEdit *>("commentsDescription")->toPlainText(),QString("first object"));
+        objects->requestDelete(first);dialog=objects->findChild<QDialog *>("ObjectDeleteDialog");dialog->reject();cleanDialogs();QVERIFY(!objects->object(first).isEmpty());
+        objects->requestDelete(first);dialog=objects->findChild<QDialog *>("ObjectDeleteDialog");
+        dialog->findChild<QDialogButtonBox *>()->button(QDialogButtonBox::Yes)->click();cleanDialogs();
+        QVERIFY(objects->object(first).isEmpty());QVERIFY(!objects->openObject(first));
+        shell.dispatch("window-back");shell.dispatch("window-forward");QVERIFY(objects->currentObject()!=first);
+        const auto capture=qEnvironmentVariable("ASPEN_CAPTURE_DIR");
+        if(!capture.isEmpty()) {QDir().mkpath(capture);objects->openObject(copied);QTest::qWait(40);shell.grab().save(capture+"/object-input.png");}
+    }
+
+    void objectTypesFlowsheetAndWizard()
+    {
+        QFile file(":/ui/aspen-plus.json");QVERIFY(file.open(QIODevice::ReadOnly));
+        UiShell shell(QJsonDocument::fromJson(file.readAll()).object());shell.show();
+        auto *objects=shell.findChild<ObjectWorkspace *>();RecoveredWorkspace resources;
+        for(const auto &v:objects->definitions()) for(const auto &t:v.toObject().value("types").toArray())
+            for(const auto &p:t.toObject().value("pages").toArray()) QVERIFY2(!resources.idForName(p.toObject().value("page").toString()).isEmpty(),qPrintable(p.toObject().value("page").toString()));
+        // Every advertised model must create an editable input document and cleanly close.
+        int modelNumber=0;
+        for(const auto &v:objects->definition("blocks").value("types").toArray()) {
+            const auto type=v.toObject().value("id").toString();
+            const auto key=objects->createObject("blocks","CHECK"+QString::number(++modelNumber),type);
+            QVERIFY2(!key.isEmpty(),qPrintable(type));QVERIFY2(objects->openObject(key),qPrintable(type));QVERIFY(objects->removeObject(key));
+            QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);
+        }
+        objects->requestNew("blocks");auto *dialog=objects->findChild<QDialog *>("ObjectNameDialog");
+        auto *ok=dialog->findChild<QDialogButtonBox *>()->button(QDialogButtonBox::Ok);QVERIFY(!ok->isEnabled());
+        dialog->findChild<QComboBox *>("ObjectType")->setCurrentIndex(0);QVERIFY(ok->isEnabled());dialog->reject();
+        QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);
+        shell.dispatch("flowsheet");QTest::qWait(30);
+        auto *canvas=objects->findChild<QGraphicsView *>("FlowsheetCanvas");QVERIFY(canvas);
+        objects->findChild<QPushButton *>("Place-blocks")->click();
+        const auto point=canvas->mapToScene(QPoint(140,100));
+        QTest::mouseClick(canvas->viewport(),Qt::LeftButton,Qt::NoModifier,QPoint(140,100));
+        QCOMPARE(objects->objects().size(),1);const auto mixer=objects->objects()[0].toObject().value("key").toString();
+        QCOMPARE(objects->object(mixer).value("type").toString(),QString("Mixer"));
+        objects->findChild<QPushButton *>("FlowSelect")->click();
+        QTest::mouseDClick(canvas->viewport(),Qt::LeftButton,Qt::NoModifier,canvas->mapFromScene(point));
+        QCOMPARE(objects->currentObject(),mixer);
+        const auto column=objects->createObject("blocks","T1","RadFrac");QVERIFY(!column.isEmpty());
+        QVERIFY(objects->createObject("column-designs","DS-1","Design",mixer).isEmpty());
+        const auto child=objects->createObject("column-designs","DS-1","Design",column);QVERIFY(!child.isEmpty());
+        objects->copyObject(column);objects->showCollection("blocks");objects->requestPaste();
+        auto *conflict=objects->findChild<QDialog *>("ObjectPasteDialog");conflict->findChild<QPushButton *>("PasteEditId")->click();
+        dialog=conflict->findChild<QDialog *>("PasteIdDialog");dialog->findChild<QLineEdit *>("ObjectId")->setText("T2");
+        dialog->findChild<QDialogButtonBox *>()->button(QDialogButtonBox::Ok)->click();
+        conflict->findChild<QPushButton *>("PasteConfirm")->click();
+        QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);const auto clone=objects->currentObject();
+        int children=0;for(const auto &v:objects->objects()) if(v.toObject().value("parent").toString()==clone) ++children;QCOMPARE(children,1);
+        objects->showFlowsheet();objects->beginPlacement("streams","MATERIAL");objects->placeAt(point,mixer);objects->placeAt(QPointF(400,160),column);
+        const auto stream=objects->objects().last().toObject().value("key").toString();
+        QCOMPARE(objects->object(stream).value("from").toString(),mixer);QCOMPARE(objects->object(stream).value("to").toString(),column);
+        objects->moveBlock(mixer,QPointF(220,220));QCOMPARE(objects->object(mixer).value("x").toInt(),220);
+        objects->beginPlacement({},{});
+        const auto capture=qEnvironmentVariable("ASPEN_CAPTURE_DIR");
+        if(!capture.isEmpty()) {QDir().mkpath(capture);QTest::qWait(40);shell.grab().save(capture+"/flowsheet-objects.png");}
+        QVERIFY(objects->removeObject(column));QVERIFY(objects->object(child).isEmpty());QVERIFY(objects->object(stream).value("to").toString().isEmpty());QVERIFY(!objects->object(clone).isEmpty());
+        shell.dispatch("user-components");auto *wizard=shell.findChild<QDialog *>("wizard-user-component");QVERIFY(wizard);
+        wizard->findChild<QLineEdit *>("txtCompID")->setText("CUSTOM");wizard->findChild<QComboBox *>("cboType")->setCurrentIndex(1);
+        auto *next=wizard->findChild<QPushButton *>("WizardNext");auto *steps=wizard->findChild<QStackedWidget *>("WizardSteps");
+        while(steps->currentIndex()<steps->count()-1) {QVERIFY(next->isEnabled());next->click();}
+        auto *finish=wizard->findChild<QPushButton *>("WizardFinish");QVERIFY(finish->isEnabled());finish->click();
+        const auto custom=objects->object(objects->currentObject());QCOMPARE(custom.value("name").toString(),QString("CUSTOM"));QCOMPARE(custom.value("type").toString(),QString("SOLID"));
+        shell.dispatch("components");auto *components=shell.findChild<ComponentWorkspace *>();
+        bool found=false;for(auto *table:components->findChildren<QTableWidget *>())
+            for(int row=0;row<table->rowCount();++row) if(table->item(row,0) && table->item(row,0)->text()=="CUSTOM") found=true;QVERIFY(found);
+        objects->removeObject(custom.value("key").toString());
+        for(auto *table:components->findChildren<QTableWidget *>()) for(int row=0;row<table->rowCount();++row)
+            QVERIFY(!table->item(row,0) || table->item(row,0)->text()!="CUSTOM");
+    }
+
     void recoveredImagesAndInteractiveForms()
     {
         QFile manifest(":/ui/icons/recovered.json"); QVERIFY(manifest.open(QIODevice::ReadOnly));
@@ -176,12 +302,16 @@ private slots:
         QVERIFY(visibleLeaves>=1); QVERIFY(visibleLeaves<20);
         query->clear();
         // Existing ribbon entry points must reach recovered forms and return to Components.
-        const QMap<QString,QString> targets{{"setup","MMSetup_Setup"},{"methods","MMProp_Spec_Input"},{"property-sets","MMPropSets_Input"}};
+        const QMap<QString,QString> targets{{"setup","MMSetup_Setup"},{"methods","MMProp_Spec_Input"}};
         for (auto it=targets.cbegin();it!=targets.cend();++it) {
             auto *button=shell.findChild<QToolButton *>(it.key()); QVERIFY(button);
             button->click(); QVERIFY(recovered->isVisible());
             QVERIFY(recovered->findChild<QLabel *>("RecoveredTitle")->text().contains(it.value()));
         }
+        shell.findChild<QToolButton *>("property-sets")->click();
+        auto *objects=shell.findChild<ObjectWorkspace *>();QVERIFY(objects->isVisible());
+        QVERIFY(objects->findChild<QWidget *>("ObjectManager")->isVisible());
+        QCOMPARE(objects->findChild<QTableWidget *>("ObjectTable")->rowCount(),0);
         auto *componentsButton=shell.findChild<QToolButton *>("components"); QVERIFY(componentsButton);
         componentsButton->click(); QVERIFY(!recovered->isVisible());
         QVERIFY(shell.findChild<ComponentWorkspace *>()->isVisible());

@@ -169,11 +169,20 @@ void RecoveredWorkspace::saveState()
         const auto key = w->property("stateKey").toString();
         if (key.isEmpty()) continue;
         if (auto *t = qobject_cast<QTabWidget *>(w)) values[key] = t->currentIndex();
-        else if (auto *c = qobject_cast<QComboBox *>(w)) values[key] = c->currentIndex();
+        else if (auto *c = qobject_cast<QComboBox *>(w)) values[key] = QVariantMap{{"index",c->currentIndex()},{"text",c->currentText()}};
         else if (auto *e = qobject_cast<QLineEdit *>(w)) values[key] = e->text();
         else if (auto *e = qobject_cast<QTextEdit *>(w)) values[key] = e->toPlainText();
         else if (auto *b = qobject_cast<QAbstractButton *>(w); b && b->isCheckable()) values[key] = b->isChecked();
         else if (auto *s = qobject_cast<QSpinBox *>(w)) values[key] = s->value();
+        else if (auto *t = qobject_cast<QTableWidget *>(w)) {
+            QVariantList rows;
+            for (int r=0;r<t->rowCount();++r) {
+                QStringList cells;
+                for (int c=0;c<t->columnCount();++c) cells << (t->item(r,c)?t->item(r,c)->text():QString());
+                rows << QVariant(cells);
+            }
+            values[key] = rows;
+        }
     }
     state_[current_] = values;
 }
@@ -186,12 +195,36 @@ void RecoveredWorkspace::restoreState(QWidget *view)
         if (!values.contains(key) || w->property("globalUnits").toBool()) continue;
         const auto value = values.value(key);
         if (auto *t = qobject_cast<QTabWidget *>(w)) t->setCurrentIndex(value.toInt());
-        else if (auto *c = qobject_cast<QComboBox *>(w)) c->setCurrentIndex(value.toInt());
+        else if (auto *c = qobject_cast<QComboBox *>(w)) {
+            const auto selection=value.toMap();
+            c->setCurrentIndex(selection.value("index",-1).toInt());
+            if (c->isEditable()) c->setEditText(selection.value("text").toString());
+        }
         else if (auto *e = qobject_cast<QLineEdit *>(w)) e->setText(value.toString());
         else if (auto *e = qobject_cast<QTextEdit *>(w)) e->setPlainText(value.toString());
         else if (auto *b = qobject_cast<QAbstractButton *>(w); b && b->isCheckable()) b->setChecked(value.toBool());
         else if (auto *s = qobject_cast<QSpinBox *>(w)) s->setValue(value.toInt());
+        else if (auto *t = qobject_cast<QTableWidget *>(w)) {
+            const QSignalBlocker blocker(t);
+            const auto rows=value.toList(); t->setRowCount(rows.size());
+            for (int r=0;r<rows.size();++r) {
+                const auto cells=rows[r].toStringList();
+                for(int c=0;c<t->columnCount();++c) t->setItem(r,c,new QTableWidgetItem(cells.value(c)));
+            }
+        }
     }
+}
+
+QMap<QString, QVariantMap> RecoveredWorkspace::sessionState()
+{
+    saveState();
+    return state_;
+}
+
+void RecoveredWorkspace::setSessionState(const QMap<QString, QVariantMap> &state)
+{
+    state_=state;
+    if (scroll_->widget()) restoreState(scroll_->widget());
 }
 
 QJsonObject RecoveredWorkspace::pageSpec(const QString &id)
@@ -243,6 +276,9 @@ QWidget *RecoveredWorkspace::renderPage(const QJsonObject &spec, int depth)
     if (depth > 8) return new QLabel(QString::fromUtf8("页面引用超过预览深度"));
     QScopedValueRollback<QString> context(renderScope_, renderScope_ + "/" + spec.value("id").toString());
     QScopedValueRollback<QString> identity(renderingId_, spec.value("id").toString());
+    const auto pageName=spec.value("name").toString();
+    QScopedValueRollback<bool> editable(sessionEditable_,sessionEditable_ &&
+        !pageName.contains("_Out",Qt::CaseInsensitive) && !pageName.contains("_Result",Qt::CaseInsensitive));
     auto nodes = spec.value("nodes").toArray();
     const auto overrides = interactions_.value("forms").toObject().value(spec.value("name").toString()).toObject();
     for (int i=0; i<nodes.size(); ++i) {
@@ -343,7 +379,7 @@ QWidget *RecoveredWorkspace::renderNodes(const QJsonArray &nodes, int index, int
         if (!action.isEmpty()) connect(button,&QPushButton::clicked,this,[this,action] { emit actionRequested(action); });
         else if (p.value("IsCancel").toBool() || QStringList{"btnClose","buttonCancel","CancelButton"}.contains(p.value("Name").toString()))
             connect(button,&QPushButton::clicked,this,&RecoveredWorkspace::closeRequested);
-        else { button->setEnabled(false); button->setToolTip(QString::fromUtf8("此操作需要运行时数据或计算服务")); }
+        else { button->setEnabled(false); button->setToolTip(QString::fromUtf8("此界面动作尚未接入")); }
     } else if (type.contains("Combo") || type.contains("DropDown")) {
         auto *combo=new QComboBox;
         for (const auto &value : p.value("Options").toArray()) combo->addItem(value.toString());
@@ -354,7 +390,8 @@ QWidget *RecoveredWorkspace::renderNodes(const QJsonArray &nodes, int index, int
                 combo->addItem(cp.value("DisplayText").toString(caption(cp)),cp.value("Value").toVariant());
             }
         }
-        combo->setEnabled(combo->count()>0);
+        combo->setEditable(sessionEditable_ && combo->count()==0);
+        combo->setEnabled(combo->count()>0 || combo->isEditable());
         combo->setCurrentIndex(p.value("SelectedIndex").toInt(-1));
         if (p.contains("SelectedText")) combo->setCurrentText(p.value("SelectedText").toString());
         if (p.value("GlobalUnits").toBool()) {
@@ -364,18 +401,21 @@ QWidget *RecoveredWorkspace::renderNodes(const QJsonArray &nodes, int index, int
         widget=combo;
     } else if (type=="MMVariableEdit") {
         widget=new QWidget; auto *row=new QHBoxLayout(widget); row->setContentsMargins(0,0,0,0); row->setSpacing(2);
-        auto *edit=new QLineEdit(p.value("Text").toString()); edit->setReadOnly(!p.value("Editable").toBool());
+        auto *edit=new QLineEdit(p.value("Text").toString()); edit->setReadOnly(!p.value("Editable").toBool(sessionEditable_));
         edit->setMaxLength(number(p,"MaxLength",32767));
         edit->setProperty("stateKey",renderScope_+":"+QString::number(index)+":value"); row->addWidget(edit,1);
         if (p.value("UnitsVisibility").toString()!="Collapsed" && p.contains("UnitsWidth")) {
-            auto *units=new QComboBox; units->setEnabled(false); units->setMinimumWidth(45); row->addWidget(units,1);
+            auto *units=new QComboBox;
+            for(const auto &unit:p.value("Units").toArray()) units->addItem(unit.toString());
+            units->setEnabled(units->count()>1); units->setMinimumWidth(45); row->addWidget(units,1);
+            units->setProperty("stateKey",renderScope_+":"+QString::number(index)+":units");
         }
     } else if (type.contains("SpinBox")) {
         auto *spin=new QSpinBox; spin->setRange(number(p,"Minimum",0),number(p,"Maximum",9999)); spin->setValue(p.value("Value").toInt()); widget=spin;
     } else if (type=="MMDescription" || type=="RichTextBox" || (type=="TextBox" && p.value("AcceptsReturn").toBool())) {
         auto *edit=new QTextEdit(p.value("Text").toString()); edit->setAcceptRichText(false); edit->setMinimumHeight(80); widget=edit;
     } else if (type.contains("TextBox") || type.contains("EditBox") || type.contains("Numeric") || type.endsWith("Edit")) {
-        auto *edit=new QLineEdit(p.value("Text").toString()); edit->setReadOnly(!p.value("Editable").toBool(!p.contains("VariablePath"))); edit->setMaxLength(number(p,"MaxLength",32767)); widget=edit;
+        auto *edit=new QLineEdit(p.value("Text").toString()); edit->setReadOnly(!p.value("Editable").toBool(sessionEditable_ || !p.contains("VariablePath"))); edit->setMaxLength(number(p,"MaxLength",32767)); widget=edit;
     } else if (type=="Image" || type=="AutoDisabledImage") {
         auto *label=new QLabel; const auto icon=aspenIcon(renderingId_+":"+QString::number(index)+":Source");
         if (!icon.isNull()) label->setPixmap(icon.pixmap(QSize(number(p,"Width",512),number(p,"Height",256))));
@@ -396,7 +436,26 @@ QWidget *RecoveredWorkspace::renderNodes(const QJsonArray &nodes, int index, int
         auto *table=new QTableWidget(0,labels.size()); table->setHorizontalHeaderLabels(labels);
         for (int i=0;i<widths.size();++i) table->setColumnWidth(i,widths[i]);
         table->horizontalHeader()->setStretchLastSection(true); table->setMinimumSize(100,60);
-        table->setEditTriggers(QAbstractItemView::NoEditTriggers); widget=table;
+        table->setEditTriggers(sessionEditable_?QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed|QAbstractItemView::AnyKeyPressed:QAbstractItemView::NoEditTriggers);
+        if (sessionEditable_ && !labels.isEmpty()) {
+            table->setRowCount(1);
+            connect(table,&QTableWidget::cellChanged,table,[table](int row,int) {
+                if (row!=table->rowCount()-1) return;
+                for(int col=0;col<table->columnCount();++col)
+                    if(table->item(row,col) && !table->item(row,col)->text().isEmpty()) { table->insertRow(table->rowCount()); break; }
+            });
+            table->setContextMenuPolicy(Qt::CustomContextMenu);
+            connect(table,&QWidget::customContextMenuRequested,table,[table](const QPoint &point){
+                const auto index=table->indexAt(point); if(!index.isValid()) return;
+                QMenu menu(table); auto *remove=menu.addAction(QString::fromUtf8("删除此行"));
+                connect(remove,&QAction::triggered,table,[table,index]{
+                    table->removeRow(index.row());
+                    if(table->rowCount()==0) table->insertRow(0);
+                });
+                menu.exec(table->viewport()->mapToGlobal(point));
+            });
+        }
+        widget=table;
     } else if (isData(type) && children.isEmpty()) {
         auto *table=new QTableWidget(0,0); table->setMinimumSize(120,60); table->setEnabled(false); widget=table;
     } else if (type.contains("ListBox")) {

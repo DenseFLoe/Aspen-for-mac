@@ -17,6 +17,7 @@ public:
     QString currentPage() const;
     QTabWidget *currentTabs() const;
     QStringList pageIds() const;
+    void setUserComponents(const QJsonArray &objects);
 
 signals:
     void pageChanged(const QString &id);

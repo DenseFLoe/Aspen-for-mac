@@ -11,6 +11,7 @@ class ComponentWorkspace;
 class QTreeWidget;
 class RecoveredWorkspace;
 class QDialog;
+class ObjectWorkspace;
 
 // UI-only shell: navigation works; simulation commands have no backend.
 class UiShell final : public QMainWindow
@@ -35,6 +36,10 @@ private:
     ComponentWorkspace *components_ = nullptr;
     QTreeWidget *navigation_ = nullptr;
     RecoveredWorkspace *recovered_ = nullptr;
+    ObjectWorkspace *objects_ = nullptr;
+    void syncObjectNavigation();
+    bool dispatchObjectAction(const QString &action);
+    void setWorkspaceMode(bool simulation);
     QStackedWidget *documents_ = nullptr;
     bool openRecovered(const QString &name);
     QToolButton *makeButton(const QJsonObject &spec, QWidget *parent, bool iconOnly = false);
