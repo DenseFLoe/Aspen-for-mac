@@ -5,6 +5,8 @@
 - [report.md](report.md)：关系图谱、RC/NV/UD/UC/RP 五簇结论、未确认清单与待动态验收案例。
 - [report-continued.md](report-continued.md)：续轮逐条确认（状态真值表、向导提交模型、PFS 撤销栈、NextHit、重初始化链）与对前轮的更正。
 - [evidence-index-confirm.json](evidence-index-confirm.json) / [checks-confirm.json](checks-confirm.json)：续轮索引与 24 项检查（全过）。
+- [report-round3.md](report-round3.md)：第三轮（分析按钮簇互锁、StoreValue 通用提交钩子、ModelLibrary 撤销、状态位解码）。
+- [evidence-index-round3.json](evidence-index-round3.json) / [checks-round3.json](checks-round3.json)：第三轮索引与 16 项检查（全过）。
 - [evidence-index.json](evidence-index.json)：11 个安装源哈希、316 个方法 token/RVA、3 个原生入口、字符串归属。
 - [checks.json](checks.json)：18 项一致性检查（全过）。
 - [verify_evidence.py](verify_evidence.py) / [reproduce.py](reproduce.py)：复算与重提取入口。

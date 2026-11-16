@@ -43,4 +43,15 @@ verify 读取已保存证据与安装文件复算哈希/定位；reproduce 在�
 | 数据资产 | 仍 3,226 文件，未写入 | 同基线 |
 | 动态观察 | 仍未进行 | 无点击 |
 
+## 第三轮补充
+
+| 检查 | 结果 | 证据 / 范围 |
+| --- | --- | --- |
+| 第三轮断言 | **16/16 通过** | checks-round3.json |
+| 三索引复算 | 均 0 失败 | verify_evidence.py 默认 / --index confirm / --index round3 |
+| IL 引用扫描 | StoreValue 发布/订阅边、ModelLibrary 事件边 | scan_refs.py 产物登记于 round3 索引 |
+| 原生状态 | HAQueryRunStatus 位合成与常量部分解码 | native-runstatus(-helpers) |
+| 数据资产 | 仍 3,226 文件，未写入 | 同基线 |
+| 动态观察 | 仍未进行 | 无点击 |
+
 本轮没有把分析报告当成任何开发阶段或按钮业务功能已完成的证明。

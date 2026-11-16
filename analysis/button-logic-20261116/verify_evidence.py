@@ -46,6 +46,8 @@ def main():
             if not p.exists():
                 continue
             obj = json.loads(p.read_text(encoding='utf-8'))
+            if not isinstance(obj, dict):
+                continue
             for m in obj.get('methods', []):
                 method_triples.add((m['name'], m['token'], m['rva']))
             for f in obj.get('functions', []):
