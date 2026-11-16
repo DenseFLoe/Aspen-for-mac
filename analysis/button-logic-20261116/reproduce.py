@@ -22,13 +22,14 @@ CORE.pefile = types.SimpleNamespace(PE=full_export_pe, PEFormatError=CORE.pefile
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--out', required=True)
+    ap.add_argument('--index', type=Path, default=HERE/'evidence-index.json')
     args = ap.parse_args()
     out = Path(args.out).resolve()
     rel = out.relative_to(ROOT/'.local')
     if not rel.parts or not rel.parts[0].startswith('button-logic-repro-'):
         raise ValueError('Output must be under .local/button-logic-repro-*')
     out.mkdir(parents=True, exist_ok=False)
-    index = json.loads((HERE/'evidence-index.json').read_text(encoding='utf-8'))
+    index = json.loads(args.index.read_text(encoding='utf-8'))
     for src in index['sources']:
         p = Path(src['file'])
         if hashlib.sha256(p.read_bytes()).hexdigest() != src['sha256']:
@@ -45,7 +46,10 @@ def main():
             pattern = re.compile('^(?:'+'|'.join(re.escape(f['name']) for f in src['functions'])+')$')
             entries = [int(f['rva'], 16) for f in src['functions'] if f['name'].startswith('sub_')]
             CORE.native(Path(src['file']), pattern, target, entries)
-    subprocess.run([sys.executable, str(HERE/'verify_evidence.py'), '--run', str(out)], check=True)
+    subprocess.run([sys.executable, str(HERE/'verify_evidence.py'), '--run', str(out),
+                    '--index', str(args.index),
+                    '--checks', str(args.index.with_name(args.index.name.replace('evidence-index', 'checks')))],
+                   check=True)
 
 if __name__ == '__main__':
     main()

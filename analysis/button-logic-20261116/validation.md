@@ -32,4 +32,15 @@
 
 verify 读取已保存证据与安装文件复算哈希/定位；reproduce 在新目录重跑索引范围内提取并自动 verify。两者都不执行 Aspen 程序代码。
 
+## 续轮（同日第二轮）补充
+
+| 检查 | 结果 | 证据 / 范围 |
+| --- | --- | --- |
+| 续轮安装源 | 12 个源哈希一致，与第三轮索引连续 | evidence-index-confirm.json |
+| 续轮方法/原生定位 | 索引三元组复算一致；原生 3 入口（HappRun/SMreorder/IsNotComplete） | verify_evidence.py --index evidence-index-confirm.json --checks checks-confirm.json |
+| 续轮断言 | **24/24 通过** | checks-confirm.json |
+| 前轮更正 | 选择页无名按钮＝生物质查找（BioLookupVar），非亨利入口 | managed-biolookup＋布局 L |
+| 数据资产 | 仍 3,226 文件，未写入 | 同基线 |
+| 动态观察 | 仍未进行 | 无点击 |
+
 本轮没有把分析报告当成任何开发阶段或按钮业务功能已完成的证明。

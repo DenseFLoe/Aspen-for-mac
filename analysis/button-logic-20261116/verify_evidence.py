@@ -15,9 +15,11 @@ DEFAULT_RUN = ROOT/'.local/button-logic-exploration-20261116'
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--run', type=Path, default=None)
+    ap.add_argument('--index', type=Path, default=HERE/'evidence-index.json')
+    ap.add_argument('--checks', type=Path, default=HERE/'checks.json')
     args = ap.parse_args()
-    index = json.loads((HERE/'evidence-index.json').read_text(encoding='utf-8'))
-    checks = json.loads((HERE/'checks.json').read_text(encoding='utf-8'))['checks']
+    index = json.loads(args.index.read_text(encoding='utf-8'))
+    checks = json.loads(args.checks.read_text(encoding='utf-8'))['checks']
     failures = []
 
     def fail(msg):
