@@ -40,9 +40,11 @@
 
 模型测试覆盖 SFE 新建/追加、最终重复冲突、同名不同身份、非法来源、水离解元素与电荷守恒、参考态与方法、早完成、项目往返、撤销及损坏引用拒绝。UI 回归覆盖无水/无反应、排除与返回、ID 取消/本地集合、只读 ID、提交时点、SFE 返回重建、全局选项、活动单元格提交、陈旧项目拒绝及真实 Chemistry 页面。
 
-macOS Actions 的对应提交/结果将在交付记录中补充。
+交付代码提交：[`7bc499932e21c0d0ced286e356e33646ddfa1886`](https://github.com/DenseFLoe/Aspen-for-mac/commit/7bc499932e21c0d0ced286e356e33646ddfa1886)，已上传 `codex/wizard-business-logic`。本地与远端代码树一致，沿用分析分支历史，未改默认分支。
 
 Windows Qt 6.8.3/MinGW 构建通过；最终 CTest 3/3 通过（86.25秒），独立模型测试10项、完整 UI 回归27项通过（包含真实 WATER/ETHANOL 只读查询），Python测试14项通过。完整 UI 检查使用 `ASPEN_TEST_DATABASE`；不要用 `ASPEN_PROPERTY_DATABASE` 给所有空项目注入真实库，以免破坏无库/初始状态测试的前提。
+
+该代码提交的 [macOS Actions #43](https://github.com/DenseFLoe/Aspen-for-mac/actions/runs/43797228025) 已成功：Qt 6.8.3 编译、Python 14项、资源目录检查、CTest 4/4（21.40秒，含 Cocoa 可访问性回归）及打包 Qt/SQLite 依赖检查通过。云端没有本地真实物性库，因此真实 WATER/ETHANOL 查询证据来自 Windows；Mac 本地数据库路径与查询仍待实机验收。打包步骤在 CI 临时目录生成 ZIP，当前工作流没有发布可下载制品。
 
 Mac 实机验收仍需：
 
