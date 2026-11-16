@@ -31,9 +31,11 @@ qt_add_executable(AspenPlusUIShell
     src/main.cpp
     src/UiShell.cpp
     src/PropertyDatabase.cpp src/PropertyDatabase.h src/DatabaseDialog.cpp src/DatabaseDialog.h
-    src/UiShellProject.cpp src/ProjectDocument.cpp src/ProjectDocument.h src/WidgetState.cpp src/WidgetState.h
+    src/UiShellProject.cpp src/ProjectDocument.cpp src/ProjectDocument.h src/ChemicalSystem.cpp src/ChemicalSystem.h src/WidgetState.cpp src/WidgetState.h
     src/UiShellActions.cpp
     src/UiShellAssistants.cpp
+    src/PropertyAssistant.cpp src/PropertyAssistant.h
+    src/ChemicalSystemView.cpp src/ChemicalSystemView.h
     src/UiShellObjects.cpp
     src/UiShellSimulation.cpp
     src/ModelPalette.cpp
@@ -75,12 +77,24 @@ endif()
 include(CTest)
 if(BUILD_TESTING)
     find_package(Qt6 REQUIRED COMPONENTS Test)
+    qt_add_executable(ChemicalSystemTest tests/ChemicalSystemTest.cpp
+        src/ProjectDocument.cpp src/ProjectDocument.h src/ChemicalSystem.cpp src/ChemicalSystem.h)
+    target_include_directories(ChemicalSystemTest PRIVATE src)
+    target_link_libraries(ChemicalSystemTest PRIVATE Qt6::Widgets Qt6::Test)
+    qt_add_resources(ChemicalSystemTest "chemical_test_catalog" PREFIX "/" FILES ui/object-types.json)
+    if(MSVC)
+        target_compile_options(ChemicalSystemTest PRIVATE /utf-8)
+    endif()
+    add_test(NAME chemical-system COMMAND ChemicalSystemTest)
+    set_tests_properties(chemical-system PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen" TIMEOUT 60)
     qt_add_executable(UiSmokeTest
         tests/UiSmokeTest.cpp src/UiShell.cpp src/UiShell.h
         src/PropertyDatabase.cpp src/PropertyDatabase.h src/DatabaseDialog.cpp src/DatabaseDialog.h
-        src/UiShellProject.cpp src/ProjectDocument.cpp src/ProjectDocument.h src/WidgetState.cpp src/WidgetState.h
+        src/UiShellProject.cpp src/ProjectDocument.cpp src/ProjectDocument.h src/ChemicalSystem.cpp src/ChemicalSystem.h src/WidgetState.cpp src/WidgetState.h
         src/UiShellActions.cpp
         src/UiShellAssistants.cpp
+        src/PropertyAssistant.cpp src/PropertyAssistant.h
+        src/ChemicalSystemView.cpp src/ChemicalSystemView.h
         src/UiShellObjects.cpp src/ObjectWorkspace.cpp src/ObjectWorkspace.h
         src/UiShellSimulation.cpp src/ModelPalette.cpp
         src/IconCatalog.cpp src/IconCatalog.h
@@ -102,7 +116,7 @@ if(BUILD_TESTING)
         tests/DatabaseAccessibilityTest.cpp
         src/DatabaseDialog.cpp src/DatabaseDialog.h
         src/PropertyDatabase.cpp src/PropertyDatabase.h
-        src/ProjectDocument.cpp src/ProjectDocument.h
+        src/ProjectDocument.cpp src/ProjectDocument.h src/ChemicalSystem.cpp src/ChemicalSystem.h
     )
     set_target_properties(DatabaseAccessibilityTest PROPERTIES WIN32_EXECUTABLE FALSE)
     target_include_directories(DatabaseAccessibilityTest PRIVATE src tests)

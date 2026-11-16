@@ -1,3 +1,4 @@
+#include "ChemicalSystem.h"
 #include "DatabaseDialog.h"
 #include <QMouseEvent>
 #include "PropertyDatabase.h"
@@ -137,7 +138,7 @@ DatabaseDialog::DatabaseDialog(PropertyDatabase *database,ProjectDocument *proje
     connect(parameters_,&QTableWidget::itemSelectionChanged,this,&DatabaseDialog::showSource);
     connect(previous_,&QPushButton::clicked,this,[this]{offset_=qMax(0,offset_-200);showParameters();});connect(next_,&QPushButton::clicked,this,[this]{offset_+=200;showParameters();});
     connect(selected_,&QListWidget::currentRowChanged,this,&DatabaseDialog::updateActions);
-    connect(remove_,&QPushButton::clicked,this,[this]{const int r=selected_->currentRow();auto state=project_->state();auto c=state.value("components").toArray();if(r<0 || r>=c.size())return;c.removeAt(r);state["components"]=c;if(c.isEmpty()){auto d=state.value("dependencies").toObject();d.remove("propertyDatabase");state["dependencies"]=d;}project_->edit(state);if(selected_->count())selected_->setCurrentRow(qMin(r,selected_->count()-1));});
+    connect(remove_,&QPushButton::clicked,this,[this]{const int r=selected_->currentRow();auto state=project_->state();auto c=state.value("components").toArray();if(r<0 || r>=c.size())return;if(ChemicalSystem::componentReferenced(state,ChemicalSystem::databaseKey(c[r].toObject()))){status_->setText(QString::fromUtf8("该组分被化学系统引用，不能移除。"));return;}c.removeAt(r);state["components"]=c;if(c.isEmpty()){auto d=state.value("dependencies").toObject();d.remove("propertyDatabase");state["dependencies"]=d;}project_->edit(state);if(selected_->count())selected_->setCurrentRow(qMin(r,selected_->count()-1));});
     connect(project_,&ProjectDocument::changed,this,&DatabaseDialog::refreshSelection);
     auto updateBanks=[this,bankButtons]{bankButtons[0]->setEnabled(!availableBanks_->selectedItems().isEmpty());bankButtons[1]->setEnabled(availableBanks_->count()>0);bankButtons[2]->setEnabled(!selectedBanks_->selectedItems().isEmpty());bankButtons[3]->setEnabled(selectedBanks_->count()>0);bankButtons[4]->setEnabled(selectedBanks_->selectedItems().size()==1 && selectedBanks_->currentRow()>0);bankButtons[5]->setEnabled(selectedBanks_->selectedItems().size()==1 && selectedBanks_->currentRow()>=0 && selectedBanks_->currentRow()+1<selectedBanks_->count());};
     for(int i=0;i<4;++i)connect(bankButtons[i],&QPushButton::clicked,this,[this,i,updateBanks]{auto *from=i<2?availableBanks_:selectedBanks_;auto *to=i<2?selectedBanks_:availableBanks_;auto items=from->selectedItems();if(i%2){items.clear();for(int r=0;r<from->count();++r)items<<from->item(r);}for(auto *item:items)to->addItem(from->takeItem(from->row(item)));clearResults();updateBanks();});

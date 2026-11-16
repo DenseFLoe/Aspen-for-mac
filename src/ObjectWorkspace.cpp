@@ -1,4 +1,6 @@
 #include "ObjectWorkspace.h"
+#include "ChemicalSystem.h"
+#include "ChemicalSystemView.h"
 #include "RecoveredWorkspace.h"
 #include "IconCatalog.h"
 #include <QAction>
@@ -294,6 +296,9 @@ QString ObjectWorkspace::nameError(const QString &kind,const QString &name,const
     if(!parentTypes.isEmpty() && !parentTypes.contains(object(parent).value("type"))) return QString::fromUtf8("请选择有效的所属模块。");
     if(parentTypes.isEmpty() && !parent.isEmpty()) return QString::fromUtf8("此类别属于案例顶层。");
     if(!QRegularExpression("^[A-Za-z0-9][A-Za-z0-9_-]{0,7}$").match(name).hasMatch()) return QString::fromUtf8("请输入 1–8 位字母、数字、连字符或下划线组成的 ID。");
+    if(kind=="user-components")for(const auto &v:ChemicalSystem::components(chemicalState_)) {
+        const auto c=v.toObject();if(c.value("key")!="object:"+except && ChemicalSystem::normalizedId(c.value("id").toString())==ChemicalSystem::normalizedId(name))return QString::fromUtf8("项目已有此组分 ID。");
+    }
     for(auto it=entries_.cbegin();it!=entries_.cend();++it) {
         const auto d=it->data;
         if(it.key()!=except && d.value("kind")==kind && d.value("parent")==parent && d.value("name").toString().compare(name,Qt::CaseInsensitive)==0)
@@ -317,6 +322,7 @@ bool ObjectWorkspace::renameObject(const QString &key,const QString &name) {
 }
 bool ObjectWorkspace::removeObject(const QString &key) {
     if(!entries_.contains(key)) return false;
+    if(ChemicalSystem::componentReferenced(chemicalState_,"object:"+key)) return false;
     QStringList removed{key};
     for(int i=0;i<removed.size();++i) for(const auto &candidate:order_)
         if(entries_[candidate].data.value("parent").toString()==removed[i]) removed.append(candidate);
@@ -384,6 +390,7 @@ bool ObjectWorkspace::openObject(const QString &key,const QString &page) {
     for(const auto &p:pages) if(entry.view->idForName(p.toObject().value("page").toString())==target) allowed=true;
     if(!allowed) {if(newlyOpened) closeObject(key);return false;}
     if(entry.view->currentPage()!=target && !entry.view->showPage(target)) return false;
+    if(entry.data.contains("chemistryData"))entry.view->setBusinessContent(makeChemicalSystemView(entry.data,chemicalState_,entry.view));
     refreshTitles(); documents_->setCurrentWidget(entry.view); emit objectActivated(key,target); return true;
 }
 void ObjectWorkspace::closeObject(const QString &key) {
@@ -529,6 +536,10 @@ void ObjectWorkspace::requestDeleteObjects(const QStringList &keys) {
     auto *dialog=new QDialog(this); dialog->setAttribute(Qt::WA_DeleteOnClose); dialog->setObjectName("ObjectDeleteDialog"); dialog->setWindowTitle(QString::fromUtf8("删除对象"));
     auto *layout=new QVBoxLayout(dialog); layout->addWidget(new QLabel(QString::fromUtf8("删除 %1 及其子对象？").arg(names.join(", ")),dialog));
     auto *buttons=new QDialogButtonBox(QDialogButtonBox::Yes|QDialogButtonBox::Cancel,dialog); layout->addWidget(buttons);
+    for(const auto &key:existing)if(ChemicalSystem::componentReferenced(chemicalState_,"object:"+key)) {
+        layout->insertWidget(1,new QLabel(QString::fromUtf8("该组分被化学系统引用，不能删除。请先撤销相关向导生成。"),dialog));
+        buttons->button(QDialogButtonBox::Yes)->setEnabled(false);break;
+    }
     buttons->button(QDialogButtonBox::Yes)->setText(QString::fromUtf8("删除")); buttons->button(QDialogButtonBox::Cancel)->setText(QString::fromUtf8("取消"));
     buttons->button(QDialogButtonBox::Cancel)->setDefault(true);
     connect(buttons,&QDialogButtonBox::accepted,dialog,[this,existing,dialog,onFlowsheet]{

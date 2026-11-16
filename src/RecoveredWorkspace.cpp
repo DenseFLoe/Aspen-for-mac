@@ -32,6 +32,12 @@
 #include <QSet>
 #include <functional>
 
+void RecoveredWorkspace::setBusinessContent(QWidget *content) {
+    content->setProperty("projectDerived",true);
+    scroll_->setWidget(content);
+    notice_->hide();
+}
+
 namespace {
 QJsonObject readObject(const QString &path)
 {
@@ -171,7 +177,7 @@ void RecoveredWorkspace::setGlobalUnits(const QString &units)
 
 void RecoveredWorkspace::saveState()
 {
-    if (current_.isEmpty() || !scroll_->widget()) return;
+    if (current_.isEmpty() || !scroll_->widget() || scroll_->widget()->property("projectDerived").toBool()) return;
     QVariantMap values;
     const auto widgets = scroll_->widget()->findChildren<QWidget *>();
     for (auto *w : widgets) {

@@ -1,5 +1,6 @@
 #include "UiShell.h"
 #include "ProjectDocument.h"
+#include "ChemicalSystem.h"
 #include "PropertyDatabase.h"
 #include "DatabaseDialog.h"
 #include <QLabel>
@@ -24,6 +25,19 @@ void UiShell::initializeProject() {
     if(!dbPath.isEmpty()) database_->open(dbPath,&databaseError_);
     auto *dbStatus=new QLabel(this);dbStatus->setObjectName("DatabaseStatus");statusBar()->addPermanentWidget(dbStatus);
     project_=new ProjectDocument(this); project_->setObjectName("ProjectDocument");
+    connect(components_,&ComponentWorkspace::componentTypeChanged,this,[this](const QString &db,const QString &id,const QString &type) {
+        auto state=project_->state();auto components=state.value("components").toArray();
+        for(int i=0;i<components.size();++i) {
+            auto c=components[i].toObject();if(c.value("database")!=db || c.value("compoundId")!=id)continue;
+            c["componentType"]=type;components[i]=c;break;
+        }
+        state["components"]=components;
+        if(!ChemicalSystem::validate(state).isEmpty()) {
+            statusBar()->showMessage(QString::fromUtf8("该类别与已生成化学系统不兼容；请先撤销相关向导生成。"),6000);
+            components_->setUserComponents(objects_->objects());return;
+        }
+        project_->edit(state);
+    });
     connect(objects_,&ObjectWorkspace::objectsChanged,this,&UiShell::captureProject);
     connect(objects_,&ObjectWorkspace::inputsChanged,this,&UiShell::captureProject);
     connect(components_,&ComponentWorkspace::inputsChanged,this,&UiShell::captureProject);
@@ -31,7 +45,13 @@ void UiShell::initializeProject() {
     connect(project_,&ProjectDocument::restored,this,&UiShell::restoreProject);
     connect(project_,&ProjectDocument::changed,this,[this] {
         components_->setDatabaseComponents(project_->state().value("components").toArray());
+        components_->setGeneratedComponents(project_->state().value("chemicalSystem").toObject().value("generatedComponents").toArray());
+        objects_->setChemicalSystemState(project_->state());
         components_->setUserComponents(objects_->objects());
+        const auto global=project_->state().value("chemicalSystem").toObject().value("global").toObject();
+        components_->setChemicalSummary(global.isEmpty()?QString():QString::fromUtf8("全局 Chemistry：%1  ·  物性方法：%2  ·  %3（未接入计算）")
+            .arg(ChemicalSystem::globalChemistryId(project_->state()),global.value("method").toString(QString::fromUtf8("未设置")),
+                global.contains("trueComponents")?(global.value("trueComponents").toBool()?QString::fromUtf8("真实组分"):QString::fromUtf8("表观组分")):QString::fromUtf8("模拟方式未设置")));
         updateDatabaseStatus();
         const auto name=project_->fileName().isEmpty()?QString::fromUtf8("未命名项目"):QFileInfo(project_->fileName()).fileName();
         setWindowTitle(name+(project_->isModified()?" *":"")+QString::fromUtf8(" — Aspen for Mac"));
@@ -52,11 +72,14 @@ void UiShell::captureProject() {
     auto inputs=state.value("unverifiedInputs").toObject();
     inputs["recovered"]=recovered;inputs["components"]=components_->sessionState();
     state["unverifiedInputs"]=inputs;
-    project_->edit(state);
+    project_->edit(ChemicalSystem::removeMissingGlobalReferences(state));
 }
 void UiShell::restoreProject() {
     const QScopedValueRollback<bool> guard(restoringProject_,true);
     const auto s=project_->state(); setUnits(s.value("units").toString());
+    objects_->setChemicalSystemState(s);
+    components_->setDatabaseComponents(s.value("components").toArray());
+    components_->setGeneratedComponents(s.value("chemicalSystem").toObject().value("generatedComponents").toArray());
     objects_->restoreProjectObjects(s.value("objects").toArray());
     const auto inputs=s.value("unverifiedInputs").toObject();
     QMap<QString,QVariantMap> recovered; const auto pages=inputs.value("recovered").toObject();

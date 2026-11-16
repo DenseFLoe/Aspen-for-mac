@@ -1,3 +1,4 @@
+#include "ChemicalSystem.h"
 #include "DatabaseFixture.h"
 #include "UiShell.h"
 #include "ProjectDocument.h"
@@ -35,6 +36,7 @@
 #include <QPushButton>
 #include <QToolButton>
 #include <QLineEdit>
+#include <QInputDialog>
 #include <QScrollArea>
 #include <QScrollBar>
 #include <QSlider>
@@ -76,58 +78,103 @@ private slots:
         QVERIFY2(shell.loadProject(temp.filePath("flow.afmp"),&error),qPrintable(error));QCOMPARE(objects->object(stream).value("lineColor").toString(),QString("#ff0000"));QCOMPARE(objects->object(stream).value("lineStyle").toInt(),3);
     }
 
-    void assistantsAndComponentOrderPersist() {
+    void assistantsWriteBusinessDataAtConfirmedSteps() {
         QTemporaryDir temp;const auto db=databaseFixture(temp.path());QString error;
-        QFile file(":/ui/aspen-plus.json");QVERIFY(file.open(QIODevice::ReadOnly));const auto catalog=QJsonDocument::fromJson(file.readAll()).object();
-        UiShell shell(catalog);shell.show();QVERIFY(shell.openPropertyDatabase(db,&error));shell.dispatch("database-search");
+        QFile file(":/ui/aspen-plus.json");QVERIFY(file.open(QIODevice::ReadOnly));const auto catalog=QJsonDocument::fromJson(file.readAll()).object();UiShell shell(catalog);shell.show();
+        QVERIFY(shell.openPropertyDatabase(db,&error));shell.dispatch("find-component");
         auto *search=shell.findChild<QDialog *>("FindCompoundDialog");search->findChild<QLineEdit *>("compound-query")->setText("WATER");search->findChild<QPushButton *>("SearchDatabase")->click();
-        auto *results=search->findChild<QTableWidget *>("DatabaseResults");QTest::qWait(30);results->clearSelection();
-        QTest::mouseDClick(results->viewport(),Qt::LeftButton,Qt::NoModifier,results->visualItemRect(results->item(0,3)).center());
-        QCOMPARE(shell.project()->state().value("components").toArray().size(),1);
-        search->reject();QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);
-        shell.dispatch("component:specifications");
-        auto *componentPage=shell.findChild<ComponentWorkspace *>();
-        for(const char *id:{"electrolyte-wizard","sfe-assistant","user-components","reorder"}) {
-            auto *button=componentPage->findChild<QPushButton *>(id);QVERIFY(button);QVERIFY(button->isEnabled());
-        }
+        auto *results=search->findChild<QTableWidget *>("DatabaseResults");QVERIFY(results);QCOMPARE(results->rowCount(),1);QTest::qWait(20);results->clearSelection();QTest::mouseDClick(results->viewport(),Qt::LeftButton,Qt::NoModifier,results->visualItemRect(results->item(0,3)).center());QCOMPARE(shell.project()->state().value("components").toArray().size(),1);search->reject();QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);
+        shell.dispatch("component:specifications");auto *componentPage=shell.findChild<ComponentWorkspace *>();
+        auto *type=componentPage->findChild<QComboBox *>("ComponentType-TEST-1");QVERIFY(type);type->setCurrentText("CONV");
         const auto original=shell.project()->state();
-        componentPage->findChild<QPushButton *>("electrolyte-wizard")->click();QTest::qWait(20);
-        auto *wizard=shell.findChild<QDialog *>("wizard-electrolyte");QVERIFY(wizard);
-        const auto capture=qEnvironmentVariable("ASPEN_CAPTURE_DIR");
-        if(!capture.isEmpty()){QDir().mkpath(capture);QVERIFY(wizard->grab().save(capture+"/electrolyte-welcome.png"));}
-        auto *steps=wizard->findChild<QStackedWidget *>("WizardSteps");QCOMPARE(steps->count(),5);
-        wizard->findChild<QComboBox *>("cboRefStateSelect")->setCurrentIndex(1);
-        wizard->findChild<QPushButton *>("WizardNext")->click();QCOMPARE(steps->currentIndex(),1);
-        auto *selected=steps->widget(1)->findChild<QListWidget *>("lstSelectedComp");QCOMPARE(selected->count(),1);
-        if(!capture.isEmpty())QVERIFY(wizard->grab().save(capture+"/electrolyte-selection.png"));
-        steps->widget(1)->findChild<QPushButton *>("btnClearAll")->click();QVERIFY(!wizard->findChild<QPushButton *>("WizardNext")->isEnabled());
-        steps->widget(1)->findChild<QPushButton *>("btnMoveAll")->click();QVERIFY(wizard->findChild<QPushButton *>("WizardNext")->isEnabled());
-        wizard->findChild<QPushButton *>("WizardCancel")->click();QCOMPARE(shell.project()->state(),original);QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);
-        shell.dispatch("electrolyte-wizard");wizard=shell.findChild<QDialog *>("wizard-electrolyte");steps=wizard->findChild<QStackedWidget *>("WizardSteps");
-        wizard->findChild<QComboBox *>("cboRefStateSelect")->setCurrentIndex(1);
-        for(int i=0;i<4;++i){QVERIFY(wizard->findChild<QPushButton *>("WizardNext")->isEnabled());wizard->findChild<QPushButton *>("WizardNext")->click();}
-        QCOMPARE(steps->currentIndex(),4);QVERIFY(wizard->findChild<QPushButton *>("WizardFinish")->isEnabled());
-        if(!capture.isEmpty())QVERIFY(wizard->grab().save(capture+"/electrolyte-summary.png"));
-        wizard->findChild<QPushButton *>("WizardFinish")->click();QVERIFY(shell.project()->state()!=original);
-        QCOMPARE(shell.project()->state().value("components"),original.value("components"));
-        shell.project()->undo();QCOMPARE(shell.project()->state(),original);shell.project()->redo();
-        shell.dispatch("units:SI");const auto path=temp.filePath("assistants.afmp");QVERIFY2(shell.saveProject(path,&error),qPrintable(error));
-        UiShell reopened(catalog);QVERIFY2(reopened.loadProject(path,&error),qPrintable(error));reopened.dispatch("electrolyte-wizard");
-        auto *restored=reopened.findChild<QDialog *>("wizard-electrolyte");QCOMPARE(restored->findChild<QComboBox *>("cboRefStateSelect")->currentIndex(),1);restored->reject();
-        componentPage->findChild<QPushButton *>("sfe-assistant")->click();QTest::qWait(20);
-        wizard=shell.findChild<QDialog *>("wizard-sfe");QVERIFY(wizard);steps=wizard->findChild<QStackedWidget *>("WizardSteps");
-        QVERIFY(!wizard->findChild<QPushButton *>("WizardNext")->isEnabled());steps->widget(0)->findChild<QPushButton *>("btnMoveAll")->click();
-        wizard->findChild<QPushButton *>("WizardNext")->click();QCOMPARE(steps->currentIndex(),1);
-        auto *solids=steps->widget(1)->findChild<QTableWidget *>("grdSolidComponent");QVERIFY(solids);QCOMPARE(solids->rowCount(),1);QCOMPARE(solids->columnCount(),2);
-        if(!capture.isEmpty())QVERIFY(wizard->grab().save(capture+"/sfe-solid-selection.png"));
-        solids->item(0,1)->setText("ICE");wizard->findChild<QPushButton *>("WizardBack")->click();wizard->findChild<QPushButton *>("WizardNext")->click();QCOMPARE(solids->item(0,1)->text(),QString("ICE"));
-        wizard->findChild<QPushButton *>("WizardFinish")->click();
-        // Ordering is transactional and stores identities, including equal aliases.
-        auto state=shell.project()->state();auto components=state.value("components").toArray();auto other=components[0].toObject();other["compoundId"]="second";components.append(other);state["components"]=components;shell.project()->edit(state);
-        componentPage->findChild<QPushButton *>("reorder")->click();QTest::qWait(20);
-        auto *order=shell.findChild<QDialog *>("dialog-ReorderComp");QVERIFY(order);auto *list=order->findChild<QListWidget *>("lvSelectedComps");list->setCurrentRow(1);order->findChild<QPushButton *>("btnUp")->click();
-        order->findChild<QDialogButtonBox *>()->button(QDialogButtonBox::Ok)->click();QCOMPARE(shell.project()->state().value("components").toArray()[0].toObject().value("compoundId").toString(),QString("second"));
-        shell.project()->undo();QCOMPARE(shell.project()->state().value("components"),state.value("components"));
+        shell.dispatch("electrolyte-wizard");auto *wizard=shell.findChild<QDialog *>("wizard-electrolyte");QVERIFY(wizard);
+        auto *steps=wizard->findChild<QStackedWidget *>("WizardSteps");auto *next=wizard->findChild<QPushButton *>("WizardNext");
+        next->click();QCOMPARE(steps->currentIndex(),1);QCOMPARE(steps->widget(1)->findChild<QListWidget *>("lstSelectedComp")->count(),1);
+        next->click();QCOMPARE(steps->currentIndex(),1);QCOMPARE(shell.project()->state(),original);
+        wizard->findChild<QCheckBox *>("chkWaterDissociation")->setChecked(true);next->click();QCOMPARE(steps->currentIndex(),2);
+        QCOMPARE(wizard->findChild<QListWidget *>("lstAqueousSpecies")->count(),2);QCOMPARE(wizard->findChild<QListWidget *>("lstReactions")->count(),1);
+        next->click();QCOMPARE(steps->currentIndex(),3);QCOMPARE(shell.project()->state(),original);
+        QVERIFY(steps->widget(3)->findChild<QLineEdit *>("txtChemID")->isReadOnly());next->click();QCOMPARE(steps->currentIndex(),4);
+        const auto committed=shell.project()->state();QVERIFY(committed!=original);QCOMPARE(committed.value("components"),original.value("components"));
+        QCOMPARE(ChemicalSystem::globalChemistryId(committed),QString("GLOBAL"));QVERIFY(!wizard->findChild<QPushButton *>("WizardBack")->isEnabled());QVERIFY(!wizard->findChild<QPushButton *>("WizardCancel")->isEnabled());
+        wizard->findChild<QPushButton *>("btnModifyAddRxns")->click();auto *review=wizard->findChild<QDialog *>("ChemistryReview");QVERIFY(review);QCOMPARE(review->findChild<QTableWidget *>("ChemistryRecords")->rowCount(),3);review->reject();
+        const auto capture=qEnvironmentVariable("ASPEN_CAPTURE_DIR");if(!capture.isEmpty()){QDir().mkpath(capture);QVERIFY(wizard->grab().save(capture+"/electrolyte-committed.png"));}
+        wizard->reject();QCOMPARE(shell.project()->state(),committed);QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);
+        shell.project()->undo();QCOMPARE(shell.project()->state(),original);shell.project()->redo();QCOMPARE(shell.project()->state(),committed);
+        const auto record=ChemicalSystem::chemistry(committed,"GLOBAL");shell.dispatch("object:"+record.value("key").toString());
+        auto *objects=shell.findChild<ObjectWorkspace *>();QVERIFY(objects->findChild<QWidget *>("ChemicalSystemView"));
+        shell.dispatch("units:SI");QCOMPARE(ChemicalSystem::chemistry(shell.project()->state(),"GLOBAL"),record);
+        const auto path=temp.filePath("assistants.afmp");QVERIFY2(shell.saveProject(path,&error),qPrintable(error));
+        UiShell reopened(catalog);QVERIFY2(reopened.loadProject(path,&error),qPrintable(error));QCOMPARE(reopened.project()->state(),shell.project()->state());
+        reopened.dispatch("object:"+record.value("key").toString());QCOMPARE(reopened.findChild<QTableWidget *>("ChemistryRecords")->rowCount(),3);
+        // SFE submits only on Finish, preserves input identity and rebuilds names on re-entry.
+        shell.dispatch("sfe-assistant");wizard=shell.findChild<QDialog *>("wizard-sfe");steps=wizard->findChild<QStackedWidget *>("WizardSteps");next=wizard->findChild<QPushButton *>("WizardNext");
+        const auto beforeSfe=shell.project()->state();QVERIFY(next->isEnabled());next->click();QCOMPARE(steps->currentIndex(),0);
+        steps->widget(0)->findChild<QPushButton *>("btnMoveAll")->click();next->click();QCOMPARE(steps->currentIndex(),1);
+        auto *solids=wizard->findChild<QTableWidget *>("grdSolidComponent");QCOMPARE(solids->rowCount(),1);QCOMPARE(solids->item(0,1)->text(),QString("H2O(S)"));
+        solids->item(0,1)->setText("ICE");wizard->findChild<QPushButton *>("WizardBack")->click();next->click();QCOMPARE(solids->item(0,1)->text(),QString("H2O(S)"));QCOMPARE(shell.project()->state(),beforeSfe);
+        wizard->findChild<QRadioButton *>("radioExistChemistry")->setChecked(true);QVERIFY(wizard->findChild<QLineEdit *>("txtChemName")->text().isEmpty());QVERIFY(!wizard->findChild<QCheckBox *>("globalChecked")->isEnabled());
+        wizard->findChild<QRadioButton *>("radioNewChemistry")->setChecked(true);wizard->findChild<QLineEdit *>("txtChemName")->setText("C-1");
+        solids->item(0,1)->setText("");wizard->findChild<QPushButton *>("WizardFinish")->click();QCOMPARE(shell.project()->state(),beforeSfe);
+        solids->item(0,1)->setText("H2O(S)");if(!capture.isEmpty())QVERIFY(wizard->grab().save(capture+"/sfe-before-finish.png"));
+        solids->editItem(solids->item(0,1));QCoreApplication::processEvents();auto *active=solids->findChild<QLineEdit *>();QVERIFY(active);
+        active->selectAll();QTest::keyClicks(active,"ICE");
+        wizard->findChild<QPushButton *>("WizardFinish")->click();QVERIFY(!ChemicalSystem::chemistry(shell.project()->state(),"C-1").isEmpty());
+        QCOMPARE(shell.project()->state().value("chemicalSystem").toObject().value("generatedComponents").toArray().size(),3);
+        QCOMPARE(shell.project()->state().value("chemicalSystem").toObject().value("generatedComponents").toArray().last().toObject().value("id").toString(),QString("ICE"));
+        QVERIFY2(shell.saveProject(path,&error),qPrintable(error));QVERIFY(reopened.loadProject(path,&error));QCOMPARE(reopened.project()->state(),shell.project()->state());
+        shell.project()->undo();QCOMPARE(shell.project()->state(),beforeSfe);
+    }
+
+    void electrolyteExclusionEarlyFinishAndCollisionCancel() {
+        QFile file(":/ui/aspen-plus.json");QVERIFY(file.open(QIODevice::ReadOnly));UiShell shell(QJsonDocument::fromJson(file.readAll()).object());shell.show();
+        auto state=ProjectDocument::emptyState();state["dependencies"]=QJsonObject{{"propertyDatabase","synthetic"}};
+        state["components"]=QJsonArray{QJsonObject{{"database","TEST"},{"compoundId","1"},{"datasetId","synthetic"},{"name","WATER"},{"alias","H2O"},{"cas","7732-18-5"}}};shell.project()->edit(state);
+        const auto start=[&]() {
+            shell.dispatch("electrolyte-wizard");auto *w=shell.findChild<QDialog *>("wizard-electrolyte");w->findChild<QPushButton *>("WizardNext")->click();w->findChild<QCheckBox *>("chkWaterDissociation")->setChecked(true);w->findChild<QPushButton *>("WizardNext")->click();return w;
+        };
+        auto *wizard=start();auto *steps=wizard->findChild<QStackedWidget *>("WizardSteps");
+        wizard->findChild<QListWidget *>("lstAqueousSpecies")->setCurrentRow(0);steps->widget(2)->findChild<QPushButton *>("btnRemove")->click();
+        QVERIFY(!wizard->findChild<QPushButton *>("WizardNext")->isEnabled());QCOMPARE(wizard->findChild<QListWidget *>("lstReactions")->count(),0);QCOMPARE(shell.project()->state(),state);
+        wizard->findChild<QPushButton *>("WizardBack")->click();wizard->findChild<QPushButton *>("WizardNext")->click();QCOMPARE(wizard->findChild<QListWidget *>("lstReactions")->count(),1);
+        wizard->findChild<QRadioButton *>("radioGenChemHenry")->setChecked(true);QVERIFY(wizard->findChild<QCheckBox *>("chkGenHenryChem")->isChecked());
+        wizard->findChild<QCheckBox *>("chkGenHenryChem")->setChecked(false);QVERIFY(wizard->findChild<QPushButton *>("WizardFinish")->isEnabled());QVERIFY(!wizard->findChild<QPushButton *>("WizardNext")->isEnabled());
+        wizard->findChild<QPushButton *>("WizardFinish")->click();QVERIFY(shell.project()->state().value("objects").toArray().isEmpty());QCOMPARE(shell.project()->state().value("chemicalSystem").toObject().value("generatedComponents").toArray().size(),2);
+        shell.project()->undo();QCOMPARE(shell.project()->state(),state);QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);
+        auto *objects=shell.findChild<ObjectWorkspace *>();QVERIFY(!objects->createObject("chemistry","GLOBAL","Chemistry").isEmpty());const auto withExisting=shell.project()->state();wizard=start();steps=wizard->findChild<QStackedWidget *>("WizardSteps");
+        QTimer::singleShot(0,[&]{auto *box=qobject_cast<QMessageBox *>(QApplication::activeModalWidget());QVERIFY(box);box->button(QMessageBox::Cancel)->click();});
+        wizard->findChild<QPushButton *>("WizardNext")->click();QCOMPARE(steps->currentIndex(),2);QCOMPARE(shell.project()->state(),withExisting);wizard->reject();
+        QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);
+        // Explicitly unverified H+ cannot reach a commit.
+        wizard=start();wizard->findChild<QPushButton *>("WizardBack")->click();wizard->findChild<QRadioButton *>("radioHydrogenIon")->setChecked(true);wizard->findChild<QPushButton *>("WizardNext")->click();QCOMPARE(wizard->findChild<QStackedWidget *>("WizardSteps")->currentIndex(),1);QCOMPARE(shell.project()->state(),withExisting);wizard->reject();
+    }
+
+    void componentOrderKeepsEqualAliasesDistinct() {
+        QFile file(":/ui/aspen-plus.json");QVERIFY(file.open(QIODevice::ReadOnly));UiShell shell(QJsonDocument::fromJson(file.readAll()).object());
+        auto state=ProjectDocument::emptyState();state["dependencies"]=QJsonObject{{"propertyDatabase","synthetic"}};
+        QJsonArray components;for(const auto *id:{"first","second"})components.append(QJsonObject{{"database","TEST"},{"compoundId",id},{"datasetId","synthetic"},{"name","SAME"},{"alias","SAME"}});state["components"]=components;shell.project()->edit(state);
+        shell.dispatch("reorder");auto *order=shell.findChild<QDialog *>("dialog-ReorderComp");QVERIFY(order);auto *list=order->findChild<QListWidget *>("lvSelectedComps");list->setCurrentRow(1);order->findChild<QPushButton *>("btnUp")->click();
+        order->findChild<QDialogButtonBox *>()->button(QDialogButtonBox::Ok)->click();QCOMPARE(shell.project()->state().value("components").toArray()[0].toObject().value("compoundId").toString(),QString("second"));shell.project()->undo();QCOMPARE(shell.project()->state(),state);
+    }
+
+    void wizardReferenceStateLocalIdsAndStaleProject() {
+        QFile file(":/ui/aspen-plus.json");QVERIFY(file.open(QIODevice::ReadOnly));UiShell shell(QJsonDocument::fromJson(file.readAll()).object());shell.show();
+        shell.dispatch("electrolyte-wizard");auto *wizard=shell.findChild<QDialog *>("wizard-electrolyte");wizard->findChild<QPushButton *>("WizardNext")->click();QCOMPARE(wizard->findChild<QStackedWidget *>("WizardSteps")->currentIndex(),0);wizard->reject();QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);
+        auto state=ProjectDocument::emptyState();state["dependencies"]=QJsonObject{{"propertyDatabase","synthetic"}};
+        state["components"]=QJsonArray{QJsonObject{{"database","TEST"},{"compoundId","1"},{"datasetId","synthetic"},{"name","WATER"},{"alias","H2O"},{"cas","7732-18-5"},{"componentType","CONV"}}};shell.project()->edit(state);
+        shell.dispatch("electrolyte-wizard");wizard=shell.findChild<QDialog *>("wizard-electrolyte");auto *steps=wizard->findChild<QStackedWidget *>("WizardSteps");
+        wizard->findChild<QComboBox *>("cboRefStateSelect")->setCurrentIndex(1);wizard->findChild<QPushButton *>("WizardNext")->click();QCOMPARE(steps->widget(1)->findChild<QListWidget *>("lstSelectedComp")->count(),0);
+        steps->widget(1)->findChild<QPushButton *>("btnMoveAll")->click();wizard->findChild<QCheckBox *>("chkWaterDissociation")->setChecked(true);wizard->findChild<QPushButton *>("WizardNext")->click();
+        auto *method=wizard->findChild<QComboBox *>("cboOptSet");QCOMPARE(method->count(),1);QCOMPARE(method->currentText(),QString("ENRTL-SR"));
+        wizard->findChild<QRadioButton *>("radioGenChemHenry")->setChecked(true);
+        QTimer::singleShot(0,[&]{auto *input=qobject_cast<QInputDialog *>(QApplication::activeModalWidget());QVERIFY(input);input->setTextValue("LOCAL");input->accept();});
+        wizard->findChild<QPushButton *>("WizardNext")->click();QCOMPARE(steps->currentIndex(),3);QVERIFY(!wizard->findChild<QRadioButton *>("radioTrueComponent")->isEnabled());
+        QCOMPARE(steps->widget(3)->findChild<QLineEdit *>("txtChemID")->text(),QString("LOCAL"));QCOMPARE(shell.project()->state(),state);
+        wizard->findChild<QPushButton *>("WizardNext")->click();const auto local=shell.project()->state();QVERIFY(!ChemicalSystem::chemistry(local,"LOCAL").isEmpty());QVERIFY(ChemicalSystem::globalChemistryId(local).isEmpty());
+        wizard->findChild<QPushButton *>("WizardFinish")->click();QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);
+        shell.dispatch("sfe-assistant");wizard=shell.findChild<QDialog *>("wizard-sfe");steps=wizard->findChild<QStackedWidget *>("WizardSteps");steps->widget(0)->findChild<QPushButton *>("btnMoveAll")->click();wizard->findChild<QPushButton *>("WizardNext")->click();
+        auto changed=local;changed["units"]="SI";shell.project()->edit(changed);wizard->findChild<QPushButton *>("WizardFinish")->click();QCOMPARE(shell.project()->state(),changed);QVERIFY(wizard->isVisible());
+        QTest::keyClick(wizard,Qt::Key_Escape);QCOMPARE(shell.project()->state(),changed);
     }
 
     void recoveredMenusKeepEveryLevel() {

@@ -23,6 +23,7 @@ public:
     void setSessionEditable(bool editable) { sessionEditable_ = editable; }
     QMap<QString, QVariantMap> sessionState();
     void setSessionState(const QMap<QString, QVariantMap> &state);
+    void setBusinessContent(QWidget *content);
     QJsonArray nativeDialogs() const { return dialogs_; }
     QJsonArray menuCatalog() const { return menus_; }
 signals:

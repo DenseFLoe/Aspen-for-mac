@@ -78,6 +78,7 @@ ComponentWorkspace::ComponentWorkspace(const QJsonObject &catalog, QWidget *pare
         button->setPopupMode(QToolButton::InstantPopup);
     }
     column->addWidget(documentBar);
+    chemicalSummary_=new QLabel(this);chemicalSummary_->setObjectName("ChemicalSystemSummary");chemicalSummary_->setWordWrap(true);chemicalSummary_->hide();column->addWidget(chemicalSummary_);
     stack_ = new QStackedWidget(this);
     stack_->setObjectName("ComponentPages");
     stack_->addWidget(new QWidget(stack_));
@@ -126,7 +127,10 @@ ComponentWorkspace::ComponentWorkspace(const QJsonObject &catalog, QWidget *pare
         connect(action, &QAction::triggered, this, [this, id] { showPage(id); });
     }
     showPage("specifications");
-    if(auto *table=pages_.value("specifications")->findChild<QTableWidget *>()) table->setProperty("projectDerived",true);
+    // QStackedWidget changes child order when raising tabs. Bind the Selection
+    // table explicitly; an unconstrained findChild can return the petroleum grid.
+    componentTable_=tabs_.value("specifications")->widget(0)->findChild<QTableWidget *>();
+    componentTable_->setObjectName("ProjectComponents");componentTable_->setProperty("projectDerived",true);
     defaults_=WidgetState::capture(this);
     WidgetState::observe(this,this,[this] { emit inputsChanged(); });
 }
@@ -169,10 +173,13 @@ QWidget *ComponentWorkspace::makeContent(const QJsonObject &spec)
     return scroll;
 }
 
+void ComponentWorkspace::setChemicalSummary(const QString &text) {
+    chemicalSummary_->setText(text);chemicalSummary_->setVisible(!text.isEmpty());
+}
+
 void ComponentWorkspace::setUserComponents(const QJsonArray &objects)
 {
-    auto *page=pages_.value("specifications"); if(!page) return;
-    auto *table=page->findChild<QTableWidget *>(); if(!table) return;
+    auto *table=componentTable_; if(!table) return;
     const QSignalBlocker blocked(table);
     for(int row=table->rowCount()-1;row>=0;--row)
         if(table->item(row,0) && table->item(row,0)->data(Qt::UserRole+5).toBool()) table->removeRow(row);
@@ -185,11 +192,24 @@ void ComponentWorkspace::setUserComponents(const QJsonArray &objects)
     }
     for(const auto &value:databaseComponents_) {
         const auto c=value.toObject();const int r=qMax(0,table->rowCount()-1);table->insertRow(r);
-        const auto displayId=c.value("alias").toString().isEmpty()?c.value("name").toString():c.value("alias").toString();
+        const auto fallback=c.value("alias").toString().isEmpty()?c.value("name").toString():c.value("alias").toString();
+        const auto displayId=c.value("componentId").toString(fallback);
         const QStringList cells{displayId,QString(),c.value("name").toString(),c.value("alias").toString(),c.value("cas").toString()};
         for(int col=0;col<table->columnCount();++col) table->setItem(r,col,new QTableWidgetItem(cells.value(col)));
         table->item(r,0)->setData(Qt::UserRole+5,true);table->item(r,0)->setToolTip(c.value("database").toString()+":"+c.value("compoundId").toString()+"\n"+c.value("datasetId").toString());
-        if(table->columnCount()>1)table->item(r,1)->setToolTip(QString::fromUtf8("组分类别尚未接入。"));
+        if(table->columnCount()>1) {
+            auto *type=new QComboBox(table);type->setObjectName("ComponentType-"+c.value("database").toString()+"-"+c.value("compoundId").toString());type->setProperty("projectDerived",true);
+            type->addItem(QString::fromUtf8("未指定"),"UNKNOWN");for(const auto &t:{"CONV","PSEUDO","OLIGOMER","ION","SOLID","NONCONVENTIONAL"})type->addItem(t,t);
+            type->setCurrentIndex(qMax(0,type->findData(c.value("componentType").toString("UNKNOWN"))));
+            type->setToolTip(QString::fromUtf8("项目组分类别；运行查询库未提供类别，需按组分用途明确指定。"));table->setCellWidget(r,1,type);
+            connect(type,&QComboBox::currentIndexChanged,this,[this,type,c]{emit componentTypeChanged(c.value("database").toString(),c.value("compoundId").toString(),type->currentData().toString());});
+        }
+    }
+    for(const auto &v:generatedComponents_) {
+        const auto c=v.toObject();const int row=qMax(0,table->rowCount()-1);table->insertRow(row);
+        const QStringList cells{c.value("id").toString(),c.value("type").toString(),c.value("dbName").toString(),c.value("alias").toString()};
+        for(int col=0;col<table->columnCount();++col)table->setItem(row,col,new QTableWidgetItem(cells.value(col)));
+        table->item(row,0)->setData(Qt::UserRole+5,true);table->item(row,0)->setToolTip(QString::fromUtf8("向导生成的项目组分\n")+c.value("key").toString());
     }
     table->setFixedHeight(qMin(240,32+24*table->rowCount()));
     table->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
