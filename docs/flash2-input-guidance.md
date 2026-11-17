@@ -34,3 +34,15 @@
 
 
 单位提交 `14b7214` 已推送；macOS Actions [44035224229](https://github.com/DenseFLoe/Aspen-for-mac/actions/runs/44035224229) 成功。引导模型 CTest 通过，联合 UI 专项 5 passed（含初始化/清理）。显式提交覆盖“下一步”、保存、关闭确认和单位切换；已关闭的旧编辑页不能再写回恢复后的对象。Windows 离屏截图已检查进料字段、英制单位和组成表显示。
+
+
+## 本轮交付与验证
+
+| 项目 | 提交 | 已完成检查 |
+| --- | --- | --- |
+| 字段与项目保存 | `02b838f` | Windows 构建、CTest 4/4、字段/方法/页面结构专项；macOS Actions 44034900320 成功 |
+| 单位换算 | `14b7214` | Windows 构建、换算模型及单位切换/撤销专项；macOS Actions 44035224229 成功 |
+| 下一步数据驱动引导 | `e3d00c7` | Windows CTest 4/4（91.76 秒）、联合 UI 专项 5 passed；macOS Actions [44036355003](https://github.com/DenseFLoe/Aspen-for-mac/actions/runs/44036355003) 成功 |
+| 完成状态视觉修正 | `0a156bb` | Windows 增量构建、引导专项 3 passed、完成状态截图复核；macOS Actions [44036542529](https://github.com/DenseFLoe/Aspen-for-mac/actions/runs/44036542529) 成功 |
+
+三个功能里程碑及视觉修正均已推送 `codex/flash2-input-guidance`。本轮 Windows 全套检查使用隔离的空数据库设置，真实库专项因未提供测试库跳过；数据库接口未更改。Mac CI 检查包括编译、自动测试、包内 Qt/SQLite 依赖及自检，未替代 Mac 实机验收。原始数据库、归档、公式资料保持本地，未作为代码提交内容。
