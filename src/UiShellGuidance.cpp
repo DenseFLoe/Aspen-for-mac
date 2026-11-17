@@ -19,6 +19,7 @@ void UiShell::updateProcessStatus() {
         label->setText(problems.isEmpty()?QString::fromUtf8("参考案例输入完整 · 未接入计算"):QString::fromUtf8("输入待完成（%1 项）").arg(problems.size()));
         label->setToolTip(problems.isEmpty()?QString::fromUtf8("已通过本轮字段与基本拓扑检查；物性参数和计算尚未验证。"):problems.first().message);
         label->setProperty("inputComplete",problems.isEmpty());
+        label->setStyleSheet(problems.isEmpty()?"background: #d7eadb; color: #214f2f; padding: 1px;":"");
     }
 }
 void UiShell::nextProcessInput() {
