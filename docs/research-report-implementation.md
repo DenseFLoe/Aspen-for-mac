@@ -21,7 +21,7 @@
 
 Flash2 的 TQ/PQ 对应 **入口热流**，不能把 Q 当作另一种数值热负荷。当前参考拓扑不支持热流连接，所以不提供这两个选项；完整 CC Nodes 状态、Heater/其他模块规定、质量基准与其他流量基准仍待各自模型及验收。阶段 3 仅扩大输入子集，阶段 5–8 和求解/结果页仍未完成。
 
-Windows Qt 6.8.3 编译通过；输入模型专项 **10 passed / 0 failed / 0 skipped**，规定联动 UI 专项 **3 passed / 0 failed / 0 skipped**（均含初始化/清理），最终完整 CTest **4/4**（103.86 秒，含本地真实只读库）。PV 和 PD 页离屏截图已检查。macOS 自动检查随实现提交上传后另行补录，不替代 Mac 实机验收。
+实现提交 **`315b2785e9be5b9b5f49109567fa1f3fe33c0a75`** 已推送 `codex/research-flash-specifications`，远端精确 SHA 已复核。Windows Qt 6.8.3 编译通过；输入模型专项 **10 passed / 0 failed / 0 skipped**，规定联动 UI 专项 **3 passed / 0 failed / 0 skipped**（均含初始化/清理），最终完整 CTest **4/4**（103.86 秒，含本地真实只读库）。PV 和 PD 页离屏截图已检查。[macOS Actions 44059434533](https://github.com/DenseFLoe/Aspen-for-mac/actions/runs/44059434533) **success**：资源/Python 检查、Qt 6.8.3 编译、CTest（含 Cocoa 原生可访问性）和包内 Qt/SQLite 依赖及自检均通过；自动检查不替代 Mac 实机验收。
 
 本地构建、专项、完整回归及资产核对记录保存在 `.local/research-specifications-20261117/`。受保护 `.local/property-database/` 前后均为 **3,226 个文件**，路径/大小/修改时间差异 **0**。原报告、数据库、归档和用户原有教程 PDF 均保留，不加入本轮提交。
 

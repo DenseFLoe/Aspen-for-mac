@@ -1,6 +1,6 @@
 # Aspen for Mac 开发要求与实施顺序
 
-2026-11-17 表单研究落实续轮：继承 `e936cd4`，在 `codex/research-flash-specifications` 按已保留流股/模块表单报告补齐物料进料 TP/TV/PV 和 Flash2 TP/TV/PV/TD/PD。规定下拉互相约束，字段启用/必填随规定变化；汽相摩尔分率与热负荷接入校验、单位、项目保存/撤销和“下一步”。本轮继续落实阶段 3 的已有研究，不扩大计算完成声明；入口热流规定 TQ/PQ、其他模块与完整引擎状态仍保留依赖。证据、范围和检查见[研究报告落实核对](research-report-implementation.md)。
+2026-11-17 表单研究落实续轮：继承 `e936cd4`，在 `codex/research-flash-specifications` 按已保留流股/模块表单报告补齐物料进料 TP/TV/PV 和 Flash2 TP/TV/PV/TD/PD。规定下拉互相约束，字段启用/必填随规定变化；汽相摩尔分率与热负荷接入校验、单位、项目保存/撤销和“下一步”。实现 `315b278` 已推送，Windows CTest 4/4（含真实只读库）及 macOS Actions 44059434533 的资源检查、编译、CTest 和包内自检通过。本轮继续落实阶段 3 的已有研究，不扩大计算完成声明；入口热流规定 TQ/PQ、其他模块与完整引擎状态仍保留依赖。证据、范围和检查见[研究报告落实核对](research-report-implementation.md)。
 
 2026-11-17 查找研究续轮：在 `860dd50` 基础上以 `codex/research-search-filters` 接通分子量/沸点范围、真实分类、结果数值排序、多选双击、新搜索保留匹配方式/单位，以及数据库页选择/顺序的项目保存和撤销联动。实现 `c77ec1b` 已推送；Windows CTest 4/4（含真实库）、Python 22/22、macOS Actions 44053728245 的 CTest 5/5 及包内自检通过。运行索引以新目录构建，旧库和原始资产保留；实施规则、检查和原版剩余边界见[研究报告落实核对](research-report-implementation.md)。这仍是阶段 2 查询能力的补齐，不将参数检索/复制、方法修改或数值计算标记完成。
 
