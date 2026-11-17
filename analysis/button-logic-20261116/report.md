@@ -1,5 +1,7 @@
 # 按钮关系图谱与未确认清单
 
+后续实现：参考案例的字段/单位/“下一步”与端口规则见[Flash2 输入与引导](../../docs/flash2-input-guidance.md)、[连接规则](../../docs/flash2-topology.md)；组分排序、通用编辑提交及撤销历史的落实见[研究报告落实核对](../../docs/research-report-implementation.md)。本文描述的研究时移植缺口不代表这些后续实现尚未完成，求解相关边界仍保留。
+
 日期：2026-11-16（北京时间）。分支 `codex/button-logic-exploration`，基于 `codex/wizard-business-logic@a6074aa`。本轮在 [wizard-logic-20261115](../wizard-logic-20261115/report.md) 与 `.local/other-button-logic/report.md` 已确认链条之上，把覆盖扩大到**运行控制、导航、撤销/重做、报告、组分页其余入口（用户定义／重新排序／亨利）**，并以全量清单差集标出尚未确认的按钮。本轮仅分析与证据整理：新增大体积证据在 `.local/button-logic-exploration-20261116/`，报告与索引发布于本目录；未编辑项目源码，未进行动态点击。
 
 最值得注意的结论：
