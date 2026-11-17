@@ -41,6 +41,7 @@ void UiShell::setUnits(const QString &units)
     if (!QStringList{"ENG","MET","METCBAR","SI"}.contains(units)) return;
     if(!restoringProject_ && project_) {
         if(auto *editor=QApplication::focusWidget();editor && isAncestorOf(editor))editor->clearFocus();
+        objects_->commitProcessEditors();
         QString error;if(!objects_->convertProcessUnits(units,&error)){statusBar()->showMessage(error,10000);return;}
     }
     globalUnits_=units; recovered_->setGlobalUnits(units); objects_->setGlobalUnits(units);
@@ -193,7 +194,7 @@ void UiShell::dispatch(const QString &requested)
                 if (item->text()==QString::fromUtf8("显示在功能区下方") || item->text()==QString::fromUtf8("显示在功能区上方"))
                     item->setText(below?QString::fromUtf8("显示在功能区上方"):QString::fromUtf8("显示在功能区下方"));
     } else if (action=="next") {
-        dispatch("component:specifications"); statusBar()->showMessage(QString::fromUtf8("请先选择组分，再指定物性方法。"),7000);
+        nextProcessInput();
     } else if (action=="control-panel" || action=="messages") {
         auto *dialog=new QDialog(this); dialog->setAttribute(Qt::WA_DeleteOnClose); dialog->setObjectName("ControlPanel"); dialog->setWindowTitle(QString::fromUtf8("控制面板")); dialog->resize(680,400);
         auto *layout=new QVBoxLayout(dialog); auto *text=new QTextEdit(dialog); text->setReadOnly(true);

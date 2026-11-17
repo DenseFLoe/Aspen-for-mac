@@ -1,4 +1,6 @@
 #include "ChemicalSystem.h"
+#include "Flash2Fixture.h"
+#include "ProcessInputWidget.h"
 #include "DatabaseFixture.h"
 #include "UiShell.h"
 #include "ProjectDocument.h"
@@ -54,16 +56,33 @@ class UiSmokeTest : public QObject
     Q_OBJECT
 
 private slots:
+    void nextGuidesFlash2AndCommitsActiveComposition() {
+        QFile file(":/ui/aspen-plus.json");QVERIFY(file.open(QIODevice::ReadOnly));UiShell shell(QJsonDocument::fromJson(file.readAll()).object());shell.show();
+        shell.dispatch("next");QVERIFY(!shell.findChild<QLabel *>("Incomplete")->property("inputComplete").toBool());
+        auto state=flash2Fixture();auto objectsData=state.value("objects").toArray();auto block=objectsData[0].toObject();block.remove("processInput");objectsData[0]=block;
+        auto feed=objectsData[1].toObject();auto input=feed.value("processInput").toObject();input.remove("fractions");feed["processInput"]=input;objectsData[1]=feed;state["objects"]=objectsData;
+        shell.project()->edit(state);QTemporaryDir dir;QString error;QVERIFY(shell.project()->save(dir.filePath("guided.afmp"),&error));QVERIFY(shell.loadProject(dir.filePath("guided.afmp"),&error));
+        auto *objects=shell.findChild<ObjectWorkspace *>();shell.dispatch("object:B");shell.dispatch("next");QCoreApplication::processEvents();
+        auto *tabs=objects->findChild<QTabWidget *>("ObjectDocuments");auto editor=[&](){return tabs->currentWidget()->findChild<ProcessInputWidget *>();};
+        auto *temperature=editor()->findChild<QLineEdit *>("Process_temperature");QVERIFY(temperature->hasFocus());QTest::keyClicks(temperature,"185");shell.dispatch("next");
+        QCOMPARE(objects->currentObject(),QString("B"));auto *pressure=editor()->findChild<QLineEdit *>("Process_pressure");QVERIFY(pressure->hasFocus());QTest::keyClicks(pressure,"14.7");shell.dispatch("quick-next");
+        QCOMPARE(objects->currentObject(),QString("F"));auto *fractions=editor()->findChild<QTableWidget *>("ProcessFractions");QVERIFY(fractions);fractions->item(0,1)->setText("0.5");
+        fractions->setCurrentCell(1,1);fractions->editItem(fractions->item(1,1));QCoreApplication::processEvents();auto *cell=fractions->findChild<QLineEdit *>();QVERIFY(cell);cell->setFocus();cell->setText("0.5");shell.dispatch("next");
+        QVERIFY(shell.findChild<QLabel *>("Incomplete")->property("inputComplete").toBool());if(!qEnvironmentVariable("ASPEN_CAPTURE_DIR").isEmpty())QVERIFY(shell.grab().save(qEnvironmentVariable("ASPEN_CAPTURE_DIR")+"/flash2-input-complete.png"));auto *complete=shell.findChild<QMessageBox *>("ProcessInputComplete");QVERIFY(complete);complete->accept();QCoreApplication::processEvents();
+        QVERIFY(shell.saveProject(dir.filePath("complete.afmp"),&error));QVERIFY(shell.loadProject(dir.filePath("complete.afmp"),&error));QVERIFY(shell.findChild<QLabel *>("Incomplete")->property("inputComplete").toBool());
+        shell.dispatch("object:B");temperature=editor()->findChild<QLineEdit *>("Process_temperature");temperature->setFocus();temperature->setText("-500");shell.dispatch("next");QVERIFY(!shell.findChild<QLabel *>("Incomplete")->property("inputComplete").toBool());QCOMPARE(objects->currentObject(),QString("B"));
+    }
+
     void processUnitsPreserveQuantityAndUndo() {
         QFile file(":/ui/aspen-plus.json");QVERIFY(file.open(QIODevice::ReadOnly));UiShell shell(QJsonDocument::fromJson(file.readAll()).object());shell.show();
         shell.dispatch("units:ENG");auto *objects=shell.findChild<ObjectWorkspace *>();const auto key=objects->createObject("blocks","B1","Flash2");shell.dispatch("object:"+key);QCoreApplication::processEvents();
-        auto *temperature=objects->findChild<QLineEdit *>("Process_temperature");auto *unit=objects->findChild<QComboBox *>("ProcessUnit_temperature");QCOMPARE(unit->currentText(),QString("F"));
+        auto *temperature=objects->findChild<QTabWidget *>("ObjectDocuments")->currentWidget()->findChild<QLineEdit *>("Process_temperature");auto *unit=objects->findChild<QTabWidget *>("ObjectDocuments")->currentWidget()->findChild<QComboBox *>("ProcessUnit_temperature");QCOMPARE(unit->currentText(),QString("F"));
         temperature->setFocus();QTest::keyClicks(temperature,"185");shell.dispatch("units:SI");
         QVERIFY(qAbs(objects->object(key).value("processInput").toObject().value("temperature").toObject().value("text").toString().toDouble()-358.15)<1e-10);
         shell.project()->undo();QCOMPARE(objects->object(key).value("processInput").toObject().value("temperature").toObject().value("unit").toString(),QString("F"));
-        shell.project()->redo();shell.dispatch("object:"+key);unit=objects->findChild<QComboBox *>("ProcessUnit_temperature");unit->setCurrentText("C");
+        shell.project()->redo();shell.dispatch("object:"+key);unit=objects->findChild<QTabWidget *>("ObjectDocuments")->currentWidget()->findChild<QComboBox *>("ProcessUnit_temperature");unit->setCurrentText("C");
         QVERIFY(qAbs(objects->object(key).value("processInput").toObject().value("temperature").toObject().value("text").toString().toDouble()-85)<1e-10);
-        temperature=objects->findChild<QLineEdit *>("Process_temperature");temperature->setFocus();temperature->setText("bad");temperature->clearFocus();const auto before=shell.project()->state();shell.dispatch("units:ENG");QCOMPARE(shell.project()->state(),before);
+        temperature=objects->findChild<QTabWidget *>("ObjectDocuments")->currentWidget()->findChild<QLineEdit *>("Process_temperature");temperature->setFocus();temperature->setText("bad");temperature->clearFocus();objects->commitProcessEditors();QCOMPARE(objects->object(key).value("processInput").toObject().value("temperature").toObject().value("text").toString(),QString("bad"));const auto before=shell.project()->state();shell.dispatch("units:ENG");QCOMPARE(shell.project()->state(),before);
     }
 
     void typedFlashFieldsSaveActiveEditor() {

@@ -55,7 +55,7 @@ void UiShell::setWorkspaceMode(bool simulation)
 {
     const bool changed=simulationMode_!=simulation;simulationMode_=simulation;
     if(navigationPages_) navigationPages_->setCurrentIndex(simulation?1:0);
-    if(auto *label=findChild<QLabel *>("Incomplete"))label->setText(simulation?QString::fromUtf8("流程未完成"):QString::fromUtf8("所需输入不完整"));
+    updateProcessStatus();
     if(auto *label=findChild<QLabel *>("FlowsheetContext"))label->setVisible(simulation);
     if(auto *label=findChild<QLabel *>("DatabaseStatus"))label->setVisible(!simulation);
     if(auto *ribbon=findChild<QTabWidget *>("Ribbon")) {

@@ -42,6 +42,7 @@ QVector<Issue> issues(const QJsonObject &o,const QJsonArray &components) {
         else if(value<=0) add(f,QString::fromUtf8("%1必须大于零（温度按绝对温标）。").arg(label(f)));
     }
     if(o.value("kind")=="streams") {
+        const auto scalarIssues=result;result.clear();
         const auto fractions=input.value("fractions").toObject();double sum=0;bool valid=!components.isEmpty();
         for(const auto &v:components) {
             const auto c=v.toObject();const auto id=componentKey(c);double x=0;
@@ -54,6 +55,7 @@ QVector<Issue> issues(const QJsonObject &o,const QJsonArray &components) {
             bool exists=false;for(const auto &c:components) if(componentKey(c.toObject())==it.key()) exists=true;
             if(!exists) add("fractions",QString::fromUtf8("组成含已移除组分，请在组成表中移除失效项。"));
         }
+        result+=scalarIssues;
     }
     return result;
 }

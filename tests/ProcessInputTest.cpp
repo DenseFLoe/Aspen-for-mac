@@ -1,4 +1,6 @@
 #include "ProcessInput.h"
+#include "ProcessGuidance.h"
+#include "Flash2Fixture.h"
 #include "ProcessUnits.h"
 #include "ProjectDocument.h"
 #include <QtTest>
@@ -7,6 +9,19 @@
 class ProcessInputTest : public QObject {
     Q_OBJECT
 private slots:
+    void guidanceTracksDataAndCurrentObject() {
+        auto state=flash2Fixture();QVERIFY(ProjectDocument::validate(state).isEmpty());QVERIFY(ProcessGuidance::issues(state).isEmpty());
+        auto missing=state;missing["components"]=QJsonArray();QCOMPARE(ProcessGuidance::next(missing,"B").field,QString("components"));
+        missing=state;missing.remove("process");QCOMPARE(ProcessGuidance::next(missing,"B").field,QString("method"));
+        missing=flash2Fixture(false);QCOMPARE(ProcessGuidance::next(missing,"B").object,QString("B"));QCOMPARE(ProcessGuidance::next(missing,"B").field,QString("temperature"));
+        QCOMPARE(ProcessGuidance::next(missing,"F").object,QString("F"));QVERIFY(ProcessGuidance::next(missing,"F").field.startsWith("fraction:"));
+        auto objects=state.value("objects").toArray();auto feed=objects[1].toObject();feed["to"]="";objects[1]=feed;missing=state;missing["objects"]=objects;
+        QVERIFY(!ProcessGuidance::issues(missing).isEmpty());QCOMPARE(ProcessGuidance::next(missing,{}).field,QString("flowsheet"));
+        objects=state.value("objects").toArray();auto block=objects[0].toObject();auto input=block.value("processInput").toObject();input["temperature"]=ProcessInput::quantity("-500","F");block["processInput"]=input;objects[0]=block;missing=state;missing["objects"]=objects;
+        QCOMPARE(ProcessGuidance::next(missing,"B").field,QString("temperature"));
+        block["type"]="Heater";block.remove("processInput");objects[0]=block;missing["objects"]=objects;QCOMPARE(ProcessGuidance::next(missing,"B").field,QString("unsupported"));
+    }
+
     void referenceUnitsAndRoundTrips() {
         double value=0;
         QVERIFY(ProcessUnits::toSI("temperature",ProcessInput::quantity("185","F"),&value));QVERIFY(qAbs(value-358.15)<1e-10);

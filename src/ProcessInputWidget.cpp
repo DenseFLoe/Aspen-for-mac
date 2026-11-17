@@ -72,3 +72,14 @@ void ProcessInputWidget::setInput(const QJsonObject &input) {
     }
     updateStatus();
 }
+
+void ProcessInputWidget::commit() {
+    if(edits_.isEmpty())return;
+    for(auto it=edits_.begin();it!=edits_.end();++it)input_[it.key()]=ProcessInput::quantity(it.value()->text(),units_[it.key()]->currentText());
+    if(fractions_) {
+        auto values=input_.value("fractions").toObject();
+        for(int row=0;row<fractions_->rowCount();++row)values[fractions_->item(row,0)->data(Qt::UserRole).toString()]=fractions_->item(row,1)->text();
+        input_["fractions"]=values;
+    }
+    publish();
+}

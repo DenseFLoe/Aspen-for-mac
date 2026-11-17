@@ -398,8 +398,8 @@ bool ObjectWorkspace::openObject(const QString &key,const QString &page) {
         for(const auto &field:ProcessInput::fields(entry.data)) if(!typed.contains(field))typed[field]=ProcessInput::quantity("",ProcessUnits::forSet(field,units_));
         auto display=entry.data;display["processInput"]=typed;
         auto *editor=new ProcessInputWidget(display,chemicalState_.value("components").toArray(),entry.view);
-        connect(editor,&ProcessInputWidget::inputChanged,this,[this,key](const QJsonObject &input){
-            if(!entries_.contains(key))return;entries_[key].data["processInput"]=input;emit inputsChanged();
+        connect(editor,&ProcessInputWidget::inputChanged,this,[this,key,editor](const QJsonObject &input){
+            if(!entries_.contains(key) || !entries_[key].view || entries_[key].view->findChild<ProcessInputWidget *>()!=editor)return;entries_[key].data["processInput"]=input;emit inputsChanged();
         });
         entry.view->setBusinessContent(editor);
     }
@@ -842,4 +842,8 @@ bool ObjectWorkspace::convertProcessUnits(const QString &units,QString *error) {
         if(entry.view)if(auto *editor=entry.view->findChild<ProcessInputWidget *>())editor->setInput(it.value());
     }
     return true;
+}
+
+void ObjectWorkspace::commitProcessEditors() {
+    for(auto &entry:entries_)if(entry.view)if(auto *editor=entry.view->findChild<ProcessInputWidget *>())editor->commit();
 }

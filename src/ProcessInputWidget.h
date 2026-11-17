@@ -12,6 +12,7 @@ class ProcessInputWidget final : public QWidget {
 public:
     ProcessInputWidget(const QJsonObject &object,const QJsonArray &components,QWidget *parent=nullptr);
     void setComponents(const QJsonArray &components);
+    void commit();
     void setInput(const QJsonObject &input);
     void focusField(const QString &field);
 signals:

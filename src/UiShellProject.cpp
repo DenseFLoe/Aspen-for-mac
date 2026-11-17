@@ -60,6 +60,7 @@ void UiShell::initializeProject() {
             const auto value=project_->state().value("process").toObject().value("method").toString();
             if(method->findText(value)<0)method->addItem(value);method->setCurrentText(value);
         }
+        updateProcessStatus();
         updateDatabaseStatus();
         const auto name=project_->fileName().isEmpty()?QString::fromUtf8("未命名项目"):QFileInfo(project_->fileName()).fileName();
         setWindowTitle(name+(project_->isModified()?" *":"")+QString::fromUtf8(" — Aspen for Mac"));
@@ -101,6 +102,7 @@ void UiShell::restoreProject() {
 bool UiShell::saveProject(const QString &path,QString *error) {
     // Commit an active item delegate before serializing the document.
     if(auto *editor=QApplication::focusWidget();editor && isAncestorOf(editor)) editor->clearFocus();
+    objects_->commitProcessEditors();
     return project_->save(path,error);
 }
 bool UiShell::loadProject(const QString &path,QString *error) { return project_->load(path,error); }
@@ -115,6 +117,7 @@ bool UiShell::saveProjectDialog(bool saveAs) {
 }
 bool UiShell::confirmProjectReplacement() {
     if(auto *editor=QApplication::focusWidget();editor && isAncestorOf(editor)) editor->clearFocus();
+    objects_->commitProcessEditors();
     if(!project_->isModified()) return true;
     const auto answer=QMessageBox::warning(this,QString::fromUtf8("未保存的项目"),QString::fromUtf8("保存当前项目的更改？"),QMessageBox::Save|QMessageBox::Discard|QMessageBox::Cancel,QMessageBox::Save);
     return answer==QMessageBox::Discard || (answer==QMessageBox::Save && saveProjectDialog(false));

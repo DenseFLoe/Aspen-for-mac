@@ -38,6 +38,8 @@ private:
     bool restoringProject_=false;
     void initializeProject();
     void installMethodEditor();
+    void updateProcessStatus();
+    void nextProcessInput();
     void captureProject();
     void restoreProject();
     bool projectAction(const QString &action);
