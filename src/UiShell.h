@@ -37,6 +37,7 @@ private:
     void updateDatabaseStatus();
     bool restoringProject_=false;
     void initializeProject();
+    void installMethodEditor();
     void captureProject();
     void restoreProject();
     bool projectAction(const QString &action);

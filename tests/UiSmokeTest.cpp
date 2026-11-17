@@ -54,6 +54,18 @@ class UiSmokeTest : public QObject
     Q_OBJECT
 
 private slots:
+    void typedFlashFieldsSaveActiveEditor() {
+        QFile file(":/ui/aspen-plus.json");QVERIFY(file.open(QIODevice::ReadOnly));UiShell shell(QJsonDocument::fromJson(file.readAll()).object());shell.show();
+        auto *objects=shell.findChild<ObjectWorkspace *>();const auto key=objects->createObject("blocks","B1","Flash2");shell.dispatch("object:"+key);QCoreApplication::processEvents();
+        auto *temperature=objects->findChild<QLineEdit *>("Process_temperature");QVERIFY(temperature);temperature->setFocus();QTest::keyClicks(temperature,"358.15");
+        QTemporaryDir dir;QString error;QVERIFY2(shell.saveProject(dir.filePath("typed.afmp"),&error),qPrintable(error));
+        const auto data=objects->object(key).value("processInput").toObject();QCOMPARE(data.value("temperature").toObject().value("text").toString(),QString("358.15"));
+        QVERIFY(shell.loadProject(dir.filePath("typed.afmp"),&error));QCOMPARE(objects->object(key).value("processInput").toObject(),data);
+        shell.dispatch("methods");auto *method=shell.findChild<QComboBox *>("ProcessMethod");QVERIFY(method);method->setCurrentText("NRTL");
+        QCOMPARE(shell.project()->state().value("process").toObject().value("method").toString(),QString("NRTL"));
+        shell.project()->undo();QCOMPARE(shell.findChild<QComboBox *>("ProcessMethod")->currentText(),QString());shell.project()->redo();QCOMPARE(shell.findChild<QComboBox *>("ProcessMethod")->currentText(),QString("NRTL"));
+    }
+
     void reconnectAndStreamAppearanceAreUndoable() {
         QFile file(":/ui/aspen-plus.json");QVERIFY(file.open(QIODevice::ReadOnly));UiShell shell(QJsonDocument::fromJson(file.readAll()).object());shell.show();shell.dispatch("flowsheet");
         auto *objects=shell.findChild<ObjectWorkspace *>();const auto a=objects->createObject("blocks","A","Mixer"),b=objects->createObject("blocks","B","Mixer");QVERIFY(!a.isEmpty() && !b.isEmpty());
@@ -484,13 +496,13 @@ void shellKeepsNativeTextUndo()
         auto *notes=view->findChild<QTextEdit *>("commentsDescription");QVERIFY(notes);notes->setPlainText(QString::fromUtf8("持久输入"));
         auto *grid=view->findChild<QTableWidget *>("grdSelection");QVERIFY(grid);grid->setItem(0,0,new QTableWidgetItem("TEMP"));
         const auto after=shell.project()->state();shell.project()->undo();QVERIFY(shell.project()->state()!=after);shell.project()->redo();
-        shell.dispatch("methods");auto *method= shell.findChild<RecoveredWorkspace *>()->findChild<QComboBox *>("MMComboBox4");QVERIFY(method);method->setCurrentText("NRTL");QCOMPARE(method->currentText(),QString("NRTL"));
+        shell.dispatch("methods");auto *method= shell.findChild<RecoveredWorkspace *>()->findChild<QComboBox *>("ProcessMethod");QVERIFY(method);method->setCurrentText("NRTL");QCOMPARE(method->currentText(),QString("NRTL"));
         auto *components=shell.findChild<ComponentWorkspace *>();QVERIFY(components->showPage("specifications"));components->currentTabs()->setCurrentIndex(4);components->currentTabs()->currentWidget()->findChild<QTextEdit *>("comments-editor")->setPlainText("project notes");
         QVERIFY2(shell.saveProject(temp.filePath("input.afmp"),&error),qPrintable(error));
         UiShell other(spec);QVERIFY(other.loadProject(temp.filePath("input.afmp"),&error));auto *ow=other.findChild<ObjectWorkspace *>();QVERIFY(ow->openObject(key));
         auto *ov=qobject_cast<RecoveredWorkspace *>(ow->findChild<QTabWidget *>("ObjectDocuments")->currentWidget());QCOMPARE(ov->findChild<QTextEdit *>("commentsDescription")->toPlainText(),QString::fromUtf8("持久输入"));
         QCOMPARE(ov->findChild<QTableWidget *>("grdSelection")->item(0,0)->text(),QString("TEMP"));
-        other.dispatch("methods");QCOMPARE(other.findChild<RecoveredWorkspace *>()->findChild<QComboBox *>("MMComboBox4")->currentText(),QString("NRTL"));
+        other.dispatch("methods");QCOMPARE(other.findChild<RecoveredWorkspace *>()->findChild<QComboBox *>("ProcessMethod")->currentText(),QString("NRTL"));
         auto *oc=other.findChild<ComponentWorkspace *>();QVERIFY(oc->showPage("specifications"));oc->currentTabs()->setCurrentIndex(4);QCOMPARE(oc->currentTabs()->currentWidget()->findChild<QTextEdit *>("comments-editor")->toPlainText(),QString("project notes"));
     }
     void objectLifecycleAndIndependentInputs()

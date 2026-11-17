@@ -1,3 +1,6 @@
+#include <QComboBox>
+#include <QVBoxLayout>
+#include <QSignalBlocker>
 #include "UiShell.h"
 #include "ProjectDocument.h"
 #include "ChemicalSystem.h"
@@ -52,6 +55,11 @@ void UiShell::initializeProject() {
         components_->setChemicalSummary(global.isEmpty()?QString():QString::fromUtf8("全局 Chemistry：%1  ·  物性方法：%2  ·  %3（未接入计算）")
             .arg(ChemicalSystem::globalChemistryId(project_->state()),global.value("method").toString(QString::fromUtf8("未设置")),
                 global.contains("trueComponents")?(global.value("trueComponents").toBool()?QString::fromUtf8("真实组分"):QString::fromUtf8("表观组分")):QString::fromUtf8("模拟方式未设置")));
+        if(auto *method=recovered_->findChild<QComboBox *>("ProcessMethod")) {
+            const QSignalBlocker blocked(method);
+            const auto value=project_->state().value("process").toObject().value("method").toString();
+            if(method->findText(value)<0)method->addItem(value);method->setCurrentText(value);
+        }
         updateDatabaseStatus();
         const auto name=project_->fileName().isEmpty()?QString::fromUtf8("未命名项目"):QFileInfo(project_->fileName()).fileName();
         setWindowTitle(name+(project_->isModified()?" *":"")+QString::fromUtf8(" — Aspen for Mac"));
@@ -85,6 +93,7 @@ void UiShell::restoreProject() {
     QMap<QString,QVariantMap> recovered; const auto pages=inputs.value("recovered").toObject();
     for(auto it=pages.begin();it!=pages.end();++it) recovered[it.key()]=it.value().toObject().toVariantMap();
     recovered_->setSessionState(recovered);
+    installMethodEditor();
     components_->restoreSessionState(inputs.value("components").toObject());
     locations_.clear(); locationIndex_=-1; syncObjectNavigation();
     for(const auto &id:{"window-back","window-forward"}) if(auto *button=findChild<QToolButton *>(id)) button->setEnabled(false);
@@ -138,4 +147,18 @@ void UiShell::updateDatabaseStatus() {
 void UiShell::showDatabaseSearch() {
     auto *dialog=new DatabaseDialog(database_,project_,this);dialog->setAttribute(Qt::WA_DeleteOnClose);
     connect(dialog,&DatabaseDialog::databaseChanged,this,[this] {databaseError_.clear();updateDatabaseStatus();});dialog->open();
+}
+
+void UiShell::installMethodEditor() {
+    if(!project_ || recovered_->currentPage()!=recovered_->idForName("MMProp_Spec_Input"))return;
+    auto *method=recovered_->findChild<QComboBox *>("MMComboBox4");if(!method)return;
+    const QSignalBlocker blocked(method);
+    disconnect(method,nullptr,recovered_,nullptr);
+    method->setProperty("projectDerived",true);method->setObjectName("ProcessMethod");
+    method->setAccessibleName(QString::fromUtf8("全局物性方法"));method->setEditable(false);
+    method->clear();method->addItems({"","NRTL","IDEAL"});
+    const auto value=project_->state().value("process").toObject().value("method").toString();
+    if(method->findText(value)<0)method->addItem(value);method->setCurrentText(value);
+    method->setToolTip(QString::fromUtf8("本轮支持记录 NRTL / IDEAL；参数校验与计算尚未接入。其他设置仍为未校验输入。"));
+    connect(method,&QComboBox::currentTextChanged,method,[this](const QString &value){auto state=project_->state();state["process"]=QJsonObject{{"version",1},{"method",value}};project_->edit(state);});
 }

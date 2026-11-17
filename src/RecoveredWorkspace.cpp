@@ -183,6 +183,10 @@ void RecoveredWorkspace::saveState()
     for (auto *w : widgets) {
         const auto key = w->property("stateKey").toString();
         if (key.isEmpty()) continue;
+        if(w->property("projectDerived").toBool()) {
+            if(state_.value(current_).contains(key))values[key]=state_.value(current_).value(key);
+            continue;
+        }
         if (auto *t = qobject_cast<QTabWidget *>(w)) values[key] = t->currentIndex();
         else if (auto *c = qobject_cast<QComboBox *>(w)) values[key] = QVariantMap{{"index",c->currentIndex()},{"text",c->currentText()}};
         else if (auto *e = qobject_cast<QLineEdit *>(w)) values[key] = e->text();

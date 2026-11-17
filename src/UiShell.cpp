@@ -395,6 +395,7 @@ QWidget *UiShell::makeNavigator()
         }
     });
     connect(recovered_,&RecoveredWorkspace::pageChanged,this,[this](const QString &id) {
+        installMethodEditor();
         remember("page:"+id);
         selectNavigationRoute("page:"+id);
     });

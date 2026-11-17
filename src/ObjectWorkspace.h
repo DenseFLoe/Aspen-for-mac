@@ -24,7 +24,7 @@ public:
     QJsonArray objects() const;
     QJsonArray projectObjects();
     void restoreProjectObjects(const QJsonArray &objects);
-    void setChemicalSystemState(const QJsonObject &state) { chemicalState_=state; }
+    void setChemicalSystemState(const QJsonObject &state);
     QJsonObject object(const QString &key) const;
     QJsonObject definition(const QString &kind) const;
     QJsonObject typeDefinition(const QString &kind, const QString &type) const;

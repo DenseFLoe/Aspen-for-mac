@@ -1,3 +1,5 @@
+#include "ProcessInput.h"
+#include "ProcessInputWidget.h"
 #include "ObjectWorkspace.h"
 #include "ChemicalSystem.h"
 #include "ChemicalSystemView.h"
@@ -390,6 +392,13 @@ bool ObjectWorkspace::openObject(const QString &key,const QString &page) {
     for(const auto &p:pages) if(entry.view->idForName(p.toObject().value("page").toString())==target) allowed=true;
     if(!allowed) {if(newlyOpened) closeObject(key);return false;}
     if(entry.view->currentPage()!=target && !entry.view->showPage(target)) return false;
+    if(ProcessInput::supported(entry.data)) {
+        auto *editor=new ProcessInputWidget(entry.data,chemicalState_.value("components").toArray(),entry.view);
+        connect(editor,&ProcessInputWidget::inputChanged,this,[this,key](const QJsonObject &input){
+            if(!entries_.contains(key))return;entries_[key].data["processInput"]=input;emit inputsChanged();
+        });
+        entry.view->setBusinessContent(editor);
+    }
     if(entry.data.contains("chemistryData"))entry.view->setBusinessContent(makeChemicalSystemView(entry.data,chemicalState_,entry.view));
     refreshTitles(); documents_->setCurrentWidget(entry.view); emit objectActivated(key,target); return true;
 }
@@ -802,4 +811,10 @@ void ObjectWorkspace::restoreProjectObjects(const QJsonArray &objects) {
     refreshManager(); refreshCanvas();
     if(entries_.contains(selected)) openObject(selected,page);
     blocked.unblock();emit flowsheetSelectionChanged();
+}
+
+void ObjectWorkspace::setChemicalSystemState(const QJsonObject &state) {
+    chemicalState_=state;
+    for(auto &entry:entries_) if(entry.view)
+        if(auto *editor=entry.view->findChild<ProcessInputWidget *>()) editor->setComponents(state.value("components").toArray());
 }

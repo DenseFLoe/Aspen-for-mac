@@ -1,5 +1,6 @@
 #include "ProjectDocument.h"
 #include "ChemicalSystem.h"
+#include "ProcessInput.h"
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -68,7 +69,8 @@ QString ProjectDocument::validate(const QJsonObject &s) {
             return QString::fromUtf8("组分身份或数据来源无效。");
         componentIds.insert(key);
     }
-    return ChemicalSystem::validate(s);
+    const auto processError=ProcessInput::validateStructure(s);
+    return processError.isEmpty()?ChemicalSystem::validate(s):processError;
 }
 void ProjectDocument::initialize(const QJsonObject &s) { state_=saved_=s; history_={s}; index_=0; }
 void ProjectDocument::edit(const QJsonObject &s) {
