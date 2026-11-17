@@ -23,6 +23,8 @@ public:
     void restoreSessionState(const QJsonObject &state);
     void setDatabaseComponents(const QJsonArray &components) { databaseComponents_=components; }
     void setGeneratedComponents(const QJsonArray &components) { generatedComponents_=components; }
+    void setComponentOrder(const QJsonArray &order) { componentOrder_=order; }
+    QString selectedComponentKey() const;
     void setUserComponents(const QJsonArray &objects);
     void setChemicalSummary(const QString &text);
 
@@ -32,9 +34,12 @@ signals:
     void actionRequested(const QString &action);
     void componentTypeChanged(const QString &database,const QString &compoundId,const QString &type);
 
+protected:
+    bool eventFilter(QObject *watched,QEvent *event) override;
+
 private:
     QJsonObject catalog_, defaults_;
-    QJsonArray databaseComponents_,generatedComponents_;
+    QJsonArray databaseComponents_,generatedComponents_,componentOrder_;
     QTableWidget *componentTable_=nullptr;
     QStackedWidget *stack_ = nullptr;
     QLabel *title_ = nullptr;

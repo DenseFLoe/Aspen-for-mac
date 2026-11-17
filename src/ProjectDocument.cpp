@@ -73,12 +73,28 @@ QString ProjectDocument::validate(const QJsonObject &s) {
         componentIds.insert(key);
     }
     const auto processError=ProcessInput::validateStructure(s);
+    if(s.contains("componentOrder")) {
+        if(!s.value("componentOrder").isArray()) return QString::fromUtf8("组分顺序结构无效。");
+        QSet<QString> available,seen;
+        for(const auto &v:ChemicalSystem::components(s)) available.insert(v.toObject().value("key").toString());
+        for(const auto &v:s.value("componentOrder").toArray()) {
+            if(!v.isString() || !available.contains(v.toString()) || seen.contains(v.toString()))
+                return QString::fromUtf8("组分顺序含失效或重复身份。");
+            seen.insert(v.toString());
+        }
+    }
     return processError.isEmpty()?ChemicalSystem::validate(s):processError;
 }
 void ProjectDocument::initialize(const QJsonObject &s) { state_=saved_=s; history_={s}; index_=0; }
 void ProjectDocument::edit(const QJsonObject &s) {
-    if(state_==s) return;
-    state_=s; history_.resize(index_+1); history_.append(s); ++index_;
+    auto normalized=s;
+    if(s.value("componentOrder").isArray()) {
+        QJsonArray order;
+        for(const auto &v:ChemicalSystem::components(s)) order.append(v.toObject().value("key"));
+        normalized["componentOrder"]=order;
+    }
+    if(state_==normalized) return;
+    state_=normalized; history_.resize(index_+1); history_.append(state_); ++index_;
     if(history_.size()>101) { history_.removeFirst(); --index_; }
     emit changed();
 }

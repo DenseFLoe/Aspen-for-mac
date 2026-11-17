@@ -246,6 +246,41 @@ private slots:
         order->findChild<QDialogButtonBox *>()->button(QDialogButtonBox::Ok)->click();QCOMPARE(shell.project()->state().value("components").toArray()[0].toObject().value("compoundId").toString(),QString("second"));shell.project()->undo();QCOMPARE(shell.project()->state(),state);
     }
 
+    void componentRecordEntryPointsAndUnifiedMultiSelection() {
+        QFile file(":/ui/aspen-plus.json");QVERIFY(file.open(QIODevice::ReadOnly));UiShell shell(QJsonDocument::fromJson(file.readAll()).object());shell.show();
+        auto *objects=shell.findChild<ObjectWorkspace *>();const auto user=objects->createObject("user-components","CUSTOM","CONVENTIONAL");QVERIFY(!user.isEmpty());
+        auto state=shell.project()->state();state["dependencies"]=QJsonObject{{"propertyDatabase","synthetic"}};
+        state["components"]=QJsonArray{QJsonObject{{"database","TEST"},{"compoundId","1"},{"datasetId","synthetic"},{"name","WATER"},{"alias","WATER"},{"componentId","WATER"},{"cas","7732-18-5"},{"componentType","CONV"}}};
+        auto result=ChemicalSystem::applySfe(state,QJsonArray{QJsonObject{{"fluid","db:TEST:1"},{"solidId","WATER(S)"}}},"C-1",false,true);QVERIFY2(result,qPrintable(result.error));
+        shell.project()->edit(result.state);QTemporaryDir setup;QString setupError;
+        QVERIFY(shell.project()->save(setup.filePath("initial.afmp"),&setupError));QVERIFY(shell.loadProject(setup.filePath("initial.afmp"),&setupError));
+        shell.dispatch("component:specifications");auto *workspace=shell.findChild<ComponentWorkspace *>();auto *table=workspace->findChild<QTableWidget *>("ProjectComponents");
+        const auto before=shell.project()->state();QCOMPARE(table->rowCount(),4);table->setCurrentCell(1,0);
+        auto *title=workspace->findChild<QLabel *>("ComponentSelectionTitle");QVERIFY(title);QTest::mouseDClick(title,Qt::LeftButton);
+        QTRY_VERIFY(shell.findChild<QDialog *>("FindCompoundDialog"));shell.findChild<QDialog *>("FindCompoundDialog")->reject();QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);
+        const auto point=table->visualItemRect(table->item(1,0)).center();
+        QVERIFY(QMetaObject::invokeMethod(table,"customContextMenuRequested",Qt::DirectConnection,Q_ARG(QPoint,point)));
+        auto *menu=table->findChild<QMenu *>("ComponentContextMenu");QVERIFY(menu);menu->actions().first()->trigger();menu->close();
+        QTRY_VERIFY(shell.findChild<QDialog *>("dialog-ReorderComp"));auto *dialog=shell.findChild<QDialog *>("dialog-ReorderComp");
+        auto *list=dialog->findChild<QListWidget *>("lvSelectedComps");QCOMPARE(list->count(),3);QCOMPARE(list->currentRow(),1);
+        list->item(2)->setSelected(true);dialog->findChild<QPushButton *>("btnUp")->click();
+        QCOMPARE(list->item(0)->data(Qt::UserRole).toString(),"object:"+user);QVERIFY(list->item(0)->isSelected());QVERIFY(list->item(1)->isSelected());
+        QVERIFY(!dialog->findChild<QPushButton *>("btnUp")->isEnabled());
+        dialog->reject();QCOMPARE(shell.project()->state(),before);QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);
+        shell.dispatch("reorder");dialog=shell.findChild<QDialog *>("dialog-ReorderComp");list=dialog->findChild<QListWidget *>("lvSelectedComps");
+        list->clearSelection();list->item(1)->setSelected(true);list->item(2)->setSelected(true);dialog->findChild<QPushButton *>("btnUp")->click();
+        dialog->findChild<QDialogButtonBox *>()->button(QDialogButtonBox::Ok)->click();
+        const auto committed=shell.project()->state();QCOMPARE(table->item(0,0)->text(),QString("CUSTOM"));QCOMPARE(table->item(1,0)->text(),QString("WATER(S)"));
+        shell.project()->undo();QCOMPARE(shell.project()->state(),before);shell.project()->redo();QCOMPARE(shell.project()->state(),committed);
+        QTemporaryDir dir;QString error;QVERIFY(shell.saveProject(dir.filePath("mixed.afmp"),&error));QVERIFY(shell.loadProject(dir.filePath("mixed.afmp"),&error));
+        QCOMPARE(table->item(0,0)->text(),QString("CUSTOM"));QCOMPARE(table->item(1,0)->text(),QString("WATER(S)"));
+        QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);shell.dispatch("reorder");dialog=shell.findChild<QDialog *>("dialog-ReorderComp");
+        QVERIFY(objects->renameObject(user,"RENAMED"));const auto renamed=shell.project()->state();
+        dialog->findChild<QDialogButtonBox *>()->button(QDialogButtonBox::Ok)->click();QVERIFY(dialog->isVisible());QCOMPARE(shell.project()->state(),renamed);
+        QVERIFY(!dialog->findChild<QLabel *>("ComponentOrderStatus")->text().isEmpty());dialog->reject();
+        QCOMPARE(table->item(0,0)->text(),QString("RENAMED"));
+    }
+
     void wizardReferenceStateLocalIdsAndStaleProject() {
         QFile file(":/ui/aspen-plus.json");QVERIFY(file.open(QIODevice::ReadOnly));UiShell shell(QJsonDocument::fromJson(file.readAll()).object());shell.show();
         shell.dispatch("electrolyte-wizard");auto *wizard=shell.findChild<QDialog *>("wizard-electrolyte");wizard->findChild<QPushButton *>("WizardNext")->click();QCOMPARE(wizard->findChild<QStackedWidget *>("WizardSteps")->currentIndex(),0);wizard->reject();QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);

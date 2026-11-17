@@ -19,6 +19,29 @@ QJsonObject data(const QJsonObject &state,const QString &name) {return chemistry
 class ChemicalSystemTest:public QObject {
     Q_OBJECT
 private slots:
+    void unifiedComponentOrderSurvivesMembershipChanges() {
+        auto result=applySfe(fixture(),rows(),"C-1",false,true);QVERIFY(result);
+        auto state=result.state;auto objects=state.value("objects").toArray();
+        objects.append(QJsonObject{{"key","user-key"},{"name","CUSTOM"},{"kind","user-components"},{"type","CONVENTIONAL"},{"parent",""},{"inputs",QJsonObject()}});
+        state["objects"]=objects;
+        const auto solid=state.value("chemicalSystem").toObject().value("generatedComponents").toArray()[0].toObject().value("key").toString();
+        state["componentOrder"]=QJsonArray{solid,"object:user-key","db:TEST:2","db:TEST:1"};
+        QVERIFY2(ProjectDocument::validate(state).isEmpty(),qPrintable(ProjectDocument::validate(state)));
+        const auto ordered=components(state);QCOMPARE(ordered[0].toObject().value("key").toString(),solid);QCOMPARE(ordered[1].toObject().value("id").toString(),QString("CUSTOM"));
+        auto invalid=state;invalid["componentOrder"]=QJsonArray{solid,solid};QVERIFY(!ProjectDocument::validate(invalid).isEmpty());
+        invalid["componentOrder"]=QJsonArray{"missing"};QVERIFY(!ProjectDocument::validate(invalid).isEmpty());
+        invalid["componentOrder"]=QJsonArray{42};QVERIFY(!ProjectDocument::validate(invalid).isEmpty());
+        invalid["componentOrder"]="invalid";QVERIFY(!ProjectDocument::validate(invalid).isEmpty());
+        ProjectDocument document;document.edit(state);QTemporaryDir dir;QString error;
+        const auto path=dir.filePath("order.afmp");QVERIFY(document.save(path,&error));
+        ProjectDocument restored;QVERIFY(restored.load(path,&error));QCOMPARE(restored.state(),document.state());
+        objects.removeLast();state["objects"]=objects;document.edit(state);
+        QVERIFY(!document.state().value("componentOrder").toArray().contains("object:user-key"));
+        document.undo();QCOMPARE(document.state().value("componentOrder"),state.value("componentOrder"));
+        document.redo();QVERIFY(ProjectDocument::validate(document.state()).isEmpty());
+        auto added=document.state();auto db=added.value("components").toArray();auto third=db[1].toObject();third["compoundId"]="3";third["componentId"]="THIRD";db.append(third);added["components"]=db;document.edit(added);
+        QCOMPARE(document.state().value("componentOrder").toArray().last().toString(),QString("db:TEST:3"));
+    }
     void newSfeWritesBusinessFieldsAndRoundTrips() {
         const auto before=fixture();auto result=applySfe(before,rows()," c-1 ",false,true);QVERIFY2(result,qPrintable(result.error));
         QCOMPARE(result.state.value("components"),before.value("components"));

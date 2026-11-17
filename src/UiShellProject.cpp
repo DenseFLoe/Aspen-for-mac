@@ -48,6 +48,7 @@ void UiShell::initializeProject() {
     connect(project_,&ProjectDocument::restored,this,&UiShell::restoreProject);
     connect(project_,&ProjectDocument::changed,this,[this] {
         components_->setDatabaseComponents(project_->state().value("components").toArray());
+        components_->setComponentOrder(project_->state().value("componentOrder").toArray());
         components_->setGeneratedComponents(project_->state().value("chemicalSystem").toObject().value("generatedComponents").toArray());
         objects_->setChemicalSystemState(project_->state());
         components_->setUserComponents(objects_->objects());
@@ -88,6 +89,7 @@ void UiShell::restoreProject() {
     const auto s=project_->state(); setUnits(s.value("units").toString());
     objects_->setChemicalSystemState(s);
     components_->setDatabaseComponents(s.value("components").toArray());
+    components_->setComponentOrder(s.value("componentOrder").toArray());
     components_->setGeneratedComponents(s.value("chemicalSystem").toObject().value("generatedComponents").toArray());
     objects_->restoreProjectObjects(s.value("objects").toArray());
     const auto inputs=s.value("unverifiedInputs").toObject();

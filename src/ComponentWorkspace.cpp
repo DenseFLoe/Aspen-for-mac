@@ -1,4 +1,6 @@
 #include "ComponentWorkspace.h"
+#include "ChemicalSystem.h"
+#include <QMouseEvent>
 #include "WidgetState.h"
 #include <QSignalBlocker>
 #include "IconCatalog.h"
@@ -131,6 +133,25 @@ ComponentWorkspace::ComponentWorkspace(const QJsonObject &catalog, QWidget *pare
     // table explicitly; an unconstrained findChild can return the petroleum grid.
     componentTable_=tabs_.value("specifications")->widget(0)->findChild<QTableWidget *>();
     componentTable_->setObjectName("ProjectComponents");componentTable_->setProperty("projectDerived",true);
+    componentTable_->setContextMenuPolicy(Qt::CustomContextMenu);
+    componentTable_->verticalHeader()->setContextMenuPolicy(Qt::CustomContextMenu);
+    const auto showMenu=[this](QWidget *source,const QPoint &position,int row) {
+        if(row<0 || !componentTable_->item(row,0) || componentTable_->item(row,0)->data(Qt::UserRole).toString().isEmpty())return;
+        if(!componentTable_->selectionModel()->isRowSelected(row,QModelIndex()))componentTable_->setCurrentCell(row,0);
+        auto *menu=new QMenu(componentTable_);menu->setObjectName("ComponentContextMenu");menu->setAttribute(Qt::WA_DeleteOnClose);
+        auto *action=menu->addAction(QString::fromUtf8("重新排序记录"));
+        action->setObjectName("ComponentReorder");
+        connect(action,&QAction::triggered,this,[this]{emit actionRequested("reorder");});
+        menu->popup(source->mapToGlobal(position));
+    };
+    connect(componentTable_,&QTableWidget::customContextMenuRequested,this,[this,showMenu](const QPoint &p){
+        // A column selection is not a record command context.
+        if(!componentTable_->selectionModel()->selectedColumns().isEmpty())return;
+        showMenu(componentTable_->viewport(),p,componentTable_->rowAt(p.y()));
+    });
+    connect(componentTable_->verticalHeader(),&QHeaderView::customContextMenuRequested,this,[this,showMenu](const QPoint &p){
+        showMenu(componentTable_->verticalHeader()->viewport(),p,componentTable_->verticalHeader()->logicalIndexAt(p));
+    });
     defaults_=WidgetState::capture(this);
     WidgetState::observe(this,this,[this] { emit inputsChanged(); });
 }
@@ -180,39 +201,41 @@ void ComponentWorkspace::setChemicalSummary(const QString &text) {
 void ComponentWorkspace::setUserComponents(const QJsonArray &objects)
 {
     auto *table=componentTable_; if(!table) return;
+    const auto selected=selectedComponentKey();
     const QSignalBlocker blocked(table);
-    for(int row=table->rowCount()-1;row>=0;--row)
-        if(table->item(row,0) && table->item(row,0)->data(Qt::UserRole+5).toBool()) table->removeRow(row);
-    for(const auto &value:objects) {
-        const auto d=value.toObject(); if(d.value("kind").toString()!="user-components") continue;
-        const int row=qMax(0,table->rowCount()-1); table->insertRow(row);
-        for(int col=0;col<table->columnCount();++col) table->setItem(row,col,new QTableWidgetItem);
-        table->item(row,0)->setText(d.value("name").toString());table->item(row,0)->setData(Qt::UserRole+5,true);
-        if(table->columnCount()>1) table->item(row,1)->setText(d.value("type").toString());
-    }
-    for(const auto &value:databaseComponents_) {
-        const auto c=value.toObject();const int r=qMax(0,table->rowCount()-1);table->insertRow(r);
-        const auto fallback=c.value("alias").toString().isEmpty()?c.value("name").toString():c.value("alias").toString();
-        const auto displayId=c.value("componentId").toString(fallback);
-        const QStringList cells{displayId,QString(),c.value("name").toString(),c.value("alias").toString(),c.value("cas").toString()};
+    const auto all=ChemicalSystem::components(QJsonObject{{"components",databaseComponents_},{"objects",objects},
+        {"componentOrder",componentOrder_},{"chemicalSystem",QJsonObject{{"generatedComponents",generatedComponents_}}}});
+    table->setRowCount(0);table->setRowCount(all.size()+1);
+    for(int r=0;r<all.size();++r) {
+        const auto c=all[r].toObject();
+        const QStringList cells{c.value("id").toString(),c.value("type").toString(),c.value("dbName").toString(),c.value("alias").toString(),c.value("cas").toString()};
         for(int col=0;col<table->columnCount();++col) table->setItem(r,col,new QTableWidgetItem(cells.value(col)));
-        table->item(r,0)->setData(Qt::UserRole+5,true);table->item(r,0)->setToolTip(c.value("database").toString()+":"+c.value("compoundId").toString()+"\n"+c.value("datasetId").toString());
-        if(table->columnCount()>1) {
+        table->item(r,0)->setData(Qt::UserRole+5,true);table->item(r,0)->setData(Qt::UserRole,c.value("key").toString());
+        table->item(r,0)->setToolTip(c.value("key").toString());
+        if(c.value("key").toString()==selected)table->setCurrentCell(r,0);
+        if(table->columnCount()>1 && c.contains("database")) {
             auto *type=new QComboBox(table);type->setObjectName("ComponentType-"+c.value("database").toString()+"-"+c.value("compoundId").toString());type->setProperty("projectDerived",true);
             type->addItem(QString::fromUtf8("未指定"),"UNKNOWN");for(const auto &t:{"CONV","PSEUDO","OLIGOMER","ION","SOLID","NONCONVENTIONAL"})type->addItem(t,t);
-            type->setCurrentIndex(qMax(0,type->findData(c.value("componentType").toString("UNKNOWN"))));
+            type->setCurrentIndex(qMax(0,type->findData(c.value("type").toString("UNKNOWN"))));
             type->setToolTip(QString::fromUtf8("项目组分类别；运行查询库未提供类别，需按组分用途明确指定。"));table->setCellWidget(r,1,type);
             connect(type,&QComboBox::currentIndexChanged,this,[this,type,c]{emit componentTypeChanged(c.value("database").toString(),c.value("compoundId").toString(),type->currentData().toString());});
         }
     }
-    for(const auto &v:generatedComponents_) {
-        const auto c=v.toObject();const int row=qMax(0,table->rowCount()-1);table->insertRow(row);
-        const QStringList cells{c.value("id").toString(),c.value("type").toString(),c.value("dbName").toString(),c.value("alias").toString()};
-        for(int col=0;col<table->columnCount();++col)table->setItem(row,col,new QTableWidgetItem(cells.value(col)));
-        table->item(row,0)->setData(Qt::UserRole+5,true);table->item(row,0)->setToolTip(QString::fromUtf8("向导生成的项目组分\n")+c.value("key").toString());
-    }
+    for(int col=0;col<table->columnCount();++col)table->setItem(all.size(),col,new QTableWidgetItem);
+    auto *newRow=new QTableWidgetItem("*");table->setVerticalHeaderItem(all.size(),newRow);
     table->setFixedHeight(qMin(240,32+24*table->rowCount()));
     table->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+}
+
+QString ComponentWorkspace::selectedComponentKey() const {
+    auto *item=componentTable_?componentTable_->item(componentTable_->currentRow(),0):nullptr;
+    return item?item->data(Qt::UserRole).toString():QString();
+}
+
+bool ComponentWorkspace::eventFilter(QObject *watched,QEvent *event) {
+    if(watched->objectName()=="ComponentSelectionTitle" && event->type()==QEvent::MouseButtonDblClick &&
+       static_cast<QMouseEvent *>(event)->button()==Qt::LeftButton) {showFindDialog();return true;}
+    return QWidget::eventFilter(watched,event);
 }
 
 QWidget *ComponentWorkspace::makeElement(const QJsonObject &spec)
@@ -380,6 +403,9 @@ QWidget *ComponentWorkspace::makeElement(const QJsonObject &spec)
         row->addStretch();
     } else {
         widget = new QLabel(label);
+        if(label==QString::fromUtf8("选择组分")) {
+            widget->setObjectName("ComponentSelectionTitle");widget->installEventFilter(this);
+        }
     }
     if (spec.contains("width")) widget->setMaximumWidth(spec.value("width").toInt());
     if (spec.contains("minHeight")) widget->setMinimumHeight(spec.value("minHeight").toInt());

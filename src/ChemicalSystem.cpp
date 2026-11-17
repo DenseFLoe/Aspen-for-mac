@@ -63,7 +63,14 @@ QJsonArray components(const QJsonObject &state) {
             {"dbName",c.value("dbName").toString()},{"alias",c.value("alias").toString()}});
     }
     for(const auto &v:system(state).value("generatedComponents").toArray()) result.append(v);
-    return result;
+    QJsonArray ordered;
+    QSet<QString> used;
+    for(const auto &key:state.value("componentOrder").toArray())
+        for(const auto &v:result) if(v.toObject().value("key")==key && !used.contains(key.toString())) {
+            ordered.append(v);used.insert(key.toString());break;
+        }
+    for(const auto &v:result) if(!used.contains(v.toObject().value("key").toString())) ordered.append(v);
+    return ordered;
 }
 QJsonArray sfeComponents(const QJsonObject &state) {
     QJsonArray result;
