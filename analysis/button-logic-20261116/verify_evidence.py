@@ -87,13 +87,13 @@ def main():
         if not c['ok']:
             fail(f"recorded check not ok: {c['check']}")
 
-    # 5. protected asset count baseline
+    # 5. Report inventory only. Legitimate new archives may increase this count;
+    # content preservation requires a separate before/after manifest and hashes.
     prot = ROOT/'.local/property-database'
     n = sum(1 for x in prot.rglob('*') if x.is_file())
-    if n != 3226:
-        fail(f'protected asset count {n} != baseline 3226')
 
     print(json.dumps({'failures': failures, 'protected_files': n,
+                      'protected_integrity': 'not_checked_by_logic_verifier',
                       'indexed_methods': sum(len(s['methods']) for s in index['sources']),
                       'indexed_functions': sum(len(s['functions']) for s in index['sources'])},
                      ensure_ascii=False))
