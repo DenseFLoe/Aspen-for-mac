@@ -11,15 +11,42 @@ bool supported(const QJsonObject &o) {
 }
 QString componentKey(const QJsonObject &c) { return c.value("database").toString()+":"+c.value("compoundId").toString(); }
 QStringList fields(const QJsonObject &o) {
-    QStringList result{"temperature","pressure"};
+    QStringList result{"temperature","pressure","vaporFraction"};
+    if(o.value("kind")=="blocks") result.append("duty");
     if(o.value("kind")=="streams") result.append("moleFlow");
     return result;
 }
-QString defaultUnit(const QString &f) { return f=="temperature"?"K":f=="pressure"?"Pa":"mol/s"; }
+QString specification(const QJsonObject &input) { return input.contains("specification")?input.value("specification").toString():QString("TP"); }
+QStringList specificationFields(const QString &spec) {
+    if(spec=="TP")return {"temperature","pressure"};
+    if(spec=="TV")return {"temperature","vaporFraction"};
+    if(spec=="PV")return {"pressure","vaporFraction"};
+    if(spec=="TD")return {"temperature","duty"};
+    if(spec=="PD")return {"pressure","duty"};
+    return {};
+}
+QString specificationFor(const QString &first,const QString &second) {
+    for(const auto &spec:QStringList{"TP","TV","PV","TD","PD"}) {
+        const auto pair=specificationFields(spec);
+        if(first!=second && pair.contains(first) && pair.contains(second))return spec;
+    }
+    return {};
+}
+QStringList specifications(const QJsonObject &o) {
+    return o.value("kind")=="blocks"?QStringList{"TP","TV","PV","TD","PD"}:QStringList{"TP","TV","PV"};
+}
+QStringList requiredFields(const QJsonObject &o) {
+    auto result=specificationFields(specification(o.value("processInput").toObject()));
+    if(o.value("kind")=="streams")result.append("moleFlow");
+    return result;
+}
+QString defaultUnit(const QString &f) { return f=="temperature"?"K":f=="pressure"?"Pa":f=="vaporFraction"?"1":f=="duty"?"W":"mol/s"; }
 QString label(const QString &f) {
     if(f=="temperature") return QString::fromUtf8("温度");
     if(f=="pressure") return QString::fromUtf8("绝对压力");
     if(f=="moleFlow") return QString::fromUtf8("总摩尔流量");
+    if(f=="vaporFraction") return QString::fromUtf8("汽相摩尔分率");
+    if(f=="duty") return QString::fromUtf8("热负荷");
     return QString::fromUtf8("摩尔分率");
 }
 QJsonObject quantity(const QString &text,const QString &unit) { return {{"text",text},{"unit",unit}}; }
@@ -35,11 +62,14 @@ QVector<Issue> issues(const QJsonObject &o,const QJsonArray &components) {
     if(!supported(o)) return result;
     // Connected product/intermediate streams are calculated, not independent feeds.
     if(o.value("kind")=="streams" && !o.value("from").toString().isEmpty()) return result;
-    for(const auto &f:fields(o)) {
+    if(!specifications(o).contains(specification(input)))add("specification",QString::fromUtf8("闪蒸规定无效；请选择该对象支持的两项规定。"));
+    for(const auto &f:requiredFields(o)) {
         const auto q=input.value(f).toObject();double value=0;
         if(q.value("text").toString().trimmed().isEmpty()) add(f,QString::fromUtf8("必须指定%1。").arg(label(f)));
         else if(!ProcessUnits::toSI(f,q,&value)) add(f,QString::fromUtf8("%1的数值或单位无效。").arg(label(f)));
-        else if(value<=0) add(f,QString::fromUtf8("%1必须大于零（温度按绝对温标）。").arg(label(f)));
+        else if(f=="vaporFraction") {
+            if(value<0 || value>1)add(f,QString::fromUtf8("汽相摩尔分率必须在 0–1 之间（包含端点）。"));
+        } else if(f!="duty" && value<=0) add(f,QString::fromUtf8("%1必须大于零（温度按绝对温标）。").arg(label(f)));
     }
     if(o.value("kind")=="streams") {
         const auto scalarIssues=result;result.clear();
@@ -65,7 +95,9 @@ QString validateStructure(const QJsonObject &state) {
     for(const auto &v:state.value("objects").toArray()) {
         const auto o=v.toObject();if(!o.contains("processInput")) continue;
         const auto input=o.value("processInput").toObject();
-        if(!supported(o) || input.value("version")!=1) return QString::fromUtf8("流程输入类型或版本无效。");
+        if(!o.value("processInput").isObject() || !supported(o) || input.value("version")!=1) return QString::fromUtf8("流程输入类型或版本无效。");
+        if(!specifications(o).contains(specification(input)))return QString::fromUtf8("该对象的流程闪蒸规定无效或尚不支持。");
+        if(o.value("kind")=="streams" && input.contains("duty"))return QString::fromUtf8("物料流股不支持热负荷输入。");
         for(const auto &f:fields(o)) if(input.contains(f)) {
             const auto q=input.value(f).toObject();
             if(!q.value("text").isString() || !q.value("unit").isString()) return QString::fromUtf8("流程数值字段结构无效。");

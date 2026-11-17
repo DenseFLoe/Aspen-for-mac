@@ -61,6 +61,50 @@ class UiSmokeTest : public QObject
     Q_OBJECT
 
 private slots:
+    void flashSpecificationsLinkSelectorsGuidanceAndProjectHistory() {
+        QFile file(":/ui/aspen-plus.json");QVERIFY(file.open(QIODevice::ReadOnly));UiShell shell(QJsonDocument::fromJson(file.readAll()).object());shell.show();
+        QTemporaryDir dir;QString error;shell.project()->edit(flash2Fixture());QVERIFY(shell.project()->save(dir.filePath("spec.afmp"),&error));QVERIFY(shell.loadProject(dir.filePath("spec.afmp"),&error));
+        auto *objects=shell.findChild<ObjectWorkspace *>();shell.dispatch("object:B");QCoreApplication::processEvents();
+        auto editor=[&](){return objects->findChild<QTabWidget *>("ObjectDocuments")->currentWidget()->findChild<ProcessInputWidget *>();};
+        auto *first=editor()->findChild<QComboBox *>("ProcessSpecFirst");auto *second=editor()->findChild<QComboBox *>("ProcessSpecSecond");
+        QVERIFY(first && second);QCOMPARE(first->currentData().toString(),QString("temperature"));QCOMPARE(second->currentData().toString(),QString("pressure"));
+        QCOMPARE(first->findData("pressure"),-1);QCOMPARE(second->findData("temperature"),-1);
+        QVERIFY(!editor()->findChild<QLineEdit *>("Process_vaporFraction")->isEnabled());
+        // A pending value survives a specification change even without a focus event.
+        editor()->findChild<QLineEdit *>("Process_temperature")->setText("190.000");
+        second->setCurrentIndex(second->findData("vaporFraction"));
+        auto input=objects->object("B").value("processInput").toObject();QCOMPARE(input.value("specification").toString(),QString("TV"));
+        QCOMPARE(input.value("temperature").toObject().value("text").toString(),QString("190.000"));
+        QVERIFY(!editor()->findChild<QLineEdit *>("Process_pressure")->isEnabled());QVERIFY(editor()->findChild<QLineEdit *>("Process_vaporFraction")->isEnabled());
+        shell.dispatch("next");auto *fraction=editor()->findChild<QLineEdit *>("Process_vaporFraction");QVERIFY(fraction->hasFocus());fraction->setText("1.2");shell.dispatch("next");
+        fraction=editor()->findChild<QLineEdit *>("Process_vaporFraction");QVERIFY(fraction->hasFocus());
+        fraction->setText("0");shell.dispatch("flowsheet");QVERIFY(shell.findChild<QLabel *>("Incomplete")->property("inputComplete").toBool());
+        shell.dispatch("object:B");first=editor()->findChild<QComboBox *>("ProcessSpecFirst");first->setCurrentIndex(first->findData("pressure"));
+        QCOMPARE(objects->object("B").value("processInput").toObject().value("specification").toString(),QString("PV"));
+        QVERIFY(!editor()->findChild<QLineEdit *>("Process_temperature")->isEnabled());
+        shell.project()->undo();shell.dispatch("object:B");QCOMPARE(editor()->findChild<QComboBox *>("ProcessSpecFirst")->currentData().toString(),QString("temperature"));
+        shell.project()->redo();shell.dispatch("object:B");QCOMPARE(editor()->findChild<QComboBox *>("ProcessSpecFirst")->currentData().toString(),QString("pressure"));
+        shell.dispatch("units:SI");input=objects->object("B").value("processInput").toObject();QCOMPARE(input.value("vaporFraction").toObject(),ProcessInput::quantity("0","1"));
+        QVERIFY(shell.saveProject(dir.filePath("spec.afmp"),&error));const auto saved=shell.project()->state();QVERIFY(shell.loadProject(dir.filePath("spec.afmp"),&error));QCOMPARE(shell.project()->state(),saved);
+        shell.dispatch("object:B");QVERIFY(!editor()->findChild<QLineEdit *>("Process_temperature")->isEnabled());QCOMPARE(editor()->findChild<QLineEdit *>("Process_vaporFraction")->text(),QString("0"));
+        const auto capture=qEnvironmentVariable("ASPEN_CAPTURE_DIR");if(!capture.isEmpty()){QDir().mkpath(capture);QVERIFY(shell.grab().save(capture+"/flash2-pv-input.png"));}
+        // The same selectors apply to independent feeds; calculated products stay read-only.
+        shell.dispatch("object:F");second=editor()->findChild<QComboBox *>("ProcessSpecSecond");second->setCurrentIndex(second->findData("vaporFraction"));shell.dispatch("next");
+        fraction=editor()->findChild<QLineEdit *>("Process_vaporFraction");QVERIFY(fraction->hasFocus());fraction->setText("1");
+        shell.dispatch("object:V");QVERIFY(!editor()->findChild<QComboBox *>("ProcessSpecFirst"));QVERIFY(shell.findChild<QLabel *>("Incomplete")->property("inputComplete").toBool());
+        shell.dispatch("object:F");QCOMPARE(editor()->findChild<QComboBox *>("ProcessSpecSecond")->findData("duty"),-1);
+        shell.dispatch("object:B");second=editor()->findChild<QComboBox *>("ProcessSpecSecond");second->setCurrentIndex(second->findData("duty"));
+        QCOMPARE(objects->object("B").value("processInput").toObject().value("specification").toString(),QString("PD"));
+        QCOMPARE(editor()->findChild<QComboBox *>("ProcessSpecFirst")->findData("vaporFraction"),-1);
+        QVERIFY(!editor()->findChild<QLineEdit *>("Process_vaporFraction")->isEnabled());shell.dispatch("next");
+        auto *duty=editor()->findChild<QLineEdit *>("Process_duty");QVERIFY(duty->hasFocus());duty->setText("-2.5");
+        editor()->findChild<QComboBox *>("ProcessUnit_duty")->setCurrentText("kW");
+        shell.dispatch("units:SI");QCOMPARE(objects->object("B").value("processInput").toObject().value("duty").toObject(),ProcessInput::quantity("-2.5","W"));
+        // Changing the unit while editing converts the typed value rather than reinterpreting it.
+        QCOMPARE(editor()->findChild<QComboBox *>("ProcessUnit_duty")->currentText(),QString("W"));
+        QVERIFY(shell.saveProject(dir.filePath("duty.afmp"),&error));const auto withDuty=shell.project()->state();QVERIFY(shell.loadProject(dir.filePath("duty.afmp"),&error));QCOMPARE(shell.project()->state(),withDuty);
+        shell.dispatch("object:B");if(!capture.isEmpty())QVERIFY(shell.grab().save(capture+"/flash2-duty-input.png"));
+    }
     void flash2PortsRejectInvalidEditsAndSurviveProjectOperations() {
         QFile file(":/ui/aspen-plus.json");QVERIFY(file.open(QIODevice::ReadOnly));UiShell shell(QJsonDocument::fromJson(file.readAll()).object());shell.show();shell.dispatch("flowsheet");
         auto *objects=shell.findChild<ObjectWorkspace *>();auto *canvas=objects->findChild<QGraphicsView *>("FlowsheetCanvas");

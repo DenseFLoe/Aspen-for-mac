@@ -10,6 +10,71 @@
 class ProcessInputTest : public QObject {
     Q_OBJECT
 private slots:
+    void dutySpecificationsUseSignedPowerAndRejectIncompatiblePairs() {
+        const auto reference=flash2Fixture();
+        for(const auto &spec:QStringList{"TD","PD"})for(const auto &text:QStringList{"-2.5","0","3.0"}) {
+            auto state=reference;auto objects=state.value("objects").toArray();auto block=objects[0].toObject();auto input=block.value("processInput").toObject();
+            input["specification"]=spec;input["duty"]=ProcessInput::quantity(text,"kW");
+            input[spec=="TD"?"pressure":"temperature"]=ProcessInput::quantity("bad",spec=="TD"?"Pa":"K");
+            block["processInput"]=input;objects[0]=block;state["objects"]=objects;
+            QVERIFY(ProcessGuidance::issues(state).isEmpty());QVERIFY(ProjectDocument::validate(state).isEmpty());
+            ProjectDocument doc;doc.edit(reference);doc.edit(state);doc.undo();QCOMPARE(doc.state(),reference);doc.redo();
+            QTemporaryDir dir;QString error;QVERIFY(doc.save(dir.filePath("duty.afmp"),&error));QVERIFY(doc.load(dir.filePath("duty.afmp"),&error));QCOMPARE(doc.state(),state);
+            input["duty"]=ProcessInput::quantity("","W");block["processInput"]=input;
+            QCOMPARE(ProcessInput::issues(block,state.value("components").toArray()).first().field,QString("duty"));
+            auto feed=objects[1].toObject();auto feedInput=feed.value("processInput").toObject();feedInput["specification"]=spec;feed["processInput"]=feedInput;objects[1]=feed;state["objects"]=objects;
+            QVERIFY(!ProjectDocument::validate(state).isEmpty());
+        }
+        QVERIFY(ProcessInput::specificationFor("duty","vaporFraction").isEmpty());
+        QCOMPARE(ProcessInput::specificationFor("duty","temperature"),QString("TD"));QCOMPARE(ProcessInput::specificationFor("pressure","duty"),QString("PD"));
+        QJsonObject result;QVERIFY(ProcessUnits::convert("duty",ProcessInput::quantity("-2.5","kW"),"W",&result));QCOMPARE(result,ProcessInput::quantity("-2500","W"));
+        QVERIFY(ProcessUnits::convert("duty",result,"MW",&result));double watts=0;QVERIFY(ProcessUnits::toSI("duty",result,&watts));QCOMPARE(watts,-2500.0);
+        QVERIFY(!ProcessUnits::convert("duty",ProcessInput::quantity("NaN","W"),"kW",&result));
+    }
+    void specificationsControlRequiredInputsAndPersist() {
+        const auto reference=flash2Fixture();
+        for(const auto &spec:QStringList{"TP","TV","PV"})for(int objectIndex:{0,1}) {
+            auto state=reference;auto objects=state.value("objects").toArray();auto object=objects[objectIndex].toObject();
+            auto input=object.value("processInput").toObject();input["specification"]=spec;
+            input["vaporFraction"]=ProcessInput::quantity("0.50","1");
+            // An inactive retained input must not become a third required condition.
+            for(const auto &f:QStringList{"temperature","pressure","vaporFraction"})
+                if(!ProcessInput::specificationFields(spec).contains(f))input[f]=ProcessInput::quantity("bad",ProcessInput::defaultUnit(f));
+            object["processInput"]=input;objects[objectIndex]=object;state["objects"]=objects;
+            QVERIFY(ProcessInput::issues(object,state.value("components").toArray()).isEmpty());QVERIFY(ProcessGuidance::issues(state).isEmpty());
+            ProjectDocument doc;doc.edit(reference);doc.edit(state);doc.undo();QCOMPARE(doc.state(),reference);doc.redo();QCOMPARE(doc.state(),state);
+            QTemporaryDir dir;QString error;QVERIFY2(doc.save(dir.filePath("spec.afmp"),&error),qPrintable(error));
+            QVERIFY(doc.load(dir.filePath("spec.afmp"),&error));QCOMPARE(doc.state(),state);
+            if(spec=="TP")continue;
+            for(const auto &text:QStringList{"0","1"}) {
+                input["vaporFraction"]=ProcessInput::quantity(text,"1");object["processInput"]=input;
+                QVERIFY(ProcessInput::issues(object,state.value("components").toArray()).isEmpty());
+            }
+            for(const auto &text:QStringList{"","-0.01","1.01","NaN","1e999"}) {
+                input["vaporFraction"]=ProcessInput::quantity(text,"1");object["processInput"]=input;
+                const auto problems=ProcessInput::issues(object,state.value("components").toArray());
+                QCOMPARE(problems.size(),1);QCOMPARE(problems.first().field,QString("vaporFraction"));
+            }
+            input["vaporFraction"]=ProcessInput::quantity("0.5","%");object["processInput"]=input;
+            QCOMPARE(ProcessInput::issues(object,state.value("components").toArray()).first().field,QString("vaporFraction"));
+        }
+        for(const auto &spec:QStringList{"TP","TV","PV"}) {
+            const auto pair=ProcessInput::specificationFields(spec);
+            QCOMPARE(ProcessInput::specificationFor(pair[0],pair[1]),spec);
+            QCOMPARE(ProcessInput::specificationFor(pair[1],pair[0]),spec);
+        }
+        QVERIFY(ProcessInput::specificationFor("temperature","temperature").isEmpty());
+        for(const QJsonValue bad:QList<QJsonValue>{"", "TT", "TQ", 1, QJsonValue(QJsonValue::Null)}) {
+            auto state=reference;auto objects=state.value("objects").toArray();auto object=objects[0].toObject();auto input=object.value("processInput").toObject();
+            input["specification"]=bad;object["processInput"]=input;objects[0]=object;state["objects"]=objects;
+            QVERIFY(!ProjectDocument::validate(state).isEmpty());QCOMPARE(ProcessGuidance::next(state,"B").field,QString("specification"));
+        }
+        // Malformed inactive fields cannot bypass project structure validation.
+        auto state=reference;auto objects=state.value("objects").toArray();auto object=objects[0].toObject();auto input=object.value("processInput").toObject();
+        input["vaporFraction"]=2;object["processInput"]=input;objects[0]=object;state["objects"]=objects;QVERIFY(!ProjectDocument::validate(state).isEmpty());
+        double fraction=0;QVERIFY(ProcessUnits::toSI("vaporFraction",ProcessInput::quantity("0.5","1"),&fraction));QCOMPARE(fraction,0.5);
+        for(const auto &units:QStringList{"SI","ENG","MET","CBAR"})QCOMPARE(ProcessUnits::forSet("vaporFraction",units),QString("1"));
+    }
     void referenceTopologyRequiresDistinctVerifiedPorts() {
         const auto reference=flash2Fixture();
         QVERIFY(ProcessGuidance::issues(reference).isEmpty());

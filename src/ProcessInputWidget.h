@@ -22,8 +22,12 @@ private:
     QJsonArray components_;
     QMap<QString,QLineEdit *> edits_;
     QMap<QString,QComboBox *> units_;
+    QComboBox *specFirst_=nullptr, *specSecond_=nullptr;
     QTableWidget *fractions_=nullptr;
     QLabel *status_=nullptr;
     void publish();
     void updateStatus();
+    void storeValues();
+    void updateSpecification(const QString &first, const QString &second);
+    void changeSpecification();
 };

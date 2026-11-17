@@ -1,5 +1,7 @@
 # Flash2 字段、单位与下一步实施
 
+后续表单研究已补齐物料进料 TP/TV/PV 与 Flash2 TP/TV/PV/TD/PD 的规定选择、字段联动及保存/引导，见[研究报告落实核对](research-report-implementation.md)。本文仅支持 TP 的描述为初次交付记录。
+
 后续实施：[Flash2 连接规则](flash2-topology.md)补齐明确的汽液出口角色与端口校验。下文“基本拓扑”的边界保留为本轮原始交付记录，当前行为以该后续记录为准。
 
 2026-11-17，工作分支 `codex/flash2-input-guidance`，继承研究提交 `8fa281b`。

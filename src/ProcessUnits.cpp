@@ -19,6 +19,12 @@ bool coefficients(const QString &field,const QString &unit,double *scale,double 
         if(unit=="mol/s")return true;
         if(unit=="kmol/hr"){*scale=1000.0/3600;return true;}
         if(unit=="lbmol/hr"){*scale=453.59237/3600;return true;}
+    } else if(field=="vaporFraction") {
+        return unit=="1";
+    } else if(field=="duty") {
+        if(unit=="W")return true;
+        if(unit=="kW"){*scale=1000;return true;}
+        if(unit=="MW"){*scale=1000000;return true;}
     }
     return false;
 }
@@ -28,9 +34,13 @@ QStringList units(const QString &field) {
     if(field=="temperature")return {"K","C","F"};
     if(field=="pressure")return {"Pa","kPa","bar","atm","psia"};
     if(field=="moleFlow")return {"mol/s","kmol/hr","lbmol/hr"};
+    if(field=="vaporFraction")return {"1"};
+    if(field=="duty")return {"W","kW","MW"};
     return {};
 }
 QString forSet(const QString &field,const QString &set) {
+    if(field=="vaporFraction")return "1";
+    if(field=="duty")return set=="SI"?"W":"kW";
     if(set=="SI")return ProcessInput::defaultUnit(field);
     if(field=="temperature")return set=="ENG"?"F":"C";
     if(field=="pressure")return set=="ENG"?"psia":set=="MET"?"atm":"bar";

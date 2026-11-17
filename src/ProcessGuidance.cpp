@@ -17,7 +17,7 @@ QVector<ProcessInput::Issue> issues(const QJsonObject &state) {
         if(kind=="blocks")blocks.append(o);
         if(kind=="streams")streams.append(o);
         if(kind=="user-components" || kind=="chemistry" || ((kind=="blocks" || kind=="streams") && !ProcessInput::supported(o)))
-            result.append({o.value("key").toString(),"unsupported",QString::fromUtf8("%1：本轮引导仅覆盖数据库组分、物料流股和 Flash2 温压规定。").arg(o.value("name").toString())});
+            result.append({o.value("key").toString(),"unsupported",QString::fromUtf8("%1：本轮引导仅覆盖数据库组分、物料流股和 Flash2 的 TP / TV / PV / TD / PD 规定。").arg(o.value("name").toString())});
     }
     if(blocks.size()!=1 || blocks.first().toObject().value("type")!="Flash2")
         result.append({{},"flowsheet",QString::fromUtf8("本轮参考流程需要一个 Flash2、一个进料和两个产品流股。")});
