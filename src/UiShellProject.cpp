@@ -11,6 +11,7 @@
 #include "ObjectWorkspace.h"
 #include "ComponentWorkspace.h"
 #include "RecoveredWorkspace.h"
+#include "WidgetState.h"
 #include <QCloseEvent>
 #include <QApplication>
 #include <QFileDialog>
@@ -84,6 +85,11 @@ void UiShell::captureProject() {
     state["unverifiedInputs"]=inputs;
     project_->edit(ChemicalSystem::removeMissingGlobalReferences(state));
 }
+void UiShell::commitPendingInputs() {
+    if(!project_ || restoringProject_)return;
+    WidgetState::commit(this);
+    objects_->commitProcessEditors();
+}
 void UiShell::restoreProject() {
     const QScopedValueRollback<bool> guard(restoringProject_,true);
     const auto s=project_->state(); setUnits(s.value("units").toString());
@@ -103,8 +109,7 @@ void UiShell::restoreProject() {
 }
 bool UiShell::saveProject(const QString &path,QString *error) {
     // Commit an active item delegate before serializing the document.
-    if(auto *editor=QApplication::focusWidget();editor && isAncestorOf(editor)) editor->clearFocus();
-    objects_->commitProcessEditors();
+    commitPendingInputs();
     return project_->save(path,error);
 }
 bool UiShell::loadProject(const QString &path,QString *error) { return project_->load(path,error); }
@@ -118,8 +123,7 @@ bool UiShell::saveProjectDialog(bool saveAs) {
     pages_->setCurrentIndex(0); statusBar()->showMessage(QString::fromUtf8("项目已保存：")+path,6000); return true;
 }
 bool UiShell::confirmProjectReplacement() {
-    if(auto *editor=QApplication::focusWidget();editor && isAncestorOf(editor)) editor->clearFocus();
-    objects_->commitProcessEditors();
+    commitPendingInputs();
     if(!project_->isModified()) return true;
     const auto answer=QMessageBox::warning(this,QString::fromUtf8("未保存的项目"),QString::fromUtf8("保存当前项目的更改？"),QMessageBox::Save|QMessageBox::Discard|QMessageBox::Cancel,QMessageBox::Save);
     return answer==QMessageBox::Discard || (answer==QMessageBox::Save && saveProjectDialog(false));

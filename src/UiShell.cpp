@@ -109,6 +109,7 @@ QMenu *UiShell::makeMenu(const QJsonArray &entries, QWidget *parent)
 bool UiShell::openRecovered(const QString &name)
 {
     if (!recovered_) return false;
+    commitPendingInputs();
     for (const auto &value:recovered_->catalog().value("pages").toArray()) {
         const auto page=value.toObject();
         if (page.value("name").toString()!=name && page.value("id").toString()!=name) continue;

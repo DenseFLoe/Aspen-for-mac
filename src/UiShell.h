@@ -41,6 +41,7 @@ private:
     void updateProcessStatus();
     void nextProcessInput();
     void captureProject();
+    void commitPendingInputs();
     void restoreProject();
     bool projectAction(const QString &action);
     bool saveProjectDialog(bool saveAs);

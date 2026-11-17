@@ -7,6 +7,7 @@
 #include "ChemicalSystemView.h"
 #include "RecoveredWorkspace.h"
 #include "IconCatalog.h"
+#include "WidgetState.h"
 #include <QAction>
 #include <QBoxLayout>
 #include <QComboBox>
@@ -259,6 +260,7 @@ ObjectWorkspace::ObjectWorkspace(QWidget *parent) : QWidget(parent)
         closeObject(view->property("objectKey").toString());
     });
     connect(documents_,&QTabWidget::currentChanged,this,[this](int){
+        WidgetState::commit(this);commitProcessEditors();
         const bool flow=documents_->currentWidget()==flowsheet_;
         metrics_->setVisible(flow); modelPalette_->setVisible(flow);
         emit flowsheetActivated(flow);
@@ -370,10 +372,12 @@ void ObjectWorkspace::showCollection(const QString &kind,const QString &parent) 
     if(definition(kind).isEmpty() || (!parent.isEmpty() && !entries_.contains(parent))) return;
     const auto parents=definition(kind).value("parentTypes").toArray();
     if((parents.isEmpty() && !parent.isEmpty()) || (!parents.isEmpty() && !parents.contains(object(parent).value("type")))) return;
+    WidgetState::commit(this);commitProcessEditors();
     kind_=kind; parent_=parent; refreshManager(); documents_->setTabVisible(documents_->indexOf(manager_),true);documents_->setCurrentWidget(manager_); emit collectionActivated(kind,parent);
 }
 bool ObjectWorkspace::openObject(const QString &key,const QString &page) {
     if(!entries_.contains(key)) return false;
+    WidgetState::commit(this);commitProcessEditors();
     auto &entry=entries_[key]; const auto kind=entry.data.value("kind").toString();
     const auto pages=typeDefinition(kind,entry.data.value("type").toString()).value("pages").toArray();
     if(pages.isEmpty()) return false;
@@ -415,6 +419,7 @@ bool ObjectWorkspace::openObject(const QString &key,const QString &page) {
 }
 void ObjectWorkspace::closeObject(const QString &key) {
     if(!entries_.contains(key) || !entries_[key].view) return;
+    if(!signalsBlocked()) {WidgetState::commit(entries_[key].view);commitProcessEditors();}
     auto &entry=entries_[key]; entry.values=entry.view->sessionState();entry.lastPage=entry.view->currentPage();
     auto *view=entry.view; entry.view=nullptr; documents_->removeTab(documents_->indexOf(view)); view->deleteLater();
 }
@@ -575,6 +580,7 @@ void ObjectWorkspace::requestDeleteObjects(const QStringList &keys) {
     connect(buttons,&QDialogButtonBox::rejected,dialog,&QDialog::reject); dialog->open();
 }
 void ObjectWorkspace::showFlowsheet() {
+    WidgetState::commit(this);commitProcessEditors();
     documents_->setTabVisible(documents_->indexOf(manager_),false);
     documents_->setCurrentWidget(flowsheet_);metrics_->show();modelPalette_->show();refreshCanvas();
     emit flowsheetActivated(true);

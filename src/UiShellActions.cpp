@@ -144,6 +144,9 @@ void UiShell::openWizard(const QString &name)
 
 void UiShell::dispatch(const QString &requested)
 {
+    // Screen changes and analysis/dialog entry points commit the current edit
+    // before a view can be hidden or rebuilt. Undo keeps its existing routing.
+    if(requested!="undo" && requested!="redo" && requested!="quick-undo" && requested!="quick-redo")commitPendingInputs();
     if (projectAction(requested)) return;
     auto action=requested;
     const auto commands=interactions_.value("commands").toObject();

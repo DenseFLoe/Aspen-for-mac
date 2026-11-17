@@ -266,6 +266,7 @@ private slots:
         list->item(2)->setSelected(true);dialog->findChild<QPushButton *>("btnUp")->click();
         QCOMPARE(list->item(0)->data(Qt::UserRole).toString(),"object:"+user);QVERIFY(list->item(0)->isSelected());QVERIFY(list->item(1)->isSelected());
         QVERIFY(!dialog->findChild<QPushButton *>("btnUp")->isEnabled());
+        const auto capture=qEnvironmentVariable("ASPEN_CAPTURE_DIR");if(!capture.isEmpty()){QDir().mkpath(capture);QVERIFY(dialog->grab().save(capture+"/component-order.png"));}
         dialog->reject();QCOMPARE(shell.project()->state(),before);QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);
         shell.dispatch("reorder");dialog=shell.findChild<QDialog *>("dialog-ReorderComp");list=dialog->findChild<QListWidget *>("lvSelectedComps");
         list->clearSelection();list->item(1)->setSelected(true);list->item(2)->setSelected(true);dialog->findChild<QPushButton *>("btnUp")->click();
@@ -279,6 +280,31 @@ private slots:
         dialog->findChild<QDialogButtonBox *>()->button(QDialogButtonBox::Ok)->click();QVERIFY(dialog->isVisible());QCOMPARE(shell.project()->state(),renamed);
         QVERIFY(!dialog->findChild<QLabel *>("ComponentOrderStatus")->text().isEmpty());dialog->reject();
         QCOMPARE(table->item(0,0)->text(),QString("RENAMED"));
+        if(!capture.isEmpty())QVERIFY(shell.grab().save(capture+"/component-records.png"));
+    }
+
+    void navigationCommitsActiveEditorsBeforeReplacingViews() {
+        QFile file(":/ui/aspen-plus.json");QVERIFY(file.open(QIODevice::ReadOnly));UiShell shell(QJsonDocument::fromJson(file.readAll()).object());shell.show();
+        auto *objects=shell.findChild<ObjectWorkspace *>();const auto flash=objects->createObject("blocks","FLASH","Flash2");QVERIFY(!flash.isEmpty());
+        shell.dispatch("object:"+flash);auto *tabs=objects->findChild<QTabWidget *>("ObjectDocuments");
+        auto *temperature=tabs->currentWidget()->findChild<QLineEdit *>("Process_temperature");QVERIFY(temperature);
+        temperature->setFocus();temperature->setText("330");shell.dispatch("methods");
+        QCOMPARE(objects->object(flash).value("processInput").toObject().value("temperature").toObject().value("text").toString(),QString("330"));
+        shell.dispatch("object:"+flash);temperature=tabs->currentWidget()->findChild<QLineEdit *>("Process_temperature");
+        temperature->setFocus();temperature->setText("335");QVERIFY(objects->openObject(flash));
+        QCOMPARE(tabs->currentWidget()->findChild<QLineEdit *>("Process_temperature")->text(),QString("335"));
+        const auto property=objects->createObject("property-sets","EDIT","PropertySet");shell.dispatch("object:"+property);
+        auto *view=qobject_cast<RecoveredWorkspace *>(tabs->currentWidget());QVERIFY(view);const auto first=view->currentPage();
+        auto *grid=view->findChild<QTableWidget *>("grdSelection");QVERIFY(grid);grid->setItem(0,0,new QTableWidgetItem("OLD"));grid->setCurrentCell(0,0);grid->editItem(grid->item(0,0));QCoreApplication::processEvents();
+        auto *editor=grid->findChild<QLineEdit *>();QVERIFY(editor);editor->setFocus();editor->setText("COMMITTED ON NAVIGATION");
+        QVERIFY(view->showPage(view->idForName("MMProp_Spec_Input")));QVERIFY(view->showPage(first));
+        QCOMPARE(view->findChild<QTableWidget *>("grdSelection")->item(0,0)->text(),QString("COMMITTED ON NAVIGATION"));
+        grid=view->findChild<QTableWidget *>("grdSelection");grid->setCurrentCell(0,0);grid->editItem(grid->item(0,0));QCoreApplication::processEvents();
+        editor=grid->findChild<QLineEdit *>();QVERIFY(editor);editor->setFocus();editor->setText("BEFORE DIALOG");shell.dispatch("database-search");
+        QCOMPARE(grid->item(0,0)->text(),QString("BEFORE DIALOG"));auto *dialog=shell.findChild<QDialog *>("FindCompoundDialog");QVERIFY(dialog);dialog->reject();
+        QTemporaryDir dir;QString error;QVERIFY(shell.saveProject(dir.filePath("navigation.afmp"),&error));QVERIFY(shell.loadProject(dir.filePath("navigation.afmp"),&error));
+        QVERIFY(objects->openObject(property));view=qobject_cast<RecoveredWorkspace *>(tabs->currentWidget());QCOMPARE(view->findChild<QTableWidget *>("grdSelection")->item(0,0)->text(),QString("BEFORE DIALOG"));
+        QCOMPARE(objects->object(flash).value("processInput").toObject().value("temperature").toObject().value("text").toString(),QString("335"));
     }
 
     void wizardReferenceStateLocalIdsAndStaleProject() {

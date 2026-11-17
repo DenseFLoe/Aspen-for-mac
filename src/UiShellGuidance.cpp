@@ -23,8 +23,7 @@ void UiShell::updateProcessStatus() {
     }
 }
 void UiShell::nextProcessInput() {
-    if(auto *editor=QApplication::focusWidget();editor && isAncestorOf(editor))editor->clearFocus();
-    objects_->commitProcessEditors();
+    commitPendingInputs();
     captureProject();
     const auto current=documents_->currentWidget()==objects_?objects_->currentObject():QString();
     const auto issue=ProcessGuidance::next(project_->state(),current);

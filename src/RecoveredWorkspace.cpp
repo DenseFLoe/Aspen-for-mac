@@ -270,6 +270,7 @@ QJsonObject RecoveredWorkspace::pageSpec(const QString &id)
 
 bool RecoveredWorkspace::showPage(const QString &id)
 {
+    WidgetState::commit(this);
     saveState();
     QWidget *view = nullptr;
     QJsonObject spec;

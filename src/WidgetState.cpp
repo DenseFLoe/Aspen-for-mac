@@ -1,5 +1,6 @@
 #include "WidgetState.h"
 #include <QAbstractButton>
+#include <QApplication>
 #include <QComboBox>
 #include <QJsonArray>
 #include <QLineEdit>
@@ -31,6 +32,9 @@ bool internal(QWidget *w,QWidget *root) {
         if(qobject_cast<QComboBox *>(p) || qobject_cast<QSpinBox *>(p) || qobject_cast<QAbstractItemView *>(p)) return true;
     return false;
 }
+}
+void WidgetState::commit(QWidget *root) {
+    if(auto *editor=QApplication::focusWidget();editor && (editor==root || root->isAncestorOf(editor)))editor->clearFocus();
 }
 QJsonObject WidgetState::capture(QWidget *root) {
     QJsonObject result;

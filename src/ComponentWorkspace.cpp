@@ -160,6 +160,7 @@ bool ComponentWorkspace::showPage(const QString &id)
 {
     auto *page = pages_.value(id, nullptr);
     if (!page) return false;
+    WidgetState::commit(this);
     stack_->setCurrentWidget(page);
     title_->setText(page->property("pageTitle").toString());
     emit pageChanged(id);
@@ -211,7 +212,9 @@ void ComponentWorkspace::setUserComponents(const QJsonArray &objects)
         const QStringList cells{c.value("id").toString(),c.value("type").toString(),c.value("dbName").toString(),c.value("alias").toString(),c.value("cas").toString()};
         for(int col=0;col<table->columnCount();++col) table->setItem(r,col,new QTableWidgetItem(cells.value(col)));
         table->item(r,0)->setData(Qt::UserRole+5,true);table->item(r,0)->setData(Qt::UserRole,c.value("key").toString());
-        table->item(r,0)->setToolTip(c.value("key").toString());
+        auto source=c.value("key").toString();
+        for(const auto &v:databaseComponents_)if(ChemicalSystem::databaseKey(v.toObject())==source)source+="\n"+v.toObject().value("datasetId").toString();
+        table->item(r,0)->setToolTip(source);
         if(c.value("key").toString()==selected)table->setCurrentCell(r,0);
         if(table->columnCount()>1 && c.contains("database")) {
             auto *type=new QComboBox(table);type->setObjectName("ComponentType-"+c.value("database").toString()+"-"+c.value("compoundId").toString());type->setProperty("projectDerived",true);
