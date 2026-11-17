@@ -31,7 +31,7 @@ qt_add_executable(AspenPlusUIShell
     src/main.cpp
     src/UiShell.cpp
     src/PropertyDatabase.cpp src/PropertyDatabase.h src/DatabaseDialog.cpp src/DatabaseDialog.h
-    src/UiShellProject.cpp src/ProjectDocument.cpp src/ProjectDocument.h src/ProcessUnits.cpp src/ProcessUnits.h src/ProcessGuidance.cpp src/ProcessGuidance.h src/ProcessInput.cpp src/ProcessInput.h src/ChemicalSystem.cpp src/ChemicalSystem.h src/WidgetState.cpp src/WidgetState.h
+    src/UiShellProject.cpp src/ProjectDocument.cpp src/ProjectDocument.h src/ProcessUnits.cpp src/ProcessUnits.h src/ProcessGuidance.cpp src/ProcessGuidance.h src/ProcessTopology.cpp src/ProcessTopology.h src/ProcessInput.cpp src/ProcessInput.h src/ChemicalSystem.cpp src/ChemicalSystem.h src/WidgetState.cpp src/WidgetState.h
     src/ProcessInputWidget.cpp src/ProcessInputWidget.h
     src/UiShellGuidance.cpp src/UiShellActions.cpp
     src/UiShellAssistants.cpp
@@ -78,7 +78,7 @@ endif()
 include(CTest)
 if(BUILD_TESTING)
     find_package(Qt6 REQUIRED COMPONENTS Test)
-    qt_add_executable(ProcessInputTest tests/ProcessInputTest.cpp src/ProcessUnits.cpp src/ProcessUnits.h src/ProcessGuidance.cpp src/ProcessGuidance.h src/ProcessInput.cpp src/ProjectDocument.cpp src/ChemicalSystem.cpp)
+    qt_add_executable(ProcessInputTest tests/ProcessInputTest.cpp src/ProcessUnits.cpp src/ProcessUnits.h src/ProcessGuidance.cpp src/ProcessGuidance.h src/ProcessTopology.cpp src/ProcessTopology.h src/ProcessInput.cpp src/ProjectDocument.cpp src/ChemicalSystem.cpp)
     target_include_directories(ProcessInputTest PRIVATE src)
     target_link_libraries(ProcessInputTest PRIVATE Qt6::Widgets Qt6::Test)
     qt_add_resources(ProcessInputTest "process_test_catalog" PREFIX "/" FILES ui/object-types.json)
@@ -88,7 +88,7 @@ if(BUILD_TESTING)
     add_test(NAME process-input COMMAND ProcessInputTest)
     set_tests_properties(process-input PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen" TIMEOUT 60)
     qt_add_executable(ChemicalSystemTest tests/ChemicalSystemTest.cpp
-        src/ProjectDocument.cpp src/ProjectDocument.h src/ProcessUnits.cpp src/ProcessUnits.h src/ProcessGuidance.cpp src/ProcessGuidance.h src/ProcessInput.cpp src/ProcessInput.h src/ChemicalSystem.cpp src/ChemicalSystem.h)
+        src/ProjectDocument.cpp src/ProjectDocument.h src/ProcessUnits.cpp src/ProcessUnits.h src/ProcessGuidance.cpp src/ProcessGuidance.h src/ProcessTopology.cpp src/ProcessTopology.h src/ProcessInput.cpp src/ProcessInput.h src/ChemicalSystem.cpp src/ChemicalSystem.h)
     target_include_directories(ChemicalSystemTest PRIVATE src)
     target_link_libraries(ChemicalSystemTest PRIVATE Qt6::Widgets Qt6::Test)
     qt_add_resources(ChemicalSystemTest "chemical_test_catalog" PREFIX "/" FILES ui/object-types.json)
@@ -100,7 +100,7 @@ if(BUILD_TESTING)
     qt_add_executable(UiSmokeTest
         tests/UiSmokeTest.cpp src/UiShell.cpp src/UiShell.h
         src/PropertyDatabase.cpp src/PropertyDatabase.h src/DatabaseDialog.cpp src/DatabaseDialog.h
-        src/UiShellProject.cpp src/ProjectDocument.cpp src/ProjectDocument.h src/ProcessUnits.cpp src/ProcessUnits.h src/ProcessGuidance.cpp src/ProcessGuidance.h src/ProcessInput.cpp src/ProcessInput.h src/ChemicalSystem.cpp src/ChemicalSystem.h src/WidgetState.cpp src/WidgetState.h
+        src/UiShellProject.cpp src/ProjectDocument.cpp src/ProjectDocument.h src/ProcessUnits.cpp src/ProcessUnits.h src/ProcessGuidance.cpp src/ProcessGuidance.h src/ProcessTopology.cpp src/ProcessTopology.h src/ProcessInput.cpp src/ProcessInput.h src/ChemicalSystem.cpp src/ChemicalSystem.h src/WidgetState.cpp src/WidgetState.h
         src/ProcessInputWidget.cpp src/ProcessInputWidget.h
         src/UiShellGuidance.cpp src/UiShellActions.cpp
         src/UiShellAssistants.cpp
@@ -127,7 +127,7 @@ if(BUILD_TESTING)
         tests/DatabaseAccessibilityTest.cpp
         src/DatabaseDialog.cpp src/DatabaseDialog.h
         src/PropertyDatabase.cpp src/PropertyDatabase.h
-        src/ProjectDocument.cpp src/ProjectDocument.h src/ProcessUnits.cpp src/ProcessUnits.h src/ProcessGuidance.cpp src/ProcessGuidance.h src/ProcessInput.cpp src/ProcessInput.h src/ChemicalSystem.cpp src/ChemicalSystem.h
+        src/ProjectDocument.cpp src/ProjectDocument.h src/ProcessUnits.cpp src/ProcessUnits.h src/ProcessGuidance.cpp src/ProcessGuidance.h src/ProcessTopology.cpp src/ProcessTopology.h src/ProcessInput.cpp src/ProcessInput.h src/ChemicalSystem.cpp src/ChemicalSystem.h
     )
     set_target_properties(DatabaseAccessibilityTest PROPERTIES WIN32_EXECUTABLE FALSE)
     target_include_directories(DatabaseAccessibilityTest PRIVATE src tests)

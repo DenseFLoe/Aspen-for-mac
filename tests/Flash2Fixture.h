@@ -11,7 +11,8 @@ inline QJsonObject flash2Fixture(bool filled=true) {
     QJsonObject block{{"key","B"},{"name","B1"},{"kind","blocks"},{"type","Flash2"},{"parent",""},{"inputs",QJsonObject()}};
     QJsonObject feed{{"key","F"},{"name","1"},{"kind","streams"},{"type","MATERIAL"},{"parent",""},{"inputs",QJsonObject()},{"from",""},{"to","B"}};
     auto vapor=feed;vapor["key"]="V";vapor["name"]="2";vapor["from"]="B";vapor["to"]="";
-    auto liquid=vapor;liquid["key"]="L";liquid["name"]="3";
+    feed["toPort"]="FEED";vapor["fromPort"]="VAPOR";
+    auto liquid=vapor;liquid["key"]="L";liquid["name"]="3";liquid["fromPort"]="LIQUID";
     if(filled) {
         block["processInput"]=QJsonObject{{"version",1},{"temperature",ProcessInput::quantity("185","F")},{"pressure",ProcessInput::quantity("14.7","psia")}};
         feed["processInput"]=QJsonObject{{"version",1},{"temperature",ProcessInput::quantity("200","F")},{"pressure",ProcessInput::quantity("50","psia")},{"moleFlow",ProcessInput::quantity("100","lbmol/hr")},{"fractions",QJsonObject{{"TEST:METHANOL","0.5"},{"TEST:WATER","0.5"}}}};

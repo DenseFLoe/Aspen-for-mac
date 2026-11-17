@@ -1,6 +1,7 @@
 #include "ChemicalSystem.h"
 #include "Flash2Fixture.h"
 #include "ProcessInputWidget.h"
+#include "ProcessGuidance.h"
 #include "DatabaseFixture.h"
 #include "UiShell.h"
 #include "ProjectDocument.h"
@@ -41,6 +42,7 @@
 #include <QInputDialog>
 #include <QScrollArea>
 #include <QScrollBar>
+#include <QSettings>
 #include <QSlider>
 #include <QGroupBox>
 #include <QTabBar>
@@ -56,6 +58,50 @@ class UiSmokeTest : public QObject
     Q_OBJECT
 
 private slots:
+    void flash2PortsRejectInvalidEditsAndSurviveProjectOperations() {
+        QFile file(":/ui/aspen-plus.json");QVERIFY(file.open(QIODevice::ReadOnly));UiShell shell(QJsonDocument::fromJson(file.readAll()).object());shell.show();shell.dispatch("flowsheet");
+        auto *objects=shell.findChild<ObjectWorkspace *>();auto *canvas=objects->findChild<QGraphicsView *>("FlowsheetCanvas");
+        const auto block=objects->createObject("blocks","B1","Flash2");objects->moveBlock(block,{200,150});
+        objects->beginPlacement("streams","MATERIAL");objects->placeAt({50,150});objects->placeAt({160,150},block);
+        const auto feed=objects->objects().last().toObject().value("key").toString();QCOMPARE(objects->object(feed).value("toPort").toString(),QString("FEED"));
+        // Real canvas port hits convey direction and phase without relying on names.
+        QTest::mouseClick(canvas->viewport(),Qt::LeftButton,Qt::NoModifier,canvas->mapFromScene(QPointF(240,132)));
+        objects->placeAt({450,80});const auto vapor=objects->objects().last().toObject().value("key").toString();
+        QCOMPARE(objects->object(vapor).value("fromPort").toString(),QString("VAPOR"));
+        const auto count=objects->objects().size();
+        objects->placeAt({200,150},block);auto *choice=objects->findChild<QDialog *>("Flash2PortDialog");QVERIFY(choice);
+        choice->findChild<QComboBox *>("Flash2PortChoice")->setCurrentIndex(1);QVERIFY(!choice->findChild<QDialogButtonBox *>()->button(QDialogButtonBox::Ok)->isEnabled());
+        choice->reject();QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);QCOMPARE(objects->objects().size(),count);
+        objects->placeAt({200,150},block);choice=objects->findChild<QDialog *>("Flash2PortDialog");QVERIFY(choice);
+        choice->findChild<QComboBox *>("Flash2PortChoice")->setCurrentIndex(2);choice->findChild<QDialogButtonBox *>()->button(QDialogButtonBox::Ok)->click();
+        objects->placeAt({450,250});const auto liquid=objects->objects().last().toObject().value("key").toString();
+        QCOMPARE(objects->object(liquid).value("fromPort").toString(),QString("LIQUID"));objects->beginPlacement({},{});
+        const auto before=shell.project()->state();
+        QVERIFY(!objects->connectStreamEndpoint(vapor,"from",block,"LIQUID",{240,168}));QCOMPARE(shell.project()->state(),before);
+        QVERIFY(!objects->connectStreamEndpoint(vapor,"to",block,"FEED",{160,150}));QCOMPARE(shell.project()->state(),before);
+        objects->beginPlacement("streams","HEAT");objects->placeAt({50,220});objects->placeAt({160,150},block);QCOMPARE(shell.project()->state(),before);objects->beginPlacement({},{});
+        QVERIFY(objects->connectStreamEndpoint(vapor,"from","","",{400,80}));QVERIFY(!objects->object(vapor).contains("fromPort"));
+        shell.project()->undo();QCOMPARE(objects->object(vapor).value("fromPort").toString(),QString("VAPOR"));
+        shell.project()->redo();QVERIFY(!objects->object(vapor).contains("fromPort"));
+        QVERIFY(objects->connectStreamEndpoint(vapor,"from",block,"VAPOR",{240,132}));
+        objects->moveBlock(block,{250,180});QCOMPARE(objects->object(liquid).value("fromPort").toString(),QString("LIQUID"));
+        QTemporaryDir dir;QString error;QVERIFY2(shell.saveProject(dir.filePath("ports.afmp"),&error),qPrintable(error));
+        const auto saved=shell.project()->state();QVERIFY(shell.loadProject(dir.filePath("ports.afmp"),&error));QCOMPARE(shell.project()->state(),saved);
+        objects->showFlowsheet();const auto capture=qEnvironmentVariable("ASPEN_CAPTURE_DIR");if(!capture.isEmpty()){QDir().mkpath(capture);QVERIFY(shell.grab().save(capture+"/flash2-ports.png"));}
+        QVERIFY(objects->removeObject(block));QVERIFY(objects->object(vapor).value("from").toString().isEmpty());QVERIFY(!objects->object(vapor).contains("fromPort"));QVERIFY(!objects->object(feed).contains("toPort"));
+        shell.project()->undo();QCOMPARE(objects->object(vapor).value("fromPort").toString(),QString("VAPOR"));
+        objects->setFlowsheetLocked(true);QVERIFY(!objects->connectStreamEndpoint(vapor,"from","","",{400,80}));
+    }
+    void nextLocatesLegacyStreamNeedingPhaseAssignment() {
+        QFile file(":/ui/aspen-plus.json");QVERIFY(file.open(QIODevice::ReadOnly));UiShell shell(QJsonDocument::fromJson(file.readAll()).object());shell.show();
+        auto state=flash2Fixture();auto data=state.value("objects").toArray();auto vapor=data[2].toObject();vapor.remove("fromPort");
+        vapor["startX"]=240;vapor["startY"]=100;vapor["endX"]=400;vapor["endY"]=100;data[2]=vapor;state["objects"]=data;
+        shell.project()->edit(state);QTemporaryDir dir;QString error;QVERIFY(shell.project()->save(dir.filePath("legacy.afmp"),&error));QVERIFY(shell.loadProject(dir.filePath("legacy.afmp"),&error));
+        shell.dispatch("next");auto *objects=shell.findChild<ObjectWorkspace *>();QCOMPARE(objects->selectedFlowsheetObject(),QString("V"));
+        QVERIFY(!shell.findChild<QLabel *>("Incomplete")->property("inputComplete").toBool());
+        QVERIFY(objects->connectStreamEndpoint("V","from","B","VAPOR",{240,100}));QVERIFY(shell.findChild<QLabel *>("Incomplete")->property("inputComplete").toBool());
+        shell.project()->undo();QVERIFY(!shell.findChild<QLabel *>("Incomplete")->property("inputComplete").toBool());
+    }
     void nextGuidesFlash2AndCommitsActiveComposition() {
         QFile file(":/ui/aspen-plus.json");QVERIFY(file.open(QIODevice::ReadOnly));UiShell shell(QJsonDocument::fromJson(file.readAll()).object());shell.show();
         shell.dispatch("next");QVERIFY(!shell.findChild<QLabel *>("Incomplete")->property("inputComplete").toBool());
@@ -921,6 +967,12 @@ void shellKeepsNativeTextUndo()
 int main(int argc, char **argv)
 {
     QApplication app(argc, argv);
+    // UI fixtures select their own databases. Never inherit or change user settings.
+    QTemporaryDir settings;
+    if(!settings.isValid())qFatal("Cannot create isolated UI test settings");
+    QSettings::setDefaultFormat(QSettings::IniFormat);
+    QSettings::setPath(QSettings::IniFormat,QSettings::UserScope,settings.path());
+    qunsetenv("ASPEN_PROPERTY_DATABASE");
 #ifdef Q_OS_WIN
     // The offscreen plugin has no Windows system-font fallback of its own.
     QFontDatabase::addApplicationFont("C:/Windows/Fonts/msyh.ttc");

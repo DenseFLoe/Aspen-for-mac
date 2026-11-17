@@ -38,7 +38,9 @@ void UiShell::nextProcessInput() {
         else if(issue.field=="method") {
             dispatch("methods");setWorkspaceMode(false);
             if(auto *method=recovered_->findChild<QComboBox *>("ProcessMethod"))method->setFocus();
-        } else if(issue.field=="flowsheet" || issue.field=="unsupported")dispatch("flowsheet");
+        } else if(issue.field=="flowsheet" || issue.field=="unsupported") {
+            dispatch("flowsheet");objects_->focusFlowsheetObject(issue.object);
+        }
         else {
             dispatch("object:"+issue.object);
             auto *tabs=objects_->findChild<QTabWidget *>("ObjectDocuments");

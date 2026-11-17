@@ -1,4 +1,5 @@
 #include "ProcessInput.h"
+#include "ProcessTopology.h"
 #include "ProcessUnits.h"
 #include "ProcessInputWidget.h"
 #include "ObjectWorkspace.h"
@@ -93,7 +94,7 @@ public:
         setObjectName("FlowsheetCanvas");
     }
     bool placing=false;
-    std::function<void(QPointF,QString)> place;
+    std::function<void(QPointF,QString,QString)> place;
     std::function<void(QString)> open, rename, copy, cut;
     std::function<void(QStringList)> remove;
     std::function<void()> cancel;
@@ -126,7 +127,9 @@ protected:
         }
         if(placing && event->button()==Qt::LeftButton) {
             const auto key=keyAt(event->position().toPoint());
-            place(mapToScene(event->position().toPoint()),key); event->accept(); return;
+            auto *item=itemAt(event->position().toPoint());QString port;
+            while(item){if(!item->data(2).toString().isEmpty()){port=item->data(2).toString();break;}item=item->parentItem();}
+            place(mapToScene(event->position().toPoint()),key,port); event->accept(); return;
         }
         QGraphicsView::mousePressEvent(event);
         dragStart_.clear();
@@ -240,7 +243,7 @@ ObjectWorkspace::ObjectWorkspace(QWidget *parent) : QWidget(parent)
     modelPalette_=makeModelPalette(); layout->addWidget(modelPalette_);
     documents_->addTab(flowsheet_,QString::fromUtf8("主工艺流程"));
     documents_->tabBar()->setTabButton(1,QTabBar::RightSide,nullptr);
-    canvas_->place=[this](QPointF p,const QString &key){placeAt(p,key);};
+    canvas_->place=[this](QPointF p,const QString &key,const QString &port){placeAt(p,key,port);};
     canvas_->open=[this](const QString &key){openObject(key);};
     canvas_->remove=[this](const QStringList &keys){if(!flowsheetLocked_)requestDeleteObjects(keys);};
     canvas_->rename=[this](const QString &key){if(!flowsheetLocked_)requestRename(key);};
@@ -326,11 +329,15 @@ bool ObjectWorkspace::renameObject(const QString &key,const QString &name) {
 bool ObjectWorkspace::removeObject(const QString &key) {
     if(!entries_.contains(key)) return false;
     if(ChemicalSystem::componentReferenced(chemicalState_,"object:"+key)) return false;
+    commitProcessEditors();
     QStringList removed{key};
     for(int i=0;i<removed.size();++i) for(const auto &candidate:order_)
         if(entries_[candidate].data.value("parent").toString()==removed[i]) removed.append(candidate);
     for(const auto &id:removed) {closeObject(id); entries_.remove(id); order_.removeAll(id);}
-    for(auto &entry:entries_) for(const auto &end:{"from","to"}) if(removed.contains(entry.data.value(end).toString())) entry.data[end]="";
+    for(auto &entry:entries_) for(const auto &end:QStringList{"from","to"}) if(removed.contains(entry.data.value(end).toString())) {
+        closeObject(entry.data.value("key").toString());
+        entry.data[end]="";entry.data.remove(end+"Port");
+    }
     if(removed.contains(parent_)) {parent_.clear();kind_="blocks";}
     refreshManager(); refreshCanvas(); emit objectsRemoved(removed); emit objectsChanged(); return true;
 }
@@ -666,6 +673,7 @@ void ObjectWorkspace::showFlowsheetMenu(const QPoint &position) {
 void ObjectWorkspace::beginPlacement(const QString &kind,const QString &type) {
     if(flowsheetLocked_ && !kind.isEmpty()) return;
     for(auto *button:findChildren<QToolButton *>()) if(button->property("modelTile").toBool()) button->setChecked(kind=="blocks" && button->property("paletteType").toString()==type);
+    ++placementRevision_;streamStartPort_.clear();
     reconnectKey_.clear();reconnectEnd_.clear();placementKind_=kind;placementType_=type;streamPending_=false;canvas_->placing=!kind.isEmpty();
     if(auto *select=findChild<QPushButton *>("FlowSelect")){select->setCheckable(true);select->setChecked(kind.isEmpty());}
     if(auto *stream=findChild<QToolButton *>("StreamPaletteButton")){stream->setCheckable(true);stream->setChecked(kind=="streams");}
@@ -676,22 +684,80 @@ void ObjectWorkspace::beginPlacement(const QString &kind,const QString &type) {
     placementNotice_->setText(kind=="streams"?QString::fromUtf8("依次单击起点和终点；单击模块可连接，Esc 取消。"):
         kind=="blocks"?QString::fromUtf8("单击画布放置 %1；Esc 退出放置。").arg(type):QString::fromUtf8("拖动模块调整位置；双击对象编辑输入。"));
 }
-void ObjectWorkspace::placeAt(const QPointF &point,const QString &attachment) {
+void ObjectWorkspace::connectionNotice(const QString &message) {
+    placementNotice_->setText(message);placementNotice_->show();canvas_->setToolTip(message);
+}
+bool ObjectWorkspace::chooseFlash2Port(const QPointF &position,const QString &block,const QJsonObject &stream,const QString &end) {
+    if(auto *existing=findChild<QDialog *>("Flash2PortDialog")){existing->raise();return true;}
+    auto *dialog=new QDialog(this);dialog->setAttribute(Qt::WA_DeleteOnClose);dialog->setObjectName("Flash2PortDialog");
+    dialog->setWindowTitle(QString::fromUtf8("选择 Flash2 出口"));auto *layout=new QVBoxLayout(dialog);
+    layout->addWidget(new QLabel(QString::fromUtf8("选择 %1 的产品出口：").arg(object(block).value("name").toString()),dialog));
+    auto *choices=new QComboBox(dialog);choices->setObjectName("Flash2PortChoice");choices->setAccessibleName(QString::fromUtf8("产品出口"));
+    choices->addItem(QString::fromUtf8("请选择出口"),QString());
+    for(const auto &port:ProcessTopology::ports(end))choices->addItem(ProcessTopology::portLabel(port),port);
+    layout->addWidget(choices);auto *reason=new QLabel(dialog);reason->setWordWrap(true);layout->addWidget(reason);
+    auto *buttons=new QDialogButtonBox(QDialogButtonBox::Ok|QDialogButtonBox::Cancel,dialog);layout->addWidget(buttons);
+    const auto update=[this,choices,reason,buttons,stream,end,block] {
+        const auto error=ProcessTopology::endpointError(objects(),stream,end,block,choices->currentData().toString());
+        reason->setText(error);buttons->button(QDialogButtonBox::Ok)->setEnabled(error.isEmpty());
+    };
+    connect(choices,&QComboBox::currentIndexChanged,dialog,update);
+    const int revision=placementRevision_;
+    connect(buttons,&QDialogButtonBox::accepted,dialog,[this,dialog,choices,revision,position,block] {
+        const auto port=choices->currentData().toString();dialog->accept();
+        if(revision==placementRevision_)placeAt(position,block,port);
+    });
+    connect(buttons,&QDialogButtonBox::rejected,dialog,&QDialog::reject);update();dialog->open();return true;
+}
+bool ObjectWorkspace::connectStreamEndpoint(const QString &key,const QString &end,const QString &block,const QString &port,const QPointF &position) {
+    if(flowsheetLocked_ || !entries_.contains(key))return false;
+    const auto error=ProcessTopology::endpointError(objects(),object(key),end,block,port);
+    if(!error.isEmpty()){connectionNotice(error);return false;}
+    commitProcessEditors();closeObject(key);
+    auto &data=entries_[key].data;data[end]=block;
+    if(port.isEmpty())data.remove(end+"Port");else data[end+"Port"]=port;
+    data[end=="from"?"startX":"endX"]=qMax(40.0,position.x());data[end=="from"?"startY":"endY"]=qMax(30.0,position.y());
+    beginPlacement({},{});refreshCanvas();emit objectsChanged();return true;
+}
+void ObjectWorkspace::focusFlowsheetObject(const QString &key) {
+    showFlowsheet();selectFlowsheetObject(key);
+    for(auto *item:canvas_->scene()->selectedItems())canvas_->ensureVisible(item);
+}
+void ObjectWorkspace::placeAt(const QPointF &point,const QString &attachment,const QString &selectedPort) {
+    if(flowsheetLocked_)return;
+    if(!attachment.isEmpty() && object(attachment).value("kind")!="blocks") {
+        connectionNotice(QString::fromUtf8("请选择模块或空白端点；不能将流股连接到另一条流股。"));return;
+    }
+    const auto endpoint=!reconnectKey_.isEmpty()?reconnectEnd_:(streamPending_?QString("to"):QString("from"));
+    auto port=selectedPort;
+    const bool connecting=!reconnectKey_.isEmpty() || placementKind_=="streams";
+    QJsonObject proposed=!reconnectKey_.isEmpty()?object(reconnectKey_):QJsonObject{{"key",QUuid::createUuid().toString()},{"kind","streams"},{"type",placementType_},{"from",streamPending_?streamStartKey_:QString()}};
+    if(connecting && ProcessTopology::isFlash2(object(attachment)) && port.isEmpty()) {
+        if(endpoint=="to")port="FEED";
+        else {
+            if(proposed.value("type")!="MATERIAL"){connectionNotice(QString::fromUtf8("当前 Flash2 参考案例只支持物料连接；热量和功连接尚未接入。"));return;}
+            chooseFlash2Port(point,attachment,proposed,endpoint);return;
+        }
+    }
+    if(connecting) {
+        const auto error=ProcessTopology::endpointError(objects(),proposed,endpoint,attachment,port);
+        if(!error.isEmpty()){connectionNotice(error);return;}
+    }
     if(!reconnectKey_.isEmpty() && !flowsheetLocked_) {
         const auto key=reconnectKey_,end=reconnectEnd_;
         if(!entries_.contains(key)){beginPlacement({},{});return;}
-        // Reconnection targets a block or a free endpoint; clicking another
-        // stream must not silently disconnect the current one.
-        if(!attachment.isEmpty() && object(attachment).value("kind")!="blocks")return;
-        auto &data=entries_[key].data;data[end]=attachment;
-        data[end=="from"?"startX":"endX"]=qMax(40.0,point.x());data[end=="from"?"startY":"endY"]=qMax(30.0,point.y());
-        beginPlacement({},{});refreshCanvas();emit objectsChanged();return;
+        connectStreamEndpoint(key,end,attachment,port,point);return;
     }
     if(flowsheetLocked_ || placementKind_.isEmpty()) return;
     const QPointF position(qMax(40.0,point.x()),qMax(30.0,point.y()));
     if(placementKind_=="streams" && !streamPending_) {
-        streamStart_=position;streamStartKey_=object(attachment).value("kind")=="blocks"?attachment:QString();streamPending_=true;
+        streamStart_=position;streamStartKey_=attachment;streamStartPort_=port;streamPending_=true;++placementRevision_;
         placementNotice_->setText(QString::fromUtf8("选择流股终点；Esc 取消。")); return;
+    }
+    if(placementKind_=="streams") {
+        proposed["to"]=attachment;
+        const auto error=ProcessTopology::endpointError(objects(),proposed,"from",streamStartKey_,streamStartPort_);
+        if(!error.isEmpty()){connectionNotice(error);return;}
     }
     QSignalBlocker transaction(this);
     const auto key=createObject(placementKind_,suggestedName(placementKind_),placementType_);
@@ -699,7 +765,10 @@ void ObjectWorkspace::placeAt(const QPointF &point,const QString &attachment) {
     auto &d=entries_[key].data; d["x"]=position.x();d["y"]=position.y();
     if(placementKind_=="streams") {
         d["startX"]=streamStart_.x();d["startY"]=streamStart_.y();d["endX"]=position.x();d["endY"]=position.y();
-        d["from"]=streamStartKey_;d["to"]=object(attachment).value("kind")=="blocks"?attachment:QString();streamPending_=false;
+        d["from"]=streamStartKey_;d["to"]=attachment;
+        if(!streamStartPort_.isEmpty())d["fromPort"]=streamStartPort_;
+        if(!port.isEmpty())d["toPort"]=port;
+        streamPending_=false;++placementRevision_;
         placementNotice_->setText(QString::fromUtf8("依次单击起点和终点；单击模块可连接，Esc 取消。"));
     }
     refreshCanvas();transaction.unblock();emit objectsChanged();
@@ -769,10 +838,22 @@ void ObjectWorkspace::refreshCanvas() {
             symbol->setAcceptedMouseButtons(Qt::NoButton);
             auto *label=new QGraphicsSimpleTextItem(d.value("name").toString(),box);label->setPos(-label->boundingRect().width()/2,34);label->setAcceptedMouseButtons(Qt::NoButton);label->setVisible(!labelsHidden_);
             box->setSelected(selection.contains(key));box->setToolTip(d.value("name").toString()+" ("+d.value("type").toString()+")");
+            if(ProcessTopology::isFlash2(d)) {
+                for(const auto &port:QStringList{"FEED","VAPOR","LIQUID"}) {
+                    const QPointF anchor=port=="FEED"?QPointF(-40,0):QPointF(40,port=="VAPOR"?-18:18);
+                    auto *marker=new QGraphicsRectItem(-4,-4,8,8,box);marker->setPos(anchor);marker->setData(2,port);
+                    marker->setBrush(QColor("#32618a"));marker->setPen(QPen(Qt::white));marker->setZValue(2);
+                    marker->setToolTip(ProcessTopology::portLabel(port));
+                }
+            }
         } else if(d.value("kind")=="streams" && d.contains("startX")) {
             QPointF from(d.value("startX").toDouble(),d.value("startY").toDouble()),to(d.value("endX").toDouble(),d.value("endY").toDouble());
             const auto start=object(d.value("from").toString()),end=object(d.value("to").toString());
-            if(!start.isEmpty()) from={start.value("x").toDouble()+40,start.value("y").toDouble()};
+            if(!start.isEmpty()) {
+                const auto port=d.value("fromPort").toString();
+                const double offset=ProcessTopology::isFlash2(start)?(port=="VAPOR"?-18:port=="LIQUID"?18:0):0;
+                from={start.value("x").toDouble()+40,start.value("y").toDouble()+offset};
+            }
             if(!end.isEmpty()) to={end.value("x").toDouble()-40,end.value("y").toDouble()};
             QPainterPath path(from);const qreal middle=(from.x()+to.x())/2;path.lineTo(middle,from.y());path.lineTo(middle,to.y());path.lineTo(to);
             const QPen pen(QColor(d.value("lineColor").toString("#32618a")),qBound(1,d.value("lineWidth").toInt(2),5),Qt::PenStyle(qBound(1,d.value("lineStyle").toInt(1),5)));
@@ -781,7 +862,11 @@ void ObjectWorkspace::refreshCanvas() {
             const qreal direction=to.x()>=middle?1:-1;
             QPainterPath arrow;arrow.moveTo(to+QPointF(-7*direction,-4));arrow.lineTo(to);arrow.lineTo(to+QPointF(-7*direction,4));
             auto *head=new QGraphicsPathItem(arrow,line);head->setPen(QPen(pen.color(),pen.widthF()));
-            head->setAcceptedMouseButtons(Qt::NoButton);line->setSelected(selection.contains(key));line->setToolTip(d.value("name").toString()+" ("+d.value("type").toString()+")");
+            head->setAcceptedMouseButtons(Qt::NoButton);line->setSelected(selection.contains(key));
+            QString role;
+            if(ProcessTopology::isFlash2(start))role=d.value("fromPort").toString().isEmpty()?QString::fromUtf8("出口角色未指定"):ProcessTopology::portLabel(d.value("fromPort").toString());
+            if(!role.isEmpty())label->setText(d.value("name").toString()+" · "+role);
+            line->setToolTip(d.value("name").toString()+" ("+d.value("type").toString()+")"+(role.isEmpty()?QString():" · "+role));
         }
     }
     emit flowsheetSelectionChanged();

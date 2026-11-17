@@ -1,5 +1,6 @@
 #include "ProcessInput.h"
 #include "ProcessGuidance.h"
+#include "ProcessTopology.h"
 #include "Flash2Fixture.h"
 #include "ProcessUnits.h"
 #include "ProjectDocument.h"
@@ -9,6 +10,46 @@
 class ProcessInputTest : public QObject {
     Q_OBJECT
 private slots:
+    void referenceTopologyRequiresDistinctVerifiedPorts() {
+        const auto reference=flash2Fixture();
+        QVERIFY(ProcessGuidance::issues(reference).isEmpty());
+        // Legacy connections remain loadable and saveable, but cannot pass readiness.
+        auto legacy=reference;auto objects=legacy.value("objects").toArray();
+        for(int i=1;i<objects.size();++i){auto o=objects[i].toObject();o.remove("fromPort");o.remove("toPort");objects[i]=o;}
+        legacy["objects"]=objects;QVERIFY(ProjectDocument::validate(legacy).isEmpty());
+        QCOMPARE(ProcessGuidance::next(legacy,{}).field,QString("flowsheet"));
+        QTemporaryDir dir;ProjectDocument doc;doc.edit(legacy);QString error;
+        QVERIFY2(doc.save(dir.filePath("legacy.afmp"),&error),qPrintable(error));
+        QVERIFY(doc.load(dir.filePath("legacy.afmp"),&error));QCOMPARE(doc.state(),legacy);
+        // Duplicate phase, reversed direction, missing phase and nonmaterial connection.
+        for(const auto &role:QStringList{"LIQUID","FEED","","unknown"}) {
+            objects=reference.value("objects").toArray();auto vapor=objects[2].toObject();vapor["fromPort"]=role;objects[2]=vapor;
+            auto state=reference;state["objects"]=objects;
+            QVERIFY(!ProcessGuidance::issues(state).isEmpty());QCOMPARE(ProcessGuidance::next(state,{}).object,QString("V"));
+        }
+        objects=reference.value("objects").toArray();auto vapor=objects[2].toObject();vapor["type"]="HEAT";objects[2]=vapor;
+        QVERIFY(!ProcessTopology::issues(objects).isEmpty());
+        vapor=reference.value("objects").toArray()[2].toObject();vapor["to"]="B";vapor["toPort"]="FEED";objects[2]=vapor;
+        QVERIFY(!ProcessTopology::issues(objects).isEmpty());
+        // Malformed metadata fails before replacing a saved document.
+        objects=reference.value("objects").toArray();vapor=objects[2].toObject();vapor["fromPort"]=12;objects[2]=vapor;
+        auto bad=reference;bad["objects"]=objects;QVERIFY(!ProjectDocument::validate(bad).isEmpty());
+        doc.edit(bad);QVERIFY(!doc.save(dir.filePath("legacy.afmp"),&error));
+        QVERIFY(doc.load(dir.filePath("legacy.afmp"),&error));QCOMPARE(doc.state(),legacy);
+    }
+    void endpointEditsRespectDirectionOccupancyAndIdentity() {
+        auto objects=flash2Fixture().value("objects").toArray();
+        const auto vapor=objects[2].toObject();
+        QVERIFY(ProcessTopology::endpointError(objects,vapor,"from","B","VAPOR").isEmpty());
+        QVERIFY(!ProcessTopology::endpointError(objects,vapor,"from","B","LIQUID").isEmpty());
+        QVERIFY(!ProcessTopology::endpointError(objects,vapor,"from","B","FEED").isEmpty());
+        QVERIFY(!ProcessTopology::endpointError(objects,vapor,"to","B","FEED").isEmpty());
+        QVERIFY(!ProcessTopology::endpointError(objects,vapor,"from","missing","VAPOR").isEmpty());
+        QVERIFY(ProcessTopology::endpointError(objects,vapor,"from","","").isEmpty());
+        QVERIFY(!ProcessTopology::endpointError(objects,vapor,"from","","VAPOR").isEmpty());
+        auto block=objects[0].toObject();block["name"]="RENAMED";objects[0]=block;
+        QVERIFY(ProcessTopology::endpointError(objects,vapor,"from","B","VAPOR").isEmpty());
+    }
     void guidanceTracksDataAndCurrentObject() {
         auto state=flash2Fixture();QVERIFY(ProjectDocument::validate(state).isEmpty());QVERIFY(ProcessGuidance::issues(state).isEmpty());
         auto missing=state;missing["components"]=QJsonArray();QCOMPARE(ProcessGuidance::next(missing,"B").field,QString("components"));

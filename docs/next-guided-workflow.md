@@ -1,6 +1,6 @@
 # 以“下一步”为主线的流程研究与实走
 
-后续实施：字段、单位和数据驱动引导见 [Flash2 输入与引导](flash2-input-guidance.md)。本文的移植缺口描述保留为研究时基准，不代表后续代码状态。
+后续实施：字段、单位和数据驱动引导见 [Flash2 输入与引导](flash2-input-guidance.md)，端口及汽液角色检查见 [Flash2 连接规则](flash2-topology.md)。本文的移植缺口描述保留为研究时基准，不代表后续代码状态。
 
 日期：2026-11-17（北京时间）。代码基准：`main@74eae60`；研究分支：`codex/next-guided-workflow`。
 

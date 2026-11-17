@@ -1,6 +1,7 @@
 #include "ProjectDocument.h"
 #include "ChemicalSystem.h"
 #include "ProcessInput.h"
+#include "ProcessTopology.h"
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -61,6 +62,8 @@ QString ProjectDocument::validate(const QJsonObject &s) {
                 return QString::fromUtf8("项目含失效的流程图连接。");
         }
     }
+    const auto topologyError=ProcessTopology::validateStructure(s.value("objects").toArray());
+    if(!topologyError.isEmpty())return topologyError;
     QSet<QString> componentIds;
     for(const auto &v:s.value("components").toArray()) {
         const auto c=v.toObject(); const auto key=c.value("database").toString()+":"+c.value("compoundId").toString();

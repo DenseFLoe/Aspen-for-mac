@@ -48,7 +48,10 @@ public:
     void setObjectState(const QString &key, const QMap<QString,QVariantMap> &values);
     QString currentObject() const;
     void beginPlacement(const QString &kind, const QString &type);
-    void placeAt(const QPointF &position, const QString &attachment={});
+    void placeAt(const QPointF &position, const QString &attachment={}, const QString &port={});
+    bool connectStreamEndpoint(const QString &key, const QString &end, const QString &block,
+                               const QString &port, const QPointF &position);
+    void focusFlowsheetObject(const QString &key);
     void moveBlock(const QString &key, const QPointF &position);
     void setFlowsheetZoom(int percent);
     void setFlowsheetLocked(bool locked);
@@ -92,7 +95,8 @@ private:
     QMap<QString,QVariantMap> clipboardValues_;
     QJsonArray clipboardChildren_;
     QMap<QString,QMap<QString,QVariantMap>> clipboardChildValues_;
-    QString placementKind_, placementType_, streamStartKey_;
+    QString placementKind_, placementType_, streamStartKey_, streamStartPort_;
+    int placementRevision_=0;
     QString reconnectKey_,reconnectEnd_;
     QPointF streamStart_;
     bool streamPending_=false;
@@ -112,4 +116,7 @@ private:
     void moveBlocks(const QMap<QString,QPointF> &positions);
     void selectFlowsheetObject(const QString &key);
     void fitFlowsheet();
+    void connectionNotice(const QString &message);
+    bool chooseFlash2Port(const QPointF &position, const QString &block,
+                         const QJsonObject &stream, const QString &end);
 };

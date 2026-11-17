@@ -1,4 +1,5 @@
 #include "ProcessGuidance.h"
+#include "ProcessTopology.h"
 
 namespace ProcessGuidance {
 QVector<ProcessInput::Issue> issues(const QJsonObject &state) {
@@ -31,6 +32,7 @@ QVector<ProcessInput::Issue> issues(const QJsonObject &state) {
         }
         if(feeds!=1 || products!=2)result.append({key,"flowsheet",QString::fromUtf8("Flash2 需要一个外部进料和两个外部产品连接。")});
     }
+    result+=ProcessTopology::issues(objects);
     for(const auto &v:blocks) result+=ProcessInput::issues(v.toObject(),components);
     for(const auto &v:streams) result+=ProcessInput::issues(v.toObject(),components);
     return result;
