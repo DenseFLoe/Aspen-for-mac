@@ -1,5 +1,28 @@
 # 云端与本地分支功能标注
 
+## 最新主线整合（2026-11-17）
+
+本轮按用户“梳理分支，把新改动都合并到主干”的要求，从 GitHub 与本地一致的 `main@74eae608cf287311d6fe6348998d576c2b9f72cd` 整合。六条开发分支构成单一继承链，最新为 `7e372d00f52d468ef1ef4b4d30382905da76d51d`，共 16 个新增提交、50 个变更文件。采用快进保留每个原始提交，无冲突、无 squash/rebase 或历史改写；本报告只补充文档。
+
+| 原分支 | 整合前分支头 | 新增成果 |
+| --- | --- | --- |
+| `codex/next-guided-workflow` | `8fa281b1615c906a11144ba1519a6c9bbfd91cb7` | 原版“下一步”引导和完整 Flash2 参考案例研究 |
+| `codex/flash2-input-guidance` | `e5768c0e9383d1587845b87bf961352b15241c49` | 持久化进料/Flash2 字段、单位换算、输入校验和完成状态引导 |
+| `codex/flash2-topology` | `054148ef98b35f9fda747a98af177fb6fdb09e30` | Flash2 进料/汽相/液相端口、占用与方向检查及保存/撤销 |
+| `codex/research-report-followthrough` | `860dd502a399b437f1a6aa3bfb313b4aa3475bc6` | 组分入口、多选排序、导航前提交编辑及多步撤销/重做 |
+| `codex/research-search-filters` | `e936cd4128795e4be282b3c9c24df30d0e994373` | 真实组分范围/分类筛选、数值排序及数据库顺序持久化 |
+| `codex/research-flash-specifications` | `7e372d00f52d468ef1ef4b4d30382905da76d51d` | 物料进料 TP/TV/PV 与 Flash2 TP/TV/PV/TD/PD 规定及字段联动 |
+
+整合使用临时分支 `codex/integrate-main-20261117-latest`。沿用既定单主分支策略，主线同步后按上述精确 SHA 和祖先关系清理六条源分支及临时分支，本地使用 `git branch -d`，远端使用原子删除和逐分支 SHA lease。保留旧 Mac 工作树及文件；不清理 Git 对象、构建目录或本地资产。最终主线为本报告提交，精确本地/远端引用及资产复核记录保存在 `.local/main-sync-20261117-branches/`。
+
+本轮 Windows Qt 6.8.3 / MinGW Debug 重新编译通过，完整 CTest **4/4**（99.81 秒，含新真实只读运行库），覆盖输入模型、化学模型、数据库可访问性和 UI 操作。Python **22/22**、资源目录核验和 `git diff --check` 通过。50 个待整合文件均为项目文本，最大 123,303 字节；未发现禁止路径、二进制数据或常见凭据模式。旧 Mac 工作树无未提交改动，stash 为空；未跟踪教程 PDF 保留。
+
+既有最新应用提交 `315b278` 的 [macOS Actions 44059434533](https://github.com/DenseFLoe/Aspen-for-mac/actions/runs/44059434533) 已实时复核为成功，且整合候选的应用源码、测试、工具、CMake、工作流和 UI 资源与该提交一致。主线推送后的 CI 另行跟踪并保留本地记录。原有研究与功能边界继续有效：阶段 3–4 仅覆盖已声明的 Flash2 子集，阶段 5–8、数值计算引擎及 Mac 实机验收尚未整体完成。
+
+本地数据库目录 3,226 文件、公式原件 1,530 文件、归档目录 12 文件和两个运行库目录 4 文件均纳入操作前后元数据清单复核；数据库六个关键文件及未跟踪教程 PDF 另核对 SHA-256。所有数据、归档和 PDF 均保持本地，不加入提交或上传。
+
+## 此前工作记录
+
 2026-11-17 后续工作分支 `codex/research-report-followthrough` 继承 `codex/flash2-topology@054148e`，新增 `88a19f4` 组分入口和统一多选排序、`d342c18` 导航前提交编辑、`3bdcaa9` 多步撤销/重做历史。三个里程碑的 Windows CTest 均为 4/4，macOS Actions 44043577374、44044584387、44046567748 均成功；本轮未合并或清理其他分支。报告范围、剩余依赖与资产核对见[研究报告落实核对](research-report-implementation.md)。以下为此前整合和清理的历史记录。
 
 最近核对：2026-11-17（北京时间）。仓库：`DenseFLoe/Aspen-for-mac`，默认分支为 `main`。本轮各分支来源、独立验证、资产压缩和整合记录见 [2026-11-17 分支验证](branch-validation-20261117.md)。下方保留此前清理历史，不代表本轮开始时的实时分支集合。
