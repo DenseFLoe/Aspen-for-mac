@@ -2,6 +2,7 @@
 #include <QJsonObject>
 #include <QObject>
 #include <QVector>
+#include <QStringList>
 
 // The persistent document has no dependency on widgets or the Aspen runtime.
 // Unverified resource inputs remain explicitly separate from typed inputs.
@@ -18,8 +19,11 @@ public:
     bool canRedo() const { return index_+1 < history_.size(); }
     void edit(const QJsonObject &state);
     void reset();
-    void undo();
-    void redo();
+    void undo(int steps=1);
+    void redo(int steps=1);
+    QStringList undoHistory() const;
+    QStringList redoHistory() const;
+    quint64 historyRevision() const { return historyRevision_; }
     bool save(const QString &path, QString *error);
     bool load(const QString &path, QString *error);
 signals:
@@ -30,5 +34,6 @@ private:
     QString fileName_;
     QVector<QJsonObject> history_;
     int index_=0;
+    quint64 historyRevision_=0;
     void initialize(const QJsonObject &state);
 };

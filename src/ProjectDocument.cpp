@@ -9,6 +9,40 @@
 #include <QSet>
 #include <QRegularExpression>
 
+namespace {
+QString describeEdit(const QJsonObject &before,const QJsonObject &after) {
+    if(before.value("componentOrder")!=after.value("componentOrder")) {
+        QSet<QString> oldKeys,newKeys;
+        for(const auto &v:ChemicalSystem::components(before))oldKeys.insert(v.toObject().value("key").toString());
+        for(const auto &v:ChemicalSystem::components(after))newKeys.insert(v.toObject().value("key").toString());
+        if(oldKeys==newKeys)return QString::fromUtf8("重新排序组分");
+    }
+    if(before.value("units")!=after.value("units"))return QString::fromUtf8("切换单位：")+after.value("units").toString();
+    if(before.value("process")!=after.value("process"))return QString::fromUtf8("修改物性方法");
+    if(before.value("components")!=after.value("components"))return QString::fromUtf8("修改组分");
+    if(before.value("chemicalSystem")!=after.value("chemicalSystem"))return QString::fromUtf8("修改化学系统");
+    QMap<QString,QJsonObject> oldObjects,newObjects;
+    for(const auto &v:before.value("objects").toArray())oldObjects[v.toObject().value("key").toString()]=v.toObject();
+    for(const auto &v:after.value("objects").toArray())newObjects[v.toObject().value("key").toString()]=v.toObject();
+    QStringList added,removed,changed;
+    for(auto it=newObjects.cbegin();it!=newObjects.cend();++it) {
+        if(!oldObjects.contains(it.key()))added<<it.value().value("name").toString();
+        else if(oldObjects.value(it.key())!=it.value())changed<<it.key();
+    }
+    for(auto it=oldObjects.cbegin();it!=oldObjects.cend();++it)if(!newObjects.contains(it.key()))removed<<it.value().value("name").toString();
+    if(!added.isEmpty())return QString::fromUtf8("新建：")+added.join(", ");
+    if(!removed.isEmpty())return QString::fromUtf8("删除：")+removed.join(", ");
+    if(changed.size()==1) {
+        const auto old=oldObjects.value(changed.first()),current=newObjects.value(changed.first());
+        const auto name=current.value("name").toString();
+        if(old.value("name")!=current.value("name"))return QString::fromUtf8("重命名：%1 → %2").arg(old.value("name").toString(),name);
+        if(old.value("x")!=current.value("x") || old.value("y")!=current.value("y"))return QString::fromUtf8("移动：")+name;
+        return QString::fromUtf8("修改：")+name;
+    }
+    return changed.isEmpty()?QString::fromUtf8("修改页面输入"):QString::fromUtf8("修改多个对象");
+}
+}
+
 ProjectDocument::ProjectDocument(QObject *parent):QObject(parent) { initialize(emptyState()); }
 QJsonObject ProjectDocument::emptyState() {
     return {{"format","aspen-for-mac-project"},{"version",1},{"units","METCBAR"},
@@ -85,7 +119,7 @@ QString ProjectDocument::validate(const QJsonObject &s) {
     }
     return processError.isEmpty()?ChemicalSystem::validate(s):processError;
 }
-void ProjectDocument::initialize(const QJsonObject &s) { state_=saved_=s; history_={s}; index_=0; }
+void ProjectDocument::initialize(const QJsonObject &s) { state_=saved_=s; history_={s}; index_=0; ++historyRevision_; }
 void ProjectDocument::edit(const QJsonObject &s) {
     auto normalized=s;
     if(s.value("componentOrder").isArray()) {
@@ -96,11 +130,24 @@ void ProjectDocument::edit(const QJsonObject &s) {
     if(state_==normalized) return;
     state_=normalized; history_.resize(index_+1); history_.append(state_); ++index_;
     if(history_.size()>101) { history_.removeFirst(); --index_; }
+    ++historyRevision_;
     emit changed();
 }
 void ProjectDocument::reset() { initialize(emptyState()); fileName_.clear(); emit restored(); emit changed(); }
-void ProjectDocument::undo() { if(!canUndo()) return; state_=history_[--index_]; emit restored(); emit changed(); }
-void ProjectDocument::redo() { if(!canRedo()) return; state_=history_[++index_]; emit restored(); emit changed(); }
+void ProjectDocument::undo(int steps) {
+    const int count=qBound(0,steps,index_);if(!count)return;
+    index_-=count;state_=history_[index_];++historyRevision_;emit restored();emit changed();
+}
+void ProjectDocument::redo(int steps) {
+    const int count=qBound(0,steps,int(history_.size())-1-index_);if(!count)return;
+    index_+=count;state_=history_[index_];++historyRevision_;emit restored();emit changed();
+}
+QStringList ProjectDocument::undoHistory() const {
+    QStringList result;for(int i=index_;i>0;--i)result<<describeEdit(history_[i-1],history_[i]);return result;
+}
+QStringList ProjectDocument::redoHistory() const {
+    QStringList result;for(int i=index_+1;i<history_.size();++i)result<<describeEdit(history_[i-1],history_[i]);return result;
+}
 bool ProjectDocument::save(const QString &path, QString *error) {
     *error=validate(state_); if(!error->isEmpty()) return false;
     QSaveFile file(path); file.setDirectWriteFallback(false);

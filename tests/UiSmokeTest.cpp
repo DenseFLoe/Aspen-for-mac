@@ -29,6 +29,7 @@
 #include <QCheckBox>
 #include <QMenu>
 #include <QStackedWidget>
+#include <QStatusBar>
 #include <QListWidget>
 #include <QDialog>
 #include <QDir>
@@ -305,6 +306,25 @@ private slots:
         QTemporaryDir dir;QString error;QVERIFY(shell.saveProject(dir.filePath("navigation.afmp"),&error));QVERIFY(shell.loadProject(dir.filePath("navigation.afmp"),&error));
         QVERIFY(objects->openObject(property));view=qobject_cast<RecoveredWorkspace *>(tabs->currentWidget());QCOMPARE(view->findChild<QTableWidget *>("grdSelection")->item(0,0)->text(),QString("BEFORE DIALOG"));
         QCOMPARE(objects->object(flash).value("processInput").toObject().value("temperature").toObject().value("text").toString(),QString("335"));
+    }
+
+    void undoHistoryMenusJumpAndRejectOldActions() {
+        QFile file(":/ui/aspen-plus.json");QVERIFY(file.open(QIODevice::ReadOnly));UiShell shell(QJsonDocument::fromJson(file.readAll()).object());shell.show();
+        auto *objects=shell.findChild<ObjectWorkspace *>();const auto first=objects->createObject("blocks","M1","Mixer");const auto afterFirst=shell.project()->state();
+        const auto second=objects->createObject("blocks","M2","Mixer");QVERIFY(!second.isEmpty());QVERIFY(objects->renameObject(first,"RENAMED"));const auto latest=shell.project()->state();
+        auto *undo=shell.findChild<QToolButton *>("quick-undo");auto *redo=shell.findChild<QToolButton *>("quick-redo");QVERIFY(undo->menu());QVERIFY(redo->menu());
+        auto *menu=undo->menu();QVERIFY(QMetaObject::invokeMethod(menu,"aboutToShow",Qt::DirectConnection));QVERIFY(menu->actions().size()>=2);
+        const auto capture=qEnvironmentVariable("ASPEN_CAPTURE_DIR");if(!capture.isEmpty()){QDir().mkpath(capture);menu->popup(undo->mapToGlobal(QPoint(0,undo->height())));QCoreApplication::processEvents();QVERIFY(shell.grab().save(capture+"/undo-toolbar.png"));QVERIFY(menu->grab().save(capture+"/undo-history.png"));menu->close();}
+        QVERIFY(menu->actions()[0]->text().contains("RENAMED"));menu->actions()[1]->trigger();QCOMPARE(shell.project()->state(),afterFirst);QVERIFY(redo->isEnabled());
+        menu=redo->menu();QVERIFY(QMetaObject::invokeMethod(menu,"aboutToShow",Qt::DirectConnection));QCOMPARE(menu->actions().size(),2);menu->actions()[1]->trigger();QCOMPARE(shell.project()->state(),latest);
+        menu=undo->menu();QVERIFY(QMetaObject::invokeMethod(menu,"aboutToShow",Qt::DirectConnection));auto *oldAction=menu->actions()[1];
+        shell.project()->undo();shell.project()->redo();QCOMPARE(shell.project()->state(),latest);oldAction->trigger();QCOMPARE(shell.project()->state(),latest);
+        QVERIFY(shell.statusBar()->currentMessage().contains(QString::fromUtf8("历史已改变")));
+        shell.dispatch("component:specifications");auto *workspace=shell.findChild<ComponentWorkspace *>();workspace->currentTabs()->setCurrentIndex(4);
+        auto *edit=workspace->findChild<QTextEdit *>("comments-editor");shell.activateWindow();QCoreApplication::processEvents();edit->setFocus();QTest::keyClicks(edit,"note");
+        QCOMPARE(QApplication::focusWidget(),edit);QVERIFY(edit->document()->isUndoAvailable());
+        const auto count=objects->objects().size();undo->click();QVERIFY(edit->toPlainText().isEmpty());QCOMPARE(objects->objects().size(),count);redo->click();QCOMPARE(edit->toPlainText(),QString("note"));
+        QVERIFY(QMetaObject::invokeMethod(undo->menu(),"aboutToShow",Qt::DirectConnection));QCOMPARE(undo->menu()->actions().size(),1);QVERIFY(!undo->menu()->actions()[0]->isEnabled());
     }
 
     void wizardReferenceStateLocalIdsAndStaleProject() {

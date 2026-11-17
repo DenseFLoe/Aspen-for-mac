@@ -19,6 +19,21 @@ QJsonObject data(const QJsonObject &state,const QString &name) {return chemistry
 class ChemicalSystemTest:public QObject {
     Q_OBJECT
 private slots:
+    void multiStepHistoryIsAtomicAndInvalidatesMenus() {
+        ProjectDocument document;auto first=document.state();first["units"]="ENG";document.edit(first);
+        auto second=first;second["units"]="SI";document.edit(second);
+        auto third=second;third["units"]="MET";document.edit(third);
+        QCOMPARE(document.undoHistory().size(),3);QVERIFY(document.undoHistory()[0].contains("MET"));
+        QSignalSpy restores(&document,&ProjectDocument::restored),changes(&document,&ProjectDocument::changed);
+        const auto revision=document.historyRevision();document.undo(2);QCOMPARE(document.state(),first);QCOMPARE(restores.size(),1);QCOMPARE(changes.size(),1);QVERIFY(document.historyRevision()!=revision);
+        QCOMPARE(document.redoHistory().size(),2);QVERIFY(document.redoHistory()[0].contains("SI"));document.redo(2);QCOMPARE(document.state(),third);
+        const auto unchanged=document.historyRevision();document.undo(-1);document.redo(0);QCOMPARE(document.historyRevision(),unchanged);
+        document.undo(1000);QVERIFY(!document.canUndo());QCOMPARE(document.state(),ProjectDocument::emptyState());
+        document.redo(1000);QCOMPARE(document.state(),third);document.undo(2);document.edit(second);QVERIFY(!document.canRedo());
+        for(int i=0;i<130;++i){auto state=document.state();state["units"]=(i%2?"ENG":"SI");document.edit(state);}
+        QCOMPARE(document.undoHistory().size(),100);document.undo(1000);QCOMPARE(document.redoHistory().size(),100);
+        const auto beforeReset=document.historyRevision();document.reset();QVERIFY(document.undoHistory().isEmpty());QVERIFY(document.redoHistory().isEmpty());QVERIFY(document.historyRevision()!=beforeReset);
+    }
     void unifiedComponentOrderSurvivesMembershipChanges() {
         auto result=applySfe(fixture(),rows(),"C-1",false,true);QVERIFY(result);
         auto state=result.state;auto objects=state.value("objects").toArray();

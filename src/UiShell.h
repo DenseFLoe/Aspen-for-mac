@@ -35,6 +35,7 @@ private:
     QString databaseError_;
     void showDatabaseSearch();
     void updateDatabaseStatus();
+    void updateUndoActions();
     bool restoringProject_=false;
     void initializeProject();
     void installMethodEditor();

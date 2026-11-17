@@ -22,6 +22,21 @@
 #include <QStatusBar>
 #include <QToolButton>
 #include <QScopedValueRollback>
+#include <QLineEdit>
+#include <QPlainTextEdit>
+#include <QTextEdit>
+#include <QMenu>
+#include <QTimer>
+
+namespace {
+bool textUndo(QWidget *root,bool redo,bool execute) {
+    auto *focus=QApplication::focusWidget();if(!focus || !root->isAncestorOf(focus))return false;
+    if(auto *edit=qobject_cast<QLineEdit *>(focus);edit && !edit->isReadOnly()) {if(execute){if(redo)edit->redo();else edit->undo();}return true;}
+    if(auto *edit=qobject_cast<QTextEdit *>(focus);edit && !edit->isReadOnly()) {if(execute){if(redo)edit->redo();else edit->undo();}return true;}
+    if(auto *edit=qobject_cast<QPlainTextEdit *>(focus);edit && !edit->isReadOnly()) {if(execute){if(redo)edit->redo();else edit->undo();}return true;}
+    return false;
+}
+}
 
 void UiShell::initializeProject() {
     database_=new PropertyDatabase(this);
@@ -66,13 +81,58 @@ void UiShell::initializeProject() {
         updateDatabaseStatus();
         const auto name=project_->fileName().isEmpty()?QString::fromUtf8("未命名项目"):QFileInfo(project_->fileName()).fileName();
         setWindowTitle(name+(project_->isModified()?" *":"")+QString::fromUtf8(" — Aspen for Mac"));
-        for(const auto &id:{"undo","quick-undo"}) if(auto *b=findChild<QToolButton *>(id)) b->setEnabled(project_->canUndo());
-        for(const auto &id:{"redo","quick-redo"}) if(auto *b=findChild<QToolButton *>(id)) b->setEnabled(project_->canRedo());
+        updateUndoActions();
+    });
+    // Focus changes also arrive while a native dialog is deleting its children.
+    // Refresh after that deletion finishes, with the shell as the timer context.
+    const auto updateUndo=[this]{QTimer::singleShot(0,this,[this]{updateUndoActions();});};
+    connect(qApp,&QApplication::focusChanged,this,[this,updateUndo](QWidget *,QWidget *focus){
+        if(focus && isAncestorOf(focus) && !focus->property("undoSignalsObserved").toBool()) {
+            focus->setProperty("undoSignalsObserved",true);
+            if(auto *edit=qobject_cast<QLineEdit *>(focus))connect(edit,&QLineEdit::textChanged,this,updateUndo);
+            if(auto *edit=qobject_cast<QTextEdit *>(focus)) {
+                connect(edit,&QTextEdit::undoAvailable,this,updateUndo);connect(edit,&QTextEdit::redoAvailable,this,updateUndo);
+            }
+            if(auto *edit=qobject_cast<QPlainTextEdit *>(focus)) {
+                connect(edit,&QPlainTextEdit::undoAvailable,this,updateUndo);connect(edit,&QPlainTextEdit::redoAvailable,this,updateUndo);
+            }
+        }
+        updateUndo();
     });
     const QList<QPair<QKeySequence,QString>> keys{{QKeySequence::New,"file-new"},{QKeySequence::Open,"file-open"},
         {QKeySequence::Save,"file-save"},{QKeySequence::SaveAs,"file-save-as"},{QKeySequence::Undo,"undo"},{QKeySequence::Redo,"redo"}};
     for(const auto &k:keys) {auto *s=new QShortcut(k.first,this);connect(s,&QShortcut::activated,this,[this,k]{projectAction(k.second);});}
+    for(bool redo:{false,true})for(const auto &id:redo?QStringList{"redo","quick-redo"}:QStringList{"undo","quick-undo"}) {
+        auto *button=findChild<QToolButton *>(id);if(!button)continue;
+        auto *menu=new QMenu(button);menu->setObjectName(id+"-history");button->setMenu(menu);button->setPopupMode(QToolButton::MenuButtonPopup);button->setFocusPolicy(Qt::NoFocus);
+        if(id.startsWith("quick-"))button->setFixedWidth(36);
+        connect(menu,&QMenu::aboutToShow,this,[this,menu,redo]{
+            menu->clear();
+            if(textUndo(this,redo,false)) {menu->addAction(QString::fromUtf8("请先完成当前文本编辑"))->setEnabled(false);return;}
+            const auto revision=project_->historyRevision();const auto labels=redo?project_->redoHistory():project_->undoHistory();
+            for(int i=0;i<labels.size();++i) {
+                auto *action=menu->addAction(QString::fromUtf8("%1 步 · %2").arg(i+1).arg(labels[i]));action->setData(i+1);
+                connect(action,&QAction::triggered,this,[this,redo,revision,i]{
+                    if(project_->historyRevision()!=revision) {statusBar()->showMessage(QString::fromUtf8("撤销历史已改变，请重新打开列表。"),6000);return;}
+                    if(redo)project_->redo(i+1);else project_->undo(i+1);
+                });
+            }
+            if(labels.isEmpty())menu->addAction(QString::fromUtf8("没有可用的历史记录"))->setEnabled(false);
+        });
+    }
     project_->reset();
+}
+void UiShell::updateUndoActions() {
+    if(!project_)return;
+    bool undo=project_->canUndo(),redo=project_->canRedo();
+    auto *focus=QApplication::focusWidget();
+    if(focus && isAncestorOf(focus)) {
+        if(auto *edit=qobject_cast<QLineEdit *>(focus);edit && !edit->isReadOnly()) {undo=edit->isUndoAvailable();redo=edit->isRedoAvailable();}
+        if(auto *edit=qobject_cast<QTextEdit *>(focus);edit && !edit->isReadOnly()) {undo=edit->document()->isUndoAvailable();redo=edit->document()->isRedoAvailable();}
+        if(auto *edit=qobject_cast<QPlainTextEdit *>(focus);edit && !edit->isReadOnly()) {undo=edit->document()->isUndoAvailable();redo=edit->document()->isRedoAvailable();}
+    }
+    for(const auto &id:{"undo","quick-undo"})if(auto *button=findChild<QToolButton *>(id))button->setEnabled(undo);
+    for(const auto &id:{"redo","quick-redo"})if(auto *button=findChild<QToolButton *>(id))button->setEnabled(redo);
 }
 void UiShell::captureProject() {
     if(!project_ || restoringProject_) return;
@@ -131,8 +191,8 @@ bool UiShell::confirmProjectReplacement() {
 void UiShell::closeEvent(QCloseEvent *event) { if(confirmProjectReplacement()) event->accept(); else event->ignore(); }
 bool UiShell::projectAction(const QString &action) {
     if(action=="database-search" || action=="find-component" || action=="dialog:FindComounds") {showDatabaseSearch();return true;}
-    if(action=="undo" || action=="quick-undo") project_->undo();
-    else if(action=="redo" || action=="quick-redo") project_->redo();
+    if(action=="undo" || action=="quick-undo") {if(!textUndo(this,false,true))project_->undo();updateUndoActions();}
+    else if(action=="redo" || action=="quick-redo") {if(!textUndo(this,true,true))project_->redo();updateUndoActions();}
     else if(action=="file-save" || action=="save" || action=="quick-save") saveProjectDialog(false);
     else if(action=="file-save-as" || action=="file-saveas") saveProjectDialog(true);
     else if(action=="file-open" || action=="open") {
