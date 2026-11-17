@@ -1,4 +1,5 @@
 #include "ProcessInput.h"
+#include "ProcessUnits.h"
 #include "ProcessInputWidget.h"
 #include "ObjectWorkspace.h"
 #include "ChemicalSystem.h"
@@ -393,7 +394,10 @@ bool ObjectWorkspace::openObject(const QString &key,const QString &page) {
     if(!allowed) {if(newlyOpened) closeObject(key);return false;}
     if(entry.view->currentPage()!=target && !entry.view->showPage(target)) return false;
     if(ProcessInput::supported(entry.data)) {
-        auto *editor=new ProcessInputWidget(entry.data,chemicalState_.value("components").toArray(),entry.view);
+        auto typed=entry.data.value("processInput").toObject();typed["version"]=1;
+        for(const auto &field:ProcessInput::fields(entry.data)) if(!typed.contains(field))typed[field]=ProcessInput::quantity("",ProcessUnits::forSet(field,units_));
+        auto display=entry.data;display["processInput"]=typed;
+        auto *editor=new ProcessInputWidget(display,chemicalState_.value("components").toArray(),entry.view);
         connect(editor,&ProcessInputWidget::inputChanged,this,[this,key](const QJsonObject &input){
             if(!entries_.contains(key))return;entries_[key].data["processInput"]=input;emit inputsChanged();
         });
@@ -817,4 +821,25 @@ void ObjectWorkspace::setChemicalSystemState(const QJsonObject &state) {
     chemicalState_=state;
     for(auto &entry:entries_) if(entry.view)
         if(auto *editor=entry.view->findChild<ProcessInputWidget *>()) editor->setComponents(state.value("components").toArray());
+}
+
+bool ObjectWorkspace::convertProcessUnits(const QString &units,QString *error) {
+    QMap<QString,QJsonObject> converted;
+    for(const auto &key:order_) {
+        const auto &data=entries_[key].data;if(!ProcessInput::supported(data))continue;
+        auto input=data.value("processInput").toObject();input["version"]=1;
+        for(const auto &field:ProcessInput::fields(data)) {
+            const auto q=input.value(field).toObject(ProcessInput::quantity("",ProcessInput::defaultUnit(field)));QJsonObject result;
+            if(!ProcessUnits::convert(field,q,ProcessUnits::forSet(field,units),&result)) {
+                *error=QString::fromUtf8("%1：%2无效，请修正后切换单位。").arg(data.value("name").toString(),ProcessInput::label(field));return false;
+            }
+            input[field]=result;
+        }
+        converted[key]=input;
+    }
+    for(auto it=converted.begin();it!=converted.end();++it) {
+        auto &entry=entries_[it.key()];entry.data["processInput"]=it.value();
+        if(entry.view)if(auto *editor=entry.view->findChild<ProcessInputWidget *>())editor->setInput(it.value());
+    }
+    return true;
 }

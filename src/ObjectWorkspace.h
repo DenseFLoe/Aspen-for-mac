@@ -37,6 +37,7 @@ public:
     bool openObject(const QString &key, const QString &page={});
     void closeObject(const QString &key);
     void showFlowsheet();
+    bool convertProcessUnits(const QString &units,QString *error);
     void setGlobalUnits(const QString &units);
     void requestNew(const QString &kind, const QString &parent={});
     void requestRename(const QString &key);

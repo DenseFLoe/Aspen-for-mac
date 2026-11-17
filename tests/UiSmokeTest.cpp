@@ -54,6 +54,18 @@ class UiSmokeTest : public QObject
     Q_OBJECT
 
 private slots:
+    void processUnitsPreserveQuantityAndUndo() {
+        QFile file(":/ui/aspen-plus.json");QVERIFY(file.open(QIODevice::ReadOnly));UiShell shell(QJsonDocument::fromJson(file.readAll()).object());shell.show();
+        shell.dispatch("units:ENG");auto *objects=shell.findChild<ObjectWorkspace *>();const auto key=objects->createObject("blocks","B1","Flash2");shell.dispatch("object:"+key);QCoreApplication::processEvents();
+        auto *temperature=objects->findChild<QLineEdit *>("Process_temperature");auto *unit=objects->findChild<QComboBox *>("ProcessUnit_temperature");QCOMPARE(unit->currentText(),QString("F"));
+        temperature->setFocus();QTest::keyClicks(temperature,"185");shell.dispatch("units:SI");
+        QVERIFY(qAbs(objects->object(key).value("processInput").toObject().value("temperature").toObject().value("text").toString().toDouble()-358.15)<1e-10);
+        shell.project()->undo();QCOMPARE(objects->object(key).value("processInput").toObject().value("temperature").toObject().value("unit").toString(),QString("F"));
+        shell.project()->redo();shell.dispatch("object:"+key);unit=objects->findChild<QComboBox *>("ProcessUnit_temperature");unit->setCurrentText("C");
+        QVERIFY(qAbs(objects->object(key).value("processInput").toObject().value("temperature").toObject().value("text").toString().toDouble()-85)<1e-10);
+        temperature=objects->findChild<QLineEdit *>("Process_temperature");temperature->setFocus();temperature->setText("bad");temperature->clearFocus();const auto before=shell.project()->state();shell.dispatch("units:ENG");QCOMPARE(shell.project()->state(),before);
+    }
+
     void typedFlashFieldsSaveActiveEditor() {
         QFile file(":/ui/aspen-plus.json");QVERIFY(file.open(QIODevice::ReadOnly));UiShell shell(QJsonDocument::fromJson(file.readAll()).object());shell.show();
         auto *objects=shell.findChild<ObjectWorkspace *>();const auto key=objects->createObject("blocks","B1","Flash2");shell.dispatch("object:"+key);QCoreApplication::processEvents();

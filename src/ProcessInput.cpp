@@ -1,4 +1,5 @@
 #include "ProcessInput.h"
+#include "ProcessUnits.h"
 #include <QLocale>
 #include <QRegularExpression>
 #include <cmath>
@@ -37,7 +38,7 @@ QVector<Issue> issues(const QJsonObject &o,const QJsonArray &components) {
     for(const auto &f:fields(o)) {
         const auto q=input.value(f).toObject();double value=0;
         if(q.value("text").toString().trimmed().isEmpty()) add(f,QString::fromUtf8("必须指定%1。").arg(label(f)));
-        else if(q.value("unit")!=defaultUnit(f) || !number(q.value("text").toString(),&value)) add(f,QString::fromUtf8("%1的数值或单位无效。").arg(label(f)));
+        else if(!ProcessUnits::toSI(f,q,&value)) add(f,QString::fromUtf8("%1的数值或单位无效。").arg(label(f)));
         else if(value<=0) add(f,QString::fromUtf8("%1必须大于零（温度按绝对温标）。").arg(label(f)));
     }
     if(o.value("kind")=="streams") {

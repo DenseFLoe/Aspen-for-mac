@@ -1,4 +1,5 @@
 #include "ProcessInput.h"
+#include "ProcessUnits.h"
 #include "ProjectDocument.h"
 #include <QtTest>
 #include <QTemporaryDir>
@@ -6,6 +7,20 @@
 class ProcessInputTest : public QObject {
     Q_OBJECT
 private slots:
+    void referenceUnitsAndRoundTrips() {
+        double value=0;
+        QVERIFY(ProcessUnits::toSI("temperature",ProcessInput::quantity("185","F"),&value));QVERIFY(qAbs(value-358.15)<1e-10);
+        QVERIFY(ProcessUnits::toSI("temperature",ProcessInput::quantity("200","F"),&value));QVERIFY(qAbs(value-366.4833333333333)<1e-10);
+        QVERIFY(ProcessUnits::toSI("pressure",ProcessInput::quantity("50","psia"),&value));QVERIFY(qAbs(value-344737.864658418)<1e-6);
+        QVERIFY(ProcessUnits::toSI("moleFlow",ProcessInput::quantity("100","lbmol/hr"),&value));QVERIFY(qAbs(value-12.59978805555556)<1e-12);
+        auto q=ProcessInput::quantity("185","F");
+        for(int i=0;i<100;++i)for(const auto &u:{"K","C","F"}){QJsonObject result;QVERIFY(ProcessUnits::convert("temperature",q,u,&result));q=result;}
+        QVERIFY(ProcessUnits::toSI("temperature",q,&value));QVERIFY(qAbs(value-358.15)<1e-10);
+        QJsonObject result{{"unchanged",true}};QVERIFY(!ProcessUnits::convert("pressure",ProcessInput::quantity("bad","psia"),"bar",&result));QVERIFY(result.value("unchanged").toBool());
+        QVERIFY(!ProcessUnits::convert("pressure",ProcessInput::quantity("1","psia"),"C",&result));
+        QVERIFY(ProcessUnits::convert("temperature",ProcessInput::quantity("","F"),"C",&result));QVERIFY(result.value("text").toString().isEmpty());
+    }
+
     void fieldsRejectMissingInvalidAndOutOfRange() {
         QJsonObject feed{{"key","feed"},{"kind","streams"},{"type","MATERIAL"}};
         QJsonArray components{QJsonObject{{"database","TEST"},{"compoundId","1"},{"name","A"}},QJsonObject{{"database","TEST"},{"compoundId","2"},{"name","B"}}};

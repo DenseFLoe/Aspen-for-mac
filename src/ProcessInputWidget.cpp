@@ -1,5 +1,8 @@
 #include "ProcessInputWidget.h"
 #include "ProcessInput.h"
+#include "ProcessUnits.h"
+#include <QComboBox>
+#include <QHBoxLayout>
 #include <QFormLayout>
 #include <QVBoxLayout>
 #include <QLineEdit>
@@ -21,8 +24,19 @@ ProcessInputWidget::ProcessInputWidget(const QJsonObject &object,const QJsonArra
     for(const auto &f:ProcessInput::fields(object)) {
         auto *edit=new QLineEdit(input_.value(f).toObject().value("text").toString(),this);
         edit->setObjectName("Process_"+f);edit->setAccessibleName(ProcessInput::label(f));edits_[f]=edit;
-        form->addRow(ProcessInput::label(f)+" ("+ProcessInput::defaultUnit(f)+")",edit);
-        connect(edit,&QLineEdit::editingFinished,this,[this,f,edit]{input_[f]=ProcessInput::quantity(edit->text(),ProcessInput::defaultUnit(f));publish();});
+        auto *unit=new QComboBox(this);unit->setObjectName("ProcessUnit_"+f);unit->setAccessibleName(ProcessInput::label(f)+QString::fromUtf8("单位"));unit->addItems(ProcessUnits::units(f));units_[f]=unit;
+        const auto initial=input_.value(f).toObject().value("unit").toString(ProcessInput::defaultUnit(f));
+        if(unit->findText(initial)<0)unit->addItem(initial);unit->setCurrentText(initial);
+        auto *row=new QHBoxLayout;row->addWidget(edit);row->addWidget(unit);form->addRow(ProcessInput::label(f),row);
+        connect(edit,&QLineEdit::editingFinished,this,[this,f,edit,unit]{input_[f]=ProcessInput::quantity(edit->text(),unit->currentText());publish();});
+        connect(unit,&QComboBox::currentTextChanged,this,[this,f,edit,unit](const QString &target){
+            const auto previous=input_.value(f).toObject().value("unit").toString(ProcessInput::defaultUnit(f));
+            QJsonObject converted;
+            if(!ProcessUnits::convert(f,ProcessInput::quantity(edit->text(),previous),target,&converted)) {
+                const QSignalBlocker block(unit);unit->setCurrentText(previous);status_->setText(QString::fromUtf8("数值无效，无法切换单位；原输入保留。"));return;
+            }
+            input_[f]=converted;edit->setText(converted.value("text").toString());publish();
+        });
     }
     if(object.value("kind")=="streams") {
         layout->addWidget(new QLabel(QString::fromUtf8("组成基准：摩尔分率（无量纲）；总流量单独指定。"),this));
@@ -48,4 +62,13 @@ void ProcessInputWidget::updateStatus() {if(!status_)return;object_["processInpu
 void ProcessInputWidget::focusField(const QString &field) {
     if(edits_.contains(field)){edits_[field]->setFocus();edits_[field]->selectAll();}
     else if(fractions_){int row=0;for(int i=0;i<fractions_->rowCount();++i)if(field=="fraction:"+fractions_->item(i,0)->data(Qt::UserRole).toString())row=i;fractions_->setFocus();if(fractions_->rowCount())fractions_->setCurrentCell(row,1);}
+}
+
+void ProcessInputWidget::setInput(const QJsonObject &input) {
+    input_=input;input_["version"]=1;
+    for(auto it=edits_.begin();it!=edits_.end();++it) {
+        const auto q=input_.value(it.key()).toObject();const QSignalBlocker blocked(units_[it.key()]);
+        it.value()->setText(q.value("text").toString());units_[it.key()]->setCurrentText(q.value("unit").toString(ProcessInput::defaultUnit(it.key())));
+    }
+    updateStatus();
 }

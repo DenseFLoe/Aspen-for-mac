@@ -4,6 +4,7 @@
 #include <QJsonArray>
 #include <QMap>
 class QLineEdit;
+class QComboBox;
 class QLabel;
 class QTableWidget;
 class ProcessInputWidget final : public QWidget {
@@ -11,6 +12,7 @@ class ProcessInputWidget final : public QWidget {
 public:
     ProcessInputWidget(const QJsonObject &object,const QJsonArray &components,QWidget *parent=nullptr);
     void setComponents(const QJsonArray &components);
+    void setInput(const QJsonObject &input);
     void focusField(const QString &field);
 signals:
     void inputChanged(const QJsonObject &input);
@@ -18,6 +20,7 @@ private:
     QJsonObject object_,input_;
     QJsonArray components_;
     QMap<QString,QLineEdit *> edits_;
+    QMap<QString,QComboBox *> units_;
     QTableWidget *fractions_=nullptr;
     QLabel *status_=nullptr;
     void publish();

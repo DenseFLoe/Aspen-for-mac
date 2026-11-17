@@ -1,4 +1,5 @@
 #include "UiShell.h"
+#include <QApplication>
 #include "ComponentWorkspace.h"
 #include "RecoveredWorkspace.h"
 #include "ObjectWorkspace.h"
@@ -38,6 +39,10 @@ void UiShell::remember(const QString &location)
 void UiShell::setUnits(const QString &units)
 {
     if (!QStringList{"ENG","MET","METCBAR","SI"}.contains(units)) return;
+    if(!restoringProject_ && project_) {
+        if(auto *editor=QApplication::focusWidget();editor && isAncestorOf(editor))editor->clearFocus();
+        QString error;if(!objects_->convertProcessUnits(units,&error)){statusBar()->showMessage(error,10000);return;}
+    }
     globalUnits_=units; recovered_->setGlobalUnits(units); objects_->setGlobalUnits(units);
     if (auto *button=findChild<QToolButton *>("unit-selector")) {
         button->setText(units);
