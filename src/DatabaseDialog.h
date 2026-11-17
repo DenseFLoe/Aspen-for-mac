@@ -12,6 +12,7 @@ class QPushButton;
 class QListWidget;
 class QButtonGroup;
 class QEvent;
+class QComboBox;
 
 class DatabaseDialog final : public QDialog {
     Q_OBJECT
@@ -23,6 +24,8 @@ private:
     PropertyDatabase *database_;
     ProjectDocument *project_;
     QLineEdit *query_;
+    QLineEdit *mwMin_, *mwMax_, *bpMin_, *bpMax_;
+    QComboBox *classes_, *bpUnit_;
     QLabel *status_, *path_;
     QTableWidget *results_, *parameters_;
     QTextEdit *source_;
@@ -30,15 +33,21 @@ private:
     QButtonGroup *matchMode_;
     QDialog *details_, *selectionDialog_;
     QPushButton *add_, *detailsButton_, *remove_, *previous_, *next_;
-    QJsonArray matches_, parameterRows_, allBanks_;
+    QJsonArray matches_, parameterRows_, allBanks_, defaultBanks_;
     QJsonObject detailCompound_;
     int offset_=0;
+    int sortColumn_=-1;
+    Qt::SortOrder sortOrder_=Qt::AscendingOrder;
     void search();
+    QJsonObject resultAt(int row) const;
     void clearResults();
     void clearDetails();
     void addSelection();
     void updateActions();
     void refreshDatabanks();
+    QJsonArray bankSelection() const;
+    void saveDatabankSelection();
+    void syncDatabankSelection();
     void openDetails();
     bool eventFilter(QObject *watched,QEvent *event) override;
     void showParameters();

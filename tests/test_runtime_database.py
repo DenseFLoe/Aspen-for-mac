@@ -40,6 +40,50 @@ def fixture(root, database):
 
 
 class RuntimeDatabaseTest(unittest.TestCase):
+    def test_search_index_uses_declared_scalar_units_and_enumerations(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source, output = Path(tmp) / "source", Path(tmp) / "runtime"
+            fixture(source, "APV150")
+            storage = source / "aped/APV150/storage"
+            manifest = json.loads((storage / "manifest.json").read_text())
+
+            def table(name, records):
+                path = storage / (name + ".jsonl")
+                path.write_text("".join(json.dumps(r) + "\n" for r in records), encoding="utf-8")
+                manifest["tables"] = [t for t in manifest["tables"] if t["table"] != name]
+                manifest["tables"].append({"table": name, "file": path.name, "rows": len(records), "sha256": digest(path)})
+
+            table("active_Properties", [{"propId": i, "propName": name, "propDescription": name} for i, name in ((1, "COMPCLASS"), (354, "MW"), (549, "TB"))])
+            table("active_CompoundProperty", [{"cpId": i, "cpCompoundId": 1, "cpPropertyId": prop} for i, prop in ((7, 354), (8, 549), (9, 1), (10, 354), (11, 354))])
+            table("active_PropValueConst", [
+                {"pvcCompoundPropId": 7, "pvcIndex": 1386, "pvcValue": "18.015300000000000001"},
+                {"pvcCompoundPropId": 7, "pvcIndex": 0, "pvcValue": "999"},
+                {"pvcCompoundPropId": 8, "pvcIndex": 1885, "pvcValue": "373.15"},
+                {"pvcCompoundPropId": 10, "pvcIndex": 1386, "pvcValue": "1E35"},
+                {"pvcCompoundPropId": 11, "pvcIndex": 1386, "pvcValue": "invalid"}])
+            table("active_EnumerationValues", [{"evId": 4, "evPropId": 1, "evIndex": 0, "evValue": "Synthetic class"}])
+            table("active_PropValueText", [{"pvtCompoundPropId": 9, "pvtIndex": 0, "pvtEnumValueId": 4}])
+            (storage / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+            api = storage.parent / "api/properties.jsonl"
+            api.write_text("\n".join(json.dumps(r) for r in [
+                {"property_id": 354, "name": "MW", "element_count": 1, "label_ij": [1386]},
+                {"property_id": 549, "name": "TB", "element_count": 1, "label_ij": [1885], "units": [{"type": "TEMPERATURE", "default_unit": "K"}]}]) + "\n", encoding="utf-8")
+            before = {str(p): digest(p) for p in source.rglob("*") if p.is_file()}
+            build(source, output, ("APV150",))
+            with closing(sqlite3.connect(output / "catalog.sqlite")) as conn:
+                self.assertEqual(conn.execute("SELECT property,value_text FROM compound_search_values ORDER BY cp_id").fetchall(), [("MW", "18.015300000000000001"), ("TB", "373.15"), ("COMPCLASS", "Synthetic class")])
+                self.assertEqual(conn.execute("SELECT count(*) FROM parameter_values").fetchone()[0], 5)
+                self.assertEqual(conn.execute("SELECT value FROM metadata WHERE key='compound_search_version'").fetchone()[0], "1")
+            self.assertEqual(before, {str(p): digest(p) for p in source.rglob("*") if p.is_file()})
+            # Without verified Kelvin metadata, TB remains available as raw data
+            # but is not eligible for temperature range comparisons.
+            specs = [json.loads(line) for line in api.read_text().splitlines()]
+            specs[1]["units"] = []
+            api.write_text("\n".join(json.dumps(r) for r in specs) + "\n")
+            build(source, Path(tmp) / "no-units", ("APV150",))
+            with closing(sqlite3.connect(Path(tmp) / "no-units/catalog.sqlite")) as conn:
+                self.assertEqual(conn.execute("SELECT count(*) FROM compound_search_values WHERE property='TB'").fetchone()[0], 0)
+
     def test_exact_values_namespaced_identity_provenance_and_no_overwrite(self):
         with tempfile.TemporaryDirectory() as tmp:
             source, output = Path(tmp) / "source", Path(tmp) / "runtime"

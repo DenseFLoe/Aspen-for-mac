@@ -1,5 +1,7 @@
 # 只读物性数据库接入
 
+2026-11-17 查询增强：`codex/research-search-filters` 增加可选 `compound_search_version=1` 索引，接通 MW/TB 范围、F/K/C/R 沸点单位、原始 COMPCLASS 分类和结果数值排序。数据库页选择及顺序随项目保存，并支持撤销。增强库在新目录 `.local/runtime-databases/aspen-v15-search-20261117-1/` 生成；此前运行库、导出和归档均保留。旧 schema_version=1 库继续支持原有查询，增强筛选需使用更新后的构建工具在新目录生成。数据集身份不变，仍为相同源包；本地路径不写入项目。规则与验证见[研究报告落实核对](research-report-implementation.md)。
+
 Mac 验收新增阻塞：`25e90c3` 打包复制版的数据库窗口在外部可访问性扫描时两次崩溃；真实运行库尚未提供。独立修复分支 `codex/mac-accessibility-fix` 固定 Qt 6.8.3 并补充 Cocoa 原生及包内回归，证据、检查结果和复验步骤见 [Mac 可访问性修复](macos-accessibility.md)。实机外部扫描和真实组分查询仍待验收。
 
 2026-11-15（北京时间），分支 `codex/project-database`。本轮实现阶段 2 的真实组分检索、来源查看和项目集成；不是物性公式或流程计算引擎。

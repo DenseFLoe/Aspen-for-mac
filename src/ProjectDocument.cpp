@@ -20,6 +20,7 @@ QString describeEdit(const QJsonObject &before,const QJsonObject &after) {
     if(before.value("units")!=after.value("units"))return QString::fromUtf8("切换单位：")+after.value("units").toString();
     if(before.value("process")!=after.value("process"))return QString::fromUtf8("修改物性方法");
     if(before.value("components")!=after.value("components"))return QString::fromUtf8("修改组分");
+    if(before.value("compoundSearch")!=after.value("compoundSearch"))return QString::fromUtf8("修改数据库检索顺序");
     if(before.value("chemicalSystem")!=after.value("chemicalSystem"))return QString::fromUtf8("修改化学系统");
     QMap<QString,QJsonObject> oldObjects,newObjects;
     for(const auto &v:before.value("objects").toArray())oldObjects[v.toObject().value("key").toString()]=v.toObject();
@@ -98,6 +99,16 @@ QString ProjectDocument::validate(const QJsonObject &s) {
     }
     const auto topologyError=ProcessTopology::validateStructure(s.value("objects").toArray());
     if(!topologyError.isEmpty())return topologyError;
+    if(s.contains("compoundSearch")) {
+        const auto preferences=s.value("compoundSearch").toObject();
+        if(!s.value("compoundSearch").isObject() || !preferences.value("datasetId").isString() || preferences.value("datasetId").toString().isEmpty() || !preferences.value("databanks").isArray())return QString::fromUtf8("数据库检索设置结构无效。");
+        QSet<QString> banks;
+        for(const auto &v:preferences.value("databanks").toArray()) {
+            const auto b=v.toObject();const auto id=b.value("bankId");const auto key=b.value("database").toString()+":"+QString::number(id.toInt(-1));
+            if(!v.isObject() || !b.value("database").isString() || b.value("database").toString().isEmpty() || !id.isDouble() || id.toDouble()<0 || id.toDouble()!=id.toInt(-1) || banks.contains(key))return QString::fromUtf8("数据库检索设置含无效或重复子库。");
+            banks.insert(key);
+        }
+    }
     QSet<QString> componentIds;
     for(const auto &v:s.value("components").toArray()) {
         const auto c=v.toObject(); const auto key=c.value("database").toString()+":"+c.value("compoundId").toString();

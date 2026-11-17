@@ -3,6 +3,8 @@
 #include "ProcessInputWidget.h"
 #include "ProcessGuidance.h"
 #include "DatabaseFixture.h"
+#include "DatabaseDialog.h"
+#include <QHeaderView>
 #include "UiShell.h"
 #include "ProjectDocument.h"
 #include "PropertyDatabase.h"
@@ -359,6 +361,62 @@ private slots:
         }
     }
 
+    void compoundRangesClassesAndSortedSelection() {
+        QTemporaryDir temp;const auto path=databaseFixture(temp.path());QVERIFY(!path.isEmpty());
+        QString error;PropertyDatabase database;QVERIFY(database.open(path,&error));QVERIFY(!database.supportsCompoundFilters());
+        PropertyDatabase::SearchOptions options;options.molecularWeightMin=1;QVERIFY(database.search("WATER",&error,options).isEmpty());QVERIFY(!error.isEmpty());
+        {
+            auto db=QSqlDatabase::addDatabase("QSQLITE","range-fixture");db.setDatabaseName(path);QVERIFY(db.open());QSqlQuery q(db);
+            const QStringList sql{
+                "INSERT INTO metadata VALUES ('compound_search_version','1')",
+                "CREATE TABLE compound_search_values(db TEXT,compound_id TEXT,property TEXT,cp_id INTEGER,element_index INTEGER,value_text TEXT,value_number REAL)",
+                "CREATE INDEX compound_search_owner ON compound_search_values(db,compound_id,property)",
+                "INSERT INTO compounds VALUES ('TEST','2','TEST-LIGHT','LIGHT','2'),('TEST','3','TEST-HEAVY','HEAVY','3'),('TEST','4','TEST-MISSING','MISSING','4')",
+                "INSERT INTO identifiers VALUES ('TEST','2','NAME','TEST-LIGHT'),('TEST','3','NAME','TEST-HEAVY'),('TEST','4','NAME','TEST-MISSING')",
+                "INSERT INTO databanks VALUES ('TEST',10,'SECOND')",
+                "INSERT INTO parameters VALUES ('TEST',101,'1',354),('TEST',102,'1',549),('TEST',111,'1',354),('TEST',201,'2',354),('TEST',202,'2',549),('TEST',301,'3',354),('TEST',403,'4',1)",
+                "INSERT INTO refs VALUES ('TEST',101,101,9),('TEST',102,102,9),('TEST',111,111,10),('TEST',201,201,9),('TEST',202,202,9),('TEST',301,301,10),('TEST',403,403,9)",
+                "INSERT INTO compound_search_values VALUES ('TEST','1','MW',101,1386,'18.0153',18.0153),('TEST','1','MW',111,1386,'20',20),('TEST','1','TB',102,1885,'373.15',373.15),('TEST','1','COMPCLASS',103,0,'Water',NULL),('TEST','2','MW',201,1386,'9',9),('TEST','2','TB',202,1885,'280',280),('TEST','2','COMPCLASS',203,0,'Light',NULL),('TEST','3','MW',301,1386,'100',100),('TEST','3','COMPCLASS',303,0,'Heavy',NULL),('TEST','4','COMPCLASS',403,0,'Unknown',NULL)"};
+            for(const auto &s:sql)QVERIFY2(q.exec(s),qPrintable(q.lastError().text()));
+        }
+        QSqlDatabase::removeDatabase("range-fixture");QVERIFY(database.open(path,&error));QVERIFY(database.supportsCompoundFilters());QCOMPARE(database.compoundClasses(&error).size(),4);
+        options={};options.molecularWeightMin=100;auto matches=database.search("",&error,options,1);QVERIFY2(error.isEmpty(),qPrintable(error));QCOMPARE(matches.size(),1);QCOMPARE(matches[0].toObject().value("compoundId").toString(),QString("3"));
+        options={};options.molecularWeightMax=18.0153;QCOMPARE(database.search("",&error,options).size(),2);
+        options={};options.boilingPointMinK=373.15;options.boilingPointMaxK=373.15;QCOMPARE(database.search("",&error,options).size(),1);
+        options.boilingPointMinK=374;QVERIFY(database.search("",&error,options).isEmpty());QVERIFY(!error.isEmpty());
+        options={};options.compoundClass="water";QCOMPARE(database.search("",&error,options).size(),1);options.compoundClass="Water' OR 1=1 --";QCOMPARE(database.search("",&error,options).size(),0);
+        const QJsonObject first{{"database","TEST"},{"bankId",9}},second{{"database","TEST"},{"bankId",10}};
+        options={};options.databanks={second,first};options.restrictDatabanks=true;matches=database.search("WATER",&error,options);QCOMPARE(matches[0].toObject().value("molecularWeight").toString(),QString("20"));
+        options.databanks={first,second};matches=database.search("WATER",&error,options);QCOMPARE(matches[0].toObject().value("molecularWeight").toString(),QString("18.0153"));
+        options.databanks={second};matches=database.search("WATER",&error,options);QVERIFY(matches[0].toObject().value("boilingPointK").isNull());
+
+        ProjectDocument project;DatabaseDialog dialog(&database,&project);dialog.show();QTest::qWait(20);
+        auto *query=dialog.findChild<QLineEdit *>("compound-query");auto *results=dialog.findChild<QTableWidget *>("DatabaseResults");auto *find=dialog.findChild<QPushButton *>("SearchDatabase");
+        auto *mw=dialog.findChild<QLineEdit *>("MolecularWeightMin");auto *bp=dialog.findChild<QLineEdit *>("BoilingPointMin");auto *bpMax=dialog.findChild<QLineEdit *>("BoilingPointMax");auto *unit=dialog.findChild<QComboBox *>("BoilingPointUnit");auto *classes=dialog.findChild<QComboBox *>("CompoundClassFilter");
+        QVERIFY(query && results && find && mw && bp && bpMax && unit && classes);QVERIFY(mw->isEnabled());QVERIFY(classes->isEnabled());
+        unit->setCurrentText("C");bp->setText("100");bpMax->setText("100");find->click();QCOMPARE(results->rowCount(),1);QCOMPARE(results->item(0,5)->text(),QString("100"));
+        unit->setCurrentText("F");QCOMPARE(results->rowCount(),0);bp->setText("212");bpMax->setText("212");find->click();QCOMPARE(results->rowCount(),1);
+        unit->setCurrentText("R");bp->setText("671.67");bpMax->clear();find->click();QCOMPARE(results->rowCount(),1);
+        bp->setText("bad");find->click();QCOMPARE(results->rowCount(),0);QVERIFY(!dialog.findChild<QPushButton *>("AddDatabaseComponent")->isEnabled());QVERIFY(dialog.findChild<QLabel *>("DatabaseQueryStatus")->text().contains(QString::fromUtf8("有效数值")));
+        dialog.findChild<QRadioButton *>("MatchEquals")->setChecked(true);dialog.findChild<QPushButton *>("NewDatabaseSearch")->click();QVERIFY(dialog.findChild<QRadioButton *>("MatchEquals")->isChecked());QCOMPARE(unit->currentText(),QString("R"));QVERIFY(bp->text().isEmpty());
+        classes->setCurrentText("Water");find->click();QCOMPARE(results->rowCount(),1);classes->setCurrentIndex(0);mw->setText("1");find->click();QCOMPARE(results->rowCount(),3);
+        auto *header=results->horizontalHeader();QTest::mouseClick(header->viewport(),Qt::LeftButton,{},QPoint(header->sectionViewportPosition(4)+10,header->height()/2));QCOMPARE(results->item(0,4)->text(),QString("9"));QCOMPARE(results->item(1,4)->text(),QString("20"));
+        QTest::mouseClick(header->viewport(),Qt::LeftButton,{},QPoint(header->sectionViewportPosition(4)+10,header->height()/2));QCOMPARE(results->item(0,4)->text(),QString("100"));QTest::mouseClick(header->viewport(),Qt::LeftButton,{},QPoint(header->sectionViewportPosition(4)+10,header->height()/2));QCOMPARE(results->item(0,4)->text(),QString("9"));
+        results->selectRow(0);dialog.findChild<QPushButton *>("ShowDatabaseParameters")->click();auto *details=dialog.findChild<QDialog *>("DatabaseParameterDialog");QVERIFY(details->windowTitle().startsWith("TEST-LIGHT"));details->reject();
+        results->selectionModel()->select(results->model()->index(1,0),QItemSelectionModel::Select|QItemSelectionModel::Rows);
+        QTest::mouseDClick(results->viewport(),Qt::LeftButton,{},results->visualItemRect(results->item(0,0)).center());
+        const auto added=project.state().value("components").toArray();QCOMPARE(added.size(),2);QCOMPARE(added[0].toObject().value("compoundId").toString(),QString("2"));QCOMPARE(added[1].toObject().value("compoundId").toString(),QString("1"));QVERIFY(!added[0].toObject().contains("molecularWeight"));
+        const auto capture=qEnvironmentVariable("ASPEN_CAPTURE_DIR");if(!capture.isEmpty()){QDir().mkpath(capture);QVERIFY(dialog.grab().save(capture+"/compound-range-filters.png"));}
+        dialog.findChild<QPushButton *>("NewDatabaseSearch")->click();QCOMPARE(project.state().value("components").toArray(),added);
+        // Database selection writes immediately and survives closing the finder.
+        auto *banks=dialog.findChild<QListWidget *>("FindSelectedDatabanks");QCOMPARE(banks->count(),2);banks->setCurrentRow(1);dialog.findChild<QPushButton *>("FindDatabankUp")->click();
+        const auto searchPreferences=project.state().value("compoundSearch").toObject();QCOMPARE(searchPreferences.value("databanks").toArray()[0].toObject().value("bankId").toInt(),9);
+        auto invalid=project.state();auto invalidPreferences=searchPreferences;auto duplicateBanks=searchPreferences.value("databanks").toArray();duplicateBanks.append(duplicateBanks[0]);invalidPreferences["databanks"]=duplicateBanks;invalid["compoundSearch"]=invalidPreferences;QVERIFY(!ProjectDocument::validate(invalid).isEmpty());invalidPreferences["databanks"]="invalid";invalid["compoundSearch"]=invalidPreferences;QVERIFY(!ProjectDocument::validate(invalid).isEmpty());
+        dialog.reject();{DatabaseDialog reopenedFinder(&database,&project);QCOMPARE(reopenedFinder.findChild<QListWidget *>("FindSelectedDatabanks")->item(0)->data(Qt::UserRole).toJsonObject().value("bankId").toInt(),9);}
+        project.undo();QCOMPARE(banks->item(0)->data(Qt::UserRole).toJsonObject().value("bankId").toInt(),10);project.redo();QCOMPARE(project.state().value("compoundSearch").toObject(),searchPreferences);
+        QVERIFY(project.save(temp.filePath("ranges.afmp"),&error));ProjectDocument reopened;QVERIFY(reopened.load(temp.filePath("ranges.afmp"),&error));QCOMPARE(reopened.state().value("components").toArray(),added);QCOMPARE(reopened.state().value("compoundSearch").toObject(),searchPreferences);QVERIFY(project.canUndo());project.undo(2);QVERIFY(project.state().value("components").toArray().isEmpty());
+    }
+
     void databaseInteractionParity() {
         QTemporaryDir temp;const auto path=databaseFixture(temp.path());QVERIFY(!path.isEmpty());
         {
@@ -590,6 +648,16 @@ void shellKeepsNativeTextUndo()
         bool found=false;for(const auto &v:water) {const auto c=v.toObject();if(c.value("database")!="APV150") continue;
             QCOMPARE(c.value("cas").toString(),QString("7732-18-5"));const auto p=database.parameters("APV150",c.value("compoundId").toString(),0,&error,500);QVERIFY2(!p.isEmpty(),qPrintable(error));found=true;}
         QVERIFY(found);QVERIFY(!database.search("ETHANOL",&error).isEmpty());
+        if(database.supportsCompoundFilters()) {
+            PropertyDatabase::SearchOptions options;options.molecularWeightMin=18;options.molecularWeightMax=19;options.boilingPointMinK=373;options.boilingPointMaxK=374;options.compoundClass="Other-inorganics";
+            const auto filtered=database.search("7732-18-5",&error,options);QVERIFY2(!filtered.isEmpty(),qPrintable(error));
+            for(const auto &v:database.databanks(&error)){const auto bank=v.toObject();if(bank.value("database")=="APV150" && bank.value("name")=="PURE41")options.databanks.append(bank);}
+            QVERIFY(!options.databanks.isEmpty());options.restrictDatabanks=true;
+            const auto rangeOnly=database.search("",&error,options);bool rangeWater=false;for(const auto &v:rangeOnly)rangeWater|=v.toObject().value("cas")=="7732-18-5";QVERIFY2(rangeWater,qPrintable(error));
+            options.molecularWeightMax=17;QVERIFY(database.search("7732-18-5",&error,options).isEmpty());QVERIFY(!error.isEmpty());
+            options.molecularWeightMin=1;QCOMPARE(database.search("7732-18-5",&error,options).size(),0);
+            options={};options.compoundClass="n-Alcohols";QVERIFY2(!database.search("ETHANOL",&error,options).isEmpty(),qPrintable(error));
+        }
     }
     void projectRoundTripAndUndo()
     {

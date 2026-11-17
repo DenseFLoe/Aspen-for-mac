@@ -3,6 +3,7 @@
 #include <QJsonObject>
 #include <QSqlDatabase>
 #include <QObject>
+#include <optional>
 
 class PropertyDatabase final : public QObject {
 public:
@@ -11,6 +12,9 @@ public:
         MatchMode mode=MatchMode::Contains;
         QJsonArray databanks;
         bool restrictDatabanks=false;
+        std::optional<double> molecularWeightMin, molecularWeightMax;
+        std::optional<double> boilingPointMinK, boilingPointMaxK;
+        QString compoundClass;
     };
     explicit PropertyDatabase(QObject *parent=nullptr);
     ~PropertyDatabase();
@@ -20,6 +24,8 @@ public:
     bool isOpen() const { return connection_.isOpen(); }
     QString datasetId() const { return datasetId_; }
     QString path() const { return connection_.databaseName(); }
+    bool supportsCompoundFilters() const { return compoundFilters_; }
+    QStringList compoundClasses(QString *error);
     QJsonArray search(const QString &text,QString *error,int limit=101);
     QJsonArray search(const QString &text,QString *error,const SearchOptions &options,int limit=101);
     QJsonArray databanks(QString *error);
@@ -28,5 +34,6 @@ public:
 private:
     QSqlDatabase connection_;
     QString connectionName_, datasetId_;
+    bool compoundFilters_=false;
     void close();
 };

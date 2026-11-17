@@ -5,12 +5,14 @@
 #include <QSqlError>
 #include <QSqlQuery>
 #include <QUuid>
+#include <cmath>
 
 PropertyDatabase::PropertyDatabase(QObject *parent):QObject(parent),connectionName_(QUuid::createUuid().toString()) {}
 PropertyDatabase::~PropertyDatabase() { close(); }
 void PropertyDatabase::close() {
     if(connection_.isValid()) {connection_.close(); connection_=QSqlDatabase(); QSqlDatabase::removeDatabase(connectionName_);}
     datasetId_.clear();
+    compoundFilters_=false;
 }
 bool PropertyDatabase::open(const QString &path,QString *error) {
     close(); error->clear();
@@ -25,10 +27,12 @@ bool PropertyDatabase::open(const QString &path,QString *error) {
             QMap<QString,QString> metadata;
             while(query.next()) metadata[query.value(0).toString()]=query.value(1).toString();
             datasetId_=metadata.value("dataset_id");
+            compoundFilters_=metadata.value("compound_search_version")=="1";
             valid=metadata.value("schema_version")=="1" && datasetId_.startsWith("aspen-v15-") &&
                 metadata.value("validation")=="query-only-unverified-for-calculation";
         }
         if(valid) valid=query.exec("SELECT c.db,c.id,c.name,c.alias,c.cas,i.kind,i.value,p.cp_id,p.property_id,v.element_index,v.value_text,r.dbc_id,r.bank_id,b.name,m.units,m.metadata FROM compounds c LEFT JOIN identifiers i ON 0 LEFT JOIN parameters p ON 0 LEFT JOIN parameter_values v ON 0 LEFT JOIN refs r ON 0 LEFT JOIN databanks b ON 0 LEFT JOIN properties m ON 0 LIMIT 0");
+        if(valid && compoundFilters_)valid=query.exec("SELECT db,compound_id,property,cp_id,element_index,value_text,value_number FROM compound_search_values INDEXED BY compound_search_owner LIMIT 0");
     }
     if(!valid) { *error=QString::fromUtf8("数据库版本不兼容、结构损坏或构建未完成；需要 schema_version=1 的运行数据库。"); close(); }
     return valid;
@@ -44,10 +48,25 @@ QJsonArray PropertyDatabase::databanks(QString *error) {
     while(query.next()) result.append(QJsonObject{{"database",query.value(0).toString()},{"bankId",query.value(1).toInt()},{"name",query.value(2).toString()}});
     return result;
 }
+QStringList PropertyDatabase::compoundClasses(QString *error) {
+    error->clear();QStringList result;
+    if(!compoundFilters_)return result;
+    QSqlQuery query(connection_);
+    if(!query.exec("SELECT DISTINCT value_text FROM compound_search_values WHERE property='COMPCLASS' AND value_text<>'' ORDER BY value_text COLLATE NOCASE")){*error=query.lastError().text();return result;}
+    while(query.next())result<<query.value(0).toString();
+    return result;
+}
 QJsonArray PropertyDatabase::search(const QString &text,QString *error,const SearchOptions &options,int limit) {
     error->clear(); QJsonArray results;
     if(!isOpen()) { *error=QString::fromUtf8("未连接运行数据库。"); return results; }
-    if(text.trimmed().isEmpty() || (options.restrictDatabanks && options.databanks.isEmpty())) return results;
+    const bool filtered=options.molecularWeightMin || options.molecularWeightMax || options.boilingPointMinK || options.boilingPointMaxK || !options.compoundClass.isEmpty();
+    for(const auto &range:{qMakePair(options.molecularWeightMin,options.molecularWeightMax),qMakePair(options.boilingPointMinK,options.boilingPointMaxK)}) {
+        if((range.first && (!std::isfinite(*range.first) || *range.first<0)) || (range.second && (!std::isfinite(*range.second) || *range.second<0)) || (range.first && range.second && *range.first>*range.second)) {
+            *error=QString::fromUtf8("范围必须为非负有限数值，且下限不能大于上限。");return results;
+        }
+    }
+    if(filtered && !compoundFilters_){*error=QString::fromUtf8("此运行库缺少范围和分类索引，请用更新后的构建工具在新目录生成运行库。");return results;}
+    if((text.trimmed().isEmpty() && !filtered) || (options.restrictDatabanks && options.databanks.isEmpty())) return results;
     auto escaped=text.trimmed(); escaped.replace('\\',"\\\\"); escaped.replace('%',"\\%"); escaped.replace('_',"\\_");
     QSqlQuery query(connection_);
     QString sql="WITH ";
@@ -60,32 +79,65 @@ QJsonArray PropertyDatabase::search(const QString &text,QString *error,const Sea
     const QString bankPriority="SELECT MIN(sb.priority) FROM parameters p CROSS JOIN refs r CROSS JOIN search_banks sb WHERE p.db=c.db AND p.compound_id=c.id AND r.db=p.db AND r.cp_id=p.cp_id AND sb.db=r.db AND sb.bank_id=r.bank_id";
     // Materialize text matches before applying source filters so a selective
     // name/CAS query never evaluates parameter provenance for the whole catalog.
-    sql+="matches AS MATERIALIZED (SELECT c.db,c.id,c.name,c.alias,c.cas FROM compounds c WHERE c.name IS NOT NULL AND EXISTS (SELECT 1 FROM identifiers i WHERE i.db=c.db AND i.compound_id=c.id AND i.kind IN ('NAME','ALIAS','CASRN','SYNONYM') AND ";
-    sql+=options.mode==MatchMode::Equals?"i.value=? COLLATE NOCASE)":"i.value LIKE ? ESCAPE '\\')";
-    sql+=") SELECT c.db,c.id,c.name,c.alias,c.cas";
+    sql+="matches AS MATERIALIZED (SELECT c.db,c.id,c.name,c.alias,c.cas FROM compounds c WHERE c.name IS NOT NULL";
+    const bool hasText=!text.trimmed().isEmpty();
+    if(hasText) {
+        sql+=" AND EXISTS (SELECT 1 FROM identifiers i WHERE i.db=c.db AND i.compound_id=c.id AND i.kind IN ('NAME','ALIAS','CASRN','SYNONYM') AND ";
+        sql+=options.mode==MatchMode::Equals?"i.value=? COLLATE NOCASE)":"i.value LIKE ? ESCAPE '\\')";
+    }
+    sql+="), enriched AS MATERIALIZED (SELECT c.*";
+    // Prefer the user's first selected source, then the stable parameter ID.
+    // COMPCLASS is global enumeration data and need not have a databank ref.
+    if(compoundFilters_)for(const auto &name:{QString("MW"),QString("TB"),QString("COMPCLASS")}) {
+        const bool banks=!options.databanks.isEmpty() && name!="COMPCLASS";
+        const QString scalarPriority="(SELECT MIN(sb.priority) FROM refs r CROSS JOIN search_banks sb WHERE r.db=sv.db AND r.cp_id=sv.cp_id AND sb.db=r.db AND sb.bank_id=r.bank_id)";
+        sql+=",(SELECT sv.value_text FROM compound_search_values sv INDEXED BY compound_search_owner";
+        sql+=" WHERE sv.db=c.db AND sv.compound_id=c.id AND sv.property='"+name+"'";
+        if(banks && options.restrictDatabanks)sql+=" AND "+scalarPriority+" IS NOT NULL";
+        sql+=" ORDER BY ";
+        if(banks)sql+=scalarPriority+" IS NULL,"+scalarPriority+",";
+        sql+="sv.cp_id,sv.element_index LIMIT 1) AS "+name;
+    }
+    sql+=" FROM matches c) SELECT c.db,c.id,c.name,c.alias,c.cas";
+    if(compoundFilters_)sql+=",c.MW,c.TB,c.COMPCLASS";
     if(!options.databanks.isEmpty())sql+=",("+bankPriority+") AS bank_priority";
-    sql+=" FROM matches c WHERE 1";
+    sql+=" FROM enriched c WHERE 1";
     if(options.restrictDatabanks) {
         sql+=" AND ("+bankPriority+") IS NOT NULL";
     }
+    if(options.molecularWeightMin)sql+=" AND c.MW IS NOT NULL AND CAST(c.MW AS REAL)>=?";
+    if(options.molecularWeightMax)sql+=" AND c.MW IS NOT NULL AND CAST(c.MW AS REAL)<=?";
+    if(options.boilingPointMinK)sql+=" AND c.TB IS NOT NULL AND CAST(c.TB AS REAL)>=?";
+    if(options.boilingPointMaxK)sql+=" AND c.TB IS NOT NULL AND CAST(c.TB AS REAL)<=?";
+    if(!options.compoundClass.isEmpty())sql+=" AND c.COMPCLASS=? COLLATE NOCASE";
     sql+=" ORDER BY CASE WHEN EXISTS (SELECT 1 FROM identifiers exact WHERE exact.db=c.db AND exact.compound_id=c.id AND exact.kind IN ('NAME','ALIAS','CASRN','SYNONYM') AND exact.value=? COLLATE NOCASE) THEN 0 ELSE 1 END,";
     if(!options.databanks.isEmpty())sql+="bank_priority IS NULL,bank_priority,";
     sql+="c.name,c.db,c.id LIMIT ?";
     query.prepare(sql);
     for(int i=0;i<options.databanks.size();++i){const auto b=options.databanks[i].toObject();query.addBindValue(b.value("database").toString());query.addBindValue(b.value("bankId").toInt());query.addBindValue(i);}
-    query.addBindValue(options.mode==MatchMode::Equals?text.trimmed():(options.mode==MatchMode::Contains?"%":"")+escaped+"%");
+    if(hasText)query.addBindValue(options.mode==MatchMode::Equals?text.trimmed():(options.mode==MatchMode::Contains?"%":"")+escaped+"%");
+    for(const auto &bound:{options.molecularWeightMin,options.molecularWeightMax,options.boilingPointMinK,options.boilingPointMaxK})if(bound)query.addBindValue(*bound);
+    if(!options.compoundClass.isEmpty())query.addBindValue(options.compoundClass);
     query.addBindValue(text.trimmed());query.addBindValue(qBound(1,limit,501));
     if(!query.exec()) { *error=query.lastError().text(); return results; }
-    while(query.next()) results.append(QJsonObject{{"database",query.value(0).toString()},{"compoundId",query.value(1).toString()},
+    while(query.next()) {
+        QJsonObject compound{{"database",query.value(0).toString()},{"compoundId",query.value(1).toString()},
         {"name",query.value(2).toString()},{"alias",query.value(3).toString()},{"cas",query.value(4).toString()},
-        {"datasetId",datasetId_},{"sourceTable","active_Compounds"}});
+        {"datasetId",datasetId_},{"sourceTable","active_Compounds"}};
+        if(compoundFilters_) {
+            compound["molecularWeight"]=query.value(5).isNull()?QJsonValue():QJsonValue(query.value(5).toString());
+            compound["boilingPointK"]=query.value(6).isNull()?QJsonValue():QJsonValue(query.value(6).toString());
+            compound["compoundClass"]=query.value(7).toString();
+        }
+        results.append(compound);
+    }
     return results;
 }
 QJsonArray PropertyDatabase::parameters(const QString &database,const QString &compoundId,int offset,QString *error,int limit) {
     error->clear();QJsonArray result;
     if(!isOpen()) { *error=QString::fromUtf8("未连接运行数据库。"); return result; }
     QSqlQuery query(connection_);
-    query.prepare("SELECT p.cp_id,m.name,m.description,v.element_index,v.value_text,m.units,b.name,r.dbc_id,m.metadata FROM parameters p JOIN properties m ON m.db=p.db AND m.id=p.property_id LEFT JOIN parameter_values v ON v.db=p.db AND v.cp_id=p.cp_id LEFT JOIN refs r ON r.db=p.db AND r.cp_id=p.cp_id LEFT JOIN databanks b ON b.db=r.db AND b.id=r.bank_id WHERE p.db=? AND p.compound_id=? ORDER BY m.name,p.cp_id,r.dbc_id,v.element_index LIMIT ? OFFSET ?");
+    query.prepare("SELECT p.cp_id,m.name,m.description,v.element_index,v.value_text,m.units,b.name,r.dbc_id,m.metadata FROM parameters p CROSS JOIN properties m ON m.db=p.db AND m.id=p.property_id LEFT JOIN parameter_values v ON v.db=p.db AND v.cp_id=p.cp_id LEFT JOIN refs r ON r.db=p.db AND r.cp_id=p.cp_id LEFT JOIN databanks b ON b.db=r.db AND b.id=r.bank_id WHERE p.db=? AND p.compound_id=? ORDER BY m.name,p.cp_id,r.dbc_id,v.element_index LIMIT ? OFFSET ?");
     query.addBindValue(database);query.addBindValue(compoundId);query.addBindValue(qBound(1,limit,501));query.addBindValue(qMax(0,offset));
     if(!query.exec()) { *error=query.lastError().text(); return result; }
     while(query.next()) result.append(QJsonObject{{"cpId",query.value(0).toInt()},{"property",query.value(1).toString()},

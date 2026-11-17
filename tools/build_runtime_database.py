@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import sqlite3
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 VERSION = 1
@@ -44,10 +45,13 @@ CREATE TABLE data_info(db TEXT, dbc_id INTEGER, record TEXT);
 CREATE INDEX identifier_search ON identifiers(value COLLATE NOCASE);
 CREATE INDEX identifier_owner ON identifiers(db,compound_id);
 CREATE INDEX parameter_owner ON parameters(db,compound_id,property_id);
+CREATE INDEX parameter_property ON parameters(db,property_id,compound_id);
 CREATE INDEX ref_parameter ON refs(db,cp_id,bank_id);
 CREATE INDEX citation_owner ON citation_links(db,dbc_id);
 CREATE INDEX note_owner ON notes(db,dbc_id);
 CREATE INDEX data_owner ON data_info(db,dbc_id);
+CREATE TABLE compound_search_values(db TEXT,compound_id TEXT,property TEXT,cp_id INTEGER,element_index INTEGER,value_text TEXT,value_number REAL,PRIMARY KEY(db,cp_id,element_index));
+CREATE INDEX compound_search_owner ON compound_search_values(db,compound_id,property);
 """
 
 
@@ -102,6 +106,38 @@ def build(source, destination, databases=DATABASES):
                         raise ValueError("Original decimal value must remain a string")
                     yield db, r["pvcCompoundPropId"], r["pvcIndex"], r["pvcValue"]
             conn.executemany("INSERT INTO parameter_values VALUES (?,?,?,?)", values())
+            # Search-only scalars: use the API's declared single element, never
+            # assume that the first stored cell is the property's scalar value.
+            for prop_id, spec in api.items():
+                name = spec.get("name")
+                labels = spec.get("label_ij", [])
+                if name not in ("MW", "TB") or spec.get("element_count") != 1 or len(labels) != 1:
+                    continue
+                if name == "TB" and not any(u.get("type") == "TEMPERATURE" and u.get("default_unit") == "K" for u in spec.get("units", [])):
+                    continue
+                scalar_rows = conn.execute("SELECT p.compound_id,p.cp_id,v.element_index,v.value_text FROM parameters p CROSS JOIN parameter_values v WHERE p.db=? AND p.property_id=? AND v.db=p.db AND v.cp_id=p.cp_id AND v.element_index=?", (db, prop_id, labels[0]))
+                for compound_id, cp_id, element, text in scalar_rows:
+                    try:
+                        number = Decimal(text)
+                    except InvalidOperation:
+                        continue
+                    # Aspen's missing sentinel is 1E35. Invalid/missing values
+                    # remain intact in parameter_values, but cannot match ranges.
+                    if not number.is_finite() or number <= 0 or number >= Decimal("1E34"):
+                        continue
+                    conn.execute("INSERT INTO compound_search_values VALUES (?,?,?,?,?,?,?)", (db, compound_id, name, cp_id, element, text, float(number)))
+            if "active_PropValueText" in tables and "active_EnumerationValues" in tables:
+                enums = {r["evId"]: r for r in verified("active_EnumerationValues")}
+                class_ids = {r[0] for r in conn.execute("SELECT id FROM properties WHERE db=? AND name='COMPCLASS'", (db,))}
+                class_parameters = {r[0]: (r[1], r[2]) for r in conn.execute("SELECT cp_id,compound_id,property_id FROM parameters WHERE db=? AND property_id IN (SELECT id FROM properties WHERE db=? AND name='COMPCLASS')", (db, db))}
+                for r in verified("active_PropValueText"):
+                    owner = class_parameters.get(r["pvtCompoundPropId"])
+                    if owner is None:
+                        continue
+                    enum = enums.get(r["pvtEnumValueId"])
+                    if enum is None or enum["evPropId"] not in class_ids or enum["evPropId"] != owner[1]:
+                        raise ValueError("Broken compound class enumeration")
+                    conn.execute("INSERT INTO compound_search_values VALUES (?,?,?,?,?,?,NULL)", (db, owner[0], "COMPCLASS", r["pvtCompoundPropId"], r["pvtIndex"], enum["evValue"]))
             conn.executemany("INSERT INTO citations VALUES (?,?,?)", ((db, r["citId"], json.dumps(r, ensure_ascii=False)) for r in verified("active_Citations")))
             conn.executemany("INSERT INTO citation_links VALUES (?,?,?)", ((db, r["dbcpcId"], r["dbcpcCitId"]) for r in verified("active_DbcpCitations")))
             conn.executemany("INSERT INTO notes VALUES (?,?,?)", ((db, r["dbcpnId"], r["dbcpnNote"]) for r in verified("active_DbcpNotes")))
@@ -120,7 +156,7 @@ def build(source, destination, databases=DATABASES):
             raise ValueError("SQLite integrity check failed")
         dataset_id = "aspen-v15-" + hashlib.sha256(json.dumps(provenance, sort_keys=True).encode()).hexdigest()
         counts = {t: conn.execute("SELECT COUNT(*) FROM " + t).fetchone()[0] for t in ("compounds", "identifiers", "parameters", "parameter_values", "refs")}
-        conn.executemany("INSERT INTO metadata VALUES (?,?)", (("schema_version", str(VERSION)), ("dataset_id", dataset_id), ("validation", "query-only-unverified-for-calculation")))
+        conn.executemany("INSERT INTO metadata VALUES (?,?)", (("schema_version", str(VERSION)), ("dataset_id", dataset_id), ("validation", "query-only-unverified-for-calculation"), ("compound_search_version", "1")))
         conn.commit()
     finally:
         conn.close()
