@@ -18,6 +18,8 @@
 
 受保护 `.local/property-database/` 前后均为 **3,226** 文件，路径/大小/修改时间差异 **0**。旧运行库 SHA-256 仍为 `7f5e866a69f53eaaccfc7cac5c8d07e41aed6c69c2501dcddce7301a5894ce24`；新库哈希及完整本地审计位于 `.local/research-filters-20261117/`。原有未跟踪教程 PDF 未处理；数据库、归档、安装输入、工具及构建结果均不提交。
 
+实现提交 **`c77ec1b62241e53a6132b28eaa7f16e7f7083024`** 已推送 `codex/research-search-filters`，远端分支头已复核。[macOS Actions 44053728245](https://github.com/DenseFLoe/Aspen-for-mac/actions/runs/44053728245) **success**：Qt 6.8.3 编译、CTest **5/5**（24.11 秒，含 Cocoa 可访问性）、Python 检查、包内 Qt/SQLite 依赖及自检均通过。真实原库查询由 Windows 本地检查；CI 未上传或使用受保护数据。
+
 ## 本轮落实
 
 1. **组分表右键排序**：有效记录的单元格或行头可打开“重新排序记录”，复用页面按钮的排序入口，带入当前组分的稳定身份；空白追加行、空白区域和列选择不作为记录上下文。
