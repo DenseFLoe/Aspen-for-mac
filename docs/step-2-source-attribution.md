@@ -1,5 +1,7 @@
 # 第 2 步｜现有源码与 Aspen Plus V15 原版文件对照
 
+下方项目文件与功能对应表为旧 Qt 工程的历史研究记录。当前反编译归档按完成状态组织，见[当前源码归档](#当前源码归档)。
+
 盘点日期 2026-11-18。源码基准为 `4ffcad5d7ea2aa168410a417dba87bab01c6c860`。本表覆盖 `src/` 的 45 个文件和研究工具，共 45 条功能记录，其中 40 条有证据的部分计入第 2 步。同一源码可以有多条记录。第 2 步对应[逐文件分析与归档](development-requirements.md#2-逐个反编译并按原名归档)。
 
 - **计入 · 调用**：已定位原版方法、导出或调用链，只计入表中明确的入口、操作和数据变化。
@@ -108,29 +110,15 @@
 - Windows Installer 只读查询核实产品 MSI 版本 `41.0.0`，`File` 表命中本批其余 19 个文件名，共 23 条记录。两个 `ApwnShell.resources.dll` 安装副本的 SHA-256 不同，分别按相对路径保存。MSI 中同名文件与安装文件的逐字节匹配仍需解包比对。
 - 7 份旧 C# 阅读版中，6 份重新提取后正文匹配，归入 `AspenTech.Visualisation.Assistant.Run.exe`、`Interop.Aosapfs.dll` 和新增归档的 `AspenTech.AspenPlus.MMHNodeTree.dll`。旧 `MMResults_PureSca_Converter.cs` 只有 ILSpy 更新提示，索引继续保留该异常。实际转换器已通过 `NestedClass` 定位到 `AspenTech.AspenPlus.MMForms.PhysicalProperties.dll` 中的父 ViewModel，并单独归档重新提取的正文。
 
-## 已有源码按原名重新归档
+## 当前源码归档
 
-本地入口为 `.local/source-classification-20261118/README.md`。`index.json` 记录原版绝对路径、版本、SHA-256、对照编号，以及每份归档的来源和校验值。项目源码基准为 `b69fc4dd6ab678ab0cbd3128c6fe9df4f18b4865`，其中 `src/` 与本表的源码基准一致。归档使用新目录和源码副本，工程继续从 `src/` 构建。
+归档入口为本机的 `.local/source-classification-20261118/README.md`。`index.json` 记录原版绝对路径、版本、SHA-256、归档文件指纹和选取范围。完整反编译资料仅在本机保存。
 
-| 本地目录 | 数量 | 命名与依据 |
+| 本地目录 | 数量 | 命名和说明 |
 | --- | --- | --- |
-| `original-source/whole/` | 5 份整文件 C# | 保留安装产品和原相对目录，文件名为 `<原文件全名>.cs`，如 `AspenTech.AspenPlus.WpfFindComponent.dll.cs`。程序集 SHA-256 与原版索引一致，整文件导出正文与既有反编译结果一致。 |
-| `original-source/partial/` | 160 份局部 C# | 文件名为 `<原文件全名>.<序号>.cs`。每份可回查既有类型证据和归档哈希。整文件与局部 C# 合计来自 39 个原版文件。 |
-| `qt-excerpts/` | 19 段，涉及 12 个原版文件 | 文件名为 `<原文件全名>.qt-<序号>.cpp`。例如 `ApwnShell.dll.qt-01.cpp` 指向工作区切换，`AspenTech.AspenPlus.WpfFindComponent.dll.qt-01.cpp` 指向加入组分入口。文件头和索引列出 Qt 源码行号、原版路径及已确认范围。 |
-| `mapped-qt/src/` | 23 个工程文件副本 | 含有可对应的行为。保留完整实现和头文件，可按上述片段回查。文件内仍含 Qt 接线和项目特有实现，归属只覆盖有证据的部分。 |
-| `project-owned/src/` | 22 个工程文件副本 | 自写项目模型、平台适配、数据库访问或资源桥接，按项目文件名保存。借用了原版布局、数据或案例的文件在索引中保留相应引用。 |
+| `01-completed/` | 4 个原版文件，4 份 C# | 保留原相对路径，使用 `<原文件全名>.cs`。目录中的 `README.md` 列出完成依据与验证范围。 |
+| `02-incomplete/` | 35 个原版文件，161 份 C# | 使用 `<原文件全名>.<序号>.cs` 保存局部导出，带未解决提示的整份导出保留 `<原文件全名>.cs`。目录中的 `README.md` 按原版文件列出已导出类型、已知缺口与证据。 |
 
-整文件 C# 对应 `AspenTech.AspenPlus.WpfFindComponent.dll`、`AspenTech.AspenPlus.ModelLibrary.Controls.dll`、`AspenTech.AspenPlus.WpfPropertyControl.dll`、`AspenTech.Visualisation.Controls.Assistant.W1.dll` 和 `AspenTech.Visualisation.Assistant.Run.exe`。其中 `WpfFindComponent.dll` 的反编译结果保留两处类型推断提示。整文件导出与重新编译、逐项行为验收是不同的验证步骤。
+第一类的四份整程序集 C# 均由原版重新导出复核。`AspenTech.AspenPlus.WpfFindComponent.dll` 的整份导出仍有两处类型未能推断，归第二类。重新编译、资源与行为对照按后续步骤验收。
 
-`AspenTech.AspenPlus.MMForms.PhysicalProperties.dll.27.cs` 保留非 UTF-8 的旧归档字节。同一类型可在 `AspenTech.AspenPlus.MMForms.PhysicalProperties.dll.30.cs` 查看已归档的 UTF-8 重新提取件。
-
-### 先留一边的项目源码
-
-| 文件 | 用途 |
-| --- | --- |
-| `main.cpp`、`LightTheme.h`、`CocoaAccessibilityCheck.h/.mm` | Qt 程序入口、主题和 macOS 自检。 |
-| `RecoveredWorkspace.cpp/.h`、`IconCatalog.cpp/.h`、`WidgetState.cpp/.h` | 布局、图标和控件状态与 Qt 的桥接。 |
-| `ProjectDocument.cpp/.h`、`PropertyDatabase.cpp/.h`、`ChemicalSystemView.cpp/.h` | 自有工程格式、SQLite 数据适配、Chemistry 只读视图。 |
-| `ProcessGuidance.cpp/.h`、`ProcessTopology.cpp/.h`、`ProcessUnits.cpp/.h` | 参考案例检查顺序、项目端口规则和单位换算。 |
-
-混合文件中暂无法归属的部分留在 [待核实清单](#待核实清单)。例如项目的运行和结果提示、主流程图中部分未接通的命令，以及原生文件兼容、完整设备端口与原版状态的对应关系。本地索引另列 7 条未能归属的旧证据，其中 6 条为空提取，1 条是只有工具提示的旧 C# 文件。对应转换器的重新提取件已按原版父类型归档。
+上述 45 个第三类 Qt 工程文件已从当前整理分支移除，之前分类目录中的 45 个工程副本和 19 段 Qt 摘录一并移除。功能对照表仍可用来定位原版文件和调用链。数据库保护范围见[数据库永久保留原则](database-preservation.md)。

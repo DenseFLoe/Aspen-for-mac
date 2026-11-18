@@ -1,4 +1,4 @@
-name: Qt UI build
+name: Source research checks
 on:
   push:
     branches: ["codex/**", main]
@@ -19,7 +19,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Check resource parsers and catalog
+      - name: Check research tools and resource catalog
         run: |
           python -m pip install pefile==2024.8.26 dnfile==0.18.0 beautifulsoup4==4.15.0
           python -m unittest discover -s tests -p test_ui_resources.py -v
@@ -27,18 +27,3 @@ jobs:
           python -m unittest discover -s tests -p test_runtime_database.py -v
           python -m unittest discover -s tests -p test_formula_extraction.py -v
           python tools/verify_ui_catalog.py ui/recovered
-      - name: Install build dependencies
-        run: brew install ninja
-      - uses: jurplel/install-qt-action@v4
-        with:
-          version: '6.8.3'
-          arch: clang_64
-          cache: true
-      - name: Configure
-        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR" -DBUILD_TESTING=ON
-      - name: Build
-        run: cmake --build build --parallel 3
-      - name: Test navigation and assets
-        run: ctest --test-dir build --output-on-failure
-      - name: Verify packaged Qt and SQLite dependencies
-        run: sh tools/package_macos.sh build "$QT_ROOT_DIR"
