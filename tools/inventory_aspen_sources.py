@@ -254,14 +254,14 @@ class MsiReader:
             self.api.MsiCloseHandle(view)
 
 
-def scan_msi_streams(path):
+def scan_msi_streams(path, product_label="Aspen-Plus"):
     reader = MsiReader(path)
     rows = []
     try:
         for table in ("Binary", "Icon"):
             for item in reader.streams(table):
                 rows.append(record(item["name"], item["head"], source="installer-msi-stream", priority=1,
-                                   scope="Aspen-Plus-installer-stream", relative_path=table + "/" + item["name"],
+                                   scope=product_label + "-installer-stream", relative_path=table + "/" + item["name"],
                                    original_path=str(path), container=str(path), member=table + "/" + item["name"],
                                    size_bytes=item["size"], sha256=item["sha256"], version="", read_status="ok"))
     finally:
@@ -466,6 +466,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--media-root", required=True, type=Path)
     parser.add_argument("--installer", required=True, type=Path)
+    parser.add_argument("--product-label", default="Aspen-Plus",
+                        help="product scope label; defaults to the historical Aspen Plus scan")
     parser.add_argument("--backup-root", action="append", type=Path, default=[])
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--physical-evidence", type=Path,
@@ -480,7 +482,7 @@ def main():
     emit_json(args.output / "msi-tables.json", manifest)
     by_id = {row["File"].casefold(): row for row in manifest["File"]}
     product = dict((r["Property"], r["Value"]) for r in manifest["Property"])
-    emit_json(args.output / "selection.json", dict(primary="installer", primary_path=str(args.installer),
+    emit_json(args.output / "selection.json", dict(primary="installer", primary_path=str(args.installer), product_label=args.product_label,
               fallback="installed files only for supplements and hash comparison", product=product.get("ProductName"),
               version=product.get("ProductVersion"), media_root=str(args.media_root),
               backup_roots=list(map(str, args.backup_root)), started_utc=started))
@@ -516,8 +518,8 @@ def main():
     else:
         tasks = []
         for path in walk(args.media_root, errors):
-            scope = "Aspen-Plus-installer" if path.parent == args.installer.parent else "media-surroundings"
-            tasks.append(("installer-media", 1 if scope == "Aspen-Plus-installer" else 3, scope, args.media_root, path))
+            scope = args.product_label + "-installer" if path.parent == args.installer.parent else "media-surroundings"
+            tasks.append(("installer-media", 1 if scope == args.product_label + "-installer" else 3, scope, args.media_root, path))
         for index, root in enumerate(args.backup_root, 1):
             if not root.is_dir():
                 errors.append(dict(path=str(root), error="backup root missing"))
@@ -546,7 +548,7 @@ def main():
                 for member in members:
                     original = by_id.get(member["name"].casefold())
                     name = original["FileName"].split("|")[-1] if original else member["name"]
-                    row = record(name, member["head"], source="installer-payload", priority=1, scope="Aspen-Plus-payload",
+                    row = record(name, member["head"], source="installer-payload", priority=1, scope=args.product_label + "-payload",
                                  relative_path=original["target_relative_path"] if original else member["name"],
                                  original_path=str(args.installer), container=str(cabinet), member=member["name"],
                                  size_bytes=member["size"], sha256=member["sha256"], version=original["Version"] if original else "",
@@ -566,7 +568,7 @@ def main():
                                     with archive.open(info) as stream:
                                         sha, head, size = digest_stream(stream)
                                     embedded.append(record(info.filename, head, source="installer-payload:zip-member", priority=1,
-                                                           scope="Aspen-Plus-payload", relative_path=row["relative_path"] + "!/" + info.filename,
+                                                           scope=args.product_label + "-payload", relative_path=row["relative_path"] + "!/" + info.filename,
                                                            original_path=str(args.installer), container=container_path, member=info.filename,
                                                            size_bytes=size, sha256=sha, version="", read_status="ok"))
                                 zip_results.append(dict(path=container_path, members=len(entries), status="ok"))
@@ -582,7 +584,7 @@ def main():
     payload.sort(key=order)
     emit_csv(args.output / "installer-payload.csv", payload)
     emit_json(args.output / "cabinet-results.json", cabinet_results)
-    msi_streams = scan_msi_streams(args.installer)
+    msi_streams = scan_msi_streams(args.installer, args.product_label)
     emit_csv(args.output / "installer-msi-streams.csv", sorted(msi_streams, key=order))
 
     for row in physical:
@@ -655,7 +657,7 @@ def main():
                    backup_physical_sha_matches=sum(bool(r["primary_sha_matches"]) for r in physical),
                    backup_physical_needs_reverse_sha_matches=sum(bool(r["primary_sha_matches"]) for r in physical if r["category"] == REVERSE),
                    unique_verified_hashes=len({r["sha256"] for r in all_rows if r["read_status"] == "ok"}),
-                   limitations=["安装介质周边其他产品的 ISO/MSI/CAB 只盘点容器文件，不列其内部文件；Aspen Plus 产品全部 CAB 已逐成员读取。",
+                   limitations=[f"安装介质周边其他产品的 ISO/MSI/CAB 只盘点容器文件，不列其内部文件；{args.product_label} 产品全部 CAB 已逐成员读取。",
                                 "ZIP 容器枚举一层；更深的嵌套容器须后续按具体来源处理。",
                                 "数据库/未知数据格式可能需要格式研究；不因此算作已恢复业务代码。",
                                 "资源 PE 判据为 IL-only 且 MethodDef=0，或原生无可执行区段；未完整验证语义。",
@@ -663,7 +665,7 @@ def main():
                                 "MSI 版本字符串可为伴随文件引用，不等于每个载荷都具有 PE 版本资源。"])
     emit_json(args.output / "summary.json", summary)
     emit_json(args.output / "errors.json", errors)
-    lines = ["# Aspen 安装程序优先：全文件扫描清单", "", "选择：Aspen Plus 产品安装包为主来源；已安装文件仅作备选补充。", "",
+    lines = ["# Aspen 安装程序优先：全文件扫描清单", "", f"选择：{args.product_label} 产品安装包为主来源；已安装文件仅作备选补充。", "",
              "本轮只盘点、读取文件头和哈希；未安装、未运行、未反编译输入，也未开始 Windows/Mac 编译。", "",
              f"- 主安装器：`{args.installer}`", f"- MSI File 表：{len(by_id):,}；CAB：{len(cabinets):,}；实际载荷：{len(payload):,}。",
              f"- MSI 内嵌 Binary/Icon 流：{len(msi_streams):,}；单独列入两类清单。",

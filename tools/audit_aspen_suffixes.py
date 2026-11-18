@@ -526,8 +526,10 @@ def finalize(rows, unresolved, results, output, inventory, sql_evidence=None):
     revised = []
     changes = []
     for original in rows:
-        row = dict(original, previous_category=original["category"], classification_status="baseline",
-                   classification_evidence="", classification_remaining="")
+        row = dict(original, previous_category=original["category"],
+                   classification_status=original.get("classification_status") or "baseline",
+                   classification_evidence=original.get("classification_evidence", ""),
+                   classification_remaining=original.get("classification_remaining", ""))
         sample = by_hash.get(row["sha256"]) if row["sha256"] else None
         if sample:
             finding = sample["inspection"]

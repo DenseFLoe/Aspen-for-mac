@@ -11,9 +11,11 @@
 
 ## 开发原则与工作顺序
 
-**本次开发只关心 Aspen Plus 部分，其他 Aspen 产品暂不进行开发评估。** 以 Aspen Plus 原版安装包交付的文件为首选范围；共享组件仅在安装归属、依赖或调用证据确认其被 Aspen Plus 使用时，按相关部分纳入。不得因扫描到整个 AspenTech 安装目录而自动扩大范围。
+**本次开发范围包括 Aspen Plus 与 Aspen Properties，Aspen Properties 作为独立产品正式纳入开发。** 两者均以各自原版安装包交付的文件为首选范围，已安装程序用于补充缺项、版本差异与运行证据；Aspen Properties Enterprise Database Server 作为 Properties 配套安装组件单列。共享组件须有安装归属、依赖或调用证据确认被其中一个或两个产品使用，按相关部分纳入，不因扫描到整个 AspenTech 安装目录而扩大范围。
 
-HYSYS、EDR、Energy Analyzer、Adsorption、Chromatography 等其他产品自身的文件暂不开展分类调查、逆向、重建或移植评估，也不计入本次 Aspen Plus 的未分类项、未完成项或验收分母。已有全来源扫描记录继续保留，汇报时单列范围外记录；后续仅在用户明确扩大范围后再评估其他产品。
+分别维护 Plus、Properties 和两者共用文件的分类文档清单。确认同时属于两者的文件须在三份清单中同时出现，保留双方来源、归属依据、SHA-256 与统一 analysis_key；同名异哈希分别记录，不凭名称认定内容相同。分类沿用“需要逆向 / 不需要逆向”，类内按末级后缀排序；与成果验收的“已完成 / 未完成”分开。入口见 [双产品盘点](docs/plus-properties-inventory.md) 和 [共用文件清单](docs/plus-properties-shared-files.md)。
+
+HYSYS、EDR、Energy Analyzer、Adsorption、Chromatography 等其他产品自身的文件暂不开展分类调查、逆向、重建或移植评估，也不计入本次 Plus / Properties 的未分类项、未完成项或验收分母。已有全来源扫描记录继续保留，汇报时单列范围外记录；后续仅在用户明确扩大范围后再评估其他产品。
 
 按以下顺序开发。详细过程和验收要求见 [开发要求与实施顺序](docs/development-requirements.md)。
 
