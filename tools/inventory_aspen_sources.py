@@ -127,8 +127,10 @@ def classify(name, head):
         return DIRECT, "ZIP/container", "按 ZIP 读取；内嵌代码另列", ""
     if ext in TEXT_EXT:
         return DIRECT, "readable-source/config/document", "已有文本/源码/脚本，直接读取，无须反编译", ""
+    if name.replace("\\", "/").split("/")[-1].casefold() == "vbaproject.bin":
+        return REVERSE, "VBA-project-candidate", "VBA 项目载体，须检查 OLE/VBA 存储并恢复代码", "VBA 存储结构尚未核验"
     if ext in DATA_EXT or head.startswith((b"%PDF-", b"SQLite format 3\0", b"ITSF", b"MSFT", b"SLTG", b"\x89PNG", b"GIF8")):
-        return DIRECT, "resource/data/document", "按原格式读取/提取/解析；不是可执行逻辑，格式解析可能仍需研究", ""
+        return DIRECT, "resource/data/document", "资源/数据/文档初步处理路线；按原格式核验，可能含内嵌代码", "仅按后缀或文件头初分，尚无完整结构或角色核验证据"
     if not head:
         return DIRECT, "empty", "空文件，无代码可逆向", ""
     if b"\0" not in head[:4096]:

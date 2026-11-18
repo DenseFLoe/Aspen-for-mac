@@ -1,6 +1,6 @@
 # Aspen V15 源码研究
 
-开发范围包括 **Aspen Plus 与独立的 Aspen Properties**。Properties 主安装包及配套数据库服务器已纳入第 1 步盘点与分类；双归属文件在 Plus、Properties、共用三份清单同时列出。 [盘点与验证](docs/plus-properties-inventory.md) · [Plus 分类](docs/aspen-plus-classification.md) · [Properties 分类](docs/aspen-properties-classification.md) · [共用文件](docs/plus-properties-shared-files.md)
+开发范围包括 **Aspen Plus 与独立的 Aspen Properties**。Properties 主安装包及配套数据库服务器已纳入第 1 步盘点与初步分类，分类仍有待核实项；双归属文件在 Plus、Properties、共用三份清单同时列出。 [盘点与验证](docs/plus-properties-inventory.md) · [Plus 分类](docs/aspen-plus-classification.md) · [Properties 分类](docs/aspen-properties-classification.md) · [共用文件](docs/plus-properties-shared-files.md)
 
 当前工作按原版文件逐个核对反编译源码。已确认来源的两类代码各有独立的本地目录和说明。
 

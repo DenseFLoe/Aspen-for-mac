@@ -182,18 +182,22 @@ def report(args):
         folder = args.output / name.lower()
         folder.mkdir()
         save_rows(folder, items)
+        fields = list(dict.fromkeys(k for r in items for k in r))
+        write_csv(folder / 'remaining-review.csv', sorted([r for r in items if r['review'] or r['read_status'] != 'ok'], key=key), fields)
         stats = collections.Counter((r['category'], r['extension']) for r in items)
         write_csv(folder / 'extension-statistics.csv', [dict(category=c, extension=e, files=n) for (c,e),n in sorted(stats.items())],
                   ['category', 'extension', 'files'])
         lines = [f'# {name} 分类文档清单', '', '来源逐行列出，非去重文件数。两包同哈希内容在三份清单同时列出；owner 保留原交付归属。', '',
                  '详尽来源、组件、版本、内容哈希和证据见同目录两大类 CSV。此处按末级后缀排序，不表示已完成反编译。', '',
-                 '| 类别 | 后缀 | 原始文件/成员路径 | SHA-256 | 交付来源 |', '| --- | --- | --- | --- | --- |']
+                 '两类包含规则初分条目，待核实项见 remaining-review.csv；分类状态为 preliminary-rule-only 的条目尚未通过分类验收。', '',
+                 '| 类别 | 后缀 | 原始文件/成员路径 | SHA-256 | 交付来源 | 分类状态 |', '| --- | --- | --- | --- | --- | --- |']
         for r in sorted(items, key=key):
             path = r['relative_path'].replace('|', '&#124;')
-            lines.append(f"| {r['category']} | {r['extension']} | `{path}` | `{r['sha256'] or '不可读'}` | {r['owner']} / {r['package']} / {r['source']} |")
+            lines.append(f"| {r['category']} | {r['extension']} | `{path}` | `{r['sha256'] or '不可读'}` | {r['owner']} / {r['package']} / {r['source']} | {r.get('classification_status', 'baseline')} |")
         (folder / 'classification.md').write_text('\n'.join(lines) + '\n', encoding='utf-8')
         summaries[name] = dict(rows=len(items), categories=dict(collections.Counter(r['category'] for r in items)),
             unique_hashes=len({r['sha256'] for r in items if r['sha256']}), review=sum(bool(r['review']) for r in items),
+            preliminary_rule_only=sum(r.get('classification_status') == 'preliminary-rule-only' for r in items),
             unreadable=sum(r['read_status'] != 'ok' for r in items),
             primary_payload=dict(collections.Counter(r['category'] for r in items if r['source'] == 'installer-payload' and r['owner'] == name)))
     identities = lambda items: {(r['owner'], r['package'], r['source'], r['relative_path'], r['sha256']) for r in items}
@@ -220,6 +224,7 @@ def report(args):
     (args.output / 'README.md').write_text('# Plus / Properties 双产品盘点及分类\n\n'
         '完整分类文档：\n\n- [Plus](plus/classification.md)\n- [Properties](properties/classification.md)\n- [共用](shared/classification.md)\n\n'
         '各目录按需要逆向 / 不需要逆向列出 CSV，类内按后缀排序。同哈希沿用分析键，双方来源保留。'
+        '两类含规则初分条目，尚未通过分类验收的内容见各目录 remaining-review.csv。'
         'shared-target-variants.csv 单列同安装目标异哈希；summary.json 和 verification.json 保存统计与验证。'
         '安装容器、载荷、内嵌流与 ZIP 成员分别计数，不是去重文件数。原输入与详细资料仅本地保留。\n', encoding='utf-8')
     print(json.dumps(summary, ensure_ascii=False), flush=True)

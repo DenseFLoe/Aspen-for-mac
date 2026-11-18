@@ -570,7 +570,7 @@ def finalize(rows, unresolved, results, output, inventory, sql_evidence=None):
         for name, priority in (("primary-files.csv", "1"), ("backup-files.csv", "2"), ("surrounding-media.csv", "3")):
             write_csv(folder / name, [r for r in revised if r["category"] == category and r["priority"] == priority], fields)
     write_csv(output / "category-changes.csv", sorted(changes, key=key), fields)
-    write_csv(output / "remaining-review.csv", [r for r in revised if r["review"]], fields)
+    write_csv(output / "remaining-review.csv", [r for r in revised if r["review"] or r["read_status"] != "ok"], fields)
     matrix = []
     for item in results:
         row = item["source_record"]
@@ -606,7 +606,9 @@ def finalize(rows, unresolved, results, output, inventory, sql_evidence=None):
                    primary_moves=sum(r["priority"] == "1" for r in changes),
                    primary_lib_categories=dict(collections.Counter(r["category"] for r in primary_payload if r["extension"] == ".lib")),
                    primary_dll_categories=dict(collections.Counter(r["category"] for r in primary_payload if r["extension"] == ".dll" and r["classification_status"] != "baseline")),
-                   review_after=sum(bool(r["review"]) for r in revised), encrypted_members=sum(r["read_status"] == "encrypted-member-not-read" for r in revised),
+                   review_after=sum(bool(r["review"]) or r["read_status"] != "ok" for r in revised),
+                   unreadable_after=sum(r["read_status"] != "ok" for r in revised),
+                   encrypted_members=sum(r["read_status"] == "encrypted-member-not-read" for r in revised),
                    metadata_confirmed_sql_files=sum(r["classification_status"] == "SQL-catalog-confirmed" for r in revised),
                    metadata_confirmed_sql_backups=sum(r["classification_status"] == "SQL-header-confirmed" for r in revised),
                    unresolved_suffix_samples=[r for r in suffix_rows if r["unavailable_or_unresolved"]],

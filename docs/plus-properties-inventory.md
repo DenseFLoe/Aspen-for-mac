@@ -18,15 +18,19 @@ Properties 两包共 1,495 个 CAB 均读取成功。载荷与 MSI File / Compon
 
 ## 分类复核与三份清单
 
+**分类验收尚未完成。** 上轮初始 Properties 两包有 377 条显式疑点，373 条复用同 SHA-256 的既有证据，4 条新检查。脚本却没有将通用资源/数据规则的初分项计入待核实；`review_after=0` 因此不能代表所有文件均有充分内容证据。本轮发现并以完整 OLE/VBA 存储核验纠正了 **5 个不同 VBA 项目、10 条安装包/已安装来源记录** 的误分类，均由不需逆向改为需逆向。规则和报告现已保留初分状态及读取限制，详见[分类不确定项与纠正](classification-uncertainties.md)。
+
+按原交付归属，Plus 首选来源仍有 **1,129 条**、Properties 首选来源仍有 **1,041 条**通用规则初分项，须进一步核验格式、内部成员和原版用途。这些是待复核记录，不等于已经证明含代码，也不能算通过分类验收。
+
 两类分别为 `01-needs-reverse/`、`02-no-reverse/`，类内按末级后缀转小写排序。它们表示后续处理路线，不表示已完成反编译；成果仍按 `01-completed/`、`02-incomplete/` 及一文件一说明验收。
 
-已有分类证据只复用于相同内容哈希。本轮新增主来源疑点涉及四份不同内容：`Microsoft.VisualStudio.Interop.dll` 确认 16,767 个方法；`util.lib` 全成员为短导入记录或导入描述符，归入不需逆向；`vba_caller.xlsm`、`Regression.xlsm` 含 VBA，归入需要逆向。最终抽取 14 个不同内容或受限样本，其中 8 个完整读取，6 个为不可读数据库样本；首选来源四条新增分类疑点全部核实。
+已有分类证据只复用于相同内容哈希。本轮新增主来源疑点涉及四份不同内容：`Microsoft.VisualStudio.Interop.dll` 确认 16,767 个方法；`util.lib` 全成员为短导入记录或导入描述符，归入不需逆向；`vba_caller.xlsm`、`Regression.xlsm` 含 VBA，归入需要逆向。最终抽取 14 个不同内容或受限样本，其中 8 个完整读取，6 个为不可读数据库样本；首选来源四条显式分类疑点已核实，但这并未覆盖未被脚本标记的通用规则初分条目。
 
 | 文档 | 需要逆向的来源行 | 不需要逆向的来源行 | 完整本地分类文档 |
 | --- | ---: | ---: | --- |
-| [Plus](aspen-plus-classification.md) | 3,791 | 48,187 | `.local/plus-properties-20261118-delivery/plus/classification.md` |
-| [Properties](aspen-properties-classification.md) | 2,626 | 19,906 | `.local/plus-properties-20261118-delivery/properties/classification.md` |
-| [两者共用](plus-properties-shared-files.md) | 2,534 | 8,189 | `.local/plus-properties-20261118-delivery/shared/classification.md` |
+| [Plus](aspen-plus-classification.md) | 3,795 | 48,183 | `.local/plus-properties-20261118-corrected-delivery/plus/classification.md` |
+| [Properties](aspen-properties-classification.md) | 2,632 | 19,900 | `.local/plus-properties-20261118-corrected-delivery/properties/classification.md` |
+| [两者共用](plus-properties-shared-files.md) | 2,534 | 8,189 | `.local/plus-properties-20261118-corrected-delivery/shared/classification.md` |
 
 三份清单均有逐来源 CSV，保留产品、安装包、原路径、组件、版本、哈希、统一分析键和分类证据。共用来源行同时出现在两份产品清单中，不从产品清单移走。统计包括容器、载荷、内嵌流、ZIP 成员及重复来源，三份有交集，不能相加当作独立文件数。总输入为 63,787 条来源记录。
 
@@ -45,8 +49,9 @@ Properties 两包共 1,495 个 CAB 均读取成功。载荷与 MSI File / Compon
 | `.local/properties-inventory-20261118-primary/` | Properties 主包完整初始盘点、MSI 表、CAB 和哈希记录 |
 | `.local/properties-inventory-20261118-server/` | 配套数据库服务器的独立初始盘点 |
 | `.local/plus-properties-20261118-baseline-full/` | 本轮已安装现场读取、原清单指纹、归属对应及缺失安装目标 |
-| `.local/plus-properties-20261118-classified/` | 分类复核、逐样本输入与结构证据，保留旧证据链接 |
-| `.local/plus-properties-20261118-delivery/` | 正式三份分类文档、两类 CSV、后缀统计和验证 |
+| `.local/plus-properties-20261118-classified/` | 上轮显式疑点复核快照；其零待核实统计已被本轮纠正，不作为完整分类验收 |
+| `.local/plus-properties-20261118-confidence-review/` | VBA 结构证据、规则初分项、待核实与分类纠正记录 |
+| `.local/plus-properties-20261118-corrected-delivery/` | 正式三份分类文档、两类 CSV、后缀统计和验证 |
 | `.local/plus-properties-20261118-checks/` | 独立 CAB 样本核验及最终清单复核 |
 
-工具为 `tools/inventory_aspen_sources.py`、`tools/audit_aspen_suffixes.py`、`tools/inventory_plus_properties.py`。后者分 `prepare` 与 `report` 两阶段；两者均拒绝覆盖已有输出路径。初始 Properties 快照中沿用旧工具的个别 Plus 范围标签在双产品基线中按实际 MSI 归属规范为 Properties，原来源、路径和内容哈希保持不变，原快照保留。
+工具另含 `tools/audit_classification_confidence.py`，用于在新目录纠正 VBA 项目并暴露规则初分项；不宣称已对全部数据格式重新验收。原有工具为 `tools/inventory_aspen_sources.py`、`tools/audit_aspen_suffixes.py`、`tools/inventory_plus_properties.py`。后者分 `prepare` 与 `report` 两阶段；两者均拒绝覆盖已有输出路径。初始 Properties 快照中沿用旧工具的个别 Plus 范围标签在双产品基线中按实际 MSI 归属规范为 Properties，原来源、路径和内容哈希保持不变，原快照保留。
