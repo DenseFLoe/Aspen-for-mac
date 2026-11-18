@@ -14,11 +14,11 @@ Aspen Properties 已作为独立产品正式纳入开发，与 Aspen Plus 使用
 
 Properties 两包共 1,495 个 CAB 均读取成功。载荷与 MSI File / Component / Directory / Media 逐项对应，缺失、重复、未映射、大小不符、所属 CAB 不符均为零。逐行记录原路径、原文件名、包内成员、所属组件、大小、内容类型、可读取的版本和 SHA-256；MSI 版本可能是伴随文件引用，不能等同于独立 PE 版本资源。安装器、资源、数据库、文本源码与编译程序分别标明处理路线。
 
-此前为共享比对读取了 **44,561 个已安装物理文件**（此为历史来源记录，当前不重新分类 Plus）：Plus 归属 33,935 个、Properties 归属 8,292 个、双方安装表共同指向 2,334 个。覆盖两个产品各自的 Program Files、ProgramData 目录及 Properties 的 APED 目录；其他共享目录只纳入 MSI 明确指向的文件。共享目录中没有安装归属证据的其他文件不自动纳入。符号根 `[TARGETDIR]` 未强行转换为实际目录；Properties 有 98 条载荷记录保留此类未解析目标，Plus 路径记录仅作既有对照，不列入本轮待办。
+此前为共享比对读取了 **44,561 个已安装物理文件**（此为历史来源记录，当前不重新分类 Plus）：Plus 归属 33,935 个、Properties 归属 8,292 个、双方安装表共同指向 2,334 个。覆盖两个产品各自的 Program Files、ProgramData 目录及 Properties 的 APED 目录；其他共享目录只纳入 MSI 明确指向的文件。共享目录中没有安装归属证据的其他文件不自动纳入。此前 Properties 98 条 `[TARGETDIR]` 载荷目标已在 2026-11-19 通过 MSI 程序集表确认均属 GAC：97 条找到本机实际路径（93 条哈希相同、4 条内容不同），1 条本机组件禁用，无物理安装路径，见[安装目标落实](properties-install-paths.md)。原来源路径保留，当前五份清单增加定位证据；Plus 路径记录仅作既有对照。
 
 ## 分类复核与当前五份清单
 
-本轮深入核验当前入口为 `.local/properties-deep-20261118-verified/README.md`。原 3,441 条未确定来源全部明确处理路线，其中可读的 2,481 个内容哈希逐一核验；8 个受限 MDF/LDF 仅用当前 SQL 系统目录确认数据身份，内容/哈希仍不可读。新确认 3 个旧版 Excel VBA 项目、4 条来源，31 个内部模块单列未完成源文本。方法及边界见[深入分类核验](properties-deep-confirmation.md)。
+当前五份清单及安装定位入口为 `.local/properties-install-paths-20261119-verified/README.md`，分类沿用 `.local/properties-deep-20261118-verified/` 的完整证据基线。原 3,441 条未确定来源全部明确处理路线，其中可读的 2,481 个内容哈希逐一核验；8 个受限 MDF/LDF 仅用当前 SQL 系统目录确认数据身份，内容/哈希仍不可读。新确认 3 个旧版 Excel VBA 项目、4 条来源，31 个内部模块单列未完成源文本。方法及边界见[深入分类核验](properties-deep-confirmation.md)。
 
 **本轮仅新增 Properties 分类与复核，Plus 沿用既有分类。** Properties 与 Plus 同内容哈希的文件直接继承原分类及分析记录；Plus 清单只补共用交叉索引。上轮擅自扩展到 Plus 的重分类和新增待核实统计已撤出当前交付，历史记录保留。
 
@@ -28,7 +28,7 @@ Properties 两包共 1,495 个 CAB 均读取成功。载荷与 MSI File / Compon
 
 已有分类证据只复用于相同内容哈希。本轮新增主来源疑点涉及四份不同内容：`Microsoft.VisualStudio.Interop.dll` 确认 16,767 个方法；`util.lib` 全成员为短导入记录或导入描述符，归入不需逆向；`vba_caller.xlsm`、`Regression.xlsm` 含 VBA，归入需要逆向。最终抽取 14 个不同内容或受限样本，其中 8 个完整读取，6 个为不可读数据库样本；首选来源四条显式分类疑点已核实，但这并未覆盖未被脚本标记的通用规则初分条目。
 
-当前 Properties 分类入口为 `.local/properties-deep-20261118-verified/README.md`，具体五份清单及数量见 [Properties 当前分类](aspen-properties-classification.md)。两类已确认路线与尚未确定三组互不重叠；每个已确认分类各有一份附加重复清单，总共两份。
+当前 Properties 分类入口为 `.local/properties-install-paths-20261119-verified/README.md`，具体五份清单及数量见 [Properties 当前分类](aspen-properties-classification.md)。两类已确认路线与尚未确定三组互不重叠；每个已确认分类各有一份附加重复清单，总共两份。
 
 只纳入有 Properties 安装归属的 19,298 条来源记录，Plus 对照来源通过重复关系引用，不另算 Properties 文件。需要逆向 1,866 条，不需要逆向 17,432 条，尚未确定 0 条。重复清单分别为 1,828 条和 10,735 条，是对应主清单的子集，不能再次相加。此前混合索引的来源行数量不作为当前 Properties 数量。
 
@@ -51,7 +51,8 @@ Properties 两包共 1,495 个 CAB 均读取成功。载荷与 MSI File / Compon
 | `.local/properties-only-20261118-review-final/` | 仅 Properties 的新内容复核；Plus 分类冻结并按哈希继承 |
 | `.local/properties-only-20261118-delivery-final/` | 重整理前的混合索引历史快照 |
 | `.local/properties-classification-20261118-reorganized/` | 深入核验前五份清单的历史基线，保留原未确定项及重复关系 |
-| `.local/properties-deep-20261118-verified/` | 深入核验后的当前五份清单、2,489 份逐内容/来源证据、31 份未完成 VBA 源文本及独立验证 |
+| `.local/properties-deep-20261118-verified/` | 深入分类核验基线、2,489 份逐内容/来源证据、31 份未完成 VBA 源文本及独立验证，继续保留 |
+| `.local/properties-install-paths-20261119-verified/` | 当前五份清单及 98 对安装定位证据；97 条物理路径、1 条禁用组件，附独立验证 |
 | `.local/plus-properties-20261118-checks/` | 独立 CAB 样本核验及最终清单复核 |
 
 工具另含 `tools/audit_classification_confidence.py`，必须指定 `--plus-baseline`，仅复核 Properties 新内容，冻结 Plus 原分类并继承相同哈希内容的已有结果；不宣称已对全部数据格式重新验收。原有工具为 `tools/inventory_aspen_sources.py`、`tools/audit_aspen_suffixes.py`、`tools/inventory_plus_properties.py`。后者分 `prepare` 与 `report` 两阶段；两者均拒绝覆盖已有输出路径。初始 Properties 快照中沿用旧工具的个别 Plus 范围标签在双产品基线中按实际 MSI 归属规范为 Properties，原来源、路径和内容哈希保持不变，原快照保留。

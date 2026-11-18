@@ -2,7 +2,7 @@
 
 本轮将 Properties 原未确定的 **3,441 条来源记录**全部明确处理路线，包括 **613 条首选安装来源**。其中 **2,481 个可读内容 SHA-256**逐一检查，不再按后缀抽样后外推；另有 **8 个内容不可读的 MDF/LDF**，通过当前只读 SQL 系统目录确认数据/日志身份。Plus 原分类及原清单保持只读，未开展其他产品自身文件的分类调查。
 
-当前本地入口：`.local/properties-deep-20261118-verified/README.md`。原 `.local/properties-classification-20261118-reorganized/` 及所有历史证据完整保留。
+本轮分类核验基线：`.local/properties-deep-20261118-verified/README.md`。2026-11-19 在保留全部分类的基础上补充 98 条安装目标证据，当前五份清单入口为 `.local/properties-install-paths-20261119-verified/README.md`，见[安装目标落实](properties-install-paths.md)。原 `.local/properties-classification-20261118-reorganized/` 及所有历史证据完整保留。
 
 ## 当前五份清单
 
@@ -59,7 +59,7 @@ Excel ActiveX 的 XML 与 BIN 数字编号存在错位，实际绑定必须沿 `
 - 独立工具从 CSV 复算 19,298 条来源身份和静态字段、旧已确认记录不变、五份清单、重复子集、同哈希分类一致性、全部逐内容证据及 31 份 VBA、2 份局部反汇编的代码/说明配对，全部通过。
 - 对本轮输入和 Plus 四份冻结清单前后核对 SHA-256，结果不变。最终独立验证记录为 `validation-final.json`，此前核验快照继续保留；原包内及安装来源按内容哈希引用相同证据。
 - 18 项生成式样本测试通过，覆盖损坏图片/BIFF/Shell Link 边界、活动 SVG、二进制内容变化、ActiveX 编号错位、关系 ID 和 CLSID 冲突。没有将原版二进制加入测试仓库。
-- **处理路线未确定为零，只表示分类完成。** 8 个 MDF/LDF 内容及 SHA-256 仍不可读；98 条符号安装目标仍未定位，均有独立字段。HMS/SDF 完整二进制语义和数值解码仍未完成，数据可直接用于计算的正确性也未因此确立。
+- **处理路线未确定为零，只表示分类完成。** 8 个 MDF/LDF 内容及 SHA-256 仍不可读；本轮曾留下的 98 条符号目标已在 2026-11-19 单独落实，97 条有本机物理路径、1 条为禁用组件。HMS/SDF 完整二进制语义和数值解码仍未完成，数据可直接用于计算的正确性也未因此确立。
 - 所有原版输入、完整逐文件证据、详细清单及 VBA 源文本仅本地保存。数据库/公式长期资产未删除、覆盖或迁移；仓库只提交自编核验工具、无原版内容的测试和汇总文档。
 
 工具为 `tools/confirm_properties_pending.py`、`tools/inspect_properties_readers.py`、`tools/Get-PropertiesSqlCatalogEvidence.ps1` 和 `tools/validate_properties_confirmation.py`，均要求新输出路径，拒绝覆盖历史证据。复核时须提供原五份清单、冻结的 Plus 基线、7-Zip、olefile/oletools/pefile/capstone/cryptography 模块目录及 pypdf 模块目录；输入指纹和逐文件证据保留具体原始来源及处理结果。CSV 中 `category` 为当前路线，`input_category`、`proposed_category` 为此前初分记录，保留用于追溯。
