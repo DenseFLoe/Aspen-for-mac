@@ -90,3 +90,11 @@
 - 原版安装路径、SHA-256 和证据出处按原名登记在本地 `.local/source-attribution-20261118/original-files.json`。112 个原版路径与既有哈希一致，其中包括静态目录的 59 个布局来源。另现场登记 `AspenPlus.exe`、两个空白模板和产品 MSI 的哈希。数据库和公式使用原有清单，本轮不对运行中的 MDF 做快照。原有反编译、IL、原生证据和数据包继续在各自的本地路径保留。
 - 本轮复核通过向导静态 37 项、其他按钮静态 77 项、按钮三轮索引，以及 Flash2 快照、源身份与 Next 调用链 9 项。资源检查通过 3,086 份布局、59 个模块、289 个原生对话框、117 份菜单。Flash2 检查使用保存的原版运行快照。
 - 主要本地定位入口为 `.local/full-ui-logic-20261116/{shell-file,flowsheet,stream-block-forms,properties-env}/report.md` 和 `.local/other-button-logic/report.md`。前四份按报告中的 FIL、PFD、FRM 与物性字段回查各目录的托管/原生证据。后一份按 F、M、A 编号及同目录证据索引回查。快照入口和原版调用研究在[下一步研究](next-guided-workflow.md)、[向导报告](../analysis/wizard-logic-20261115/report.md)、[按钮报告](../analysis/button-logic-20261116/report.md)与[三轮补充](../analysis/button-logic-20261116/report-round3.md)。
+
+## 原名归档与报告命名
+
+本地入口为 `.local/step-2-naming-20261118/V15-final/README.md`。`sources/` 和 `reports/` 下镜像保存安装产品、相对目录和完整文件名（含原扩展名）。例如，`AprSystem V15.0/GUI/Xeq/ApwnShell.dll` 对应 `ApwnShell.dll.sources.json` 和 `ApwnShell.dll.md`。已确认来源的 C#、IL 和原生分析材料分别追加 `.01.cs`、`.il-01.json`、`.native-01.json` 等后缀。记录内保留原版路径、可取得的文件版本、SHA-256、原始证据出处和对照表编号。同一相对路径有不同哈希的版本时，为每个版本使用含版本号和哈希的独立归档目录。
+
+本轮建立 **1,298 对**原名源码记录和报告，归入 **251 份**可追溯的局部分析材料（139 份 C# 阅读版、77 份 IL、35 份原生分析）。C# 归属通过 IL 或原版托管类型定义核对。资源条目保留原资源键，数据库、公式和流体数据指向已有本地资料。20 个仅登记身份的条目标为源码归档待核实。未能归属的材料记录在 `index.json` 的 `unassignedEvidence`。原名归档和原版证据均保存在本地。
+
+`project-reports/src/` 按当前项目文件的完整文件名保存 **45 份**同名报告，例如 `UiShell.cpp.md`。现在的 Qt 构建从 `src/` 读取源码。一个 Qt 文件涉及多个原版文件时，可通过 `project-index.json` 和对照表编号查阅各自的原版报告。
