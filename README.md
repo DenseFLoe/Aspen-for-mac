@@ -12,3 +12,14 @@
 当前分支已移除归入第三类的 45 个 Qt 应用源文件，Windows 和 macOS 的应用构建及 Qt 集成测试暂停。旧工程的功能、构建和测试记录仍可从清理前的提交查阅。 [旧 Qt 工程 README](https://github.com/DenseFLoe/Aspen-for-mac/blob/02c9f6f6aa75faf3efd39b217b00c39184c51678/README.md)
 
 资源解析、数据库导出校验、只读库工具及其 Python 测试仍可独立使用。已提取的数据库、校验记录及压缩归档长期保留在本机。 [开发顺序](docs/development-requirements.md) · [数据库永久保留原则](docs/database-preservation.md)
+
+## 独立保留的数据库与公式
+
+以下资料独立于两类反编译源码，长期保留原目录和压缩归档，开发、切换分支及清理均不得删除或覆盖。仅本地保存，迁移电脑时需单独备份。
+
+| 资料 | 本地目录 | 说明 |
+| --- | --- | --- |
+| 数据库 | `.local/property-database/plaintext-export/`；归档在 `.local/property-database/archives/` | [导出范围、单位、关系与已知限制](docs/plaintext-database-export.md) |
+| 公式及流体数据 | `.local/formula-extraction-20261116/`；归档在 `.local/extraction-archives-20261117/aspen-v15-formulas-*` | [文档公式、图片转录和流体文件](docs/formula-extraction.md) |
+
+原版界面与按钮研究、资源图标、提取与恢复工具继续保留。旧 Qt 工程可从上述历史提交恢复；当前主线的交付仍为逐文件反编译与归档。

@@ -4,6 +4,7 @@
 
 - 已提取的 Aspen V15 数据库是需要长期保留的独立项目资产，不是缓存、临时文件或可重新生成的构建产物。**项目开发、重构、构建、分支切换和清理均不得删除、清空、覆盖或损坏这些资产。**
 - 受保护范围包括 `.local/property-database/plaintext-export/` 完整数据包、`.local/property-database/archives/` 下的归档及其校验/核验记录，以及 `.local/property-database/DO_NOT_DELETE.md` 保留声明。保留整个目录结构、元数据、恢复工具和原始十进制数值。
+- 公式资料同样长期独立保留：`.local/formula-extraction-20261116/` 原目录，以及 `.local/extraction-archives-20261117/` 中所有 `aspen-v15-formulas-*` 压缩包、校验和核验记录。保留主题正文、公式原图、转录、索引和流体参数文件；开发、构建、分支切换与清理不得删除、清空或覆盖，新增处理使用新路径。资料及归档仅本地保存，不加入 Git 或上传 GitHub。详见 [公式提取说明](docs/formula-extraction.md)。
 - `.local/` 被 Git 忽略只表示数据不上传，不表示它可以删除。禁止对工作区运行会清除这些资产的 `git clean -fdx`、`git clean -ffdx`，也禁止递归清理整个 `.local/` 或 `.local/property-database/`。清理脚本必须明确排除受保护路径。
 - 压缩归档不是删除原目录的授权；新增导出、恢复、迁移或归档必须使用新路径，不得覆盖已有数据。数据包和归档继续仅本地保存，不得自动加入 Git 或上传 GitHub。
 - 只有用户今后针对具体受保护路径明确要求删除或覆盖，才可执行对应操作。常规的“清理项目”“重新构建”“整理分支”不构成授权。详见 `docs/database-preservation.md`。
