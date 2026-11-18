@@ -1,5 +1,13 @@
 # Properties 分类不确定项与纠正（2026-11-18）
 
+本轮深入核验后，原 3,441 条未确定来源的处理路线已全部确认，包括 613 条首选来源。全部 2,481 个可读内容哈希逐一取得结构/内容证据；8 个不可读 MDF/LDF 由当前 SQL 系统目录确认身份，读取限制仍单列保留。新入口为 `.local/properties-deep-20261118-verified/README.md`，完整方法、逐类结果及边界见[深入分类核验](properties-deep-confirmation.md)。
+
+新确认 3 个旧版 Excel VBA 项目（4 条来源），31 个内部模块另列为需要逆向，并以原安装相对路径归档源文本及同名说明，全部在 `02-incomplete/`，没有宣称反编译完成。当前分类数为需要逆向 1,866、不需要逆向 17,432、未确定 0；原先已确认记录及 Plus 分类基线均保持不变。
+
+以下为本轮深入核验前的历史基线，原快照保留；其中的待核实数量不再代表当前清单。
+
+## 先前基线与纠正
+
 本轮只复核新增的 Aspen Properties。Aspen Plus 沿用已固定的分类结果，作为只读对照基线。上轮把复核扩大到 Plus 并新增其待核实统计，超出了本轮任务范围；这些重分类和统计已撤出当前交付，相关本地快照仅作历史保留。
 
 Properties 主包初始有 207 条显式疑点，配套包 170 条，合计 377 条来源记录。其中 373 条复用此前相同内容哈希的结构证据，4 条重新检查。后续检查发现通用资源/数据规则漏标初分项，不能用显式待核实为零代表 Properties 分类全部验收。
@@ -10,7 +18,7 @@ Properties 主包初始有 207 条显式疑点，配套包 170 条，合计 377 
 
 Properties 的 `vba_caller.xlsm`、`Calculation.xlsm`、`Regression.xlsm` 内部 `xl/vbaProject.bin` 曾被当成普通数据。本轮核对完整内容哈希及 OLE/VBA 存储，纠正 3 个不同 VBA 项目、6 条安装包 / 已安装来源记录，改为“需要逆向”。VBA 代码恢复尚未验收。
 
-## Properties 尚缺的证据
+## 深入核验前尚缺的证据（历史）
 
 | 项目 | 数量与口径 | 后续工作 |
 | --- | --- | --- |
@@ -21,6 +29,6 @@ Properties 的 `vba_caller.xlsm`、`Calculation.xlsm`、`Regression.xlsm` 内部
 
 此前的 1,041 条 Properties 首选初分项中，428 条与既有 Plus 分类同哈希，直接继承已有结果；剩余 613 条才是本轮新增待复核项。此前列出的 Plus 1,129 条等统计不作为本轮欠项。
 
-最新入口为 `.local/properties-classification-20261118-reorganized/README.md`；未确定项只列在 `03-undetermined/files.csv`，已从“需要逆向 / 不需要逆向”两组移出。证据为 `.local/properties-only-20261118-review-final/`，含 `confidence-audit.json`、`category-corrections.csv`、`remaining-review.csv` 和 3 份 VBA 结构核验记录。Plus 分类逐字段保持基线一致、三份共用索引完整性与分类纠正另有验证记录。所有原快照继续保留，数据库和公式资产未改动。
+当时入口为 `.local/properties-classification-20261118-reorganized/README.md`；未确定项只列在 `03-undetermined/files.csv`，已从“需要逆向 / 不需要逆向”两组移出。证据为 `.local/properties-only-20261118-review-final/`，含 `confidence-audit.json`、`category-corrections.csv`、`remaining-review.csv` 和 3 份 VBA 结构核验记录。Plus 分类逐字段保持基线一致、三份共用索引完整性与分类纠正另有验证记录。所有原快照继续保留，数据库和公式资产未改动。
 
 本轮重整理保留全部 Properties 来源：两类已确认路线加尚未确定三组互不重叠。尚未确定项保留暂定分类和具体原因；其中有重复的内容附重复标记，待分类确认后再进入相应重复清单。原 19,298 条 Properties 归属来源全部保留，Plus 原分类文件的哈希核对不变。
