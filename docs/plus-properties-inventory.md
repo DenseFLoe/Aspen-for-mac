@@ -1,4 +1,4 @@
-# Aspen Plus / Aspen Properties 双产品盘点（2026-11-18）
+# Properties 盘点来源与当前分类（2026-11-18）
 
 Aspen Properties 已作为独立产品正式纳入开发，与 Aspen Plus 使用相同的开发顺序、归档和验收要求。Properties Enterprise Database Server 作为 Properties 配套安装组件单列。HYSYS、EDR 等其他产品自身文件继续范围外保留。本轮执行新增产品的第 1 步及“需要逆向 / 不需要逆向”分类，不启动 Windows / Mac 重建。
 
@@ -16,7 +16,7 @@ Properties 两包共 1,495 个 CAB 均读取成功。载荷与 MSI File / Compon
 
 此前为共享比对读取了 **44,561 个已安装物理文件**（此为历史来源记录，当前不重新分类 Plus）：Plus 归属 33,935 个、Properties 归属 8,292 个、双方安装表共同指向 2,334 个。覆盖两个产品各自的 Program Files、ProgramData 目录及 Properties 的 APED 目录；其他共享目录只纳入 MSI 明确指向的文件。共享目录中没有安装归属证据的其他文件不自动纳入。符号根 `[TARGETDIR]` 未强行转换为实际目录；Properties 有 98 条载荷记录保留此类未解析目标，Plus 路径记录仅作既有对照，不列入本轮待办。
 
-## 分类复核与三份清单
+## 分类复核与当前五份清单
 
 **本轮仅新增 Properties 分类与复核，Plus 沿用既有分类。** Properties 与 Plus 同内容哈希的文件直接继承原分类及分析记录；Plus 清单只补共用交叉索引。上轮擅自扩展到 Plus 的重分类和新增待核实统计已撤出当前交付，历史记录保留。
 
@@ -26,13 +26,9 @@ Properties 初始有 377 条显式疑点，373 条复用同哈希的既有证据
 
 已有分类证据只复用于相同内容哈希。本轮新增主来源疑点涉及四份不同内容：`Microsoft.VisualStudio.Interop.dll` 确认 16,767 个方法；`util.lib` 全成员为短导入记录或导入描述符，归入不需逆向；`vba_caller.xlsm`、`Regression.xlsm` 含 VBA，归入需要逆向。最终抽取 14 个不同内容或受限样本，其中 8 个完整读取，6 个为不可读数据库样本；首选来源四条显式分类疑点已核实，但这并未覆盖未被脚本标记的通用规则初分条目。
 
-| 文档 | 需要逆向的来源行 | 不需要逆向的来源行 | 完整本地分类文档 |
-| --- | ---: | ---: | --- |
-| [Plus](aspen-plus-classification.md) | 3,791 | 48,187 | `.local/properties-only-20261118-delivery-final/plus/classification.md` |
-| [Properties](aspen-properties-classification.md) | 2,632 | 19,900 | `.local/properties-only-20261118-delivery-final/properties/classification.md` |
-| [两者共用](plus-properties-shared-files.md) | 2,534 | 8,189 | `.local/properties-only-20261118-delivery-final/shared/classification.md` |
+当前 Properties 分类入口为 `.local/properties-classification-20261118-reorganized/README.md`，具体五份清单及数量见 [Properties 当前分类](aspen-properties-classification.md)。两类已确认路线与尚未确定三组互不重叠；每个已确认分类各有一份附加重复清单，总共两份。
 
-三份清单均有逐来源 CSV，保留产品、安装包、原路径、组件、版本、哈希、统一分析键和分类证据。共用来源行同时出现在两份产品清单中，不从产品清单移走。统计包括容器、载荷、内嵌流、ZIP 成员及重复来源，三份有交集，不能相加当作独立文件数。总输入为 63,787 条来源记录。
+只纳入有 Properties 安装归属的 19,298 条来源记录，Plus 对照来源通过重复关系引用，不另算 Properties 文件。需要逆向 1,862 条，不需要逆向 13,995 条，尚未确定 3,441 条。重复清单分别为 1,826 条和 9,149 条，是对应主清单的子集，不能再次相加。此前混合索引的来源行数量不作为当前 Properties 数量。
 
 ## 验证、限制与本地证据
 
@@ -51,7 +47,10 @@ Properties 初始有 377 条显式疑点，373 条复用同哈希的既有证据
 | `.local/plus-properties-20261118-baseline-full/` | 本轮已安装现场读取、原清单指纹、归属对应及缺失安装目标 |
 | `.local/plus-properties-20261118-classified/` | 上轮显式疑点复核快照；其零待核实统计已被本轮纠正，不作为完整分类验收 |
 | `.local/properties-only-20261118-review-final/` | 仅 Properties 的新内容复核；Plus 分类冻结并按哈希继承 |
-| `.local/properties-only-20261118-delivery-final/` | 正式三份分类文档、两类 CSV、后缀统计和验证 |
+| `.local/properties-only-20261118-delivery-final/` | 重整理前的混合索引历史快照 |
+| `.local/properties-classification-20261118-reorganized/` | 当前五份 Properties 清单、重复关系、输入指纹和验收 |
 | `.local/plus-properties-20261118-checks/` | 独立 CAB 样本核验及最终清单复核 |
 
 工具另含 `tools/audit_classification_confidence.py`，必须指定 `--plus-baseline`，仅复核 Properties 新内容，冻结 Plus 原分类并继承相同哈希内容的已有结果；不宣称已对全部数据格式重新验收。原有工具为 `tools/inventory_aspen_sources.py`、`tools/audit_aspen_suffixes.py`、`tools/inventory_plus_properties.py`。后者分 `prepare` 与 `report` 两阶段；两者均拒绝覆盖已有输出路径。初始 Properties 快照中沿用旧工具的个别 Plus 范围标签在双产品基线中按实际 MSI 归属规范为 Properties，原来源、路径和内容哈希保持不变，原快照保留。
+
+本轮重整理工具为 `tools/organize_properties_classification.py`。只读已有分类与证据，不重新扫描或分类 Plus，不运行安装器或修改源文件。输出必须是新路径；对 Properties 输入和 Plus 原清单在前后核对 SHA-256。

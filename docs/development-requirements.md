@@ -6,6 +6,8 @@
 
 本轮任务边界：只新增 Properties 的第 1 步及分类复核。Plus 使用既有分类作为只读基线，只补共用文件交叉索引，不重新分类或新增本轮待核实统计。Properties 中与该基线同哈希的内容直接复用分类与分析记录；剩余新内容再核验。
 
+2026-11-18 Properties 重整理：按用户确认固定为五份清单，详见 [Properties 当前入口](aspen-properties-classification.md)。需要逆向、不需要逆向分别有总清单及一份重复清单，另有尚未确定清单。前两类与尚未确定互不重叠，重复清单是分类总清单的子集；重复按内容 SHA-256 判断并保留全部来源引用。只纳入 Properties 原始归属来源，不把为对照复制的 Plus 来源计入 Properties 数量；Plus 分类及原清单不变。
+
 分别维护 Plus、Properties、两者共用文件三份分类文档清单。双归属文件在三份清单同时列出；同哈希共用分析键并保留各来源，同名异哈希分别记录。两大类继续使用“需要逆向 / 不需要逆向”，类内按末级后缀排序；不得与已完成 / 未完成的成果验收分类混用。共用内容与同安装目标的版本差异分别登记，不能仅凭文件名或目录名判定共享。详细入口见[双产品盘点](plus-properties-inventory.md)、[Plus 清单](aspen-plus-classification.md)、[Properties 清单](aspen-properties-classification.md)和[共用文件清单](plus-properties-shared-files.md)。
 
 HYSYS、EDR、Energy Analyzer、Adsorption、Chromatography 等其他产品自身文件仍不评估，不计入双产品的未分类项、未完成项和验收分母。全来源历史扫描继续保留并单列范围外记录；扩大产品范围须由用户明确提出。

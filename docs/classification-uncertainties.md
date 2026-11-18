@@ -21,4 +21,6 @@ Properties 的 `vba_caller.xlsm`、`Calculation.xlsm`、`Regression.xlsm` 内部
 
 此前的 1,041 条 Properties 首选初分项中，428 条与既有 Plus 分类同哈希，直接继承已有结果；剩余 613 条才是本轮新增待复核项。此前列出的 Plus 1,129 条等统计不作为本轮欠项。
 
-最新入口为 `.local/properties-only-20261118-delivery-final/README.md`。证据为 `.local/properties-only-20261118-review-final/`，含 `confidence-audit.json`、`category-corrections.csv`、`remaining-review.csv` 和 3 份 VBA 结构核验记录。Plus 分类逐字段保持基线一致、三份共用索引完整性与分类纠正另有验证记录。所有原快照继续保留，数据库和公式资产未改动。
+最新入口为 `.local/properties-classification-20261118-reorganized/README.md`；未确定项只列在 `03-undetermined/files.csv`，已从“需要逆向 / 不需要逆向”两组移出。证据为 `.local/properties-only-20261118-review-final/`，含 `confidence-audit.json`、`category-corrections.csv`、`remaining-review.csv` 和 3 份 VBA 结构核验记录。Plus 分类逐字段保持基线一致、三份共用索引完整性与分类纠正另有验证记录。所有原快照继续保留，数据库和公式资产未改动。
+
+本轮重整理保留全部 Properties 来源：两类已确认路线加尚未确定三组互不重叠。尚未确定项保留暂定分类和具体原因；其中有重复的内容附重复标记，待分类确认后再进入相应重复清单。原 19,298 条 Properties 归属来源全部保留，Plus 原分类文件的哈希核对不变。
