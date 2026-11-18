@@ -157,7 +157,8 @@ def report(args):
         r['memberships'] = 'Plus;Properties' if r['shared_content'] == 'True' else r['owner']
         # Existing classification evidence must remain resolvable after copying.
         if r.get('classification_evidence') and not Path(r['classification_evidence']).is_absolute():
-            r['classification_evidence'] = str(args.inventory.resolve() / r['classification_evidence'])
+            evidence_root = Path(r.get('classification_evidence_root') or args.inventory.resolve())
+            r['classification_evidence'] = str(evidence_root / r['classification_evidence'])
     groups = {owner: [r for r in rows if owner in r['memberships'].split(';')] for owner in ('Plus', 'Properties')}
     groups['Shared'] = [r for r in rows if r['shared_content'] == 'True' or r['owner'] == 'Plus;Properties']
     # Exact target overlap is a second, separate relation, even for different bytes.

@@ -1,15 +1,15 @@
 # Aspen Plus 与 Aspen Properties 共用文件清单
 
-**本清单包含 1,511 条规则初分待复核来源记录，分类验收尚未完成。** 逐项见本地同目录 `remaining-review.csv`；[纠正说明](classification-uncertainties.md)记录遗漏原因与 VBA 误分类修复。
+本轮只新增共享归属与交叉索引；共用内容沿用既有 Plus 分类，不重开 Plus 分类或新增其待核实项。Properties 的新内容待复核项另见[说明](classification-uncertainties.md)。
 
 本页是新增的共用文件分类入口。[Plus](aspen-plus-classification.md)、[Properties](aspen-properties-classification.md)与本清单同时保留双归属文件。共用清单是两份产品清单的交集索引，不替代它们。
 
 | 处理路线 | 来源记录 | 本地 CSV |
 | --- | ---: | --- |
-| 需要逆向 | 2,534 | `.local/plus-properties-20261118-corrected-delivery/shared/01-needs-reverse/files.csv` |
-| 不需要逆向 | 8,189 | `.local/plus-properties-20261118-corrected-delivery/shared/02-no-reverse/files.csv` |
+| 需要逆向 | 2,534 | `.local/properties-only-20261118-delivery-final/shared/01-needs-reverse/files.csv` |
+| 不需要逆向 | 8,189 | `.local/properties-only-20261118-delivery-final/shared/02-no-reverse/files.csv` |
 
-完整逐来源 Markdown：`.local/plus-properties-20261118-corrected-delivery/shared/classification.md`。每条记录保留原产品、安装包、路径、包内成员、组件、版本、SHA-256、分类依据和统一分析键；类内按末级后缀排序。三份清单的共用来源行已逐项核对一致。
+完整逐来源 Markdown：`.local/properties-only-20261118-delivery-final/shared/classification.md`。每条记录保留原产品、安装包、路径、包内成员、组件、版本、SHA-256、分类依据和统一分析键；类内按末级后缀排序。三份清单的共用来源行已逐项核对一致。
 
 ## 纳入依据
 

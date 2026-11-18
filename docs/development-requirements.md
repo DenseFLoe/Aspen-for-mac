@@ -4,6 +4,8 @@
 
 2026-11-18 范围更新：**本次开发包括 Aspen Plus 与独立的 Aspen Properties。** 此要求覆盖盘点、分类调查、逐文件逆向、Windows 重建和 Mac 适配。两者各自的原版安装包为首选来源，已安装文件用于补充缺项、版本差异与运行证据。Aspen Properties Enterprise Database Server 作为 Properties 配套组件单列，不混淆其与主安装包的统计。共享组件按安装归属、依赖或调用证据纳入相关部分。
 
+本轮任务边界：只新增 Properties 的第 1 步及分类复核。Plus 使用既有分类作为只读基线，只补共用文件交叉索引，不重新分类或新增本轮待核实统计。Properties 中与该基线同哈希的内容直接复用分类与分析记录；剩余新内容再核验。
+
 分别维护 Plus、Properties、两者共用文件三份分类文档清单。双归属文件在三份清单同时列出；同哈希共用分析键并保留各来源，同名异哈希分别记录。两大类继续使用“需要逆向 / 不需要逆向”，类内按末级后缀排序；不得与已完成 / 未完成的成果验收分类混用。共用内容与同安装目标的版本差异分别登记，不能仅凭文件名或目录名判定共享。详细入口见[双产品盘点](plus-properties-inventory.md)、[Plus 清单](aspen-plus-classification.md)、[Properties 清单](aspen-properties-classification.md)和[共用文件清单](plus-properties-shared-files.md)。
 
 HYSYS、EDR、Energy Analyzer、Adsorption、Chromatography 等其他产品自身文件仍不评估，不计入双产品的未分类项、未完成项和验收分母。全来源历史扫描继续保留并单列范围外记录；扩大产品范围须由用户明确提出。
@@ -18,7 +20,7 @@ HYSYS、EDR、Energy Analyzer、Adsorption、Chromatography 等其他产品自�
 
 2026-11-18 分类复核：按后缀抽取不同内容样本，首选来源的 389 条原待核实记录覆盖全部内容哈希，其他来源按后缀补样。同一后缀可能同时包含实现、导入声明、资源或数据，不据后缀统一改类。只将实际检查过的内容哈希及明确的数据库元数据结论写入新清单，保留原清单、原来源和未完成的格式/逻辑工作。最新入口、核验和范围见[后缀抽样分类复核](suffix-sample-classification.md)。
 
-2026-11-18 分类证据纠正：通用后缀/文件头规则仅作为初分，不等于内容分类验收；须保留待复核状态。内嵌 VBA 等代码成员单独核验，读取不可得与目标路径未解析分别登记。此前零待核实统计存在漏标，已纠正 5 个 VBA 项目的误分并公开规则初分欠项，见[分类不确定项](classification-uncertainties.md)。
+2026-11-18 Properties 分类证据纠正：通用后缀/文件头规则仅作为初分，不等于内容分类验收；须保留待复核状态。内嵌 VBA 等代码成员单独核验，读取不可得与目标路径未解析分别登记。沿用既有 Plus 分类并排除相同哈希内容后，当前 Properties 新内容有 613 条首选来源记录待复核，已纠正 Properties 的 3 个 VBA 项目；上轮擅自扩大到 Plus 的重分类和待核实统计已撤出本轮交付。见[Properties 分类不确定项](classification-uncertainties.md)。
 
 #### 1.1 每轮成果分类与逐文件说明
 
