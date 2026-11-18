@@ -98,3 +98,12 @@
 本轮建立 **1,298 对**原名源码记录和报告，归入 **251 份**可追溯的局部分析材料（139 份 C# 阅读版、77 份 IL、35 份原生分析）。C# 归属通过 IL 或原版托管类型定义核对。资源条目保留原资源键，数据库、公式和流体数据指向已有本地资料。20 个仅登记身份的条目标为源码归档待核实。未能归属的材料记录在 `index.json` 的 `unassignedEvidence`。原名归档和原版证据均保存在本地。
 
 `project-reports/src/` 按当前项目文件的完整文件名保存 **45 份**同名报告，例如 `UiShell.cpp.md`。现在的 Qt 构建从 `src/` 读取源码。一个 Qt 文件涉及多个原版文件时，可通过 `project-index.json` 和对照表编号查阅各自的原版报告。
+
+## 20 个原版条目与 7 份 C# 阅读版复核
+
+最新本地归档入口为 `.local/step-2-naming-20261118/V15-check/README.md`。同目录 `followup.md` 逐项列出本轮 20 个原版文件的已证实范围和待核实项。各文件按原相对路径补入 `<原名>.verification.json` 及可取得的 C#、原始 BAML 或 APT，原版文件 SHA-256 均与上一版登记一致。
+
+- 托管程序集通过 TypeDef、方法与 ILSpy 阅读版定位。例如 `ApedGateway.dll` 定义 `IPropertyValueManager` 接口，`ApedDataProvider.dll` 持有 `SqlServerDatabase` 和 `GetUnaryPropertyValue` 的实现。另核实了 Chemistry 编辑入口、流程图覆盖层、模型选项板和启动入口。
+- 原生文件核到导入、导出或注册证据。`ADMethods.dll` 对应 Aspen Dynamics 与 EDR 接口，更正旧报告的“油品化验方法”标注。`AOSA.dll` 有本机 64 位 COM 注册记录，`mmhost.dll` 已确认回调接口，实际加载者与运行调用链仍待核实。
+- Windows Installer 只读查询核实产品 MSI 版本 `41.0.0`，`File` 表命中本批其余 19 个文件名，共 23 条记录。两个 `ApwnShell.resources.dll` 安装副本的 SHA-256 不同，分别按相对路径保存。MSI 中同名文件与安装文件的逐字节匹配仍需解包比对。
+- 7 份旧 C# 阅读版中，6 份重新提取后正文匹配，归入 `AspenTech.Visualisation.Assistant.Run.exe`、`Interop.Aosapfs.dll` 和新增归档的 `AspenTech.AspenPlus.MMHNodeTree.dll`。旧 `MMResults_PureSca_Converter.cs` 只有 ILSpy 更新提示，索引继续保留该异常。实际转换器已通过 `NestedClass` 定位到 `AspenTech.AspenPlus.MMForms.PhysicalProperties.dll` 中的父 ViewModel，并单独归档重新提取的正文。
