@@ -1,8 +1,7 @@
 # 逐文件逆向当前状态
 
-2026-11-19，第 20261119-05 轮。当前处于开发总纲第 2 步。需要逆向的 1,397 个不同原文件中，累计 11 个已通过逐文件归档验收，对应 33 条去重来源。
+2026-11-19，第 20261119-06 轮。当前处于原版逐文件逆向归档阶段。1,397 个不同原件中，累计 **12 件已完成**，对应 36 条去重来源。其余为 31 件未完成、15 件暂存、1,339 件未开始，处理中和待复核均为 0。[累计台账](../inventories/reverse/20261119-06/ledger.csv)
 
-- **本轮新增 1 件：`AspenTech.AspenPlus.MMForms.Flowsheet.dll`。** 两个原包成员与安装件逐字节一致；117 个方法定义含 115 个 IL 实现、2 个外部 COM 声明。核对三页布局的 445 条 BAML 记录、11 处接线和 8 个绑定；原版无窗口探针两次各通过 111 项断言。资源卫星不另计完成；真实宿主操作未验收。[本轮验收记录](../inventories/reverse/20261119-05/README.md)
-- **剩余工作：** 32 个未完成、15 个暂存、1,339 个未开始；处理中和待复核均为 0。[累计台账](../inventories/reverse/20261119-05/ledger.csv)
-- **本机入口：** `.local/reverse-round-20261119-05/`。四份成果及各自说明位于 `01-completed/`；`signoff.json`、`verification.json` 分别记录验收和四份状态视图的逐行核验。[累计归档指纹](../inventories/reverse/20261119-05/artifacts.csv) · [上一轮](../inventories/reverse/20261119-04/README.md)
-- **下轮首选 `AspenTech.AspenPlus.MMForms.APropSetup.dll`（仍未完成）。** 同为 Plus/Properties 共用的表单，已核实安装件 SHA-256 为 `6287a414f51e5c0288a096e4614fa892cc76b030fe536b4f43a6ca7331c231e0`，共 298 个方法定义。旧档只单独选取 45 个顶层类型中的 2 个，且有 1 份含 ILSpy 诊断。先核对两套安装包，再按令牌定位该诊断并核查完整代码和页面依赖。
+- **本轮完成 `AspenTech.AspenPlus.MMForms.APropSetup.dll`。** Plus 与独立 Properties 的原包成员和安装件内容一致。已核对全部 298 个方法实现，补齐旧档覆盖之外的表单和视图模型，解决同一静态构造器中的 135 条反编译诊断。22 页布局和 243 个控件连接均已定位。[本轮验收记录](../inventories/reverse/20261119-06/README.md)
+- **本机归档**位于 `.local/reverse-round-20261119-06/`。整件 C#、22 页 XAML 布局包和各自的同名说明在 `01-completed/`。本轮的 `signoff.json` 与 `verification.json` 分别记录静态验收和四份状态视图的增量核验。报告默认页的一处标签目标沿用原值，实际焦点行为留待 Windows 对照阶段。[归档指纹](../inventories/reverse/20261119-06/artifacts.csv)
+- **下轮首选 `AspenTech.AspenPlus.WpfFindComponent.dll`**，台账状态为未完成。已核对安装件 SHA-256 为 `04e68b8eca60b732e661bf322d74b6f042abeba9ea801e2e2e410c1be007b5d5`。旧整件 C# 第 8133–8136 行的四条诊断均在 `PubChemAgent` 的静态构造器内。先核实两套原包成员，再对照该方法使用的 HTTP 类型及构造调用，随后核查其余方法和资源。
