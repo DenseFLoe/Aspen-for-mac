@@ -1,5 +1,7 @@
 # Aspen V15 源码研究
 
+逐文件任务从[项目核心指令](AGENTS.md)、[精简执行规则](docs/reverse-execution-workflow.md)和[当前工作状态](docs/reverse-work-status.md)开始；总纲、详细规则和历史证据按需查阅，避免每轮全文重复读取。
+
 开发范围包括 **Aspen Plus 与独立的 Aspen Properties**。Properties 主安装包及配套数据库服务器已纳入第 1 步盘点和分类复核；当前尚未确定的处理路线为零，读取限制、解码及反编译验收仍分别记录。双归属文件在 Plus、Properties、共用三份清单同时列出。 [完整分类清单下载](inventories/2026-11-19/README.md) · [盘点与验证](docs/plus-properties-inventory.md) · [Plus 分类](docs/aspen-plus-classification.md) · [Properties 分类](docs/aspen-properties-classification.md) · [共用文件](docs/plus-properties-shared-files.md)
 
 当前工作按原版文件逐个核对反编译源码。已确认来源的两类代码各有独立的本地目录和说明。
