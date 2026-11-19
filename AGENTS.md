@@ -36,6 +36,8 @@ HYSYS、EDR、Energy Analyzer、Adsorption、Chromatography 等其他产品自�
 
 ## Repository workflow
 
+- 用户于 2026-11-19 明确要求上传完整分类清单。允许将分类清单及其来源、哈希、重复关系、安装定位与源码完成状态索引等元数据复制到 `inventories/` 并提交；本地原清单及历史证据继续保留。该要求不包含数据库、公式资料、原版二进制或完整反编译正文。
+
 - Target repository: `https://github.com/DenseFLoe/Aspen-for-mac.git`.
 - Before changing repository content, fetch and inspect the existing default branch and any applicable repository instructions. Preserve existing remote history and user changes.
 - Commit each meaningful, verified milestone and push its working branch promptly. Report the branch, commit SHA, checks, and push result. If access or a push fails, keep local work safe and report the exact blocker; do not claim it was uploaded.

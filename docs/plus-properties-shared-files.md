@@ -1,6 +1,6 @@
 # Properties 重复项与 Plus 共用关联
 
-Properties 本轮按处理路线总共附加两份重复清单。它们的当前入口为 `.local/properties-deep-20261118-verified/README.md`；Plus 原分类继续只读沿用。
+Properties 本轮按处理路线总共附加两份重复清单。它们的当前入口为 `.local/properties-install-paths-20261119-verified/README.md`；Plus 原分类继续只读沿用。完整重复 CSV、全部重复关联及原共用索引见[仓库分类清单快照](../inventories/2026-11-19/README.md)。
 
 | 重复清单 | Properties 来源行 | 其中与 Plus 重复 | 其中 Properties 不同来源重复 |
 | --- | ---: | ---: | ---: |
