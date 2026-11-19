@@ -1,5 +1,25 @@
 # 云端与本地分支功能标注
 
+## 最新分类成果整合与分支清理（2026-11-19）
+
+按用户“最新的合并到 main，旧分支删除”的要求，核对 GitHub 默认分支仍为 `main`，本地与云端的七条开发分支头完全一致，且全部构成同一继承链。`main@5a651aadb6b276cea85dbf4ea019e0df1e8e0407` 是最新成果 `d15963b0383cb9a88834236bec25cbdd590a2b7f` 的祖先，相差 11 个提交、48 个文件；快进整合保留所有原始提交和既有主线历史。本报告提交在最新成果之上，仅补充分支记录。
+
+| 清理的开发分支 | 整合前分支头 | 保留在主线的成果 |
+| --- | --- | --- |
+| `codex/installer-first-inventory` | `a25e42a45af61979f66ee10254efd52dee43dc55` | 安装包优先的原始文件盘点 |
+| `codex/suffix-sample-classification` | `6e44f41ae02ef5871bce42cfd9732649c36d85c3` | 后缀样本与内容证据分类 |
+| `codex/aspen-plus-only-scope` | `ebcac4b5b9aeac0d586cf7fddd47d789a22e0961` | 历史开发范围调整，后续双产品范围修订一并保留 |
+| `codex/properties-inventory` | `d7cf495c1d98d98bf644b3415309ea3a4155f72a` | Properties 五份清单、Plus 冻结基线与共用交叉索引 |
+| `codex/properties-deep-confirmation` | `7bb139de66fa95e187781976f462aa60f26e8515` | Properties 逐内容证据复核 |
+| `codex/properties-install-paths` | `309441c0ab484ccfe62b424c623198d56f2959e1` | Properties 安装目标与 GAC 定位证据 |
+| `codex/publish-classification-lists` | `d15963b0383cb9a88834236bec25cbdd590a2b7f` | 完整分类、重复关系、定位与源码状态元数据快照 |
+
+整合检查为 Python 3.12 单元测试 **54/54**、资源目录核验、`git diff --check`，以及 `tools/verify_published_classification.py --check-local-sources`。18 份元数据副本的大小、SHA-256 与本地原清单一致，Properties 分类互斥、重复清单为子集，共用索引交叉引用通过。此处验证研究工具与清单一致性，不新增反编译完成或 Windows/Mac 行为验收结论。
+
+临时整合分支为 `codex/integrate-main-20261119`。已验证当前 MinGit 使用 Git Credential Manager，推送预检成功；正常推送工作分支并快进同步 `main` 后，再复核精确远端 SHA 和祖先关系，以逐分支 SHA lease 原子删除七条源分支及临时整合分支。本地使用 `git branch -d`，最终仅保留与 GitHub 一致的 `main`；独立 Mac 工作树保留原样。
+
+本地操作证据保存于 `.local/branch-integration-20261119-122130/`。操作前记录数据库、公式原件与归档、逐文件源码归档及相关证据的 **16,822** 个文件元数据，另记录 **27** 个关键文件及教程 PDF 的 SHA-256，操作后复核。受保护资产、本地原清单、历史证据、教程 PDF 均继续保留本地；本次新增提交只有本文档。
+
 ## 源码研究主线调整（2026-11-18）
 
 按用户要求，以 `codex/decompiled-source-only@55977807169795704bb11c74e155816c8c3f1c07` 的源码分类与开发原则作为新主线基础，补充数据库和公式长期保留规则后快进同步到 `main`。原 `main@ad05a37daeeea58986f135468ae84f0b9d9b630c` 是该分支祖先，原有提交历史全部保留；GitHub 默认分支继续使用 `main`。
