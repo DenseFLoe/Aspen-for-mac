@@ -9,3 +9,4 @@
 20261121-0135 push outgoing/20261121-0135-T5-native-chain.reply.md (ack + 2 divergences)
 20261121-0135 push taskbook 20261121-0135-T6-plan-review.md (type=review-request) state=awaiting_reply
 20261121-0145 push plan/01-plan-rev5.md + plan/skills-dispatch.md + plan/00-req-excerpt-9.md (redacted); outgoing reply for T6 query
+20261121-0250 push outgoing/20261121-0250-T6-verdict-ack.md; T6 state=replied; repair_blocked=no_ptc_channel
