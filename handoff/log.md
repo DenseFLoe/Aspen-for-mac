@@ -22,3 +22,5 @@
 20261121-0515 DECISION user instruction: DO NOT upload IDA tool (tool/ida_export.py excluded by design, not a reproducibility gap). No further pushes until Router releases hold. IDA products (19 asm/c/md) stay as pushed at 87fddcbf.
 20261121-0515 LOCAL check_upload.py DRIVE_RE widened to (?<![A-Za-z])[A-Za-z]:[\/] (posix drive accepted, scheme URLs excluded); local rescan: GATE UPLOAD_OK files=175 findings=0 (not pushed).
 20261121-0515 OPEN_ISSUES 7: +1 historical residual tools.json abs paths in df559421/777e8167; history not rewritten (no force).
+20261121-0525 PR #1 merged d99bdfc6dd400eea1c217119b188f8d5f6b93ee3 (codex/20261121-ping -> main): handoff/outgoing/20261121-0525-reachability-ping.query.md; §13 PR->merge first real use
+20261121-0525 ping watcher started (60s interval, max 20 min) -> inbox/ping-watch.log; judgement in TASK_RESULT
