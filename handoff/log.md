@@ -28,3 +28,5 @@
 20261121-0545 §14 K1/K2/K3 adopted: local inbox/watch.py classifies .started.reply.md -> state=planning + push_to_started_s; pushed+30min no started -> no_start_signal; started+90min no plan -> timeout; next plan-request front-matter must carry require_start_ack: true
 20261121-0545 PR #5 merged b471064975a219aa2b9a2e97dd721fc77892cb1f (codex/20261121-log-pr4 -> main): log/status for §14
 20261121-0543 PING verdict=UNREACHABLE_NO_REPLY elapsed_s=1212 polls=21 found=0; side evidence: other-side commits in window = 0 (all recent main commits author=tietoumiao); codex/20261120-batch-review head unchanged 781c7772 (== 05:00 value); handoff/incoming count stayed 6
+20261121-0555 PR #6 merged 1ade2aade5ee6f388f38476688a166572c4e298c (codex/20261121-log-pr5 -> main): log/status ping verdict
+20261121-0555 STALL detected (§15: no pushed/awaiting_reply/planning/replied tasks, Ro open must_fix=0, no workers, no pending PR) -> push next-goals query; 60 min timer started
