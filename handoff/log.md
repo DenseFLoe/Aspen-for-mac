@@ -24,3 +24,5 @@
 20261121-0515 OPEN_ISSUES 7: +1 historical residual tools.json abs paths in df559421/777e8167; history not rewritten (no force).
 20261121-0525 PR #1 merged d99bdfc6dd400eea1c217119b188f8d5f6b93ee3 (codex/20261121-ping -> main): handoff/outgoing/20261121-0525-reachability-ping.query.md; §13 PR->merge first real use
 20261121-0525 ping watcher started (60s interval, max 20 min) -> inbox/ping-watch.log; judgement in TASK_RESULT
+20261121-0545 PR #4 merged 39afbaf954bcc2fa8a4a5ce7483b9a679ba25cfb (codex/20261121-start-ack -> main): handoff/README.md += 开工信号(§14) + 发布通道(§13)
+20261121-0545 §14 K1/K2/K3 adopted: local inbox/watch.py classifies .started.reply.md -> state=planning + push_to_started_s; pushed+30min no started -> no_start_signal; started+90min no plan -> timeout; next plan-request front-matter must carry require_start_ack: true
