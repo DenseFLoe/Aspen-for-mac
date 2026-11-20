@@ -317,9 +317,13 @@ def main(argv=None):
         log("INPUT FAIL reason=analyze-missing n=%d (use --force-analyze)" % len(miss))
         return 2
 
+    # repair-01: --prune deletes the product paths superseded by the reorg in
+    # the same tree update that adds their replacement; --verify-product-sha
+    # recomputes product_sha256 from the bytes served by the branch.
     cmd = [sys.executable, os.path.join(HERE, "publish.py"),
            "--staging", staging, "--allowlist", allowlist,
-           "--branch", BRANCH, "--out", r3]
+           "--branch", BRANCH, "--out", r3,
+           "--prune", "--verify-product-sha"]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     chunks = []
     for raw in iter(proc.stdout.readline, b""):
@@ -346,7 +350,9 @@ def main(argv=None):
             if it["action"] == "skip":
                 continue
             items_state[it["key"]] = {
-                "sha256": it["sha256"], "kind": it["kind"], "status": it["status"],
+                "sha256": it["sha256"], "kind": it["kind"], "chain": it["kind"],
+                "product": it.get("product", ""),
+                "status": it["status"],
                 "product_sha256": it["product_sha256"] or ent.get("product_sha256", ""),
                 "pushed": {"commit": pr["head"]},
                 "superseded_by": subset_superseded(it, supersede),

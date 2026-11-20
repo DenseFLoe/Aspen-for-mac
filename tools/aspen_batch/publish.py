@@ -9,6 +9,14 @@ Hard rules enforced at runtime, not by convention:
   * 422 on a ref update = NOT_FAST_FORWARD, exit 1, no force retry
   * pushed set must equal the audited allowlist, else exit 3
 
+repair-01:
+  * --prune removes the superseded product paths (the old chain-named
+    directories) by sending "sha": null entries in the SAME tree update that
+    adds the replacement path of that item; it never uses force and never
+    touches another ref.
+  * --verify-product-sha re-reads every product file from the branch and
+    recomputes the ledger's product_sha256 from the remote bytes.
+
 Token discipline (D1): the token is obtained only inside this process by
   subprocess.run([sys.executable, CRED], capture_output=True)
 and is never put in argv, env, files, logs or exception text; only its
@@ -248,7 +256,70 @@ def kind_of_item(g, ledger):
 
 
 # ---------------------------------------------------------------- main push
-def publish(staging, allowlist, branch, out_dir, dry_run=False, sample=5):
+def path_tail(rel, driver):
+    """path with the product segment removed -> stable item key across the
+    old (chain-named) and new (product-named) layouts."""
+    if not rel.startswith(driver + "/"):
+        return None
+    parts = rel.split("/")
+    if len(parts) < 4:
+        return None
+    return ("/".join(parts[:2] + parts[3:])).lower()
+
+
+def verify_products(c, post, ledger_path, driver):
+    """recompute product_sha256 from the bytes served by the branch."""
+    import csv
+    rows = []
+    with open(ledger_path, newline="", encoding="utf-8-sig") as f:
+        rows = list(csv.DictReader(f))
+    cache = {}
+    n = 0
+    ok = 0
+    bad = []
+    for row in rows:
+        md = (row.get("report_md") or "").strip()
+        if not md:
+            continue
+        parent, base = md.rsplit("/", 1)
+        stem = base[:-3] if base.endswith(".md") else base
+        rels = [md]
+        for sub, ext in (("il", ".il.txt"), ("decompiled", ".cs.txt"),
+                         ("disasm", ".asm.txt"), ("decompiled", ".c.txt")):
+            cand = parent + "/" + sub + "/" + stem + ext
+            if cand in post and cand not in rels:
+                rels.append(cand)
+        parts = []
+        for rel in sorted(rels, key=lambda x: x.rsplit("/", 1)[-1]):
+            blob = post.get(rel)
+            if blob is None:
+                parts.append(rel.rsplit("/", 1)[-1] + "=MISSING;")
+                continue
+            if blob not in cache:
+                doc = c.request("GET", API + "/git/blobs/" + blob)
+                cache[blob] = base64.b64decode(doc.get("content", "").replace(chr(10), ""))
+            parts.append(rel.rsplit("/", 1)[-1] + "=" + sha256_bytes(cache[blob]) + ";")
+        dig = sha256_bytes("".join(parts).encode("utf-8"))
+        n += 1
+        if dig == (row.get("product_sha256") or "").strip():
+            ok += 1
+        else:
+            bad.append((md, dig[:16], (row.get("product_sha256") or "")[:16]))
+        try:
+            want_n = int((row.get("product_files") or "0").strip() or 0)
+        except ValueError:
+            want_n = 0
+        if want_n and want_n != len(rels):
+            bad.append((md, "files=%d" % len(rels), "ledger_files=%d" % want_n))
+    for md, got, want in bad[:5]:
+        log("PRODUCT_SHA mismatch path=%s remote=%s ledger=%s" % (md, got, want))
+    log("PRODUCT_SHA remote items=%d match=%d mismatch=%d blobs_fetched=%d" % (
+        n, ok, len(bad), len(cache)))
+    return n, ok, len(bad)
+
+
+def publish(staging, allowlist, branch, out_dir, dry_run=False, sample=5,
+            prune=False, verify_sha=False):
     files = collect(staging)
     allow = load_allowlist(allowlist)
     rc = check_audited(files, allow)
@@ -267,7 +338,7 @@ def publish(staging, allowlist, branch, out_dir, dry_run=False, sample=5):
     total_files = sum(len(g["files"]) for g in groups)
     log("PUBLISH-PLAN files=%d groups=%d audited=%d" % (total_files, len(groups), len(allow)))
     if dry_run:
-        return 0
+        log("DRYRUN no_write=OK")
 
     tok = token()
     log("TOKEN token_len=%d" % len(tok))
@@ -297,6 +368,32 @@ def publish(staging, allowlist, branch, out_dir, dry_run=False, sample=5):
     pre = {e["path"]: e["sha"] for e in t.get("tree", []) if e.get("type") == "blob"}
     base_blob = len(pre)
     log("BASE base_blob=%d existed=%s parent=%s" % (base_blob, existed, parent[:12]))
+    _ = None
+
+    # repair-01 I1: paths that the reorg supersedes.  An old path is stale when
+    # its item key (path minus the product segment, case-folded) is present in
+    # the new tree but the old path itself is not.  Deletion is only ever an
+    # entry with "sha": null inside a normal tree/commit, never a ref delete.
+    new_paths = {rel for rel, _p in files}
+    drv = "analysis/20261120-batch-driver"
+    new_tails = set()
+    for rel in new_paths:
+        t = path_tail(rel, drv)
+        if t:
+            new_tails.add(t)
+    stale = []
+    if prune:
+        for rel in pre:
+            t = path_tail(rel, drv)
+            if t and t in new_tails and rel not in new_paths:
+                stale.append(rel)
+        stale.sort()
+        log("PRUNE stale=%d" % len(stale))
+        for p in stale[:3]:
+            log("PRUNE-EX %s" % p)
+    if dry_run:
+        log("DRYRUN no_write=OK audited=%d staged=%d would_prune=%d" % (len(allow), len(files), len(stale)))
+        return 0
 
     # 5 blobs (content-addressed; independent -> parallel, 8 lanes)
     blob_sha = {}
@@ -329,28 +426,54 @@ def publish(staging, allowlist, branch, out_dir, dry_run=False, sample=5):
     cur_commit = parent
     pushed_files = 0
     added = 0
+    stale_left = set(stale)
     for g in groups:
         if g["kind"] == "meta":
             pass
         entries = []
         new_for_group = 0
+        g_tails = set()
         for rel in g["files"]:
             entries.append({"path": rel, "mode": "100644", "type": "blob", "sha": blob_sha[rel]})
+            t = path_tail(rel, drv)
+            if t:
+                g_tails.add(t)
             if not (rel in pre and pre[rel] == blob_sha[rel]):
                 new_for_group += 1
-        if new_for_group == 0:
+        g_del = sorted(p for p in stale if path_tail(p, drv) in g_tails)
+        for p in g_del:
+            entries.append({"path": p, "mode": "100644", "type": "blob", "sha": None})
+            stale_left.discard(p)
+        if new_for_group == 0 and not g_del:
             continue
         nt = c.request("POST", API + "/git/trees", {"base_tree": cur_tree, "tree": entries})
         cur_tree = nt["sha"]
         msg = "round=20261120 item=%s kind=%s files=%d" % (g["item"], g["kindname"], len(g["files"]))
+        if g_del:
+            msg += " prune=%d" % len(g_del)
         cm = c.request("POST", API + "/git/commits",
                        {"message": msg, "tree": cur_tree, "parents": [cur_commit]})
         cur_commit = cm["sha"]
         commits.append({"sha": cur_commit, "message": msg, "files": len(g["files"]),
-                        "item": g["item"]})
+                        "item": g["item"], "pruned": len(g_del)})
         pushed_files += new_for_group
         added += new_for_group
         log("COMMIT n=%d sha=%s item=%s files=%d" % (len(commits), cur_commit[:12], g["item"], new_for_group))
+
+    if stale_left:
+        entries = [{"path": p, "mode": "100644", "type": "blob", "sha": None}
+                   for p in sorted(stale_left)]
+        nt = c.request("POST", API + "/git/trees", {"base_tree": cur_tree, "tree": entries})
+        cur_tree = nt["sha"]
+        msg = "round=20261120 reorg product dirs prune-residual=%d" % len(stale_left)
+        cm = c.request("POST", API + "/git/commits",
+                       {"message": msg, "tree": cur_tree, "parents": [cur_commit]})
+        cur_commit = cm["sha"]
+        commits.append({"sha": cur_commit, "message": msg, "files": 0,
+                        "item": "prune-residual", "pruned": len(stale_left)})
+        log("COMMIT n=%d sha=%s item=prune-residual files=0 prune=%d" % (
+            len(commits), cur_commit[:12], len(stale_left)))
+        stale_left = set()
 
     # 7 ref write
     if commits:
@@ -387,7 +510,14 @@ def publish(staging, allowlist, branch, out_dir, dry_run=False, sample=5):
         rb["tree"] = "TRUNCATED"
     post = {e["path"]: e["sha"] for e in t2.get("tree", []) if e.get("type") == "blob"}
     rb["tree_paths"] = len(post)
-    rb["pre_subset"] = "OK" if all(post.get(k) == v for k, v in pre.items()) else "FAIL"
+    deleted = set(stale)
+    rb["slow_paths"] = len(deleted)
+    rb["pre_subset"] = "OK" if all(
+        post.get(k) == v or k in deleted for k, v in pre.items()) else "FAIL"
+    residual = sorted(p for p in deleted if p in post)
+    rb["stale_residual"] = len(residual)
+    if residual:
+        log("STALE-RESIDUAL n=%d first=%s" % (len(residual), residual[0]))
     rb["tree_delta"] = len(post) - base_blob
     main_after = c.request("GET", API + "/git/ref/heads/main")["object"]["sha"]
     rb["main"] = "OK" if main_after == main_before else "FAIL"
@@ -421,6 +551,18 @@ def publish(staging, allowlist, branch, out_dir, dry_run=False, sample=5):
     log("BYTES-MATCH checked=%d mismatch=%d" % (checked, mism))
     rb["bytes_checked"] = checked
     rb["bytes_mismatch"] = mism
+
+    rbv = {"items": 0, "match": 0, "mismatch": None}
+    if verify_sha:
+        lp = os.path.join(staging, "analysis", "20261120-batch-driver", "archive-ledger.csv")
+        if os.path.isfile(lp):
+            n_it, n_ok, n_bad = verify_products(c, post, lp, "analysis/20261120-batch-driver")
+            rbv = {"items": n_it, "match": n_ok, "mismatch": n_bad}
+            if n_bad:
+                log("PUBLISH FAIL product_sha-mismatch=%d" % n_bad)
+                return 1
+        else:
+            log("VERIFY ledger-missing, product_sha verify skipped")
 
     picked = [rel for rel, _p in files][:sample]
     if len(files) > sample:
@@ -457,6 +599,7 @@ def publish(staging, allowlist, branch, out_dir, dry_run=False, sample=5):
               "commits_count": len(commits), "tree_paths": rb["tree_paths"],
               "base_blob": base_blob, "main_before": main_before, "main_after": main_after,
               "main_unchanged": "OK", "readback": rb, "files": len(files),
+              "pruned": len(stale), "product_sha_verify": rbv,
               "branch_note": {
                   "summary": "analysis drop for the 20261120 batch (%d files, %d commits); review branch only" % (len(files), len(commits)),
                   "evidence": "gate UPLOAD_OK + readback ref/tree/5 files vs local sha256; main sha unchanged",
@@ -570,6 +713,9 @@ def main(argv=None):
     ap.add_argument("--branch", default=BRANCH_DEFAULT)
     ap.add_argument("--out", default="out/R3")
     ap.add_argument("--dry-run", dest="dry_run", action="store_true")
+    ap.add_argument("--prune", action="store_true",
+                    help="delete superseded product paths in the same tree update")
+    ap.add_argument("--verify-product-sha", dest="verify_sha", action="store_true")
     ap.add_argument("--self-test", dest="self_test", action="store_true")
     ap.add_argument("--case", default="all")
     a = ap.parse_args(argv)
@@ -579,7 +725,8 @@ def main(argv=None):
     st = a.staging if os.path.isabs(a.staging) else os.path.join(WR, a.staging)
     al = a.allowlist if os.path.isabs(a.allowlist) else os.path.join(WR, a.allowlist)
     try:
-        return publish(st, al, a.branch, outd, a.dry_run)
+        return publish(st, al, a.branch, outd, a.dry_run,
+                       prune=a.prune, verify_sha=a.verify_sha)
     except Refused as e:
         log("REFUSED %s" % e)
         return 1
