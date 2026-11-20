@@ -30,3 +30,4 @@
 20261121-0543 PING verdict=UNREACHABLE_NO_REPLY elapsed_s=1212 polls=21 found=0; side evidence: other-side commits in window = 0 (all recent main commits author=tietoumiao); codex/20261120-batch-review head unchanged 781c7772 (== 05:00 value); handoff/incoming count stayed 6
 20261121-0555 PR #6 merged 1ade2aade5ee6f388f38476688a166572c4e298c (codex/20261121-log-pr5 -> main): log/status ping verdict
 20261121-0555 STALL detected (§15: no pushed/awaiting_reply/planning/replied tasks, Ro open must_fix=0, no workers, no pending PR) -> push next-goals query; 60 min timer started
+20261121-0600 PR #7 merged 3b7e9e5bb14b312b86a353072a1ee49554449fb8 (codex/20261121-stall-goals -> main, 2 commits 91367fb7/68dca1a8): §15 stall section + next-goals query (state=completed_all, 15 lines); waiting_for_goals=true; 60min deadline started; monitor job bash-8e9ce4ce3c454ab2 (3min)
