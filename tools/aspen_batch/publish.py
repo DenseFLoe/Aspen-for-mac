@@ -512,8 +512,12 @@ def publish(staging, allowlist, branch, out_dir, dry_run=False, sample=5,
     rb["tree_paths"] = len(post)
     deleted = set(stale)
     rb["slow_paths"] = len(deleted)
+    # pre_subset: every previously published path is still intact, unless this
+    # run deliberately deleted it (reorg) or re-pushed it (intentional update).
+    new_paths_rb = {rel for rel, _p in files}
     rb["pre_subset"] = "OK" if all(
-        post.get(k) == v or k in deleted for k, v in pre.items()) else "FAIL"
+        post.get(k) == v or k in deleted or k in new_paths_rb
+        for k, v in pre.items()) else "FAIL"
     residual = sorted(p for p in deleted if p in post)
     rb["stale_residual"] = len(residual)
     if residual:

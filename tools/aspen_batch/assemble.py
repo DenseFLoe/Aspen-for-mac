@@ -166,7 +166,8 @@ def build_items(manifest_path):
         it = {"sha256": h, "source_name": name, "relative_path": src,
               "size": (row.get("size") or "").strip(), "kind": None,
               "product": "", "status": "", "analysis_key": "sha256:" + h,
-              "product_files": [], "ledger_product_sha256": ""}
+              "product_files": [], "ledger_product_sha256": "",
+              "tool": "", "prevtool": ""}
         cr = by_sha_clr.get(h)
         nr = by_sha_nat.get(h)
         if nr:
@@ -182,7 +183,12 @@ def build_items(manifest_path):
                       src_a=os.path.join(WR, norm(r.get("disasm_path"))),
                       src_b=os.path.join(WR, norm(r.get("decompiled_path"))),
                       companion=(("disasm", norm(r.get("disasm_path")).rsplit("/", 1)[-1]),
-                                 ("decompiled", norm(r.get("decompiled_path")).rsplit("/", 1)[-1])))
+                                 ("decompiled", norm(r.get("decompiled_path")).rsplit("/", 1)[-1])),
+                      # T5N: the native chain was redone with IDA 9.5 + Hex-Rays.
+                      # The ledger carries the authoritative values; fall back to the
+                      # literals so an older ledger still publishes a correct label.
+                      tool=(r.get("tool") or "IDA 9.5"),
+                      prevtool=(r.get("prevtool") or "Ghidra 12.1.4"))
         elif cr:
             r = cr[0]
             st = (r.get("status") or "").strip()
@@ -197,7 +203,9 @@ def build_items(manifest_path):
                       src_a=os.path.join(WR, "out/R1", norm(ad), "il", name + ".il.txt"),
                       src_b=os.path.join(WR, "out/R1", norm(ad), "decompiled", name + ".cs.txt"),
                       companion=(("il", name + ".il.txt"),
-                                 ("decompiled", name + ".cs.txt")))
+                                 ("decompiled", name + ".cs.txt")),
+                      tool=("dnfile 0.18.0 + ILSpy" if kind == "CLR" else "none (unrecognised format)"),
+                      prevtool="")
             if kind == "CLR":
                 it["sub"] = strip_prefix(ad, ("01-completed/Aspen-Plus/", "01-completed/Aspen-Properties/",
                                               "01-completed/Shared/"))
@@ -314,14 +322,15 @@ def readme_text(items):
 
 def index_md(items):
     lines = ["# INDEX -- 20261120 batch driver", "",
-             "| kind | chain | product | analysis_key | status | sha256 | files | report |",
-             "| --- | --- | --- | --- | --- | --- | --- | --- |"]
+             "| kind | chain | tool | prevtool | product | analysis_key | status | sha256 | files | report |",
+             "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |"]
     for chain in CHAIN_ORDER:
         for it in items:
             if it["kind"] != chain:
                 continue
-            lines.append("| %s | %s | %s | %s | %s | %s | %d | %s |" % (
-                it["kind"], it["kind"], it["product"], it["analysis_key"],
+            lines.append("| %s | %s | %s | %s | %s | %s | %s | %s | %d | %s |" % (
+                it["kind"], it["kind"], it.get("tool", ""), it.get("prevtool", ""),
+                it["product"], it["analysis_key"],
                 it["status"], it["sha256"][:16], len(it["files"]), it["md"]))
     lines.append("")
     lines.append("## Column semantics (repair-01)")
@@ -331,6 +340,13 @@ def index_md(items):
     lines.append("  " + DRIVER + "/ is this exact string, for every row (58/58).")
     lines.append("- chain: the analysis chain (CLR / native / nonPE). Separate")
     lines.append("  dimension; it never decides the directory.")
+    lines.append("- tool: the engine that produced this item's disassembly/decompiled")
+    lines.append("  text in THIS push. native = IDA 9.5 (idat.exe -A -c -S, Hex-Rays")
+    lines.append("  built in); CLR = dnfile 0.18.0 metadata/IL + ILSpy decompiler;")
+    lines.append("  nonPE = no disassembly (format not recognised).")
+    lines.append("- prevtool: the engine whose text this push REPLACES. native =")
+    lines.append("  Ghidra 12.1.4 (analyzeHeadless, the round=20261120 products); empty")
+    lines.append("  for CLR/nonPE because those products are unchanged this round.")
     lines.append("- product_sha256: sha256 over the product files AS PUBLISHED")
     lines.append("  (basename ascending, name=sha256; concatenated, then hashed).")
     lines.append("  Recomputed from the copied files after they were written, so it")
@@ -350,24 +366,26 @@ def index_md(items):
 
 
 def index_csv(items):
-    cols = ("analysis_key", "kind", "chain", "product", "source_name", "status",
-            "sha256", "product_sha256", "bytes", "report_md")
+    cols = ("analysis_key", "kind", "chain", "tool", "prevtool", "product", "source_name",
+            "status", "sha256", "product_sha256", "bytes", "report_md")
     out = [",".join(cols)]
     for it in items:
         out.append(",".join(['"%s"' % str(it["analysis_key"]).replace('"', ""),
-                             it["kind"], it["kind"], it["product"], it["source_name"],
+                             it["kind"], it["kind"], '"%s"' % it.get("tool", ""),
+                             '"%s"' % it.get("prevtool", ""), it["product"], it["source_name"],
                              it["status"], it["sha256"], it["product_sha256"],
                              str(it["bytes"]), it["md"]]))
     return "\n".join(out) + "\n"
 
 
 def ledger_csv(items):
-    cols = ("analysis_key", "kind", "chain", "product", "status", "source_name",
-            "sha256", "size", "product_sha256", "ledger_product_sha256",
+    cols = ("analysis_key", "kind", "chain", "tool", "prevtool", "product", "status",
+            "source_name", "sha256", "size", "product_sha256", "ledger_product_sha256",
             "product_files", "report_md")
     out = [",".join(cols)]
     for it in items:
         out.append(",".join(['"%s"' % it["analysis_key"], it["kind"], it["kind"],
+                             '"%s"' % it.get("tool", ""), '"%s"' % it.get("prevtool", ""),
                              it["product"],
                              it["status"], '"%s"' % it["source_name"].replace('"', ""),
                              it["sha256"], it["size"], it["product_sha256"],
