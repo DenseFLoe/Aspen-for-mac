@@ -1,0 +1,381 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Xml;
+
+[assembly: AssemblyCompany("Aspen Technology")]
+[assembly: TargetFramework(".NETFramework,Version=v4.0", FrameworkDisplayName = ".NET Framework 4")]
+[assembly: AssemblyTitle("AspenTech.Exchange.EquipmentSelection")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyProduct("AspenTech Exchange")]
+[assembly: AssemblyCopyright("Copyright © Aspen Technology 2012")]
+[assembly: AssemblyTrademark("")]
+[assembly: ComVisible(true)]
+[assembly: Guid("5faafc66-804b-4ec6-866d-f047746fd9ff")]
+[assembly: AssemblyFileVersion("10.0.1.0")]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: AssemblyVersion("10.0.1.0")]
+namespace AspenTech.Exchange.EquipmentSelection;
+
+public class EquipmentSelectionLoader : MarshalByRefObject
+{
+	private IEquipmentSelection _toolInstance;
+
+	private string _Cookie = string.Empty;
+
+	public EquipmentSelectionLoader()
+	{
+		_toolInstance = null;
+	}
+
+	public bool LoadSelectionTool(string pathOfTool)
+	{
+		_toolInstance = null;
+		try
+		{
+			Type typeTool = null;
+			Assembly toolAssembly = GetToolAssembly(pathOfTool, out typeTool);
+			if (toolAssembly != null)
+			{
+				if (File.Exists(string.Concat(toolAssembly, ".config")))
+				{
+					AppDomain.CurrentDomain.SetupInformation.ConfigurationFile = string.Concat(toolAssembly, ".config");
+				}
+				AppDomain.CurrentDomain.Load(toolAssembly.GetName());
+				_toolInstance = AppDomain.CurrentDomain.CreateInstanceAndUnwrap(toolAssembly.FullName, typeTool.FullName) as IEquipmentSelection;
+			}
+		}
+		catch (Exception)
+		{
+		}
+		return _toolInstance != null;
+	}
+
+	public string GetSelectionResult(StartContext context, IntPtr mainWindowHandler)
+	{
+		string result = string.Empty;
+		if (_toolInstance != null)
+		{
+			_toolInstance.SetContext(context);
+			_Cookie = _toolInstance.ShowDialog(mainWindowHandler);
+			if (!string.IsNullOrEmpty(_Cookie))
+			{
+				result = _toolInstance.GetResult();
+			}
+		}
+		return result;
+	}
+
+	public string GetCookie()
+	{
+		return _Cookie;
+	}
+
+	private static Assembly GetToolAssembly(string path, out Type typeTool)
+	{
+		Assembly result = null;
+		typeTool = null;
+		string value = string.Empty;
+		try
+		{
+			DirectoryInfo directoryInfo = new DirectoryInfo(path);
+			FileInfo[] files = directoryInfo.GetFiles("*.dll", SearchOption.TopDirectoryOnly);
+			FileInfo[] array = files;
+			foreach (FileInfo fileInfo in array)
+			{
+				Assembly assembly = Assembly.LoadFile(fileInfo.FullName);
+				if (!(assembly != null) || !(assembly.FullName != typeof(IEquipmentSelection).Assembly.FullName))
+				{
+					continue;
+				}
+				Type[] types = assembly.GetTypes();
+				foreach (Type type in types)
+				{
+					if (typeof(IEquipmentSelection).IsAssignableFrom(type))
+					{
+						value = fileInfo.FullName;
+						result = assembly;
+						typeTool = type;
+						break;
+					}
+				}
+				if (!string.IsNullOrEmpty(value))
+				{
+					break;
+				}
+			}
+			if (string.IsNullOrEmpty(value))
+			{
+				files = directoryInfo.GetFiles("*.exe", SearchOption.TopDirectoryOnly);
+				FileInfo[] array2 = files;
+				foreach (FileInfo fileInfo2 in array2)
+				{
+					Assembly assembly2 = Assembly.LoadFile(fileInfo2.FullName);
+					if (!(assembly2 != null) || !(assembly2.FullName != typeof(IEquipmentSelection).Assembly.FullName))
+					{
+						continue;
+					}
+					Type[] types2 = assembly2.GetTypes();
+					foreach (Type type2 in types2)
+					{
+						if (typeof(IEquipmentSelection).IsAssignableFrom(type2))
+						{
+							value = fileInfo2.FullName;
+							result = assembly2;
+							typeTool = type2;
+							break;
+						}
+					}
+					if (!string.IsNullOrEmpty(value))
+					{
+						break;
+					}
+				}
+			}
+			if (string.IsNullOrEmpty(value))
+			{
+				result = null;
+			}
+		}
+		catch (Exception ex)
+		{
+			value = string.Empty;
+			result = null;
+			throw new ApplicationException("1003::Error when loading assembly, " + ex.Message);
+		}
+		return result;
+	}
+
+	public override object InitializeLifetimeService()
+	{
+		return null;
+	}
+}
+public interface IEquipmentSelection
+{
+	void SetContext(StartContext startContext);
+
+	string ShowDialog(IntPtr parentWindow);
+
+	string GetResult();
+}
+public static class ParameterUtils
+{
+	public enum ParameterKnownKeys
+	{
+		InletVaporFraction,
+		FlowRate,
+		InletPressure,
+		OutletPressure,
+		InletTemperature,
+		StaticHead,
+		Density,
+		Viscosity,
+		VaporPressure,
+		Material,
+		InterstageTemperature,
+		SpecificGravity,
+		GasType,
+		FlowType,
+		NumberofStages,
+		InterstageCooling,
+		FluidType,
+		PressureDifferential,
+		CriticalPressure,
+		Undefined
+	}
+
+	private static Dictionary<ParameterKnownKeys, string> _ParameterKnownKeysToStrDictionary;
+
+	private static Dictionary<string, ParameterKnownKeys> _StrToParameterKnownKeysDictionary;
+
+	static ParameterUtils()
+	{
+		_ParameterKnownKeysToStrDictionary = new Dictionary<ParameterKnownKeys, string>();
+		_StrToParameterKnownKeysDictionary = new Dictionary<string, ParameterKnownKeys>();
+		_ParameterKnownKeysToStrDictionary.Add(ParameterKnownKeys.FlowRate, "Flow Rate");
+		_ParameterKnownKeysToStrDictionary.Add(ParameterKnownKeys.InletPressure, "Inlet Pressure");
+		_ParameterKnownKeysToStrDictionary.Add(ParameterKnownKeys.InletTemperature, "Inlet Temperature");
+		_ParameterKnownKeysToStrDictionary.Add(ParameterKnownKeys.InletVaporFraction, "Inlet Vapor Fraction");
+		_ParameterKnownKeysToStrDictionary.Add(ParameterKnownKeys.OutletPressure, "Outlet Pressure");
+		_ParameterKnownKeysToStrDictionary.Add(ParameterKnownKeys.Undefined, "Undefined");
+		_ParameterKnownKeysToStrDictionary.Add(ParameterKnownKeys.StaticHead, "Static Head");
+		_ParameterKnownKeysToStrDictionary.Add(ParameterKnownKeys.Density, "Density");
+		_ParameterKnownKeysToStrDictionary.Add(ParameterKnownKeys.Viscosity, "Viscosity");
+		_ParameterKnownKeysToStrDictionary.Add(ParameterKnownKeys.VaporPressure, "Vapor Pressure");
+		_ParameterKnownKeysToStrDictionary.Add(ParameterKnownKeys.Material, "Material");
+		_ParameterKnownKeysToStrDictionary.Add(ParameterKnownKeys.InterstageTemperature, "Interstage Temperature");
+		_ParameterKnownKeysToStrDictionary.Add(ParameterKnownKeys.SpecificGravity, "Specific Gravity");
+		_ParameterKnownKeysToStrDictionary.Add(ParameterKnownKeys.GasType, "Gas Type");
+		_ParameterKnownKeysToStrDictionary.Add(ParameterKnownKeys.FlowType, "Flow Type");
+		_ParameterKnownKeysToStrDictionary.Add(ParameterKnownKeys.NumberofStages, "Number of Stages");
+		_ParameterKnownKeysToStrDictionary.Add(ParameterKnownKeys.InterstageCooling, "Interstage Cooling");
+		_ParameterKnownKeysToStrDictionary.Add(ParameterKnownKeys.FluidType, "Fluid Type");
+		_ParameterKnownKeysToStrDictionary.Add(ParameterKnownKeys.PressureDifferential, "Pressure Differential");
+		_ParameterKnownKeysToStrDictionary.Add(ParameterKnownKeys.CriticalPressure, "Critical Pressure");
+		foreach (ParameterKnownKeys key in _ParameterKnownKeysToStrDictionary.Keys)
+		{
+			_StrToParameterKnownKeysDictionary.Add(_ParameterKnownKeysToStrDictionary[key], key);
+		}
+	}
+
+	public static string GetKnownNameString(this ParameterKnownKeys key)
+	{
+		if (_ParameterKnownKeysToStrDictionary.ContainsKey(key))
+		{
+			return _ParameterKnownKeysToStrDictionary[key];
+		}
+		return string.Empty;
+	}
+
+	public static ParameterKnownKeys GetKnownNameFromString(this string keyStr)
+	{
+		if (_StrToParameterKnownKeysDictionary.ContainsKey(keyStr))
+		{
+			return _StrToParameterKnownKeysDictionary[keyStr];
+		}
+		return ParameterKnownKeys.Undefined;
+	}
+}
+public class BusinessParameter
+{
+	private string _DisplayName;
+
+	private string _CodeName;
+
+	public string CodeName => _CodeName;
+
+	public string DisplayName
+	{
+		get
+		{
+			if (string.IsNullOrEmpty(_DisplayName))
+			{
+				return CodeName;
+			}
+			return _DisplayName;
+		}
+	}
+
+	public string Value { get; set; }
+
+	public BusinessParameter(string codeName, string displayName)
+	{
+		_CodeName = codeName;
+		_DisplayName = displayName;
+	}
+
+	public BusinessParameter(ParameterUtils.ParameterKnownKeys codeKnownName, string displayName)
+	{
+		_DisplayName = displayName;
+		_CodeName = codeKnownName.GetKnownNameString();
+	}
+
+	public override string ToString()
+	{
+		return "Code Name:<" + CodeName + ">; Display Name:<" + DisplayName + ">; Value:<" + Value.ToString() + ">";
+	}
+}
+public class AdditionalParameters : Dictionary<string, BusinessParameter>
+{
+}
+[Serializable]
+public class StartContext
+{
+	private string _AdditionalParametersXML = string.Empty;
+
+	private string _UserName = string.Empty;
+
+	private string _Cookie = string.Empty;
+
+	public AdditionalParameters AdditionalBusinessParameters
+	{
+		get
+		{
+			AdditionalParameters additionalParameters = new AdditionalParameters();
+			if (!string.IsNullOrEmpty(_AdditionalParametersXML))
+			{
+				XmlDocument xmlDocument = new XmlDocument();
+				xmlDocument.LoadXml(_AdditionalParametersXML);
+				XmlNodeList elementsByTagName = xmlDocument.GetElementsByTagName("AdditionalParameters");
+				if (elementsByTagName != null && elementsByTagName.Count > 0)
+				{
+					XmlElement xmlElement = elementsByTagName[0] as XmlElement;
+					XmlNodeList elementsByTagName2 = xmlElement.GetElementsByTagName("BusinessParameter");
+					foreach (XmlNode item in elementsByTagName2)
+					{
+						string text = "";
+						string displayName = "";
+						string value = "";
+						XmlElement xmlElement2 = item as XmlElement;
+						if (xmlElement2.HasAttribute("CodeName"))
+						{
+							text = xmlElement2.Attributes["CodeName"].Value;
+						}
+						if (xmlElement2.HasAttribute("DisplayName"))
+						{
+							displayName = xmlElement2.Attributes["DisplayName"].Value;
+						}
+						if (xmlElement2.HasAttribute("Value"))
+						{
+							value = xmlElement2.Attributes["Value"].Value;
+						}
+						BusinessParameter businessParameter = new BusinessParameter(text, displayName);
+						businessParameter.Value = value;
+						if (!additionalParameters.ContainsKey(text))
+						{
+							additionalParameters.Add(text, businessParameter);
+						}
+					}
+				}
+			}
+			return additionalParameters;
+		}
+	}
+
+	public string Username
+	{
+		get
+		{
+			return _UserName;
+		}
+		set
+		{
+			_UserName = value;
+		}
+	}
+
+	public string Cookie
+	{
+		get
+		{
+			return _Cookie;
+		}
+		set
+		{
+			_Cookie = value;
+		}
+	}
+
+	public StartContext(string parameterXML)
+	{
+		_AdditionalParametersXML = parameterXML;
+	}
+
+	public StartContext(string parameterXML, string userName, string cookie)
+	{
+		_AdditionalParametersXML = parameterXML;
+		_UserName = userName;
+		_Cookie = cookie;
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')
