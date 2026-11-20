@@ -1,0 +1,66 @@
+# comcat.dll 静态复核报告（native / T1N）
+
+## 0. 摘要
+
+| 项目 | 结果 |
+| --- | --- |
+| 样本 | `comcat.dll`，8704 字节，SHA-256 `42abffb7bfa1da5188a85dcc448365c4ca5cb07d8749d32e0dae636ecb23d696` |
+| 链 | T1N（native，Ghidra 全函数反汇编 + 全函数伪 C） |
+| 函数 | FUNC 26 = //FUNC 26 + //DECOMP-FAIL 0 |
+| 证据等级 | 〔实测〕analyzeHeadless 单件跑通，正文见同目录 disasm/ 与 decompiled/ |
+
+含完整逆向正文，依据：用户 2026-11-20 指令，偏离仓库 AGENTS 该条
+
+## 1. 样本与哈希
+
+| 项 | 值 |
+| --- | --- |
+| 名称 | `comcat.dll` |
+| 字节数 | 8704 |
+| SHA-256 | `42abffb7bfa1da5188a85dcc448365c4ca5cb07d8749d32e0dae636ecb23d696` |
+| 清单 | read-test-waiting.csv（kind=native） |
+| 原始相对路径（清单 path，去掉产品段） | `Windows/SysWOW64/comcat.dll` |
+| product_raw | `Plus` |
+| 产品目录 | `Aspen-Plus` |
+| machine / sections / entry | 0x014C / 5 / 0x1630 |
+| 原件核对 | size 与 sha256 均与清单一致〔实测〕 |
+
+## 2. PE 导入摘要（语言/基址/块）
+
+| 项 | 值 |
+| --- | --- |
+| Ghidra 语言 id | `x86:LE:32:default` |
+| 镜像基址 | `0x5c880000` |
+| 函数块数（# BLOCKS） | 26 |
+| 指令行数 | 700 |
+
+## 3. 反汇编清单（全量）
+
+全文：disasm/comcat.dll.asm.txt（逐函数 FUNC <addr> <name> / 指令行 / ENDFUNC，无抽样）。
+
+## 4. 反编译伪 C（Ghidra）
+
+全文：decompiled/comcat.dll.c.txt（逐函数 // FUNC <addr> <name> + C 正文 + // ENDFUNC；反编译失败写 // DECOMP-FAIL <addr> <name> <ExceptionClass>，未填任何空函数体）。
+
+## 5. 函数统计（FUNC 数 = //FUNC 数 + //DECOMP-FAIL 数）
+
+- FUNC（asm） = 26
+- // FUNC（伪 C） = 26
+- // DECOMP-FAIL = 0
+- 恒等式：成立〔实测〕
+
+## 6. 工具与环境
+
+- Ghidra 12.1.4 PUBLIC headless（support/analyzeHeadless，bash 调），JDK 21，-analysisTimeoutPerFile 600
+- 脚本：tool/ghidra_scripts/ExportAll.java（本仓从零写）
+- 单件耗时（含 JVM 启动）：46.4 s
+- 日志：__raw/sha256_42abffb7bfa1da5188a85dcc448365c4ca5cb07d8749d32e0dae636ecb23d696/import.log
+
+## 7. 缺口与待验证
+
+- 语义层（函数用途、调用约定、数据结构）未做人工复核；本报告只证明「全函数已反汇编/反编译落盘」。〔未验证〕
+- 反编译失败函数 0 个（// DECOMP-FAIL 行可逐一核对）。
+
+## 8. 结论
+
+- `comcat.dll` 全函数反汇编与全函数伪 C 已落盘，FUNC == //FUNC + //DECOMP-FAIL 成立。
