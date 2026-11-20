@@ -27,6 +27,19 @@
 - 交接内容不得含 token、本机绝对路径、用户名、凭据。回执只允许写 `token_len=<n>`。
 - 本分支只做交接与产物评审，**不合并 main**。
 
+## 项目五步路线（阶段记账，§17）
+
+本仓不是「把文件逆向完 = 完成」，而是按上游总目标分 5 步记账；`status.json.workflow.state` 只表示**当前批次**，不代表项目完成。
+
+| 阶段 | 目标 | 门禁 |
+| --- | --- | --- |
+| 1 盘点 | 原件全集清点与分类（1,315 件） | manifest 行数 = 原件数、哈希全对账 |
+| 2 逐文件逆向 | 每件 IL/C#/asm/伪C 产物 + 台账 | 1,315 件全进 `01-completed`，台账 P1/P2/INDEX 全 0 |
+| 3 Windows 重建对照 | 与原版二进制对照验收（重建/加载/行为） | 对照报告 + 差异清单 |
+| 4 复制独立 Mac 工程 | 脱离 Windows 依赖的独立工程 | 工程树自洽、无本机路径依赖 |
+| 5 macOS 构建实机复验 | 在 macOS 实机构建并跑通 | 构建通过 + 复验证据 |
+
+记账字段：`project_goal` / `project_phase` / `project_phase_basis` / `phase_gate`（见 `status.json.workflow`）。
 ## 开工信号（started reply）
 
 `type: plan-request` 的一条硬义务：**先回「已开始 planning」，再写计划正文。**
