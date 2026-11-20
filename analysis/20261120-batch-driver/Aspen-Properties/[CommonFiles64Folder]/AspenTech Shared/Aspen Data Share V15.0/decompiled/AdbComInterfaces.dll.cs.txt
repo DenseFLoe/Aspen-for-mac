@@ -1,0 +1,194 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyCompany("AspenTech Corporation")]
+[assembly: AssemblyProduct("Aspen Data Share")]
+[assembly: AssemblyCopyright("Copyright © AspenTech Corporation 2025")]
+[assembly: AssemblyFileVersion("41.0.0.2")]
+[assembly: AssemblyTitle("AdbComInterfaces")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyTrademark("")]
+[assembly: ComVisible(false)]
+[assembly: Guid("901cdce2-6294-479b-8373-348f8b5e9c86")]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.0")]
+namespace AspenTech.Adb.Interfaces;
+
+[ComVisible(true)]
+[Guid("6F17D581-AB69-45F6-BEC6-C5F08E5C1671")]
+public interface IAdbRecord
+{
+	object Value(object[] path);
+
+	IAdbRecord Reference(object[] path);
+
+	void SetValue(object[] path, object newValue);
+
+	object ScalarValue(string guid, out string units);
+
+	IAdbRecord ScalarReference(string guid);
+
+	void SetScalarValue(string guid, object newValue);
+
+	object Execute(string guid, object[] arguments);
+
+	object ExecutePath(object[] path, object[] arguments);
+
+	string RecordGuid();
+}
+public interface IAdbEnumerable
+{
+	IEnumerator<IAdbRecord> GetRecordEnumerator(string guidStr);
+}
+[ComVisible(true)]
+[Guid("352AC731-7054-4237-B3E6-D7E548C78CF6")]
+public interface IAdbTop
+{
+	IAdbRecord CreateRecord(string guid);
+
+	IAdbRecord TopRecord();
+
+	void PurgeCache();
+
+	void Reconnect();
+
+	void Rename(string newName);
+
+	IAdbRecord[] AllRecords();
+
+	IAdbRecord FindRecord(string guid);
+
+	void IncrementalPurge();
+
+	void IncrementalReconnect();
+
+	string GetFileName();
+
+	bool LoadPsvAccessData(string docname);
+
+	void MoveBlock(string oldPath, string flowsheetPath);
+
+	void PurgeClassTypes();
+
+	void SendNames(string names);
+}
+[ComVisible(true)]
+[Guid("26D2C0AB-6E92-4107-A3BD-2C02BDA11DF4")]
+public interface IAdbManager
+{
+	IAdbTop OpenDatabase(string connectionString, bool createIfNecessary);
+
+	IAdbTop CreateDatabase(string connectionString);
+}
+[ComVisible(true)]
+[Guid("A9479ED0-E89A-4A01-BDB9-2AD70E3DEF87")]
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void AdbNotifyTarget(IAdbNotificationHolder notification);
+[ComVisible(true)]
+[Guid("B2C2D41B-EDE8-4CCE-8DD6-A264FC7920D4")]
+public interface IAdbTopNotify
+{
+	void PushHoldNotifies();
+
+	void PopHoldNotifies();
+
+	string NotifyRequest([MarshalAs(UnmanagedType.FunctionPtr)] AdbNotifyTarget notificationTarget);
+
+	void UnNotifyRequest(string key);
+
+	bool AddNotify(string key, IAdbRecord record, object notifyTag);
+}
+[ComVisible(true)]
+[Guid("9EDE5AD9-6817-421B-82B5-38D9BE2A946D")]
+public interface IAdbNotificationHolder
+{
+	int NotificationCount { get; }
+
+	[ComVisible(false)]
+	IEnumerable<IAdbNotification> Notifications { get; }
+
+	IAdbNotification[] GetNotifications();
+}
+[ComVisible(true)]
+[Guid("06AB5B30-B04D-4277-A397-5BC860E70A8E")]
+public interface IAdbNotification
+{
+	IAdbTop Top { get; }
+
+	IAdbRecord Record { get; }
+
+	IAdbChange Change { get; }
+
+	object notifyTag { get; }
+}
+[ComVisible(true)]
+[Guid("F2173D56-93A2-40AF-A46A-5ECD33F5D34A")]
+public enum AdbChangeType
+{
+	Unknown,
+	ValueChange,
+	ArrayAppend,
+	ArrayInsertBefore,
+	ArraySetValue,
+	ArraySetId,
+	ArrayRemove,
+	RecordDelete
+}
+[ComVisible(true)]
+[Guid("96E54640-1BAD-4823-BB9D-F1F83A50D8EA")]
+public interface IAdbChange
+{
+	string VariableName { get; }
+
+	Guid VariableGuid { get; }
+
+	AdbChangeType changeType { get; }
+
+	int currentLocation { get; }
+
+	string Description { get; }
+}
+public interface IArgumentData
+{
+	string sVal { get; }
+
+	int? iVal { get; }
+
+	double? rVal { get; }
+
+	bool? bVal { get; }
+
+	IArgumentData reference { get; }
+
+	string orginalDatatype { get; }
+
+	int Length { get; }
+
+	bool IsScalar { get; }
+
+	object ScalarValue { get; }
+
+	IEnumerable<IArgumentData> Values { get; }
+
+	IEnumerable<string> Ids { get; }
+
+	IEnumerable<KeyValuePair<string, IArgumentData>> IdValues { get; }
+
+	IArgumentData ValueAt(int index);
+
+	string IdAt(int index);
+
+	KeyValuePair<string, IArgumentData>? IdValueAt(int index);
+}
+public delegate double UnitConverter(int row, double from, int fromCol, int toCol);
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')
