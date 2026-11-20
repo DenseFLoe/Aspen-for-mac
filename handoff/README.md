@@ -27,6 +27,32 @@
 - 交接内容不得含 token、本机绝对路径、用户名、凭据。回执只允许写 `token_len=<n>`。
 - 本分支只做交接与产物评审，**不合并 main**。
 
+## 开工信号（started reply）
+
+`type: plan-request` 的一条硬义务：**先回「已开始 planning」，再写计划正文。**
+
+| 步骤 | 文件 | 说明 |
+| --- | --- | --- |
+| 1 | `handoff/incoming/<yyyymmdd-hhmm>-<task_id>.started.reply.md` | ≤5 行，只作「已收到 + 已开工」的时间戳 |
+| 2 | `handoff/incoming/<yyyymmdd-hhmm>-<task_id>.plan.md` | 计划正文，**与 started 分开提交** |
+
+`started.reply.md` 的 front-matter：
+
+```yaml
+---
+task_id: <对应请求的 task_id>
+type: started
+state: planning
+at: <ISO8601>
+eta: <预计 X 分钟 / 不确定>
+---
+已开始 planning：<一句话说明准备怎么做，不超过两行>
+```
+
+对等义务：我方收到对方 `plan-request` 时，同样先推 `handoff/outgoing/<ts>-<task_id>.started.reply.md` 再写计划。
+
+超时口径：`pushed` 后 **30 分钟**无 `started` ⇒ 记 `no_start_signal`（继续等，不判超时，但在 `log.md` 点名）；`started` 后 **90 分钟**无 `.plan.md` ⇒ 记 `timeout`。
+
 ## 超时与重试
 
 | 项 | 值 |
@@ -40,4 +66,5 @@
 
 1. **发**：本侧写 `taskbooks/<ts>-<task>.md` → 单文件 commit（message 含 `handoff: taskbook <task_id>`）→ 更新 `status.json` → `log.md` 追加一行。
 2. **收**：轮询 `GET /git/trees/codex/20261120-batch-review?recursive=1`，与本地 `state.json` 的 path→sha 对比；`incoming/` 下出现新 blob ⇒ 拉正文落 `inbox/` ⇒ 交 starter 处理。
-3. **回**：处理完 ⇒ `outgoing/<ts>-<task>.reply.md` + 更新 `status.json`，单 commit 推送。
+3. **回**：处理完 ⇒ `outgoing/<ts>-<task>.reply.md` + 更新 `status.json`，走 **PR → 合并**（不再直推 main）。
+4. **发布通道**：从 2026-11-21 起，任何对 main 的改动一律 `codex/<yyyymmdd>-<slug>` 分支 → commit → PR → `PUT /pulls/{n}/merge`（`merge_method=merge`）；PR 正文按 Summary / Evidence / Merge Danger 三节。
