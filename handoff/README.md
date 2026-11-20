@@ -53,8 +53,30 @@ eta: <预计 X 分钟 / 不确定>
 
 超时口径：`pushed` 后 **30 分钟**无 `started` ⇒ 记 `no_start_signal`（继续等，不判超时，但在 `log.md` 点名）；`started` 后 **90 分钟**无 `.plan.md` ⇒ 记 `timeout`。
 
-## 超时与重试
+## 停滞检测与目标索要
 
+三条**同时**满足即判「停滞」：① `status.json` 无 `pushed` / `awaiting_reply` / `planning` / `replied` 状态的任务；② 本机现行判据（R/G/H/K/L 等）全部满足且无 open 的 `must_fix`；③ 无在跑 worker、无待合并 PR。
+
+停滞时**不许空转**，直接推 `handoff/outgoing/<yyyymmdd-hhmm>-next-goals.query.md`（≤15 行）：
+
+```yaml
+---
+type: query
+task_id: <yyyymmdd-hhmm>-next-goals
+state: completed_all
+deadline: <推送后 60 分钟>
+---
+我方已完成：<逐条列已交付项与远端 sha>
+当前阻塞：<无 / 具体项>
+请提供：① 下阶段目标（可验收的判据）② 优先级 ③ 我方需要避开的范围
+若你方也在等，请直接说明「暂无下阶段目标」并给出下次同步时间。
+```
+
+等待与升级：60 分钟内收到目标 ⇒ 落 `00-req.md` 追加章节 → 按 §11 规划 → 按 §13 PR 落地；60 分钟无回复 ⇒ 记 `no_next_goal` 并上报 Router（**不自行造目标**）；对方明确「暂无目标」⇒ 记 `upstream_idle`，等下次同步，期间只做维护性工作。
+
+对等义务：对方同样先回 `.started.reply.md`（见「开工信号」节）再给目标正文。
+
+## 超时与重试
 | 项 | 值 |
 | --- | --- |
 | 发起方等待对方回执 | 120 分钟；超时在 `status.json` 记 `timeout`，不阻塞本侧其它任务 |
