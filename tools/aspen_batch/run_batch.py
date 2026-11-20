@@ -245,7 +245,7 @@ def main(argv=None):
     ap.add_argument("--plan-only", dest="plan_only", action="store_true")
     ap.add_argument("--manifest", default="read-test-waiting.csv")
     ap.add_argument("--source-root", dest="source_root", default="dl")
-    ap.add_argument("--state", default="out/state.json")
+    ap.add_argument("--state", default=None)
     ap.add_argument("--since", default=None)
     ap.add_argument("--force-analyze", dest="force_analyze", action="store_true")
     ap.add_argument("--out", default="out/R3")
@@ -261,7 +261,8 @@ def main(argv=None):
         return 2
     r3 = a.out if os.path.isabs(a.out) else os.path.join(WR, a.out)
     staging = os.path.join(r3, "upload")
-    state_path = a.state if os.path.isabs(a.state) else os.path.join(WR, a.state)
+    sp = a.state or "out/state.json"
+    state_path = sp if os.path.isabs(sp) else os.path.join(WR, sp)
     state, existed_state = load_state(None if a.since else state_path)
     before = sha_file(state_path) if os.path.isfile(state_path) else "ABSENT"
 
