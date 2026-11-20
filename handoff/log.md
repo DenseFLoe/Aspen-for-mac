@@ -26,3 +26,5 @@
 20261121-0525 ping watcher started (60s interval, max 20 min) -> inbox/ping-watch.log; judgement in TASK_RESULT
 20261121-0545 PR #4 merged 39afbaf954bcc2fa8a4a5ce7483b9a679ba25cfb (codex/20261121-start-ack -> main): handoff/README.md += 开工信号(§14) + 发布通道(§13)
 20261121-0545 §14 K1/K2/K3 adopted: local inbox/watch.py classifies .started.reply.md -> state=planning + push_to_started_s; pushed+30min no started -> no_start_signal; started+90min no plan -> timeout; next plan-request front-matter must carry require_start_ack: true
+20261121-0545 PR #5 merged b471064975a219aa2b9a2e97dd721fc77892cb1f (codex/20261121-log-pr4 -> main): log/status for §14
+20261121-0543 PING verdict=UNREACHABLE_NO_REPLY elapsed_s=1212 polls=21 found=0; side evidence: other-side commits in window = 0 (all recent main commits author=tietoumiao); codex/20261120-batch-review head unchanged 781c7772 (== 05:00 value); handoff/incoming count stayed 6
