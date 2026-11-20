@@ -1,0 +1,209 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Xml;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyCompany("AspenTech Corporation")]
+[assembly: AssemblyProduct("Aspen Data Share")]
+[assembly: AssemblyCopyright("Copyright © AspenTech Corporation 2025")]
+[assembly: AssemblyFileVersion("41.0.0.2")]
+[assembly: AssemblyTitle("AdbConfigOptions")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyTrademark("")]
+[assembly: ComVisible(false)]
+[assembly: Guid("486c3baa-655e-4952-9b6e-9c9c05e4601a")]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.0")]
+namespace Aspentech.Adb.AdbConfigOptions;
+
+public class AdbOption
+{
+	private Dictionary<string, string> _subOptions = new Dictionary<string, string>();
+
+	public void AddSubOption(string name, string value)
+	{
+		_subOptions.Add(name, value);
+	}
+
+	public bool HasSubOption(string name)
+	{
+		return _subOptions.ContainsKey(name);
+	}
+
+	public string SubOption(string name)
+	{
+		string value = null;
+		if (_subOptions.TryGetValue(name, out value) && value == null)
+		{
+			value = "";
+		}
+		return value;
+	}
+}
+public class AdbOptions
+{
+	private static Dictionary<string, AdbOption> _options;
+
+	static AdbOptions()
+	{
+		_options = new Dictionary<string, AdbOption>();
+		string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AspenTech\\Aspen Data Share\\config.xml");
+		if (!File.Exists(path))
+		{
+			return;
+		}
+		FileStream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read);
+		try
+		{
+			XmlDocument xmlDocument = new XmlDocument();
+			xmlDocument.Load(fileStream);
+			foreach (XmlNode childNode in xmlDocument.DocumentElement.ChildNodes)
+			{
+				if (childNode.NodeType != XmlNodeType.Element)
+				{
+					continue;
+				}
+				XmlElement xmlElement = (XmlElement)childNode;
+				if (((XmlElement)childNode).HasAttribute("option") && !((XmlElement)childNode).GetAttribute("option").ToLower().Equals("on"))
+				{
+					continue;
+				}
+				AdbOption adbOption = new AdbOption();
+				foreach (XmlNode childNode2 in xmlElement.ChildNodes)
+				{
+					if (childNode2.NodeType == XmlNodeType.Element)
+					{
+						XmlElement xmlElement2 = (XmlElement)childNode2;
+						if (!xmlElement2.HasAttribute("option") || xmlElement2.GetAttribute("option").ToLower().Equals("on"))
+						{
+							adbOption.AddSubOption(xmlElement2.Name.ToLower(), xmlElement2.InnerText.ToLower());
+						}
+					}
+				}
+				_options.Add(xmlElement.Name.ToLower(), adbOption);
+			}
+		}
+		catch
+		{
+		}
+		fileStream.Close();
+	}
+
+	public static bool HasOption(string option)
+	{
+		bool result = false;
+		if (_options != null)
+		{
+			result = _options.ContainsKey(option.ToLower());
+		}
+		return result;
+	}
+
+	public static AdbOption GetOption(string option)
+	{
+		AdbOption value = null;
+		if (_options != null)
+		{
+			_options.TryGetValue(option.ToLower(), out value);
+		}
+		return value;
+	}
+}
+public abstract class ShouldBase
+{
+	private bool _hasTested;
+
+	private bool _should;
+
+	public bool Should
+	{
+		get
+		{
+			if (DebugLog.ShouldWrite)
+			{
+				if (!_hasTested)
+				{
+					_hasTested = true;
+					_should = Test();
+				}
+			}
+			else
+			{
+				_should = false;
+			}
+			return _should;
+		}
+	}
+
+	public abstract bool Test();
+}
+public class DebugLog
+{
+	private static bool _testedShouldWrite;
+
+	private static bool _shouldWrite;
+
+	private static int instance;
+
+	public static string PathToFile { get; set; }
+
+	public static string Role { get; set; }
+
+	public static bool ShouldWrite
+	{
+		get
+		{
+			if (!_testedShouldWrite)
+			{
+				_testedShouldWrite = true;
+				_shouldWrite = AdbOptions.HasOption("debug");
+			}
+			return _shouldWrite;
+		}
+	}
+
+	private static string DebugFilePath()
+	{
+		return Path.ChangeExtension(PathToFile, "debug.txt");
+	}
+
+	public static void WriteDebug(string msg)
+	{
+		if (!ShouldWrite)
+		{
+			return;
+		}
+		string text = DebugFilePath();
+		if (text == null)
+		{
+			return;
+		}
+		try
+		{
+			using FileStream stream = new FileStream(text, FileMode.Append, FileAccess.Write);
+			using StreamWriter streamWriter = new StreamWriter(stream);
+			streamWriter.Write(DateTime.Now.ToString("HH:mm:ss.ff") + " ");
+			streamWriter.Write(instance + " ");
+			instance++;
+			streamWriter.Write(Role);
+			streamWriter.Write(":   ");
+			streamWriter.WriteLine(msg);
+			streamWriter.Flush();
+			streamWriter.Close();
+		}
+		catch
+		{
+		}
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')
