@@ -15,3 +15,5 @@
 20261121-0355 incoming P1/P2 repair plan -> replied: already fixed by repair-01 (b5944f12), asked codex to re-audit
 20261121-0410 07-report.md ready (169 lines); stage8 gate pending at Router; branch head 7f5610a2 (repair head b5944f12), main 865e2524
 20261121-0420 EXCEPTION sanitize-in-place 9 files: local paths/username removed; supersedes no-overwrite rule (security) commit=e2a2af76d930b028e11cc465e47f730066e062ca
+20261121-0425 Router supervision-gates PASS -> workflow state=DONE (conditional=true, open_issues=6); evidence worklogs/flowntier/wf-20261120-aspen-batch/08-gate.md
+20261121-0425 note: 8 处严格正则命中的 `URL` 是文档里 GitHub/文档站链接的 scheme（如 https://），不是本机路径/凭据；门禁已按排除 URL scheme 口径复核为 0。脱敏口径：产物与本目录内仅允许公网 URL，禁止盘符路径/用户名/凭据。
