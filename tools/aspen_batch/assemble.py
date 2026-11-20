@@ -11,20 +11,25 @@ Layout (write-scope: out/R3/** only):
   tools/aspen_batch/{profiles.json,tools.json}
   tools/aspen_batch/ghidra_scripts/ExportAll.java
   analysis/20261120-batch-driver/{README.md,INDEX.md,index.csv,archive-ledger.csv}
-  analysis/20261120-batch-driver/<GROUP>/<archive dirs>/<NAME>.md      x58
-      GROUP in (Aspen-Properties=CLR, Aspen-Plus=native, Shared=nonPE);
-      the three group names are the upload gate's product vocabulary
-      (check_upload.PRODUCT_DIRS), the real archive product is kept in
-      index.csv / archive-ledger.csv.
+  analysis/20261120-batch-driver/<product>/<archive dirs>/<NAME>.md      x58
+      <product> is the REAL product of that item, taken from the frozen
+      out/R1/ledger-clr.csv / out/R1N/ledger-native.csv "product" column
+      (Aspen-Plus 57 / Aspen-Properties 1), so the directory segment always
+      equals the ledger product column (repair-01 I1).  The analysis chain
+      (CLR / native / nonPE) is a SEPARATE dimension and lives in the chain
+      column of index.csv / archive-ledger.csv / INDEX.md -- it never picks
+      the directory any more.
   companion artefacts next to each .md: il/<NAME>.il.txt + decompiled/<NAME>.cs.txt
       (CLR), disasm/<NAME>.asm.txt + decompiled/<NAME>.c.txt (native).
 
-product_sha256 convention (unified here, see receipt):
-  per item, its product files sorted by BASENAME ascending, concatenated as
-  "name=sha256;" and hashed with sha256.  T1N matches this 19/19; T1's CLR
-  column matches only 2/31, so the canonical recomputed value is written to
-  the product_sha256 column and T1's legacy value is kept verbatim in
-  ledger_product_sha256.
+product_sha256 convention (repair-01 I2):
+  per item, the product files THIS RUN COPIED OUT (i.e. the bytes actually
+  written under out/R3/upload/) sorted by BASENAME ascending, concatenated as
+  "name=sha256;" and hashed with sha256.  The convention is applied after the
+  files are on disk and re-verified from disk at the end of the build, so the
+  published ledger can always be reproduced from the published tree.
+  ledger_product_sha256 keeps the upstream T1/T1N value verbatim, for
+  traceability only; it came from an earlier build and is NOT comparable.
 """
 from __future__ import annotations
 
@@ -39,9 +44,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 WR = os.path.dirname(HERE)
 MANIFEST = "read-test-waiting.csv"
 DRIVER = "analysis/20261120-batch-driver"
-GROUP = {"CLR": "Aspen-Properties", "native": "Aspen-Plus", "nonPE": "Shared"}
-GROUP_ORDER = ("CLR", "native", "nonPE")
-DEVIATION = "\u504f\u79bb\u4ed3\u5e93 AGENTS"
+# chain is metadata only; it no longer decides the directory (repair-01 I1)
+CHAIN_ORDER = ("CLR", "native", "nonPE")
+DEVIATION = "偏离仓库 AGENTS"
 TOOLS = ("run_batch.py", "assemble.py", "publish.py", "check_upload.py",
          "batch_reverse.py", "il_dump.py", "render_report.py",
          "native_reverse.py", "dnlib.py", "iltab.py")
@@ -80,6 +85,17 @@ def product_sha(paths):
     parts = []
     for p in sorted(paths, key=lambda x: x.rsplit("/", 1)[-1]):
         parts.append(p.rsplit("/", 1)[-1] + "=" + sha_file(p) + ";")
+    return sha_bytes("".join(parts).encode("utf-8"))
+
+
+def product_sha_rel(staging, rels):
+    """same convention, but keyed on the PUBLISHED repo paths (forward slashes)
+    so the basename used in the digest is the real file name; the digest can be
+    reproduced by a reviewer from the published tree alone."""
+    parts = []
+    for rel in sorted(rels, key=lambda x: x.rsplit("/", 1)[-1]):
+        p = os.path.join(staging, rel.replace("/", os.sep))
+        parts.append(rel.rsplit("/", 1)[-1] + "=" + sha_file(p) + ";")
     return sha_bytes("".join(parts).encode("utf-8"))
 
 
@@ -156,7 +172,8 @@ def build_items(manifest_path):
         if nr:
             r = nr[0]
             it.update(kind="native", status=(r.get("status") or "analyzed"),
-                      product=r.get("product") or "", product_raw=r.get("product_raw") or "",
+                      product=(r.get("product") or "").strip(),
+                      product_raw=r.get("product_raw") or "",
                       analysis_key=(r.get("analysis_key") or "sha256:" + h),
                       relative_path=norm(r.get("relative_path") or rel),
                       sub=os.path.dirname(norm(r.get("relative_path") or rel)),
@@ -171,7 +188,7 @@ def build_items(manifest_path):
             st = (r.get("status") or "").strip()
             kind = "CLR" if st == "processed" else "nonPE"
             ad = norm(r.get("archive_dir"))
-            it.update(kind=kind, status=st, product=r.get("product") or "",
+            it.update(kind=kind, status=st, product=(r.get("product") or "").strip(),
                       product_raw=r.get("product_raw") or "",
                       analysis_key=(r.get("analysis_key") or "sha256:" + h),
                       ledger_product_sha256=(r.get("product_sha256") or ""),
@@ -189,6 +206,11 @@ def build_items(manifest_path):
                                               "02-incomplete/Shared/"))
         else:
             die("ASSEMBLE FAIL unclassified sha256=%s" % h[:16], 2)
+        if not it["product"]:
+            die("ASSEMBLE FAIL no-product sha256=%s name=%s (repair-01 I1 needs a real product)" % (
+                h[:16], name), 2)
+        if "/" in it["product"] or it["product"].startswith("."):
+            die("ASSEMBLE FAIL bad-product name=%s product=%s" % (name, it["product"]), 2)
         items.append(it)
     return items
 
@@ -196,7 +218,7 @@ def build_items(manifest_path):
 def plan_paths(items):
     seen = set()
     for it in items:
-        base = "%s/%s/%s/%s" % (DRIVER, GROUP[it["kind"]], it["sub"], it["source_name"])
+        base = "%s/%s/%s/%s" % (DRIVER, it["product"], it["sub"], it["source_name"])
         base = base.replace("//", "/")
         md = base + ".md"
         n = 1
@@ -206,7 +228,10 @@ def plan_paths(items):
         seen.add(md)
         it["md"] = md
         parent = md.rsplit("/", 1)[0]
-        stem = it["source_name"]
+        # stem follows the (possibly de-duplicated) markdown name so that the
+        # gate's companion rule (parent + sub + stem + ".") keeps matching.
+        stem = md.rsplit("/", 1)[-1][:-3]
+        it["stem"] = stem
         it["files"] = [(md, it["src_md"])]
         if it["kind"] == "CLR":
             it["files"].append((parent + "/il/" + stem + ".il.txt", it["src_a"]))
@@ -289,15 +314,30 @@ def readme_text(items):
 
 def index_md(items):
     lines = ["# INDEX -- 20261120 batch driver", "",
-             "| kind | product | analysis_key | status | sha256 | files | report |",
-             "| --- | --- | --- | --- | --- | --- | --- |"]
-    for kind in GROUP_ORDER:
+             "| kind | chain | product | analysis_key | status | sha256 | files | report |",
+             "| --- | --- | --- | --- | --- | --- | --- | --- |"]
+    for chain in CHAIN_ORDER:
         for it in items:
-            if it["kind"] != kind:
+            if it["kind"] != chain:
                 continue
-            lines.append("| %s | %s | %s | %s | %s | %d | %s |" % (
-                kind, it["product"], it["analysis_key"], it["status"],
-                it["sha256"][:16], len(it["files"]) + 2, it["md"]))
+            lines.append("| %s | %s | %s | %s | %s | %s | %d | %s |" % (
+                it["kind"], it["kind"], it["product"], it["analysis_key"],
+                it["status"], it["sha256"][:16], len(it["files"]), it["md"]))
+    lines.append("")
+    lines.append("## Column semantics (repair-01)")
+    lines.append("")
+    lines.append("- product: the real product of the item, taken from the frozen")
+    lines.append("  T1/T1N ledgers. The directory segment right below")
+    lines.append("  " + DRIVER + "/ is this exact string, for every row (58/58).")
+    lines.append("- chain: the analysis chain (CLR / native / nonPE). Separate")
+    lines.append("  dimension; it never decides the directory.")
+    lines.append("- product_sha256: sha256 over the product files AS PUBLISHED")
+    lines.append("  (basename ascending, name=sha256; concatenated, then hashed).")
+    lines.append("  Recomputed from the copied files after they were written, so it")
+    lines.append("  is reproducible from this tree.")
+    lines.append("- ledger_product_sha256 (archive-ledger.csv only): upstream T1/T1N")
+    lines.append("  value kept verbatim for traceability. It came from an earlier")
+    lines.append("  build and is expected to differ.")
     lines.append("")
     lines.append(DEVIATION + " -- 本清单是二进制分析产物，不是仓库源码；产品口径见 archive-ledger.csv。")
     lines.append("")
@@ -310,24 +350,25 @@ def index_md(items):
 
 
 def index_csv(items):
-    cols = ("analysis_key", "kind", "product", "source_name", "status",
+    cols = ("analysis_key", "kind", "chain", "product", "source_name", "status",
             "sha256", "product_sha256", "bytes", "report_md")
     out = [",".join(cols)]
     for it in items:
         out.append(",".join(['"%s"' % str(it["analysis_key"]).replace('"', ""),
-                             it["kind"], it["product"], it["source_name"],
+                             it["kind"], it["kind"], it["product"], it["source_name"],
                              it["status"], it["sha256"], it["product_sha256"],
                              str(it["bytes"]), it["md"]]))
     return "\n".join(out) + "\n"
 
 
 def ledger_csv(items):
-    cols = ("analysis_key", "kind", "product", "status", "source_name",
+    cols = ("analysis_key", "kind", "chain", "product", "status", "source_name",
             "sha256", "size", "product_sha256", "ledger_product_sha256",
             "product_files", "report_md")
     out = [",".join(cols)]
     for it in items:
-        out.append(",".join(['"%s"' % it["analysis_key"], it["kind"], it["product"],
+        out.append(",".join(['"%s"' % it["analysis_key"], it["kind"], it["kind"],
+                             it["product"],
                              it["status"], '"%s"' % it["source_name"].replace('"', ""),
                              it["sha256"], it["size"], it["product_sha256"],
                              it["ledger_product_sha256"],
@@ -349,6 +390,64 @@ def origins_csv():
     return "\n".join(rows) + "\n", n
 
 
+def canonicalize(items, records, staging):
+    """Windows is case-insensitive: the first writer decides a directory's
+    casing, so the on-disk name may differ from the planned one (e.g.
+    APrSystem vs AprSystem across the R1/R1N trees).  Git is case-SENSITIVE,
+    so every published path must use the casing that is really on disk.
+    Re-point items and records at the real paths found by os.walk."""
+    real = {}
+    for root, _d, files in os.walk(staging):
+        for n in files:
+            p = os.path.join(root, n)
+            rel = os.path.relpath(p, staging).replace(os.sep, "/")
+            real[rel.lower()] = rel
+    changed = 0
+    for it in items:
+        newfiles = []
+        for repo_rel, src in it["files"]:
+            r = real.get(repo_rel.lower())
+            if not r:
+                die("ASSEMBLE FAIL not-on-disk path=%s" % repo_rel, 2)
+            if r != repo_rel:
+                changed += 1
+            newfiles.append((r, src))
+        it["files"] = newfiles
+        it["md"] = newfiles[0][0]
+    for rec in records:
+        rec["path"] = real.get(rec["path"].lower(), rec["path"])
+    print("ASSEMBLE CASEFOLD rewrote=%d path(s) to on-disk casing" % changed)
+    return items, records
+
+
+def verify_items(items, staging):
+    """repair-01 I1/I2 assertions, run against the files actually on disk."""
+    seg_ok = 0
+    sha_ok = 0
+    n_files = 0
+    for it in items:
+        prod = it["product"]
+        for repo_rel, _src in it["files"]:
+            parts = repo_rel.split("/")
+            if len(parts) < 5 or parts[2] != prod:
+                die("ASSEMBLE FAIL path-segment-product path=%s segment=%s product=%s" % (
+                    repo_rel, parts[2] if len(parts) > 2 else "?", prod), 2)
+        seg_ok += 1
+        rels = [r for r, _s in it["files"]]
+        for p in [os.path.join(staging, r.replace("/", os.sep)) for r in rels]:
+            if not os.path.isfile(p):
+                die("ASSEMBLE FAIL missing-staged file=%s" % p, 2)
+            n_files += 1
+        dig = product_sha_rel(staging, rels)
+        if dig != it["product_sha256"]:
+            die("ASSEMBLE FAIL product_sha-unsatisfied item=%s on-disk=%s recorded=%s" % (
+                it["source_name"], dig[:16], (it["product_sha256"] or "")[:16]), 2)
+        sha_ok += 1
+    print("ASSEMBLE VERIFY path_segment_product=%d/%d product_sha_on_disk=%d/%d product_files=%d" % (
+        seg_ok, len(items), sha_ok, len(items), n_files))
+    return seg_ok, sha_ok
+
+
 def build(staging, manifest_path, r3dir):
     items = plan_paths(build_items(manifest_path))
     if os.path.isdir(staging):
@@ -357,18 +456,18 @@ def build(staging, manifest_path, r3dir):
     os.makedirs(staging, exist_ok=True)
     records = []
     for it in items:
-        paths = []
+        rels = []
         for repo_rel, src in it["files"]:
             dst = os.path.join(staging, repo_rel.replace("/", os.sep))
             if not os.path.isfile(src):
                 die("ASSEMBLE ANALYZE-MISSING item=%s file=%s" % (it["source_name"], src))
             digest = copy_text(src, dst)
-            paths.append(dst)
+            rels.append(repo_rel)
             records.append({"path": repo_rel, "local": os.path.relpath(dst, WR).replace(os.sep, "/"),
                             "sha256": digest, "bytes": os.path.getsize(dst)})
-        it["product_files"] = paths
-        it["product_sha256"] = product_sha(paths)
-        it["bytes"] = sum(os.path.getsize(p) for p in paths)
+        it["product_files"] = rels
+        it["product_sha256"] = product_sha_rel(staging, rels)
+        it["bytes"] = sum(os.path.getsize(os.path.join(staging, r.replace("/", os.sep))) for r in rels)
     # tools
     src_tools = os.path.join(HERE)
     for name in TOOLS:
@@ -392,6 +491,9 @@ def build(staging, manifest_path, r3dir):
     digest = copy_text(src, os.path.join(staging, rel.replace("/", os.sep)))
     records.append({"path": rel, "local": rel, "sha256": digest,
                     "bytes": os.path.getsize(os.path.join(staging, rel.replace("/", os.sep)))})
+    # repair-01 I1: publish the casing that is really on disk (git is
+    # case-sensitive, Windows is not); must happen before the indices are built.
+    canonicalize(items, records, staging)
     # meta
     meta = {DRIVER + "/README.md": readme_text(items),
             DRIVER + "/INDEX.md": index_md(items),
@@ -404,6 +506,8 @@ def build(staging, manifest_path, r3dir):
             f.write(text)
         records.append({"path": repo_rel, "local": repo_rel,
                         "sha256": sha_file(dst), "bytes": os.path.getsize(dst)})
+    # repair-01 I1/I2: assert against the on-disk staging, after every write
+    verify_items(items, staging)
     records.sort(key=lambda r: r["path"])
     os.makedirs(r3dir, exist_ok=True)
     with open(os.path.join(r3dir, "upload-map.tsv"), "w", encoding="utf-8", newline="\n") as f:
@@ -415,9 +519,12 @@ def build(staging, manifest_path, r3dir):
     with open(os.path.join(r3dir, "upload-map.json"), "w", encoding="utf-8", newline="\n") as f:
         json.dump(records, f, ensure_ascii=False, indent=1)
         f.write("\n")
-    matches = sum(1 for it in items if it["product_sha256"] == it["ledger_product_sha256"])
-    print("ASSEMBLE items=%d files=%d bytes=%d origins=%d product_sha_ledger_match=%d/%d" % (
-        len(items), len(records), sum(r["bytes"] for r in records), n_orig, matches, len(items)))
+    same = sum(1 for it in items if it["product_sha256"] == it["ledger_product_sha256"])
+    print("ASSEMBLE items=%d files=%d bytes=%d origins=%d product_sha_ledger_match=%d/%d (upstream column, expected 0)" % (
+        len(items), len(records), sum(r["bytes"] for r in records), n_orig, same, len(items)))
+    print("ASSEMBLE product_dirs %s" % ", ".join(
+        "%s=%d" % (p, sum(1 for i in items if i["product"] == p))
+        for p in sorted({i["product"] for i in items})))
     return items, records
 
 
@@ -428,6 +535,7 @@ def seed_state(manifest_path, out_path):
     for it in items:
         key = (it["analysis_key"] or ("sha256:" + it["sha256"]))
         doc["items"][key] = {"sha256": it["sha256"], "kind": it["kind"],
+                             "chain": it["kind"], "product": it["product"],
                              "status": it["status"],
                              "product_sha256": it["ledger_product_sha256"],
                              "pushed": {"commit": "seed"},
