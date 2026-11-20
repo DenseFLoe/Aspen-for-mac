@@ -1,6 +1,6 @@
 # 20261120 batch driver -- analysis drop for review
 
-This tree is the review payload of the 20261120 batch: 58 analysed products (31 CLR/IL, 19 native PE, 8 non-PE).
+This tree is the review payload of the 20261120 batch: 97 analysed products (40 CLR/IL, 39 native PE, 18 non-PE).
 It is pushed to the review branch only; nothing here touches the default branch.
 
 ## 0. Scope and manifest
