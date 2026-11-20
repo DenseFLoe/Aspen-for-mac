@@ -63,7 +63,7 @@
 
 - IDA Professional 9.5 headless：`idat.exe -A -c -S<script> -L<log> <dll>`，脚本先 `ida_auto.auto_wait()` 再统计，末尾 `idc.qexit(0)`
 - Hex-Rays：`ida_hexrays.init_hexrays_plugin()` → True（IDA 9.5 内置）
-- 脚本：tool/ida_export.py（本仓从零写，生成 IDAPython 脚本；产物同路径覆盖 Ghidra 旧版）
+- 脚本：IDAPython 导出脚本（本地保留，未随产物发布；产物同路径覆盖 Ghidra 旧版）
 - 单件耗时（含自动分析）：1.8 s
 - 日志：out/R1N/ida/logs/sha256_241cab76b699772b7266c25d0308f273961ec199e25b2fe9d57128ceaeb1c8b0.log（本机保留，不进推送集）
 
