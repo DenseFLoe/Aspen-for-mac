@@ -34,7 +34,7 @@ NAME_BLOCK = ("_cred.py", "gh.py", "git-auth.sh", "err.tmp", "tok.tmp",
 FIXED_SENTENCE = "\u504f\u79bb\u4ed3\u5e93 AGENTS"
 
 # --- leak rules (built from fragments on purpose: this file is itself uploaded) ---
-DRIVE_RE = re.compile("[A-Za-z]:" + re.escape(_BS))
+DRIVE_RE = re.compile(r"(?<![A-Za-z])[A-Za-z]:[\\/]")  # drive letter at token boundary; scheme URLs excluded by lookbehind
 USERS_RE = re.compile("Us" + "ers" + re.escape(_BS * 2))
 WORKSPACE_RE = re.compile("deep" + "seek" + "har" + "ness" + chr(32) + "work" + "space")
 USER_RE = re.compile("34" + "218")

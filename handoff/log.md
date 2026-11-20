@@ -19,3 +19,6 @@
 20261121-0425 note: 8 处严格正则命中的 `URL` 是文档里 GitHub/文档站链接的 scheme（如 https://），不是本机路径/凭据；门禁已按排除 URL scheme 口径复核为 0。脱敏口径：产物与本目录内仅允许公网 URL，禁止盘符路径/用户名/凭据。
 20261121-0500 DECISION native chain Ghidra 12.1.4 -> IDA 9.5 + Hex-Rays (user instruction 2026-11-21 05:0x); criteria G1-G6 in 00-req.md §12
 20261121-0500 RESULT 19/19 native redone: funcs 1079 (Ghidra 1067, +1.1%), decomp_fail 0, 22 commits, head 87fddcbf, main 865e2524 unchanged; INDEX/index.csv/ledger gained tool+prevtool columns
+20261121-0515 DECISION user instruction: DO NOT upload IDA tool (tool/ida_export.py excluded by design, not a reproducibility gap). No further pushes until Router releases hold. IDA products (19 asm/c/md) stay as pushed at 87fddcbf.
+20261121-0515 LOCAL check_upload.py DRIVE_RE widened to (?<![A-Za-z])[A-Za-z]:[\/] (posix drive accepted, scheme URLs excluded); local rescan: GATE UPLOAD_OK files=175 findings=0 (not pushed).
+20261121-0515 OPEN_ISSUES 7: +1 historical residual tools.json abs paths in df559421/777e8167; history not rewritten (no force).
