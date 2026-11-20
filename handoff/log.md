@@ -17,3 +17,5 @@
 20261121-0420 EXCEPTION sanitize-in-place 9 files: local paths/username removed; supersedes no-overwrite rule (security) commit=e2a2af76d930b028e11cc465e47f730066e062ca
 20261121-0425 Router supervision-gates PASS -> workflow state=DONE (conditional=true, open_issues=6); evidence worklogs/flowntier/wf-20261120-aspen-batch/08-gate.md
 20261121-0425 note: 8 处严格正则命中的 `URL` 是文档里 GitHub/文档站链接的 scheme（如 https://），不是本机路径/凭据；门禁已按排除 URL scheme 口径复核为 0。脱敏口径：产物与本目录内仅允许公网 URL，禁止盘符路径/用户名/凭据。
+20261121-0500 DECISION native chain Ghidra 12.1.4 -> IDA 9.5 + Hex-Rays (user instruction 2026-11-21 05:0x); criteria G1-G6 in 00-req.md §12
+20261121-0500 RESULT 19/19 native redone: funcs 1079 (Ghidra 1067, +1.1%), decomp_fail 0, 22 commits, head 87fddcbf, main 865e2524 unchanged; INDEX/index.csv/ledger gained tool+prevtool columns
