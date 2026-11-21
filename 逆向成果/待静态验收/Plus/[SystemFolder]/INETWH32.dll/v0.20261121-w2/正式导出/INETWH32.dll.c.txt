@@ -1,0 +1,6578 @@
+// FUNC 10001000 sub_10001000
+int __stdcall sub_10001000(LPSTR lpString1, _DWORD *a2)
+{
+  DWORD Type; // [esp+4h] [ebp-110h] BYREF
+  HKEY phkResult; // [esp+8h] [ebp-10Ch] BYREF
+  DWORD cbData; // [esp+Ch] [ebp-108h] BYREF
+  CHAR Buffer[260]; // [esp+10h] [ebp-104h] BYREF
+
+  *lpString1 = 0;
+  LoadStringA(hInstance, 6u, Buffer, 260);
+  if ( RegOpenKeyExA(HKEY_LOCAL_MACHINE, Buffer, 0, 0x20019u, &phkResult) != 0 )
+    return 0;
+  cbData = 260;
+  Type = 1;
+  if ( RegQueryValueExA(phkResult, ValueName, nullptr, &Type, (LPBYTE)Buffer, &cbData) != 0 )
+    return 0;
+  lstrcpyA(lpString1, String2);
+  lstrcatA(lpString1, Buffer);
+  lstrcatA(lpString1, String2);
+  *a2 = 1;
+  return 1;
+}
+// ENDFUNC
+// FUNC 100010d0 BrowserNameFromSystem
+int __stdcall BrowserNameFromSystem(LPSTR lpString1, _DWORD *a2)
+{
+  int v3; // ebx
+  int *v4; // edi
+  DWORD cbData; // [esp+10h] [ebp-424h] BYREF
+  DWORD Type; // [esp+14h] [ebp-420h] BYREF
+  HKEY phkResult; // [esp+18h] [ebp-41Ch] BYREF
+  CHAR v8[20]; // [esp+1Ch] [ebp-418h] BYREF
+  CHAR Buffer[260]; // [esp+30h] [ebp-404h] BYREF
+  CHAR Filename[256]; // [esp+134h] [ebp-300h] BYREF
+  CHAR String2[256]; // [esp+234h] [ebp-200h] BYREF
+  char Ext[256]; // [esp+334h] [ebp-100h] BYREF
+
+  *lpString1 = 0;
+  LoadStringA(hInstance, 6u, Buffer, 260);
+  if ( RegOpenKeyExA(HKEY_LOCAL_MACHINE, Buffer, 0, 0x20019u, &phkResult) != 0
+    || (cbData = 260, Type = 1, RegQueryValueExA(phkResult, ValueName, nullptr, &Type, (LPBYTE)Buffer, &cbData) != 0) )
+  {
+    v3 = 0;
+    v4 = (int *)&unk_10009038;
+    do
+    {
+      if ( LoadStringA(hInstance, *(v4 - 2), v8, 20) != 0 && sub_100012F0(v8, (LPBYTE)Buffer, 260, *v4) != 0 )
+      {
+        lstrcpyA(lpString1, ::String2);
+        lstrcatA(lpString1, Buffer);
+        lstrcatA(lpString1, ::String2);
+        *a2 = dword_10009034[3 * v3];
+        return 1;
+      }
+      v4 += 3;
+      ++v3;
+    }
+    while ( (int)v4 < (int)&ValueName[4] );
+    if ( GetProfileStringA(AppName, KeyName, Default, Buffer, 0x104u) == 0 || Buffer[0] == 126 )
+    {
+      return 0;
+    }
+    else
+    {
+      _splitpath(Buffer, (char *)&cbData, String2, Filename, Ext);
+      lstrcpyA(lpString1, (LPCSTR)&cbData);
+      lstrcatA(lpString1, String2);
+      lstrcatA(lpString1, Filename);
+      lstrcatA(lpString1, aExe);
+      *a2 = 1;
+      return 1;
+    }
+  }
+  else
+  {
+    lstrcpyA(lpString1, ::String2);
+    lstrcatA(lpString1, Buffer);
+    lstrcatA(lpString1, ::String2);
+    *a2 = 1;
+    return 1;
+  }
+}
+// ENDFUNC
+// FUNC 100012f0 sub_100012F0
+int __cdecl sub_100012F0(LPCSTR lpString2, LPBYTE lpData, HKEY a3, int a4)
+{
+  LPBYTE v4; // esi
+  HKEY phkResult; // [esp+10h] [ebp-20Ch] BYREF
+  DWORD cbData; // [esp+14h] [ebp-208h] BYREF
+  DWORD Type; // [esp+18h] [ebp-204h] BYREF
+  CHAR Buffer[256]; // [esp+1Ch] [ebp-200h] BYREF
+  BYTE Data[256]; // [esp+11Ch] [ebp-100h] BYREF
+
+  if ( a4 != 0 )
+  {
+    LoadStringA(hInstance, 0x11u, Buffer, 256);
+    lstrcatA(Buffer, lpString2);
+    lstrcatA(Buffer, aClsid);
+    if ( RegOpenKeyExA(HKEY_LOCAL_MACHINE, Buffer, 0, 1u, (PHKEY)&cbData) == 0 )
+    {
+      phkResult = (HKEY)256;
+      if ( RegQueryValueExA((HKEY)cbData, nullptr, nullptr, &Type, Data, (LPDWORD)&phkResult) == 0 )
+      {
+        LoadStringA(hInstance, 0x11u, Buffer, 256);
+        lstrcatA(Buffer, aClsid_0);
+        lstrcatA(Buffer, (LPCSTR)Data);
+        lstrcatA(Buffer, aLocalserver32);
+        if ( RegOpenKeyExA(HKEY_LOCAL_MACHINE, Buffer, 0, 1u, (PHKEY)&cbData) == 0 )
+        {
+          phkResult = a3;
+          if ( RegQueryValueExA((HKEY)cbData, nullptr, nullptr, &Type, lpData, (LPDWORD)&phkResult) == 0
+            && _access((const char *)lpData, 0) == 0 )
+          {
+            return 1;
+          }
+        }
+      }
+    }
+  }
+  else
+  {
+    LoadStringA(hInstance, 5u, Buffer, 256);
+    lstrcatA(Buffer, lpString2);
+    if ( RegOpenKeyExA(HKEY_LOCAL_MACHINE, Buffer, 0, 1u, &phkResult) == 0 )
+    {
+      v4 = lpData;
+      cbData = (DWORD)a3;
+      if ( RegQueryValueExA(phkResult, nullptr, nullptr, &Type, lpData, &cbData) == 0
+        && _access((const char *)lpData, 0) == 0 )
+      {
+        return 1;
+      }
+      goto LABEL_13;
+    }
+  }
+  v4 = lpData;
+LABEL_13:
+  *v4 = 0;
+  return 0;
+}
+// ENDFUNC
+// FUNC 10001500 BrowserNameFromUser
+BOOL __stdcall BrowserNameFromUser(const CHAR *a1)
+{
+  *a1 = 0;
+  lpString = a1;
+  return DialogBoxParamA(hInstance, (LPCSTR)0x65, nullptr, DialogFunc, 0) != 0 && *a1 != 0;
+}
+// ENDFUNC
+// FUNC 10001540 DialogFunc
+INT_PTR __stdcall DialogFunc(HWND hDlg, UINT a2, WPARAM a3, LPARAM a4)
+{
+  int v5; // eax
+  int v6; // [esp-10h] [ebp-74h]
+  LONG right; // [esp-Ch] [ebp-70h]
+  LONG bottom; // [esp-8h] [ebp-6Ch]
+  struct tagRECT Rect; // [esp+8h] [ebp-5Ch] BYREF
+  _DWORD v10[19]; // [esp+18h] [ebp-4Ch] BYREF
+
+  if ( a2 == 272 )
+  {
+    GetWindowRect(hDlg, &Rect);
+    OffsetRect(&Rect, -Rect.left, -Rect.top);
+    bottom = Rect.bottom;
+    right = Rect.right;
+    v6 = (GetSystemMetrics(1) - Rect.bottom) / 2;
+    v5 = (GetSystemMetrics(0) - Rect.right) / 2 + 4;
+    LOBYTE(v5) = v5 & 0xF8;
+    MoveWindow(hDlg, v5, v6, right, bottom, false);
+  }
+  else
+  {
+    if ( a2 != 273 )
+      return 0;
+    switch ( (unsigned __int16)a3 )
+    {
+      case 1u:
+        EndDialog(hDlg, 1);
+        return 0;
+      case 2u:
+        EndDialog(hDlg, 0);
+        return 0;
+      case 0x3E9u:
+        *lpString = 0;
+        memset(v10, 0, sizeof(v10));
+        v10[1] = hDlg;
+        v10[0] = 76;
+        v10[3] = aProgramsExe;
+        v10[7] = lpString;
+        v10[8] = 260;
+        v10[13] = 4096;
+        if ( GetOpenFileNameA((LPOPENFILENAMEA)v10) )
+        {
+          SetDlgItemTextA(hDlg, 1002, lpString);
+          return 1;
+        }
+        break;
+      default:
+        return 0;
+    }
+  }
+  return 1;
+}
+// ENDFUNC
+// FUNC 100016a0 FindActiveBrowser
+int FindActiveBrowser()
+{
+  LPSTR *v0; // esi
+  UINT *v1; // edi
+  char *v2; // ebp
+  unsigned int v3; // ebp
+  _BYTE *v4; // ebx
+  LPCSTR *v5; // edi
+  _DWORD *v6; // esi
+  HWND v7; // eax
+  LPARAM *v8; // esi
+  LPARAM v9; // edx
+  HMODULE ModuleHandleA; // esi
+  HANDLE (__stdcall *CreateToolhelp32Snapshot)(DWORD, DWORD); // ebx
+  BOOL (__stdcall *Process32Next)(HANDLE, LPPROCESSENTRY32); // eax
+  int (__stdcall *v14)(HANDLE, _DWORD *); // esi
+  HANDLE v15; // eax
+  LPCSTR *v16; // edi
+  _DWORD *v17; // esi
+  int v18; // [esp+18h] [ebp-2344h] BYREF
+  HWND hWnd; // [esp+1Ch] [ebp-2340h] BYREF
+  LPARAM v20[2]; // [esp+20h] [ebp-233Ch] BYREF
+  LPARAM lParam[2]; // [esp+28h] [ebp-2334h] BYREF
+  _DWORD v22[9]; // [esp+30h] [ebp-232Ch] BYREF
+  CHAR String1[260]; // [esp+54h] [ebp-2308h] BYREF
+  CHAR Filename[260]; // [esp+158h] [ebp-2204h] BYREF
+  CHAR String2[256]; // [esp+25Ch] [ebp-2100h] BYREF
+  _BYTE v26[8192]; // [esp+35Ch] [ebp-2000h] BYREF
+
+  v18 = 0;
+  v0 = (LPSTR *)malloc(0x14u);
+  hWnd = (HWND)v0;
+  v1 = (UINT *)&unk_100090C8;
+  v2 = (char *)((_BYTE *)malloc(0x14u) - (_BYTE *)v0);
+  do
+  {
+    *v0 = (LPSTR)malloc(0x14u);
+    *(_DWORD *)&v2[(_DWORD)v0] = malloc(0x104u);
+    LoadStringA(hInstance, *v1, *v0, 20);
+    sub_10001AD0(*v0, *(LPBYTE *)&v2[(_DWORD)v0], 260);
+    v1 += 2;
+    ++v0;
+  }
+  while ( (int)v1 < (int)aProcess32next );
+  if ( dword_10009F28 != 0 )
+  {
+    v3 = 0;
+    v20[0] = sub_10001EF0(v26, 256);
+    if ( v20[0] != 0 )
+    {
+      v4 = v26;
+      while ( v18 == 0 )
+      {
+        v5 = (LPCSTR *)hWnd;
+        v6 = &unk_100090CC;
+        do
+        {
+          if ( v18 != 0 )
+            break;
+          if ( lstrcmpiA(v4 + 16, *v5) == 0 )
+            v18 = sub_100019C0(*(_DWORD *)v4, *v6);
+          v6 += 2;
+          ++v5;
+        }
+        while ( (int)v6 < (int)&aProcess32next[4] );
+        ++v3;
+        v4 += 32;
+        if ( v3 >= v20[0] )
+          goto LABEL_13;
+      }
+    }
+    else
+    {
+LABEL_13:
+      if ( v18 == 0 )
+      {
+        v7 = nullptr;
+        hWnd = nullptr;
+        lParam[0] = (LPARAM)&hWnd;
+        v8 = (LPARAM *)&unk_100090CC;
+        while ( v7 == nullptr )
+        {
+          lParam[1] = (LPARAM)AppName;
+          EnumWindows(EnumFunc, (LPARAM)lParam);
+          v7 = hWnd;
+          if ( hWnd != nullptr )
+          {
+            if ( IsIconic(hWnd) )
+              ShowWindow(hWnd, 9);
+            v9 = *v8;
+            v20[0] = (LPARAM)&v18;
+            v20[1] = v9;
+            EnumChildWindows(hWnd, sub_10001C10, (LPARAM)v20);
+            v7 = hWnd;
+          }
+          v8 += 2;
+          if ( (int)v8 >= (int)&aProcess32next[4] )
+            return v18;
+        }
+      }
+    }
+    return v18;
+  }
+  ModuleHandleA = GetModuleHandleA(ModuleName);
+  CreateToolhelp32Snapshot = (HANDLE (__stdcall *)(DWORD, DWORD))GetProcAddress(ModuleHandleA, ProcName);
+  v20[0] = (LPARAM)GetProcAddress(ModuleHandleA, aProcess32first);
+  Process32Next = (BOOL (__stdcall *)(HANDLE, LPPROCESSENTRY32))GetProcAddress(ModuleHandleA, aProcess32next);
+  lParam[0] = (LPARAM)Process32Next;
+  if ( CreateToolhelp32Snapshot != nullptr )
+  {
+    v14 = (int (__stdcall *)(HANDLE, _DWORD *))v20[0];
+    if ( v20[0] != 0 && Process32Next != nullptr )
+    {
+      v15 = CreateToolhelp32Snapshot(2, 0);
+      v20[0] = (LPARAM)v15;
+      if ( v15 != (HANDLE)-1 )
+      {
+        v22[0] = 296;
+        if ( v14(v15, v22) != 0 )
+        {
+          do
+          {
+            if ( v18 != 0 )
+              break;
+            v16 = (LPCSTR *)hWnd;
+            v17 = &unk_100090CC;
+            do
+            {
+              if ( v18 != 0 )
+                break;
+              if ( lstrcmpiA(String1, *(LPCSTR *)&v2[(_DWORD)v16]) != 0 )
+              {
+                _splitpath(String1, nullptr, nullptr, Filename, String2);
+                lstrcatA(Filename, String2);
+                if ( lstrcmpiA(Filename, *v16) != 0 )
+                  continue;
+              }
+              v18 = sub_100019C0(v22[2], *v17);
+              v17 += 2;
+              ++v16;
+            }
+            while ( (int)v17 < (int)&aProcess32next[4] );
+          }
+          while ( ((int (__stdcall *)(LPARAM, _DWORD *))lParam[0])(v20[0], v22) != 0 );
+        }
+        CloseHandle((HANDLE)v20[0]);
+      }
+      return v18;
+    }
+  }
+  sub_10002330(8u);
+  return 0;
+}
+// ENDFUNC
+// FUNC 100019c0 sub_100019C0
+int __cdecl sub_100019C0(LPARAM a1, LPARAM a2)
+{
+  LPARAM lParam[2]; // [esp+0h] [ebp-Ch] BYREF
+  int v4; // [esp+8h] [ebp-4h]
+
+  lParam[0] = a1;
+  lParam[1] = a2;
+  v4 = 0;
+  EnumWindows(sub_10001A00, (LPARAM)lParam);
+  return v4;
+}
+// ENDFUNC
+// FUNC 10001a00 sub_10001A00
+BOOL __stdcall sub_10001A00(HWND hWnd, HWND *lParam)
+{
+  HWND v2; // esi
+
+  v2 = hWnd;
+  if ( !IsWindowEnabled(hWnd) )
+    return true;
+  if ( !IsWindowVisible(v2) )
+    return true;
+  hWnd = nullptr;
+  if ( GetWindowThreadProcessId(v2, (LPDWORD)&hWnd) == 0 || hWnd != *lParam )
+    return true;
+  EnumChildWindows(v2, sub_10001A60, (LPARAM)lParam);
+  return false;
+}
+// ENDFUNC
+// FUNC 10001a60 sub_10001A60
+BOOL __stdcall sub_10001A60(HWND hWnd, LPARAM a2)
+{
+  CHAR ClassName[80]; // [esp+4h] [ebp-50h] BYREF
+
+  if ( !IsWindowEnabled(hWnd) )
+    return true;
+  if ( !IsWindowVisible(hWnd) )
+    return true;
+  GetClassNameA(hWnd, ClassName, 80);
+  if ( lstrcmpA(ClassName, aEdit) != 0 || GetWindowLongA(hWnd, -12) != *(_DWORD *)(a2 + 4) )
+    return true;
+  *(_DWORD *)(a2 + 8) = hWnd;
+  return false;
+}
+// ENDFUNC
+// FUNC 10001ad0 sub_10001AD0
+int __cdecl sub_10001AD0(LPCSTR lpString2, LPBYTE lpData, DWORD a3)
+{
+  HKEY phkResult; // [esp+4h] [ebp-10Ch] BYREF
+  DWORD cbData; // [esp+8h] [ebp-108h] BYREF
+  DWORD Type; // [esp+Ch] [ebp-104h] BYREF
+  CHAR Buffer[256]; // [esp+10h] [ebp-100h] BYREF
+
+  LoadStringA(hInstance, 5u, Buffer, 256);
+  lstrcatA(Buffer, lpString2);
+  if ( RegOpenKeyExA(HKEY_LOCAL_MACHINE, Buffer, 0, 1u, &phkResult) == 0 )
+  {
+    cbData = a3;
+    if ( RegQueryValueExA(phkResult, nullptr, nullptr, &Type, lpData, &cbData) == 0
+      && _access((const char *)lpData, 0) == 0 )
+    {
+      return 1;
+    }
+  }
+  *lpData = 0;
+  return 0;
+}
+// ENDFUNC
+// FUNC 10001b80 EnumFunc
+BOOL __stdcall EnumFunc(HWND hWnd, LPARAM a2)
+{
+  size_t v2; // eax
+  BOOL result; // eax
+  CHAR String[256]; // [esp+8h] [ebp-100h] BYREF
+
+  if ( !IsWindowEnabled(hWnd) )
+    return true;
+  if ( !IsWindowVisible(hWnd) )
+    return true;
+  if ( GetParent(hWnd) != nullptr )
+    return true;
+  GetWindowTextA(hWnd, String, 256);
+  v2 = lstrlenA(*(LPCSTR *)(a2 + 4));
+  result = _strnicmp(String, *(const char **)(a2 + 4), v2);
+  if ( result )
+    return true;
+  **(_DWORD **)a2 = hWnd;
+  return result;
+}
+// ENDFUNC
+// FUNC 10001c10 sub_10001C10
+BOOL __stdcall sub_10001C10(HWND hWnd, LPARAM a2)
+{
+  if ( !IsWindowEnabled(hWnd) || !IsWindowVisible(hWnd) || GetWindowLongA(hWnd, -12) != *(_DWORD *)(a2 + 4) )
+    return true;
+  **(_DWORD **)a2 = hWnd;
+  return false;
+}
+// ENDFUNC
+// FUNC 10001c50 sub_10001C50
+BOOL __cdecl sub_10001C50(char *Str)
+{
+  void *v2; // esi
+  const char *v3; // eax
+  char *v4; // esi
+  char *v5; // eax
+
+  if ( Str == nullptr )
+    return false;
+  v2 = (void *)dword_10009F18(8, 0);
+  v3 = (const char *)GlobalLock(v2);
+  strncpy(Str, v3, 0x30Cu);
+  GlobalUnlock(v2);
+  GlobalFree(v2);
+  v4 = strrchr(Str, 92);
+  v5 = strrchr(Str, 47);
+  if ( v4 != nullptr && v4 > v5 )
+  {
+    *v4 = 0;
+    return strlen(Str) >= 2;
+  }
+  else
+  {
+    if ( v5 != nullptr && v5 > v4 )
+      *v5 = 0;
+    return strlen(Str) >= 2;
+  }
+}
+// ENDFUNC
+// FUNC 10001ce0 LDLLHandler
+int __stdcall LDLLHandler(__int16 a1, int a2, int a3)
+{
+  if ( a1 == 1 )
+    return 16;
+  if ( a1 == 10 )
+    return sub_10001D20(a2);
+  return 0;
+}
+// ENDFUNC
+// FUNC 10001d20 sub_10001D20
+int __cdecl sub_10001D20(_DWORD *a1)
+{
+  dword_10009EF0 = a1[1];
+  dword_10009F20 = a1[2];
+  dword_10009EFC = a1[3];
+  dword_10009EE8 = a1[4];
+  dword_10009F14 = a1[5];
+  dword_10009EF8 = a1[6];
+  dword_10009F1C = a1[7];
+  dword_10009EEC = a1[8];
+  dword_10009F04 = a1[9];
+  dword_10009F08 = a1[10];
+  dword_10009F0C = a1[11];
+  dword_10009F10 = a1[12];
+  dword_10009F00 = a1[13];
+  dword_10009EF4 = a1[14];
+  dword_10009F18 = (int (__stdcall *)(_DWORD, _DWORD))a1[15];
+  dword_10009EE4 = a1[16];
+  return 1;
+}
+// ENDFUNC
+// FUNC 10001dc0 LaunchBrowser
+int __stdcall LaunchBrowser(const char *a1, int a2, const char *a3)
+{
+  struct _PROCESS_INFORMATION ProcessInformation; // [esp+0h] [ebp-4F0h] BYREF
+  struct _STARTUPINFOA StartupInfo; // [esp+10h] [ebp-4E0h] BYREF
+  CHAR CommandLine[400]; // [esp+54h] [ebp-49Ch] BYREF
+  CHAR CurrentDirectory[780]; // [esp+1E4h] [ebp-30Ch] BYREF
+
+  if ( a2 == 0 )
+    return 0;
+  if ( !sub_10001C50(CurrentDirectory) )
+    CurrentDirectory[0] = 0;
+  wsprintfA(CommandLine, "%s %s", a1, a3);
+  memset(&StartupInfo, 0, sizeof(StartupInfo));
+  StartupInfo.cb = 68;
+  if ( !CreateProcessA(
+          nullptr,
+          CommandLine,
+          nullptr,
+          nullptr,
+          false,
+          0,
+          nullptr,
+          CurrentDirectory,
+          &StartupInfo,
+          &ProcessInformation) )
+  {
+    sub_10002330(0xDu);
+    MessageBoxA(nullptr, CommandLine, Caption, 0);
+    return 0;
+  }
+  return 1;
+}
+// ENDFUNC
+// FUNC 10001e90 _DllMain@12
+BOOL __stdcall DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
+{
+  BOOL result; // eax
+  struct _OSVERSIONINFOA VersionInformation; // [esp+0h] [ebp-94h] BYREF
+
+  if ( fdwReason != 1 )
+    return true;
+  hInstance = hinstDLL;
+  VersionInformation.dwOSVersionInfoSize = 148;
+  GetVersionExA(&VersionInformation);
+  result = true;
+  if ( VersionInformation.dwPlatformId == 2 )
+    dword_10009F28 = 1;
+  return result;
+}
+// ENDFUNC
+// FUNC 10001ef0 sub_10001EF0
+int __cdecl sub_10001EF0(_DWORD *a1, int a2)
+{
+  LSTATUS (__stdcall *v2)(HKEY, LPCSTR, LPDWORD, LPDWORD, LPBYTE, LPDWORD); // esi
+  char *v3; // ebx
+  const char *v4; // ebp
+  const char *v5; // esi
+  int v6; // ecx
+  const char *v7; // esi
+  int v8; // eax
+  const char *v9; // esi
+  int v10; // edx
+  unsigned int v11; // kr10_4
+  char v12; // al
+  _WORD *v13; // edx
+  LSTATUS v14; // eax
+  _WORD *v15; // edi
+  char v16; // dl
+  DWORD v17; // ecx
+  char *v18; // edi
+  int v19; // edx
+  _DWORD *v20; // eax
+  unsigned int v21; // esi
+  char *v22; // ecx
+  _DWORD *v23; // ebp
+  char *v24; // ebx
+  int v25; // ecx
+  _DWORD *v26; // eax
+  int v27; // ecx
+  bool v28; // zf
+  _WORD *Block; // [esp+10h] [ebp-520h]
+  DWORD cbData; // [esp+14h] [ebp-51Ch] BYREF
+  int v32; // [esp+18h] [ebp-518h]
+  HKEY phkResult; // [esp+1Ch] [ebp-514h] BYREF
+  DWORD Type; // [esp+20h] [ebp-510h] BYREF
+  unsigned int v35; // [esp+24h] [ebp-50Ch]
+  int v36; // [esp+28h] [ebp-508h]
+  CHAR MultiByteStr[260]; // [esp+2Ch] [ebp-504h] BYREF
+  CHAR SubKey[1024]; // [esp+130h] [ebp-400h] BYREF
+
+  v35 = a2 - 1;
+  sprintf(SubKey, "%s\\%03x", aSoftwareMicros, 9);
+  if ( RegOpenKeyExA(HKEY_LOCAL_MACHINE, SubKey, 0, 0x20019u, &phkResult) != 0 )
+    goto LABEL_48;
+  v2 = RegQueryValueExA;
+  if ( RegQueryValueExA(phkResult, aCounters, nullptr, &Type, nullptr, &cbData) != 0 )
+    goto LABEL_48;
+  v3 = (char *)malloc(cbData);
+  if ( v3 == nullptr )
+    goto LABEL_48;
+  memset(v3, 0, cbData);
+  if ( RegQueryValueExA(phkResult, aCounters, nullptr, &Type, (LPBYTE)v3, &cbData) != 0 )
+    goto LABEL_46;
+  v4 = v3;
+  if ( *v3 != 0 )
+  {
+    do
+    {
+      if ( v4 > v3 )
+      {
+        v5 = v4 - 2;
+        if ( isdigit(*(v4 - 2)) != 0 )
+        {
+          do
+            v6 = *--v5;
+          while ( isdigit(v6) != 0 );
+        }
+      }
+      if ( _strcmpi(v4, aProcess) != 0 )
+      {
+        if ( _strcmpi(v4, aIdProcess) == 0 )
+        {
+          v9 = v4 - 2;
+          if ( isdigit(*(v4 - 2)) != 0 )
+          {
+            do
+              v10 = *--v9;
+            while ( isdigit(v10) != 0 );
+          }
+          v32 = atol(v9 + 1);
+        }
+      }
+      else
+      {
+        v7 = v4 - 2;
+        if ( isdigit(*(v4 - 2)) != 0 )
+        {
+          do
+            v8 = *--v7;
+          while ( isdigit(v8) != 0 );
+        }
+        strcpy(SubKey, v7 + 1);
+      }
+      v11 = strlen(v4) + 1;
+      v12 = v4[v11];
+      v4 += v11;
+    }
+    while ( v12 != 0 );
+    v2 = RegQueryValueExA;
+  }
+  free(v3);
+  cbData = 51200;
+  v13 = malloc(0xC800u);
+  Block = v13;
+  if ( v13 != nullptr )
+  {
+    memset(v13, 0, cbData);
+    while ( 1 )
+    {
+      v14 = v2(HKEY_PERFORMANCE_DATA, SubKey, nullptr, &Type, (LPBYTE)v13, &cbData);
+      if ( v14 == 0 )
+        break;
+      if ( v14 != 234 )
+        goto LABEL_45;
+      cbData += 25600;
+      v15 = realloc(Block, cbData);
+      v16 = cbData;
+      v17 = cbData >> 2;
+      Block = v15;
+      memset(v15, 0, 4 * (cbData >> 2));
+      v18 = (char *)&v15[2 * v17];
+      LOBYTE(v17) = v16;
+      v13 = Block;
+      memset(v18, 0, v17 & 3);
+    }
+    if ( cbData != 0 && *Block == 80 && Block[1] == 69 && Block[2] == 82 && Block[3] == 70 )
+    {
+      v19 = 0;
+      v20 = (_DWORD *)((char *)Block + *((_DWORD *)Block + 6));
+      v21 = v20[8];
+      v22 = (char *)v20 + v20[2];
+      if ( v21 != 0 )
+      {
+        while ( *((_DWORD *)v22 + 1) != v32 )
+        {
+          v22 += 40;
+          if ( ++v19 >= v21 )
+            goto LABEL_34;
+        }
+        v36 = *((_DWORD *)v22 + 9);
+      }
+LABEL_34:
+      a2 = v35;
+      if ( v35 >= v20[10] )
+        a2 = v20[10];
+      v23 = (_DWORD *)((char *)v20 + v20[1]);
+      if ( a2 != 0 )
+      {
+        v32 = a2;
+        v24 = (char *)(a1 + 4);
+        do
+        {
+          if ( WideCharToMultiByte(0, 0, (LPCWCH)((char *)v23 + v23[4]), -1, MultiByteStr, 260, nullptr, nullptr) == 0 )
+            strcpy(v24, aUnknown);
+          if ( strlen(MultiByteStr) + 4 <= 0x10 )
+          {
+            strcpy(v24, MultiByteStr);
+            strcat(v24, aExe);
+          }
+          v25 = v36;
+          v26 = (_DWORD *)((char *)v23 + *v23);
+          *((_DWORD *)v24 - 2) = 0;
+          v27 = *(_DWORD *)((char *)v26 + v25);
+          *a1 = v27;
+          if ( v27 == 0 )
+            *a1 = -2;
+          v23 = (_DWORD *)((char *)v26 + *v26);
+          v24 += 32;
+          v28 = v32 == 1;
+          a1 += 8;
+          --v32;
+        }
+        while ( !v28 );
+      }
+    }
+LABEL_45:
+    v3 = (char *)Block;
+LABEL_46:
+    if ( v3 != nullptr )
+      free(v3);
+  }
+LABEL_48:
+  RegCloseKey(phkResult);
+  RegCloseKey(HKEY_PERFORMANCE_DATA);
+  return a2;
+}
+// ENDFUNC
+// FUNC 10002330 sub_10002330
+int __cdecl sub_10002330(UINT uID)
+{
+  int result; // eax
+  CHAR Caption[80]; // [esp+4h] [ebp-150h] BYREF
+  CHAR Buffer[256]; // [esp+54h] [ebp-100h] BYREF
+
+  result = LoadStringA(hInstance, uID, Buffer, 256);
+  if ( result != 0 )
+  {
+    result = LoadStringA(hInstance, 7u, Caption, 80);
+    if ( result != 0 )
+      return MessageBoxA(nullptr, Buffer, Caption, 0x40u);
+  }
+  return result;
+}
+// ENDFUNC
+// FUNC 100023a0 StoreBrowserName
+int __stdcall StoreBrowserName(LPCSTR lpString)
+{
+  int v2; // eax
+  HKEY phkResult; // [esp+0h] [ebp-108h] BYREF
+  DWORD dwDisposition; // [esp+4h] [ebp-104h] BYREF
+  CHAR Buffer[256]; // [esp+8h] [ebp-100h] BYREF
+
+  LoadStringA(hInstance, 6u, Buffer, 256);
+  if ( RegCreateKeyExA(HKEY_LOCAL_MACHINE, Buffer, 0, Class, 0, 0x20006u, nullptr, &phkResult, &dwDisposition) == 0 )
+  {
+    v2 = lstrlenA(lpString);
+    if ( RegSetValueExA(phkResult, ValueName, 0, 1u, (const BYTE *)lpString, v2 + 1) == 0 )
+      return 1;
+  }
+  sub_10002330(0xCu);
+  return 0;
+}
+// ENDFUNC
+// FUNC 10002450 INETWH_Initialize
+void INETWH_Initialize()
+{
+  ;
+}
+// ENDFUNC
+// FUNC 10002460 sub_10002460
+int __cdecl sub_10002460(LPBYTE lpData)
+{
+  HKEY v2; // eax
+  HKEY phkResult; // [esp+Ch] [ebp-208h] BYREF
+  DWORD cbData; // [esp+10h] [ebp-204h] BYREF
+  BYTE Data[256]; // [esp+14h] [ebp-200h] BYREF
+  CHAR SubKey[256]; // [esp+114h] [ebp-100h] BYREF
+
+  phkResult = nullptr;
+  if ( RegOpenKeyExA(HKEY_CLASSES_ROOT, ::SubKey, 0, 0x20019u, &phkResult) != 0 )
+    return 0;
+  v2 = phkResult;
+  if ( phkResult == nullptr )
+    goto LABEL_12;
+  cbData = 256;
+  if ( RegQueryValueExA(phkResult, nullptr, nullptr, nullptr, Data, &cbData) == 0 )
+  {
+    RegCloseKey(phkResult);
+    phkResult = nullptr;
+    if ( lstrlenA((LPCSTR)Data) <= 0 )
+      return 0;
+    sprintf(SubKey, "%s\\shell\\open\\command", (const char *)Data);
+    if ( RegOpenKeyExA(HKEY_CLASSES_ROOT, SubKey, 0, 0x20019u, &phkResult) != 0 )
+      return 0;
+    v2 = phkResult;
+    if ( phkResult == nullptr )
+      goto LABEL_12;
+    cbData = 520;
+    if ( RegQueryValueExA(phkResult, nullptr, nullptr, nullptr, lpData, &cbData) == 0 )
+    {
+      RegCloseKey(phkResult);
+      return 1;
+    }
+  }
+  v2 = phkResult;
+LABEL_12:
+  RegCloseKey(v2);
+  return 0;
+}
+// ENDFUNC
+// FUNC 100025a0 sub_100025A0
+BOOL __cdecl sub_100025A0(_BYTE *a1, const char *a2, char *lpFileName)
+{
+  int v3; // ebx
+
+  if ( a1 == nullptr || a2 == nullptr || lpFileName == nullptr )
+    return false;
+  strcpy(lpFileName, a2);
+  strcat(lpFileName, asc_10009204);
+  v3 = *a1 == 46;
+  if ( a1[v3] == 92 )
+    ++v3;
+  if ( a1[v3] == 47 )
+    ++v3;
+  strcat(lpFileName, &a1[v3]);
+  return GetFileAttributesA(lpFileName) != -1;
+}
+// ENDFUNC
+// FUNC 10002670 sub_10002670
+int __cdecl sub_10002670(char *Source, const char *a2, char *lpFileName)
+{
+  char *v4; // edx
+  char Destination[780]; // [esp+10h] [ebp-618h] BYREF
+  char Str[780]; // [esp+31Ch] [ebp-30Ch] BYREF
+
+  strncpy(Destination, Source, 0x30Bu);
+  _strlwr(Destination);
+  if ( strchr(Source, 58) == nullptr
+    && strstr(Source, SubStr) == nullptr
+    && strstr(Destination, aHt) != nullptr
+    && strlen(a2) > 2
+    && sub_100025A0(Source, a2, lpFileName) )
+  {
+    return 1;
+  }
+  if ( strstr(Source, aMsitstore) == nullptr )
+    return 0;
+  if ( strstr(Source, asc_10009220) == nullptr )
+    return 0;
+  if ( strstr(Source, aChm) == nullptr )
+    return 0;
+  v4 = strstr(Source, aMsitstore);
+  strncpy(Str, &v4[strlen(aMsitstore)], 0x30Cu);
+  *strstr(Str, asc_10009220) = 0;
+  if ( !sub_100025A0(Str, a2, Destination) )
+    return 0;
+  strcpy(lpFileName, aMkMsitstore);
+  strcat(lpFileName, Destination);
+  strcat(lpFileName, strstr(Source, asc_10009220));
+  return 1;
+}
+// ENDFUNC
+// FUNC 10002860 Internet
+int __stdcall Internet(char *Source)
+{
+  int result; // eax
+  CHAR *v2; // esi
+  char *v3; // eax
+  int v4; // [esp+0h] [ebp-C10h] BYREF
+  struct _PROCESS_INFORMATION ProcessInformation; // [esp+4h] [ebp-C0Ch] BYREF
+  struct _STARTUPINFOA StartupInfo; // [esp+14h] [ebp-BFCh] BYREF
+  char Str[520]; // [esp+58h] [ebp-BB8h] BYREF
+  CHAR CurrentDirectory[780]; // [esp+260h] [ebp-9B0h] BYREF
+  CHAR CommandLine[660]; // [esp+56Ch] [ebp-6A4h] BYREF
+  CHAR FileName[1040]; // [esp+800h] [ebp-410h] BYREF
+
+  v4 = 2;
+  if ( sub_10001000(Str, &v4) != 0 )
+    return LaunchBrowser(Str, v4, Source);
+  if ( sub_10002460((LPBYTE)Str) == 0 )
+    return sub_10002330(0x13u);
+  if ( !sub_10001C50(CurrentDirectory) )
+    CurrentDirectory[0] = 0;
+  v2 = Source;
+  if ( sub_10002670(Source, CurrentDirectory, FileName) != 0 )
+    v2 = FileName;
+  if ( strstr(Str, a1) != nullptr )
+  {
+    v3 = strstr(Str, a1);
+    *v3 = 0;
+    wsprintfA(CommandLine, "%s%s%s", Str, v2, v3 + 2);
+  }
+  else
+  {
+    wsprintfA(CommandLine, "%s \"%s\"", Str, v2);
+  }
+  memset(&StartupInfo, 0, sizeof(StartupInfo));
+  memset(&ProcessInformation, 0, sizeof(ProcessInformation));
+  StartupInfo.cb = 68;
+  result = CreateProcessA(
+             nullptr,
+             CommandLine,
+             nullptr,
+             nullptr,
+             false,
+             0,
+             nullptr,
+             CurrentDirectory,
+             &StartupInfo,
+             &ProcessInformation);
+  if ( result == 0 )
+    return sub_10002330(0x13u);
+  return result;
+}
+// ENDFUNC
+// FUNC 100029d0 Inet
+int __stdcall Inet(char *Source)
+{
+  return Internet(Source);
+}
+// ENDFUNC
+// FUNC 100029e0 GetOpenFileNameA
+// attributes: thunk
+BOOL __stdcall GetOpenFileNameA(LPOPENFILENAMEA a1)
+{
+  return __imp_GetOpenFileNameA(a1);
+}
+// ENDFUNC
+// FUNC 100029e6 __splitpath
+void __cdecl _splitpath(const char *FullPath, char *Drive, char *Dir, char *Filename, char *Ext)
+{
+  const char *v5; // ebx
+  char *v6; // eax
+  size_t v7; // esi
+  unsigned __int8 v8; // cl
+  size_t v9; // edi
+  size_t v10; // edi
+  unsigned int v11; // eax
+  unsigned int v12; // eax
+  unsigned __int8 *Source; // [esp+Ch] [ebp-4h]
+  const char *FullPatha; // [esp+18h] [ebp+8h]
+  char *Drivea; // [esp+1Ch] [ebp+Ch]
+
+  Source = nullptr;
+  v5 = FullPath;
+  if ( strlen(FullPath) != 0 && FullPath[1] == 58 )
+  {
+    if ( Drive != nullptr )
+    {
+      _mbsnbcpy((unsigned __int8 *)Drive, (const unsigned __int8 *)FullPath, 2u);
+      Drive[2] = 0;
+    }
+    v5 = FullPath + 2;
+  }
+  else if ( Drive != nullptr )
+  {
+    *Drive = 0;
+  }
+  Drivea = nullptr;
+  v6 = (char *)v5;
+  v7 = 255;
+  FullPatha = v5;
+  if ( *v5 == 0 )
+    goto LABEL_23;
+  do
+  {
+    v8 = *v6;
+    if ( (byte_1000B521[(unsigned __int8)*v6] & 4) != 0 )
+    {
+      ++v6;
+    }
+    else if ( v8 == 47 || v8 == 92 )
+    {
+      Drivea = v6 + 1;
+    }
+    else if ( v8 == 46 )
+    {
+      Source = (unsigned __int8 *)v6;
+    }
+    ++v6;
+  }
+  while ( *v6 != 0 );
+  FullPatha = v6;
+  if ( Drivea != nullptr )
+  {
+    if ( Dir != nullptr )
+    {
+      v9 = Drivea - v5;
+      if ( (unsigned int)(Drivea - v5) >= 0xFF )
+        v9 = 255;
+      _mbsnbcpy((unsigned __int8 *)Dir, (const unsigned __int8 *)v5, v9);
+      Dir[v9] = 0;
+      v6 = (char *)FullPatha;
+    }
+    v5 = Drivea;
+  }
+  else
+  {
+LABEL_23:
+    if ( Dir != nullptr )
+      *Dir = 0;
+  }
+  if ( Source != nullptr && Source >= (unsigned __int8 *)v5 )
+  {
+    if ( Filename != nullptr )
+    {
+      v10 = Source - (unsigned __int8 *)v5;
+      if ( (unsigned int)(Source - (unsigned __int8 *)v5) >= 0xFF )
+        v10 = 255;
+      _mbsnbcpy((unsigned __int8 *)Filename, (const unsigned __int8 *)v5, v10);
+      Filename[v10] = 0;
+      v6 = (char *)FullPatha;
+    }
+    if ( Ext != nullptr )
+    {
+      v11 = v6 - (char *)Source;
+      if ( v11 < 0xFF )
+        v7 = v11;
+      _mbsnbcpy((unsigned __int8 *)Ext, Source, v7);
+      Ext[v7] = 0;
+    }
+  }
+  else
+  {
+    if ( Filename != nullptr )
+    {
+      v12 = v6 - v5;
+      if ( v12 < 0xFF )
+        v7 = v12;
+      _mbsnbcpy((unsigned __int8 *)Filename, (const unsigned __int8 *)v5, v7);
+      Filename[v7] = 0;
+    }
+    if ( Ext != nullptr )
+      *Ext = 0;
+  }
+}
+// ENDFUNC
+// FUNC 10002b2d _malloc
+void *__cdecl malloc(size_t Size)
+{
+  return (void *)_nh_malloc(Size, dword_10009F44);
+}
+// ENDFUNC
+// FUNC 10002b3f __nh_malloc
+int __cdecl _nh_malloc(size_t Size, int a2)
+{
+  int result; // eax
+
+  if ( Size > 0xFFFFFFE0 )
+    return 0;
+  while ( 1 )
+  {
+    result = _heap_alloc(Size);
+    if ( result != 0 || a2 == 0 )
+      break;
+    if ( _callnewh(Size) == 0 )
+      return 0;
+  }
+  return result;
+}
+// ENDFUNC
+// FUNC 10002b6b __heap_alloc
+LPVOID __cdecl _heap_alloc(unsigned int a1)
+{
+  int v1; // esi
+  int v2; // edi
+
+  v1 = a1;
+  if ( a1 <= dword_10009414 )
+  {
+    _lock(9);
+    v2 = __sbh_alloc_block(a1);
+    _unlock(9);
+    if ( v2 != 0 )
+      return (LPVOID)v2;
+  }
+  if ( a1 == 0 )
+    v1 = 1;
+  return HeapAlloc(hHeap, 0, (v1 + 15) & 0xFFFFFFF0);
+}
+// ENDFUNC
+// FUNC 10002bc0 __alloca_probe
+void __usercall _alloca_probe(unsigned int a1@<eax>, char a2)
+{
+  char *i; // ecx
+
+  for ( i = &a2; a1 >= 0x1000; a1 -= 4096 )
+    i -= 4096;
+  __asm { retn }
+}
+// ENDFUNC
+// FUNC 10002bef _free
+void __cdecl free(void *Block)
+{
+  int v1; // eax
+
+  if ( Block != nullptr )
+  {
+    _lock(9);
+    v1 = __sbh_find_block(Block);
+    if ( v1 != 0 )
+    {
+      __sbh_free_block(v1, Block);
+      _unlock(9);
+    }
+    else
+    {
+      _unlock(9);
+      HeapFree(hHeap, 0, Block);
+    }
+  }
+}
+// ENDFUNC
+// FUNC 10002c40 _strrchr
+char *__cdecl strrchr(const char *Str, int Ch)
+{
+  unsigned int v2; // ecx
+  const char *v3; // edi
+  bool v4; // zf
+  char *v5; // edi
+
+  v2 = strlen(Str) + 1;
+  v3 = &Str[v2 - 1];
+  do
+  {
+    if ( v2 == 0 )
+      break;
+    v4 = *v3-- == (unsigned __int8)Ch;
+    --v2;
+  }
+  while ( !v4 );
+  v5 = (char *)(v3 + 1);
+  if ( *v5 == (_BYTE)Ch )
+    return v5;
+  else
+    return nullptr;
+}
+// ENDFUNC
+// FUNC 10002c70 _strncpy
+char *__cdecl strncpy(char *Destination, const char *Source, size_t Count)
+{
+  size_t v3; // ecx
+  size_t v4; // ebx
+  const char *v5; // esi
+  char *v6; // edi
+  size_t v7; // ecx
+  char v8; // al
+  size_t v10; // ecx
+  int v11; // eax
+  int v12; // edx
+
+  v3 = Count;
+  if ( Count == 0 )
+    return Destination;
+  v4 = Count;
+  v5 = Source;
+  v6 = Destination;
+  if ( ((unsigned __int8)Source & 3) == 0 )
+  {
+    v7 = Count >> 2;
+    if ( Count >> 2 != 0 )
+      goto main_loop_entrance;
+copy_tail_loop:
+    while ( 1 )
+    {
+      v8 = *v5++;
+      *v6++ = v8;
+      if ( v8 == 0 )
+        break;
+      if ( --v4 == 0 )
+        return Destination;
+    }
+    while ( --v4 != 0 )
+finish_loop:
+      *v6++ = v8;
+    return Destination;
+  }
+  do
+  {
+    v8 = *v5++;
+    *v6++ = v8;
+    if ( --v3 == 0 )
+      return Destination;
+    if ( v8 == 0 )
+    {
+      while ( ((unsigned __int8)v6 & 3) != 0 )
+      {
+        *v6++ = 0;
+        if ( --v3 == 0 )
+          return Destination;
+      }
+      v4 = v3;
+      v10 = v3 >> 2;
+      if ( v10 == 0 )
+        goto finish_loop;
+      goto fill_dwords_with_EOS;
+    }
+  }
+  while ( ((unsigned __int8)v5 & 3) != 0 );
+  LOBYTE(v4) = v3;
+  v7 = v3 >> 2;
+  if ( v7 == 0 )
+  {
+tail_loop_start:
+    v4 &= 3u;
+    if ( v4 != 0 )
+      goto copy_tail_loop;
+    return Destination;
+  }
+  while ( 1 )
+  {
+main_loop_entrance:
+    v11 = (*(_DWORD *)v5 + 2130640639) ^ ~*(_DWORD *)v5;
+    v12 = *(_DWORD *)v5;
+    v5 += 4;
+    if ( (v11 & 0x81010100) != 0 )
+    {
+      if ( (_BYTE)v12 == 0 )
+        break;
+      if ( BYTE1(v12) == 0 )
+      {
+        *(_DWORD *)v6 = (unsigned __int8)v12;
+        goto fill_with_EOS_dwords;
+      }
+      if ( (v12 & 0xFF0000) == 0 )
+      {
+        *(_DWORD *)v6 = (unsigned __int16)v12;
+        goto fill_with_EOS_dwords;
+      }
+      if ( (v12 & 0xFF000000) == 0 )
+      {
+        *(_DWORD *)v6 = v12;
+        goto fill_with_EOS_dwords;
+      }
+    }
+    *(_DWORD *)v6 = v12;
+    v6 += 4;
+    if ( --v7 == 0 )
+      goto tail_loop_start;
+  }
+  *(_DWORD *)v6 = 0;
+fill_with_EOS_dwords:
+  v6 += 4;
+  v8 = 0;
+  v10 = v7 - 1;
+  if ( v10 != 0 )
+  {
+fill_dwords_with_EOS:
+    v8 = 0;
+    do
+    {
+      *(_DWORD *)v6 = 0;
+      v6 += 4;
+      --v10;
+    }
+    while ( v10 != 0 );
+  }
+  v4 &= 3u;
+  if ( v4 != 0 )
+    goto finish_loop;
+  return Destination;
+}
+// ENDFUNC
+// FUNC 10002d6e _realloc
+void *__cdecl realloc(void *Block, size_t Size)
+{
+  size_t v3; // esi
+  void *v4; // edi
+  size_t v5; // eax
+  size_t v6; // eax
+  size_t v7; // eax
+  size_t Sizea; // [esp+18h] [ebp+Ch]
+
+  if ( Block == nullptr )
+    return malloc(Size);
+  v3 = Size;
+  if ( Size != 0 )
+  {
+    while ( 1 )
+    {
+      v4 = nullptr;
+      if ( v3 <= 0xFFFFFFE0 )
+      {
+        _lock(9);
+        v5 = __sbh_find_block(Block);
+        Sizea = v5;
+        if ( v5 != 0 )
+          break;
+        _unlock(9);
+        if ( v3 == 0 )
+          v3 = 1;
+        v3 = (v3 + 15) & 0xFFFFFFF0;
+        v4 = HeapReAlloc(hHeap, 0, Block, v3);
+LABEL_26:
+        if ( v4 != nullptr )
+          return v4;
+      }
+      if ( dword_10009F44 == 0 )
+        return v4;
+      if ( _callnewh(v3) == 0 )
+        return nullptr;
+    }
+    if ( v3 <= dword_10009414 )
+    {
+      if ( __sbh_resize_block(v5, Block, v3) != 0 )
+      {
+        v4 = Block;
+LABEL_22:
+        _unlock(9);
+        goto LABEL_26;
+      }
+      v4 = (void *)__sbh_alloc_block(v3);
+      if ( v4 != nullptr )
+      {
+        v6 = *((_DWORD *)Block - 1) - 1;
+        if ( v6 >= v3 )
+          v6 = v3;
+        memcpy(v4, Block, v6);
+        __sbh_free_block(Sizea, Block);
+        goto LABEL_22;
+      }
+    }
+    if ( v3 == 0 )
+      v3 = 1;
+    v3 = (v3 + 15) & 0xFFFFFFF0;
+    v4 = HeapAlloc(hHeap, 0, v3);
+    if ( v4 != nullptr )
+    {
+      v7 = *((_DWORD *)Block - 1) - 1;
+      if ( v7 >= v3 )
+        v7 = v3;
+      memcpy(v4, Block, v7);
+      __sbh_free_block(Sizea, Block);
+    }
+    goto LABEL_22;
+  }
+  free(Block);
+  return nullptr;
+}
+// ENDFUNC
+// FUNC 10002ea6 _atol
+int __cdecl atol(const char *String)
+{
+  int v2; // eax
+  int v3; // esi
+  const char *v4; // edi
+  int v5; // ebp
+  int v6; // ebx
+  int v7; // eax
+  int result; // eax
+
+  while ( 1 )
+  {
+    v2 = cbMultiByte <= 1
+       ? *((_BYTE *)off_10009420 + 2 * *(unsigned __int8 *)String) & 8
+       : _isctype(*(unsigned __int8 *)String, 8);
+    if ( v2 == 0 )
+      break;
+    ++String;
+  }
+  v3 = *(unsigned __int8 *)String;
+  v4 = String + 1;
+  v5 = v3;
+  if ( v3 == 45 || v3 == 43 )
+    v3 = *(unsigned __int8 *)v4++;
+  v6 = 0;
+  while ( 1 )
+  {
+    v7 = cbMultiByte <= 1 ? *((_BYTE *)off_10009420 + 2 * v3) & 4 : _isctype(v3, 4);
+    if ( v7 == 0 )
+      break;
+    v6 = v3 + 10 * v6 - 48;
+    v3 = *(unsigned __int8 *)v4++;
+  }
+  result = v6;
+  if ( v5 == 45 )
+    return -v6;
+  return result;
+}
+// ENDFUNC
+// FUNC 10002f31 _isdigit
+int __cdecl isdigit(int C)
+{
+  if ( cbMultiByte <= 1 )
+    return *((_BYTE *)off_10009420 + 2 * C) & 4;
+  else
+    return _isctype(C, 4);
+}
+// ENDFUNC
+// FUNC 10002f59 _sprintf
+int sprintf(char *const Buffer, const char *const Format, ...)
+{
+  int v2; // eax
+  bool v3; // sf
+  int v4; // esi
+  FILE File; // [esp+4h] [ebp-20h] BYREF
+  va_list va; // [esp+34h] [ebp+10h] BYREF
+
+  va_start(va, Format);
+  File._base = Buffer;
+  File._ptr = Buffer;
+  File._flag = 66;
+  File._cnt = 0x7FFFFFFF;
+  v2 = _output(&File, (int)Format, (int)va);
+  v3 = --File._cnt < 0;
+  v4 = v2;
+  if ( v3 )
+    _flsbuf(0, &File);
+  else
+    *File._ptr = 0;
+  return v4;
+}
+// ENDFUNC
+// FUNC 10002fb0 _strstr
+char *__cdecl strstr(const char *Str, const char *SubStr)
+{
+  char v2; // dl
+  const char *v3; // edi
+  char v4; // dh
+  const char *v5; // ecx
+  char *v6; // esi
+  char v7; // al
+  char v9; // ah
+  char v10; // al
+  char v11; // al
+
+  v2 = *SubStr;
+  v3 = Str;
+  if ( *SubStr == 0 )
+    return (char *)Str;
+  v4 = SubStr[1];
+  if ( v4 == 0 )
+    JUMPOUT(0x10003046);
+findnext:
+  v5 = SubStr;
+  v6 = (char *)(v3 + 1);
+  if ( *v3 == v2 )
+    goto first_char_found;
+  if ( *v3 != 0 )
+  {
+    while ( 2 )
+    {
+      v7 = *v6++;
+      while ( v7 == v2 )
+      {
+first_char_found:
+        v7 = *v6++;
+        if ( v7 == v4 )
+        {
+          v3 = v6 - 1;
+          while ( 1 )
+          {
+            v9 = v5[2];
+            if ( v9 == 0 )
+              break;
+            v10 = *v6;
+            v6 += 2;
+            if ( v10 != v9 )
+              goto findnext;
+            v11 = v5[3];
+            if ( v11 == 0 )
+              break;
+            v5 += 2;
+            if ( v11 != *(v6 - 1) )
+              goto findnext;
+          }
+          return (char *)(v3 - 1);
+        }
+      }
+      if ( v7 != 0 )
+        continue;
+      break;
+    }
+  }
+  return nullptr;
+}
+// ENDFUNC
+// FUNC 10003040 _strchr
+char *__cdecl strchr(const char *Str, int Val)
+{
+  const char *v2; // edx
+  char v3; // cl
+  int v4; // ecx
+  int v5; // esi
+  int v6; // eax
+  unsigned int v7; // eax
+  unsigned int v9; // eax
+  unsigned int v10; // eax
+
+  v2 = Str;
+  if ( ((unsigned __int8)Str & 3) != 0 )
+  {
+    while ( 1 )
+    {
+      v3 = *v2++;
+      if ( v3 == (_BYTE)Val )
+        return (char *)(v2 - 1);
+      if ( v3 == 0 )
+        return nullptr;
+      if ( ((unsigned __int8)v2 & 3) == 0 )
+        goto LABEL_5;
+    }
+  }
+  else
+  {
+    while ( 1 )
+    {
+LABEL_5:
+      while ( 1 )
+      {
+        v4 = (((unsigned __int8)Val << 8)
+            | (unsigned __int8)Val
+            | ((((unsigned __int8)Val << 8) | (unsigned __int8)Val) << 16))
+           ^ *(_DWORD *)v2;
+        v5 = *(_DWORD *)v2 + 2130640639;
+        v6 = v5 ^ ~*(_DWORD *)v2;
+        v2 += 4;
+        if ( (((v4 + 2130640639) ^ ~v4) & 0x81010100) != 0 )
+          break;
+        v7 = v6 & 0x81010100;
+        if ( v7 != 0 && ((v7 & 0x1010100) != 0 || (v5 & 0x80000000) == 0) )
+          return nullptr;
+      }
+      v9 = *((_DWORD *)v2 - 1);
+      if ( (_BYTE)v9 == (_BYTE)Val )
+        break;
+      if ( (_BYTE)v9 == 0 )
+        return nullptr;
+      if ( BYTE1(v9) == (_BYTE)Val )
+        return (char *)(v2 - 3);
+      if ( BYTE1(v9) == 0 )
+        return nullptr;
+      v10 = HIWORD(v9);
+      if ( (_BYTE)v10 == (_BYTE)Val )
+        return (char *)(v2 - 2);
+      if ( (_BYTE)v10 == 0 )
+        return nullptr;
+      if ( BYTE1(v10) == (_BYTE)Val )
+        return (char *)(v2 - 1);
+      if ( BYTE1(v10) == 0 )
+        return nullptr;
+    }
+    return (char *)(v2 - 4);
+  }
+}
+// ENDFUNC
+// FUNC 100030fc __strlwr
+char *__cdecl _strlwr(char *String)
+{
+  char *result; // eax
+  char *j; // edx
+  char v3; // cl
+  char *i; // edx
+  char v5; // cl
+  size_t v6; // eax
+  int v7; // ebx
+  CHAR *v8; // eax
+  char *Block; // [esp+8h] [ebp-8h]
+  int v10; // [esp+Ch] [ebp-4h]
+
+  Block = nullptr;
+  if ( dword_10009FC8 != 0 )
+  {
+    InterlockedIncrement(&Addend);
+    if ( dword_1000B3D8 != 0 )
+    {
+      InterlockedDecrement(&Addend);
+      _lock(19);
+      v10 = 1;
+    }
+    else
+    {
+      v10 = 0;
+    }
+    if ( dword_10009FC8 != 0 )
+    {
+      v6 = __crtLCMapStringA(dword_10009FC8, 0x100u, String, -1, nullptr, 0, 0, 1);
+      v7 = v6;
+      if ( v6 != 0 )
+      {
+        v8 = (CHAR *)malloc(v6);
+        Block = v8;
+        if ( v8 != nullptr && __crtLCMapStringA(dword_10009FC8, 0x100u, String, -1, v8, v7, 0, 1) != 0 )
+          strcpy(String, Block);
+      }
+      if ( v10 != 0 )
+        _unlock(19);
+      else
+        InterlockedDecrement(&Addend);
+      free(Block);
+      return String;
+    }
+    else
+    {
+      if ( v10 != 0 )
+        _unlock(19);
+      else
+        InterlockedDecrement(&Addend);
+      result = String;
+      for ( i = String; *i != 0; ++i )
+      {
+        v5 = *i;
+        if ( *i >= 65 && v5 <= 90 )
+          *i = v5 + 32;
+      }
+    }
+  }
+  else
+  {
+    result = String;
+    for ( j = String; *j != 0; ++j )
+    {
+      v3 = *j;
+      if ( *j >= 65 && v3 <= 90 )
+        *j = v3 + 32;
+    }
+  }
+  return result;
+}
+// ENDFUNC
+// FUNC 10003230 __CRT_INIT@12
+int __stdcall _CRT_INIT(int a1, int a2, int a3)
+{
+  int v3; // ecx
+  int v4; // eax
+
+  if ( a2 == 1 )
+  {
+    dword_10009FE4 = GetVersion();
+    if ( _heap_init(1) == 0 )
+      return 0;
+    v3 = BYTE1(dword_10009FE4);
+    v4 = (unsigned __int8)dword_10009FE4;
+    dword_10009FE4 = HIWORD(dword_10009FE4);
+    dword_10009FEC = v4;
+    dword_10009FF0 = v3;
+    dword_10009FE8 = v3 + (v4 << 8);
+    if ( _mtinit() == 0 )
+    {
+      _heap_term();
+      return 0;
+    }
+    dword_1000B628 = (int)GetCommandLineA();
+    Block = (char *)__crtGetEnvironmentStringsA();
+    _ioinit();
+    _setargv();
+    _setenvp();
+    _cinit();
+    ++__proc_attached;
+  }
+  else if ( a2 != 0 )
+  {
+    if ( a2 == 3 )
+      _freeptd(nullptr);
+  }
+  else
+  {
+    if ( __proc_attached <= 0 )
+      return 0;
+    --__proc_attached;
+    if ( dword_1000A01C == 0 )
+      _cexit();
+    _ioterm();
+    _mtterm();
+    _heap_term();
+  }
+  return 1;
+}
+// ENDFUNC
+// FUNC 10003309 DllEntryPoint
+BOOL __stdcall DllEntryPoint(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
+{
+  bool v4; // zf
+  BOOL v6; // eax
+  DWORD fdwReasona; // [esp+18h] [ebp+Ch]
+
+  if ( fdwReason != 0 )
+  {
+    if ( fdwReason != 1 && fdwReason != 2 )
+      goto LABEL_10;
+    if ( _pRawDllMain != nullptr && _pRawDllMain(hinstDLL, fdwReason, lpReserved) == 0 )
+      return false;
+    v4 = _CRT_INIT((int)hinstDLL, fdwReason, (int)lpReserved) == 0;
+  }
+  else
+  {
+    v4 = __proc_attached == 0;
+  }
+  if ( v4 )
+    return false;
+LABEL_10:
+  v6 = DllMain(hinstDLL, fdwReason, lpReserved);
+  fdwReasona = v6;
+  if ( fdwReason != 1 )
+  {
+LABEL_13:
+    if ( fdwReason == 0 || fdwReason == 3 )
+    {
+      if ( _CRT_INIT((int)hinstDLL, fdwReason, (int)lpReserved) == 0 )
+        fdwReasona = 0;
+      if ( fdwReasona != 0 && _pRawDllMain != nullptr )
+        return _pRawDllMain(hinstDLL, fdwReason, lpReserved);
+    }
+    return fdwReasona;
+  }
+  if ( !v6 )
+  {
+    _CRT_INIT((int)hinstDLL, 0, (int)lpReserved);
+    goto LABEL_13;
+  }
+  return fdwReasona;
+}
+// ENDFUNC
+// FUNC 100033a6 __amsg_exit
+void __cdecl __noreturn _amsg_exit(DWORD NumberOfBytesWritten)
+{
+  if ( dword_10009F38 == 1 || dword_10009F38 == 0 && dword_10009F3C == 1 )
+    _FF_MSGBANNER();
+  _NMSG_WRITE(NumberOfBytesWritten);
+  off_10009250(255);
+}
+// ENDFUNC
+// FUNC 100033d9 __setmbcp
+int __cdecl _setmbcp(int CodePage)
+{
+  UINT SystemCP; // eax
+  UINT v2; // ebx
+  int v3; // esi
+  int v4; // edx
+  _DWORD *v5; // eax
+  BYTE *v6; // ecx
+  BYTE v7; // dl
+  unsigned int i; // eax
+  int v9; // esi
+  char *v10; // ebx
+  unsigned __int8 *v11; // ecx
+  unsigned __int8 v12; // dl
+  unsigned int v13; // eax
+  unsigned int v14; // edi
+  char v15; // dl
+  LCID v16; // eax
+  _DWORD *v17; // esi
+  unsigned int j; // eax
+  struct _cpinfo CPInfo; // [esp+Ch] [ebp-18h] BYREF
+  unsigned int v21; // [esp+20h] [ebp-4h]
+  int CodePagea; // [esp+2Ch] [ebp+8h]
+
+  _lock(25);
+  SystemCP = getSystemCP(CodePage);
+  v2 = SystemCP;
+  CodePagea = SystemCP;
+  if ( SystemCP == ::CodePage )
+  {
+LABEL_2:
+    v3 = 0;
+    goto LABEL_34;
+  }
+  if ( SystemCP == 0 )
+  {
+LABEL_31:
+    setSBCS();
+LABEL_32:
+    setSBUpLow();
+    goto LABEL_2;
+  }
+  v4 = 0;
+  v5 = &unk_10009260;
+  do
+  {
+    if ( *v5 == v2 )
+    {
+      v21 = 0;
+      memset(&unk_1000B520, 0, 0x100u);
+      v9 = 48 * v4;
+      unk_1000B620 = 0;
+      v10 = (char *)&unk_10009270 + 48 * v4;
+      do
+      {
+        v11 = (unsigned __int8 *)v10;
+        if ( *v10 != 0 )
+        {
+          do
+          {
+            v12 = v11[1];
+            if ( v12 == 0 )
+              break;
+            v13 = *v11;
+            v14 = v12;
+            if ( v13 <= v12 )
+            {
+              v15 = byte_10009258[v21];
+              do
+                byte_1000B521[v13++] |= v15;
+              while ( v13 <= v14 );
+            }
+            v11 += 2;
+          }
+          while ( *v11 != 0 );
+        }
+        ++v21;
+        v10 += 8;
+      }
+      while ( v21 < 4 );
+      dword_1000B40C = 1;
+      ::CodePage = CodePagea;
+      v16 = CPtoLCID(CodePagea);
+      v17 = (_DWORD *)((char *)&unk_10009264 + v9);
+      unk_1000B400 = *v17++;
+      unk_1000B404 = *v17;
+      Locale = v16;
+      unk_1000B408 = v17[1];
+      goto LABEL_32;
+    }
+    v5 += 12;
+    ++v4;
+  }
+  while ( (int)v5 < (int)&dword_10009350 );
+  if ( GetCPInfo(v2, &CPInfo) )
+  {
+    Locale = 0;
+    memset(&unk_1000B520, 0, 0x100u);
+    unk_1000B620 = 0;
+    ::CodePage = v2;
+    if ( CPInfo.MaxCharSize <= 1 )
+    {
+      dword_1000B40C = 0;
+    }
+    else
+    {
+      if ( CPInfo.LeadByte[0] != 0 )
+      {
+        v6 = &CPInfo.LeadByte[1];
+        do
+        {
+          v7 = *v6;
+          if ( *v6 == 0 )
+            break;
+          for ( i = *(v6 - 1); i <= v7; ++i )
+            byte_1000B521[i] |= 4u;
+          v6 += 2;
+        }
+        while ( *(v6 - 1) != 0 );
+      }
+      for ( j = 1; j < 0xFF; ++j )
+        byte_1000B521[j] |= 8u;
+      Locale = CPtoLCID(v2);
+      dword_1000B40C = 1;
+    }
+    unk_1000B400 = 0;
+    unk_1000B404 = 0;
+    unk_1000B408 = 0;
+    goto LABEL_32;
+  }
+  if ( dword_10009F40 != 0 )
+    goto LABEL_31;
+  v3 = -1;
+LABEL_34:
+  _unlock(25);
+  return v3;
+}
+// ENDFUNC
+// FUNC 10003586 _getSystemCP
+UINT __cdecl getSystemCP(UINT a1)
+{
+  UINT result; // eax
+
+  result = a1;
+  dword_10009F40 = 0;
+  switch ( a1 )
+  {
+    case 0xFFFFFFFE:
+      dword_10009F40 = 1;
+      return GetOEMCP();
+    case 0xFFFFFFFD:
+      dword_10009F40 = 1;
+      return GetACP();
+    case 0xFFFFFFFC:
+      dword_10009F40 = 1;
+      return dword_10009FD8;
+    default:
+      break;
+  }
+  return result;
+}
+// ENDFUNC
+// FUNC 100035d0 _CPtoLCID
+int __cdecl CPtoLCID(int a1)
+{
+  switch ( a1 )
+  {
+    case 932:
+      return 1041;
+    case 936:
+      return 2052;
+    case 949:
+      return 1042;
+    case 950:
+      return 1028;
+    default:
+      return 0;
+  }
+}
+// ENDFUNC
+// FUNC 10003603 _setSBCS
+int setSBCS()
+{
+  memset(&unk_1000B520, 0, 0x100u);
+  unk_1000B620 = 0;
+  CodePage = 0;
+  dword_1000B40C = 0;
+  Locale = 0;
+  unk_1000B400 = 0;
+  unk_1000B404 = 0;
+  unk_1000B408 = 0;
+  return 0;
+}
+// ENDFUNC
+// FUNC 1000362c _setSBUpLow
+unsigned int setSBUpLow()
+{
+  unsigned int i; // eax
+  BYTE v1; // al
+  BYTE *v2; // edx
+  unsigned int v3; // ecx
+  unsigned int result; // eax
+  WORD *j; // ecx
+  char v6; // dl
+  char v7; // cl
+  WORD CharType[256]; // [esp+4h] [ebp-514h] BYREF
+  CHAR v9[256]; // [esp+204h] [ebp-314h] BYREF
+  CHAR DestStr[256]; // [esp+304h] [ebp-214h] BYREF
+  CHAR SrcStr[256]; // [esp+404h] [ebp-114h] BYREF
+  struct _cpinfo CPInfo; // [esp+504h] [ebp-14h] BYREF
+
+  if ( GetCPInfo(CodePage, &CPInfo) )
+  {
+    for ( i = 0; i < 0x100; ++i )
+      SrcStr[i] = i;
+    v1 = CPInfo.LeadByte[0];
+    SrcStr[0] = 32;
+    if ( CPInfo.LeadByte[0] != 0 )
+    {
+      v2 = &CPInfo.LeadByte[1];
+      do
+      {
+        v3 = *v2;
+        if ( v1 <= v3 )
+          memset(&SrcStr[v1], 0x20u, v3 - v1 + 1);
+        v2 += 2;
+        v1 = *(v2 - 1);
+      }
+      while ( v1 != 0 );
+    }
+    __crtGetStringTypeA(1u, SrcStr, 256, CharType, CodePage, Locale, 0);
+    __crtLCMapStringA(Locale, 0x100u, SrcStr, 256, DestStr, 256, CodePage, 0);
+    __crtLCMapStringA(Locale, 0x200u, SrcStr, 256, v9, 256, CodePage, 0);
+    result = 0;
+    for ( j = CharType; ; ++j )
+    {
+      if ( (*j & 1) != 0 )
+      {
+        byte_1000B521[result] |= 0x10u;
+        v6 = DestStr[result];
+      }
+      else
+      {
+        if ( (*j & 2) == 0 )
+        {
+          byte_1000B420[result] = 0;
+          goto LABEL_16;
+        }
+        byte_1000B521[result] |= 0x20u;
+        v6 = v9[result];
+      }
+      byte_1000B420[result] = v6;
+LABEL_16:
+      if ( ++result >= 0x100 )
+        return result;
+    }
+  }
+  for ( result = 0; result < 0x100; ++result )
+  {
+    if ( result >= 0x41 && result <= 0x5A )
+    {
+      byte_1000B521[result] |= 0x10u;
+      v7 = result + 32;
+LABEL_22:
+      byte_1000B420[result] = v7;
+      continue;
+    }
+    if ( result >= 0x61 && result <= 0x7A )
+    {
+      byte_1000B521[result] |= 0x20u;
+      v7 = result - 32;
+      goto LABEL_22;
+    }
+    byte_1000B420[result] = 0;
+  }
+  return result;
+}
+// ENDFUNC
+// FUNC 100037b1 ___initmbctable
+int __initmbctable()
+{
+  int result; // eax
+
+  if ( dword_1000B3C8 == 0 )
+  {
+    result = _setmbcp(-3);
+    dword_1000B3C8 = 1;
+  }
+  return result;
+}
+// ENDFUNC
+// FUNC 100037cd __mbsnbcpy
+unsigned __int8 *__cdecl _mbsnbcpy(unsigned __int8 *Dest, const unsigned __int8 *Source, size_t Count)
+{
+  unsigned __int8 *v3; // edi
+  size_t v5; // edx
+  const unsigned __int8 *v6; // ecx
+  unsigned __int8 v7; // al
+  bool v8; // zf
+  _BYTE *v9; // ecx
+  unsigned __int8 v10; // al
+  size_t v11; // eax
+  size_t v12; // edx
+
+  v3 = Dest;
+  if ( dword_1000B40C == 0 )
+    return (unsigned __int8 *)strncpy((char *)Dest, (const char *)Source, Count);
+  _lock(25);
+  v5 = Count;
+  if ( Count == 0 )
+    goto LABEL_14;
+  v6 = Source;
+  while ( 1 )
+  {
+    v7 = *v6;
+    --v5;
+    v8 = (byte_1000B521[*v6] & 4) == 0;
+    *v3 = *v6;
+    if ( v8 )
+    {
+      ++v3;
+      ++v6;
+      if ( v7 == 0 )
+        goto LABEL_14;
+      goto LABEL_10;
+    }
+    ++v3;
+    v9 = v6 + 1;
+    if ( v5 == 0 )
+    {
+      *(v3 - 1) = 0;
+      goto LABEL_14;
+    }
+    v10 = *v9;
+    --v5;
+    *v3++ = *v9;
+    v6 = v9 + 1;
+    if ( v10 == 0 )
+      break;
+LABEL_10:
+    if ( v5 == 0 )
+      goto LABEL_14;
+  }
+  *(v3 - 2) = 0;
+LABEL_14:
+  v11 = v5;
+  v12 = v5 - 1;
+  if ( v11 != 0 )
+    memset(v3, 0, v12 + 1);
+  _unlock(25);
+  return Dest;
+}
+// ENDFUNC
+// FUNC 10003870 _strlen
+size_t __cdecl strlen(const char *Str)
+{
+  const char *v1; // ecx
+  char v2; // al
+  int v3; // eax
+  int v4; // eax
+
+  v1 = Str;
+  if ( ((unsigned __int8)Str & 3) == 0 )
+    goto LABEL_4;
+  do
+  {
+    v2 = *v1++;
+    if ( v2 == 0 )
+      return v1 - 1 - Str;
+  }
+  while ( ((unsigned __int8)v1 & 3) != 0 );
+  while ( 1 )
+  {
+    do
+    {
+LABEL_4:
+      v3 = (*(_DWORD *)v1 + 2130640639) ^ ~*(_DWORD *)v1;
+      v1 += 4;
+    }
+    while ( (v3 & 0x81010100) == 0 );
+    v4 = *((_DWORD *)v1 - 1);
+    if ( (_BYTE)v4 == 0 )
+      break;
+    if ( BYTE1(v4) == 0 )
+      return v1 - 3 - Str;
+    if ( (v4 & 0xFF0000) == 0 )
+      return v1 - 2 - Str;
+    if ( (v4 & 0xFF000000) == 0 )
+      return v1 - 1 - Str;
+  }
+  return v1 - 4 - Str;
+}
+// ENDFUNC
+// FUNC 100038eb __callnewh
+int __cdecl _callnewh(size_t Size)
+{
+  return dword_10009F48 != nullptr && dword_10009F48(Size) != 0;
+}
+// ENDFUNC
+// FUNC 10003906 __heap_init
+int __cdecl _heap_init(int a1)
+{
+  hHeap = HeapCreate(a1 == 0, 0x1000u, 0);
+  if ( hHeap == nullptr )
+    return 0;
+  if ( __sbh_heap_init() == 0 )
+  {
+    HeapDestroy(hHeap);
+    return 0;
+  }
+  return 1;
+}
+// ENDFUNC
+// FUNC 10003942 __heap_term
+BOOL _heap_term()
+{
+  int v0; // ebx
+  LPVOID *v1; // esi
+
+  v0 = 0;
+  if ( dword_1000B3F0 > 0 )
+  {
+    v1 = (LPVOID *)((char *)lpMem + 12);
+    do
+    {
+      VirtualFree(*v1, 0x100000u, 0x4000u);
+      VirtualFree(*v1, 0, 0x8000u);
+      HeapFree(hHeap, 0, v1[1]);
+      v1 += 5;
+      ++v0;
+    }
+    while ( v0 < dword_1000B3F0 );
+  }
+  HeapFree(hHeap, 0, lpMem);
+  return HeapDestroy(hHeap);
+}
+// ENDFUNC
+// FUNC 100039b7 __mtinitlocks
+void _mtinitlocks()
+{
+  InitializeCriticalSection(lpCriticalSection);
+  InitializeCriticalSection(off_10009388);
+  InitializeCriticalSection(off_10009378);
+  InitializeCriticalSection(off_10009358);
+}
+// ENDFUNC
+// FUNC 100039e0 __mtdeletelocks
+void _mtdeletelocks()
+{
+  LPCRITICAL_SECTION *v0; // esi
+
+  v0 = &dword_10009354;
+  do
+  {
+    if ( *v0 != nullptr && v0 != &lpCriticalSection && v0 != &off_10009388 && v0 != &off_10009378 && v0 != &off_10009358 )
+    {
+      DeleteCriticalSection(*v0);
+      free(*v0);
+    }
+    ++v0;
+  }
+  while ( (int)v0 < (int)&dword_10009414 );
+  DeleteCriticalSection(off_10009378);
+  DeleteCriticalSection(off_10009388);
+  DeleteCriticalSection(lpCriticalSection);
+  DeleteCriticalSection(off_10009358);
+}
+// ENDFUNC
+// FUNC 10003a4c __lock
+void __cdecl _lock(int a1)
+{
+  LPCRITICAL_SECTION *v1; // esi
+  struct _RTL_CRITICAL_SECTION *v2; // edi
+
+  v1 = &dword_10009354 + a1;
+  if ( *v1 == nullptr )
+  {
+    v2 = (struct _RTL_CRITICAL_SECTION *)malloc(0x18u);
+    if ( v2 == nullptr )
+      _amsg_exit(0x11u);
+    _lock(17);
+    if ( *v1 != nullptr )
+    {
+      free(v2);
+    }
+    else
+    {
+      InitializeCriticalSection(v2);
+      *v1 = v2;
+    }
+    _unlock(17);
+  }
+  EnterCriticalSection(*v1);
+}
+// ENDFUNC
+// FUNC 10003aad __unlock
+void __cdecl _unlock(int a1)
+{
+  LeaveCriticalSection(*(&dword_10009354 + a1));
+}
+// ENDFUNC
+// FUNC 10003ac2 ___sbh_heap_init
+int __sbh_heap_init()
+{
+  int result; // eax
+
+  result = (int)HeapAlloc(hHeap, 0, 0x140u);
+  lpMem = (LPVOID)result;
+  if ( result != 0 )
+  {
+    dword_1000B3EC = nullptr;
+    dword_1000B3F0 = 0;
+    dword_1000B3E8 = result;
+    dword_1000B3E0 = 16;
+    return 1;
+  }
+  return result;
+}
+// ENDFUNC
+// FUNC 10003b00 ___sbh_find_block
+char *__cdecl __sbh_find_block(int a1)
+{
+  char *result; // eax
+
+  for ( result = (char *)lpMem; result < (char *)lpMem + 20 * dword_1000B3F0; result += 20 )
+  {
+    if ( (unsigned int)(a1 - *((_DWORD *)result + 3)) < 0x100000 )
+      return result;
+  }
+  return nullptr;
+}
+// ENDFUNC
+// FUNC 10003b2b ___sbh_free_block
+_DWORD *__cdecl __sbh_free_block(_DWORD *a1, unsigned int a2)
+{
+  int v2; // eax
+  int *v3; // edx
+  unsigned int v4; // esi
+  int v5; // ebx
+  int v6; // ecx
+  _BYTE *v7; // ecx
+  unsigned int v8; // edi
+  bool v9; // zf
+  _BYTE *v10; // ecx
+  unsigned int v11; // edi
+  int v12; // ecx
+  int v13; // edi
+  unsigned int v14; // edi
+  unsigned int v15; // ecx
+  _BYTE *v16; // ecx
+  unsigned int v17; // edx
+  _BYTE *v18; // ecx
+  unsigned int v19; // edx
+  _DWORD *v20; // ecx
+  _DWORD *result; // eax
+  LPVOID *v22; // eax
+  _DWORD *v23; // [esp+10h] [ebp-10h]
+  int v24; // [esp+14h] [ebp-Ch]
+  int v25; // [esp+18h] [ebp-8h]
+  int *v26; // [esp+18h] [ebp-8h]
+  int v27; // [esp+1Ch] [ebp-4h]
+  char v28; // [esp+2Fh] [ebp+Fh]
+
+  v2 = a1[4];
+  v3 = (int *)(a2 - 4);
+  v4 = (a2 - a1[3]) >> 15;
+  v5 = *(_DWORD *)(a2 - 4) - 1;
+  v27 = *(_DWORD *)(a2 - 8);
+  v24 = v5;
+  v23 = (_DWORD *)(516 * v4 + v2 + 324);
+  v6 = *(_DWORD *)(v5 + a2 - 4);
+  v25 = v6;
+  if ( (v6 & 1) == 0 )
+  {
+    a2 = (v6 >> 4) - 1;
+    if ( a2 > 0x3F )
+      a2 = 63;
+    if ( *(int *)((char *)v3 + v5 + 4) == *(int *)((char *)v3 + v5 + 8) )
+    {
+      if ( a2 >= 0x20 )
+      {
+        v10 = (_BYTE *)(a2 + v2 + 4);
+        v11 = ~(0x80000000 >> (a2 - 32));
+        *(_DWORD *)(v2 + 4 * v4 + 196) &= v11;
+        v9 = (*v10)-- == 1;
+        if ( v9 )
+          a1[1] &= v11;
+      }
+      else
+      {
+        v7 = (_BYTE *)(a2 + v2 + 4);
+        v8 = ~(0x80000000 >> a2);
+        *(_DWORD *)(v2 + 4 * v4 + 68) &= v8;
+        v9 = (*v7)-- == 1;
+        if ( v9 )
+          *a1 &= v8;
+      }
+    }
+    *(_DWORD *)(*(int *)((char *)v3 + v5 + 8) + 4) = *(int *)((char *)v3 + v5 + 4);
+    v12 = *(int *)((char *)v3 + v5 + 4);
+    v13 = *(int *)((char *)v3 + v5 + 8);
+    v5 += v25;
+    *(_DWORD *)(v12 + 8) = v13;
+    v24 = v5;
+  }
+  v14 = (v5 >> 4) - 1;
+  if ( v14 > 0x3F )
+    v14 = 63;
+  if ( (v27 & 1) == 0 )
+  {
+    v26 = (int *)((char *)v3 - v27);
+    v15 = (v27 >> 4) - 1;
+    a2 = v15;
+    if ( v15 > 0x3F )
+    {
+      a2 = 63;
+      v15 = 63;
+    }
+    v5 += v27;
+    v24 = v5;
+    v14 = (v5 >> 4) - 1;
+    if ( v14 > 0x3F )
+      v14 = 63;
+    if ( v15 != v14 )
+    {
+      if ( v26[1] == v26[2] )
+      {
+        if ( a2 >= 0x20 )
+        {
+          v18 = (_BYTE *)(a2 + v2 + 4);
+          v19 = ~(0x80000000 >> (a2 - 32));
+          *(_DWORD *)(v2 + 4 * v4 + 196) &= v19;
+          v9 = (*v18)-- == 1;
+          if ( v9 )
+            a1[1] &= v19;
+        }
+        else
+        {
+          v16 = (_BYTE *)(a2 + v2 + 4);
+          v17 = ~(0x80000000 >> a2);
+          *(_DWORD *)(v2 + 4 * v4 + 68) &= v17;
+          v9 = (*v16)-- == 1;
+          if ( v9 )
+            *a1 &= v17;
+        }
+      }
+      *(_DWORD *)(v26[2] + 4) = v26[1];
+      *(_DWORD *)(v26[1] + 8) = v26[2];
+    }
+    v3 = v26;
+  }
+  if ( (v27 & 1) != 0 || a2 != v14 )
+  {
+    v3[1] = v23[2 * v14 + 1];
+    v20 = &v23[2 * v14];
+    v3[2] = (int)v20;
+    v20[1] = v3;
+    *(_DWORD *)(v3[1] + 8) = v3;
+    if ( v3[1] == v3[2] )
+    {
+      v28 = *(_BYTE *)(v14 + v2 + 4);
+      *(_BYTE *)(v14 + v2 + 4) = v28 + 1;
+      if ( v14 >= 0x20 )
+      {
+        if ( v28 == 0 )
+          a1[1] |= 0x80000000 >> (v14 - 32);
+        *(_DWORD *)(v2 + 4 * v4 + 196) |= 0x80000000 >> (v14 - 32);
+      }
+      else
+      {
+        if ( v28 == 0 )
+          *a1 |= 0x80000000 >> v14;
+        *(_DWORD *)(v2 + 4 * v4 + 68) |= 0x80000000 >> v14;
+      }
+      v5 = v24;
+    }
+  }
+  result = (_DWORD *)(516 * v4 + v2 + 324);
+  *v3 = v5;
+  *(int *)((char *)v3 + v5 - 4) = v5;
+  v9 = (*v23)-- == 1;
+  if ( v9 )
+  {
+    if ( dword_1000B3EC == nullptr )
+      goto LABEL_46;
+    VirtualFree((LPVOID)(*((_DWORD *)dword_1000B3EC + 3) + (dword_1000B3E4 << 15)), 0x8000u, 0x4000u);
+    *((_DWORD *)dword_1000B3EC + 2) |= 0x80000000 >> dword_1000B3E4;
+    *(_DWORD *)(*((_DWORD *)dword_1000B3EC + 4) + 4 * dword_1000B3E4 + 196) = 0;
+    --*(_BYTE *)(*((_DWORD *)dword_1000B3EC + 4) + 67);
+    v22 = (LPVOID *)dword_1000B3EC;
+    if ( *(_BYTE *)(*((_DWORD *)dword_1000B3EC + 4) + 67) == 0 )
+    {
+      *((_DWORD *)dword_1000B3EC + 1) &= ~1u;
+      v22 = (LPVOID *)dword_1000B3EC;
+    }
+    if ( v22[2] == (LPVOID)-1 )
+    {
+      VirtualFree(v22[3], 0, 0x8000u);
+      HeapFree(hHeap, 0, *((LPVOID *)dword_1000B3EC + 4));
+      memcpy_0(
+        dword_1000B3EC,
+        (char *)dword_1000B3EC + 20,
+        (size_t)lpMem + 20 * dword_1000B3F0 - (_DWORD)dword_1000B3EC - 20);
+      result = a1;
+      --dword_1000B3F0;
+      if ( a1 > dword_1000B3EC )
+        result = a1 - 5;
+      dword_1000B3E8 = (int)lpMem;
+    }
+    else
+    {
+LABEL_46:
+      result = a1;
+    }
+    dword_1000B3EC = result;
+    dword_1000B3E4 = v4;
+  }
+  return result;
+}
+// ENDFUNC
+// FUNC 10003e56 ___sbh_alloc_block
+_DWORD *__cdecl __sbh_alloc_block(int a1)
+{
+  int v1; // ecx
+  unsigned int v2; // esi
+  char *i; // ebx
+  bool v4; // zf
+  bool v5; // zf
+  bool v6; // zf
+  _DWORD *v8; // eax
+  int v9; // edx
+  _DWORD *v10; // ecx
+  int v11; // edx
+  int v12; // edi
+  int v13; // ecx
+  int *v14; // edx
+  int v15; // ecx
+  int v16; // esi
+  unsigned int v17; // ebx
+  _BYTE *v18; // edi
+  unsigned int v19; // ebx
+  _BYTE *v20; // edi
+  int v21; // ebx
+  _DWORD *v22; // ecx
+  char v23; // cl
+  _DWORD *v24; // edx
+  int v25; // [esp+Ch] [ebp-14h]
+  int v26; // [esp+Ch] [ebp-14h]
+  signed int v27; // [esp+10h] [ebp-10h]
+  unsigned int v28; // [esp+14h] [ebp-Ch]
+  _DWORD *v29; // [esp+14h] [ebp-Ch]
+  unsigned int v30; // [esp+18h] [ebp-8h]
+  int v31; // [esp+18h] [ebp-8h]
+  char *v32; // [esp+1Ch] [ebp-4h]
+  int v33; // [esp+1Ch] [ebp-4h]
+  char *v34; // [esp+28h] [ebp+8h]
+
+  v32 = (char *)lpMem + 20 * dword_1000B3F0;
+  v27 = (a1 + 23) & 0xFFFFFFF0;
+  v1 = (v27 >> 4) - 1;
+  if ( v1 >= 32 )
+  {
+    v2 = 0;
+    v28 = 0;
+    v30 = 0xFFFFFFFF >> ((v27 >> 4) - 33);
+  }
+  else
+  {
+    v2 = 0xFFFFFFFF >> v1;
+    v30 = 0xFFFFFFFF;
+    v28 = 0xFFFFFFFF >> v1;
+  }
+  i = (char *)dword_1000B3E8;
+  v34 = (char *)dword_1000B3E8;
+  if ( dword_1000B3E8 < (unsigned int)lpMem + 20 * dword_1000B3F0 )
+  {
+    do
+    {
+      if ( (v2 & *(_DWORD *)i | v30 & *((_DWORD *)i + 1)) != 0 )
+        break;
+      i += 20;
+      v34 = i;
+    }
+    while ( i < v32 );
+  }
+  if ( i == v32 )
+  {
+    for ( i = (char *)lpMem; ; i += 20 )
+    {
+      v4 = i == (char *)dword_1000B3E8;
+      v34 = i;
+      if ( (unsigned int)i >= dword_1000B3E8 )
+        break;
+      if ( (v2 & *(_DWORD *)i | v30 & *((_DWORD *)i + 1)) != 0 )
+      {
+        v4 = i == (char *)dword_1000B3E8;
+        break;
+      }
+    }
+    if ( v4 )
+    {
+      while ( 1 )
+      {
+        v5 = i == v32;
+        if ( i >= v32 )
+          break;
+        if ( *((_DWORD *)i + 2) != 0 )
+        {
+          v5 = i == v32;
+          break;
+        }
+        i += 20;
+        v34 = i;
+      }
+      if ( v5 )
+      {
+        for ( i = (char *)lpMem; ; i += 20 )
+        {
+          v6 = i == (char *)dword_1000B3E8;
+          v34 = i;
+          if ( (unsigned int)i >= dword_1000B3E8 )
+            break;
+          if ( *((_DWORD *)i + 2) != 0 )
+          {
+            v6 = i == (char *)dword_1000B3E8;
+            break;
+          }
+        }
+        if ( v6 )
+        {
+          i = (char *)__sbh_alloc_new_region();
+          v34 = i;
+          if ( i == nullptr )
+            return nullptr;
+        }
+      }
+      **((_DWORD **)i + 4) = __sbh_alloc_new_group(i);
+      if ( **((_DWORD **)i + 4) == -1 )
+        return nullptr;
+    }
+  }
+  dword_1000B3E8 = (int)i;
+  v8 = *((_DWORD **)i + 4);
+  v9 = *v8;
+  v33 = *v8;
+  if ( *v8 == -1 || (v2 & v8[v9 + 17] | v30 & v8[v9 + 49]) == 0 )
+  {
+    v33 = 0;
+    v10 = v8 + 17;
+    v2 = v28;
+    if ( (v28 & v8[17] | v30 & v8[49]) == 0 )
+    {
+      do
+      {
+        v11 = v10[33];
+        ++v33;
+        ++v10;
+      }
+      while ( (*v10 & v28 | v30 & v11) == 0 );
+    }
+    v9 = v33;
+  }
+  v12 = 0;
+  v29 = &v8[129 * v9 + 81];
+  v13 = v2 & v8[v9 + 17];
+  if ( v13 == 0 )
+  {
+    v13 = v30 & v8[v9 + 49];
+    v12 = 32;
+  }
+  while ( v13 >= 0 )
+  {
+    v13 *= 2;
+    ++v12;
+  }
+  v14 = (int *)v29[2 * v12 + 1];
+  v31 = *v14 - v27;
+  v15 = v31;
+  v16 = (v31 >> 4) - 1;
+  if ( v16 > 63 )
+    v16 = 63;
+  if ( v16 == v12 )
+    goto LABEL_57;
+  if ( v14[1] != v14[2] )
+    goto LABEL_47;
+  if ( v12 >= 32 )
+  {
+    v19 = 0x80000000 >> (v12 - 32);
+    v20 = (char *)v8 + v12 + 4;
+    v21 = ~v19;
+    v8[v33 + 49] &= v21;
+    v4 = (*v20)-- == 1;
+    v26 = v21;
+    if ( v4 )
+    {
+      i = v34;
+      *((_DWORD *)v34 + 1) &= v26;
+      goto LABEL_47;
+    }
+  }
+  else
+  {
+    v17 = 0x80000000 >> v12;
+    v18 = (char *)v8 + v12 + 4;
+    v25 = ~v17;
+    v8[v33 + 17] &= ~v17;
+    v4 = (*v18)-- == 1;
+    if ( v4 )
+    {
+      i = v34;
+      *(_DWORD *)v34 &= v25;
+      goto LABEL_47;
+    }
+  }
+  i = v34;
+LABEL_47:
+  *(_DWORD *)(v14[2] + 4) = v14[1];
+  *(_DWORD *)(v14[1] + 8) = v14[2];
+  if ( v31 != 0 )
+  {
+    v22 = &v29[2 * v16];
+    v14[1] = v22[1];
+    v14[2] = (int)v22;
+    v22[1] = v14;
+    *(_DWORD *)(v14[1] + 8) = v14;
+    if ( v14[1] == v14[2] )
+    {
+      v23 = *((_BYTE *)v8 + v16 + 4);
+      if ( v16 >= 32 )
+      {
+        *((_BYTE *)v8 + v16 + 4) = v23 + 1;
+        if ( v23 == 0 )
+          *((_DWORD *)i + 1) |= 0x80000000 >> (v16 - 32);
+        v8[v33 + 49] |= 0x80000000 >> (v16 - 32);
+      }
+      else
+      {
+        *((_BYTE *)v8 + v16 + 4) = v23 + 1;
+        if ( v23 == 0 )
+          *(_DWORD *)i |= 0x80000000 >> v16;
+        v8[v33 + 17] |= 0x80000000 >> v16;
+      }
+    }
+    v15 = v31;
+LABEL_57:
+    if ( v15 != 0 )
+    {
+      *v14 = v15;
+      *(int *)((char *)v14 + v15 - 4) = v15;
+    }
+    goto LABEL_60;
+  }
+  v15 = 0;
+LABEL_60:
+  v24 = (int *)((char *)v14 + v15);
+  *v24 = v27 + 1;
+  *(_DWORD *)((char *)v24 + v27 - 4) = v27 + 1;
+  v4 = (*v29)++ == 0;
+  if ( v4 && i == dword_1000B3EC && v33 == dword_1000B3E4 )
+    dword_1000B3EC = nullptr;
+  *v8 = v33;
+  return v24 + 1;
+}
+// ENDFUNC
+// FUNC 1000415f ___sbh_alloc_new_region
+char *__sbh_alloc_new_region()
+{
+  int v0; // eax
+  void *v1; // eax
+  char *v2; // esi
+  LPVOID v3; // eax
+  LPVOID v4; // eax
+
+  v0 = dword_1000B3F0;
+  if ( dword_1000B3F0 == dword_1000B3E0 )
+  {
+    v1 = HeapReAlloc(hHeap, 0, lpMem, 4 * (5 * dword_1000B3E0 + 80));
+    if ( v1 == nullptr )
+      return nullptr;
+    dword_1000B3E0 += 16;
+    lpMem = v1;
+    v0 = dword_1000B3F0;
+  }
+  v2 = (char *)lpMem + 20 * v0;
+  v3 = HeapAlloc(hHeap, 8u, 0x41C4u);
+  *((_DWORD *)v2 + 4) = v3;
+  if ( v3 == nullptr )
+    return nullptr;
+  v4 = VirtualAlloc(nullptr, 0x100000u, 0x2000u, 4u);
+  *((_DWORD *)v2 + 3) = v4;
+  if ( v4 == nullptr )
+  {
+    HeapFree(hHeap, 0, *((LPVOID *)v2 + 4));
+    return nullptr;
+  }
+  *((_DWORD *)v2 + 2) = -1;
+  *(_DWORD *)v2 = 0;
+  *((_DWORD *)v2 + 1) = 0;
+  ++dword_1000B3F0;
+  **((_DWORD **)v2 + 4) = -1;
+  return v2;
+}
+// ENDFUNC
+// FUNC 10004210 ___sbh_alloc_new_group
+int __cdecl __sbh_alloc_new_group(_DWORD *a1)
+{
+  int v1; // esi
+  int v2; // eax
+  int v3; // ebx
+  int v4; // edx
+  int v5; // eax
+  _DWORD *v6; // edi
+  _DWORD *v8; // eax
+
+  v1 = a1[4];
+  v2 = a1[2];
+  v3 = 0;
+  while ( v2 >= 0 )
+  {
+    v2 *= 2;
+    ++v3;
+  }
+  v4 = 63;
+  v5 = 516 * v3 + v1 + 324;
+  do
+  {
+    *(_DWORD *)(v5 + 8) = v5;
+    *(_DWORD *)(v5 + 4) = v5;
+    v5 += 8;
+    --v4;
+  }
+  while ( v4 != 0 );
+  v6 = (_DWORD *)(a1[3] + (v3 << 15));
+  if ( VirtualAlloc(v6, 0x8000u, 0x1000u, 4u) == nullptr )
+    return -1;
+  if ( v6 < v6 + 7168 )
+  {
+    v8 = v6 + 4;
+    do
+    {
+      *(v8 - 2) = -1;
+      v8[1019] = -1;
+      *(v8 - 1) = 4080;
+      *v8 = v8 + 1023;
+      v8[1] = v8 - 1025;
+      v8[1018] = 4080;
+      v8 += 1024;
+    }
+    while ( v8 - 4 <= v6 + 7168 );
+  }
+  *(_DWORD *)(516 * v3 + v1 + 832) = v6 + 3;
+  v6[5] = 516 * v3 + v1 + 828;
+  *(_DWORD *)(516 * v3 + v1 + 836) = v6 + 7171;
+  v6[7172] = 516 * v3 + v1 + 828;
+  *(_DWORD *)(v1 + 4 * v3 + 68) = 0;
+  *(_DWORD *)(v1 + 4 * v3 + 196) = 1;
+  if ( (*(_BYTE *)(v1 + 67))++ == 0 )
+    a1[1] |= 1u;
+  a1[2] &= ~(0x80000000 >> v3);
+  return v3;
+}
+// ENDFUNC
+// FUNC 1000430b ___sbh_resize_block
+int __cdecl __sbh_resize_block(_DWORD *a1, int a2, int a3)
+{
+  int v3; // eax
+  signed int v4; // esi
+  unsigned int v5; // edx
+  int v6; // ecx
+  int v7; // ebx
+  int v8; // edi
+  unsigned int v9; // ecx
+  unsigned int v10; // ebx
+  _BYTE *v11; // ecx
+  int v12; // ebx
+  bool v13; // zf
+  unsigned int v14; // ebx
+  _BYTE *v15; // ecx
+  int v16; // ebx
+  unsigned int v17; // edi
+  int v18; // ecx
+  _DWORD *v19; // eax
+  char v20; // cl
+  int v21; // edx
+  int *v22; // eax
+  int v24; // ecx
+  int *v25; // ebx
+  unsigned int v26; // esi
+  unsigned int v27; // esi
+  unsigned int v28; // ebx
+  _BYTE *v29; // esi
+  int v30; // ebx
+  _BYTE *v31; // ecx
+  unsigned int v32; // ebx
+  unsigned int v33; // ecx
+  _DWORD *v34; // eax
+  char v35; // cl
+  int v36; // [esp+Ch] [ebp-Ch]
+  int v37; // [esp+10h] [ebp-8h]
+  int v38; // [esp+14h] [ebp-4h]
+  int v39; // [esp+14h] [ebp-4h]
+  int *v40; // [esp+24h] [ebp+Ch]
+  char v41; // [esp+27h] [ebp+Fh]
+  int v42; // [esp+28h] [ebp+10h]
+  unsigned int v43; // [esp+28h] [ebp+10h]
+  int v44; // [esp+28h] [ebp+10h]
+  char v45; // [esp+2Bh] [ebp+13h]
+
+  v3 = a1[4];
+  v4 = (a3 + 23) & 0xFFFFFFF0;
+  v5 = (unsigned int)(a2 - a1[3]) >> 15;
+  v36 = 516 * v5 + v3 + 324;
+  v6 = *(_DWORD *)(a2 - 4) - 1;
+  v42 = v6;
+  v7 = *(_DWORD *)(v6 + a2 - 4);
+  v8 = v6 + a2 - 4;
+  v38 = v7;
+  if ( v4 <= v6 )
+  {
+    if ( v4 < v6 )
+    {
+      v44 = v6 - v4;
+      v24 = v4 + 1;
+      *(_DWORD *)(a2 - 4) = v4 + 1;
+      v25 = (int *)(a2 + v4 - 4);
+      v40 = v25;
+      v26 = (v44 >> 4) - 1;
+      *(v25 - 1) = v24;
+      if ( v26 > 0x3F )
+        v26 = 63;
+      if ( (v38 & 1) == 0 )
+      {
+        v27 = (v38 >> 4) - 1;
+        if ( v27 > 0x3F )
+          v27 = 63;
+        if ( *(_DWORD *)(v8 + 4) == *(_DWORD *)(v8 + 8) )
+        {
+          if ( v27 >= 0x20 )
+          {
+            v31 = (_BYTE *)(v27 + v3 + 4);
+            v32 = ~(0x80000000 >> (v27 - 32));
+            *(_DWORD *)(v3 + 4 * v5 + 196) &= v32;
+            v13 = (*v31)-- == 1;
+            if ( v13 )
+              a1[1] &= v32;
+          }
+          else
+          {
+            v28 = 0x80000000 >> v27;
+            v29 = (_BYTE *)(v27 + v3 + 4);
+            v30 = ~v28;
+            *(_DWORD *)(v3 + 4 * v5 + 68) &= v30;
+            v13 = (*v29)-- == 1;
+            if ( v13 )
+              *a1 &= v30;
+          }
+          v25 = v40;
+        }
+        *(_DWORD *)(*(_DWORD *)(v8 + 8) + 4) = *(_DWORD *)(v8 + 4);
+        *(_DWORD *)(*(_DWORD *)(v8 + 4) + 8) = *(_DWORD *)(v8 + 8);
+        v44 += v38;
+        v26 = (v44 >> 4) - 1;
+        if ( v26 > 0x3F )
+          v26 = 63;
+      }
+      v33 = v36 + 8 * v26;
+      v25[1] = *(_DWORD *)(v33 + 4);
+      v25[2] = v33;
+      *(_DWORD *)(v33 + 4) = v25;
+      *(_DWORD *)(v25[1] + 8) = v25;
+      if ( v25[1] == v25[2] )
+      {
+        v41 = *(_BYTE *)(v26 + v3 + 4);
+        *(_BYTE *)(v26 + v3 + 4) = v41 + 1;
+        if ( v26 >= 0x20 )
+        {
+          if ( v41 == 0 )
+            a1[1] |= 0x80000000 >> (v26 - 32);
+          v34 = (_DWORD *)(v3 + 4 * v5 + 196);
+          v35 = v26 - 32;
+        }
+        else
+        {
+          if ( v41 == 0 )
+            *a1 |= 0x80000000 >> v26;
+          v34 = (_DWORD *)(v3 + 4 * v5 + 68);
+          v35 = v26;
+        }
+        *v34 |= 0x80000000 >> v35;
+      }
+      *v25 = v44;
+      *(int *)((char *)v25 + v44 - 4) = v44;
+    }
+  }
+  else
+  {
+    if ( (v7 & 1) != 0 || v4 > v6 + v7 )
+      return 0;
+    v9 = (v7 >> 4) - 1;
+    v37 = v9;
+    if ( v9 > 0x3F )
+    {
+      v9 = 63;
+      v37 = 63;
+    }
+    if ( *(_DWORD *)(v8 + 4) == *(_DWORD *)(v8 + 8) )
+    {
+      if ( v9 >= 0x20 )
+      {
+        v14 = 0x80000000 >> (v9 - 32);
+        v15 = (_BYTE *)(v37 + v3 + 4);
+        v16 = ~v14;
+        *(_DWORD *)(v3 + 4 * v5 + 196) &= v16;
+        v13 = (*v15)-- == 1;
+        if ( v13 )
+          a1[1] &= v16;
+      }
+      else
+      {
+        v10 = 0x80000000 >> v9;
+        v11 = (_BYTE *)(v37 + v3 + 4);
+        v12 = ~v10;
+        *(_DWORD *)(v3 + 4 * v5 + 68) &= v12;
+        v13 = (*v11)-- == 1;
+        if ( v13 )
+          *a1 &= v12;
+      }
+    }
+    *(_DWORD *)(*(_DWORD *)(v8 + 8) + 4) = *(_DWORD *)(v8 + 4);
+    *(_DWORD *)(*(_DWORD *)(v8 + 4) + 8) = *(_DWORD *)(v8 + 8);
+    v39 = v42 - v4 + v38;
+    if ( v39 <= 0 )
+    {
+      v21 = a2;
+    }
+    else
+    {
+      v17 = (v39 >> 4) - 1;
+      v18 = a2 + v4 - 4;
+      if ( v17 > 0x3F )
+        v17 = 63;
+      v43 = v36 + 8 * v17;
+      *(_DWORD *)(a2 + v4) = *(_DWORD *)(v43 + 4);
+      *(_DWORD *)(v18 + 8) = v43;
+      *(_DWORD *)(v43 + 4) = v18;
+      *(_DWORD *)(*(_DWORD *)(a2 + v4) + 8) = a2 + v4 - 4;
+      if ( *(_DWORD *)(a2 + v4) == *(_DWORD *)(a2 + v4 - 4 + 8) )
+      {
+        v45 = *(_BYTE *)(v17 + v3 + 4);
+        *(_BYTE *)(v17 + v3 + 4) = v45 + 1;
+        if ( v17 >= 0x20 )
+        {
+          if ( v45 == 0 )
+            a1[1] |= 0x80000000 >> (v17 - 32);
+          v19 = (_DWORD *)(v3 + 4 * v5 + 196);
+          v20 = v17 - 32;
+        }
+        else
+        {
+          if ( v45 == 0 )
+            *a1 |= 0x80000000 >> v17;
+          v19 = (_DWORD *)(v3 + 4 * v5 + 68);
+          v20 = v17;
+        }
+        *v19 |= 0x80000000 >> v20;
+      }
+      v21 = a2;
+      v22 = (int *)(a2 + v4 - 4);
+      *v22 = v39;
+      *(int *)((char *)v22 + v39 - 4) = v39;
+    }
+    *(_DWORD *)(v21 - 4) = v4 + 1;
+    *(_DWORD *)(v21 + v4 - 8) = v4 + 1;
+  }
+  return 1;
+}
+// ENDFUNC
+// FUNC 10004610 _memcpy
+void *__cdecl memcpy(void *a1, const void *Src, size_t Size)
+{
+  char *v3; // esi
+  char *v4; // edi
+  size_t v5; // ecx
+  void *result; // eax
+  char *v7; // esi
+  char *v8; // edi
+  size_t v9; // ecx
+
+  v3 = (char *)Src;
+  v4 = (char *)a1;
+  if ( a1 > Src && a1 < (char *)Src + Size )
+  {
+    v7 = (char *)Src + Size - 4;
+    v8 = (char *)a1 + Size - 4;
+    if ( ((unsigned __int8)v8 & 3) == 0 )
+    {
+      v9 = Size >> 2;
+      if ( Size >> 2 < 8 )
+      {
+        if ( v9 != 0 )
+          abort();
+      }
+      else
+      {
+        while ( v9 != 0 )
+        {
+          *(_DWORD *)v8 = *(_DWORD *)v7;
+          v7 -= 4;
+          v8 -= 4;
+          --v9;
+        }
+      }
+      switch ( Size & 3 )
+      {
+        case 0u:
+          goto TrailDown0;
+        case 1u:
+          goto TrailDown1;
+        case 2u:
+          goto TrailDown2;
+        case 3u:
+          goto TrailDown3;
+      }
+    }
+    switch ( Size )
+    {
+      case 0u:
+TrailDown0:
+        result = a1;
+        break;
+      case 1u:
+TrailDown1:
+        v8[3] = v7[3];
+        result = a1;
+        break;
+      case 2u:
+TrailDown2:
+        v8[3] = v7[3];
+        v8[2] = v7[2];
+        result = a1;
+        break;
+      case 3u:
+TrailDown3:
+        v8[3] = v7[3];
+        v8[2] = v7[2];
+        v8[1] = v7[1];
+        result = a1;
+        break;
+      default:
+        __asm { jmp     dword ptr ds:(loc_100047F4+4)[eax*4] }
+        return result;
+    }
+  }
+  else
+  {
+    if ( ((unsigned __int8)a1 & 3) != 0 )
+    {
+      if ( Size >= 4 )
+        __asm { jmp     dword ptr ds:(loc_1000466C+4)[eax*4] }
+      __asm { jmp     dword ptr ds:TrailUp0[ecx*4]; jumptable 10004645 case 0 }
+    }
+    v5 = Size >> 2;
+    switch ( v5 )
+    {
+      case 0u:
+        break;
+      case 1u:
+        goto UnwindUp1;
+      case 2u:
+        goto UnwindUp2;
+      case 3u:
+        goto UnwindUp3;
+      case 4u:
+        goto UnwindUp4;
+      case 5u:
+        goto UnwindUp5;
+      case 6u:
+        goto UnwindUp6;
+      case 7u:
+        *((_DWORD *)a1 + v5 - 7) = *((_DWORD *)Src + v5 - 7);
+UnwindUp6:
+        *((_DWORD *)a1 + v5 - 6) = *((_DWORD *)Src + v5 - 6);
+UnwindUp5:
+        *((_DWORD *)a1 + v5 - 5) = *((_DWORD *)Src + v5 - 5);
+UnwindUp4:
+        *((_DWORD *)a1 + v5 - 4) = *((_DWORD *)Src + v5 - 4);
+UnwindUp3:
+        *((_DWORD *)a1 + v5 - 3) = *((_DWORD *)Src + v5 - 3);
+UnwindUp2:
+        *((_DWORD *)a1 + v5 - 2) = *((_DWORD *)Src + v5 - 2);
+UnwindUp1:
+        *((_DWORD *)a1 + v5 - 1) = *((_DWORD *)Src + v5 - 1);
+        v3 = (char *)Src + 4 * v5;
+        v4 = (char *)a1 + 4 * v5;
+        break;
+      default:
+        qmemcpy(a1, Src, 4 * v5);
+        v3 = (char *)Src + 4 * v5;
+        v4 = (char *)a1 + 4 * v5;
+        break;
+    }
+    switch ( Size & 3 )
+    {
+      case 0u:
+        result = a1;
+        break;
+      case 1u:
+        *v4 = *v3;
+        result = a1;
+        break;
+      case 2u:
+        *v4 = *v3;
+        v4[1] = v3[1];
+        result = a1;
+        break;
+      case 3u:
+        *v4 = *v3;
+        v4[1] = v3[1];
+        v4[2] = v3[2];
+        result = a1;
+        break;
+    }
+  }
+  return result;
+}
+// ENDFUNC
+// FUNC 10004945 __isctype
+int __cdecl _isctype(int C, int Type)
+{
+  int v2; // ecx
+  int v3; // eax
+  int result; // eax
+  int SrcStr; // [esp+0h] [ebp-4h] BYREF
+
+  SrcStr = v2;
+  if ( (unsigned int)(C + 1) <= 0x100 )
+  {
+    v3 = *((unsigned __int16 *)off_10009420 + C);
+    return Type & v3;
+  }
+  if ( *((char *)off_10009420 + 2 * BYTE1(C) + 1) >= 0 )
+  {
+    LOWORD(SrcStr) = (unsigned __int8)C;
+    result = __crtGetStringTypeA(1u, (LPCSTR)&SrcStr, 1, (LPWORD)&C + 1, 0, 0, 1);
+  }
+  else
+  {
+    LOBYTE(SrcStr) = BYTE1(C);
+    *(_WORD *)((char *)&SrcStr + 1) = (unsigned __int8)C;
+    result = __crtGetStringTypeA(1u, (LPCSTR)&SrcStr, 2, (LPWORD)&C + 1, 0, 0, 1);
+  }
+  if ( result != 0 )
+  {
+    v3 = HIWORD(C);
+    return Type & v3;
+  }
+  return result;
+}
+// ENDFUNC
+// FUNC 100049c0 __allmul
+unsigned __int64 __stdcall _allmul(__int64 a1, __int64 a2)
+{
+  if ( (HIDWORD(a1) | HIDWORD(a2)) != 0 )
+    return a1 * a2;
+  else
+    return (unsigned int)a2 * (unsigned __int64)(unsigned int)a1;
+}
+// ENDFUNC
+// FUNC 100049f4 __flsbuf
+int __cdecl _flsbuf(int Ch, FILE *File)
+{
+  FILE *v2; // esi
+  int flag; // eax
+  int v4; // ebx
+  int v5; // eax
+  char *base; // eax
+  signed int v7; // edi
+  _BYTE *v8; // eax
+
+  v2 = File;
+  flag = File->_flag;
+  v4 = File->_file;
+  if ( (flag & 0x82) != 0 && (flag & 0x40) == 0 )
+  {
+    if ( (flag & 1) == 0 )
+      goto LABEL_6;
+    File->_cnt = 0;
+    if ( (flag & 0x10) != 0 )
+    {
+      LOBYTE(flag) = flag & 0xFE;
+      v2->_ptr = v2->_base;
+      v2->_flag = flag;
+LABEL_6:
+      v5 = v2->_flag;
+      v2->_cnt = 0;
+      File = nullptr;
+      LOBYTE(v5) = v5 & 0xED | 2;
+      v2->_flag = v5;
+      if ( (v5 & 0x10C) == 0 && (v2 != (FILE *)&unk_10009840 && v2 != (FILE *)&unk_10009860 || _isatty(v4) == 0) )
+        _getbuf(v2);
+      if ( (v2->_flag & 0x108) != 0 )
+      {
+        base = v2->_base;
+        v7 = v2->_ptr - base;
+        v2->_ptr = base + 1;
+        v2->_cnt = v2->_bufsiz - 1;
+        if ( v7 <= 0 )
+        {
+          if ( v4 == -1 )
+            v8 = &unk_10009760;
+          else
+            v8 = (_BYTE *)(dword_1000B2C0[v4 >> 5] + 36 * (v4 & 0x1F));
+          if ( (v8[4] & 0x20) != 0 )
+            _lseek(v4, 0, 2);
+        }
+        else
+        {
+          File = (FILE *)_write(v4, base, v7);
+        }
+        *v2->_base = Ch;
+      }
+      else
+      {
+        v7 = 1;
+        File = (FILE *)_write(v4, &Ch, 1u);
+      }
+      if ( File == (FILE *)v7 )
+        return (unsigned __int8)Ch;
+      v2->_flag |= 0x20u;
+      return -1;
+    }
+  }
+  LOBYTE(flag) = flag | 0x20;
+  v2->_flag = flag;
+  return -1;
+}
+// ENDFUNC
+// FUNC 10004b0c __output
+int __cdecl _output(FILE *File, char *a2, int a3)
+{
+  int v3; // esi
+  char v4; // bl
+  char *v5; // edi
+  bool v6; // zf
+  int v7; // ecx
+  int v8; // eax
+  int int_arg; // eax
+  int v10; // eax
+  int v11; // esi
+  int v12; // eax
+  char *v13; // ecx
+  char *i; // eax
+  int v15; // edx
+  wchar_t short_arg; // ax
+  __int16 *v17; // eax
+  int v18; // ecx
+  unsigned int v19; // eax
+  int v20; // eax
+  char *j; // eax
+  int v22; // edx
+  _WORD *v23; // eax
+  __int64 v24; // rax
+  unsigned __int64 v25; // rdi
+  int v26; // eax
+  int v27; // ebx
+  unsigned __int64 v28; // kr08_8
+  _BYTE *v29; // eax
+  char *v30; // eax
+  char v31; // bl
+  int v32; // esi
+  wchar_t *v33; // ebx
+  int v34; // edi
+  wchar_t v35; // ax
+  int v36; // eax
+  int v37; // eax
+  char Str; // [esp+Ch] [ebp-248h] BYREF
+  char v40; // [esp+20Bh] [ebp-49h] BYREF
+  int v41; // [esp+20Ch] [ebp-48h]
+  int v42; // [esp+210h] [ebp-44h]
+  __int64 v43; // [esp+214h] [ebp-40h]
+  char MbCh[4]; // [esp+21Ch] [ebp-38h] BYREF
+  int v45; // [esp+220h] [ebp-34h]
+  int v46; // [esp+224h] [ebp-30h]
+  int v47; // [esp+228h] [ebp-2Ch]
+  int v48; // [esp+22Ch] [ebp-28h]
+  int v49; // [esp+230h] [ebp-24h]
+  int v50; // [esp+234h] [ebp-20h]
+  int v51; // [esp+238h] [ebp-1Ch]
+  _WORD v52[3]; // [esp+23Eh] [ebp-16h] BYREF
+  int v53; // [esp+244h] [ebp-10h]
+  int v54; // [esp+248h] [ebp-Ch]
+  int p_Str; // [esp+24Ch] [ebp-8h]
+  int v56; // [esp+250h] [ebp-4h]
+  char *v57; // [esp+260h] [ebp+Ch]
+
+  v3 = 0;
+  v4 = *a2;
+  v5 = a2 + 1;
+  v6 = *a2 == 0;
+  v54 = 0;
+  *(_DWORD *)&v52[1] = 0;
+  v57 = a2 + 1;
+  if ( !v6 )
+  {
+    v7 = v53;
+    while ( 1 )
+    {
+      if ( *(int *)&v52[1] < 0 )
+        return *(_DWORD *)&v52[1];
+      if ( v4 < 32 || v4 > 120 )
+        v8 = 0;
+      else
+        v8 = *((_BYTE *)&IsIconic + v4) & 0xF;
+      v46 = byte_10008180[8 * v8 + v3] >> 4;
+      switch ( v46 )
+      {
+        case 0:
+          goto $NORMAL_STATE$1535;
+        case 1:
+          v53 = -1;
+          v45 = 0;
+          v48 = 0;
+          v50 = 0;
+          v51 = 0;
+          v56 = 0;
+          v49 = 0;
+          goto LABEL_171;
+        case 2:
+          switch ( v4 )
+          {
+            case ' ':
+              v56 |= 2u;
+              break;
+            case '#':
+              LOBYTE(v56) = v56 | 0x80;
+              break;
+            case '+':
+              v56 |= 1u;
+              break;
+            case '-':
+              v56 |= 4u;
+              break;
+            case '0':
+              v56 |= 8u;
+              break;
+            default:
+              break;
+          }
+          goto LABEL_171;
+        case 3:
+          if ( v4 == 42 )
+          {
+            int_arg = get_int_arg(&a3);
+            v50 = int_arg;
+            if ( int_arg >= 0 )
+              goto LABEL_171;
+            v56 |= 4u;
+            v10 = -int_arg;
+          }
+          else
+          {
+            v10 = v4 + 10 * v50 - 48;
+          }
+          v50 = v10;
+          goto LABEL_171;
+        case 4:
+          v53 = 0;
+          goto LABEL_171;
+        case 5:
+          if ( v4 == 42 )
+          {
+            v53 = get_int_arg(&a3);
+            if ( v53 < 0 )
+              v53 = -1;
+          }
+          else
+          {
+            v53 = v4 + 10 * v7 - 48;
+          }
+          goto LABEL_171;
+        case 6:
+          switch ( v4 )
+          {
+            case 'I':
+              if ( *v5 == 54 && v5[1] == 52 )
+              {
+                BYTE1(v56) |= 0x80u;
+                v57 = v5 + 2;
+              }
+              else
+              {
+                v46 = 0;
+$NORMAL_STATE$1535:
+                v49 = 0;
+                if ( *((char *)off_10009420 + 2 * (unsigned __int8)v4 + 1) < 0 )
+                {
+                  write_char(v4, File, (int)&v52[1]);
+                  v4 = *v5;
+                  v57 = v5 + 1;
+                }
+                write_char(v4, File, (int)&v52[1]);
+              }
+              break;
+            case 'h':
+              v56 |= 0x20u;
+              break;
+            case 'l':
+              v56 |= 0x10u;
+              break;
+            case 'w':
+              BYTE1(v56) |= 8u;
+              break;
+            default:
+              break;
+          }
+          goto LABEL_171;
+        case 7:
+          if ( v4 > 103 )
+          {
+            switch ( v4 )
+            {
+              case 'i':
+                goto LABEL_114;
+              case 'n':
+                v23 = (_WORD *)get_int_arg(&a3);
+                if ( (v56 & 0x20) != 0 )
+                  *v23 = v52[1];
+                else
+                  *(_DWORD *)v23 = *(_DWORD *)&v52[1];
+                v48 = 1;
+                goto LABEL_171;
+              case 'o':
+                v54 = 8;
+                if ( (v56 & 0x80u) != 0 )
+                  BYTE1(v56) |= 2u;
+                break;
+              default:
+                switch ( v4 )
+                {
+                  case 'p':
+                    v53 = 8;
+LABEL_105:
+                    v47 = 7;
+                    break;
+                  case 's':
+                    goto LABEL_55;
+                  case 'u':
+                    goto LABEL_115;
+                  case 'x':
+                    v47 = 39;
+                    break;
+                  default:
+                    goto LABEL_148;
+                }
+                v54 = 16;
+                if ( (v56 & 0x80u) != 0 )
+                {
+                  LOBYTE(v52[0]) = 48;
+                  v51 = 2;
+                  HIBYTE(v52[0]) = v47 + 81;
+                }
+                break;
+            }
+LABEL_116:
+            if ( (v56 & 0x8000) == 0 )
+            {
+              if ( (v56 & 0x20) != 0 )
+              {
+                if ( (v56 & 0x40) != 0 )
+                  LODWORD(v24) = (__int16)get_int_arg(&a3);
+                else
+                  LODWORD(v24) = (unsigned __int16)get_int_arg(&a3);
+              }
+              else
+              {
+                if ( (v56 & 0x40) == 0 )
+                {
+                  v24 = (unsigned int)get_int_arg(&a3);
+                  goto LABEL_126;
+                }
+                LODWORD(v24) = get_int_arg(&a3);
+              }
+              v24 = (int)v24;
+            }
+            else
+            {
+              LODWORD(v24) = get_int64_arg(&a3);
+            }
+LABEL_126:
+            if ( (v56 & 0x40) != 0 && v24 < 0 )
+            {
+              HIDWORD(v25) = -(int)v24;
+              BYTE1(v56) |= 1u;
+              LODWORD(v25) = (unsigned __int64)-v24 >> 32;
+            }
+            else
+            {
+              v25 = __PAIR64__(v24, HIDWORD(v24));
+            }
+            if ( (v56 & 0x8000) == 0 )
+              LODWORD(v25) = 0;
+            if ( v53 >= 0 )
+              v56 &= ~8u;
+            else
+              v53 = 1;
+            if ( v25 == 0 )
+              v51 = 0;
+            p_Str = (int)&v40;
+            while ( 1 )
+            {
+              v26 = v53--;
+              if ( v26 <= 0 && v25 == 0 )
+                break;
+              v43 = v54;
+              v27 = __PAIR64__(v25, HIDWORD(v25)) % v54 + 48;
+              v28 = __PAIR64__(v25, HIDWORD(v25)) / v54;
+              v25 = __PAIR64__(v28, HIDWORD(v28));
+              if ( v27 > 57 )
+                LOBYTE(v27) = v47 + v27;
+              v29 = (_BYTE *)p_Str--;
+              *v29 = v27;
+            }
+            v30 = &v40 - p_Str++;
+            v54 = (int)v30;
+            if ( (v56 & 0x200) != 0 && (*(_BYTE *)p_Str != 48 || v30 == nullptr) )
+            {
+              --p_Str;
+              v20 = (int)(v30 + 1);
+              *(_BYTE *)p_Str = 48;
+              goto LABEL_147;
+            }
+            goto LABEL_148;
+          }
+          if ( v4 >= 101 )
+            goto LABEL_65;
+          if ( v4 > 88 )
+          {
+            switch ( v4 )
+            {
+              case 'Z':
+                v17 = (__int16 *)get_int_arg(&a3);
+                if ( v17 != nullptr && (v18 = *((_DWORD *)v17 + 1)) != 0 )
+                {
+                  if ( (v56 & 0x800) != 0 )
+                  {
+                    v19 = (unsigned int)*v17 >> 1;
+                    p_Str = v18;
+                    v54 = v19;
+                    v49 = 1;
+                    goto LABEL_148;
+                  }
+                  v49 = 0;
+                  p_Str = v18;
+                  v20 = *v17;
+                }
+                else
+                {
+                  p_Str = (int)off_10009640;
+                  v20 = strlen(off_10009640);
+                }
+                goto LABEL_147;
+              case 'c':
+                goto LABEL_69;
+              case 'd':
+LABEL_114:
+                v56 |= 0x40u;
+LABEL_115:
+                v54 = 10;
+                goto LABEL_116;
+              default:
+                goto LABEL_148;
+            }
+          }
+          switch ( v4 )
+          {
+            case 'X':
+              goto LABEL_105;
+            case 'C':
+              if ( (v56 & 0x830) == 0 )
+                BYTE1(v56) |= 8u;
+LABEL_69:
+              if ( (v56 & 0x810) != 0 )
+              {
+                short_arg = get_short_arg(&a3);
+                v54 = wctomb(&Str, short_arg);
+                if ( v54 < 0 )
+                  v48 = 1;
+              }
+              else
+              {
+                Str = get_int_arg(&a3);
+                v54 = 1;
+              }
+              p_Str = (int)&Str;
+              break;
+            case 'E':
+            case 'G':
+              v45 = 1;
+              v4 += 32;
+LABEL_65:
+              v56 |= 0x40u;
+              p_Str = (int)&Str;
+              if ( v7 >= 0 )
+              {
+                if ( v7 == 0 && v4 == 103 )
+                  v53 = 1;
+              }
+              else
+              {
+                v53 = 6;
+              }
+              a3 += 8;
+              v41 = *(_DWORD *)(a3 - 8);
+              v42 = *(_DWORD *)(a3 - 4);
+              off_10009AA0();
+            case 'S':
+              if ( (v56 & 0x830) == 0 )
+                BYTE1(v56) |= 8u;
+LABEL_55:
+              v11 = v53;
+              if ( v53 == -1 )
+                v11 = 0x7FFFFFFF;
+              v12 = get_int_arg(&a3);
+              v13 = (char *)v12;
+              p_Str = v12;
+              if ( (v56 & 0x810) != 0 )
+              {
+                if ( v12 == 0 )
+                {
+                  v13 = (char *)off_10009644;
+                  p_Str = (int)off_10009644;
+                }
+                v49 = 1;
+                for ( i = v13; ; i += 2 )
+                {
+                  v15 = v11--;
+                  if ( v15 == 0 || *(_WORD *)i == 0 )
+                    break;
+                }
+                v20 = (i - v13) >> 1;
+              }
+              else
+              {
+                if ( v12 == 0 )
+                {
+                  v13 = off_10009640;
+                  p_Str = (int)off_10009640;
+                }
+                for ( j = v13; ; ++j )
+                {
+                  v22 = v11--;
+                  if ( v22 == 0 || *j == 0 )
+                    break;
+                }
+                v20 = j - v13;
+              }
+LABEL_147:
+              v54 = v20;
+              break;
+            default:
+              break;
+          }
+LABEL_148:
+          if ( v48 != 0 )
+            goto LABEL_171;
+          v31 = v56;
+          if ( (v56 & 0x40) != 0 )
+          {
+            if ( (v56 & 0x100) != 0 )
+            {
+              LOBYTE(v52[0]) = 45;
+LABEL_156:
+              v51 = 1;
+              goto LABEL_157;
+            }
+            if ( (v56 & 1) != 0 )
+            {
+              LOBYTE(v52[0]) = 43;
+              goto LABEL_156;
+            }
+            if ( (v56 & 2) != 0 )
+            {
+              LOBYTE(v52[0]) = 32;
+              goto LABEL_156;
+            }
+          }
+LABEL_157:
+          v32 = v50 - v51 - v54;
+          if ( (v56 & 0xC) == 0 )
+            write_multi_char(32, v50 - v51 - v54, File, (int)&v52[1]);
+          write_string((int)v52, v51, File, (int)&v52[1]);
+          if ( (v31 & 8) != 0 && (v31 & 4) == 0 )
+            write_multi_char(48, v32, File, (int)&v52[1]);
+          if ( v49 != 0 && v54 > 0 )
+          {
+            v33 = (wchar_t *)p_Str;
+            v34 = v54 - 1;
+            do
+            {
+              v35 = *v33++;
+              v36 = wctomb(MbCh, v35);
+              if ( v36 <= 0 )
+                break;
+              write_string((int)MbCh, v36, File, (int)&v52[1]);
+              v37 = v34--;
+            }
+            while ( v37 != 0 );
+          }
+          else
+          {
+            write_string(p_Str, v54, File, (int)&v52[1]);
+          }
+          if ( (v56 & 4) != 0 )
+            write_multi_char(32, v32, File, (int)&v52[1]);
+LABEL_171:
+          v4 = *v57;
+          v5 = v57 + 1;
+          v6 = *v57++ == 0;
+          if ( v6 )
+            return *(_DWORD *)&v52[1];
+          v7 = v53;
+          v3 = v46;
+          break;
+        default:
+          goto LABEL_171;
+      }
+    }
+  }
+  return *(_DWORD *)&v52[1];
+}
+// ENDFUNC
+// FUNC 1000524d _write_char
+_DWORD *__cdecl write_char(int a1, FILE *File, _DWORD *a3)
+{
+  int v4; // eax
+  bool v5; // zf
+  _DWORD *result; // eax
+
+  if ( --File->_cnt < 0 )
+  {
+    v4 = _flsbuf(a1, File);
+  }
+  else
+  {
+    *File->_ptr++ = a1;
+    v4 = (unsigned __int8)a1;
+  }
+  v5 = v4 == -1;
+  result = a3;
+  if ( v5 )
+    *a3 = -1;
+  else
+    ++*a3;
+  return result;
+}
+// ENDFUNC
+// FUNC 10005282 _write_multi_char
+_DWORD *__cdecl write_multi_char(int a1, _DWORD *a2, FILE *File, _DWORD *a4)
+{
+  _DWORD *result; // eax
+  _DWORD *i; // edi
+
+  result = a2;
+  for ( i = (_DWORD *)((char *)a2 - 1); (int)result > 0; i = (_DWORD *)((char *)i - 1) )
+  {
+    result = write_char(a1, File, a4);
+    if ( *a4 == -1 )
+      break;
+    result = i;
+  }
+  return result;
+}
+// ENDFUNC
+// FUNC 100052b3 _write_string
+_DWORD *__cdecl write_string(char *a1, _DWORD *a2, FILE *File, _DWORD *a4)
+{
+  _DWORD *result; // eax
+  _DWORD *i; // ebx
+  int v7; // eax
+
+  result = a2;
+  for ( i = (_DWORD *)((char *)a2 - 1); (int)result > 0; i = (_DWORD *)((char *)i - 1) )
+  {
+    v7 = *a1++;
+    result = write_char(v7, File, a4);
+    if ( *a4 == -1 )
+      break;
+    result = i;
+  }
+  return result;
+}
+// ENDFUNC
+// FUNC 100052eb _get_int_arg
+int __cdecl get_int_arg(_DWORD *a1)
+{
+  *a1 += 4;
+  return *(_DWORD *)(*a1 - 4);
+}
+// ENDFUNC
+// FUNC 100052f8 _get_int64_arg
+__int64 __cdecl get_int64_arg(_DWORD *a1)
+{
+  *a1 += 8;
+  return *(_QWORD *)(*a1 - 8);
+}
+// ENDFUNC
+// FUNC 10005308 _get_short_arg
+__int16 __cdecl get_short_arg(_DWORD *a1)
+{
+  *a1 += 4;
+  return *(_WORD *)(*a1 - 4);
+}
+// ENDFUNC
+// FUNC 10005320 _strcpy
+char *__cdecl strcpy(char *Destination, const char *Source)
+{
+  JUMPOUT(0x10005391);
+}
+// ENDFUNC
+// FUNC 10005330 _strcat
+char *__cdecl strcat(char *Destination, const char *Source)
+{
+  char *v2; // ecx
+  char v3; // al
+  int v4; // eax
+  int v5; // eax
+  char *v6; // edi
+  const char *v7; // ecx
+  int v8; // edx
+  int v9; // eax
+
+  v2 = Destination;
+  if ( ((unsigned __int8)Destination & 3) == 0 )
+    goto find_end_of_dest_string_loop;
+  do
+  {
+    v3 = *v2++;
+    if ( v3 == 0 )
+    {
+start_byte_3:
+      v6 = v2 - 1;
+      goto copy_start;
+    }
+  }
+  while ( ((unsigned __int8)v2 & 3) != 0 );
+  while ( 1 )
+  {
+    do
+    {
+find_end_of_dest_string_loop:
+      v4 = (*(_DWORD *)v2 + 2130640639) ^ ~*(_DWORD *)v2;
+      v2 += 4;
+    }
+    while ( (v4 & 0x81010100) == 0 );
+    v5 = *((_DWORD *)v2 - 1);
+    if ( (_BYTE)v5 == 0 )
+      break;
+    if ( BYTE1(v5) == 0 )
+    {
+      v6 = v2 - 3;
+      goto copy_start;
+    }
+    if ( (v5 & 0xFF0000) == 0 )
+    {
+      v6 = v2 - 2;
+      goto copy_start;
+    }
+    if ( (v5 & 0xFF000000) == 0 )
+      goto start_byte_3;
+  }
+  v6 = v2 - 4;
+copy_start:
+  v7 = Source;
+  if ( ((unsigned __int8)Source & 3) == 0 )
+    goto LABEL_18;
+  while ( 1 )
+  {
+    LOBYTE(v8) = *v7++;
+    if ( (_BYTE)v8 == 0 )
+      break;
+    *v6++ = v8;
+    if ( ((unsigned __int8)v7 & 3) == 0 )
+    {
+      while ( 1 )
+      {
+LABEL_18:
+        v9 = (*(_DWORD *)v7 + 2130640639) ^ ~*(_DWORD *)v7;
+        v8 = *(_DWORD *)v7;
+        v7 += 4;
+        if ( (v9 & 0x81010100) != 0 )
+        {
+          if ( (_BYTE)v8 == 0 )
+            goto LABEL_26;
+          if ( BYTE1(v8) == 0 )
+          {
+            *(_WORD *)v6 = (unsigned __int8)v8;
+            return Destination;
+          }
+          if ( (v8 & 0xFF0000) == 0 )
+          {
+            *(_WORD *)v6 = v8;
+            v6[2] = 0;
+            return Destination;
+          }
+          if ( (v8 & 0xFF000000) == 0 )
+          {
+            *(_DWORD *)v6 = v8;
+            return Destination;
+          }
+        }
+        *(_DWORD *)v6 = v8;
+        v6 += 4;
+      }
+    }
+  }
+LABEL_26:
+  *v6 = v8;
+  return Destination;
+}
+// ENDFUNC
+// FUNC 10005410 ___crtLCMapStringA
+int __cdecl __crtLCMapStringA(
+        LCID Locale,
+        DWORD dwMapFlags,
+        LPCSTR lpSrcStr,
+        int cchSrc,
+        LPSTR lpDestStr,
+        int cchDest,
+        UINT CodePage,
+        int a8)
+{
+  int v9; // eax
+  int v10; // ebx
+  int v11; // eax
+  void *v12; // esp
+  int v13; // eax
+  int v14; // esi
+  int v15; // eax
+  void *v16; // esp
+  int v17; // eax
+  WCHAR v18[8]; // [esp+0h] [ebp-38h] BYREF
+  int v19; // [esp+10h] [ebp-28h]
+  LPWSTR lpWideCharStr; // [esp+14h] [ebp-24h]
+  WCHAR *v21; // [esp+18h] [ebp-20h]
+  int v22; // [esp+1Ch] [ebp-1Ch]
+  CPPEH_RECORD ms_exc; // [esp+20h] [ebp-18h]
+
+  if ( dword_10009FB0 == 0 )
+  {
+    if ( LCMapStringW(0, 0x100u, &SrcStr, 1, nullptr, 0) != 0 )
+    {
+      dword_10009FB0 = 1;
+    }
+    else
+    {
+      if ( LCMapStringA(0, 0x100u, byte_100081F4, 1, nullptr, 0) == 0 )
+        return 0;
+      dword_10009FB0 = 2;
+    }
+  }
+  if ( cchSrc > 0 )
+    cchSrc = strncnt(lpSrcStr, cchSrc);
+  if ( dword_10009FB0 == 2 )
+    return LCMapStringA(Locale, dwMapFlags, lpSrcStr, cchSrc, lpDestStr, cchDest);
+  if ( dword_10009FB0 != 1 )
+    return 0;
+  if ( CodePage == 0 )
+    CodePage = dword_10009FD8;
+  v9 = MultiByteToWideChar(CodePage, a8 != 0 ? 9 : 1, lpSrcStr, cchSrc, nullptr, 0);
+  v10 = v9;
+  v22 = v9;
+  if ( v9 == 0 )
+    return 0;
+  v11 = 2 * v9 + 3;
+  LOBYTE(v11) = v11 & 0xFC;
+  v12 = alloca(v11);
+  ms_exc.old_esp = (DWORD)v18;
+  lpWideCharStr = v18;
+  ms_exc.registration.TryLevel = 0xFFFFFFFF;
+  if ( v18 == nullptr )
+    return 0;
+  if ( MultiByteToWideChar(CodePage, 1u, lpSrcStr, cchSrc, lpWideCharStr, v10) == 0 )
+    return 0;
+  v13 = LCMapStringW(Locale, dwMapFlags, lpWideCharStr, v10, nullptr, 0);
+  v14 = v13;
+  v19 = v13;
+  if ( v13 == 0 )
+    return 0;
+  if ( (dwMapFlags & 0x400) != 0 )
+  {
+    if ( cchDest != 0
+      && (v13 > cchDest || LCMapStringW(Locale, dwMapFlags, lpWideCharStr, v10, (LPWSTR)lpDestStr, cchDest) == 0) )
+    {
+      return 0;
+    }
+  }
+  else
+  {
+    v15 = 2 * v13 + 3;
+    LOBYTE(v15) = v15 & 0xFC;
+    v16 = alloca(v15);
+    ms_exc.old_esp = (DWORD)v18;
+    v21 = v18;
+    ms_exc.registration.TryLevel = 0xFFFFFFFF;
+    if ( v18 == nullptr || LCMapStringW(Locale, dwMapFlags, lpWideCharStr, v22, v18, v14) == 0 )
+      return 0;
+    v17 = cchDest != 0
+        ? WideCharToMultiByte(CodePage, 0x220u, v18, v14, lpDestStr, cchDest, nullptr, nullptr)
+        : WideCharToMultiByte(CodePage, 0x220u, v18, v14, nullptr, 0, nullptr, nullptr);
+    v14 = v17;
+    if ( v17 == 0 )
+      return 0;
+  }
+  return v14;
+}
+// ENDFUNC
+// FUNC 10005634 _strncnt
+_BYTE *__cdecl strncnt(_BYTE *a1, int a2)
+{
+  _BYTE *v2; // eax
+  int v3; // ecx
+  int v4; // esi
+
+  v2 = a1;
+  v3 = a2 - 1;
+  if ( a2 != 0 )
+  {
+    do
+    {
+      if ( *v2 == 0 )
+        break;
+      ++v2;
+      v4 = v3--;
+    }
+    while ( v4 != 0 );
+  }
+  if ( *v2 != 0 )
+    return (_BYTE *)a2;
+  else
+    return (_BYTE *)(v2 - a1);
+}
+// ENDFUNC
+// FUNC 1000565f __cinit
+void _cinit()
+{
+  if ( dword_1000B3D4 != nullptr )
+    dword_1000B3D4();
+  _initterm(&First, &Last);
+  _initterm(&dword_10009000, &dword_10009004);
+}
+// ENDFUNC
+// FUNC 1000568c __exit
+void __cdecl __noreturn _exit(int Code)
+{
+  doexit(Code, 1, 0);
+}
+// ENDFUNC
+// FUNC 1000569d __cexit
+void __cdecl _cexit()
+{
+  doexit(0, 0, 1);
+}
+// ENDFUNC
+// FUNC 100056ac _doexit
+int __cdecl doexit(UINT uExitCode, int a2, int a3)
+{
+  HANDLE CurrentProcess; // eax
+  void (**v4)(void); // esi
+
+  _lockexit();
+  if ( dword_1000A020 == 1 )
+  {
+    CurrentProcess = GetCurrentProcess();
+    TerminateProcess(CurrentProcess, uExitCode);
+  }
+  dword_1000A01C = 1;
+  byte_1000A018 = a3;
+  if ( a2 == 0 )
+  {
+    if ( dword_1000B3D0 != 0 )
+    {
+      v4 = (void (**)(void))(dword_1000B3CC - 4);
+      if ( dword_1000B3CC - 4 >= (unsigned int)dword_1000B3D0 )
+      {
+        do
+        {
+          if ( *v4 != nullptr )
+            (*v4)();
+          --v4;
+        }
+        while ( (unsigned int)v4 >= dword_1000B3D0 );
+      }
+    }
+    _initterm(&dword_10009018, &dword_10009020);
+  }
+  _initterm(&dword_10009024, &dword_10009028);
+  if ( a3 == 0 )
+  {
+    dword_1000A020 = 1;
+    ExitProcess(uExitCode);
+  }
+  return _unlockexit();
+}
+// ENDFUNC
+// FUNC 10005751 __lockexit
+void _lockexit()
+{
+  _lock(13);
+}
+// ENDFUNC
+// FUNC 1000575a __unlockexit
+void _unlockexit()
+{
+  _unlock(13);
+}
+// ENDFUNC
+// FUNC 10005763 __initterm
+void __cdecl _initterm(_PVFV *First, _PVFV *Last)
+{
+  while ( First < Last )
+  {
+    if ( *First != nullptr )
+      (*First)();
+    ++First;
+  }
+}
+// ENDFUNC
+// FUNC 1000577d __mtinit
+int _mtinit()
+{
+  DWORD *v0; // eax
+  DWORD *v1; // esi
+  DWORD CurrentThreadId; // eax
+
+  _mtinitlocks();
+  dwTlsIndex = TlsAlloc();
+  if ( dwTlsIndex == -1 )
+    return 0;
+  v0 = (DWORD *)calloc(1u, 0x74u);
+  v1 = v0;
+  if ( v0 == nullptr || !TlsSetValue(dwTlsIndex, v0) )
+    return 0;
+  _initptd(v1);
+  CurrentThreadId = GetCurrentThreadId();
+  v1[1] = 0xFFFFFFFF;
+  *v1 = CurrentThreadId;
+  return 1;
+}
+// ENDFUNC
+// FUNC 100057d1 __mtterm
+DWORD _mtterm()
+{
+  DWORD result; // eax
+
+  _mtdeletelocks();
+  result = dwTlsIndex;
+  if ( dwTlsIndex != -1 )
+  {
+    result = TlsFree(dwTlsIndex);
+    dwTlsIndex = 0xFFFFFFFF;
+  }
+  return result;
+}
+// ENDFUNC
+// FUNC 100057ef __initptd
+int __cdecl _initptd(int a1)
+{
+  *(_DWORD *)(a1 + 80) = &unk_10009AD0;
+  *(_DWORD *)(a1 + 20) = 1;
+  return a1;
+}
+// ENDFUNC
+// FUNC 10005802 __getptd
+_DWORD *_getptd()
+{
+  DWORD LastError; // edi
+  _DWORD *Value; // esi
+  _DWORD *v2; // eax
+  DWORD CurrentThreadId; // eax
+
+  LastError = GetLastError();
+  Value = TlsGetValue(dwTlsIndex);
+  if ( Value == nullptr )
+  {
+    v2 = calloc(1u, 0x74u);
+    Value = v2;
+    if ( v2 == nullptr || !TlsSetValue(dwTlsIndex, v2) )
+      _amsg_exit(0x10u);
+    _initptd((int)Value);
+    CurrentThreadId = GetCurrentThreadId();
+    Value[1] = -1;
+    *Value = CurrentThreadId;
+  }
+  SetLastError(LastError);
+  return Value;
+}
+// ENDFUNC
+// FUNC 10005869 __freeptd
+DWORD __cdecl _freeptd(void **Block)
+{
+  DWORD result; // eax
+  void **Value; // esi
+
+  result = dwTlsIndex;
+  if ( dwTlsIndex != -1 )
+  {
+    Value = Block;
+    if ( Block != nullptr || (Value = (void **)TlsGetValue(dwTlsIndex)) != nullptr )
+    {
+      if ( Value[9] != nullptr )
+        free(Value[9]);
+      if ( Value[10] != nullptr )
+        free(Value[10]);
+      if ( Value[12] != nullptr )
+        free(Value[12]);
+      if ( Value[14] != nullptr )
+        free(Value[14]);
+      if ( Value[16] != nullptr )
+        free(Value[16]);
+      if ( Value[17] != nullptr )
+        free(Value[17]);
+      if ( Value[20] != &unk_10009AD0 )
+        free(Value[20]);
+      free(Value);
+    }
+    return TlsSetValue(dwTlsIndex, nullptr);
+  }
+  return result;
+}
+// ENDFUNC
+// FUNC 10005909 __ioinit
+UINT _ioinit()
+{
+  char *v0; // eax
+  char *v1; // esi
+  unsigned int i; // eax
+  int v3; // edi
+  LPBYTE v4; // ebx
+  _DWORD *v5; // esi
+  char *v6; // eax
+  unsigned int j; // ecx
+  int k; // esi
+  int v9; // eax
+  int m; // ebx
+  int v11; // esi
+  DWORD v12; // eax
+  HANDLE StdHandle; // eax
+  HANDLE v14; // edi
+  DWORD FileType; // eax
+  struct _STARTUPINFOA StartupInfo; // [esp+Ch] [ebp-48h] BYREF
+  HANDLE *v18; // [esp+50h] [ebp-4h]
+
+  v0 = (char *)malloc(0x480u);
+  v1 = v0;
+  if ( v0 == nullptr )
+    _amsg_exit(0x1Bu);
+  dword_1000B2C0[0] = (int)v0;
+  uNumber = 32;
+  for ( i = (unsigned int)(v0 + 1152); (unsigned int)v1 < i; i = dword_1000B2C0[0] + 1152 )
+  {
+    v1[4] = 0;
+    *(_DWORD *)v1 = -1;
+    *((_DWORD *)v1 + 2) = 0;
+    v1[5] = 10;
+    v1 += 36;
+  }
+  GetStartupInfoA(&StartupInfo);
+  if ( StartupInfo.cbReserved2 != 0 && StartupInfo.lpReserved2 != nullptr )
+  {
+    v3 = *(_DWORD *)StartupInfo.lpReserved2;
+    v4 = StartupInfo.lpReserved2 + 4;
+    v18 = (HANDLE *)&StartupInfo.lpReserved2[*(_DWORD *)StartupInfo.lpReserved2 + 4];
+    if ( v3 >= 2048 )
+      v3 = 2048;
+    if ( (int)uNumber < v3 )
+    {
+      v5 = &unk_1000B2C4;
+      while ( 1 )
+      {
+        v6 = (char *)malloc(0x480u);
+        if ( v6 == nullptr )
+          break;
+        uNumber += 32;
+        *v5 = v6;
+        for ( j = (unsigned int)(v6 + 1152); (unsigned int)v6 < j; j = *v5 + 1152 )
+        {
+          v6[4] = 0;
+          *(_DWORD *)v6 = -1;
+          *((_DWORD *)v6 + 2) = 0;
+          v6[5] = 10;
+          v6 += 36;
+        }
+        ++v5;
+        if ( (int)uNumber >= v3 )
+          goto LABEL_19;
+      }
+      v3 = uNumber;
+    }
+LABEL_19:
+    for ( k = 0; k < v3; ++v4 )
+    {
+      if ( *v18 != (HANDLE)-1 && (*v4 & 1) != 0 && ((*v4 & 8) != 0 || GetFileType(*v18) != 0) )
+      {
+        v9 = dword_1000B2C0[k >> 5] + 36 * (k & 0x1F);
+        *(_DWORD *)v9 = *v18;
+        *(_BYTE *)(v9 + 4) = *v4;
+      }
+      ++v18;
+      ++k;
+    }
+  }
+  for ( m = 0; m < 3; ++m )
+  {
+    v11 = dword_1000B2C0[0] + 36 * m;
+    if ( *(_DWORD *)v11 == -1 )
+    {
+      *(_BYTE *)(v11 + 4) = -127;
+      if ( m != 0 )
+        v12 = -(m != 1) - 11;
+      else
+        v12 = 0xFFFFFFF6;
+      StdHandle = GetStdHandle(v12);
+      v14 = StdHandle;
+      if ( StdHandle == (HANDLE)-1
+        || (FileType = GetFileType(StdHandle)) == 0
+        || (*(_DWORD *)v11 = v14, (unsigned __int8)FileType == 2) )
+      {
+        *(_BYTE *)(v11 + 4) |= 0x40u;
+      }
+      else if ( (unsigned __int8)FileType == 3 )
+      {
+        *(_BYTE *)(v11 + 4) |= 8u;
+      }
+    }
+    else
+    {
+      *(_BYTE *)(v11 + 4) |= 0x80u;
+    }
+  }
+  return SetHandleCount(uNumber);
+}
+// ENDFUNC
+// FUNC 10005ac5 __ioterm
+void _ioterm()
+{
+  void **v0; // esi
+  char *v1; // edi
+  struct _RTL_CRITICAL_SECTION *v2; // ebx
+
+  v0 = (void **)dword_1000B2C0;
+  do
+  {
+    if ( *v0 != nullptr )
+    {
+      v1 = (char *)*v0;
+      if ( *v0 < (char *)*v0 + 1152 )
+      {
+        v2 = (struct _RTL_CRITICAL_SECTION *)(v1 + 12);
+        do
+        {
+          if ( v2[-1].SpinCount != 0 )
+            DeleteCriticalSection(v2);
+          v1 += 36;
+          v2 = (struct _RTL_CRITICAL_SECTION *)((char *)v2 + 36);
+        }
+        while ( v1 < (char *)*v0 + 1152 );
+      }
+      free(*v0);
+      *v0 = nullptr;
+    }
+    ++v0;
+  }
+  while ( (int)v0 < (int)&uNumber );
+}
+// ENDFUNC
+// FUNC 10005b19 __setenvp
+void _setenvp()
+{
+  char *v0; // esi
+  int v1; // edi
+  char **v2; // esi
+  const char *i; // edi
+  size_t v4; // eax
+  size_t v5; // ebp
+  char *v6; // eax
+
+  if ( dword_1000B3C8 == 0 )
+    __initmbctable();
+  v0 = Block;
+  v1 = 0;
+  while ( *v0 != 0 )
+  {
+    if ( *v0 != 61 )
+      ++v1;
+    v0 += strlen(v0) + 1;
+  }
+  v2 = (char **)malloc(4 * v1 + 4);
+  dword_1000A000 = (int)v2;
+  if ( v2 == nullptr )
+    _amsg_exit(9u);
+  for ( i = Block; *i != 0; i += v5 )
+  {
+    v4 = strlen(i);
+    v5 = v4 + 1;
+    if ( *i != 61 )
+    {
+      v6 = (char *)malloc(v4 + 1);
+      *v2 = v6;
+      if ( v6 == nullptr )
+        _amsg_exit(9u);
+      strcpy(*v2++, i);
+    }
+  }
+  free(Block);
+  Block = nullptr;
+  *v2 = nullptr;
+  dword_1000B3C4 = 1;
+}
+// ENDFUNC
+// FUNC 10005bd2 __setargv
+int _setargv()
+{
+  CHAR *v0; // edi
+  char *v1; // esi
+  int v3; // [esp+Ch] [ebp-8h] BYREF
+  int v4; // [esp+10h] [ebp-4h] BYREF
+
+  if ( dword_1000B3C8 == 0 )
+    __initmbctable();
+  GetModuleFileNameA(nullptr, Filename, 0x104u);
+  dword_1000A010 = (int)Filename;
+  v0 = Filename;
+  if ( *(_BYTE *)dword_1000B628 != 0 )
+    v0 = (CHAR *)dword_1000B628;
+  parse_cmdline(v0, 0, 0, &v4, &v3);
+  v1 = (char *)malloc(v3 + 4 * v4);
+  if ( v1 == nullptr )
+    _amsg_exit(8u);
+  parse_cmdline(v0, v1, &v1[4 * v4], &v4, &v3);
+  dword_10009FF8 = (int)v1;
+  dword_10009FF4 = v4 - 1;
+  return v4 - 1;
+}
+// ENDFUNC
+// FUNC 10005c6b _parse_cmdline
+_DWORD *__cdecl parse_cmdline(unsigned __int8 *a1, unsigned __int8 **a2, unsigned __int8 *a3, _DWORD *a4, _DWORD *a5)
+{
+  unsigned __int8 *v6; // esi
+  unsigned __int8 **v7; // edi
+  unsigned __int8 *v8; // eax
+  unsigned __int8 v9; // dl
+  unsigned __int8 v10; // dl
+  unsigned int v11; // ebx
+  unsigned int v12; // edx
+  unsigned int v13; // ebx
+  unsigned int v14; // ebx
+  unsigned __int8 v15; // dl
+  int v17; // [esp+14h] [ebp+8h]
+  BOOL v18; // [esp+24h] [ebp+18h]
+
+  *a5 = 0;
+  v6 = a3;
+  v7 = a2;
+  *a4 = 1;
+  v8 = a1;
+  if ( a2 != nullptr )
+  {
+    *a2 = a3;
+    v7 = ++a2;
+  }
+  if ( *a1 == 34 )
+  {
+    while ( 1 )
+    {
+      v9 = *++v8;
+      if ( v9 == 34 || v9 == 0 )
+        break;
+      if ( (byte_1000B521[v9] & 4) != 0 )
+      {
+        ++*a5;
+        if ( v6 != nullptr )
+          *v6++ = *v8++;
+      }
+      ++*a5;
+      if ( v6 != nullptr )
+        *v6++ = *v8;
+    }
+    ++*a5;
+    if ( v6 != nullptr )
+      *v6++ = 0;
+    if ( *v8 == 34 )
+      ++v8;
+  }
+  else
+  {
+    do
+    {
+      ++*a5;
+      if ( v6 != nullptr )
+        *v6++ = *v8;
+      v10 = *v8++;
+      if ( (byte_1000B521[v10] & 4) != 0 )
+      {
+        ++*a5;
+        if ( v6 != nullptr )
+          *v6++ = *v8;
+        ++v8;
+      }
+      if ( v10 == 32 )
+        break;
+      if ( v10 == 0 )
+      {
+        --v8;
+        goto LABEL_28;
+      }
+    }
+    while ( v10 != 9 );
+    if ( v6 != nullptr )
+      *(v6 - 1) = 0;
+  }
+LABEL_28:
+  v18 = false;
+  while ( *v8 != 0 )
+  {
+    while ( *v8 == 32 || *v8 == 9 )
+      ++v8;
+    if ( *v8 == 0 )
+      break;
+    if ( v7 != nullptr )
+    {
+      *v7++ = v6;
+      a2 = v7;
+    }
+    ++*a4;
+    while ( 1 )
+    {
+      v17 = 1;
+      v11 = 0;
+      while ( *v8 == 92 )
+      {
+        ++v8;
+        ++v11;
+      }
+      if ( *v8 == 34 )
+      {
+        if ( (v11 & 1) == 0 )
+        {
+          if ( v18 && v8[1] == 34 )
+            ++v8;
+          else
+            v17 = 0;
+          v7 = a2;
+          v18 = !v18;
+        }
+        v11 >>= 1;
+      }
+      v12 = v11;
+      v13 = v11 - 1;
+      if ( v12 != 0 )
+      {
+        v14 = v13 + 1;
+        do
+        {
+          if ( v6 != nullptr )
+            *v6++ = 92;
+          ++*a5;
+          --v14;
+        }
+        while ( v14 != 0 );
+      }
+      v15 = *v8;
+      if ( *v8 == 0 || !v18 && (v15 == 32 || v15 == 9) )
+        break;
+      if ( v17 != 0 )
+      {
+        if ( v6 != nullptr )
+        {
+          if ( (byte_1000B521[v15] & 4) != 0 )
+          {
+            *v6++ = v15;
+            ++v8;
+            ++*a5;
+          }
+          *v6++ = *v8;
+        }
+        else if ( (byte_1000B521[v15] & 4) != 0 )
+        {
+          ++v8;
+          ++*a5;
+        }
+        ++*a5;
+      }
+      ++v8;
+    }
+    if ( v6 != nullptr )
+      *v6++ = 0;
+    ++*a5;
+  }
+  if ( v7 != nullptr )
+    *v7 = nullptr;
+  ++*a4;
+  return a4;
+}
+// ENDFUNC
+// FUNC 10005e1f ___crtGetEnvironmentStringsA
+CHAR *__crtGetEnvironmentStringsA()
+{
+  CHAR *v0; // ebx
+  WCHAR *EnvironmentStringsW; // esi
+  LPCH EnvironmentStrings; // edi
+  WCHAR *i; // eax
+  size_t v4; // eax
+  int v5; // ebp
+  CHAR *v6; // eax
+  LPCH j; // eax
+  size_t v9; // ebp
+  void *v10; // eax
+  void *v11; // esi
+  CHAR *Block; // [esp+10h] [ebp-8h]
+  int cchWideChar; // [esp+14h] [ebp-4h]
+
+  v0 = nullptr;
+  EnvironmentStringsW = nullptr;
+  EnvironmentStrings = nullptr;
+  if ( dword_1000A128 != 0 )
+  {
+    if ( dword_1000A128 == 1 )
+      goto LABEL_7;
+    if ( dword_1000A128 != 2 )
+      return nullptr;
+  }
+  else
+  {
+    EnvironmentStringsW = GetEnvironmentStringsW();
+    if ( EnvironmentStringsW != nullptr )
+    {
+      dword_1000A128 = 1;
+LABEL_7:
+      if ( EnvironmentStringsW != nullptr || (EnvironmentStringsW = GetEnvironmentStringsW()) != nullptr )
+      {
+        for ( i = EnvironmentStringsW; *i != 0; ++i )
+        {
+          do
+            ++i;
+          while ( *i != 0 );
+        }
+        cchWideChar = i - EnvironmentStringsW + 1;
+        v4 = WideCharToMultiByte(0, 0, EnvironmentStringsW, cchWideChar, nullptr, 0, nullptr, nullptr);
+        v5 = v4;
+        if ( v4 != 0 )
+        {
+          v6 = (CHAR *)malloc(v4);
+          Block = v6;
+          if ( v6 != nullptr )
+          {
+            if ( WideCharToMultiByte(0, 0, EnvironmentStringsW, cchWideChar, v6, v5, nullptr, nullptr) == 0 )
+            {
+              free(Block);
+              Block = nullptr;
+            }
+            v0 = Block;
+          }
+        }
+        FreeEnvironmentStringsW(EnvironmentStringsW);
+        return v0;
+      }
+      return nullptr;
+    }
+    EnvironmentStrings = GetEnvironmentStrings();
+    if ( EnvironmentStrings == nullptr )
+      return nullptr;
+    dword_1000A128 = 2;
+  }
+  if ( EnvironmentStrings == nullptr )
+  {
+    EnvironmentStrings = GetEnvironmentStrings();
+    if ( EnvironmentStrings == nullptr )
+      return nullptr;
+  }
+  for ( j = EnvironmentStrings; *j != 0; ++j )
+  {
+    do
+      ++j;
+    while ( *j != 0 );
+  }
+  v9 = j - EnvironmentStrings + 1;
+  v10 = malloc(v9);
+  v11 = v10;
+  if ( v10 != nullptr )
+    memcpy(v10, EnvironmentStrings, v9);
+  else
+    v11 = nullptr;
+  FreeEnvironmentStringsA(EnvironmentStrings);
+  return (CHAR *)v11;
+}
+// ENDFUNC
+// FUNC 10005f51 __FF_MSGBANNER
+int _FF_MSGBANNER()
+{
+  int result; // eax
+
+  result = dword_10009F38;
+  if ( dword_10009F38 == 1 || dword_10009F38 == 0 && dword_10009F3C == 1 )
+  {
+    _NMSG_WRITE(0xFCu);
+    if ( dword_1000A12C != nullptr )
+      dword_1000A12C();
+    return _NMSG_WRITE(0xFFu);
+  }
+  return result;
+}
+// ENDFUNC
+// FUNC 10005f8a __NMSG_WRITE
+int *__cdecl _NMSG_WRITE(DWORD NumberOfBytesWritten)
+{
+  int v1; // ecx
+  int *result; // eax
+  int v3; // esi
+  char *v4; // edi
+  const char **v5; // esi
+  HANDLE StdHandle; // eax
+  const char *v7; // [esp-14h] [ebp-1B8h]
+  DWORD v8; // [esp-10h] [ebp-1B4h]
+  DWORD *p_NumberOfBytesWritten; // [esp-Ch] [ebp-1B0h]
+  int v10; // [esp-8h] [ebp-1ACh]
+  CHAR Filename[260]; // [esp+0h] [ebp-1A4h] BYREF
+  char Destination[160]; // [esp+104h] [ebp-A0h] BYREF
+  int savedregs; // [esp+1A4h] [ebp+0h] BYREF
+
+  v1 = 0;
+  result = dword_10009788;
+  do
+  {
+    if ( NumberOfBytesWritten == *result )
+      break;
+    result += 2;
+    ++v1;
+  }
+  while ( (int)result < (int)&unk_10009818 );
+  v3 = 2 * v1;
+  if ( NumberOfBytesWritten == dword_10009788[2 * v1] )
+  {
+    result = (int *)dword_10009F38;
+    if ( dword_10009F38 == 1 || dword_10009F38 == 0 && dword_10009F3C == 1 )
+    {
+      v5 = (const char **)&(&off_1000978C)[v3];
+      v10 = 0;
+      p_NumberOfBytesWritten = &NumberOfBytesWritten;
+      v8 = strlen(*v5);
+      v7 = *v5;
+      StdHandle = GetStdHandle(0xFFFFFFF4);
+      return (int *)WriteFile(StdHandle, v7, v8, &NumberOfBytesWritten, nullptr);
+    }
+    else if ( NumberOfBytesWritten != 252 )
+    {
+      if ( GetModuleFileNameA(nullptr, Filename, 0x104u) == 0 )
+        strcpy(Filename, "<program name unknown>");
+      v4 = Filename;
+      if ( strlen(Filename) + 1 > 0x3C )
+      {
+        v4 = (char *)&savedregs + strlen(Filename) - 479;
+        strncpy(v4, "...", 3u);
+      }
+      strcpy(Destination, "Runtime Error!\n\nProgram: ");
+      strcat(Destination, v4);
+      strcat(Destination, "\n\n");
+      strcat(Destination, (&off_1000978C)[v3]);
+      return (int *)__crtMessageBoxA(Destination, "Microsoft Visual C++ Runtime Library", 73744);
+    }
+  }
+  return result;
+}
+// ENDFUNC
+// FUNC 100060dd ___crtGetStringTypeA
+BOOL __cdecl __crtGetStringTypeA(
+        DWORD dwInfoType,
+        LPCSTR lpSrcStr,
+        int cchSrc,
+        LPWORD lpCharType,
+        UINT CodePage,
+        LCID Locale,
+        int a7)
+{
+  int v7; // eax
+  LCID v8; // eax
+  int v10; // eax
+  size_t v11; // edi
+  int v12; // eax
+  void *v13; // esp
+  int v14; // eax
+  WCHAR v15[8]; // [esp+0h] [ebp-34h] BYREF
+  WCHAR *v16; // [esp+10h] [ebp-24h]
+  int cchWideChar; // [esp+14h] [ebp-20h]
+  WORD CharType; // [esp+18h] [ebp-1Ch] BYREF
+  CPPEH_RECORD ms_exc; // [esp+1Ch] [ebp-18h]
+
+  v7 = dword_1000A130;
+  if ( dword_1000A130 == 0 )
+  {
+    if ( GetStringTypeW(1u, &SrcStr, 1, &CharType) )
+    {
+      v7 = 1;
+    }
+    else
+    {
+      if ( !GetStringTypeA(0, 1u, byte_100081F4, 1, &CharType) )
+        return false;
+      v7 = 2;
+    }
+    dword_1000A130 = v7;
+  }
+  if ( v7 != 2 )
+  {
+    if ( v7 == 1 )
+    {
+      if ( CodePage == 0 )
+        CodePage = dword_10009FD8;
+      v10 = MultiByteToWideChar(CodePage, a7 != 0 ? 9 : 1, lpSrcStr, cchSrc, nullptr, 0);
+      cchWideChar = v10;
+      if ( v10 != 0 )
+      {
+        v11 = 2 * v10;
+        v12 = 2 * v10 + 3;
+        LOBYTE(v12) = v12 & 0xFC;
+        v13 = alloca(v12);
+        ms_exc.old_esp = (DWORD)v15;
+        v16 = v15;
+        memset(v15, 0, v11);
+        ms_exc.registration.TryLevel = 0xFFFFFFFF;
+        if ( v15 != nullptr )
+        {
+          v14 = MultiByteToWideChar(CodePage, 1u, lpSrcStr, cchSrc, v15, cchWideChar);
+          if ( v14 != 0 )
+            return GetStringTypeW(dwInfoType, v15, v14, lpCharType);
+        }
+      }
+    }
+    return false;
+  }
+  v8 = Locale;
+  if ( Locale == 0 )
+    v8 = dword_10009FC8;
+  return GetStringTypeA(v8, dwInfoType, lpSrcStr, cchSrc, lpCharType);
+}
+// ENDFUNC
+// FUNC 10006230 _memcpy_0
+void *__cdecl memcpy_0(void *a1, const void *Src, size_t Size)
+{
+  char *v3; // esi
+  char *v4; // edi
+  size_t v5; // ecx
+  void *result; // eax
+  char *v7; // esi
+  char *v8; // edi
+  size_t v9; // ecx
+
+  v3 = (char *)Src;
+  v4 = (char *)a1;
+  if ( a1 > Src && a1 < (char *)Src + Size )
+  {
+    v7 = (char *)Src + Size - 4;
+    v8 = (char *)a1 + Size - 4;
+    if ( ((unsigned __int8)v8 & 3) == 0 )
+    {
+      v9 = Size >> 2;
+      if ( Size >> 2 < 8 )
+      {
+        if ( v9 != 0 )
+          abort();
+      }
+      else
+      {
+        while ( v9 != 0 )
+        {
+          *(_DWORD *)v8 = *(_DWORD *)v7;
+          v7 -= 4;
+          v8 -= 4;
+          --v9;
+        }
+      }
+      switch ( Size & 3 )
+      {
+        case 0u:
+          goto LABEL_33;
+        case 1u:
+          goto LABEL_34;
+        case 2u:
+          goto LABEL_35;
+        case 3u:
+          goto LABEL_36;
+      }
+    }
+    switch ( Size )
+    {
+      case 0u:
+LABEL_33:
+        result = a1;
+        break;
+      case 1u:
+LABEL_34:
+        v8[3] = v7[3];
+        result = a1;
+        break;
+      case 2u:
+LABEL_35:
+        v8[3] = v7[3];
+        v8[2] = v7[2];
+        result = a1;
+        break;
+      case 3u:
+LABEL_36:
+        v8[3] = v7[3];
+        v8[2] = v7[2];
+        v8[1] = v7[1];
+        result = a1;
+        break;
+      default:
+        __asm { jmp     dword ptr ds:(loc_10006414+4)[eax*4] }
+        return result;
+    }
+  }
+  else
+  {
+    if ( ((unsigned __int8)a1 & 3) != 0 )
+    {
+      if ( Size >= 4 )
+        __asm { jmp     dword ptr ds:(loc_1000628C+4)[eax*4] }
+      __asm { jmp     dword ptr ds:TrailUp0_0[ecx*4]; jumptable 10006265 case 0 }
+    }
+    v5 = Size >> 2;
+    switch ( v5 )
+    {
+      case 0u:
+        break;
+      case 1u:
+        goto LABEL_17;
+      case 2u:
+        goto LABEL_16;
+      case 3u:
+        goto LABEL_15;
+      case 4u:
+        goto LABEL_14;
+      case 5u:
+        goto LABEL_13;
+      case 6u:
+        goto LABEL_12;
+      case 7u:
+        *((_DWORD *)a1 + v5 - 7) = *((_DWORD *)Src + v5 - 7);
+LABEL_12:
+        *((_DWORD *)a1 + v5 - 6) = *((_DWORD *)Src + v5 - 6);
+LABEL_13:
+        *((_DWORD *)a1 + v5 - 5) = *((_DWORD *)Src + v5 - 5);
+LABEL_14:
+        *((_DWORD *)a1 + v5 - 4) = *((_DWORD *)Src + v5 - 4);
+LABEL_15:
+        *((_DWORD *)a1 + v5 - 3) = *((_DWORD *)Src + v5 - 3);
+LABEL_16:
+        *((_DWORD *)a1 + v5 - 2) = *((_DWORD *)Src + v5 - 2);
+LABEL_17:
+        *((_DWORD *)a1 + v5 - 1) = *((_DWORD *)Src + v5 - 1);
+        v3 = (char *)Src + 4 * v5;
+        v4 = (char *)a1 + 4 * v5;
+        break;
+      default:
+        qmemcpy(a1, Src, 4 * v5);
+        v3 = (char *)Src + 4 * v5;
+        v4 = (char *)a1 + 4 * v5;
+        break;
+    }
+    switch ( Size & 3 )
+    {
+      case 0u:
+        result = a1;
+        break;
+      case 1u:
+        *v4 = *v3;
+        result = a1;
+        break;
+      case 2u:
+        *v4 = *v3;
+        v4[1] = v3[1];
+        result = a1;
+        break;
+      case 3u:
+        *v4 = *v3;
+        v4[1] = v3[1];
+        v4[2] = v3[2];
+        result = a1;
+        break;
+    }
+  }
+  return result;
+}
+// ENDFUNC
+// FUNC 10006565 __lseek
+int __cdecl _lseek(int FileHandle, int Offset, int Origin)
+{
+  int v3; // edi
+
+  if ( FileHandle < uNumber && (*(_BYTE *)(dword_1000B2C0[FileHandle >> 5] + 36 * (FileHandle & 0x1F) + 4) & 1) != 0 )
+  {
+    _lock_fhandle(FileHandle);
+    v3 = _lseek_lk(FileHandle, Offset, Origin);
+    _unlock_fhandle(FileHandle);
+    return v3;
+  }
+  else
+  {
+    *_errno() = 9;
+    *__doserrno() = 0;
+    return -1;
+  }
+}
+// ENDFUNC
+// FUNC 100065ca __lseek_lk
+DWORD __cdecl _lseek_lk(int FileHandle, LONG lDistanceToMove, DWORD dwMoveMethod)
+{
+  void *osfhandle; // eax
+  DWORD v4; // edi
+  DWORD LastError; // eax
+
+  osfhandle = (void *)_get_osfhandle(FileHandle);
+  if ( osfhandle == (void *)-1 )
+  {
+    *_errno() = 9;
+    return -1;
+  }
+  v4 = SetFilePointer(osfhandle, lDistanceToMove, nullptr, dwMoveMethod);
+  if ( v4 == -1 )
+    LastError = GetLastError();
+  else
+    LastError = 0;
+  if ( LastError != 0 )
+  {
+    _dosmaperr(LastError);
+    return -1;
+  }
+  *(_BYTE *)(dword_1000B2C0[FileHandle >> 5] + 36 * (FileHandle & 0x1F) + 4) &= ~2u;
+  return v4;
+}
+// ENDFUNC
+// FUNC 1000663d __write
+int __cdecl _write(int FileHandle, const void *Buf, unsigned int MaxCharCount)
+{
+  int v3; // edi
+
+  if ( FileHandle < uNumber && (*(_BYTE *)(dword_1000B2C0[FileHandle >> 5] + 36 * (FileHandle & 0x1F) + 4) & 1) != 0 )
+  {
+    _lock_fhandle(FileHandle);
+    v3 = _write_lk(FileHandle, Buf, MaxCharCount);
+    _unlock_fhandle(FileHandle);
+    return v3;
+  }
+  else
+  {
+    *_errno() = 9;
+    *__doserrno() = 0;
+    return -1;
+  }
+}
+// ENDFUNC
+// FUNC 100066a2 __write_lk
+int __cdecl _write_lk(int FileHandle, _BYTE *lpBuffer, DWORD nNumberOfBytesToWrite)
+{
+  int *v4; // ebx
+  int v5; // esi
+  int v6; // eax
+  _BYTE *v7; // eax
+  char *v8; // ecx
+  char v9; // cl
+  signed int v10; // edi
+  _BYTE Buffer[1028]; // [esp+Ch] [ebp-414h] BYREF
+  int v12; // [esp+410h] [ebp-10h]
+  DWORD NumberOfBytesWritten; // [esp+414h] [ebp-Ch] BYREF
+  DWORD v14; // [esp+418h] [ebp-8h]
+  char *v15; // [esp+41Ch] [ebp-4h]
+  DWORD FileHandlea; // [esp+428h] [ebp+8h]
+
+  v14 = 0;
+  v12 = 0;
+  if ( nNumberOfBytesToWrite == 0 )
+    return 0;
+  v4 = &dword_1000B2C0[FileHandle >> 5];
+  v5 = 36 * (FileHandle & 0x1F);
+  if ( (*(_BYTE *)(*v4 + v5 + 4) & 0x20) != 0 )
+    _lseek_lk(FileHandle, 0, 2u);
+  v6 = v5 + *v4;
+  if ( *(char *)(v6 + 4) >= 0 )
+  {
+    if ( WriteFile(*(HANDLE *)v6, lpBuffer, nNumberOfBytesToWrite, &NumberOfBytesWritten, nullptr) )
+    {
+      FileHandlea = 0;
+      v14 = NumberOfBytesWritten;
+    }
+    else
+    {
+      FileHandlea = GetLastError();
+    }
+  }
+  else
+  {
+    v15 = lpBuffer;
+    FileHandlea = 0;
+    while ( 1 )
+    {
+      v7 = Buffer;
+      do
+      {
+        if ( v15 - lpBuffer >= nNumberOfBytesToWrite )
+          break;
+        v8 = v15++;
+        v9 = *v8;
+        if ( v9 == 10 )
+        {
+          ++v12;
+          *v7++ = 13;
+        }
+        *v7++ = v9;
+      }
+      while ( v7 - Buffer < 1024 );
+      v10 = v7 - Buffer;
+      if ( !WriteFile(*(HANDLE *)(*v4 + v5), Buffer, v7 - Buffer, &NumberOfBytesWritten, nullptr) )
+        break;
+      v14 += NumberOfBytesWritten;
+      if ( (int)NumberOfBytesWritten < v10 || v15 - lpBuffer >= nNumberOfBytesToWrite )
+        goto LABEL_15;
+    }
+    FileHandlea = GetLastError();
+  }
+LABEL_15:
+  if ( v14 != 0 )
+    return v14 - v12;
+  if ( FileHandlea != 0 )
+  {
+    if ( FileHandlea == 5 )
+    {
+      *_errno() = 9;
+      *__doserrno() = 5;
+    }
+    else
+    {
+      _dosmaperr(FileHandlea);
+    }
+  }
+  else
+  {
+    if ( (*(_BYTE *)(*v4 + v5 + 4) & 0x40) != 0 && *lpBuffer == 26 )
+      return 0;
+    *_errno() = 28;
+    *__doserrno() = 0;
+  }
+  return -1;
+}
+// ENDFUNC
+// FUNC 1000682d __getbuf
+int __cdecl _getbuf(_DWORD *a1)
+{
+  void *v1; // eax
+  int result; // eax
+
+  ++dword_1000A134;
+  v1 = malloc(0x1000u);
+  a1[2] = v1;
+  if ( v1 != nullptr )
+  {
+    a1[3] |= 8u;
+    a1[6] = 4096;
+  }
+  else
+  {
+    a1[3] |= 4u;
+    a1[2] = a1 + 5;
+    a1[6] = 2;
+  }
+  result = a1[2];
+  a1[1] = 0;
+  *a1 = result;
+  return result;
+}
+// ENDFUNC
+// FUNC 10006871 __isatty
+int __cdecl _isatty(int FileHandle)
+{
+  if ( FileHandle < uNumber )
+    return *(_BYTE *)(dword_1000B2C0[FileHandle >> 5] + 36 * (FileHandle & 0x1F) + 4) & 0x40;
+  else
+    return 0;
+}
+// ENDFUNC
+// FUNC 1000689a ___initstdio
+int __initstdio()
+{
+  size_t v0; // eax
+  int v1; // ecx
+  _UNKNOWN **v2; // eax
+  int v3; // ecx
+  _DWORD *v4; // edx
+  int result; // eax
+
+  v0 = Count;
+  if ( Count == 0 )
+  {
+    v0 = 512;
+LABEL_5:
+    Count = v0;
+    goto LABEL_6;
+  }
+  if ( (int)Count < 20 )
+  {
+    v0 = 20;
+    goto LABEL_5;
+  }
+LABEL_6:
+  dword_1000A280 = (int)calloc(v0, 4u);
+  if ( dword_1000A280 == 0 )
+  {
+    Count = 20;
+    dword_1000A280 = (int)calloc(0x14u, 4u);
+    if ( dword_1000A280 == 0 )
+      _amsg_exit(0x1Au);
+  }
+  v1 = 0;
+  v2 = &off_10009820;
+  do
+  {
+    *(_DWORD *)(v1 + dword_1000A280) = v2;
+    v2 += 8;
+    v1 += 4;
+  }
+  while ( (int)v2 < (int)&off_10009AA0 );
+  v3 = 0;
+  v4 = &unk_10009830;
+  do
+  {
+    result = *(_DWORD *)(dword_1000B2C0[v3 >> 5] + 36 * (v3 & 0x1F));
+    if ( result == -1 || result == 0 )
+      *v4 = -1;
+    v4 += 8;
+    ++v3;
+  }
+  while ( (int)v4 < (int)dword_10009890 );
+  return result;
+}
+// ENDFUNC
+// FUNC 10006942 ___endstdio
+int __endstdio()
+{
+  int result; // eax
+
+  result = sub_10007310();
+  if ( byte_1000A018 != 0 )
+    return _fcloseall();
+  return result;
+}
+// ENDFUNC
+// FUNC 10006956 __lock_file
+void __cdecl _lock_file(FILE *Stream)
+{
+  if ( Stream < (FILE *)&off_10009820 || Stream > &stru_10009A80 )
+    EnterCriticalSection((LPCRITICAL_SECTION)&Stream[1]);
+  else
+    _lock((((char *)Stream - (char *)&off_10009820) >> 5) + 28);
+}
+// ENDFUNC
+// FUNC 10006985 __lock_file2
+void __cdecl _lock_file2(int a1, int a2)
+{
+  if ( a1 >= 20 )
+    EnterCriticalSection((LPCRITICAL_SECTION)(a2 + 32));
+  else
+    _lock(a1 + 28);
+}
+// ENDFUNC
+// FUNC 100069a8 __unlock_file
+void __cdecl _unlock_file(FILE *Stream)
+{
+  if ( Stream < (FILE *)&off_10009820 || Stream > &stru_10009A80 )
+    LeaveCriticalSection((LPCRITICAL_SECTION)&Stream[1]);
+  else
+    _unlock((((char *)Stream - (char *)&off_10009820) >> 5) + 28);
+}
+// ENDFUNC
+// FUNC 100069d7 __unlock_file2
+void __cdecl _unlock_file2(int a1, int a2)
+{
+  if ( a1 >= 20 )
+    LeaveCriticalSection((LPCRITICAL_SECTION)(a2 + 32));
+  else
+    _unlock(a1 + 28);
+}
+// ENDFUNC
+// FUNC 100069fa _wctomb
+int __cdecl wctomb(char *MbCh, wchar_t WCh)
+{
+  int v2; // ebx
+  int WCha; // [esp+18h] [ebp+Ch]
+
+  InterlockedIncrement(&Addend);
+  v2 = 0;
+  if ( dword_1000B3D8 != 0 )
+  {
+    InterlockedDecrement(&Addend);
+    _lock(19);
+    v2 = 1;
+  }
+  WCha = _wctomb_lk(MbCh, WCh);
+  if ( v2 != 0 )
+    _unlock(19);
+  else
+    InterlockedDecrement(&Addend);
+  return WCha;
+}
+// ENDFUNC
+// FUNC 10006a53 __wctomb_lk
+int __cdecl _wctomb_lk(LPSTR lpMultiByteStr, WCHAR WideCharStr)
+{
+  int result; // eax
+
+  result = (int)lpMultiByteStr;
+  if ( lpMultiByteStr != nullptr )
+  {
+    if ( dword_10009FC8 == 0 )
+    {
+      if ( WideCharStr <= 0xFFu )
+      {
+        *lpMultiByteStr = WideCharStr;
+        return 1;
+      }
+      goto LABEL_7;
+    }
+    lpMultiByteStr = nullptr;
+    result = WideCharToMultiByte(
+               dword_10009FD8,
+               0x220u,
+               &WideCharStr,
+               1,
+               (LPSTR)result,
+               cbMultiByte,
+               nullptr,
+               (LPBOOL)&lpMultiByteStr);
+    if ( result == 0 || lpMultiByteStr != nullptr )
+    {
+LABEL_7:
+      *_errno() = 42;
+      return -1;
+    }
+  }
+  return result;
+}
+// ENDFUNC
+// FUNC 10006ac0 __aulldiv
+unsigned int __stdcall _aulldiv(unsigned __int64 a1, __int64 a2)
+{
+  unsigned __int64 v3; // rtt
+  unsigned int v4; // ecx
+  unsigned int v5; // ebx
+  unsigned __int64 v6; // rax
+  char v7; // cf
+  unsigned int v8; // esi
+  unsigned __int64 v9; // rax
+
+  if ( HIDWORD(a2) != 0 )
+  {
+    v4 = HIDWORD(a2);
+    v5 = a2;
+    v6 = a1;
+    do
+    {
+      v7 = v4 & 1;
+      v4 >>= 1;
+      v5 = (v5 >> 1) | (v7 << 31);
+      v6 >>= 1;
+    }
+    while ( v4 != 0 );
+    v8 = v6 / v5;
+    v9 = v8 * (unsigned __int64)(unsigned int)a2;
+    if ( __CFADD__(HIDWORD(a2) * v8, HIDWORD(v9)) || (HIDWORD(v9) = (a2 * (unsigned __int64)v8) >> 32, v9 > a1) )
+      --v8;
+    return v8;
+  }
+  else
+  {
+    LODWORD(v3) = a1;
+    HIDWORD(v3) = HIDWORD(a1) % (unsigned int)a2;
+    return v3 / (unsigned int)a2;
+  }
+}
+// ENDFUNC
+// FUNC 10006b30 __aullrem
+unsigned __int64 __stdcall _aullrem(unsigned __int64 a1, __int64 a2)
+{
+  unsigned __int64 v2; // rtt
+  unsigned int v4; // ecx
+  unsigned int v5; // ebx
+  unsigned __int64 v6; // rax
+  bool v7; // cf
+  int v8; // ecx
+  unsigned __int64 v9; // rax
+
+  if ( HIDWORD(a2) != 0 )
+  {
+    v4 = HIDWORD(a2);
+    v5 = a2;
+    v6 = a1;
+    do
+    {
+      v7 = v4 & 1;
+      v4 >>= 1;
+      v5 = (v5 >> 1) | (v7 << 31);
+      v6 >>= 1;
+    }
+    while ( v4 != 0 );
+    v8 = HIDWORD(a2) * (v6 / v5);
+    v9 = (unsigned int)a2 * (unsigned __int64)(unsigned int)(v6 / v5);
+    v7 = __CFADD__(v8, HIDWORD(v9));
+    HIDWORD(v9) += v8;
+    if ( v7 || v9 > a1 )
+      v9 -= a2;
+    return a1 - v9;
+  }
+  else
+  {
+    LODWORD(v2) = a1;
+    HIDWORD(v2) = HIDWORD(a1) % (unsigned int)a2;
+    return v2 % (unsigned int)a2;
+  }
+}
+// ENDFUNC
+// FUNC 10006ba8 __global_unwind2
+void __cdecl _global_unwind2(PVOID TargetFrame)
+{
+  RtlUnwind(TargetFrame, &gu_return, nullptr, nullptr);
+}
+// ENDFUNC
+// FUNC 10006bc8 __unwind_handler
+int __cdecl _unwind_handler(int a1, int a2, int a3, _DWORD *a4)
+{
+  int result; // eax
+
+  result = 1;
+  if ( (*(_DWORD *)(a1 + 4) & 6) != 0 )
+  {
+    *a4 = a2;
+    return 3;
+  }
+  return result;
+}
+// ENDFUNC
+// FUNC 10006bea __local_unwind2
+int __cdecl _local_unwind2(int a1, int a2)
+{
+  int result; // eax
+  int v3; // ebx
+  int v4; // esi
+  int v5; // esi
+  struct _EXCEPTION_REGISTRATION_RECORD *ExceptionList; // [esp-8h] [ebp-1Ch]
+  int (__cdecl *v7)(int, int, int, _DWORD *); // [esp-4h] [ebp-18h]
+
+  v7 = _unwind_handler;
+  ExceptionList = NtCurrentTeb()->NtTib.ExceptionList;
+  while ( 1 )
+  {
+    result = a1;
+    v3 = *(_DWORD *)(a1 + 8);
+    v4 = *(_DWORD *)(a1 + 12);
+    if ( v4 == -1 || v4 == a2 )
+      break;
+    v5 = 3 * v4;
+    *(_DWORD *)(a1 + 12) = *(_DWORD *)(v3 + 4 * v5);
+    if ( *(_DWORD *)(v3 + 4 * v5 + 4) == 0 )
+    {
+      _NLG_Notify(257);
+      (*(void (__cdecl **)(struct _EXCEPTION_REGISTRATION_RECORD *, int (__cdecl *)(int, int, int, _DWORD *)))(v3 + 4 * v5 + 8))(
+        ExceptionList,
+        v7);
+    }
+  }
+  return result;
+}
+// ENDFUNC
+// FUNC 10006c52 __abnormal_termination
+int __cdecl _abnormal_termination()
+{
+  int result; // eax
+  struct _EXCEPTION_REGISTRATION_RECORD *ExceptionList; // ecx
+
+  result = 0;
+  ExceptionList = NtCurrentTeb()->NtTib.ExceptionList;
+  if ( (int (__cdecl *)(int, int, int, _DWORD *))ExceptionList->Handler == _unwind_handler )
+    return ExceptionList[1].Next == *((struct _EXCEPTION_REGISTRATION_RECORD **)ExceptionList[1].Handler + 3);
+  return result;
+}
+// ENDFUNC
+// FUNC 10006c75 __NLG_Notify1
+void __stdcall _NLG_Notify1(int a1)
+{
+  JUMPOUT(0x10006C88);
+}
+// ENDFUNC
+// FUNC 10006c7e __NLG_Notify
+int __userpurge _NLG_Notify@<eax>(int result@<eax>, int a2@<ebp>, int a3)
+{
+  unk_10009AC8 = *(_DWORD *)(a2 + 8);
+  unk_10009AC4 = result;
+  unk_10009ACC = a2;
+  return result;
+}
+// ENDFUNC
+// FUNC 10006ca0 __except_handler3
+int __cdecl _except_handler3(int a1, _DWORD *TargetFrame, int a3)
+{
+  int *v3; // ebp
+  _DWORD *v4; // ebx
+  int v5; // esi
+  int v6; // edi
+  int v7; // eax
+  int v8; // edi
+  int v9; // ecx
+  _DWORD v11[2]; // [esp+10h] [ebp-8h] BYREF
+  int savedregs; // [esp+18h] [ebp+0h] BYREF
+
+  v3 = &savedregs;
+  v4 = TargetFrame;
+  if ( (*(_DWORD *)(a1 + 4) & 6) != 0 )
+  {
+    _local_unwind2((int)TargetFrame, -1);
+    return 1;
+  }
+  else
+  {
+    v11[0] = a1;
+    v11[1] = a3;
+    *(TargetFrame - 1) = v11;
+    v5 = TargetFrame[3];
+    v6 = TargetFrame[2];
+    while ( v5 != -1 )
+    {
+      if ( *(_DWORD *)(v6 + 12 * v5 + 4) != 0 )
+      {
+        v7 = (*(int (**)(void))(v6 + 12 * v5 + 4))();
+        v4 = (_DWORD *)v3[3];
+        if ( v7 != 0 )
+        {
+          if ( v7 < 0 )
+            return 0;
+          v8 = v4[2];
+          _global_unwind2((PVOID)v3[3]);
+          v3 = v4 + 4;
+          _local_unwind2((int)v4, v5);
+          _NLG_Notify(*(_DWORD *)(v8 + 12 * v5 + 8), (int)(v4 + 4), 1);
+          v4[3] = *(_DWORD *)(v8 + 4 * v9);
+          (*(void (**)(void))(v8 + 4 * v9 + 8))();
+        }
+      }
+      v6 = v4[2];
+      v5 = *(_DWORD *)(v6 + 12 * v5);
+    }
+    return 1;
+  }
+}
+// ENDFUNC
+// FUNC 10006d5d __seh_longjmp_unwind@4
+int __stdcall _seh_longjmp_unwind(int a1)
+{
+  return _local_unwind2(*(_DWORD *)(a1 + 24), *(_DWORD *)(a1 + 28));
+}
+// ENDFUNC
+// FUNC 10006d80 _strcmp
+int __cdecl strcmp(const char *Str1, const char *Str2)
+{
+  const char *v2; // edx
+  const char *v3; // ecx
+  unsigned int v4; // eax
+  bool v5; // cf
+  unsigned int v6; // eax
+  __int16 v8; // ax
+
+  v2 = Str1;
+  v3 = Str2;
+  if ( ((unsigned __int8)Str1 & 3) == 0 )
+  {
+dodwords:
+    while ( 1 )
+    {
+      v4 = *(_DWORD *)v2;
+      v5 = (unsigned __int8)*(_DWORD *)v2 < (unsigned int)*v3;
+      if ( (unsigned __int8)*(_DWORD *)v2 != *v3 )
+        break;
+      if ( (_BYTE)v4 == 0 )
+        return 0;
+      v5 = BYTE1(v4) < (unsigned int)v3[1];
+      if ( BYTE1(v4) != v3[1] )
+        break;
+      if ( BYTE1(v4) == 0 )
+        return 0;
+      v6 = HIWORD(v4);
+      v5 = (unsigned __int8)v6 < (unsigned int)v3[2];
+      if ( (_BYTE)v6 != v3[2] )
+        break;
+      if ( (_BYTE)v6 == 0 )
+        return 0;
+      v5 = BYTE1(v6) < (unsigned int)v3[3];
+      if ( BYTE1(v6) != v3[3] )
+        break;
+      v3 += 4;
+      v2 += 4;
+      if ( BYTE1(v6) == 0 )
+        return 0;
+    }
+    return -2 * v5 + 1;
+  }
+  if ( ((unsigned __int8)Str1 & 1) != 0 )
+  {
+    v2 = Str1 + 1;
+    v5 = *Str1 < (unsigned int)*Str2;
+    if ( *Str1 != *Str2 )
+      return -2 * v5 + 1;
+    v3 = Str2 + 1;
+    if ( *Str1 == 0 )
+      return 0;
+    if ( ((unsigned __int8)v2 & 2) == 0 )
+      goto dodwords;
+  }
+  v8 = *(_WORD *)v2;
+  v2 += 2;
+  v5 = (unsigned __int8)v8 < (unsigned int)*v3;
+  if ( (_BYTE)v8 != *v3 )
+    return -2 * v5 + 1;
+  if ( (_BYTE)v8 == 0 )
+    return 0;
+  v5 = HIBYTE(v8) < (unsigned int)v3[1];
+  if ( HIBYTE(v8) == v3[1] )
+  {
+    if ( HIBYTE(v8) != 0 )
+    {
+      v3 += 2;
+      goto dodwords;
+    }
+    return 0;
+  }
+  return -2 * v5 + 1;
+}
+// ENDFUNC
+// FUNC 10006e10 _strcspn
+size_t __cdecl strcspn(const char *Str, const char *Control)
+{
+  unsigned int v2; // eax
+  size_t v5; // ecx
+  signed __int32 v7[9]; // [esp+0h] [ebp-24h] BYREF
+
+  v2 = 0;
+  memset(v7, 0, 32);
+  while ( 1 )
+  {
+    LOBYTE(v2) = *Control;
+    if ( *Control == 0 )
+      break;
+    ++Control;
+    _bittestandset(v7, v2);
+  }
+  v5 = 0xFFFFFFFF;
+  do
+  {
+    ++v5;
+    LOBYTE(v2) = *Str;
+    if ( *Str == 0 )
+      break;
+    ++Str;
+  }
+  while ( !_bittest(v7, v2) );
+  return v5;
+}
+// ENDFUNC
+// FUNC 10006e50 _strncmp
+int __cdecl strncmp(const char *Str1, const char *Str2, size_t MaxCount)
+{
+  size_t v3; // ecx
+  const char *v4; // edi
+  bool v5; // zf
+  size_t v6; // ecx
+  const char *v7; // edi
+  unsigned __int8 v9; // al
+
+  v3 = MaxCount;
+  if ( MaxCount != 0 )
+  {
+    v4 = Str1;
+    do
+    {
+      if ( v3 == 0 )
+        break;
+      v5 = *v4++ == 0;
+      --v3;
+    }
+    while ( !v5 );
+    v6 = MaxCount - v3;
+    v7 = Str1;
+    do
+    {
+      if ( v6 == 0 )
+        break;
+      v5 = *Str2++ == *v7++;
+      --v6;
+    }
+    while ( v5 );
+    v9 = *(Str2 - 1);
+    v3 = 0;
+    if ( v9 > (unsigned int)*(v7 - 1) )
+      return ~v3;
+    if ( v9 != *(v7 - 1) )
+    {
+      v3 = 0xFFFFFFFE;
+      return ~v3;
+    }
+  }
+  return v3;
+}
+// ENDFUNC
+// FUNC 10006e90 _strpbrk
+char *__cdecl strpbrk(const char *Str, const char *Control)
+{
+  char *result; // eax
+  signed __int32 v5[9]; // [esp+0h] [ebp-24h] BYREF
+
+  result = nullptr;
+  memset(v5, 0, 32);
+  while ( 1 )
+  {
+    LOBYTE(result) = *Control;
+    if ( *Control == 0 )
+      break;
+    ++Control;
+    _bittestandset(v5, (unsigned int)result);
+  }
+  while ( 1 )
+  {
+    LOBYTE(result) = *Str;
+    if ( *Str == 0 )
+      break;
+    ++Str;
+    if ( _bittest(v5, (unsigned int)result) )
+      return (char *)(Str - 1);
+  }
+  return result;
+}
+// ENDFUNC
+// FUNC 10006ed0 _memset
+void *__cdecl memset(void *a1, int Val, size_t Size)
+{
+  size_t v3; // edx
+  int v4; // eax
+  _BYTE *v5; // edi
+  int v6; // ecx
+  size_t v7; // ecx
+  unsigned int v8; // ecx
+
+  v3 = Size;
+  if ( Size == 0 )
+    return a1;
+  LOBYTE(v4) = Val;
+  v5 = a1;
+  if ( Size < 4 )
+    goto LABEL_13;
+  v6 = -(int)a1 & 3;
+  if ( v6 != 0 )
+  {
+    v3 = Size - v6;
+    do
+    {
+      *v5++ = Val;
+      --v6;
+    }
+    while ( v6 != 0 );
+  }
+  v4 = 16843009 * (unsigned __int8)Val;
+  v7 = v3;
+  v3 &= 3u;
+  v8 = v7 >> 2;
+  if ( v8 == 0 || (memset32(v5, v4, v8), v5 += 4 * v8, v3 != 0) )
+  {
+LABEL_13:
+    do
+    {
+      *v5++ = v4;
+      --v3;
+    }
+    while ( v3 != 0 );
+  }
+  return a1;
+}
+// ENDFUNC
+// FUNC 10006f28 _calloc
+void *__cdecl calloc(size_t Count, size_t Size)
+{
+  SIZE_T v2; // esi
+  size_t v3; // ebx
+  void *v4; // edi
+
+  v2 = Size * Count;
+  v3 = Size * Count;
+  if ( Size * Count <= 0xFFFFFFE0 )
+  {
+    if ( v2 == 0 )
+      v2 = 1;
+    v2 = (v2 + 15) & 0xFFFFFFF0;
+  }
+  do
+  {
+    v4 = nullptr;
+    if ( v2 <= 0xFFFFFFE0 )
+    {
+      if ( v3 <= dword_10009414 )
+      {
+        _lock(9);
+        v4 = __sbh_alloc_block(v3);
+        _unlock(9);
+        if ( v4 != nullptr )
+        {
+          memset(v4, 0, v3);
+          return v4;
+        }
+      }
+      v4 = HeapAlloc(hHeap, 8u, v2);
+      if ( v4 != nullptr )
+        return v4;
+    }
+    if ( dword_10009F44 == 0 )
+      return v4;
+  }
+  while ( _callnewh(v2) != 0 );
+  return nullptr;
+}
+// ENDFUNC
+// FUNC 10006fb5 ___crtMessageBoxA
+int __cdecl __crtMessageBoxA(const CHAR *a1, const CHAR *a2, UINT a3)
+{
+  HWND ActiveWindow; // ebx
+  HMODULE LibraryA; // eax
+  HMODULE v5; // edi
+
+  ActiveWindow = nullptr;
+  if ( MessageBoxA_0 == nullptr )
+  {
+    LibraryA = LoadLibraryA("user32.dll");
+    v5 = LibraryA;
+    if ( LibraryA == nullptr )
+      return 0;
+    MessageBoxA_0 = (int (__stdcall *)(HWND, LPCSTR, LPCSTR, UINT))GetProcAddress(LibraryA, "MessageBoxA");
+    if ( MessageBoxA_0 == nullptr )
+      return 0;
+    GetActiveWindow = (HWND (__stdcall *)())GetProcAddress(v5, "GetActiveWindow");
+    GetLastActivePopup = (HWND (__stdcall *)(HWND))GetProcAddress(v5, "GetLastActivePopup");
+  }
+  if ( GetActiveWindow != nullptr )
+  {
+    ActiveWindow = GetActiveWindow();
+    if ( ActiveWindow != nullptr && GetLastActivePopup != nullptr )
+      ActiveWindow = GetLastActivePopup(ActiveWindow);
+  }
+  return MessageBoxA_0(ActiveWindow, a1, a2, a3);
+}
+// ENDFUNC
+// FUNC 1000703e __dosmaperr
+int *__cdecl _dosmaperr(unsigned int a1)
+{
+  int v1; // esi
+  char ***v2; // eax
+  int *result; // eax
+
+  v1 = 0;
+  *__doserrno() = a1;
+  v2 = (char ***)&unk_10009B58;
+  do
+  {
+    if ( (char **)a1 == *v2 )
+    {
+      result = _errno();
+      *result = dword_10009B5C[2 * v1];
+      return result;
+    }
+    v2 += 2;
+    ++v1;
+  }
+  while ( (int)v2 < (int)&off_10009CC0 );
+  if ( a1 < 0x13 || a1 > 0x24 )
+  {
+    if ( a1 < 0xBC || a1 > 0xCA )
+    {
+      result = _errno();
+      *result = 22;
+    }
+    else
+    {
+      result = _errno();
+      *result = 8;
+    }
+  }
+  else
+  {
+    result = _errno();
+    *result = 13;
+  }
+  return result;
+}
+// ENDFUNC
+// FUNC 100070b1 __errno
+int *__cdecl _errno()
+{
+  return _getptd() + 2;
+}
+// ENDFUNC
+// FUNC 100070ba ___doserrno
+unsigned int *__cdecl __doserrno()
+{
+  return _getptd() + 3;
+}
+// ENDFUNC
+// FUNC 100070c3 __free_osfhnd
+int __cdecl _free_osfhnd(int a1)
+{
+  int *v1; // edi
+  _DWORD *v2; // eax
+
+  if ( a1 >= uNumber
+    || (v1 = &dword_1000B2C0[a1 >> 5], ((v2 = (_DWORD *)(36 * (a1 & 0x1F) + *v1))[1] & 1) == 0)
+    || *v2 == -1 )
+  {
+    *_errno() = 9;
+    *__doserrno() = 0;
+    return -1;
+  }
+  else
+  {
+    if ( dword_10009F3C == 1 )
+    {
+      if ( a1 != 0 )
+      {
+        if ( a1 == 1 )
+        {
+          SetStdHandle(0xFFFFFFF5, nullptr);
+        }
+        else if ( a1 == 2 )
+        {
+          SetStdHandle(0xFFFFFFF4, nullptr);
+        }
+      }
+      else
+      {
+        SetStdHandle(0xFFFFFFF6, nullptr);
+      }
+    }
+    *(_DWORD *)(*v1 + 36 * (a1 & 0x1F)) = -1;
+    return 0;
+  }
+}
+// ENDFUNC
+// FUNC 10007142 __get_osfhandle
+intptr_t __cdecl _get_osfhandle(int FileHandle)
+{
+  int v1; // eax
+
+  if ( FileHandle < uNumber )
+  {
+    v1 = dword_1000B2C0[FileHandle >> 5] + 36 * (FileHandle & 0x1F);
+    if ( (*(_BYTE *)(v1 + 4) & 1) != 0 )
+      return *(_DWORD *)v1;
+  }
+  *_errno() = 9;
+  *__doserrno() = 0;
+  return -1;
+}
+// ENDFUNC
+// FUNC 10007184 __lock_fhandle
+void __cdecl _lock_fhandle(int a1)
+{
+  int v1; // edi
+  int v2; // esi
+
+  v1 = 36 * (a1 & 0x1F);
+  v2 = v1 + dword_1000B2C0[a1 >> 5];
+  if ( *(_DWORD *)(v2 + 8) == 0 )
+  {
+    _lock(17);
+    if ( *(_DWORD *)(v2 + 8) == 0 )
+    {
+      InitializeCriticalSection((LPCRITICAL_SECTION)(v2 + 12));
+      ++*(_DWORD *)(v2 + 8);
+    }
+    _unlock(17);
+  }
+  EnterCriticalSection((LPCRITICAL_SECTION)(dword_1000B2C0[a1 >> 5] + v1 + 12));
+}
+// ENDFUNC
+// FUNC 100071e3 __unlock_fhandle
+void __cdecl _unlock_fhandle(int a1)
+{
+  LeaveCriticalSection((LPCRITICAL_SECTION)(dword_1000B2C0[a1 >> 5] + 36 * (a1 & 0x1F) + 12));
+}
+// ENDFUNC
+// FUNC 10007205 __fcloseall
+int __cdecl _fcloseall()
+{
+  int v0; // ebx
+  int i; // edi
+  int v2; // esi
+  int v3; // eax
+
+  v0 = 0;
+  _lock(2);
+  for ( i = 3; i < (int)Count; ++i )
+  {
+    v2 = 4 * i;
+    v3 = *(_DWORD *)(4 * i + dword_1000A280);
+    if ( v3 != 0 )
+    {
+      if ( (*(_BYTE *)(v3 + 12) & 0x83) != 0 && fclose(*(FILE **)(4 * i + dword_1000A280)) != -1 )
+        ++v0;
+      if ( i >= 20 )
+      {
+        DeleteCriticalSection((LPCRITICAL_SECTION)(*(_DWORD *)(v2 + dword_1000A280) + 32));
+        free(*(void **)(v2 + dword_1000A280));
+        *(_DWORD *)(v2 + dword_1000A280) = 0;
+      }
+    }
+  }
+  _unlock(2);
+  return v0;
+}
+// ENDFUNC
+// FUNC 10007286 __fflush_lk
+int __cdecl _fflush_lk(int a1)
+{
+  if ( _flush(a1) != 0 )
+    return -1;
+  if ( (*(_BYTE *)(a1 + 13) & 0x40) != 0 )
+    return -(_commit(*(_DWORD *)(a1 + 16)) != 0);
+  return 0;
+}
+// ENDFUNC
+// FUNC 100072b4 __flush
+int __cdecl _flush(_DWORD *a1)
+{
+  int v1; // ebx
+  const void *v2; // eax
+  unsigned int v3; // edi
+  int v4; // eax
+  int v5; // eax
+
+  v1 = 0;
+  if ( (a1[3] & 3) == 2 && (a1[3] & 0x108) != 0 )
+  {
+    v2 = (const void *)a1[2];
+    if ( *a1 - (int)v2 > 0 )
+    {
+      v3 = *a1 - (_DWORD)v2;
+      if ( _write(a1[4], v2, v3) == v3 )
+      {
+        v4 = a1[3];
+        if ( (v4 & 0x80u) != 0 )
+        {
+          LOBYTE(v4) = v4 & 0xFD;
+          a1[3] = v4;
+        }
+      }
+      else
+      {
+        a1[3] |= 0x20u;
+        v1 = -1;
+      }
+    }
+  }
+  v5 = a1[2];
+  a1[1] = 0;
+  *a1 = v5;
+  return v1;
+}
+// ENDFUNC
+// FUNC 10007310 sub_10007310
+int sub_10007310()
+{
+  return flsall(1);
+}
+// ENDFUNC
+// FUNC 10007319 _flsall
+int __cdecl flsall(int a1)
+{
+  int v1; // ebx
+  int v2; // edi
+  int i; // esi
+  int v4; // eax
+  int v5; // eax
+  int v6; // ecx
+  int result; // eax
+
+  v1 = 0;
+  v2 = 0;
+  _lock(2);
+  for ( i = 0; i < (int)Count; ++i )
+  {
+    v4 = *(_DWORD *)(dword_1000A280 + 4 * i);
+    if ( v4 != 0 && (*(_BYTE *)(v4 + 12) & 0x83) != 0 )
+    {
+      _lock_file2(i, *(_DWORD *)(dword_1000A280 + 4 * i));
+      v5 = *(_DWORD *)(dword_1000A280 + 4 * i);
+      v6 = *(_DWORD *)(v5 + 12);
+      if ( (v6 & 0x83) != 0 )
+      {
+        if ( a1 == 1 )
+        {
+          if ( _fflush_lk(v5) != -1 )
+            ++v1;
+        }
+        else if ( a1 == 0 && (v6 & 2) != 0 && _fflush_lk(*(_DWORD *)(dword_1000A280 + 4 * i)) == -1 )
+        {
+          v2 = -1;
+        }
+      }
+      _unlock_file2(i, *(_DWORD *)(dword_1000A280 + 4 * i));
+    }
+  }
+  _unlock(2);
+  result = v1;
+  if ( a1 != 1 )
+    return v2;
+  return result;
+}
+// ENDFUNC
+// FUNC 100073bd __fptrap
+void __noreturn _fptrap()
+{
+  _amsg_exit(2u);
+}
+// ENDFUNC
+// FUNC 100073d0 __strcmpi
+int __cdecl _strcmpi(const char *String1, const char *String2)
+{
+  int result; // eax
+  char v5; // t0
+  int v6; // eax
+  int v7; // ebx
+  int v8; // ebx
+  int v9; // [esp-4h] [ebp-14h]
+  int v10; // [esp+0h] [ebp-10h]
+
+  if ( dword_10009FC8 != 0 )
+  {
+    _InterlockedIncrement(&Addend);
+    if ( dword_1000B3D8 > 0 )
+    {
+      _InterlockedDecrement(&Addend);
+      _lock(19);
+      v10 = 1;
+    }
+    else
+    {
+      v10 = 0;
+    }
+    v6 = 255;
+    v7 = 0;
+    while ( (_BYTE)v6 != 0 )
+    {
+      LOBYTE(v6) = *String2++;
+      LOBYTE(v7) = *String1++;
+      if ( (_BYTE)v6 != (_BYTE)v7 )
+      {
+        v9 = v6;
+        v7 = tolower(v7);
+        v6 = tolower(v9);
+        if ( (_BYTE)v7 != (_BYTE)v6 )
+        {
+          v6 = -((unsigned __int8)v7 < (unsigned __int8)v6) - (((unsigned __int8)v7 < (unsigned __int8)v6) - 1);
+          break;
+        }
+      }
+    }
+    v8 = v6;
+    if ( v10 != 0 )
+      _unlock(19);
+    else
+      _InterlockedDecrement(&Addend);
+    return v8;
+  }
+  else
+  {
+    LOBYTE(result) = -1;
+    while ( (_BYTE)result != 0 )
+    {
+      LOBYTE(result) = *String2++;
+      BYTE1(result) = *String1++;
+      if ( BYTE1(result) != (_BYTE)result )
+      {
+        v5 = BYTE1(result);
+        BYTE1(result) = ((unsigned __int8)(result - 65) < 0x1Au ? 0x20 : 0) + result;
+        LOBYTE(result) = ((unsigned __int8)(v5 - 65) < 0x1Au ? 0x20 : 0) + v5;
+        if ( (_BYTE)result != BYTE1(result) )
+        {
+          LOBYTE(result) = -((unsigned __int8)result < BYTE1(result)) - (((unsigned __int8)result < BYTE1(result)) - 1);
+          return (char)result;
+        }
+      }
+    }
+    return (char)result;
+  }
+}
+// ENDFUNC
+// FUNC 100074a0 __strnicmp
+int __cdecl _strnicmp(const char *String1, const char *String2, size_t MaxCount)
+{
+  size_t v3; // ecx
+  unsigned __int8 v6; // ah
+  unsigned __int8 v7; // al
+  bool v8; // cf
+  unsigned int v9; // eax
+  unsigned int v10; // ebx
+  bool v11; // cf
+  int v12; // ebx
+  int v14; // [esp-8h] [ebp-18h]
+  size_t v15; // [esp-4h] [ebp-14h]
+  int v16; // [esp+0h] [ebp-10h]
+
+  v3 = MaxCount;
+  if ( MaxCount != 0 )
+  {
+    if ( dword_10009FC8 != 0 )
+    {
+      _InterlockedIncrement(&Addend);
+      if ( dword_1000B3D8 > 0 )
+      {
+        _InterlockedDecrement(&Addend);
+        _lock(19);
+        v16 = 1;
+        v3 = MaxCount;
+      }
+      else
+      {
+        v16 = 0;
+      }
+      v9 = 0;
+      v10 = 0;
+      do
+      {
+        LOBYTE(v9) = *String1;
+        LOBYTE(v10) = *String2;
+        if ( v9 == 0 || v10 == 0 )
+          break;
+        ++String1;
+        ++String2;
+        v15 = v3;
+        v14 = v9;
+        v10 = tolower(v10);
+        v9 = tolower(v14);
+        v11 = v9 < v10;
+        if ( v9 != v10 )
+          goto differ2;
+        v3 = v15 - 1;
+      }
+      while ( v15 != 1 );
+      v3 = 0;
+      v11 = v9 < v10;
+      if ( v9 != v10 )
+      {
+differ2:
+        v3 = 0xFFFFFFFF;
+        if ( !v11 )
+          v3 = 1;
+      }
+      if ( v16 != 0 )
+      {
+        v12 = v3;
+        _unlock(19);
+        return v12;
+      }
+      else
+      {
+        _InterlockedDecrement(&Addend);
+      }
+    }
+    else
+    {
+      do
+      {
+        v6 = *String1;
+        v7 = *String2;
+        if ( *String1 == 0 || v7 == 0 )
+          break;
+        ++String1;
+        ++String2;
+        if ( v6 >= 0x41u && v6 <= 0x5Au )
+          v6 += 32;
+        if ( v7 >= 0x41u && v7 <= 0x5Au )
+          v7 += 32;
+        v8 = v6 < v7;
+        if ( v6 != v7 )
+          goto differ;
+        --v3;
+      }
+      while ( v3 != 0 );
+      v3 = 0;
+      v8 = v6 < v7;
+      if ( v6 == v7 )
+        return v3;
+differ:
+      v3 = 0xFFFFFFFF;
+      if ( !v8 )
+        return 1;
+    }
+  }
+  return v3;
+}
+// ENDFUNC
+// FUNC 100075a1 _fclose
+int __cdecl fclose(FILE *Stream)
+{
+  int v1; // edi
+
+  v1 = -1;
+  if ( (Stream->_flag & 0x40) != 0 )
+  {
+    Stream->_flag = 0;
+  }
+  else
+  {
+    _lock_file(Stream);
+    v1 = _fclose_lk(Stream);
+    _unlock_file(Stream);
+  }
+  return v1;
+}
+// ENDFUNC
+// FUNC 100075d2 __fclose_lk
+int __cdecl _fclose_lk(int a1)
+{
+  int v1; // edi
+
+  v1 = -1;
+  if ( (*(_BYTE *)(a1 + 12) & 0x83) != 0 )
+  {
+    v1 = _flush((_DWORD *)a1);
+    _freebuf(a1);
+    if ( _close(*(_DWORD *)(a1 + 16)) >= 0 )
+    {
+      if ( *(_DWORD *)(a1 + 28) != 0 )
+      {
+        free(*(void **)(a1 + 28));
+        *(_DWORD *)(a1 + 28) = 0;
+      }
+    }
+    else
+    {
+      v1 = -1;
+    }
+  }
+  *(_DWORD *)(a1 + 12) = 0;
+  return v1;
+}
+// ENDFUNC
+// FUNC 1000761e __commit
+int __cdecl _commit(int FileHandle)
+{
+  int *v1; // edi
+  int v2; // esi
+  void *osfhandle; // eax
+  DWORD LastError; // esi
+
+  if ( FileHandle < uNumber )
+  {
+    v1 = &dword_1000B2C0[FileHandle >> 5];
+    v2 = 36 * (FileHandle & 0x1F);
+    if ( (*(_BYTE *)(*v1 + v2 + 4) & 1) != 0 )
+    {
+      _lock_fhandle(FileHandle);
+      if ( (*(_BYTE *)(*v1 + v2 + 4) & 1) != 0 )
+      {
+        osfhandle = (void *)_get_osfhandle(FileHandle);
+        if ( FlushFileBuffers(osfhandle) )
+          LastError = 0;
+        else
+          LastError = GetLastError();
+        if ( LastError == 0 )
+          goto LABEL_10;
+        *__doserrno() = LastError;
+      }
+      *_errno() = 9;
+      LastError = 0xFFFFFFFF;
+LABEL_10:
+      _unlock_fhandle(FileHandle);
+      return LastError;
+    }
+  }
+  *_errno() = 9;
+  return -1;
+}
+// ENDFUNC
+// FUNC 100076b1 _tolower
+int __cdecl tolower(int C)
+{
+  int result; // eax
+  int v2; // ebx
+  int v3; // eax
+  int v4; // eax
+  int v5; // eax
+  CHAR DestStr[4]; // [esp+Ch] [ebp-4h] BYREF
+
+  if ( dword_10009FC8 != 0 )
+  {
+    v2 = C;
+    if ( (C >= 256 || (cbMultiByte <= 1 ? (v3 = *((_BYTE *)off_10009420 + 2 * C) & 1) : (v3 = _isctype(C, 1)), v3 != 0))
+      && (*((char *)off_10009420 + 2 * BYTE1(v2) + 1) >= 0
+        ? (LOWORD(C) = (unsigned __int8)v2, v4 = 1)
+        : (LOBYTE(C) = BYTE1(v2), *(_WORD *)((char *)&C + 1) = (unsigned __int8)v2, v4 = 2),
+          (v5 = __crtLCMapStringA(dword_10009FC8, 0x100u, (LPCSTR)&C, v4, DestStr, 3, 0, 1)) != 0) )
+    {
+      if ( v5 == 1 )
+        return (unsigned __int8)DestStr[0];
+      else
+        return *(unsigned __int16 *)DestStr;
+    }
+    else
+    {
+      return v2;
+    }
+  }
+  else
+  {
+    result = C;
+    if ( C >= 65 && C <= 90 )
+      return C + 32;
+  }
+  return result;
+}
+// ENDFUNC
+// FUNC 1000777c __close
+int __cdecl _close(int FileHandle)
+{
+  int v1; // edi
+
+  if ( FileHandle < uNumber && (*(_BYTE *)(dword_1000B2C0[FileHandle >> 5] + 36 * (FileHandle & 0x1F) + 4) & 1) != 0 )
+  {
+    _lock_fhandle(FileHandle);
+    v1 = _close_lk(FileHandle);
+    _unlock_fhandle(FileHandle);
+    return v1;
+  }
+  else
+  {
+    *_errno() = 9;
+    *__doserrno() = 0;
+    return -1;
+  }
+}
+// ENDFUNC
+// FUNC 100077d9 __close_lk
+int __cdecl _close_lk(int FileHandle)
+{
+  intptr_t osfhandle; // edi
+  void *v2; // eax
+  DWORD LastError; // edi
+
+  if ( _get_osfhandle(FileHandle) == -1
+    || (FileHandle == 1 || FileHandle == 2) && (osfhandle = _get_osfhandle(2), _get_osfhandle(1) == osfhandle)
+    || (v2 = (void *)_get_osfhandle(FileHandle), CloseHandle(v2)) )
+  {
+    LastError = 0;
+  }
+  else
+  {
+    LastError = GetLastError();
+  }
+  _free_osfhnd(FileHandle);
+  *(_BYTE *)(dword_1000B2C0[FileHandle >> 5] + 36 * (FileHandle & 0x1F) + 4) = 0;
+  if ( LastError == 0 )
+    return 0;
+  _dosmaperr(LastError);
+  return -1;
+}
+// ENDFUNC
+// FUNC 1000785c __freebuf
+int __cdecl _freebuf(int a1)
+{
+  int result; // eax
+
+  result = *(_DWORD *)(a1 + 12);
+  if ( (result & 0x83) != 0 && (result & 8) != 0 )
+  {
+    free(*(void **)(a1 + 8));
+    *(_WORD *)(a1 + 12) &= 0xFBF7u;
+    *(_DWORD *)a1 = 0;
+    *(_DWORD *)(a1 + 8) = 0;
+    *(_DWORD *)(a1 + 4) = 0;
+    return 0;
+  }
+  return result;
+}
+// ENDFUNC
+// FUNC 10007890 RtlUnwind
+// attributes: thunk
+void __stdcall RtlUnwind(PVOID TargetFrame, PVOID TargetIp, PEXCEPTION_RECORD ExceptionRecord, PVOID ReturnValue)
+{
+  __imp_RtlUnwind(TargetFrame, TargetIp, ExceptionRecord, ReturnValue);
+}
+// ENDFUNC
+// FUNC 10007896 __access
+int __cdecl _access(const char *FileName, int AccessMode)
+{
+  DWORD FileAttributesA; // eax
+  DWORD LastError; // eax
+
+  FileAttributesA = GetFileAttributesA(FileName);
+  if ( FileAttributesA == -1 )
+  {
+    LastError = GetLastError();
+    _dosmaperr(LastError);
+    return -1;
+  }
+  if ( (FileAttributesA & 1) != 0 && (AccessMode & 2) != 0 )
+  {
+    *_errno() = 13;
+    *__doserrno() = 5;
+    return -1;
+  }
+  return 0;
+}
+// ENDFUNC
