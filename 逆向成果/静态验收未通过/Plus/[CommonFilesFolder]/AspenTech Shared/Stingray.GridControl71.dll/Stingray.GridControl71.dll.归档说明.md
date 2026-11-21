@@ -1,6 +1,6 @@
 # Stingray.GridControl71.dll
 
-状态为**待静态验收**。已定位并核对发布包中的导出文件，等待逐件静态验收。
+状态为**静态验收未通过**。原生方法体及 Win32 资源的恢复存在缺口，详见[本轮静态验收证据](静态验收-audit-2-20261121-04.md)。复验组为 2。
 
 原路径为 `Plus/[CommonFilesFolder]/AspenTech Shared/Stingray.GridControl71.dll`。
 

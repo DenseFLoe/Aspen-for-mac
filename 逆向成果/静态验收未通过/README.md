@@ -53,7 +53,6 @@
 | [BkpPreviewHandler.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/BkpPreviewHandler.dll/) | Plus | `0e1f48986bca` |
 | [BPCompressor.dll](Plus/%5BSystemFolder%5D/BPCompressor.dll/) | Plus | `5e48e9c6799a` |
 | [CalcExcelAddInATL32.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/x86/CalcExcelAddInATL32.dll/) | Plus | `0e34c185b913` |
-| [CalcExcelAddInRes32.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/x86/CalcExcelAddInRes32.dll/) | Plus | `3bfe609cd8bc` |
 | [Calculation.xls](Properties/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Solubility%20Modeler%20V15.0/NRTL-SAC/Calculation.xls/) | Properties | `e876193ceb64` |
 | [chrome_elf.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/chrome_elf.dll/) | Plus | `f4b806540aba` |
 | [ComCt232.ocx](Plus/%5BSystemFolder%5D/ComCt232.ocx/) | Plus | `5163be5869cb` |
@@ -206,6 +205,7 @@
 | [smge.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/smge.dll/) | Plus-Properties | `81740da615da` |
 | [solvint.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/solvint.dll/) | Plus | `49d15aa8d37a` |
 | [ssa3d30.ocx](Plus/%5BSystemFolder%5D/ssa3d30.ocx/) | Plus | `8698a7224323` |
+| [Stingray.GridControl71.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/Stingray.GridControl71.dll/) | Plus | `03765dc28940` |
 | [System.Net.Http.Formatting.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/System.Net.Http.Formatting.dll/) | Plus | `00664130b963` |
 | [SystemLibrary400_1.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/SystemLibrary400_1.dll/) | Plus | `ad9bc4fae634` |
 | [SystemLibrary410_1.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/SystemLibrary410_1.dll/) | Plus | `56a4322d1a84` |
