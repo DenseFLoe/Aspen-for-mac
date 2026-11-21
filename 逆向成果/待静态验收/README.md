@@ -1,6 +1,6 @@
 # 待静态验收
 
-共 937 件。已有代码，等待逐件核对。
+共 936 件。已有代码，等待逐件核对。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -847,7 +847,6 @@
 | [WpfPLRPlug.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WpfPlotWizards/WpfPLRPlug.dll/) | Plus | `f706516819aa` |
 | [WpfPLScreen.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WpfPlotWizards/WpfPLScreen.dll/) | Plus | `465e11453dd8` |
 | [WpfPLSensitivity.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WpfPlotWizards/WpfPLSensitivity.dll/) | Plus | `7096fdddaf31` |
-| [WpfPLSolid.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WpfPlotWizards/WpfPLSolid.dll/) | Plus | `071fbfbce7fb` |
 | [WpfPLVscrub.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WpfPlotWizards/WpfPLVscrub.dll/) | Plus | `fa20efed0f92` |
 | [Xceed.Compression.dll](Plus/%5BTARGETDIR%5D/Xceed.Compression.dll/) | Plus | `b230877057e7` |
 | [Xceed.Compression.dll](Properties/%5BTARGETDIR%5D/Xceed.Compression.dll/) | Properties | `91f96915bb49` |
