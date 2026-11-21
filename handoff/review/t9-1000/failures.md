@@ -2,7 +2,9 @@
 
 机检预审口径：本清单只列**机械可判**的缺口；语义层（类型用途、调用约定、逻辑等价）未复核，故本清单不等于上游「静态验收未通过」结论，也不做 P0–P3 终判。
 
-总件数 1000 ｜ fail 15 ｜ partial 122 ｜ blocked 0 ｜ pass 863
+总件数 1000 ｜ fail 15 ｜ partial 7 ｜ blocked 0 ｜ pass 978
+
+> 命名映射：a3_report_missing 即 lead 口径的 report_missing（15 件）；a2_sha_missing 与之同源（报告缺失 ⇒ 无第二处指纹可比）。
 
 复跑命令（单件）：`PYTHONIOENCODING=utf-8 python out/review9/verify_item.py --idx <idx> --fresh`
 
@@ -10,110 +12,12 @@
 
 | fail_code | 件数 | 含义 |
 | --- | ---: | --- |
-| export_missing_pe | 115 |  |
-| non_pe_tier_a_only | 115 | 非 PE（.xls/.chm 等）只做 Tier A |
 | a2_sha_missing | 15 | 归档说明或制作者报告里取不到 64 位 SHA-256 |
 | a3_report_missing | 15 | 制作者报告（v0.*/制作者报告/<name>.md）缺失或为空 |
 | tier_b_incomplete | 6 | Tier B 只做一半（如 CLR 缺 il.txt） |
-| analyze_failed | 1 |  |
+| analyze_failed | 1 | 报告自述 status=failed_analyze（反编译失败），无统计数可比对 |
 
 ## 分组明细
-
-### export_missing_pe（115 件）
-
-复跑：`PYTHONIOENCODING=utf-8 python out/review9/verify_item.py --idx <idx> --fresh`
-
-| idx | shard | product | item_dir | verdict | evidence |
-| ---: | ---: | --- | --- | --- | --- |
-| 62 | 2 | Plus | 逆向成果/待静态验收/Plus/[CommonFiles64Folder]/Hyprotech/CAPE-OPEN/COCOMTh.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 63 | 3 | Plus | 逆向成果/待静态验收/Plus/[CommonFiles64Folder]/Hyprotech/CAPE-OPEN/COCOMTh11.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 65 | 5 | Plus | 逆向成果/待静态验收/Plus/[CommonFiles64Folder]/Hyprotech/CAPE-OPEN/HYPCOThK.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 66 | 6 | Plus | 逆向成果/待静态验收/Plus/[CommonFiles64Folder]/Hyprotech/CAPE-OPEN/HYPCOThK11.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 67 | 7 | Plus | 逆向成果/待静态验收/Plus/[CommonFiles64Folder]/Hyprotech/CAPE-OPEN/HyCOGUI.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 68 | 8 | Plus | 逆向成果/待静态验收/Plus/[CommonFiles64Folder]/Hyprotech/CAPE-OPEN/HyCOGUI11.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 70 | 10 | Plus | 逆向成果/待静态验收/Plus/[CommonFiles64Folder]/Hyprotech/CAPE-OPEN/HypCOTh.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 71 | 11 | Plus | 逆向成果/待静态验收/Plus/[CommonFiles64Folder]/Hyprotech/CAPE-OPEN/HypCOTh11.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 100 | 4 | Plus | 逆向成果/待静态验收/Plus/[CommonFiles64Folder]/Hyprotech/COMThermo/thpropmanager.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 110 | 2 | Plus | 逆向成果/待静态验收/Plus/[CommonFiles64Folder]/Hyprotech/XML/Xmlread.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 175 | 7 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AMSystem V15.0/Bin/acmexp.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 176 | 8 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AMSystem V15.0/Bin/atdll_support.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 181 | 1 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/Engine/Xeq/AprCorrMan.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 193 | 1 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/Engine/Xeq/GasProps.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 199 | 7 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/Engine/Xeq/PetroleumProps.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 200 | 8 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/Engine/Xeq/aesuom.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 201 | 9 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/Engine/Xeq/aesxml.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 202 | 10 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/Engine/Xeq/aosbridge.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 203 | 11 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/Engine/Xeq/apbatutl.exe | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 227 | 11 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/Engine/Xeq/createva.exe | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 234 | 6 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/Engine/Xeq/hyspropC.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 235 | 7 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/Engine/Xeq/libifcoremd.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 236 | 8 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/Engine/Xeq/libifportmd.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 239 | 11 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/Engine/Xeq/perl.exe | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 255 | 3 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/Engine/Xeq/pppropsystem.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 259 | 7 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/Engine/Xeq/pptderefprop.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 266 | 2 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/Engine/Xeq/rtmalloc.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 267 | 3 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/Engine/Xeq/rtpdfutl.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 307 | 7 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/APRegFix.exe | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 314 | 2 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/ApwnContext.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 400 | 4 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/FindCompDBSpec.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 438 | 6 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/MMDialog.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 440 | 8 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/MMutil.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 527 | 11 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/apmodlib.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 528 | 0 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/ast100.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 532 | 4 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/libEGL.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 535 | 7 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/mmtbsdll.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 536 | 8 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/pfsplot.ocx | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 538 | 10 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/recdefdll.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 586 | 10 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/Aspen Open Solvers V15.0/Bin/IntegratorServer.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| … | | | 共 115 件，余 75 件见 ledger-1000.csv | | |
-
-### non_pe_tier_a_only（115 件）
-
-复跑：`PYTHONIOENCODING=utf-8 python out/review9/verify_item.py --idx <idx> --fresh`
-
-| idx | shard | product | item_dir | verdict | evidence |
-| ---: | ---: | --- | --- | --- | --- |
-| 62 | 2 | Plus | 逆向成果/待静态验收/Plus/[CommonFiles64Folder]/Hyprotech/CAPE-OPEN/COCOMTh.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 63 | 3 | Plus | 逆向成果/待静态验收/Plus/[CommonFiles64Folder]/Hyprotech/CAPE-OPEN/COCOMTh11.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 65 | 5 | Plus | 逆向成果/待静态验收/Plus/[CommonFiles64Folder]/Hyprotech/CAPE-OPEN/HYPCOThK.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 66 | 6 | Plus | 逆向成果/待静态验收/Plus/[CommonFiles64Folder]/Hyprotech/CAPE-OPEN/HYPCOThK11.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 67 | 7 | Plus | 逆向成果/待静态验收/Plus/[CommonFiles64Folder]/Hyprotech/CAPE-OPEN/HyCOGUI.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 68 | 8 | Plus | 逆向成果/待静态验收/Plus/[CommonFiles64Folder]/Hyprotech/CAPE-OPEN/HyCOGUI11.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 70 | 10 | Plus | 逆向成果/待静态验收/Plus/[CommonFiles64Folder]/Hyprotech/CAPE-OPEN/HypCOTh.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 71 | 11 | Plus | 逆向成果/待静态验收/Plus/[CommonFiles64Folder]/Hyprotech/CAPE-OPEN/HypCOTh11.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 100 | 4 | Plus | 逆向成果/待静态验收/Plus/[CommonFiles64Folder]/Hyprotech/COMThermo/thpropmanager.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 110 | 2 | Plus | 逆向成果/待静态验收/Plus/[CommonFiles64Folder]/Hyprotech/XML/Xmlread.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 175 | 7 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AMSystem V15.0/Bin/acmexp.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 176 | 8 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AMSystem V15.0/Bin/atdll_support.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 181 | 1 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/Engine/Xeq/AprCorrMan.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 193 | 1 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/Engine/Xeq/GasProps.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 199 | 7 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/Engine/Xeq/PetroleumProps.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 200 | 8 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/Engine/Xeq/aesuom.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 201 | 9 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/Engine/Xeq/aesxml.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 202 | 10 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/Engine/Xeq/aosbridge.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 203 | 11 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/Engine/Xeq/apbatutl.exe | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 227 | 11 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/Engine/Xeq/createva.exe | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 234 | 6 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/Engine/Xeq/hyspropC.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 235 | 7 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/Engine/Xeq/libifcoremd.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 236 | 8 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/Engine/Xeq/libifportmd.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 239 | 11 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/Engine/Xeq/perl.exe | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 255 | 3 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/Engine/Xeq/pppropsystem.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 259 | 7 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/Engine/Xeq/pptderefprop.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 266 | 2 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/Engine/Xeq/rtmalloc.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 267 | 3 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/Engine/Xeq/rtpdfutl.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 307 | 7 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/APRegFix.exe | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 314 | 2 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/ApwnContext.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 400 | 4 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/FindCompDBSpec.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 438 | 6 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/MMDialog.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 440 | 8 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/MMutil.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 527 | 11 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/apmodlib.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 528 | 0 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/ast100.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 532 | 4 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/libEGL.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 535 | 7 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/mmtbsdll.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 536 | 8 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/pfsplot.ocx | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 538 | 10 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/recdefdll.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| 586 | 10 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/Aspen Open Solvers V15.0/Bin/IntegratorServer.dll | partial | A:PASS / B:NOT_RUN / no_tierb_input /  |
-| … | | | 共 115 件，余 75 件见 ledger-1000.csv | | |
 
 ### a2_sha_missing（15 件）
 
@@ -165,12 +69,12 @@
 
 | idx | shard | product | item_dir | verdict | evidence |
 | ---: | ---: | --- | --- | --- | --- |
-| 311 | 11 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/AdvancedFileDialog.ocx | partial | A:PASS / B:PASS / no_tierb_input /  |
-| 332 | 8 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/AspenTech.Exchange.SecureServices.dll | partial | A:PASS / B:PASS / no_tierb_input /  |
-| 357 | 9 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/CefSharp.BrowserSubprocess.Core.dll | partial | A:PASS / B:PASS / b3_cs_hits=11(@42077,42082,42087,42092,42097,42102,42164,42169) / b3_cs=lines 42077,42082,42087,42092,42097,42102,42164,42169,42174,42413,42434 |
-| 359 | 11 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/CefSharp.Core.Runtime.dll | partial | A:PASS / B:PASS / b3_cs_hits=1(@79647) / b3_cs=lines 79647 |
-| 459 | 3 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/TDEdll.dll | partial | A:PASS / B:PASS / no_tierb_input /  |
-| 968 | 8 | Plus | 逆向成果/静态验收未通过/Plus/[CommonFilesFolder]/AspenTech Shared/Stingray.GridControl71.dll | partial | A:PASS / B:PASS / no_tierb_input /  |
+| 311 | 11 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/AdvancedFileDialog.ocx | partial | A:PASS / B:PARTIAL:no_il / no_tierb_input /  |
+| 332 | 8 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/AspenTech.Exchange.SecureServices.dll | partial | A:PASS / B:PARTIAL:no_il / no_tierb_input /  |
+| 357 | 9 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/CefSharp.BrowserSubprocess.Core.dll | partial | A:PASS / B:PARTIAL:no_il / b3_cs_hits=11(@42077,42082,42087,42092,42097,42102,42164,42169) / b3_cs=lines 42077,42082,42087,42092,42097,42102,42164,42169,42174,42413,42434 |
+| 359 | 11 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/CefSharp.Core.Runtime.dll | partial | A:PASS / B:PARTIAL:no_il / b3_cs_hits=1(@79647) / b3_cs=lines 79647 |
+| 459 | 3 | Plus | 逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/TDEdll.dll | partial | A:PASS / B:PARTIAL:no_il / no_tierb_input /  |
+| 968 | 8 | Plus | 逆向成果/静态验收未通过/Plus/[CommonFilesFolder]/AspenTech Shared/Stingray.GridControl71.dll | partial | A:PASS / B:PARTIAL:no_il / no_tierb_input /  |
 
 ### analyze_failed（1 件）
 
@@ -178,7 +82,7 @@
 
 | idx | shard | product | item_dir | verdict | evidence |
 | ---: | ---: | --- | --- | --- | --- |
-| 982 | 10 | Plus | 逆向成果/静态验收未通过/Plus/[ProgramFiles64Folder]/AspenTech/AMSystem V15.0/Bin/Infragistics4.Win.UltraWinListView.v15.1.dll | partial | A:PASS / B:PASS / b1_il_MD=2185 hdr=2185 md_methods=None /  |
+| 982 | 10 | Plus | 逆向成果/静态验收未通过/Plus/[ProgramFiles64Folder]/AspenTech/AMSystem V15.0/Bin/Infragistics4.Win.UltraWinListView.v15.1.dll | partial | A:PASS / B:PARTIAL:no_claim / b1_il_MD=2185 hdr=2185 md_methods=None /  |
 
 ## 观察项（不判 fail）
 

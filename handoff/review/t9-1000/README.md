@@ -9,7 +9,7 @@
 ## 判据（两层）
 
 - **Tier A（1,000 件全做）**：A1 归档说明存在；A2 归档说明与制作者报告的 原件 SHA-256 逐字符相同（64 hex）；A3 制作者报告存在非空；A4 必填字段（sha256/tool/统计数/dumps 绑定）；A5 dumps 资产名在我方 assets 清单且本件有导出 txt；A6 报告无未替换占位符。
-- **Tier B（CLR + native）**：B1 `.il.txt` 的 `^MD ` 行数与报告 `methods=` 比对；B2 `.asm.txt` 的 `^FUNC ` 行数与 `functions=` 比对；B3 占位符扫描（观察项，不判 fail）；B4 未注释工具横幅 ⇒ fail。
+- **Tier B（CLR + native）**：B1 `.il.txt` 的 `^MD 0x` 行数（排除页脚 `MD (none)` 哨兵行）与报告 `methods=` 比对；B2 `.asm.txt` 的 `^FUNC ` 行数与 `functions=` 比对；B3 占位符扫描（观察项，不判 fail）；B4 未注释工具横幅 ⇒ fail。
 
 合并：A 任一 fail ⇒ fail；A 过 + 非 PE ⇒ partial；A 过 + Tier B 无输入 ⇒ blocked；两层全过 ⇒ pass。
 
@@ -23,7 +23,8 @@
 | `shard-<n>.check.md` / `.summary.md` | worker 自抽 5 行复核 + 分片小结 |
 | `failures.md` | 按 fail_code 分组的失败清单 + 逐件复跑命令 |
 | `stats.md` | 分产品×结论矩阵、Tier A/B 覆盖率实数、fail_code top、blocked 原因、分片耗时 |
-| `review_shard.py` / `merge_ledger.py` / `verify_item.py` | 扫描 / 合并 / 单件复跑 |
+| `review_shard.py` / `merge_ledger.py` / `verify_item.py` / `gen_reports.py` | 扫描 / 合并 / 单件复跑 / 报告生成 |
+| `validation.md` | R1–R6 逐条自检 + 分片一致性 + 已知异常（裸波浪号 404、代理、并行写坏片） |
 
 ## 复现
 
@@ -39,5 +40,5 @@ PYTHONIOENCODING=utf-8 python out/review9/verify_item.py --idx 42 --fresh       
 1. 原件不在仓库：A1/A2 比的是「归档说明登记值 vs 制作者报告登记值」，不是重新计算原件 sha256。
 2. Tier B 是产物自证：数的是导出 txt 的条目行数，不是 dnfile/pefile 从原件重算 TypeDef/节/导入。
 3. B3 命中只登记：`NotImplementedException` 可能是原版行为，无法区分，故不判 fail。
-4. 缺制作者报告的件判 `fail: a3_report_missing`；只有 cs 无 il 的 CLR 判 `partial: tier_b_incomplete`；非 PE 判 `partial`。
+4. 缺制作者报告的 15 件判 `fail: a3_report_missing`（= report_missing）；只有 cs 无 il 的 6 件 CLR 判 `partial: tier_b_incomplete`；报告自述 failed_analyze 的 1 件判 `partial: analyze_failed`。
 5. 证据三档逐行单一值：本批几乎全为〔已实测〕（数的是仓内 blob 原文），blocked 行为〔无法判定〕。
