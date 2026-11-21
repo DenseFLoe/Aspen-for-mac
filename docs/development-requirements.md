@@ -8,7 +8,7 @@
 
 Plus 分类沿用冻结基线；Properties 使用需要逆向、不需要逆向、两份对应重复子集及尚未确定五份清单。未知、读取受限、路径未解析分别记录；后缀/文件头只决定初步路线，结构/内容/用途证据才能确认，内嵌代码单列。分类和阶段完成状态分开，同哈希共用分析并保留来源，同名异哈希分开。见[盘点](plus-properties-inventory.md)、[Plus](aspen-plus-classification.md)、[Properties](aspen-properties-classification.md)及[共用清单](plus-properties-shared-files.md)。
 
-当前交付为第 2 步，按逐文件证据判定阶段验收。通过验收的逆向成果及说明同步到公开仓库的 [`reverse/01-completed/`](../reverse/01-completed/README.md)。数据库、公式、原版二进制和未完成成果仅本地保存，受保护资产遵守 [AGENTS.md](../AGENTS.md)。分类及来源/哈希/重复/安装定位/完成状态等元数据可提交到 `inventories/`，本地原件及历史快照保留。
+当前交付为第 2 步，按逐文件证据判定阶段验收。通过验收的逆向成果及说明同步到公开仓库的 [`reverse/01-completed/`](../reverse/01-completed/README.md)。原版二进制和未完成逆向成果可按 [AGENTS.md](../AGENTS.md#仓库工作流) 公开发布。数据库、公式及其他受保护资产仅本地保存。分类及来源/哈希/重复/安装定位/完成状态等元数据可提交到 `inventories/`，本地原件及历史快照保留。
 
 ### 1. 盘点安装包和已安装程序
 
