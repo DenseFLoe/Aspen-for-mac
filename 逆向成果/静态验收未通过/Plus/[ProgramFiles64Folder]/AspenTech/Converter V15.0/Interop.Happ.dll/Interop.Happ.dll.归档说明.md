@@ -1,6 +1,6 @@
 # Interop.Happ.dll
 
-状态为**待静态验收**。已定位并核对发布包中的导出文件，等待逐件静态验收。
+状态为**静态验收未通过**。见[一组第 1 轮验收证据](Interop.Happ.dll.md)。
 
 原路径为 `Plus/[ProgramFiles64Folder]/AspenTech/Converter V15.0/Interop.Happ.dll`。
 

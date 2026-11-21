@@ -1,6 +1,6 @@
 # 待静态验收
 
-共 959 件。已有代码，等待逐件核对。
+共 957 件。已有代码，等待逐件核对。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -427,7 +427,6 @@
 | [FluidFlowhandler.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/PSV%20Legacy%20Recall%20Server/V15.0/FluidFlowhandler.dll/) | Plus | `ddf143677c61` |
 | [FluidFlowhandler.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Hydraulics%20V15.0/FluidFlowhandler.dll/) | Plus | `e97526a95d81` |
 | [FluidFlowInterfaceAndEnum.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/PSV%20Legacy%20Recall%20Server/V15.0/FluidFlowInterfaceAndEnum.dll/) | Plus | `fb9671fb0be2` |
-| [FluidFlowInterfaceAndEnum.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Hydraulics%20V15.0/FluidFlowInterfaceAndEnum.dll/) | Plus | `174cc8931a4b` |
 | [fnapfile.exe](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/fnapfile.exe/) | Plus | `0c001f623a58` |
 | [fug.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/fug.dll/) | Plus | `dc609054dc5d` |
 | [FxCdbCME.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/FxCdbCME.dll/) | Plus | `fda6a9123a9a` |
@@ -531,7 +530,6 @@
 | [Interop.ASCclasslib.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/Interop.ASCclasslib.dll/) | Plus | `f34a1c76f088` |
 | [Interop.BPCOMPRESSORLib.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/Interop.BPCOMPRESSORLib.dll/) | Plus | `8f6170db6d38` |
 | [Interop.Happ.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/Interop.Happ.dll/) | Plus | `c21b432f0d04` |
-| [Interop.Happ.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Converter%20V15.0/Interop.Happ.dll/) | Plus | `07adeeecea88` |
 | [Interop.MMLocal.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/Interop.MMLocal.dll/) | Plus | `c839a5f398b4` |
 | [Interop.MOLESTRUCTLib.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/Interop.MOLESTRUCTLib.dll/) | Plus | `84fc107094ef` |
 | [Interop.MSHierarchicalFlexGridLib.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/Interop.MSHierarchicalFlexGridLib.dll/) | Plus | `c9130abc82d5` |
