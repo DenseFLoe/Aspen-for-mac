@@ -1,6 +1,6 @@
 # thflash.dll
 
-状态为**待静态验收**。已定位并核对发布包中的导出文件，等待逐件静态验收。
+状态为**静态验收未通过**。二组核对原件及四份 W2 导出后，确认存在分支和 COM 资源缺口，已转修复组，复验组为 2。见[逐件静态验收证据](静态验收-audit-2-20261121-02.md)。
 
 原路径为 `Plus/[CommonFiles64Folder]/Hyprotech/COMThermo/thflash.dll`。
 

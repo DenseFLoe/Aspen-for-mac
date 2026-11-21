@@ -1,6 +1,6 @@
 # 静态验收未通过
 
-共 290 件。已有代码或局部成果，逐件记录有明确缺口。
+共 291 件。已有代码或局部成果，逐件记录有明确缺口。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -208,6 +208,7 @@
 | [tabctl32.ocx](Plus/%5BSystemFolder%5D/tabctl32.ocx/) | Plus | `d10a197fd53e` |
 | [testvirt.exe](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/testvirt.exe/) | Plus | `9498bb01afcf` |
 | [thcontainers.dll](Plus/%5BCommonFiles64Folder%5D/Hyprotech/COMThermo/thcontainers.dll/) | Plus | `efaab640a105` |
+| [thflash.dll](Plus/%5BCommonFiles64Folder%5D/Hyprotech/COMThermo/thflash.dll/) | Plus | `01cf07268dcc` |
 | [threed32.ocx](Plus/%5BSystemFolder%5D/threed32.ocx/) | Plus | `8f317a229950` |
 | [URLMON.DLL](Plus/Windows/SysWOW64/URLMON.DLL/) | Plus | `fce2477a7c14` |
 | [URLMON.DLL](Plus/%5BSystemFolder%5D/URLMON.DLL/) | Plus | `41549c656a74` |
