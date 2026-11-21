@@ -1,6 +1,6 @@
 # 静态验收未通过
 
-共 304 件。已有代码或局部成果，逐件记录有明确缺口。
+共 307 件。已有代码或局部成果，逐件记录有明确缺口。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -41,6 +41,7 @@
 | [AspenTech.APED.Core.dll](Plus-Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/Bin/AspenTech.APED.Core.dll/) | Plus-Properties | `7995945d8ff9` |
 | [AspenTech.APED.Core.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseConfiguration/AspenTech.APED.Core.dll/) | Properties | `e4e66a5e8597` |
 | [AspenTech.AspenPlus.UnmanagedWrapper.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.AspenPlus.UnmanagedWrapper.dll/) | Plus-Properties | `12726eceaf4f` |
+| [AspenTech.FeatureToggle.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.FeatureToggle.dll/) | Plus | `103fb93bb98c` |
 | [AspenTech.HtmlHelp.HelpIntegration.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.HtmlHelp.HelpIntegration.dll/) | Plus | `061d5a3a8409` |
 | [AspenTech.HtmlHelp.StrongNameInvoke.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.HtmlHelp.StrongNameInvoke.dll/) | Plus | `02826aae6dfd` |
 | [AssistEd.exe](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/AssistEd.exe/) | Plus | `f948cf2ce74f` |
@@ -103,6 +104,7 @@
 | [mfc40.dll](Plus/%5BSystemFolder%5D/mfc40.dll/) | Plus | `c1bfab83ac97` |
 | [mfc40.dll](Plus-Properties/Windows/SysWOW64/mfc40.dll/) | Plus-Properties | `c8aacb7314fe` |
 | [mfc42.dll](Plus/Windows/SysWOW64/mfc42.dll/) | Plus | `93ba144338cd` |
+| [Microsoft.Bcl.HashCode.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/Microsoft.Bcl.HashCode.dll/) | Plus | `76b1260ce747` |
 | [MMCFormsShim.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/MMCFormsShim.dll/) | Plus | `9b9050c67265` |
 | [mmg.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/mmg.dll/) | Plus-Properties | `5236861792e4` |
 | [mmstruct.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/mmstruct.dll/) | Plus-Properties | `bb9a2422bffe` |
@@ -212,6 +214,7 @@
 | [Stingray.GridControl71.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/Stingray.GridControl71.dll/) | Plus | `03765dc28940` |
 | [Stingray.GridUtils71.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/Stingray.GridUtils71.dll/) | Plus | `04ef7136488b` |
 | [System.Net.Http.Formatting.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/System.Net.Http.Formatting.dll/) | Plus | `00664130b963` |
+| [System.Runtime.CompilerServices.Unsafe.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Runtime.CompilerServices.Unsafe.dll/) | Plus | `37768488e8ef` |
 | [System.Security.Permissions.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Security.Permissions.dll/) | Plus | `006d4d13c4c4` |
 | [SystemLibrary400_1.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/SystemLibrary400_1.dll/) | Plus | `ad9bc4fae634` |
 | [SystemLibrary410_1.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/SystemLibrary410_1.dll/) | Plus | `56a4322d1a84` |

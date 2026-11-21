@@ -1,6 +1,6 @@
 # 待静态验收
 
-共 941 件。已有代码，等待逐件核对。
+共 938 件。已有代码，等待逐件核对。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -236,7 +236,6 @@
 | [Aspentech.ExchangerDesign.Infrastructure.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/Aspentech.ExchangerDesign.Infrastructure.dll/) | Plus | `e5734f06b097` |
 | [AspenTech.ExchangerDesign.UserInterface.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.ExchangerDesign.UserInterface.dll/) | Plus | `d0825be414ae` |
 | [AspenTech.ExchangerDesign.UserInterface.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/Modules/AspenTech.ExchangerDesign.UserInterface.dll/) | Plus | `e33317301230` |
-| [AspenTech.FeatureToggle.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.FeatureToggle.dll/) | Plus | `103fb93bb98c` |
 | [AspenTech.HtmlHelp.HelpCefViewer.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.HtmlHelp.HelpCefViewer.dll/) | Plus | `78a67fbf7302` |
 | [AspenTech.HtmlHelp.HelpInfrastructure.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.HtmlHelp.HelpInfrastructure.dll/) | Plus | `353d4748e2b5` |
 | [AspenTech.HtmlHelp.HelpLauncher.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.HtmlHelp.HelpLauncher.dll/) | Plus | `22dfdebff1c0` |
@@ -545,7 +544,6 @@
 | [MergeNN_FNN.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/MergeNN_FNN.dll/) | Plus | `78a39d7fa389` |
 | [mfc42.dll](Plus/%5BSystemFolder%5D/mfc42.dll/) | Plus | `ec63a85030c6` |
 | [Microsoft.Bcl.AsyncInterfaces.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/Microsoft.Bcl.AsyncInterfaces.dll/) | Plus | `80678203bd02` |
-| [Microsoft.Bcl.HashCode.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/Microsoft.Bcl.HashCode.dll/) | Plus | `76b1260ce747` |
 | [Microsoft.Extensions.Configuration.Abstractions.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/Microsoft.Extensions.Configuration.Abstractions.dll/) | Plus | `47bcc0dd74ab` |
 | [Microsoft.Extensions.Configuration.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/Microsoft.Extensions.Configuration.dll/) | Plus | `247037c17970` |
 | [Microsoft.Extensions.DependencyInjection.Abstractions.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/Microsoft.Extensions.DependencyInjection.Abstractions.dll/) | Plus | `c5a119ec8947` |
@@ -740,7 +738,6 @@
 | [System.Diagnostics.DiagnosticSource.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Diagnostics.DiagnosticSource.dll/) | Plus | `1887592615fc` |
 | [System.Memory.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Memory.dll/) | Plus | `bf3fb84664f4` |
 | [System.Numerics.Vectors.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Numerics.Vectors.dll/) | Plus | `1d3ef8698281` |
-| [System.Runtime.CompilerServices.Unsafe.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Runtime.CompilerServices.Unsafe.dll/) | Plus | `37768488e8ef` |
 | [System.Security.AccessControl.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Security.AccessControl.dll/) | Plus | `ff14c5f628b9` |
 | [System.Security.Principal.Windows.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Security.Principal.Windows.dll/) | Plus | `b4d8e15adc23` |
 | [System.Text.Encoding.CodePages.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/System.Text.Encoding.CodePages.dll/) | Plus | `b77ee852824a` |
