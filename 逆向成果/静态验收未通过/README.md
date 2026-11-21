@@ -1,6 +1,6 @@
 # 静态验收未通过
 
-共 299 件。已有代码或局部成果，逐件记录有明确缺口。
+共 301 件。已有代码或局部成果，逐件记录有明确缺口。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -36,6 +36,7 @@
 | [ApwnShell.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/ApwnShell.dll/) | Plus-Properties | `12e4bf717333` |
 | [APXLAddinLoader.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Properties%20V15.0/Engine/xeq/APXLAddinLoader.dll/) | Properties | `db40c4546119` |
 | [APXLAddinLoaderx64.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Properties%20V15.0/Engine/xeq/APXLAddinLoaderx64.dll/) | Properties | `9ba85988ad19` |
+| [AspenTech.ActivationDashboard.EnergyAnalysis.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/Modules/AspenTech.ActivationDashboard.EnergyAnalysis.dll/) | Plus | `02c618988294` |
 | [AspenTech.APED.Core.dll](Plus-Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/AspenTech.APED.Core.dll/) | Plus-Properties | `21edcf0086f7` |
 | [AspenTech.APED.Core.dll](Plus-Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/Bin/AspenTech.APED.Core.dll/) | Plus-Properties | `7995945d8ff9` |
 | [AspenTech.APED.Core.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseConfiguration/AspenTech.APED.Core.dll/) | Properties | `e4e66a5e8597` |
@@ -209,6 +210,7 @@
 | [Stingray.GridControl71.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/Stingray.GridControl71.dll/) | Plus | `03765dc28940` |
 | [Stingray.GridUtils71.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/Stingray.GridUtils71.dll/) | Plus | `04ef7136488b` |
 | [System.Net.Http.Formatting.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/System.Net.Http.Formatting.dll/) | Plus | `00664130b963` |
+| [System.Security.Permissions.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Security.Permissions.dll/) | Plus | `006d4d13c4c4` |
 | [SystemLibrary400_1.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/SystemLibrary400_1.dll/) | Plus | `ad9bc4fae634` |
 | [SystemLibrary410_1.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/SystemLibrary410_1.dll/) | Plus | `56a4322d1a84` |
 | [tabctl32.ocx](Plus/%5BSystemFolder%5D/tabctl32.ocx/) | Plus | `d10a197fd53e` |

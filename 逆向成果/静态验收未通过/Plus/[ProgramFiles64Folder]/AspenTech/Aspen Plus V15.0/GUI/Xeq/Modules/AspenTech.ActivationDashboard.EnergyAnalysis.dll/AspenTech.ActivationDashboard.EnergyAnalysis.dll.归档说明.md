@@ -1,6 +1,6 @@
 # AspenTech.ActivationDashboard.EnergyAnalysis.dll
 
-状态为**待静态验收**。已定位并核对发布包中的导出文件，等待逐件静态验收。
+当前状态为**静态验收未通过**。程序集缺少两个 WPF 布局、两张界面图片和 34 条本地化字符串。见[三组第 2 轮证据](AspenTech.ActivationDashboard.EnergyAnalysis.dll.%E9%9D%99%E6%80%81%E9%AA%8C%E6%94%B6.md)。
 
 原路径为 `Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Xeq/Modules/AspenTech.ActivationDashboard.EnergyAnalysis.dll`。
 
