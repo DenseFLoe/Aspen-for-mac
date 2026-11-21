@@ -1,5 +1,9 @@
 # CalcExcelAddInRes32.dll
 
+**待静态验收，复验一组。** 第 1 轮已补齐历史反编译失败的两个 CRT 线程函数和核对时发现的异常展开代码，栈探测改按 x86 汇编复核。[修复说明](静态修复-20261121-01/CalcExcelAddInRes32.dll.md)
+
+## 历史归档说明
+
 状态为**静态验收未通过**。发布包的代码中有明确的反编译失败记录。
 
 原路径为 `Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Xeq/x86/CalcExcelAddInRes32.dll`。
