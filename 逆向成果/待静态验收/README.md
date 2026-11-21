@@ -1,6 +1,6 @@
 # 待静态验收
 
-共 946 件。已有代码，等待逐件核对。
+共 944 件。已有代码，等待逐件核对。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -139,7 +139,6 @@
 | [Aspenproperty95.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Properties%20V15.0/Engine/xeq/Aspenproperty95.dll/) | Properties | `26bb9c7efc5f` |
 | [AspenTech.ActivationDashboard.EconomicAnalysis.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/Modules/AspenTech.ActivationDashboard.EconomicAnalysis.dll/) | Plus | `430a19b69583` |
 | [AspenTech.ActivationDashboard.EdrActivation.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/Modules/AspenTech.ActivationDashboard.EdrActivation.dll/) | Plus | `164b3f4cb6e2` |
-| [AspenTech.ActivationDashboard.EnergyAnalysis.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/Modules/AspenTech.ActivationDashboard.EnergyAnalysis.dll/) | Plus | `02c618988294` |
 | [AspenTech.ActivationDashboard.GHGEmission.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/Modules/AspenTech.ActivationDashboard.GHGEmission.dll/) | Plus | `dc23fbc9f66d` |
 | [AspenTech.ActivationDashboard.Infrastructure.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.ActivationDashboard.Infrastructure.dll/) | Plus | `47f1a96ecbf6` |
 | [AspenTech.APED.Core.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Shared%20Engineering%20Models%20V15.0/AspenTech.APED.Core.dll/) | Plus | `c82546647491` |
@@ -745,7 +744,6 @@
 | [System.Numerics.Vectors.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Numerics.Vectors.dll/) | Plus | `1d3ef8698281` |
 | [System.Runtime.CompilerServices.Unsafe.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Runtime.CompilerServices.Unsafe.dll/) | Plus | `37768488e8ef` |
 | [System.Security.AccessControl.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Security.AccessControl.dll/) | Plus | `ff14c5f628b9` |
-| [System.Security.Permissions.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Security.Permissions.dll/) | Plus | `006d4d13c4c4` |
 | [System.Security.Principal.Windows.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Security.Principal.Windows.dll/) | Plus | `b4d8e15adc23` |
 | [System.Text.Encoding.CodePages.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/System.Text.Encoding.CodePages.dll/) | Plus | `b77ee852824a` |
 | [System.Text.Encodings.Web.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Text.Encodings.Web.dll/) | Plus | `e9c4f5eed186` |
