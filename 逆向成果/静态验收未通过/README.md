@@ -1,6 +1,6 @@
 # 静态验收未通过
 
-共 315 件。已有代码或局部成果，逐件记录有明确缺口。
+共 316 件。已有代码或局部成果，逐件记录有明确缺口。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -92,6 +92,7 @@
 | [Happ.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/Happ.dll/) | Plus-Properties | `7d4964f25cee` |
 | [HHActiveX.dll](Plus/%5BSystemFolder%5D/HHActiveX.dll/) | Plus | `74f3505710a7` |
 | [hxnetintpropcomp.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/hxnetintpropcomp.dll/) | Plus | `efbdab3e9f50` |
+| [IconEditorAx.ocx](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/IconEditorAx.ocx/) | Plus | `082e89138ce9` |
 | [IDKCustomDialogs.BA3F7B28_13D7_4630_902E_55D684AF3A97](Plus/Binary/IDKCustomDialogs.BA3F7B28_13D7_4630_902E_55D684AF3A97/) | Plus | `aad4b911f9d2` |
 | [ifmsmn.exe](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/ifmsmn.exe/) | Plus | `066c1c3bd87d` |
 | [Ikc2Bkp.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/Ikc2Bkp.dll/) | Plus-Properties | `bba17051eb10` |
