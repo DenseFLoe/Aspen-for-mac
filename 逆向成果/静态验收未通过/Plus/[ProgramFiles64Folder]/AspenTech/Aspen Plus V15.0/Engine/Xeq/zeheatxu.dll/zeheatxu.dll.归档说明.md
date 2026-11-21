@@ -1,6 +1,6 @@
 # zeheatxu.dll
 
-状态为**待静态验收**。已定位并核对发布包中的导出文件，等待逐件静态验收。
+状态为**静态验收未通过**，已转修复，清单保留“复验组”字段值 2。导出存在导入数据基址及浮点比较差异，缺少数据导出的可编辑布局和版本资源。[二组第 5 轮验收证据](%E9%9D%99%E6%80%81%E9%AA%8C%E6%94%B6-audit-2-20261121-05.md)。
 
 原路径为 `Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/Engine/Xeq/zeheatxu.dll`。
 

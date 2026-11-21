@@ -1,6 +1,6 @@
 # 静态验收未通过
 
-共 301 件。已有代码或局部成果，逐件记录有明确缺口。
+共 302 件。已有代码或局部成果，逐件记录有明确缺口。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -261,6 +261,7 @@
 | [zeftools.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/zeftools.dll/) | Plus | `b2e42575befe` |
 | [zeheater.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/zeheater.dll/) | Plus | `fefa57d5436c` |
 | [zeheatx.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/zeheatx.dll/) | Plus | `0ee129bc84b2` |
+| [zeheatxu.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/zeheatxu.dll/) | Plus | `0548fadb13c5` |
 | [zeicheck.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/zeicheck.dll/) | Plus | `14734eee7ece` |
 | [zeitexec.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/zeitexec.dll/) | Plus | `3861dc8c5ca8` |
 | [zeitutl.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/zeitutl.dll/) | Plus | `82eb8236d99f` |
