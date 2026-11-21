@@ -1,5 +1,12 @@
 # InfragisticsWPF.Controls.Editors.XamRichTextEditor.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=1573）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/deec5dfc77af-InfragisticsWPF.Controls.Editors.XamRichTextEditor.dll/InfragisticsWPF.Controls.Editors.XamRichTextEditor.dll.cs.txt` sha256=cfbae1f311d953cd5efd99c8d03d7e971d2b076d820727fa4f0d03423d08b2cd bytes=578430
+- `clr/deec5dfc77af-InfragisticsWPF.Controls.Editors.XamRichTextEditor.dll/InfragisticsWPF.Controls.Editors.XamRichTextEditor.dll.il.txt` sha256=d8eda82eee61b01406cfcbd5a17b17e55bd5e6ba5821ba1190a2dd15ed8703f7 bytes=2503057

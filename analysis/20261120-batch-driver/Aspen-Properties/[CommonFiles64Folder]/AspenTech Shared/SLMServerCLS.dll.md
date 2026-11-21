@@ -1,5 +1,13 @@
 # 057_SLMServerCLS.dll 静态复核报告（Aspen-Properties / 全程序集 IL + C# 反编译）
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=8）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 样本别名：`057_SLMServerCLS.dll`（清单 read-test-waiting.csv（schema B），原件目录只读、未上传）
 来源：分支 codex/waiting-for-tietoumao｜git_blob 6c90b776e0fd｜自算 sha256 ad818dae13bfc0dfcaaf66a4622ad2f756f98589528edff819ae5abfb449cb89｜台账 20261119-61 缺失〔待验证〕
 落点：`01-completed/Aspen-Properties/[CommonFiles64Folder]/AspenTech Shared/`（相对 `out/R1`）｜定位规则：`local-rel`
@@ -138,6 +146,7 @@ PE 导入目录为空或不可读〔实测〕。
 
 ## dumps
 
-dumps: repo:逆向成果/待静态验收/Properties/[CommonFiles64Folder]/AspenTech Shared/SLMServerCLS.dll.md/分支交付/
+dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- `clr/04abce17e913-SLMServerCLS.dll/SLMServerCLS.dll.cs.txt` sha256=0ca45e28cdd5d84cb03342258882140927de3b816ac7d2d907848287d13b9868 bytes=5149
+- `clr/04abce17e913-SLMServerCLS.dll/SLMServerCLS.dll.il.txt` sha256=93377c2331c2db731b8d85d53427d059d632af2bea6994936740fd3ecc7f4a02 bytes=5001

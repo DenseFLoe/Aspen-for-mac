@@ -93,13 +93,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part5.tar.gz
 
-- `decompiled/aos_zedmo.dll.c.txt` sha256=3be27a5a6405d0822ac711ed4c0a824c5374229a51d65181dea61ed29332834b bytes=2271271
-- `decompiled/aos_zedmo_proxy.dll.c.txt` sha256=40779dccabb8cd58223a95d9f715826e8a8151595fff0487a17d7cd5239947b8 bytes=2276640
-- `decompiled/cbcCInterfaceDll.dll.c.txt` sha256=1f61bdf1fec263395f410694af4028088ee623f0c14d4651a1ec026929fec05e bytes=11177214
-- `decompiled/zedmo.dll.c.txt` sha256=302ca9d1e50befde98fa2d81033f93cd8a86139ca3878965e8cb66138dc53fdc bytes=3236679
-- `decompiled/zedmo_proxy.dll.c.txt` sha256=bdb099e0d9ca2bc0f2a1fe0438e7e7d437bfb33b76790c5ed628ed2b75cad746 bytes=3227614
-- `disasm/aos_zedmo.dll.asm.txt` sha256=c1889b9b9a9eabbb94f81eb94ccc969d5c2048e5a80e438ede410088194f8e6c bytes=5415908
-- `disasm/aos_zedmo_proxy.dll.asm.txt` sha256=709b73448ada3fb327f6b62ec051956a12edb81a2802476dbd035cbc4b6df114 bytes=5416106
-- `disasm/cbcCInterfaceDll.dll.asm.txt` sha256=5eed88e656bf0fe282b1ab5fda018ce7489c8d75f97429794390a9cbd2629699 bytes=18134369
-- `disasm/zedmo.dll.asm.txt` sha256=b78cbb1b05bb2d4b98b2ff90f35fcd59a3f04858864fcab97d1ca3274026d13a bytes=8060338
-- `disasm/zedmo_proxy.dll.asm.txt` sha256=0e8f00e615fc705f180e304e3e5b730c309a9ac2427d098b0adfd6ed57fa5e43 bytes=8060471
+- `native5/01-completed/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Open Solvers V15.0/Bin/decompiled/cbcCInterfaceDll.dll.c.txt` sha256=1f61bdf1fec263395f410694af4028088ee623f0c14d4651a1ec026929fec05e bytes=11177214
+- `native5/01-completed/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Open Solvers V15.0/Bin/disasm/cbcCInterfaceDll.dll.asm.txt` sha256=5eed88e656bf0fe282b1ab5fda018ce7489c8d75f97429794390a9cbd2629699 bytes=18134369

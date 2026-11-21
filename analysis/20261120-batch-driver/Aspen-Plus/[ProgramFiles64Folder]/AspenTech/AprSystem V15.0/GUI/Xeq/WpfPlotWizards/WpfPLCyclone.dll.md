@@ -1,5 +1,12 @@
 # WpfPLCyclone.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=93）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/3f2d559aa429-WpfPLCyclone.dll/WpfPLCyclone.dll.cs.txt` sha256=730a6869f3c6d204f181ab94978b9d40a42beaddb20a2e93dbb68efb922defcc bytes=22804
+- `clr/3f2d559aa429-WpfPLCyclone.dll/WpfPLCyclone.dll.il.txt` sha256=8179e2a5d0ac062d05e90fb6ec0a8b9f870046c64b8d5bd1f3f5c03f2055bfa0 bytes=66366

@@ -1,5 +1,12 @@
 # Infragistics4.Win.UltraWinListView.v15.1.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=未在本件报告中记录）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - status=failed_analyze
 - reason=ilspy_rc70
@@ -20,4 +27,5 @@ Latest version is '11.2.0.10050' (yours is '9.1.0.7988')
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/e1baedbb779e-Infragistics4.Win.UltraWinListView.v15.1.dll/Infragistics4.Win.UltraWinListView.v15.1.dll.il.txt` sha256=4c2574c9d0683740a56b1cfa067d9f03ef3e27731d81df703f904e2946dd296b bytes=3326706
+- 失败记录（不计为产物）：`clr/e1baedbb779e-Infragistics4.Win.UltraWinListView.v15.1.dll/Infragistics4.Win.UltraWinListView.v15.1.dll.cs.txt` bytes=124，内容为 ILSpy 版本告警原文，非反编译正文；本件 status=failed_analyze

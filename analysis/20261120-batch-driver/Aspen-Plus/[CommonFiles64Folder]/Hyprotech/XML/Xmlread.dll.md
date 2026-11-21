@@ -93,5 +93,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part5.tar.gz
 
-- `decompiled/Xmlread.dll.c.txt` sha256=9f77673f1d1f66e00b56fa31ba53baaf4e8a61d839f32444e76df418a43d6fe1 bytes=4861542
-- `disasm/Xmlread.dll.asm.txt` sha256=812bf695de7dc4774224c4ba339a033e941f3e8d72467096f6efbe786951feeb bytes=8021952
+- `native5/01-completed/Aspen-Plus/[CommonFiles64Folder]/Hyprotech/XML/decompiled/Xmlread.dll.c.txt` sha256=9f77673f1d1f66e00b56fa31ba53baaf4e8a61d839f32444e76df418a43d6fe1 bytes=4861542
+- `native5/01-completed/Aspen-Plus/[CommonFiles64Folder]/Hyprotech/XML/disasm/Xmlread.dll.asm.txt` sha256=812bf695de7dc4774224c4ba339a033e941f3e8d72467096f6efbe786951feeb bytes=8021952

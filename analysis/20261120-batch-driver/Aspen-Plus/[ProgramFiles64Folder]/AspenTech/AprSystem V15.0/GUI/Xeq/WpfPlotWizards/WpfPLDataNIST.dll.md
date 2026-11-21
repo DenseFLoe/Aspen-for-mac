@@ -1,5 +1,12 @@
 # WpfPLDataNIST.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=195）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/62ca577d31db-WpfPLDataNIST.dll/WpfPLDataNIST.dll.cs.txt` sha256=671851a3dcd855d7c8823eb31ec1a89feed06f7dfc525bc404ff7444e9748cbb bytes=116247
+- `clr/62ca577d31db-WpfPLDataNIST.dll/WpfPLDataNIST.dll.il.txt` sha256=59724c38517153b3c5812c6058e75ce18617e48ecd9d6f90de40218be58a5f75 bytes=626623

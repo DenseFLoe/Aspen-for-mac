@@ -1,5 +1,12 @@
 # AMOSNonLinear.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=180）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/29d2ac72096c-AMOSNonLinear.dll/AMOSNonLinear.dll.cs.txt` sha256=e79cb2bdf1b4407129e553c485a03e1045eaa9142b1c44300ee8a9d405905c7b bytes=182950
+- `clr/29d2ac72096c-AMOSNonLinear.dll/AMOSNonLinear.dll.il.txt` sha256=83f4a392df976ecd86d6526b0433ea7f0db9e79fd5e644fca687695af42c0eb8 bytes=2983345

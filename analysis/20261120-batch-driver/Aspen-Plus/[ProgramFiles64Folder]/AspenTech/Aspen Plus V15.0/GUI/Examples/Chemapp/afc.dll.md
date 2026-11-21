@@ -91,4 +91,7 @@
 
 ## dumps
 
-dumps: repo:逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Chemapp/afc.dll.md/分支交付/
+dumps: repo:analysis/20261120-batch-driver/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Chemapp/（仓内产物，不在 Release 包）
+
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Chemapp/decompiled/afc.dll.c.txt` sha256=e85c37d87b6782f9f61c21817ce6b78f697f9472eb1b53f80949a310152c0c8b bytes=20267
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Chemapp/disasm/afc.dll.asm.txt` sha256=f1a561fa39602ec55e97944fdf083ca12f2affd61021dda019343f502dfcf65c bytes=37712

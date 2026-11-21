@@ -1,5 +1,12 @@
 # System.Diagnostics.DiagnosticSource.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=1224）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/1887592615fc-System.Diagnostics.DiagnosticSource.dll/System.Diagnostics.DiagnosticSource.dll.cs.txt` sha256=d31661352f8394b12cda98786b9b2ba1eb1696a36c32e67fd619dcd6cd1869d0 bytes=305153
+- `clr/1887592615fc-System.Diagnostics.DiagnosticSource.dll/System.Diagnostics.DiagnosticSource.dll.il.txt` sha256=2f8fedd3430c4bfbb585a2d4039705f091f896cf45476a05d89560c0c227b77b bytes=1246730

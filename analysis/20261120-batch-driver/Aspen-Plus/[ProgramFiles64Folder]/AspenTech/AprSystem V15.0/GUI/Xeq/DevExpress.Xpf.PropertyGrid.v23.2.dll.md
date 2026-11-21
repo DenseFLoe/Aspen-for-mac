@@ -1,5 +1,12 @@
 # DevExpress.Xpf.PropertyGrid.v23.2.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=4891）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/b026b91aca10-DevExpress.Xpf.PropertyGrid.v23.2.dll/DevExpress.Xpf.PropertyGrid.v23.2.dll.cs.txt` sha256=ad39ea5c22d66b9ce9a79ca3a9237f7f1bdeac37b1453e443aa4e68bb404a129 bytes=808381
+- `clr/b026b91aca10-DevExpress.Xpf.PropertyGrid.v23.2.dll/DevExpress.Xpf.PropertyGrid.v23.2.dll.il.txt` sha256=3479d2593c63f636aa98420c3589dce5e3b54a6d0c7134145cee54ada6482ac2 bytes=4138795

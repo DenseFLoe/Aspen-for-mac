@@ -1,5 +1,12 @@
 # AspenTech.FeatureToggle.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=46）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/103fb93bb98c-AspenTech.FeatureToggle.dll/AspenTech.FeatureToggle.dll.cs.txt` sha256=db21690ac1146c6923a11629da3c6e2a7af3403358439bbaeca5a48c4c56a519 bytes=9362
+- `clr/103fb93bb98c-AspenTech.FeatureToggle.dll/AspenTech.FeatureToggle.dll.il.txt` sha256=5aacd785739365235c302961c2ea608306afd515055db243b916df41ab070d88 bytes=49207

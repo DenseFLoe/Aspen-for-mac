@@ -1,5 +1,13 @@
 # 056_Aspentech.Exchange.EquipmentSelection.dll 静态复核报告（Aspen-Plus / 全程序集 IL + C# 反编译）
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=24）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 样本别名：`056_Aspentech.Exchange.EquipmentSelection.dll`（清单 read-test-waiting.csv（schema B），原件目录只读、未上传）
 来源：分支 codex/waiting-for-tietoumao｜git_blob 0a34de7798f0｜自算 sha256 7be4816ebce1c87861db7de9b711b2ea503ead8504adcc262ec2ba416de9cb81｜台账 20261119-61 缺失〔待验证〕
 落点：`01-completed/Aspen-Plus/[TARGETDIR]/`（相对 `out/R1`）｜定位规则：`local-rel`
@@ -209,6 +217,7 @@ PE 导入表：1 个 DLL。
 
 ## dumps
 
-dumps: repo:逆向成果/待静态验收/Plus/[TARGETDIR]/Aspentech.Exchange.EquipmentSelection.dll.md/分支交付/
+dumps: repo:analysis/20261120-batch-driver/Aspen-Plus/[TARGETDIR]/（仓内产物，不在 Release 包）
 
-- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- `Aspen-Plus/[TARGETDIR]/decompiled/Aspentech.Exchange.EquipmentSelection.dll.cs.txt` sha256=0bbf0bd0b0f52fbccdde189e85fa5917f46350a7f4f6539ee1b39b3aa03af750 bytes=10907
+- `Aspen-Plus/[TARGETDIR]/il/Aspentech.Exchange.EquipmentSelection.dll.il.txt` sha256=187f644de6205d7da883ce0595582afa81e3bfe842a442774be2a42b45744a6e bytes=41739

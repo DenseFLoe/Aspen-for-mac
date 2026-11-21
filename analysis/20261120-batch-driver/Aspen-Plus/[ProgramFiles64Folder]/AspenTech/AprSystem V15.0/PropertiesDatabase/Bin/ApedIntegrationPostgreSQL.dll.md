@@ -1,5 +1,12 @@
 # ApedIntegrationPostgreSQL.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=444）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/621bfbef1a3f-ApedIntegrationPostgreSQL.dll/ApedIntegrationPostgreSQL.dll.cs.txt` sha256=474254a7c50b240708d5210a6043c305b828c2f66230485c6afc9609385d7c23 bytes=509211
+- `clr/621bfbef1a3f-ApedIntegrationPostgreSQL.dll/ApedIntegrationPostgreSQL.dll.il.txt` sha256=79f0bc94191ee07f538eb2abfd389bb4f76f4fa6746c6adf14b4f5bf1c93dc32 bytes=10939318

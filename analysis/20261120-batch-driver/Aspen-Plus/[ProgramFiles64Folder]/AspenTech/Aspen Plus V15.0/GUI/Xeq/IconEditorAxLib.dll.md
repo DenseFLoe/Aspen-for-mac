@@ -1,5 +1,12 @@
 # IconEditorAxLib.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=138）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/aa665a96c0e1-IconEditorAxLib.dll/IconEditorAxLib.dll.cs.txt` sha256=03ace511fa827e153ef36bba54f95b12f933d330c934c24e0401c507ab58baf6 bytes=31559
+- `clr/aa665a96c0e1-IconEditorAxLib.dll/IconEditorAxLib.dll.il.txt` sha256=7288952c38594c953ea8f80b66f7084bba695672f2810ef9180dbd64b6606947 bytes=55010

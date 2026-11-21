@@ -93,5 +93,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part3.tar.gz
 
-- `decompiled/aos_lib.dll.c.txt` sha256=f600e99384fed81a1e4370c1ead713db018248a600018395ab308972fba3d671 bytes=2534365
-- `disasm/aos_lib.dll.asm.txt` sha256=e8fa9f8655df65fa9ef7c5a6fe67c22109c5f187e6a489f87c8a983eff032289 bytes=3966301
+- `native4/01-completed/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Open Solvers V15.0/Lib/decompiled/aos_lib.dll.c.txt` sha256=f600e99384fed81a1e4370c1ead713db018248a600018395ab308972fba3d671 bytes=2534365
+- `native4/01-completed/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Open Solvers V15.0/Lib/disasm/aos_lib.dll.asm.txt` sha256=e8fa9f8655df65fa9ef7c5a6fe67c22109c5f187e6a489f87c8a983eff032289 bytes=3966301

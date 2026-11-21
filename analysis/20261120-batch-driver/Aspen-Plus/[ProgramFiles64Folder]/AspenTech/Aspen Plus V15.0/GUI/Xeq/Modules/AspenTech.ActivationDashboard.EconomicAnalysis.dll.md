@@ -1,5 +1,12 @@
 # AspenTech.ActivationDashboard.EconomicAnalysis.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=264）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/430a19b69583-AspenTech.ActivationDashboard.EconomicAnalysis.dll/AspenTech.ActivationDashboard.EconomicAnalysis.dll.cs.txt` sha256=eb65ff0bed1a6e837b45853acfc23bcb4abe665e11e72f7c29907d656b9bbb10 bytes=94834
+- `clr/430a19b69583-AspenTech.ActivationDashboard.EconomicAnalysis.dll/AspenTech.ActivationDashboard.EconomicAnalysis.dll.il.txt` sha256=2d4dc8d151993bc182ec17eb6d29fb1cb3ebd52f5a2f0a13dbdcf3c28a48370b bytes=429388

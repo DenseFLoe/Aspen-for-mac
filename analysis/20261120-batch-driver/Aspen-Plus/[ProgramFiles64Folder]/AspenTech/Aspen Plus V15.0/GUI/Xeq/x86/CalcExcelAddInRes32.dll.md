@@ -98,5 +98,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part1.tar.gz
 
-- `decompiled/CalcExcelAddInRes32.dll.c.txt` sha256=52341192f1abb38adc8fdc7aa8ad44395d868a79afdfcb5e7193db330298ede8 bytes=41986
-- `disasm/CalcExcelAddInRes32.dll.asm.txt` sha256=eb024bebaf03eb3a2056fea4f2a222046234368c0e851fb2e171cbda57861275 bytes=80546
+- `native/01-completed/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Xeq/x86/decompiled/CalcExcelAddInRes32.dll.c.txt` sha256=52341192f1abb38adc8fdc7aa8ad44395d868a79afdfcb5e7193db330298ede8 bytes=41986
+- `native/01-completed/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Xeq/x86/disasm/CalcExcelAddInRes32.dll.asm.txt` sha256=eb024bebaf03eb3a2056fea4f2a222046234368c0e851fb2e171cbda57861275 bytes=80546

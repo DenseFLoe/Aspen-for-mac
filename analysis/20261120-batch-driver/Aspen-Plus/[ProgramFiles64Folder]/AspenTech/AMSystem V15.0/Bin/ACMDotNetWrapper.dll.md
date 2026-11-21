@@ -1,5 +1,12 @@
 # ACMDotNetWrapper.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=31）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/8fa9d484b3d3-ACMDotNetWrapper.dll/ACMDotNetWrapper.dll.cs.txt` sha256=14681ff49c51abda6428f6896207bd632384eba93051f8c252eeda27526bcd78 bytes=13213
+- `clr/8fa9d484b3d3-ACMDotNetWrapper.dll/ACMDotNetWrapper.dll.il.txt` sha256=53899c316654b848dd46d8e1a1edab3986ee8f9264e9f35c3a1f7dfeaad40d44 bytes=43136

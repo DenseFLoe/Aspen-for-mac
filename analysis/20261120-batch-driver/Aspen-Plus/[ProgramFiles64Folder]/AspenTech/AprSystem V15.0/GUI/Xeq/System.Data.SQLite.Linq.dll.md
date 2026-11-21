@@ -1,5 +1,12 @@
 # System.Data.SQLite.Linq.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=470）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/a409e2bf0b5c-System.Data.SQLite.Linq.dll/System.Data.SQLite.Linq.dll.cs.txt` sha256=2c13d64aee903b4e5f4d2f8b005eedf55dc239281758575b63df636ac22360e7 bytes=156611
+- `clr/a409e2bf0b5c-System.Data.SQLite.Linq.dll/System.Data.SQLite.Linq.dll.il.txt` sha256=cbf25730f9daff551abfed228b751d50ae809a7785cf5609b1b1fea6e65d238b bytes=691435

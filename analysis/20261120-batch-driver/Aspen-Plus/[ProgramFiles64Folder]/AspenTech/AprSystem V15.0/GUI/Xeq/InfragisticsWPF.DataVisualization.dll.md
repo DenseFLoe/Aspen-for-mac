@@ -1,5 +1,12 @@
 # InfragisticsWPF.DataVisualization.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=22257）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/1d5110a66cb9-InfragisticsWPF.DataVisualization.dll/InfragisticsWPF.DataVisualization.dll.cs.txt` sha256=039b547d7354f094b7e90a3aec2745a763f04a1f855296c57bb9bfd2b16be6c4 bytes=4087132
+- `clr/1d5110a66cb9-InfragisticsWPF.DataVisualization.dll/InfragisticsWPF.DataVisualization.dll.il.txt` sha256=895026a29fb6782e414c0afb80b3f7c8abb28b3924d29c981b3f58476e2664df bytes=19160402

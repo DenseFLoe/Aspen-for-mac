@@ -1,5 +1,13 @@
 # 013_System.Security.Principal.Windows.dll 静态复核报告（Aspen-Plus / 全程序集 IL + C# 反编译）
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=25）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 样本别名：`013_System.Security.Principal.Windows.dll`（清单 read-test-waiting.csv（schema B），原件目录只读、未上传）
 来源：分支 codex/waiting-for-tietoumao｜git_blob 54f7829bc3b3｜自算 sha256 b4d8e15adc235d0e858e39b5133e5d00a4baa8c94f4f39e3b5e791b0f9c0c806｜台账 20261119-61 缺失〔待验证〕
 落点：`01-completed/Aspen-Plus/[CommonFilesFolder]/AspenTech Shared/`（相对 `out/R1`）｜定位规则：`local-rel`
@@ -136,6 +144,7 @@ PE 导入表：1 个 DLL。
 
 ## dumps
 
-dumps: repo:逆向成果/待静态验收/Plus/[CommonFilesFolder]/AspenTech Shared/System.Security.Principal.Windows.dll.md/分支交付/
+dumps: repo:analysis/20261120-batch-driver/Aspen-Plus/[CommonFilesFolder]/AspenTech Shared/（仓内产物，不在 Release 包）
 
-- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- `Aspen-Plus/[CommonFilesFolder]/AspenTech Shared/decompiled/System.Security.Principal.Windows.dll.cs.txt` sha256=6066c9a0c9b5d5b2566ccee6a655b0835aec3a14a9f61c6287e6e7413caeda82 bytes=6905
+- `Aspen-Plus/[CommonFilesFolder]/AspenTech Shared/il/System.Security.Principal.Windows.dll.il.txt` sha256=7dbb5a581319ddeef8eed76fb0a4f59ee9e7e0f34c65ef5970f033ec7cd04b07 bytes=10774

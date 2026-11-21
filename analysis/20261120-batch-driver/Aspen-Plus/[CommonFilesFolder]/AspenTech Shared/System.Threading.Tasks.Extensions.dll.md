@@ -1,5 +1,12 @@
 # System.Threading.Tasks.Extensions.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=110）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/4f81ffd0dc72-System.Threading.Tasks.Extensions.dll/System.Threading.Tasks.Extensions.dll.cs.txt` sha256=24096ede4cb22021085f6d87efcb22a1275a76b954946491cdbf21268d31e1cb bytes=30467
+- `clr/4f81ffd0dc72-System.Threading.Tasks.Extensions.dll/System.Threading.Tasks.Extensions.dll.il.txt` sha256=23fde0fe528ccbddebe500ed3b61473896e0c2f228978e601e10f5bc7b86d2bc bytes=91300

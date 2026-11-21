@@ -1,5 +1,12 @@
 # AspenTech.AspenPlus.MMForms.Blocks.BatchOp.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=2361）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/34033f12fe02-AspenTech.AspenPlus.MMForms.Blocks.BatchOp.dll/AspenTech.AspenPlus.MMForms.Blocks.BatchOp.dll.cs.txt` sha256=5e5e0ceb8686a504301acfa265d47feb2e503577fab7d518365ac031b67beffe bytes=2066719
+- `clr/34033f12fe02-AspenTech.AspenPlus.MMForms.Blocks.BatchOp.dll/AspenTech.AspenPlus.MMForms.Blocks.BatchOp.dll.il.txt` sha256=8bf202f206e0fdcac68340db78cd732de59bcbb2492fa40b3293df0ad6346039 bytes=5319716

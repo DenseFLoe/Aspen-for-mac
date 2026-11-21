@@ -1,5 +1,13 @@
 # 027_AspenTech.Interop.thflashmanager.dll 静态复核报告（Aspen-Plus / 全程序集 IL + C# 反编译）
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=0）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 样本别名：`027_AspenTech.Interop.thflashmanager.dll`（清单 read-test-waiting.csv（schema B），原件目录只读、未上传）
 来源：分支 codex/waiting-for-tietoumao｜git_blob b06b369ff0f8｜自算 sha256 5c87a3e33800e6b08b404bbdf34c4fd1f9b06f5b54faf234534296f3ab4462b0｜台账 20261119-61 缺失〔待验证〕
 落点：`01-completed/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Hydraulics V15.0/`（相对 `out/R1`）｜定位规则：`local-rel`
@@ -127,6 +135,7 @@ PE 导入表：1 个 DLL。
 
 ## dumps
 
-dumps: repo:逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/Aspen Hydraulics V15.0/AspenTech.Interop.thflashmanager.dll.md/分支交付/
+dumps: repo:analysis/20261120-batch-driver/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Hydraulics V15.0/（仓内产物，不在 Release 包）
 
-- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Hydraulics V15.0/decompiled/AspenTech.Interop.thflashmanager.dll.cs.txt` sha256=95035217d42ad0355501bb1eb941113ba6e8eb3ed51ad0f6db75478ca4645513 bytes=8536
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Hydraulics V15.0/il/AspenTech.Interop.thflashmanager.dll.il.txt` sha256=d49250deed1f3e256d7f7c6d8711e417963c5503cb9250d689837fc4870a0a11 bytes=5087

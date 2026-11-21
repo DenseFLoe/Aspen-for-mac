@@ -88,3 +88,10 @@
 - 仅 Ghidra 有、IDA 未单列：无
 - 仅 IDA 有：`sub_1001600`, `DialogFunc`, `sub_1001799`, `sub_10017F8`, `sub_1001B01`, `sub_1001B18`, `sub_1001B42`, `sub_1001BD5`
 - 命名口径：上两行按函数名对比。IDA 应用了 FLIRT 库签名（如 `__CRT_INIT@12`、`@__security_check_cookie@4`），同一地址在 Ghidra 侧仍是 `FUN_<addr>`，因此名单差异主要是命名差异；函数个数按上表比对。
+
+## dumps
+
+dumps: v0.20261121-w2#dumps-w2-part5.tar.gz
+
+- `native5/01-completed/Aspen-Plus/Binary/decompiled/NewBinary2.C25FA7FB_B884_414F_A1CE_91EAE0A5FE95.c.txt` sha256=1ffb1e0642c0317eea5fe04f911a04fa084b1b591b48583e8a1e600522efa04d bytes=156427
+- `native5/01-completed/Aspen-Plus/Binary/disasm/NewBinary2.C25FA7FB_B884_414F_A1CE_91EAE0A5FE95.asm.txt` sha256=acda7a4ccd24ce26690f2c306094ea7fd6e85721992336912a7f2459729ea78f bytes=350722

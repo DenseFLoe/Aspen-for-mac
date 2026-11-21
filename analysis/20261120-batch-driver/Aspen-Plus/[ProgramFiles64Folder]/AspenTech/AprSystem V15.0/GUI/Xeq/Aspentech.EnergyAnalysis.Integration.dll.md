@@ -1,5 +1,12 @@
 # Aspentech.EnergyAnalysis.Integration.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=758）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/5ae8f18a8b04-Aspentech.EnergyAnalysis.Integration.dll/Aspentech.EnergyAnalysis.Integration.dll.cs.txt` sha256=e3979a67bcb8a7620eea381791fd3aa12c96f1a9410655c5a092cd0a0bedc1cf bytes=400266
+- `clr/5ae8f18a8b04-Aspentech.EnergyAnalysis.Integration.dll/Aspentech.EnergyAnalysis.Integration.dll.il.txt` sha256=3875b1e507be2c738268930d6c576629fb58d66107d81d7b98e6b79c79857358 bytes=2013399

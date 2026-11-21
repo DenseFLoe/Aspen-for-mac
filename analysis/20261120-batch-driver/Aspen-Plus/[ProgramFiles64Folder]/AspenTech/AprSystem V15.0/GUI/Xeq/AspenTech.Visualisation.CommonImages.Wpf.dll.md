@@ -1,5 +1,12 @@
 # AspenTech.Visualisation.CommonImages.Wpf.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=1423）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/7cd7cc30b3d7-AspenTech.Visualisation.CommonImages.Wpf.dll/AspenTech.Visualisation.CommonImages.Wpf.dll.cs.txt` sha256=74003409c23eeeb4491118169cef1f291e3e3b1358b63cabe9e6f895d60db4bb bytes=122530
+- `clr/7cd7cc30b3d7-AspenTech.Visualisation.CommonImages.Wpf.dll/AspenTech.Visualisation.CommonImages.Wpf.dll.il.txt` sha256=94d38af282cab9a5d28be72fbeee38de4beb9dd4425f340351cb9c0362bf9fc1 bytes=630077

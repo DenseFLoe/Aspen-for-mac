@@ -1,5 +1,12 @@
 # InfragisticsWPF.Reporting.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=281）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/ecc5721faa67-InfragisticsWPF.Reporting.dll/InfragisticsWPF.Reporting.dll.cs.txt` sha256=d52e3f8d9237a18de1481a99f2485a02b49e2dbcbcb604d81f9e5f804a18b0fd bytes=98621
+- `clr/ecc5721faa67-InfragisticsWPF.Reporting.dll/InfragisticsWPF.Reporting.dll.il.txt` sha256=4cb189defa01661e4f4d801900aa79b546cc099eed203f10b3a992fc2b6ecb7a bytes=389952

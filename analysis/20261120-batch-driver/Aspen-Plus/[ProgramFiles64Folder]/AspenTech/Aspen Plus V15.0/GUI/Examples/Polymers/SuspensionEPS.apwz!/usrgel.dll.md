@@ -91,4 +91,7 @@
 
 ## dumps
 
-dumps: repo:逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Polymers/SuspensionEPS.apwz!/usrgel.dll.md/分支交付/
+dumps: repo:analysis/20261120-batch-driver/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Polymers/SuspensionEPS.apwz!/（仓内产物，不在 Release 包）
+
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Polymers/SuspensionEPS.apwz!/decompiled/usrgel.dll.c.txt` sha256=18d78aba4644b49cdfab08bd61081082ff1d17cad9fe5ffd184c72014b6ee894 bytes=25114
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Polymers/SuspensionEPS.apwz!/disasm/usrgel.dll.asm.txt` sha256=a0a5b290217857a0b88c1c33e1aca2eacea6a41a4dc9365230ecc1d2d8b68d79 bytes=46426

@@ -1,5 +1,12 @@
 # DevExpress.Xpf.NavBar.v23.2.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=2846）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/ebb7340a7d5b-DevExpress.Xpf.NavBar.v23.2.dll/DevExpress.Xpf.NavBar.v23.2.dll.cs.txt` sha256=13823058b65c30c3a41231fe97289d65b5d0cdb13e14e7e0a3494c09be9eae6d bytes=583740
+- `clr/ebb7340a7d5b-DevExpress.Xpf.NavBar.v23.2.dll/DevExpress.Xpf.NavBar.v23.2.dll.il.txt` sha256=d7d155d6516d9e1a975cc98b0d4933b97b763c234156450a1020435aaf070838 bytes=2524605

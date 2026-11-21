@@ -1,5 +1,12 @@
 # TankModel.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=191）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/efa6266bc100-TankModel.dll/TankModel.dll.cs.txt` sha256=8925a48021b37eaa435a4d4bd9c32fd6fc671b487eaa4a9c58f5293b9542ab50 bytes=49762
+- `clr/efa6266bc100-TankModel.dll/TankModel.dll.il.txt` sha256=fdbebcf5486de5b7b89cd2cec480e27bfe873376c6bfe5d0e56002c05b7f0dbf bytes=235391

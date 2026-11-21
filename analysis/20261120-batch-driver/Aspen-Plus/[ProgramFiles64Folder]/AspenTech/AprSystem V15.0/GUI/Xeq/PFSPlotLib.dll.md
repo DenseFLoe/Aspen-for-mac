@@ -1,5 +1,12 @@
 # PFSPlotLib.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=816）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/41d9fc23d8c0-PFSPlotLib.dll/PFSPlotLib.dll.cs.txt` sha256=b64a2330bc3f38dea4ac735e59a0edb47addac122875b7f6164b671b2746bf8f bytes=179260
+- `clr/41d9fc23d8c0-PFSPlotLib.dll/PFSPlotLib.dll.il.txt` sha256=edb1737ad1c88eab84d5ffe55fb34bdae06af9d82143bb8c7b9c9ee12c9572fe bytes=349963

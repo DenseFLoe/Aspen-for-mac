@@ -1,5 +1,12 @@
 # WpfPLControls.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=156）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/aec982c392f2-WpfPLControls.dll/WpfPLControls.dll.cs.txt` sha256=2f3491ca00e4dd5e5afd75e5d54853f7fbfae31b564591f2c074c30638795178 bytes=29065
+- `clr/aec982c392f2-WpfPLControls.dll/WpfPLControls.dll.il.txt` sha256=da44b2f2f771894690de90feb3401604cb8b518f57816f7e969a9255dc913887 bytes=142364

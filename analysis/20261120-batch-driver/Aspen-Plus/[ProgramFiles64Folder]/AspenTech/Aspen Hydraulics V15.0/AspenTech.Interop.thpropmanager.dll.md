@@ -1,5 +1,12 @@
 # AspenTech.Interop.thpropmanager.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=405）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/90cc6500452e-AspenTech.Interop.thpropmanager.dll/AspenTech.Interop.thpropmanager.dll.cs.txt` sha256=24e610ccc2a1b00379f3497aeba7097dba6a50bb33ad0cff9172b6590d89e0f8 bytes=97295
+- `clr/90cc6500452e-AspenTech.Interop.thpropmanager.dll/AspenTech.Interop.thpropmanager.dll.il.txt` sha256=b0f8418f160ac8867908b2a492a54df4478aefc9c033395947f3da0e98299790 bytes=64251

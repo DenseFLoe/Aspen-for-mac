@@ -1,5 +1,12 @@
 # AspenTech.CompositeDoc.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=258）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/e826a8acb00c-AspenTech.CompositeDoc.dll/AspenTech.CompositeDoc.dll.cs.txt` sha256=2766e3f4d67659deb10bcacc4e52b5e18f7e4d1d976a07d6eaff67a01844ebd7 bytes=89418
+- `clr/e826a8acb00c-AspenTech.CompositeDoc.dll/AspenTech.CompositeDoc.dll.il.txt` sha256=0a5efa192fc8339c0ef167a6e1d80e21581e7ccda4c39b45c8b1945b089800d1 bytes=420587

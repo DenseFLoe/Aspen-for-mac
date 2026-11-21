@@ -1,5 +1,12 @@
 # Interop.SECSERVEROBJECTLib.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=290）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/a1b19af66ce6-Interop.SECSERVEROBJECTLib.dll/Interop.SECSERVEROBJECTLib.dll.cs.txt` sha256=bab9097c2da5ac34a42f68797b6f50cfcaa273ed12c71e2f8182dcd3608db3f0 bytes=81002
+- `clr/a1b19af66ce6-Interop.SECSERVEROBJECTLib.dll/Interop.SECSERVEROBJECTLib.dll.il.txt` sha256=481e5b4f84073f77c4311c68c89548ef19b2d28ca655a9a61f2d236bbd7bb669 bytes=45584

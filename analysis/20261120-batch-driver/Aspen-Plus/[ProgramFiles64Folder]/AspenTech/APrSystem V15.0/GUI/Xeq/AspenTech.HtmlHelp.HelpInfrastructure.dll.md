@@ -1,5 +1,13 @@
 # 018_AspenTech.HtmlHelp.HelpInfrastructure.dll 静态复核报告（Aspen-Plus / 全程序集 IL + C# 反编译）
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=16）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 样本别名：`018_AspenTech.HtmlHelp.HelpInfrastructure.dll`（清单 read-test-waiting.csv（schema B），原件目录只读、未上传）
 来源：分支 codex/waiting-for-tietoumao｜git_blob 78de4a44cfaa｜自算 sha256 353d4748e2b529f4cbe3008b9da48cd93529d0f4acf798274a77bba07d7e9115｜台账 20261119-61 缺失〔待验证〕
 落点：`01-completed/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/`（相对 `out/R1`）｜定位规则：`local-rel`
@@ -163,6 +171,7 @@ PE 导入目录为空或不可读〔实测〕。
 
 ## dumps
 
-dumps: repo:逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/GUI/Xeq/AspenTech.HtmlHelp.HelpInfrastructure.dll.md/分支交付/
+dumps: repo:analysis/20261120-batch-driver/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/GUI/Xeq/（仓内产物，不在 Release 包）
 
-- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/GUI/Xeq/decompiled/AspenTech.HtmlHelp.HelpInfrastructure.dll.cs.txt` sha256=ed3407572a86b1f366bbb1917b47d897df56e853467ad840ca24dd76e0b81b7d bytes=4361
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/GUI/Xeq/il/AspenTech.HtmlHelp.HelpInfrastructure.dll.il.txt` sha256=3ca7aa81271f545a382b8ff651a9784d6e0da1c417cadc375191f4f87122e217 bytes=10844

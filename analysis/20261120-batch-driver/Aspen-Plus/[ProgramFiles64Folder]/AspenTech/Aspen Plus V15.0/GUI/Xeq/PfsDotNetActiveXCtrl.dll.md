@@ -1,5 +1,12 @@
 # PfsDotNetActiveXCtrl.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=67）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/4bb238de3a44-PfsDotNetActiveXCtrl.dll/PfsDotNetActiveXCtrl.dll.cs.txt` sha256=7a11e1cc89cd5bb206a9b39c3019b6b64cdb4cd1304316eb2c626615f3a66974 bytes=16298
+- `clr/4bb238de3a44-PfsDotNetActiveXCtrl.dll/PfsDotNetActiveXCtrl.dll.il.txt` sha256=adaa4c6fa3ea09f7d7fa5fec9a63055cd745d002d9778cdcd0eec00a71c6d2dd bytes=59993

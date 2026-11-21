@@ -1,5 +1,12 @@
 # PipeFlowMethodLib.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=22）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/bc8f035ea34e-PipeFlowMethodLib.dll/PipeFlowMethodLib.dll.cs.txt` sha256=24ca8b5197dada9ea1f37243f19b828cccead949260c407b43cdc07247d63d1c bytes=19424
+- `clr/bc8f035ea34e-PipeFlowMethodLib.dll/PipeFlowMethodLib.dll.il.txt` sha256=76a62e3d6a1924928943b3a476425d2171254ae93abfa1519ab0f23fc11c6750 bytes=84306

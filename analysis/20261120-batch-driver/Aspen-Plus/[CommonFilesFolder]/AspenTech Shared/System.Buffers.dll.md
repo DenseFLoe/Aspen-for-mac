@@ -1,5 +1,13 @@
 # 011_System.Buffers.dll 静态复核报告（Aspen-Plus / 全程序集 IL + C# 反编译）
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=32）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 样本别名：`011_System.Buffers.dll`（清单 read-test-waiting.csv（schema B），原件目录只读、未上传）
 来源：分支 codex/waiting-for-tietoumao｜git_blob f2d83c51416e｜自算 sha256 accccfbe45d9f08ffeed9916e37b33e98c65be012cfff6e7fa7b67210ce1fefb｜台账 20261119-61 缺失〔待验证〕
 落点：`01-completed/Aspen-Plus/[CommonFilesFolder]/AspenTech Shared/`（相对 `out/R1`）｜定位规则：`local-rel`
@@ -197,6 +205,7 @@ PE 导入表：1 个 DLL。
 
 ## dumps
 
-dumps: repo:逆向成果/待静态验收/Plus/[CommonFilesFolder]/AspenTech Shared/System.Buffers.dll.md/分支交付/
+dumps: repo:analysis/20261120-batch-driver/Aspen-Plus/[CommonFilesFolder]/AspenTech Shared/（仓内产物，不在 Release 包）
 
-- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- `Aspen-Plus/[CommonFilesFolder]/AspenTech Shared/decompiled/System.Buffers.dll.cs.txt` sha256=acffa707a068c2c639fe5dbd20a5a08fccaf92b137393cce2292f12e57aeecd1 bytes=11295
+- `Aspen-Plus/[CommonFilesFolder]/AspenTech Shared/il/System.Buffers.dll.il.txt` sha256=06f0d4ba32c71a33d8a41d57814104ac8e840f7f5e80adf3883f110117658bf4 bytes=39595

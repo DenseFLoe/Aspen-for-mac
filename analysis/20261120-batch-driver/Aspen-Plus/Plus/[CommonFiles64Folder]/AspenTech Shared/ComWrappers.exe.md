@@ -92,3 +92,10 @@
 - 仅 Ghidra 有、IDA 未单列：无
 - 仅 IDA 有：`sub_401000`, `sub_401060`, `sub_401133`, `sub_401150`, `sub_401170`, `sub_4011A0`, `sub_4011C0`, `sub_4011F0`
 - 命名口径：上两行按函数名对比。IDA 应用了 FLIRT 库签名（如 `__CRT_INIT@12`、`@__security_check_cookie@4`），同一地址在 Ghidra 侧仍是 `FUN_<addr>`，因此名单差异主要是命名差异；函数个数按上表比对。
+
+## dumps
+
+dumps: v0.20261121-w2#dumps-w2-part2.tar.gz
+
+- `native3/01-completed/Aspen-Plus/[CommonFiles64Folder]/AspenTech Shared/decompiled/ComWrappers.exe.c.txt` sha256=8e5e12557604deab5b67bd789fe8a9c1fe64bb2e42953def14b17b955151388e bytes=347625
+- `native3/01-completed/Aspen-Plus/[CommonFiles64Folder]/AspenTech Shared/disasm/ComWrappers.exe.asm.txt` sha256=a927d7ec13edfd08ef5717e74cf2ca911b22752cadb0153d532e5e0df6236d9a bytes=701737

@@ -1,5 +1,12 @@
 # CefSharp.Core.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=7127）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/ac2047c51f5b-CefSharp.Core.dll/CefSharp.Core.dll.cs.txt` sha256=3c2cda74db8847b211fd1a9dbad873bc68577ecf62a961640ea8eb2164281f3c bytes=783161
+- `clr/ac2047c51f5b-CefSharp.Core.dll/CefSharp.Core.dll.il.txt` sha256=6a34c0a8e582d71c16c6b5bf4ec4bef9dd9934d8666e4ab4cd072124d939a569 bytes=3356430

@@ -1,5 +1,12 @@
 # CraneMethodLib.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=20）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/1e237585dcba-CraneMethodLib.dll/CraneMethodLib.dll.cs.txt` sha256=12dc64850d92acb456c1271cd0d7072f1c6098857de387e3ec603f921be2f75a bytes=11182
+- `clr/1e237585dcba-CraneMethodLib.dll/CraneMethodLib.dll.il.txt` sha256=e6e3e63f3dcaf73bc68bc6ab319c3ee000ef4a23521b23165089c1754f50dde7 bytes=47769

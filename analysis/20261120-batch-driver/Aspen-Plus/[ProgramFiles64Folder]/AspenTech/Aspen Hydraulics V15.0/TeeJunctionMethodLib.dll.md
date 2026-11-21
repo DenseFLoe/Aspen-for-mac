@@ -1,5 +1,12 @@
 # TeeJunctionMethodLib.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=35）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/3532d64ecd67-TeeJunctionMethodLib.dll/TeeJunctionMethodLib.dll.cs.txt` sha256=964146fe6fabb4b622c950f0db81ccd70a85c6f046a1cf876618952358b7f4df bytes=95598
+- `clr/3532d64ecd67-TeeJunctionMethodLib.dll/TeeJunctionMethodLib.dll.il.txt` sha256=78faa60fcdd34ce03f7ed89b633d6f9deda1b4440649775950c23c41cb9eac7c bytes=506431

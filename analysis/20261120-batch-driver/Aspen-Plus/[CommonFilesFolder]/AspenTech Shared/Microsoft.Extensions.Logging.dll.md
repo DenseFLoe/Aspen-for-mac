@@ -1,5 +1,12 @@
 # Microsoft.Extensions.Logging.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=269）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/c7756fe1d264-Microsoft.Extensions.Logging.dll/Microsoft.Extensions.Logging.dll.cs.txt` sha256=2fec1682c681889b16ce4683922af8bb4ae08d10c2205b2024f9a474610f6f6d bytes=54341
+- `clr/c7756fe1d264-Microsoft.Extensions.Logging.dll/Microsoft.Extensions.Logging.dll.il.txt` sha256=a3c20c87c53d7fd081f3346d83642fc1810027a2b98f410823167c110ec8f1cc bytes=224385

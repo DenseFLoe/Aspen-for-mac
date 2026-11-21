@@ -93,13 +93,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part5.tar.gz
 
-- `decompiled/thcontainers.dll.c.txt` sha256=afddac7b23a71e321d4b083fcf9a3e5b9bbe90f0d36681eb2ad85415b0bf9ef2 bytes=6751038
-- `decompiled/thflash.dll.c.txt` sha256=44415b51f459037a4320bab39ebe578d9a9bce4af72d9a646e4fc62a9dde6ac6 bytes=6639270
-- `decompiled/thpropmanager.dll.c.txt` sha256=453fa1becac25424b050d74ecceb2bf7e5515f0420e122237e4e3e513bc46dbf bytes=5453033
-- `decompiled/thtdepprop.dll.c.txt` sha256=5af6f89078de4651408dc411f870a678656c4f3781b4ab85cd3e9780f882ee34 bytes=3936788
-- `decompiled/ththreephaseenvelope.dll.c.txt` sha256=a16fa94a1ded9f177d8023225a66fa7b873640a3af3adfa19400242dd459a659 bytes=3673914
-- `disasm/thcontainers.dll.asm.txt` sha256=198595c3a96708d457acaa9bd61279d13ab087ff5c9defec97e33ce2b1d0622a bytes=12299249
-- `disasm/thflash.dll.asm.txt` sha256=59080cb43374c149edc098005a010978d193256ca717f8bb9c592b29fbc30b6f bytes=10785100
-- `disasm/thpropmanager.dll.asm.txt` sha256=a757532a439c80c204b3ee28c38221b66ff0ca88291750102502ba6eb98e7d14 bytes=9288391
-- `disasm/thtdepprop.dll.asm.txt` sha256=74a3e511a0c7a53e0fda350fa3430145c232130273d4301b2853ac60a08b1402 bytes=6609596
-- `disasm/ththreephaseenvelope.dll.asm.txt` sha256=e3cb4eaabdf41a8a3fea53e92b4cc4297328306eeb104e1d93057965b24eee3e bytes=6831923
+- `native5/01-completed/Aspen-Plus/[CommonFiles64Folder]/Hyprotech/COMThermo/decompiled/thflash.dll.c.txt` sha256=44415b51f459037a4320bab39ebe578d9a9bce4af72d9a646e4fc62a9dde6ac6 bytes=6639270
+- `native5/01-completed/Aspen-Plus/[CommonFiles64Folder]/Hyprotech/COMThermo/disasm/thflash.dll.asm.txt` sha256=59080cb43374c149edc098005a010978d193256ca717f8bb9c592b29fbc30b6f bytes=10785100

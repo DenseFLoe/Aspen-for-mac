@@ -88,3 +88,10 @@
 - 仅 Ghidra 有、IDA 未单列：无
 - 仅 IDA 有：`sub_180001000`, `sub_180001020`, `sub_18000105C`, `sub_18000107C`, `sub_18000109C`, `sub_1800010BC`, `sub_1800010D0`, `sub_18000110C`
 - 命名口径：上两行按函数名对比。IDA 应用了 FLIRT 库签名（如 `__CRT_INIT@12`、`@__security_check_cookie@4`），同一地址在 Ghidra 侧仍是 `FUN_<addr>`，因此名单差异主要是命名差异；函数个数按上表比对。
+
+## dumps
+
+dumps: v0.20261121-w2#dumps-w2-part2.tar.gz
+
+- `native3/01-completed/Aspen-Plus/[CommonFiles64Folder]/Hyprotech/COMThermo/decompiled/hyploader.dll.c.txt` sha256=6883b158d70840ed8e46e5f258bd5b25cb34ba287e25e871126de4520a222b79 bytes=406422
+- `native3/01-completed/Aspen-Plus/[CommonFiles64Folder]/Hyprotech/COMThermo/disasm/hyploader.dll.asm.txt` sha256=bcb1d580be04fbba082852c610b83e82418c696658c5da083f9a54d8d83e6814 bytes=742814

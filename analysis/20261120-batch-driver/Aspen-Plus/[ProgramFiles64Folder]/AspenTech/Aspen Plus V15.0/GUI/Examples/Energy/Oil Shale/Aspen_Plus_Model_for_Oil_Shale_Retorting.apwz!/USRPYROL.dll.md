@@ -93,5 +93,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part1.tar.gz
 
-- `decompiled/USRPYROL.dll.c.txt` sha256=fdcba846d88aed23a8884889284816ce2839e582f00e3189af33b222a02087c3 bytes=216610
-- `disasm/USRPYROL.dll.asm.txt` sha256=f1ea8e11ff8400124846b4aa74163c6bd66ad7a2b2ec60806213db06db4f02f7 bytes=113018
+- `native2/01-completed/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Energy/Oil Shale/Aspen_Plus_Model_for_Oil_Shale_Retorting.apwz!/decompiled/USRPYROL.dll.c.txt` sha256=fdcba846d88aed23a8884889284816ce2839e582f00e3189af33b222a02087c3 bytes=216610
+- `native2/01-completed/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Energy/Oil Shale/Aspen_Plus_Model_for_Oil_Shale_Retorting.apwz!/disasm/USRPYROL.dll.asm.txt` sha256=f1ea8e11ff8400124846b4aa74163c6bd66ad7a2b2ec60806213db06db4f02f7 bytes=113018

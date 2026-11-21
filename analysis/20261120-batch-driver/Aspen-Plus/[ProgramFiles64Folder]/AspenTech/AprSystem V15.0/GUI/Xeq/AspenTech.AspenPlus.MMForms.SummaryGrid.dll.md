@@ -1,5 +1,12 @@
 # AspenTech.AspenPlus.MMForms.SummaryGrid.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=200）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/8f38412515bc-AspenTech.AspenPlus.MMForms.SummaryGrid.dll/AspenTech.AspenPlus.MMForms.SummaryGrid.dll.cs.txt` sha256=771c88fc598e75bca96c820ea0743066cd5a89883e84109d4464228ce836b3eb bytes=85613
+- `clr/8f38412515bc-AspenTech.AspenPlus.MMForms.SummaryGrid.dll/AspenTech.AspenPlus.MMForms.SummaryGrid.dll.il.txt` sha256=b00533733f179ff2badcd4468770039733bb6414d1ad7114d6811344d46f5515 bytes=343249

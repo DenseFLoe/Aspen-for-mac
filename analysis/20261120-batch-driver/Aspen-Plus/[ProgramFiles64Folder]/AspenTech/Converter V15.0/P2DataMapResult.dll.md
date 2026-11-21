@@ -1,5 +1,12 @@
 # P2DataMapResult.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=152）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/718690d2b156-P2DataMapResult.dll/P2DataMapResult.dll.cs.txt` sha256=78e681d98724c34eaf961116857289750675ff9baa43bea65a8ab6108120d8da bytes=1105143
+- `clr/718690d2b156-P2DataMapResult.dll/P2DataMapResult.dll.il.txt` sha256=efb84df3077f0aaa5e9206589036a43081e155c28daf1adbf9cb8a47b7d6f041 bytes=5811977

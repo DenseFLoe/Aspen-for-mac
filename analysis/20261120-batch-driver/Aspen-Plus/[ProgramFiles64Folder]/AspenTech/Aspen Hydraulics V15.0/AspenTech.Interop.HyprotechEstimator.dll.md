@@ -1,5 +1,13 @@
 # 026_AspenTech.Interop.HyprotechEstimator.dll 静态复核报告（Aspen-Plus / 全程序集 IL + C# 反编译）
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=0）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 样本别名：`026_AspenTech.Interop.HyprotechEstimator.dll`（清单 read-test-waiting.csv（schema B），原件目录只读、未上传）
 来源：分支 codex/waiting-for-tietoumao｜git_blob 4af2e2ed008a｜自算 sha256 cc406b72dbe46e26d6c8fc500c8fa288cbbbd4a41c9dd959ea4a9cc8173d7958｜台账 20261119-61 缺失〔待验证〕
 落点：`01-completed/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Hydraulics V15.0/`（相对 `out/R1`）｜定位规则：`local-rel`
@@ -127,6 +135,7 @@ PE 导入表：1 个 DLL。
 
 ## dumps
 
-dumps: repo:逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/Aspen Hydraulics V15.0/AspenTech.Interop.HyprotechEstimator.dll.md/分支交付/
+dumps: repo:analysis/20261120-batch-driver/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Hydraulics V15.0/（仓内产物，不在 Release 包）
 
-- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Hydraulics V15.0/decompiled/AspenTech.Interop.HyprotechEstimator.dll.cs.txt` sha256=8f26927b48aaa929b7faa66f6bc55de6e7cb521a00cbd4231c3f101d01ef7b72 bytes=4946
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Hydraulics V15.0/il/AspenTech.Interop.HyprotechEstimator.dll.il.txt` sha256=0d88ac0024c5adea9364d84f26c2cfb7e8f147c02b4293f068effad528a77660 bytes=2836

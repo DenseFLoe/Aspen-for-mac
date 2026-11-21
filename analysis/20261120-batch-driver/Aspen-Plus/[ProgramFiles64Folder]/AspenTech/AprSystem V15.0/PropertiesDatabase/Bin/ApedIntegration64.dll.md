@@ -1,5 +1,12 @@
 # ApedIntegration64.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=508）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/d5764730f6c7-ApedIntegration64.dll/ApedIntegration64.dll.cs.txt` sha256=41a131f87da9f79fc68b46631a907ce5a510fa933c269e5ea37926fda6a33204 bytes=604151
+- `clr/d5764730f6c7-ApedIntegration64.dll/ApedIntegration64.dll.il.txt` sha256=fb938225d2b4637975c0a321381bcd455acf4cfaad38ca7c57a3e06c1c2d56d9 bytes=12035962

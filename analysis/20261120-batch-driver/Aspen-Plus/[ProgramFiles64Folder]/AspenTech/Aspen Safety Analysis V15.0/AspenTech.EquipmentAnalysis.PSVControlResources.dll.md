@@ -1,5 +1,12 @@
 # AspenTech.EquipmentAnalysis.PSVControlResources.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=2620）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/d03cf0debf75-AspenTech.EquipmentAnalysis.PSVControlResources.dll/AspenTech.EquipmentAnalysis.PSVControlResources.dll.cs.txt` sha256=c5cfc70ddd423619a7ef3d55eacef5e59f0e56562a2c9746ba6d63aeb42baf1f bytes=374867
+- `clr/d03cf0debf75-AspenTech.EquipmentAnalysis.PSVControlResources.dll/AspenTech.EquipmentAnalysis.PSVControlResources.dll.il.txt` sha256=8ec2b7a729f149f8aa73972ceb4a555c1632cddfae118411af1ace80c4539f3a bytes=1829265

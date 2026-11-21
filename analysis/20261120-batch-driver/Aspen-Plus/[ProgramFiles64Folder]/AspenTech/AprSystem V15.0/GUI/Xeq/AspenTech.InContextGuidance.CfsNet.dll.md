@@ -1,5 +1,12 @@
 # AspenTech.InContextGuidance.CfsNet.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=193）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/88f90017b913-AspenTech.InContextGuidance.CfsNet.dll/AspenTech.InContextGuidance.CfsNet.dll.cs.txt` sha256=d1a90669fb1d823249312f3c8743bf6c142821144e08bfaab70102324e33d8e7 bytes=23184
+- `clr/88f90017b913-AspenTech.InContextGuidance.CfsNet.dll/AspenTech.InContextGuidance.CfsNet.dll.il.txt` sha256=99657a676e9c23dc77618d8830e3ede739730afc69a5487fc9ae909099bc3548 bytes=188037

@@ -1,5 +1,12 @@
 # AspenTech.AspenPlus.EOVariableList.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=90）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/1028d3dd171c-AspenTech.AspenPlus.EOVariableList.dll/AspenTech.AspenPlus.EOVariableList.dll.cs.txt` sha256=3dea8db327061b4417c29a7aa32b7fe0440c48816672693a84fd941a17c294f8 bytes=37917
+- `clr/1028d3dd171c-AspenTech.AspenPlus.EOVariableList.dll/AspenTech.AspenPlus.EOVariableList.dll.il.txt` sha256=f5e2847c682dd9a764195b9968f7998356b464aefca20d2704b42255492686f6 bytes=143556

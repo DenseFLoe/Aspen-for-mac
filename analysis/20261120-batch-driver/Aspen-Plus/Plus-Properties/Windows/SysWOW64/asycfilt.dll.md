@@ -88,3 +88,10 @@
 - 仅 Ghidra 有、IDA 未单列：无
 - 仅 IDA 有：`_jpeg_abort@4`, `_jpeg_destroy@4`, `_jpeg_alloc_quant_table@4`, `_jpeg_alloc_huff_table@4`, `_jpeg_create_decompress@4`, `default_decompress_parms`, `_jpeg_read_header@8`, `_jpeg_consume_input@4`
 - 命名口径：上两行按函数名对比。IDA 应用了 FLIRT 库签名（如 `__CRT_INIT@12`、`@__security_check_cookie@4`），同一地址在 Ghidra 侧仍是 `FUN_<addr>`，因此名单差异主要是命名差异；函数个数按上表比对。
+
+## dumps
+
+dumps: v0.20261121-w2#dumps-w2-part1.tar.gz
+
+- `native2/01-completed/Plus-Properties/Windows/SysWOW64/decompiled/asycfilt.dll.c.txt` sha256=61cc575b36d857da9c13e5785a10c30b7e3e8dac331de0ac63b5f0250f943ea2 bytes=367474
+- `native2/01-completed/Plus-Properties/Windows/SysWOW64/disasm/asycfilt.dll.asm.txt` sha256=68357c90100d2c6cc8bb7aa9d37bafab7f41f3e25d683dc9dc5f0fd5b4b7378e bytes=655897

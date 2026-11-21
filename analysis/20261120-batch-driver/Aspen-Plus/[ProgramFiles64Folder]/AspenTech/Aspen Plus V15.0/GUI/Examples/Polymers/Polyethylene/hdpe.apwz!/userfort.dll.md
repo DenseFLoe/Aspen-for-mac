@@ -91,4 +91,7 @@
 
 ## dumps
 
-dumps: repo:逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Polymers/Polyethylene/hdpe.apwz!/userfort.dll.md/分支交付/
+dumps: repo:analysis/20261120-batch-driver/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Polymers/Polyethylene/hdpe.apwz!/（仓内产物，不在 Release 包）
+
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Polymers/Polyethylene/hdpe.apwz!/decompiled/userfort.dll.c.txt` sha256=271af3eecb498e2ce703ed12f591c5a560c9c137f76b46ef6dbb277c2d197b64 bytes=24751
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Polymers/Polyethylene/hdpe.apwz!/disasm/userfort.dll.asm.txt` sha256=1f61b4562258c8d5dcc7a27424ab043a607c733a8e254d1c3dbd945c998ac0d7 bytes=44322

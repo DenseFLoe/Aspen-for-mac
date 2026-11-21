@@ -1,5 +1,12 @@
 # InfragisticsWPF.Controls.Editors.XamComboEditor.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=1093）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/e25225bf0510-InfragisticsWPF.Controls.Editors.XamComboEditor.dll/InfragisticsWPF.Controls.Editors.XamComboEditor.dll.cs.txt` sha256=cf664289ebf256567e89d11a2962c83912f9df4fc7220b9a5f78d034872c11de bytes=340453
+- `clr/e25225bf0510-InfragisticsWPF.Controls.Editors.XamComboEditor.dll/InfragisticsWPF.Controls.Editors.XamComboEditor.dll.il.txt` sha256=76cbee77d186ca7ba6f5a5b0a744b59ad1905ef982412764b146122154ff0537 bytes=1570234

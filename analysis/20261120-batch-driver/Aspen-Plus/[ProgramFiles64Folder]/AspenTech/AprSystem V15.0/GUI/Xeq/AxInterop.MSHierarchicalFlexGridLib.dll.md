@@ -1,5 +1,12 @@
 # AxInterop.MSHierarchicalFlexGridLib.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=1266）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/b68e44120f4d-AxInterop.MSHierarchicalFlexGridLib.dll/AxInterop.MSHierarchicalFlexGridLib.dll.cs.txt` sha256=0948aaa1932d141747827ac71f00b3cba130d4b8153d8a5782dc6c5257c39a75 bytes=276929
+- `clr/b68e44120f4d-AxInterop.MSHierarchicalFlexGridLib.dll/AxInterop.MSHierarchicalFlexGridLib.dll.il.txt` sha256=0a4f1e535db674dd9e0a0cee428f097505711f8f25d1831b36a9f583a8dd1d53 bytes=1080645

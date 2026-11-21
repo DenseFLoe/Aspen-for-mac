@@ -1,5 +1,12 @@
 # Data.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=237）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/0cfb6db889fc-Data.dll/Data.dll.cs.txt` sha256=4c751661b482df0c376ec8e90ea5e32fbb821e8a21913dc865f27fe404442e14 bytes=25324
+- `clr/0cfb6db889fc-Data.dll/Data.dll.il.txt` sha256=17a1ab85cfe89b3b5d327cdb814893dba6b1d8635a0eac7eb5bcb69113a857c2 bytes=132643

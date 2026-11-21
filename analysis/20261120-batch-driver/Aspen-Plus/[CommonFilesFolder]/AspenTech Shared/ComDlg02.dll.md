@@ -120,5 +120,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part5.tar.gz
 
-- `decompiled/ComDlg02.dll.c.txt` sha256=ef02751d1d77f2df7b1e6ecae1e3a48b6efe22c53b8e2de0f84b72d326cc9a07 bytes=4214158
-- `disasm/ComDlg02.dll.asm.txt` sha256=72fcc6c3282a08e1db0ac0e50eb0aa643225cf7ae1118afc98342f773ed5c970 bytes=8342179
+- `native5/01-completed/Aspen-Plus/[CommonFilesFolder]/AspenTech Shared/decompiled/ComDlg02.dll.c.txt` sha256=ef02751d1d77f2df7b1e6ecae1e3a48b6efe22c53b8e2de0f84b72d326cc9a07 bytes=4214158
+- `native5/01-completed/Aspen-Plus/[CommonFilesFolder]/AspenTech Shared/disasm/ComDlg02.dll.asm.txt` sha256=72fcc6c3282a08e1db0ac0e50eb0aa643225cf7ae1118afc98342f773ed5c970 bytes=8342179

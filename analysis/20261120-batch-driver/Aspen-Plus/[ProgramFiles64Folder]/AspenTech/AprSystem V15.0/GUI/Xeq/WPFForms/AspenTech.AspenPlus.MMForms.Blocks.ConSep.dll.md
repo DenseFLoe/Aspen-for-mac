@@ -1,5 +1,12 @@
 # AspenTech.AspenPlus.MMForms.Blocks.ConSep.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=353）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/a8f493d6a78a-AspenTech.AspenPlus.MMForms.Blocks.ConSep.dll/AspenTech.AspenPlus.MMForms.Blocks.ConSep.dll.cs.txt` sha256=f30f4836987c14506af04b7277352b2b267fd46b4104956f18662e05cb3c2d62 bytes=285222
+- `clr/a8f493d6a78a-AspenTech.AspenPlus.MMForms.Blocks.ConSep.dll/AspenTech.AspenPlus.MMForms.Blocks.ConSep.dll.il.txt` sha256=5178b9e8898e10c4673ede4bbb564beff71b8100923173d2afb880564071799b bytes=670113

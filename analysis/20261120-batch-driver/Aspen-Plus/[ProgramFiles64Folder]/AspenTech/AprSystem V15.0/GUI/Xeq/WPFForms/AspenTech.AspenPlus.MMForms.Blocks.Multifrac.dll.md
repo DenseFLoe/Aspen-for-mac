@@ -1,5 +1,12 @@
 # AspenTech.AspenPlus.MMForms.Blocks.Multifrac.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=2589）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/f46670c1ca99-AspenTech.AspenPlus.MMForms.Blocks.Multifrac.dll/AspenTech.AspenPlus.MMForms.Blocks.Multifrac.dll.cs.txt` sha256=25893b2d79f8c596a2507de4fe53daab2dac0310994a7267f8b19f75a20f05a8 bytes=1852943
+- `clr/f46670c1ca99-AspenTech.AspenPlus.MMForms.Blocks.Multifrac.dll/AspenTech.AspenPlus.MMForms.Blocks.Multifrac.dll.il.txt` sha256=49c159732761e52505cc10c14b468b1d12710b79d142f940393ad961c71b4b3b bytes=4410232

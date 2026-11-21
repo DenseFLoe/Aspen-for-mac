@@ -1,5 +1,12 @@
 # AdbCsLayer.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=1189）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/67f2ca38ff98-AdbCsLayer.dll/AdbCsLayer.dll.cs.txt` sha256=4406a817570a133da93629aba089903d0cc487358e0d3f658a747e063a5f63e8 bytes=405725
+- `clr/67f2ca38ff98-AdbCsLayer.dll/AdbCsLayer.dll.il.txt` sha256=3b3348b60c189085460433db9b4db5f8ae3df2617d6eba0a442237bd9268ca10 bytes=2051903

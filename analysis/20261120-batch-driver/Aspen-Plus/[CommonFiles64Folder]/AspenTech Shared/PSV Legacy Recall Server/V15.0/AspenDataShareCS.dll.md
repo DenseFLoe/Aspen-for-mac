@@ -1,5 +1,12 @@
 # AspenDataShareCS.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=20069）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/d1b62813294a-AspenDataShareCS.dll/AspenDataShareCS.dll.cs.txt` sha256=00b8580e5ff5b27d6639140d936064a5d1cfb80b13938eb160f7bebb066b2a18 bytes=3277220
+- `clr/d1b62813294a-AspenDataShareCS.dll/AspenDataShareCS.dll.il.txt` sha256=f56cd6cf979392e08e58ff296771fddd1454b07a2ff34e819dbd102bb892ca60 bytes=14230911

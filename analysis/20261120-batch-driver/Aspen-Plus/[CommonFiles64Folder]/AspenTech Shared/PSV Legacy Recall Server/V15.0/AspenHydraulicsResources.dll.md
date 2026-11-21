@@ -1,5 +1,12 @@
 # AspenHydraulicsResources.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=639）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/43807097228d-AspenHydraulicsResources.dll/AspenHydraulicsResources.dll.cs.txt` sha256=49854a2aa55f9efffbceb5c4fc6d18108a0c058131d5142bb0658dcd58c6346f bytes=84577
+- `clr/43807097228d-AspenHydraulicsResources.dll/AspenHydraulicsResources.dll.il.txt` sha256=be0c99d03f579a396426522ffccae53d8224bef2f96a7c0105965592ede2fcb4 bytes=324709

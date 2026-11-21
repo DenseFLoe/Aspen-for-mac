@@ -1,5 +1,12 @@
 # DevExpress.Xpf.Office.v23.2.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=412）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/f761add16d7b-DevExpress.Xpf.Office.v23.2.dll/DevExpress.Xpf.Office.v23.2.dll.cs.txt` sha256=545e8c40b0abfb9b2b80dceae333e0e3f166fe7efb5ab5dcf1f4584c18e7ba54 bytes=148286
+- `clr/f761add16d7b-DevExpress.Xpf.Office.v23.2.dll/DevExpress.Xpf.Office.v23.2.dll.il.txt` sha256=084e8fcbc243acaef52b2de2af38b206683906245496a1e0da7b89a8c22adf65 bytes=666067

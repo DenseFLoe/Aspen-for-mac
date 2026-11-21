@@ -1,5 +1,12 @@
 # AdsComparer.exe
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=109）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/a2e1d9e2f963-AdsComparer.exe/AdsComparer.exe.cs.txt` sha256=56c2b0f6c6c3978da695c11cef738fa1ec1b0ccc3ad1c57af7e01bb898e37212 bytes=40852
+- `clr/a2e1d9e2f963-AdsComparer.exe/AdsComparer.exe.il.txt` sha256=3d0e148173ebb326703a28ce396134dc6cef75e21095b6ea5eb8f1e2f75a55f6 bytes=189577

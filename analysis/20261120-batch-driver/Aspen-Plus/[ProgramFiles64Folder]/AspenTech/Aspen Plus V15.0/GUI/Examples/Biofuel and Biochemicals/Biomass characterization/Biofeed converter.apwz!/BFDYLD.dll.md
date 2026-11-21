@@ -91,4 +91,7 @@
 
 ## dumps
 
-dumps: repo:逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Biofuel and Biochemicals/Biomass characterization/Biofeed converter.apwz!/BFDYLD.dll.md/分支交付/
+dumps: repo:analysis/20261120-batch-driver/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Biofuel and Biochemicals/Biomass characterization/Biofeed converter.apwz!/（仓内产物，不在 Release 包）
+
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Biofuel and Biochemicals/Biomass characterization/Biofeed converter.apwz!/decompiled/BFDYLD.dll.c.txt` sha256=18204e20cfe0f1b5f03fcf4c72da35f40ffc97796b05b2ea661acd1a5e6be588 bytes=31229
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Biofuel and Biochemicals/Biomass characterization/Biofeed converter.apwz!/disasm/BFDYLD.dll.asm.txt` sha256=1948a0b6e30a6dcf5ee80f0aebbde0b23ec015e053c3964276e242812ba82b0f bytes=49756

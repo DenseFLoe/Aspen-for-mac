@@ -1,5 +1,13 @@
 # 008_Microsoft.Practices.ServiceLocation.dll 静态复核报告（Aspen-Plus / 全程序集 IL + C# 反编译）
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=32）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 样本别名：`008_Microsoft.Practices.ServiceLocation.dll`（清单 read-test-waiting.csv（schema B），原件目录只读、未上传）
 来源：分支 codex/waiting-for-tietoumao｜git_blob 0d600ecca85e｜自算 sha256 78ac70411c71b7a0c68fe8746edd3f3a8cd3f72044b329a40ab53c57891be37d｜台账 20261119-61 缺失〔待验证〕
 落点：`01-completed/Aspen-Plus/[CommonFiles64Folder]/AspenTech Shared/PSV Legacy Recall Server/V15.0/`（相对 `out/R1`）｜定位规则：`local-rel`
@@ -178,6 +186,7 @@ PE 导入表：1 个 DLL。
 
 ## dumps
 
-dumps: repo:逆向成果/待静态验收/Plus/[CommonFiles64Folder]/AspenTech Shared/PSV Legacy Recall Server/V15.0/Microsoft.Practices.ServiceLocation.dll.md/分支交付/
+dumps: repo:analysis/20261120-batch-driver/Aspen-Plus/[CommonFiles64Folder]/AspenTech Shared/PSV Legacy Recall Server/V15.0/（仓内产物，不在 Release 包）
 
-- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- `Aspen-Plus/[CommonFiles64Folder]/AspenTech Shared/PSV Legacy Recall Server/V15.0/decompiled/Microsoft.Practices.ServiceLocation.dll.cs.txt` sha256=993b7366ea1ee48e9d3d80a633e8d816929c38717e983107f8d320737dfbe0a5 bytes=5915
+- `Aspen-Plus/[CommonFiles64Folder]/AspenTech Shared/PSV Legacy Recall Server/V15.0/il/Microsoft.Practices.ServiceLocation.dll.il.txt` sha256=3e98b89e8f2268acf2e37ea61d986ef4475c66bccb801feb16a7b60d7b226c35 bytes=23721

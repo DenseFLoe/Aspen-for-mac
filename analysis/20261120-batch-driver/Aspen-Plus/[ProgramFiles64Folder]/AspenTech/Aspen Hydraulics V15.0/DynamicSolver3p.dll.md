@@ -1,5 +1,12 @@
 # DynamicSolver3p.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=530）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/2202571288d1-DynamicSolver3p.dll/DynamicSolver3p.dll.cs.txt` sha256=f37aa8230ee1e64802089fa983d05bd4f46706282ff411b5429a6a6f16165705 bytes=308738
+- `clr/2202571288d1-DynamicSolver3p.dll/DynamicSolver3p.dll.il.txt` sha256=0a58715a6e672ccea631e65b6d09fb799248ee8bed923fb72cce402cdee73ad1 bytes=1593494

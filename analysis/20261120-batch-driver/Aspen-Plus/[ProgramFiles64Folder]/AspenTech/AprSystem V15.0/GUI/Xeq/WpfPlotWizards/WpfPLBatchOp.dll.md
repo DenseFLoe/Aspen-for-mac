@@ -1,5 +1,12 @@
 # WpfPLBatchOp.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=599）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/3b0a4b8af7c3-WpfPLBatchOp.dll/WpfPLBatchOp.dll.cs.txt` sha256=55fed9a204d19abca471bd5e7f5a30f84c935f8899de29b3842e54e3e35e5440 bytes=176562
+- `clr/3b0a4b8af7c3-WpfPLBatchOp.dll/WpfPLBatchOp.dll.il.txt` sha256=8695dd32e2b46ca1d72f58fbb083636aead334c4d02c713fb2d2407b203997b5 bytes=823232

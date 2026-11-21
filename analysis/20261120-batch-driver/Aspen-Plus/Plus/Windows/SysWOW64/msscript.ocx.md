@@ -97,3 +97,10 @@
 - 仅 Ghidra 有、IDA 未单列：无
 - 仅 IDA 有：``dynamic initializer for 'g_csResource''`, ``dynamic initializer for 'g_CriticalSection''`, ``dynamic initializer for 'g_csTimer''`, `?ExternalQueryInterface@CUnknownObject@@IAEJABU_GUID@@PAPAX@Z`, `?ExternalAddRef@CUnknownObject@@IAEKXZ`, `?ExternalRelease@CUnknownObject@@IAEKXZ`, `?WldpIsClassInApprovedListRecursive@@YGJP6GJABU_GUID@@PAUWLDP_HOST_INFORMATION@@PAHK@Z012K@Z`, `?QueryInterface@CModulesObject@@UAGJABU_GUID@@PAPAX@Z`
 - 命名口径：上两行按函数名对比。IDA 应用了 FLIRT 库签名（如 `__CRT_INIT@12`、`@__security_check_cookie@4`），同一地址在 Ghidra 侧仍是 `FUN_<addr>`，因此名单差异主要是命名差异；函数个数按上表比对。
+
+## dumps
+
+dumps: v0.20261121-w2#dumps-w2-part1.tar.gz
+
+- `native2/01-completed/Aspen-Plus/Windows/SysWOW64/decompiled/msscript.ocx.c.txt` sha256=88332d152b4c3afc19229e089cb402931d868983f90f7fb7bb05bbae23e797d4 bytes=415927
+- `native2/01-completed/Aspen-Plus/Windows/SysWOW64/disasm/msscript.ocx.asm.txt` sha256=f7a14e74756e59a2779fad578e834ba8eef29d565b99f72660fdfacc0388eb94 bytes=791499

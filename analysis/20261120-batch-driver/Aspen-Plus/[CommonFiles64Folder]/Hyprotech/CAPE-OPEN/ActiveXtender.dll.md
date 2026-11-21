@@ -1,5 +1,12 @@
 # ActiveXtender.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=1847）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/808432f879bf-ActiveXtender.dll/ActiveXtender.dll.cs.txt` sha256=e3e7e551882fe189d37bcd8dbabd4eeefe980c6cb98f215d04958c38be8803b9 bytes=1188437
+- `clr/808432f879bf-ActiveXtender.dll/ActiveXtender.dll.il.txt` sha256=37f10f17c9fbf3f684d9fbe9764f53fea4417f2b0cb6671c502961bd369e0cb3 bytes=3386324

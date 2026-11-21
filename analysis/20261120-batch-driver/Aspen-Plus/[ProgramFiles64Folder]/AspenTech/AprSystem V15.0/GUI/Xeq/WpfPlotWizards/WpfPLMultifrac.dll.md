@@ -1,5 +1,12 @@
 # WpfPLMultifrac.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=554）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/e2d72a00ae1f-WpfPLMultifrac.dll/WpfPLMultifrac.dll.cs.txt` sha256=049f2d70a88d2a003dd899fc8a441742dee558cf97493735e08c5ec4e6ddf5e0 bytes=172771
+- `clr/e2d72a00ae1f-WpfPLMultifrac.dll/WpfPLMultifrac.dll.il.txt` sha256=30b4708c52171e19eb02053b8b847f8e69f8bc834821f230dc885c85ddb27994 bytes=875242

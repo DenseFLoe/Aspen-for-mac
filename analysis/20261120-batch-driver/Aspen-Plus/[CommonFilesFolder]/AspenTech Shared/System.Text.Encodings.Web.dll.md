@@ -1,5 +1,12 @@
 # System.Text.Encodings.Web.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=461）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/e9c4f5eed186-System.Text.Encodings.Web.dll/System.Text.Encodings.Web.dll.cs.txt` sha256=8013c4a66d55966e42a3674569a00c745b2485024eaa142a4b4efc8825444276 bytes=159418
+- `clr/e9c4f5eed186-System.Text.Encodings.Web.dll/System.Text.Encodings.Web.dll.il.txt` sha256=3ec5768d7397e30e6c99add79d6bd720865c2f83a4000ac497512cddb2385752 bytes=450321

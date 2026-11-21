@@ -1,5 +1,13 @@
 # AspenTech.AspenCxs.dll 静态复核报告（Aspen-Plus / 全程序集 IL + C# 反编译）
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=未在本件报告中记录）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 样本别名：`AspenTech.AspenCxs.dll`（清单 out/B2/manifest-b2.csv，原件只读、未上传）
 来源：分支 codex/waiting-for-tietoumao｜自算 sha256 8e5089cad02fdd61939012de6be3ec3da67b17e0d6696ff3850ab4ee36af8a28｜台账 B2-B wave1b
 落点：`01-completed/Aspen-Plus/Plus/[CommonFiles64Folder]/AspenTech Shared/Aspen CXS V15.0/`（相对 `out/R1`）｜定位规则：`local-rel`
@@ -36,3 +44,9 @@
 
 - 运行期行为、强名/签名有效性未验证〔待验证〕；本轮仅静态 IL 与 C# 反编译。
 
+## dumps
+
+dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
+
+- `clr/8e5089cad02f-AspenTech.AspenCxs.dll/AspenTech.AspenCxs.dll.cs.txt` sha256=9a0b14f29ae40cca560e97bc840102374ce89c37fce9fe4f1b52441ec17e8d6f bytes=598537
+- `clr/8e5089cad02f-AspenTech.AspenCxs.dll/AspenTech.AspenCxs.dll.il.txt` sha256=cd40ecf6acda5d51ed8b2b734e24bd02beb0219ebbacb9eaa6f77ed7f53714c8 bytes=2409726

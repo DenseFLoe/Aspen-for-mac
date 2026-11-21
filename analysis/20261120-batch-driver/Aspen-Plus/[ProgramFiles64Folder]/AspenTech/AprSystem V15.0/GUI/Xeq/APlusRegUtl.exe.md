@@ -1,5 +1,12 @@
 # APlusRegUtl.exe
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=20）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/79f8cdeb147a-APlusRegUtl.exe/APlusRegUtl.exe.cs.txt` sha256=db0b86781515a0b09e9f14bf42a7202efd61092bf65c46299a3d1d5aaf2db725 bytes=17575
+- `clr/79f8cdeb147a-APlusRegUtl.exe/APlusRegUtl.exe.il.txt` sha256=e0db7368de446fdde2eb075b53aef1dff85576ee2d606c5f1700e8515be4dd79 bytes=65545

@@ -1,5 +1,12 @@
 # AspenTech.AspenPlus.AddInContracts.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=391）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/360ee897fdbe-AspenTech.AspenPlus.AddInContracts.dll/AspenTech.AspenPlus.AddInContracts.dll.cs.txt` sha256=c05feae0729e9e2ba53421996d186504ea0296bbb700d3c81056df2aa6c9e345 bytes=21448
+- `clr/360ee897fdbe-AspenTech.AspenPlus.AddInContracts.dll/AspenTech.AspenPlus.AddInContracts.dll.il.txt` sha256=3d6fbf7a3ec9a64eaf534f25c190ed6d86c525f05354652ba3494d594f5d0ef1 bytes=143169

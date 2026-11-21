@@ -1,5 +1,12 @@
 # P2ConvertCore.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=21）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/6b33888a51b0-P2ConvertCore.dll/P2ConvertCore.dll.cs.txt` sha256=cba3e9b239061cad6cdb1595f427064b50df6d322c34d9af7af059270d36901a bytes=9745
+- `clr/6b33888a51b0-P2ConvertCore.dll/P2ConvertCore.dll.il.txt` sha256=209dea94def99bcb439d788bf96554038f56d640bff34012e9a0b2e578744538 bytes=33568

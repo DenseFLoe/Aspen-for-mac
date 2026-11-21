@@ -1,5 +1,12 @@
 # FluidFlowhandler.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=865）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/e97526a95d81-FluidFlowhandler.dll/FluidFlowhandler.dll.cs.txt` sha256=a09c0243c6d8882962687f58c1178dcd6ca023a8a39e0dc5cc5363734a1b3240 bytes=319884
+- `clr/e97526a95d81-FluidFlowhandler.dll/FluidFlowhandler.dll.il.txt` sha256=75dc3ac6df5264f5762848c865b492615b4c5833a179b38f7ba1fe4fb5c6eb47 bytes=1516461

@@ -91,4 +91,7 @@
 
 ## dumps
 
-dumps: repo:逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Polymers/RAFT polymerization.apwz!/USRAFT.DLL.md/分支交付/
+dumps: repo:analysis/20261120-batch-driver/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Polymers/RAFT polymerization.apwz!/（仓内产物，不在 Release 包）
+
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Polymers/RAFT polymerization.apwz!/decompiled/USRAFT.DLL.c.txt` sha256=64056571f7fa68c6557af580f6385b034938be64a528c1159eabbb25f68b8ec8 bytes=30963
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Polymers/RAFT polymerization.apwz!/disasm/USRAFT.DLL.asm.txt` sha256=730cc9a6670efe3e0db00ad89d3d74a4e89148471839a2c94734a5166df94f36 bytes=52056

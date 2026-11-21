@@ -1,5 +1,12 @@
 # DevExpress.Charts.Designer.v23.2.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=9337）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/7d18d02d6236-DevExpress.Charts.Designer.v23.2.dll/DevExpress.Charts.Designer.v23.2.dll.cs.txt` sha256=df765e5e7dfca291bb7ecc54d5fc07a3021ac2c5b12080141a9368a7f1973e53 bytes=2492170
+- `clr/7d18d02d6236-DevExpress.Charts.Designer.v23.2.dll/DevExpress.Charts.Designer.v23.2.dll.il.txt` sha256=de9fc89f162a36474ac40d1e83aba8f9f0d3dfe874e976aae3340f0e4e422c4e bytes=9907114

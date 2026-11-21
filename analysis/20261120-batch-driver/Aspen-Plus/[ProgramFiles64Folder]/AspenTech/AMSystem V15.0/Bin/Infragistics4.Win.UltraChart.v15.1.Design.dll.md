@@ -1,5 +1,12 @@
 # Infragistics4.Win.UltraChart.v15.1.Design.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=846）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/cd07c83aad90-Infragistics4.Win.UltraChart.v15.1.Design.dll/Infragistics4.Win.UltraChart.v15.1.Design.dll.cs.txt` sha256=2f03ed2da2ed2c98df546d954ce24a2a0ce5df7ac825cda6f29f551b8546c421 bytes=1138947
+- `clr/cd07c83aad90-Infragistics4.Win.UltraChart.v15.1.Design.dll/Infragistics4.Win.UltraChart.v15.1.Design.dll.il.txt` sha256=1c4e5033896e075e0b9e7dbeb24a1a97c17e2064ab14c885acfc0e562f1a1337 bytes=5462105

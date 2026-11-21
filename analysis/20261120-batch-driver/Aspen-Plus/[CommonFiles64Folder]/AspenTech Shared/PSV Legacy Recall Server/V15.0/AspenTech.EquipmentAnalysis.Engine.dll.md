@@ -1,5 +1,12 @@
 # AspenTech.EquipmentAnalysis.Engine.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=904）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/1f25e885b317-AspenTech.EquipmentAnalysis.Engine.dll/AspenTech.EquipmentAnalysis.Engine.dll.cs.txt` sha256=18cd9fd8fdb94d0a83cb91f62aa721f9643c5a3711d3cade6de4dfcbacdb7801 bytes=325446
+- `clr/1f25e885b317-AspenTech.EquipmentAnalysis.Engine.dll/AspenTech.EquipmentAnalysis.Engine.dll.il.txt` sha256=962157bedf3f33d0572aa1e523e805fc1e36b928b0e5eaf0d0c80a68d4b133b5 bytes=1734232

@@ -1,5 +1,12 @@
 # DevExpress.Charts.v23.2.Core.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=8532）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/0e8e8e95dbf1-DevExpress.Charts.v23.2.Core.dll/DevExpress.Charts.v23.2.Core.dll.cs.txt` sha256=77ab5e031ae764f262759b4721c1d16c2512a9c4fd3b74ab688130aee7a4d338 bytes=2207481
+- `clr/0e8e8e95dbf1-DevExpress.Charts.v23.2.Core.dll/DevExpress.Charts.v23.2.Core.dll.il.txt` sha256=befcfb9052e825b470a645374e60743008e5b673d9e3143dcddafb8e6fddf1bc bytes=9316771

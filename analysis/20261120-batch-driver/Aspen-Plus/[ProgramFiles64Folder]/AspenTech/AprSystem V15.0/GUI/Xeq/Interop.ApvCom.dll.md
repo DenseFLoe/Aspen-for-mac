@@ -1,5 +1,12 @@
 # Interop.ApvCom.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=299）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/21a23f7d0f6c-Interop.ApvCom.dll/Interop.ApvCom.dll.cs.txt` sha256=b516142683724969b7b54c046f6c1173e3102ba689d0a12e30a0e3d389a0080f bytes=74970
+- `clr/21a23f7d0f6c-Interop.ApvCom.dll/Interop.ApvCom.dll.il.txt` sha256=0c1c282f34c2bd3b094821f8410709025fe4e5eeabe27db3334a50351a7fabaa bytes=51547

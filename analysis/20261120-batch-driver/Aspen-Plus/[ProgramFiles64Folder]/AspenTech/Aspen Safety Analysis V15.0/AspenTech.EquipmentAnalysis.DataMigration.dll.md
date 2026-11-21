@@ -1,5 +1,12 @@
 # AspenTech.EquipmentAnalysis.DataMigration.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=1515）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/8ab000fdfbb4-AspenTech.EquipmentAnalysis.DataMigration.dll/AspenTech.EquipmentAnalysis.DataMigration.dll.cs.txt` sha256=9fe7fa19b2b6236b04f1dbfd5b04c16d7ce073341d179385b431562b78f7a258 bytes=214864
+- `clr/8ab000fdfbb4-AspenTech.EquipmentAnalysis.DataMigration.dll/AspenTech.EquipmentAnalysis.DataMigration.dll.il.txt` sha256=6e8b7d3387ff0c8127306c9696940f79e51f9b0e9c8e09de07d2f8fff8105c7f bytes=1598397

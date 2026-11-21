@@ -1,5 +1,12 @@
 # PipeFittingServer.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=722）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/89f1ff2e9399-PipeFittingServer.dll/PipeFittingServer.dll.cs.txt` sha256=795d5191ecfe6ca15c1effbb42f5d61c0f7b073d4d3c33b1370e0c1e639d5693 bytes=243154
+- `clr/89f1ff2e9399-PipeFittingServer.dll/PipeFittingServer.dll.il.txt` sha256=6cda3b352e1bb218863ad0409fdf4dc88bf09b4e2a71dfea025f1f990c868cec bytes=1244214

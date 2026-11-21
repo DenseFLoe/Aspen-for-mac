@@ -1,5 +1,13 @@
 # 003_Interop.SLMErrorDialogLib.dll 静态复核报告（Aspen-Plus / 全程序集 IL + C# 反编译）
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=0）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 样本别名：`003_Interop.SLMErrorDialogLib.dll`（清单 read-test-waiting.csv（schema B），原件目录只读、未上传）
 来源：分支 codex/waiting-for-tietoumao｜git_blob 737967d704da｜自算 sha256 c06395a498188dfd3084e421a1c702ce3193ea2207eb28e8f0f56dba885d181c｜台账 20261119-61 缺失〔待验证〕
 落点：`01-completed/Aspen-Plus/[CommonFiles64Folder]/AspenTech Shared/Aspen CXS V15.0/SummaryGrid/`（相对 `out/R1`）｜定位规则：`local-rel`
@@ -128,6 +136,7 @@ PE 导入表：1 个 DLL。
 
 ## dumps
 
-dumps: repo:逆向成果/待静态验收/Plus/[CommonFiles64Folder]/AspenTech Shared/Aspen CXS V15.0/SummaryGrid/Interop.SLMErrorDialogLib.dll.md/分支交付/
+dumps: repo:analysis/20261120-batch-driver/Aspen-Plus/[CommonFiles64Folder]/AspenTech Shared/Aspen CXS V15.0/SummaryGrid/（仓内产物，不在 Release 包）
 
-- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- `Aspen-Plus/[CommonFiles64Folder]/AspenTech Shared/Aspen CXS V15.0/SummaryGrid/decompiled/Interop.SLMErrorDialogLib.dll.cs.txt` sha256=eb0a8afab25bcfe397d72e01b2dfde677a39e758ebc3c26c31a2321a222eef64 bytes=2493
+- `Aspen-Plus/[CommonFiles64Folder]/AspenTech Shared/Aspen CXS V15.0/SummaryGrid/il/Interop.SLMErrorDialogLib.dll.il.txt` sha256=a6c1897e9e6d28eca4c2b40643e58803f587aed358181348764a720bfe4383cd bytes=1737

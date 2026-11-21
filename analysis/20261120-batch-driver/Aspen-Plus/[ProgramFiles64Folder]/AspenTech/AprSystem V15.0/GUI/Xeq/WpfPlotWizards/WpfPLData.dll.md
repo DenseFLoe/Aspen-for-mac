@@ -1,5 +1,12 @@
 # WpfPLData.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=211）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/bf01baee8339-WpfPLData.dll/WpfPLData.dll.cs.txt` sha256=75a3c11e7613bae98380cbb48d7688d98372ac586f458125265721b752b273d0 bytes=91345
+- `clr/bf01baee8339-WpfPLData.dll/WpfPLData.dll.il.txt` sha256=f0fce7362f30fe7e89787e3bfa3c0f41dcfd8e556912eb1f59ab2495408945cf bytes=569936

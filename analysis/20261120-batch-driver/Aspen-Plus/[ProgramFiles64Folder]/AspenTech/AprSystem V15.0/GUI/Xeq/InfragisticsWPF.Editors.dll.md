@@ -1,5 +1,12 @@
 # InfragisticsWPF.Editors.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=3222）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/be24b6a20aae-InfragisticsWPF.Editors.dll/InfragisticsWPF.Editors.dll.cs.txt` sha256=dff52c6fa607ca552df32642c298eed23802732b6b50e60883e6d51542ffdb53 bytes=1177590
+- `clr/be24b6a20aae-InfragisticsWPF.Editors.dll/InfragisticsWPF.Editors.dll.il.txt` sha256=50e67a6c0709245d48d7a0965801e8bb2f5801ec8c822cd357335db4f262c9c9 bytes=4766377

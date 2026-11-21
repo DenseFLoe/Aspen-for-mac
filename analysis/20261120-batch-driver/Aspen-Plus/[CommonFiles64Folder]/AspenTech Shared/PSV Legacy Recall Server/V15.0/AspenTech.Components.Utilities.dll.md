@@ -1,5 +1,13 @@
 # 007_AspenTech.Components.Utilities.dll 静态复核报告（Aspen-Plus / 全程序集 IL + C# 反编译）
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=12）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 样本别名：`007_AspenTech.Components.Utilities.dll`（清单 read-test-waiting.csv（schema B），原件目录只读、未上传）
 来源：分支 codex/waiting-for-tietoumao｜git_blob c97f67ec8745｜自算 sha256 ddd385d09d33bfa4bcf9c5d088cd5dcd45a1c50b61d155155279016ed0f72fbc｜台账 20261119-61 缺失〔待验证〕
 落点：`01-completed/Aspen-Plus/[CommonFiles64Folder]/AspenTech Shared/PSV Legacy Recall Server/V15.0/`（相对 `out/R1`）｜定位规则：`local-rel`
@@ -158,6 +166,7 @@ PE 导入表：1 个 DLL。
 
 ## dumps
 
-dumps: repo:逆向成果/待静态验收/Plus/[CommonFiles64Folder]/AspenTech Shared/PSV Legacy Recall Server/V15.0/AspenTech.Components.Utilities.dll.md/分支交付/
+dumps: repo:analysis/20261120-batch-driver/Aspen-Plus/[CommonFiles64Folder]/AspenTech Shared/PSV Legacy Recall Server/V15.0/（仓内产物，不在 Release 包）
 
-- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- `Aspen-Plus/[CommonFiles64Folder]/AspenTech Shared/PSV Legacy Recall Server/V15.0/decompiled/AspenTech.Components.Utilities.dll.cs.txt` sha256=efc4f5ad74e923c591e455dad2a216a170e09036c742f074827f967e577e877a bytes=3742
+- `Aspen-Plus/[CommonFiles64Folder]/AspenTech Shared/PSV Legacy Recall Server/V15.0/il/AspenTech.Components.Utilities.dll.il.txt` sha256=70ab81c309ab811c245b58fcf2c19a1c366817e45e668e086ac517e9abcff528 bytes=11996

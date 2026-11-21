@@ -93,13 +93,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part5.tar.gz
 
-- `decompiled/ATModelCME.dll.c.txt` sha256=4f669567d683d460d30687cff0bc6d0cabdd3c453d3cb1eecdc865782173a2e2 bytes=4661254
-- `decompiled/hmxlpxmps.dll.c.txt` sha256=23792fefdf45902883d67c904d24e2c159b4253b09ddae8c56caa090f5f936fe bytes=4646543
-- `decompiled/icondefdll.dll.c.txt` sha256=a612146c07e890ad700be24484f925bbc70612fd28cdf8716a39b674b9bf2893 bytes=10678138
-- `decompiled/iconeditorCME.dll.c.txt` sha256=68480495e07620b90d9032ecd66621b5dc68e6a3dd6d9bc6b4b3ffe954284d59 bytes=2826234
-- `decompiled/pfsctrl.ocx.c.txt` sha256=5b96d853176807ab399bc278343b5d3d2118cd482270b6b678dd0072446ea267 bytes=4222422
-- `disasm/ATModelCME.dll.asm.txt` sha256=e3a855d433a605545ae7d7be348363c5649e4c585342c6771d434dc92557eac7 bytes=9138329
-- `disasm/hmxlpxmps.dll.asm.txt` sha256=4894b12c84d7f9b4dffbece630cfd1bea8540021fd755560fcc3c74d6f005db0 bytes=8324793
-- `disasm/icondefdll.dll.asm.txt` sha256=1932acd10f1ed503b02a602a7851e097129217ca188261ac6f572e51b588e78f bytes=19063871
-- `disasm/iconeditorCME.dll.asm.txt` sha256=36299d56e9c338555c86a6b77184d9cf8a71497620f19db8c6dc09199d4b64df bytes=6220094
-- `disasm/pfsctrl.ocx.asm.txt` sha256=005ca861745ad5776825abddc62594d41c9f10510cdd89e0f25c712a00d9ca6c bytes=7177254
+- `native5/01-completed/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Xeq/decompiled/icondefdll.dll.c.txt` sha256=a612146c07e890ad700be24484f925bbc70612fd28cdf8716a39b674b9bf2893 bytes=10678138
+- `native5/01-completed/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Xeq/disasm/icondefdll.dll.asm.txt` sha256=1932acd10f1ed503b02a602a7851e097129217ca188261ac6f572e51b588e78f bytes=19063871

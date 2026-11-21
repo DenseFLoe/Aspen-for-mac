@@ -1,5 +1,12 @@
 # InfragisticsWPF.Documents.RichTextDocument.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=7015）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/85bab25ecf59-InfragisticsWPF.Documents.RichTextDocument.dll/InfragisticsWPF.Documents.RichTextDocument.dll.cs.txt` sha256=ddc8601dccd212fd6917a99b2686600195d9213e77922250c85fef9074bc47fd bytes=2001578
+- `clr/85bab25ecf59-InfragisticsWPF.Documents.RichTextDocument.dll/InfragisticsWPF.Documents.RichTextDocument.dll.il.txt` sha256=661d981e959170d82451747076488084f9e142c25bd55ef8850a626446054a49 bytes=9451429

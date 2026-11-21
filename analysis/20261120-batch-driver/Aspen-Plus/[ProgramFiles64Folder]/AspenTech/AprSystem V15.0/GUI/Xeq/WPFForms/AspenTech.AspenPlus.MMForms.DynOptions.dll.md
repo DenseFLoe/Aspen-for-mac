@@ -1,5 +1,12 @@
 # AspenTech.AspenPlus.MMForms.DynOptions.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=24）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/84b1c1bbc261-AspenTech.AspenPlus.MMForms.DynOptions.dll/AspenTech.AspenPlus.MMForms.DynOptions.dll.cs.txt` sha256=5dae1c2a6ddf3c01d35be513544d1075b310cc90d17c23894b06ac77abf840db bytes=15051
+- `clr/84b1c1bbc261-AspenTech.AspenPlus.MMForms.DynOptions.dll/AspenTech.AspenPlus.MMForms.DynOptions.dll.il.txt` sha256=245992861e84606435b4d5db35994e3dbe979334dcbafaee17a973d3127b6729 bytes=29308

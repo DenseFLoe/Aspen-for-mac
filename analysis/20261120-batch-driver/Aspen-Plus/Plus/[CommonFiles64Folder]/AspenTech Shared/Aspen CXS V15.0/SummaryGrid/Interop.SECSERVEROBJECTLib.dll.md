@@ -1,5 +1,13 @@
 # Interop.SECSERVEROBJECTLib.dll 静态复核报告（Aspen-Plus / 全程序集 IL + C# 反编译）
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=未在本件报告中记录）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 样本别名：`Interop.SECSERVEROBJECTLib.dll`（清单 out/B2/manifest-b2.csv，原件只读、未上传）
 来源：分支 codex/waiting-for-tietoumao｜自算 sha256 a1b19af66ce615764eec35d8a5489e426aa2a62cfb2a1f551c13b88b5258e5c1｜台账 B2-B wave1b
 落点：`01-completed/Aspen-Plus/Plus/[CommonFiles64Folder]/AspenTech Shared/Aspen CXS V15.0/SummaryGrid/`（相对 `out/R1`）｜定位规则：`local-rel`
@@ -36,3 +44,9 @@
 
 - 运行期行为、强名/签名有效性未验证〔待验证〕；本轮仅静态 IL 与 C# 反编译。
 
+## dumps
+
+dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
+
+- `clr/a1b19af66ce6-Interop.SECSERVEROBJECTLib.dll/Interop.SECSERVEROBJECTLib.dll.cs.txt` sha256=bab9097c2da5ac34a42f68797b6f50cfcaa273ed12c71e2f8182dcd3608db3f0 bytes=81002
+- `clr/a1b19af66ce6-Interop.SECSERVEROBJECTLib.dll/Interop.SECSERVEROBJECTLib.dll.il.txt` sha256=481e5b4f84073f77c4311c68c89548ef19b2d28ca655a9a61f2d236bbd7bb669 bytes=45584

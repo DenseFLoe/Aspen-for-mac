@@ -1,5 +1,12 @@
 # DevExpress.Xpf.TreeMap.v23.2.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=1644）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/a778c5d22f52-DevExpress.Xpf.TreeMap.v23.2.dll/DevExpress.Xpf.TreeMap.v23.2.dll.cs.txt` sha256=0a84b0e88a8fc5b6d027aec76b641a63d41404d3c49364fac4de5f0a9d64cb46 bytes=323408
+- `clr/a778c5d22f52-DevExpress.Xpf.TreeMap.v23.2.dll/DevExpress.Xpf.TreeMap.v23.2.dll.il.txt` sha256=ac717b0c07be1e88c7cd575a6ff166f9a3d1e96f86b04039b3e2ab6740b81656 bytes=1473360

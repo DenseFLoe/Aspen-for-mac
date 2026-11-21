@@ -93,3 +93,10 @@
 - 仅 Ghidra 有、IDA 未单列：无
 - 仅 IDA 有：`sub_10001000`, `sub_10001016`, `sub_10001030`, `___local_stdio_printf_options`, `sub_100010E0`, `sub_10001100`, `sub_10001120`, `sub_100011C0`
 - 命名口径：上两行按函数名对比。IDA 应用了 FLIRT 库签名（如 `__CRT_INIT@12`、`@__security_check_cookie@4`），同一地址在 Ghidra 侧仍是 `FUN_<addr>`，因此名单差异主要是命名差异；函数个数按上表比对。
+
+## dumps
+
+dumps: v0.20261121-w2#dumps-w2-part1.tar.gz
+
+- `native2/01-completed/Aspen-Plus/Binary/decompiled/NewBinary2.E6666298_EE0A_4DDA_A546_05448F2E1526.c.txt` sha256=8b9fb0d5fd7e8ce20afd00716975a0bdb57cc679ad953eb5d2a92e0d29a4508c bytes=304242
+- `native2/01-completed/Aspen-Plus/Binary/disasm/NewBinary2.E6666298_EE0A_4DDA_A546_05448F2E1526.asm.txt` sha256=467eb626af1b17c2e4544e15994ef6353019a9f9f3dea0b4ad21cf14d5f3cd25 bytes=630030

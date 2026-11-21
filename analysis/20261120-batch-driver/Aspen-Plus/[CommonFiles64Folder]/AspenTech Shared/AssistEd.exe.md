@@ -135,13 +135,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part3.tar.gz
 
-- `Aspen Data Share V15.0/decompiled/AdbHysysExtract.dll.c.txt` sha256=3d8a1b02a86cf44793012daa1e8821017fa4fc28e34de0d384525b0e140f6c80 bytes=200443
-- `Aspen Data Share V15.0/decompiled/AdbHysysExtractCOM.exe.c.txt` sha256=3d66122ccc3986cb55d35191e8234cd73d51f98af45d6a574970c411239e8539 bytes=292500
-- `Aspen Data Share V15.0/disasm/AdbHysysExtract.dll.asm.txt` sha256=ba485a6dac491de431640d7cbf8e84d1e47b091c2bccbc62f3baca252e47be9f bytes=309376
-- `Aspen Data Share V15.0/disasm/AdbHysysExtractCOM.exe.asm.txt` sha256=033d95c49e96b6e73ec9a7fafd43313c844dd7eee1369c10b7d5ccc177f99649 bytes=508524
-- `decompiled/AssistEd.exe.c.txt` sha256=81a8a0683886d48479188c7e721a79bab749384bf47714508b54c8b97989288e bytes=3538742
-- `decompiled/ComWrappersPS.dll.c.txt` sha256=c112319114d531448dbee1c5460aae4d19b9c8243b0b50694cf4e606fd3f7f0c bytes=27128
-- `decompiled/apvcomps.dll.c.txt` sha256=9fbb3a58815c6489a1bde85942cb1ab154b96732766dff1a0f7cceee517ba574 bytes=48210
-- `disasm/AssistEd.exe.asm.txt` sha256=290ea44ef0c65a6dcc6683cad02ee4dc27c4b75a02a6db59cb613d0c36cf10ec bytes=5627509
-- `disasm/ComWrappersPS.dll.asm.txt` sha256=241ef20fb4e4656ef4137d7fb014348543af50cf92988b25155c428581cbc69d bytes=47581
-- `disasm/apvcomps.dll.asm.txt` sha256=c2fb9afd0e80a2ca119d0c22f15843f24af7f0e18d957c966b6f9c2dfdb912e7 bytes=65284
+- `native4/01-completed/Aspen-Plus/[CommonFiles64Folder]/AspenTech Shared/decompiled/AssistEd.exe.c.txt` sha256=81a8a0683886d48479188c7e721a79bab749384bf47714508b54c8b97989288e bytes=3538742
+- `native4/01-completed/Aspen-Plus/[CommonFiles64Folder]/AspenTech Shared/disasm/AssistEd.exe.asm.txt` sha256=290ea44ef0c65a6dcc6683cad02ee4dc27c4b75a02a6db59cb613d0c36cf10ec bytes=5627509

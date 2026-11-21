@@ -1,5 +1,12 @@
 # NetworkPlugins.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=28）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/6d90299ffed0-NetworkPlugins.dll/NetworkPlugins.dll.cs.txt` sha256=4ea4dd8f780c62dd070486e247d61a0614d4073e4e6332e26b2e6333baaf51cc bytes=7501
+- `clr/6d90299ffed0-NetworkPlugins.dll/NetworkPlugins.dll.il.txt` sha256=3025ca457cdab55c8a3e93c06fa4795da0f20e4d6f544edc7f63388a8aebbab1 bytes=30418

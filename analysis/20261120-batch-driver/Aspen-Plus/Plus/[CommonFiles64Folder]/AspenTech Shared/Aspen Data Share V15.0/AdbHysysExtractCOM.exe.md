@@ -92,3 +92,10 @@
 - 仅 Ghidra 有、IDA 未单列：无
 - 仅 IDA 有：`sub_401000`, `sub_401060`, `sub_4010F3`, `sub_401110`, `CoAddRefServerProcess`, `sub_401140`, `sub_401180`, `sub_4011B0`
 - 命名口径：上两行按函数名对比。IDA 应用了 FLIRT 库签名（如 `__CRT_INIT@12`、`@__security_check_cookie@4`），同一地址在 Ghidra 侧仍是 `FUN_<addr>`，因此名单差异主要是命名差异；函数个数按上表比对。
+
+## dumps
+
+dumps: v0.20261121-w2#dumps-w2-part1.tar.gz
+
+- `native2/01-completed/Aspen-Plus/[CommonFiles64Folder]/AspenTech Shared/Aspen Data Share V15.0/decompiled/AdbHysysExtractCOM.exe.c.txt` sha256=3d66122ccc3986cb55d35191e8234cd73d51f98af45d6a574970c411239e8539 bytes=292500
+- `native2/01-completed/Aspen-Plus/[CommonFiles64Folder]/AspenTech Shared/Aspen Data Share V15.0/disasm/AdbHysysExtractCOM.exe.asm.txt` sha256=033d95c49e96b6e73ec9a7fafd43313c844dd7eee1369c10b7d5ccc177f99649 bytes=508524

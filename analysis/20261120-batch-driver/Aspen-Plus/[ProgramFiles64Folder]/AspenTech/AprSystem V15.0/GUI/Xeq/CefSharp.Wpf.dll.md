@@ -1,5 +1,12 @@
 # CefSharp.Wpf.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=689）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/14834e44c3d7-CefSharp.Wpf.dll/CefSharp.Wpf.dll.cs.txt` sha256=5c25291d06c8cb1e59938244724574826a0c263c8ac9533e5b1b78cb26dd85a8 bytes=146743
+- `clr/14834e44c3d7-CefSharp.Wpf.dll/CefSharp.Wpf.dll.il.txt` sha256=2abe3b1394c400174b271328d558fc9ecb6ef9277b12c9e50db1e1479ccdd3d9 bytes=723576

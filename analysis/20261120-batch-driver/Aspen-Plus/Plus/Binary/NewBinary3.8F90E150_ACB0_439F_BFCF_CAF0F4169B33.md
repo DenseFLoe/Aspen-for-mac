@@ -88,3 +88,10 @@
 - 仅 Ghidra 有、IDA 未单列：无
 - 仅 IDA 有：`??0CAccountAccess@@QAE@PAG0@Z`, `?Init@CAccountAccess@@QAEKK@Z`, `?AddInheritance@CAccountAccess@@QAEXE@Z`, `??0CAccount@@QAE@PAG0@Z`, `??0CAccount@@QAE@PAU_SID@@PAG@Z`, `??1CAccount@@QAE@XZ`, `?GetAccountName@CAccount@@QAEKPAPAG@Z`, `?GetAccountSid@CAccount@@QAEKPAPAU_SID@@@Z`
 - 命名口径：上两行按函数名对比。IDA 应用了 FLIRT 库签名（如 `__CRT_INIT@12`、`@__security_check_cookie@4`），同一地址在 Ghidra 侧仍是 `FUN_<addr>`，因此名单差异主要是命名差异；函数个数按上表比对。
+
+## dumps
+
+dumps: v0.20261121-w2#dumps-w2-part1.tar.gz
+
+- `native/01-completed/Aspen-Plus/Binary/decompiled/NewBinary3.8F90E150_ACB0_439F_BFCF_CAF0F4169B33.c.txt` sha256=1bfe1ea8279f3f6a185269df3d7ee83cab423094648910c73ac444810228cdd9 bytes=73758
+- `native/01-completed/Aspen-Plus/Binary/disasm/NewBinary3.8F90E150_ACB0_439F_BFCF_CAF0F4169B33.asm.txt` sha256=ff8b28c8ad83085791d3b78673b31b79f3fa52ce57838a7f957540dce9a0438d bytes=155944

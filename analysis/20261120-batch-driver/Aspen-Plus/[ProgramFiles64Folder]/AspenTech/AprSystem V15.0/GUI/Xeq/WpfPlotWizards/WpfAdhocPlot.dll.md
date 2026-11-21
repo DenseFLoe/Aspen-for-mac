@@ -1,5 +1,12 @@
 # WpfAdhocPlot.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=52）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/c647c2decb36-WpfAdhocPlot.dll/WpfAdhocPlot.dll.cs.txt` sha256=44a56033ddd9204997c9cd58bdc5a0064fe0fb73f42f4e76e906da48496a48cf bytes=30486
+- `clr/c647c2decb36-WpfAdhocPlot.dll/WpfAdhocPlot.dll.il.txt` sha256=ee64cbbf6174f077aec22d1171b32d60bf68bd5f3c418280863c82d01ceaccdd bytes=150312

@@ -1,5 +1,12 @@
 # AspenTech.AspenPlus.MMForms.Blocks.Petrofrac.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=4456）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/edb65a07422e-AspenTech.AspenPlus.MMForms.Blocks.Petrofrac.dll/AspenTech.AspenPlus.MMForms.Blocks.Petrofrac.dll.cs.txt` sha256=9133eee000442ed7091e5602f30f22eb17f4b9d97fb3a08553228197c855730a bytes=3273520
+- `clr/edb65a07422e-AspenTech.AspenPlus.MMForms.Blocks.Petrofrac.dll/AspenTech.AspenPlus.MMForms.Blocks.Petrofrac.dll.il.txt` sha256=d892b9792d0ca41bba002c1b5ee2a0a6556159993e8124e8d49f2c38310e4240 bytes=7467386

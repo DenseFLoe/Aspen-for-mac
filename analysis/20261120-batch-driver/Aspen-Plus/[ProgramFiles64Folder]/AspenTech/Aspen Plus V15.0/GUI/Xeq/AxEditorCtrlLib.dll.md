@@ -1,5 +1,12 @@
 # AxEditorCtrlLib.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=79）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/5ca67d4970c4-AxEditorCtrlLib.dll/AxEditorCtrlLib.dll.cs.txt` sha256=ea65e49ccb2bd71b90e6dc788ecba3a3c04d0ce682c689de42f2c469d85d8186 bytes=16837
+- `clr/5ca67d4970c4-AxEditorCtrlLib.dll/AxEditorCtrlLib.dll.il.txt` sha256=3e4c57cd8ddfdbd7c6af09091673641bea2272806e11af573f7cc00d312cde90 bytes=65685
