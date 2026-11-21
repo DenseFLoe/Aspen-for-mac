@@ -1,6 +1,6 @@
 # 静态验收未通过
 
-共 312 件。已有代码或局部成果，逐件记录有明确缺口。
+共 313 件。已有代码或局部成果，逐件记录有明确缺口。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -23,6 +23,7 @@
 | [aos_sparse_ma38.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Open%20Solvers%20V15.0/Bin/aos_sparse_ma38.dll/) | Plus | `d4e628a7220a` |
 | [aos_sparselm.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Open%20Solvers%20V15.0/Bin/aos_sparselm.dll/) | Plus | `69f4d1cadad4` |
 | [apblk.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/apblk.dll/) | Plus | `cb775eefd0e3` |
+| [apcommands.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/apcommands.dll/) | Plus | `0c1ea40455f6` |
 | [apconnmgr.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/apconnmgr.dll/) | Plus | `fc4fa5e634bb` |
 | [APEDMgr_prew8.2DEC4A45_82FF_4174_874A_CFF9E227A91E.exe](Plus/Icon/APEDMgr_prew8.2DEC4A45_82FF_4174_874A_CFF9E227A91E.exe/) | Plus | `4246ee81cb44` |
 | [apflash.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/apflash.dll/) | Plus | `da538a39853f` |

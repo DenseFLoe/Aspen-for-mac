@@ -1,6 +1,6 @@
 # 待静态验收
 
-共 933 件。已有代码，等待逐件核对。
+共 932 件。已有代码，等待逐件核对。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -75,7 +75,6 @@
 | [aosutils.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Open%20Solvers%20V15.0/Bin/aosutils.dll/) | Plus | `2c2174bfb8db` |
 | [apbatutl.exe](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/apbatutl.exe/) | Plus | `22176d99910e` |
 | [apcfgblk.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/apcfgblk.dll/) | Plus | `0735ddb8912a` |
-| [apcommands.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/apcommands.dll/) | Plus | `0c1ea40455f6` |
 | [APConSvr.exe](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/APConSvr.exe/) | Plus | `cef82deb1a32` |
 | [apddbi0.exe](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/apddbi0.exe/) | Plus | `7ac3963bb48e` |
 | [ApDotNetAsmReg.exe](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/ApDotNetAsmReg.exe/) | Plus | `a015bb5b50b2` |
