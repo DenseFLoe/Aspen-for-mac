@@ -1,0 +1,579 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Numerics;
+using System.Reflection;
+using System.Resources;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Security;
+using System.Security.Cryptography;
+using System.Security.Permissions;
+using FxResources.Microsoft.Bcl.HashCode;
+using Microsoft.CodeAnalysis;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyDefaultAlias("Microsoft.Bcl.HashCode")]
+[assembly: AssemblyMetadata(".NETFrameworkAssembly", "")]
+[assembly: AssemblyMetadata("Serviceable", "True")]
+[assembly: AssemblyMetadata("PreferInbox", "True")]
+[assembly: AssemblyCompany("Microsoft Corporation")]
+[assembly: AssemblyCopyright("© Microsoft Corporation. All rights reserved.")]
+[assembly: AssemblyDescription("Microsoft.Bcl.HashCode")]
+[assembly: AssemblyFileVersion("4.700.20.56604")]
+[assembly: AssemblyInformationalVersion("3.1.11+59d2f36ec02c494eec50940c7993257a807f9531")]
+[assembly: AssemblyProduct("Microsoft® .NET Core")]
+[assembly: AssemblyTitle("Microsoft.Bcl.HashCode")]
+[assembly: CLSCompliant(true)]
+[assembly: SecurityPermission(SecurityAction.RequestMinimum, SkipVerification = true)]
+[assembly: AssemblyVersion("1.0.0.0")]
+[module: UnverifiableCode]
+[module: NullablePublicOnly(false)]
+namespace Microsoft.CodeAnalysis
+{
+	[CompilerGenerated]
+	[Embedded]
+	internal sealed class EmbeddedAttribute : Attribute
+	{
+	}
+}
+namespace System.Runtime.CompilerServices
+{
+	[CompilerGenerated]
+	[Embedded]
+	[AttributeUsage(AttributeTargets.Class | AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Event | AttributeTargets.Parameter | AttributeTargets.ReturnValue | AttributeTargets.GenericParameter, AllowMultiple = false, Inherited = false)]
+	internal sealed class NullableAttribute : Attribute
+	{
+		public readonly byte[] NullableFlags;
+
+		public NullableAttribute(byte P_0)
+		{
+			NullableFlags = new byte[1] { P_0 };
+		}
+
+		public NullableAttribute(byte[] P_0)
+		{
+			NullableFlags = P_0;
+		}
+	}
+	[CompilerGenerated]
+	[Embedded]
+	[AttributeUsage(AttributeTargets.Module | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Method | AttributeTargets.Interface | AttributeTargets.Delegate, AllowMultiple = false, Inherited = false)]
+	internal sealed class NullableContextAttribute : Attribute
+	{
+		public readonly byte Flag;
+
+		public NullableContextAttribute(byte P_0)
+		{
+			Flag = P_0;
+		}
+	}
+	[CompilerGenerated]
+	[Embedded]
+	[AttributeUsage(AttributeTargets.Module, AllowMultiple = false, Inherited = false)]
+	internal sealed class NullablePublicOnlyAttribute : Attribute
+	{
+		public readonly bool IncludesInternals;
+
+		public NullablePublicOnlyAttribute(bool P_0)
+		{
+			IncludesInternals = P_0;
+		}
+	}
+}
+internal class Interop
+{
+	internal unsafe static void GetRandomBytes(byte* buffer, int length)
+	{
+		if (!System.LocalAppContextSwitches.UseNonRandomizedHashSeed)
+		{
+			using (RandomNumberGenerator randomNumberGenerator = RandomNumberGenerator.Create())
+			{
+				byte[] array = new byte[length];
+				randomNumberGenerator.GetBytes(array);
+				Marshal.Copy(array, 0, (IntPtr)buffer, length);
+			}
+		}
+	}
+}
+namespace FxResources.Microsoft.Bcl.HashCode
+{
+	internal static class SR
+	{
+	}
+}
+namespace System
+{
+	public struct HashCode
+	{
+		private static readonly uint s_seed = GenerateGlobalSeed();
+
+		private const uint Prime1 = 2654435761u;
+
+		private const uint Prime2 = 2246822519u;
+
+		private const uint Prime3 = 3266489917u;
+
+		private const uint Prime4 = 668265263u;
+
+		private const uint Prime5 = 374761393u;
+
+		private uint _v1;
+
+		private uint _v2;
+
+		private uint _v3;
+
+		private uint _v4;
+
+		private uint _queue1;
+
+		private uint _queue2;
+
+		private uint _queue3;
+
+		private uint _length;
+
+		private unsafe static uint GenerateGlobalSeed()
+		{
+			uint result = default(uint);
+			global::Interop.GetRandomBytes((byte*)(&result), 4);
+			return result;
+		}
+
+		public static int Combine<T1>(T1 value1)
+		{
+			uint queuedValue = (uint)(value1?.GetHashCode() ?? 0);
+			uint num = MixEmptyState();
+			num += 4;
+			num = QueueRound(num, queuedValue);
+			return (int)MixFinal(num);
+		}
+
+		public static int Combine<T1, T2>(T1 value1, T2 value2)
+		{
+			uint queuedValue = (uint)(value1?.GetHashCode() ?? 0);
+			uint queuedValue2 = (uint)(value2?.GetHashCode() ?? 0);
+			uint num = MixEmptyState();
+			num += 8;
+			num = QueueRound(num, queuedValue);
+			num = QueueRound(num, queuedValue2);
+			return (int)MixFinal(num);
+		}
+
+		public static int Combine<T1, T2, T3>(T1 value1, T2 value2, T3 value3)
+		{
+			uint queuedValue = (uint)(value1?.GetHashCode() ?? 0);
+			uint queuedValue2 = (uint)(value2?.GetHashCode() ?? 0);
+			uint queuedValue3 = (uint)(value3?.GetHashCode() ?? 0);
+			uint num = MixEmptyState();
+			num += 12;
+			num = QueueRound(num, queuedValue);
+			num = QueueRound(num, queuedValue2);
+			num = QueueRound(num, queuedValue3);
+			return (int)MixFinal(num);
+		}
+
+		public static int Combine<T1, T2, T3, T4>(T1 value1, T2 value2, T3 value3, T4 value4)
+		{
+			uint input = (uint)(value1?.GetHashCode() ?? 0);
+			uint input2 = (uint)(value2?.GetHashCode() ?? 0);
+			uint input3 = (uint)(value3?.GetHashCode() ?? 0);
+			uint input4 = (uint)(value4?.GetHashCode() ?? 0);
+			Initialize(out var v, out var v2, out var v3, out var v4);
+			v = Round(v, input);
+			v2 = Round(v2, input2);
+			v3 = Round(v3, input3);
+			v4 = Round(v4, input4);
+			uint num = MixState(v, v2, v3, v4);
+			num += 16;
+			return (int)MixFinal(num);
+		}
+
+		public static int Combine<T1, T2, T3, T4, T5>(T1 value1, T2 value2, T3 value3, T4 value4, T5 value5)
+		{
+			uint input = (uint)(value1?.GetHashCode() ?? 0);
+			uint input2 = (uint)(value2?.GetHashCode() ?? 0);
+			uint input3 = (uint)(value3?.GetHashCode() ?? 0);
+			uint input4 = (uint)(value4?.GetHashCode() ?? 0);
+			uint queuedValue = (uint)(value5?.GetHashCode() ?? 0);
+			Initialize(out var v, out var v2, out var v3, out var v4);
+			v = Round(v, input);
+			v2 = Round(v2, input2);
+			v3 = Round(v3, input3);
+			v4 = Round(v4, input4);
+			uint num = MixState(v, v2, v3, v4);
+			num += 20;
+			num = QueueRound(num, queuedValue);
+			return (int)MixFinal(num);
+		}
+
+		public static int Combine<T1, T2, T3, T4, T5, T6>(T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6)
+		{
+			uint input = (uint)(value1?.GetHashCode() ?? 0);
+			uint input2 = (uint)(value2?.GetHashCode() ?? 0);
+			uint input3 = (uint)(value3?.GetHashCode() ?? 0);
+			uint input4 = (uint)(value4?.GetHashCode() ?? 0);
+			uint queuedValue = (uint)(value5?.GetHashCode() ?? 0);
+			uint queuedValue2 = (uint)(value6?.GetHashCode() ?? 0);
+			Initialize(out var v, out var v2, out var v3, out var v4);
+			v = Round(v, input);
+			v2 = Round(v2, input2);
+			v3 = Round(v3, input3);
+			v4 = Round(v4, input4);
+			uint num = MixState(v, v2, v3, v4);
+			num += 24;
+			num = QueueRound(num, queuedValue);
+			num = QueueRound(num, queuedValue2);
+			return (int)MixFinal(num);
+		}
+
+		public static int Combine<T1, T2, T3, T4, T5, T6, T7>(T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7)
+		{
+			uint input = (uint)(value1?.GetHashCode() ?? 0);
+			uint input2 = (uint)(value2?.GetHashCode() ?? 0);
+			uint input3 = (uint)(value3?.GetHashCode() ?? 0);
+			uint input4 = (uint)(value4?.GetHashCode() ?? 0);
+			uint queuedValue = (uint)(value5?.GetHashCode() ?? 0);
+			uint queuedValue2 = (uint)(value6?.GetHashCode() ?? 0);
+			uint queuedValue3 = (uint)(value7?.GetHashCode() ?? 0);
+			Initialize(out var v, out var v2, out var v3, out var v4);
+			v = Round(v, input);
+			v2 = Round(v2, input2);
+			v3 = Round(v3, input3);
+			v4 = Round(v4, input4);
+			uint num = MixState(v, v2, v3, v4);
+			num += 28;
+			num = QueueRound(num, queuedValue);
+			num = QueueRound(num, queuedValue2);
+			num = QueueRound(num, queuedValue3);
+			return (int)MixFinal(num);
+		}
+
+		public static int Combine<T1, T2, T3, T4, T5, T6, T7, T8>(T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7, T8 value8)
+		{
+			uint input = (uint)(value1?.GetHashCode() ?? 0);
+			uint input2 = (uint)(value2?.GetHashCode() ?? 0);
+			uint input3 = (uint)(value3?.GetHashCode() ?? 0);
+			uint input4 = (uint)(value4?.GetHashCode() ?? 0);
+			uint input5 = (uint)(value5?.GetHashCode() ?? 0);
+			uint input6 = (uint)(value6?.GetHashCode() ?? 0);
+			uint input7 = (uint)(value7?.GetHashCode() ?? 0);
+			uint input8 = (uint)(value8?.GetHashCode() ?? 0);
+			Initialize(out var v, out var v2, out var v3, out var v4);
+			v = Round(v, input);
+			v2 = Round(v2, input2);
+			v3 = Round(v3, input3);
+			v4 = Round(v4, input4);
+			v = Round(v, input5);
+			v2 = Round(v2, input6);
+			v3 = Round(v3, input7);
+			v4 = Round(v4, input8);
+			uint num = MixState(v, v2, v3, v4);
+			num += 32;
+			return (int)MixFinal(num);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static void Initialize(out uint v1, out uint v2, out uint v3, out uint v4)
+		{
+			v1 = (uint)((int)s_seed + -1640531535 + -2048144777);
+			v2 = s_seed + 2246822519u;
+			v3 = s_seed;
+			v4 = s_seed - 2654435761u;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static uint Round(uint hash, uint input)
+		{
+			return BitOperations.RotateLeft(hash + (uint)((int)input * -2048144777), 13) * 2654435761u;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static uint QueueRound(uint hash, uint queuedValue)
+		{
+			return BitOperations.RotateLeft(hash + (uint)((int)queuedValue * -1028477379), 17) * 668265263;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static uint MixState(uint v1, uint v2, uint v3, uint v4)
+		{
+			return BitOperations.RotateLeft(v1, 1) + BitOperations.RotateLeft(v2, 7) + BitOperations.RotateLeft(v3, 12) + BitOperations.RotateLeft(v4, 18);
+		}
+
+		private static uint MixEmptyState()
+		{
+			return s_seed + 374761393;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static uint MixFinal(uint hash)
+		{
+			hash ^= hash >> 15;
+			hash *= 2246822519u;
+			hash ^= hash >> 13;
+			hash *= 3266489917u;
+			hash ^= hash >> 16;
+			return hash;
+		}
+
+		public void Add<T>(T value)
+		{
+			Add(value?.GetHashCode() ?? 0);
+		}
+
+		public void Add<T>(T value, IEqualityComparer<T>? comparer)
+		{
+			Add(comparer?.GetHashCode(value) ?? value?.GetHashCode() ?? 0);
+		}
+
+		private void Add(int value)
+		{
+			uint num = _length++;
+			switch (num % 4)
+			{
+			case 0u:
+				_queue1 = (uint)value;
+				return;
+			case 1u:
+				_queue2 = (uint)value;
+				return;
+			case 2u:
+				_queue3 = (uint)value;
+				return;
+			}
+			if (num == 3)
+			{
+				Initialize(out _v1, out _v2, out _v3, out _v4);
+			}
+			_v1 = Round(_v1, _queue1);
+			_v2 = Round(_v2, _queue2);
+			_v3 = Round(_v3, _queue3);
+			_v4 = Round(_v4, (uint)value);
+		}
+
+		public int ToHashCode()
+		{
+			uint length = _length;
+			uint num = length % 4;
+			uint num2 = ((length < 4) ? MixEmptyState() : MixState(_v1, _v2, _v3, _v4));
+			num2 += length * 4;
+			if (num != 0)
+			{
+				num2 = QueueRound(num2, _queue1);
+				if (num > 1)
+				{
+					num2 = QueueRound(num2, _queue2);
+					if (num > 2)
+					{
+						num2 = QueueRound(num2, _queue3);
+					}
+				}
+			}
+			return (int)MixFinal(num2);
+		}
+
+		[Obsolete("HashCode is a mutable struct and should not be compared with other HashCodes. Use ToHashCode to retrieve the computed hash code.", true)]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		public override int GetHashCode()
+		{
+			throw new NotSupportedException(System.SR.HashCode_HashCodeNotSupported);
+		}
+
+		[Obsolete("HashCode is a mutable struct and should not be compared with other HashCodes.", true)]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		public override bool Equals(object? obj)
+		{
+			throw new NotSupportedException(System.SR.HashCode_EqualityNotSupported);
+		}
+	}
+	internal static class LocalAppContextSwitches
+	{
+		private static int s_useNonRandomizedHashSeed;
+
+		public static bool UseNonRandomizedHashSeed
+		{
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
+			get
+			{
+				return GetCachedSwitchValue("Switch.System.Data.UseNonRandomizedHashSeed", ref s_useNonRandomizedHashSeed);
+			}
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		internal static bool GetCachedSwitchValue(string switchName, ref int cachedSwitchValue)
+		{
+			if (cachedSwitchValue < 0)
+			{
+				return false;
+			}
+			if (cachedSwitchValue > 0)
+			{
+				return true;
+			}
+			return GetCachedSwitchValueInternal(switchName, ref cachedSwitchValue);
+		}
+
+		private static bool GetCachedSwitchValueInternal(string switchName, ref int cachedSwitchValue)
+		{
+			if (!AppContext.TryGetSwitch(switchName, out var isEnabled))
+			{
+				isEnabled = GetSwitchDefaultValue(switchName);
+			}
+			AppContext.TryGetSwitch("TestSwitch.LocalAppContext.DisableCaching", out var isEnabled2);
+			if (!isEnabled2)
+			{
+				cachedSwitchValue = (isEnabled ? 1 : (-1));
+			}
+			return isEnabled;
+		}
+
+		private static bool GetSwitchDefaultValue(string switchName)
+		{
+			if (switchName == "Switch.System.Runtime.Serialization.SerializationGuard")
+			{
+				return true;
+			}
+			return false;
+		}
+	}
+	internal static class SR
+	{
+		private static ResourceManager s_resourceManager;
+
+		internal static ResourceManager ResourceManager => s_resourceManager ?? (s_resourceManager = new ResourceManager(typeof(SR)));
+
+		internal static string HashCode_EqualityNotSupported => GetResourceString("HashCode_EqualityNotSupported");
+
+		internal static string HashCode_HashCodeNotSupported => GetResourceString("HashCode_HashCodeNotSupported");
+
+		[MethodImpl(MethodImplOptions.NoInlining)]
+		private static bool UsingResourceKeys()
+		{
+			return false;
+		}
+
+		internal static string GetResourceString(string resourceKey, string defaultString = null)
+		{
+			if (UsingResourceKeys())
+			{
+				return defaultString ?? resourceKey;
+			}
+			string text = null;
+			try
+			{
+				text = ResourceManager.GetString(resourceKey);
+			}
+			catch (MissingManifestResourceException)
+			{
+			}
+			if (defaultString != null && resourceKey.Equals(text))
+			{
+				return defaultString;
+			}
+			return text;
+		}
+
+		internal static string Format(string resourceFormat, object p1)
+		{
+			if (UsingResourceKeys())
+			{
+				return string.Join(", ", resourceFormat, p1);
+			}
+			return string.Format(resourceFormat, p1);
+		}
+
+		internal static string Format(string resourceFormat, object p1, object p2)
+		{
+			if (UsingResourceKeys())
+			{
+				return string.Join(", ", resourceFormat, p1, p2);
+			}
+			return string.Format(resourceFormat, p1, p2);
+		}
+
+		internal static string Format(string resourceFormat, object p1, object p2, object p3)
+		{
+			if (UsingResourceKeys())
+			{
+				return string.Join(", ", resourceFormat, p1, p2, p3);
+			}
+			return string.Format(resourceFormat, p1, p2, p3);
+		}
+
+		internal static string Format(string resourceFormat, params object[] args)
+		{
+			if (args != null)
+			{
+				if (UsingResourceKeys())
+				{
+					return resourceFormat + ", " + string.Join(", ", args);
+				}
+				return string.Format(resourceFormat, args);
+			}
+			return resourceFormat;
+		}
+
+		internal static string Format(IFormatProvider provider, string resourceFormat, object p1)
+		{
+			if (UsingResourceKeys())
+			{
+				return string.Join(", ", resourceFormat, p1);
+			}
+			return string.Format(provider, resourceFormat, p1);
+		}
+
+		internal static string Format(IFormatProvider provider, string resourceFormat, object p1, object p2)
+		{
+			if (UsingResourceKeys())
+			{
+				return string.Join(", ", resourceFormat, p1, p2);
+			}
+			return string.Format(provider, resourceFormat, p1, p2);
+		}
+
+		internal static string Format(IFormatProvider provider, string resourceFormat, object p1, object p2, object p3)
+		{
+			if (UsingResourceKeys())
+			{
+				return string.Join(", ", resourceFormat, p1, p2, p3);
+			}
+			return string.Format(provider, resourceFormat, p1, p2, p3);
+		}
+
+		internal static string Format(IFormatProvider provider, string resourceFormat, params object[] args)
+		{
+			if (args != null)
+			{
+				if (UsingResourceKeys())
+				{
+					return resourceFormat + ", " + string.Join(", ", args);
+				}
+				return string.Format(provider, resourceFormat, args);
+			}
+			return resourceFormat;
+		}
+	}
+}
+namespace System.Numerics
+{
+	internal static class BitOperations
+	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static uint RotateLeft(uint value, int offset)
+		{
+			return (value << offset) | (value >> 32 - offset);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static ulong RotateLeft(ulong value, int offset)
+		{
+			return (value << offset) | (value >> 64 - offset);
+		}
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

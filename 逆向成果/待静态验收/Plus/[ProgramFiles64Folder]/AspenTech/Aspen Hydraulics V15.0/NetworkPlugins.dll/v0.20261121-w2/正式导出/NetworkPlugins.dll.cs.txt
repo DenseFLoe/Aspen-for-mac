@@ -1,0 +1,288 @@
+using System;
+using System.Collections;
+using System.Collections.Specialized;
+using System.Diagnostics;
+using System.IO;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Xml;
+using AHResources;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyCompany("Aspen Technology, Inc.")]
+[assembly: AssemblyProduct("Aspen Hydraulics")]
+[assembly: AssemblyCopyright("Copyright © Aspen Technology, Inc. 2024")]
+[assembly: AssemblyTitle("")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyDelaySign(false)]
+[assembly: AssemblyKeyFile("..\\..\\..\\packages\\AspenTech.StrongName.SNK.1.0.0\\content\\AspenTech.snk")]
+[assembly: AssemblyKeyName("")]
+[assembly: AssemblyFileVersion("41.0.0.99")]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.0")]
+namespace AspenTech.Hydraulics.PluginsSupport.NetworkPlugins;
+
+[Guid("18556D74-7913-4A80-B016-FC4EA30CEFD8")]
+public interface INetworkSolverSupport
+{
+	StringCollection Locations { get; set; }
+
+	string NetworkConfigXmlFile { set; }
+
+	int SolverCount(string UnitOpType);
+
+	object UnitOpSolver(string UnitOpType);
+
+	IPlugins UnitOpSolverPlugins(string UnitOpType);
+
+	string[] GetSupportedUnitOpSolverTypes();
+
+	string[] GetSupportedUnitOpTypes();
+}
+[Guid("D928D4A5-F854-4629-B41A-0B929E0AA943")]
+public class NetworkSolverSupport : INetworkSolverSupport
+{
+	private class NetworkUnitOpsCollection : DictionaryBase
+	{
+		public Plugins this[string key]
+		{
+			get
+			{
+				return (Plugins)base.Dictionary[key];
+			}
+			set
+			{
+				base.Dictionary[key] = value;
+			}
+		}
+
+		public ICollection Keys => base.Dictionary.Keys;
+
+		public void Add(string key, Plugins thePlugins)
+		{
+			base.Dictionary.Add(key, thePlugins);
+		}
+
+		public bool Contains(string key)
+		{
+			return base.Dictionary.Contains(key);
+		}
+	}
+
+	private const string unitOpTag = "UnitOperation";
+
+	private const string unitOpSolverTag = "SolverType";
+
+	private readonly string _networkType;
+
+	private string[] _unitOpTypesSupported;
+
+	private XmlElement _xmlNetworkModel;
+
+	private bool _queryInterfaces;
+
+	private PluginManager _thePluginManager;
+
+	private NetworkUnitOpsCollection _unitOpSolverPlugins;
+
+	private string[] _unitOpSolvers;
+
+	private StringCollection _locations;
+
+	public StringCollection Locations
+	{
+		get
+		{
+			return _locations;
+		}
+		set
+		{
+			_locations = value;
+		}
+	}
+
+	public string NetworkConfigXmlFile
+	{
+		set
+		{
+			_xmlNetworkModel = (XmlElement)getNetworkNode(value);
+			_unitOpTypesSupported = GetSupportedUnitOpTypes();
+			_queryInterfaces = true;
+		}
+	}
+
+	public NetworkSolverSupport(string XmlFileName, string NetworkType)
+	{
+		_networkType = NetworkType;
+		_xmlNetworkModel = (XmlElement)getNetworkNode(XmlFileName);
+		_unitOpTypesSupported = GetSupportedUnitOpTypes();
+		Locations = new StringCollection();
+		_queryInterfaces = true;
+	}
+
+	public NetworkSolverSupport(string XmlFileName)
+	{
+		_networkType = "";
+		_xmlNetworkModel = (XmlElement)getNetworkNode(XmlFileName);
+		_unitOpTypesSupported = GetSupportedUnitOpTypes();
+		Locations = new StringCollection();
+		_queryInterfaces = true;
+	}
+
+	public NetworkSolverSupport()
+	{
+		_networkType = "";
+		_locations = new StringCollection();
+	}
+
+	public int SolverCount(string UnitOpType)
+	{
+		if (_queryInterfaces)
+		{
+			GetUnitOpSolverPlugins();
+			_queryInterfaces = false;
+		}
+		if (_unitOpSolverPlugins.Count == 0)
+		{
+			return 0;
+		}
+		if (_unitOpSolverPlugins[UnitOpType] != null)
+		{
+			return _unitOpSolverPlugins[UnitOpType].Count;
+		}
+		return 0;
+	}
+
+	public IPlugins UnitOpSolverPlugins(string UnitOpType)
+	{
+		if (_queryInterfaces)
+		{
+			GetUnitOpSolverPlugins();
+			_queryInterfaces = false;
+		}
+		return _unitOpSolverPlugins[UnitOpType];
+	}
+
+	private void GetUnitOpSolverPlugins()
+	{
+		_thePluginManager = new PluginManager();
+		if (Locations.Count == 0)
+		{
+			Assembly executingAssembly = Assembly.GetExecutingAssembly();
+			Locations.Add(Path.GetDirectoryName(executingAssembly.Location));
+		}
+		_thePluginManager.Locations = Locations;
+		_unitOpSolverPlugins = new NetworkUnitOpsCollection();
+		for (int i = 0; i < _unitOpTypesSupported.Length; i++)
+		{
+			_unitOpSolverPlugins.Add(_unitOpTypesSupported[i], (Plugins)_thePluginManager.QueryInterface(_unitOpSolvers[i]));
+		}
+	}
+
+	public object UnitOpSolver(string UnitOpType)
+	{
+		if (_queryInterfaces)
+		{
+			GetUnitOpSolverPlugins();
+			_queryInterfaces = false;
+		}
+		if (_unitOpSolverPlugins[UnitOpType].Count != 0)
+		{
+			return _unitOpSolverPlugins[UnitOpType].Item(0).Object;
+		}
+		return null;
+	}
+
+	public string[] GetSupportedUnitOpTypes()
+	{
+		XmlNode xmlNode = null;
+		XmlNode xmlNode2 = null;
+		int num = 0;
+		XmlNodeList elementsByTagName;
+		try
+		{
+			elementsByTagName = _xmlNetworkModel.GetElementsByTagName("UnitOp");
+		}
+		catch (NullReferenceException innerException)
+		{
+			if (_networkType == "" || _networkType == null)
+			{
+				throw new NullReferenceException(Resources.XMLMissingSupportedUnitOpList, innerException);
+			}
+			throw new NullReferenceException(string.Format(Resources.XMLMissingSupportedUnitOpList, _networkType), innerException);
+		}
+		string[] array = new string[elementsByTagName.Count];
+		_unitOpSolvers = new string[elementsByTagName.Count];
+		for (int i = 0; i < elementsByTagName.Count; i++)
+		{
+			xmlNode = elementsByTagName.Item(i).Attributes.GetNamedItem("UnitOperation");
+			if (xmlNode != null)
+			{
+				xmlNode2 = elementsByTagName.Item(i).Attributes.GetNamedItem("SolverType");
+				if (xmlNode2 != null)
+				{
+					array[num] = xmlNode.Value;
+					_unitOpSolvers[num] = xmlNode2.Value;
+					num++;
+				}
+			}
+		}
+		return array;
+	}
+
+	public string[] GetSupportedUnitOpSolverTypes()
+	{
+		return _unitOpSolvers;
+	}
+
+	private string getXmlFile()
+	{
+		string directoryName = Path.GetDirectoryName(Assembly.GetAssembly(GetType()).GetName().CodeBase);
+		return directoryName + "\\SSUnitOp.xml";
+	}
+
+	private XmlNode getNetworkNode(string XmlFile)
+	{
+		XmlDocument xmlDocument = new XmlDocument();
+		XmlNode xmlNode = null;
+		try
+		{
+			xmlDocument.Load(XmlFile);
+			XmlNodeList elementsByTagName = xmlDocument.GetElementsByTagName("Solver");
+			if (_networkType == "")
+			{
+				return elementsByTagName.Item(0);
+			}
+			int i;
+			for (i = 0; i < elementsByTagName.Count; i++)
+			{
+				xmlNode = elementsByTagName.Item(i).Attributes.GetNamedItem("Desc");
+				if (xmlNode.Value == _networkType)
+				{
+					break;
+				}
+			}
+			return elementsByTagName.Item(i);
+		}
+		catch (FileNotFoundException ex)
+		{
+			throw new FileNotFoundException(Resources.SolverXMLNotFound, ex.FileName, ex);
+		}
+		catch (XmlException innerException)
+		{
+			throw new XmlException(Resources.SolverXMLNotValid, innerException);
+		}
+		catch (Exception ex2)
+		{
+			throw ex2;
+		}
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

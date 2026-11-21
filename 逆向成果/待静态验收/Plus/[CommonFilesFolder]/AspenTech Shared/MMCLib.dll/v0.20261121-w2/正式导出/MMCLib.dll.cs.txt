@@ -1,0 +1,6816 @@
+using System;
+using System.Collections;
+using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Data;
+using System.Diagnostics;
+using System.Drawing;
+using System.IO;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Security;
+using System.Text;
+using System.Threading;
+using System.Windows.Forms;
+using Microsoft.Win32;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyTitle("")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("")]
+[assembly: AssemblyProduct("")]
+[assembly: AssemblyCopyright("")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyDelaySign(false)]
+[assembly: AssemblyKeyFile("..\\..\\..\\..\\..\\aped.snk")]
+[assembly: TargetFramework(".NETFramework,Version=v4.5.1", FrameworkDisplayName = ".NET Framework 4.5.1")]
+[assembly: AssemblyVersion("40.0.0.0")]
+namespace Ironring.Management.MMC;
+
+public class About : ISnapinAbout
+{
+	private string m_Description;
+
+	private string m_Provider;
+
+	private string m_Version;
+
+	private string m_MainIconName;
+
+	private string m_SmallOpenName;
+
+	private string m_SmallClosedName;
+
+	private string m_LargeName;
+
+	private ImageList staticFolderIcons = new ImageList();
+
+	private const int mainIconIndex = 0;
+
+	private const int smallOpenImageIndex = 1;
+
+	private const int smallClosedImageIndex = 2;
+
+	private const int largeImageIndex = 3;
+
+	private Color m_Mask;
+
+	public string Description
+	{
+		get
+		{
+			return m_Description;
+		}
+		set
+		{
+			m_Description = value;
+		}
+	}
+
+	public string Provider
+	{
+		get
+		{
+			return m_Provider;
+		}
+		set
+		{
+			m_Provider = value;
+		}
+	}
+
+	public string Version
+	{
+		get
+		{
+			return m_Version;
+		}
+		set
+		{
+			m_Version = value;
+		}
+	}
+
+	public string MainIconName
+	{
+		get
+		{
+			return m_MainIconName;
+		}
+		set
+		{
+			m_MainIconName = value;
+			staticFolderIcons.Replace(0, m_MainIconName);
+		}
+	}
+
+	public string SmallOpenImageName
+	{
+		get
+		{
+			return m_SmallOpenName;
+		}
+		set
+		{
+			m_SmallOpenName = value;
+			staticFolderIcons.Replace(1, m_SmallOpenName);
+		}
+	}
+
+	public string SmallClosedImageName
+	{
+		get
+		{
+			return m_SmallClosedName;
+		}
+		set
+		{
+			m_SmallClosedName = value;
+			staticFolderIcons.Replace(2, m_SmallClosedName);
+		}
+	}
+
+	public string LargeImageName
+	{
+		get
+		{
+			return m_LargeName;
+		}
+		set
+		{
+			m_LargeName = value;
+			staticFolderIcons.Replace(3, m_LargeName);
+		}
+	}
+
+	public Color ImageColorMask
+	{
+		get
+		{
+			return m_Mask;
+		}
+		set
+		{
+			m_Mask = value;
+		}
+	}
+
+	public About()
+	{
+		object[] customAttributes = GetType().GetCustomAttributes(typeof(AboutSnapinAttribute), inherit: true);
+		if (customAttributes.Length != 0)
+		{
+			AboutSnapinAttribute aboutSnapinAttribute = (AboutSnapinAttribute)customAttributes[0];
+			customAttributes = aboutSnapinAttribute.SnapinType.GetCustomAttributes(typeof(SnapinInAttribute), inherit: true);
+			if (customAttributes.Length != 0)
+			{
+				SnapinInAttribute snapinInAttribute = (SnapinInAttribute)customAttributes[0];
+				m_Provider = snapinInAttribute.Provider;
+				if (snapinInAttribute.Version != null)
+				{
+					m_Version = snapinInAttribute.Version;
+				}
+				else
+				{
+					m_Version = GetType().Module.Assembly.GetName().Version.ToString();
+				}
+			}
+		}
+		m_Mask = Color.Black;
+		staticFolderIcons.Insert(0, "");
+		staticFolderIcons.Insert(1, "");
+		staticFolderIcons.Insert(2, "");
+		staticFolderIcons.Insert(3, "");
+	}
+
+	public void GetSnapinDescription(out IntPtr lpDescription)
+	{
+		lpDescription = Marshal.StringToCoTaskMemUni(Description);
+	}
+
+	public void GetProvider(out IntPtr pName)
+	{
+		pName = Marshal.StringToCoTaskMemUni(Provider);
+	}
+
+	public void GetSnapinVersion(out IntPtr lpVersion)
+	{
+		lpVersion = Marshal.StringToCoTaskMemUni(Version);
+	}
+
+	public void GetSnapinImage(out IntPtr hAppIcon)
+	{
+		hAppIcon = staticFolderIcons.GetIconHandle(0);
+	}
+
+	public void GetStaticFolderImage(out IntPtr hSmallImage, out IntPtr hSmallImageOpen, out IntPtr hLargeImage, out uint cMask)
+	{
+		hSmallImage = staticFolderIcons.GetBitmapHandle(2);
+		hSmallImageOpen = staticFolderIcons.GetBitmapHandle(1);
+		hLargeImage = staticFolderIcons.GetBitmapHandle(3);
+		cMask = (uint)m_Mask.ToArgb();
+	}
+}
+public class BaseNode
+{
+	protected bool m_MultiSelectMode;
+
+	private bool m_EditMode;
+
+	protected BaseNode m_ParentNode;
+
+	protected SnapinBase m_Snapin;
+
+	protected Guid m_guid;
+
+	protected object m_tag;
+
+	protected ArrayList m_ChildNodes;
+
+	protected string m_sDisplayName;
+
+	protected int m_iCookie;
+
+	protected int m_iHScopeItem;
+
+	protected int m_iParentHScopeItem;
+
+	protected ImageList m_Images;
+
+	protected static ImageList s_DefaultImages = null;
+
+	protected int m_nClosedImage;
+
+	protected int m_nOpenImage = 1;
+
+	protected int m_nSmallImage;
+
+	protected int m_nLargeImage = 1;
+
+	protected ArrayList m_MenuItems;
+
+	protected ArrayList m_TopMenuItems;
+
+	protected ArrayList m_NewMenuItems;
+
+	protected ArrayList m_TaskMenuItems;
+
+	protected ArrayList m_ViewMenuItems;
+
+	protected ArrayList m_propertyPages = new ArrayList();
+
+	protected PropertySheet m_propSheet;
+
+	protected EventHandlerSet m_events = new EventHandlerSet();
+
+	public OnUserDelegate nhUpdate;
+
+	protected static object OnActivateKey = new object();
+
+	protected static object OnAddScopePaneImagesKey = new object();
+
+	protected static object OnAddResultPaneImagesKey = new object();
+
+	protected static object OnBtnClickKey = new object();
+
+	protected static object OnClickKey = new object();
+
+	protected static object OnColumnClickKey = new object();
+
+	protected static object OnCutOrRemoveKey = new object();
+
+	protected static object OnDblClickKey = new object();
+
+	protected static object OnDeleteKey = new object();
+
+	protected static object OnDeselectAllKey = new object();
+
+	protected static object OnExpandKey = new object();
+
+	protected static object OnCollapseKey = new object();
+
+	protected static object OnInitOcxKey = new object();
+
+	protected static object OnMenuBtnClickKey = new object();
+
+	protected static object OnMaximizedKey = new object();
+
+	protected static object OnMinimizedKey = new object();
+
+	protected static object OnQueryPasteKey = new object();
+
+	protected static object OnRefreshKey = new object();
+
+	protected static object OnRemoveChildrenKey = new object();
+
+	protected static object OnRenameKey = new object();
+
+	protected static object OnSelectScopeKey = new object();
+
+	protected static object OnDeselectScopeKey = new object();
+
+	protected static object OnSelectResultKey = new object();
+
+	protected static object OnDeselectResultKey = new object();
+
+	protected static object OnShowKey = new object();
+
+	protected static object OnViewChangeScopeKey = new object();
+
+	protected static object OnViewChangeResultKey = new object();
+
+	protected static object OnContextHelpKey = new object();
+
+	protected static object OnUserKey = new object();
+
+	protected static object OnQueryPropertiesKey = new object();
+
+	protected static object OnToolbarClickKey = new object();
+
+	protected static object OnFilterChangeKey = new object();
+
+	protected static object OnPrintKey = new object();
+
+	protected static object OnPasteKey = new object();
+
+	public bool MultiSelectMode
+	{
+		get
+		{
+			return m_MultiSelectMode;
+		}
+		set
+		{
+			m_MultiSelectMode = value;
+		}
+	}
+
+	public bool EditMode
+	{
+		get
+		{
+			return m_EditMode;
+		}
+		set
+		{
+			m_EditMode = value;
+		}
+	}
+
+	public BaseNode ParentNode
+	{
+		get
+		{
+			return m_ParentNode;
+		}
+		set
+		{
+			m_ParentNode = value;
+		}
+	}
+
+	public int Cookie
+	{
+		get
+		{
+			return m_iCookie;
+		}
+		set
+		{
+			m_iCookie = value;
+		}
+	}
+
+	public SnapinBase Snapin => m_Snapin;
+
+	public virtual bool HavePropertyPages => m_propertyPages.Count != 0;
+
+	public int ParentHScopeItem
+	{
+		get
+		{
+			return m_iParentHScopeItem;
+		}
+		set
+		{
+			m_iParentHScopeItem = value;
+		}
+	}
+
+	public int HScopeItem
+	{
+		get
+		{
+			return m_iHScopeItem;
+		}
+		set
+		{
+			m_iHScopeItem = value;
+		}
+	}
+
+	public string DisplayName
+	{
+		get
+		{
+			return m_sDisplayName;
+		}
+		set
+		{
+			m_sDisplayName = value;
+		}
+	}
+
+	public ImageList ResultPaneImages
+	{
+		get
+		{
+			if (m_Images == null)
+			{
+				return s_DefaultImages;
+			}
+			return m_Images;
+		}
+		set
+		{
+			m_Images = value;
+		}
+	}
+
+	public static ImageList DefaultResultPaneImages
+	{
+		get
+		{
+			return s_DefaultImages;
+		}
+		set
+		{
+			s_DefaultImages = value;
+		}
+	}
+
+	public int ClosedImageIndex
+	{
+		get
+		{
+			return m_nClosedImage;
+		}
+		set
+		{
+			m_nClosedImage = value;
+		}
+	}
+
+	public int OpenImageIndex
+	{
+		get
+		{
+			return m_nOpenImage;
+		}
+		set
+		{
+			m_nOpenImage = value;
+		}
+	}
+
+	public int SmallImageIndex
+	{
+		get
+		{
+			return m_nSmallImage;
+		}
+		set
+		{
+			m_nSmallImage = value;
+		}
+	}
+
+	public int LargeImageIndex
+	{
+		get
+		{
+			return m_nLargeImage;
+		}
+		set
+		{
+			m_nLargeImage = value;
+		}
+	}
+
+	public virtual Guid Guid
+	{
+		get
+		{
+			return m_guid;
+		}
+		set
+		{
+			m_guid = value;
+		}
+	}
+
+	public object Tag
+	{
+		get
+		{
+			return m_tag;
+		}
+		set
+		{
+			m_tag = value;
+		}
+	}
+
+	public int NumChildren
+	{
+		get
+		{
+			if (m_ChildNodes != null)
+			{
+				return m_ChildNodes.Count;
+			}
+			return 0;
+		}
+	}
+
+	public ArrayList Children => m_ChildNodes;
+
+	protected ArrayList MenuItemIndex
+	{
+		get
+		{
+			if (m_MenuItems == null)
+			{
+				m_MenuItems = new ArrayList();
+			}
+			return m_MenuItems;
+		}
+	}
+
+	public event NodeNotificationHandler OnActivateEvent
+	{
+		add
+		{
+			m_events.AddHandler(OnActivateKey, value);
+		}
+		remove
+		{
+			m_events.RemoveHandler(OnActivateKey, value);
+		}
+	}
+
+	public event NodeNotificationHandler OnAddScopePaneImagesEvent
+	{
+		add
+		{
+			m_events.AddHandler(OnAddScopePaneImagesKey, value);
+		}
+		remove
+		{
+			m_events.RemoveHandler(OnAddScopePaneImagesKey, value);
+		}
+	}
+
+	public event NodeNotificationHandler OnAddResultPaneImagesEvent
+	{
+		add
+		{
+			m_events.AddHandler(OnAddResultPaneImagesKey, value);
+		}
+		remove
+		{
+			m_events.RemoveHandler(OnAddResultPaneImagesKey, value);
+		}
+	}
+
+	public event NodeNotificationHandler OnBtnClickEvent
+	{
+		add
+		{
+			m_events.AddHandler(OnBtnClickKey, value);
+		}
+		remove
+		{
+			m_events.RemoveHandler(OnBtnClickKey, value);
+		}
+	}
+
+	public event NodeNotificationHandler OnClickEvent
+	{
+		add
+		{
+			m_events.AddHandler(OnClickKey, value);
+		}
+		remove
+		{
+			m_events.RemoveHandler(OnClickKey, value);
+		}
+	}
+
+	public event NodeNotificationHandler OnColumnClickEvent
+	{
+		add
+		{
+			m_events.AddHandler(OnColumnClickKey, value);
+		}
+		remove
+		{
+			m_events.RemoveHandler(OnColumnClickKey, value);
+		}
+	}
+
+	public event NodeNotificationHandler OnCutOrRemoveEvent
+	{
+		add
+		{
+			m_events.AddHandler(OnCutOrRemoveKey, value);
+		}
+		remove
+		{
+			m_events.RemoveHandler(OnCutOrRemoveKey, value);
+		}
+	}
+
+	public event NodeNotificationHandler OnDblClickEvent
+	{
+		add
+		{
+			m_events.AddHandler(OnDblClickKey, value);
+		}
+		remove
+		{
+			m_events.RemoveHandler(OnDblClickKey, value);
+		}
+	}
+
+	public event NodeNotificationHandler OnDeleteEvent
+	{
+		add
+		{
+			m_events.AddHandler(OnDeleteKey, value);
+		}
+		remove
+		{
+			m_events.RemoveHandler(OnDeleteKey, value);
+		}
+	}
+
+	public event NodeNotificationHandler OnDeselectAllEvent
+	{
+		add
+		{
+			m_events.AddHandler(OnDeselectAllKey, value);
+		}
+		remove
+		{
+			m_events.RemoveHandler(OnDeselectAllKey, value);
+		}
+	}
+
+	public event NodeNotificationHandler OnExpandEvent
+	{
+		add
+		{
+			m_events.AddHandler(OnExpandKey, value);
+		}
+		remove
+		{
+			m_events.RemoveHandler(OnExpandKey, value);
+		}
+	}
+
+	public event NodeNotificationHandler OnCollapseEvent
+	{
+		add
+		{
+			m_events.AddHandler(OnCollapseKey, value);
+		}
+		remove
+		{
+			m_events.RemoveHandler(OnCollapseKey, value);
+		}
+	}
+
+	public event NodeNotificationHandler OnInitOcxEvent
+	{
+		add
+		{
+			m_events.AddHandler(OnInitOcxKey, value);
+		}
+		remove
+		{
+			m_events.RemoveHandler(OnInitOcxKey, value);
+		}
+	}
+
+	public event NodeNotificationHandler OnUserEvent
+	{
+		add
+		{
+			m_events.AddHandler(OnUserKey, value);
+		}
+		remove
+		{
+			m_events.RemoveHandler(OnUserKey, value);
+		}
+	}
+
+	public event NodeNotificationHandler OnQueryPropertiesEvent
+	{
+		add
+		{
+			m_events.AddHandler(OnQueryPropertiesKey, value);
+		}
+		remove
+		{
+			m_events.RemoveHandler(OnQueryPropertiesKey, value);
+		}
+	}
+
+	public event NodeNotificationHandler OnMenuBtnClickEvent
+	{
+		add
+		{
+			m_events.AddHandler(OnMenuBtnClickKey, value);
+		}
+		remove
+		{
+			m_events.RemoveHandler(OnMenuBtnClickKey, value);
+		}
+	}
+
+	public event NodeNotificationHandler OnMaximizedEvent
+	{
+		add
+		{
+			m_events.AddHandler(OnMaximizedKey, value);
+		}
+		remove
+		{
+			m_events.RemoveHandler(OnMaximizedKey, value);
+		}
+	}
+
+	public event NodeNotificationHandler OnMinimizedEvent
+	{
+		add
+		{
+			m_events.AddHandler(OnMinimizedKey, value);
+		}
+		remove
+		{
+			m_events.RemoveHandler(OnMinimizedKey, value);
+		}
+	}
+
+	public event NodeNotificationHandler OnQueryPasteEvent
+	{
+		add
+		{
+			m_events.AddHandler(OnQueryPasteKey, value);
+		}
+		remove
+		{
+			m_events.RemoveHandler(OnQueryPasteKey, value);
+		}
+	}
+
+	public event NodeNotificationHandler OnRefreshEvent
+	{
+		add
+		{
+			m_events.AddHandler(OnRefreshKey, value);
+		}
+		remove
+		{
+			m_events.RemoveHandler(OnRefreshKey, value);
+		}
+	}
+
+	public event NodeNotificationHandler OnRemoveChildrenEvent
+	{
+		add
+		{
+			m_events.AddHandler(OnRemoveChildrenKey, value);
+		}
+		remove
+		{
+			m_events.RemoveHandler(OnRemoveChildrenKey, value);
+		}
+	}
+
+	public event NodeNotificationHandler OnRenameEvent
+	{
+		add
+		{
+			m_events.AddHandler(OnRenameKey, value);
+		}
+		remove
+		{
+			m_events.RemoveHandler(OnRenameKey, value);
+		}
+	}
+
+	public event NodeNotificationHandler OnSelectScopeEvent
+	{
+		add
+		{
+			m_events.AddHandler(OnSelectScopeKey, value);
+		}
+		remove
+		{
+			m_events.RemoveHandler(OnSelectScopeKey, value);
+		}
+	}
+
+	public event NodeNotificationHandler OnDeselectScopeEvent
+	{
+		add
+		{
+			m_events.AddHandler(OnDeselectScopeKey, value);
+		}
+		remove
+		{
+			m_events.RemoveHandler(OnDeselectScopeKey, value);
+		}
+	}
+
+	public event NodeNotificationHandler OnSelectResultEvent
+	{
+		add
+		{
+			m_events.AddHandler(OnSelectResultKey, value);
+		}
+		remove
+		{
+			m_events.RemoveHandler(OnSelectResultKey, value);
+		}
+	}
+
+	public event NodeNotificationHandler OnDeselectResultEvent
+	{
+		add
+		{
+			m_events.AddHandler(OnDeselectResultKey, value);
+		}
+		remove
+		{
+			m_events.RemoveHandler(OnDeselectResultKey, value);
+		}
+	}
+
+	public event NodeNotificationHandler OnShowEvent
+	{
+		add
+		{
+			m_events.AddHandler(OnShowKey, value);
+		}
+		remove
+		{
+			m_events.RemoveHandler(OnShowKey, value);
+		}
+	}
+
+	public event NodeNotificationHandler OnViewChangeScopeEvent
+	{
+		add
+		{
+			m_events.AddHandler(OnViewChangeScopeKey, value);
+		}
+		remove
+		{
+			m_events.RemoveHandler(OnViewChangeScopeKey, value);
+		}
+	}
+
+	public event NodeNotificationHandler OnViewChangeResultEvent
+	{
+		add
+		{
+			m_events.AddHandler(OnViewChangeResultKey, value);
+		}
+		remove
+		{
+			m_events.RemoveHandler(OnViewChangeResultKey, value);
+		}
+	}
+
+	public event NodeNotificationHandler OnContextHelpEvent
+	{
+		add
+		{
+			m_events.AddHandler(OnContextHelpKey, value);
+		}
+		remove
+		{
+			m_events.RemoveHandler(OnContextHelpKey, value);
+		}
+	}
+
+	public event NodeNotificationHandler OnToolbarClickEvent
+	{
+		add
+		{
+			m_events.AddHandler(OnToolbarClickKey, value);
+		}
+		remove
+		{
+			m_events.RemoveHandler(OnToolbarClickKey, value);
+		}
+	}
+
+	public event NodeNotificationHandler OnPasteEvent
+	{
+		add
+		{
+			m_events.AddHandler(OnPasteKey, value);
+		}
+		remove
+		{
+			m_events.RemoveHandler(OnPasteKey, value);
+		}
+	}
+
+	private IntPtr TurnOnThemes()
+	{
+		ACTCTX pActCtx = default(ACTCTX);
+		pActCtx.cbSize = (uint)Marshal.SizeOf(typeof(ACTCTX));
+		pActCtx.dwFlags = 8u;
+		pActCtx.lpSource = GetType().Module.Assembly.Location;
+		pActCtx.wProcessorArchitecture = 0;
+		pActCtx.wLangId = 0;
+		pActCtx.lpAssemblyDirectory = null;
+		pActCtx.lpResourceName = "ENABLETHEMES";
+		pActCtx.lpApplicationName = null;
+		pActCtx.hModule = IntPtr.Zero;
+		IntPtr intPtr = CreateActCtx(ref pActCtx);
+		uint lpCookie = 0u;
+		bool flag = ActivateActCtx(intPtr, out lpCookie);
+		return intPtr;
+	}
+
+	private bool HasThemes()
+	{
+		if (Environment.OSVersion.Version.Major >= 5 && Environment.OSVersion.Version.Minor > 0)
+		{
+			return true;
+		}
+		return false;
+	}
+
+	protected IConsoleVerb GetIConsoleVerb()
+	{
+		Snapin.ResultViewConsole.QueryConsoleVerb(out var ppConsoleVerb);
+		return ppConsoleVerb;
+	}
+
+	public void SetVerbState(MMC_CONSOLE_VERB cmd, MMC_BUTTON_STATE state, bool show)
+	{
+		IConsoleVerb iConsoleVerb = GetIConsoleVerb();
+		iConsoleVerb.SetVerbState(cmd, state, Convert.ToInt32(show));
+	}
+
+	public bool GetVerbState(MMC_CONSOLE_VERB cmd, MMC_BUTTON_STATE state)
+	{
+		IConsoleVerb iConsoleVerb = GetIConsoleVerb();
+		int pState = 0;
+		iConsoleVerb.GetVerbState(cmd, state, ref pState);
+		return Convert.ToBoolean(pState);
+	}
+
+	public void SetDefaultVerb(MMC_CONSOLE_VERB cmd)
+	{
+		IConsoleVerb iConsoleVerb = GetIConsoleVerb();
+		iConsoleVerb.SetDefaultVerb(cmd);
+	}
+
+	public MMC_CONSOLE_VERB GetDefaultVerb()
+	{
+		IConsoleVerb iConsoleVerb = GetIConsoleVerb();
+		MMC_CONSOLE_VERB peCmdID = MMC_CONSOLE_VERB.NONE;
+		iConsoleVerb.GetDefaultVerb(ref peCmdID);
+		return peCmdID;
+	}
+
+	public BaseNode(SnapinBase snapin)
+	{
+		m_Snapin = snapin;
+		m_ParentNode = this;
+		m_iCookie = snapin.Register(this);
+		m_iHScopeItem = 0;
+		m_iParentHScopeItem = 0;
+		m_ChildNodes = new ArrayList(8);
+	}
+
+	public BaseNode(SnapinBase snapin, BaseNode parentNode)
+	{
+		m_Snapin = snapin;
+		m_ParentNode = parentNode;
+		m_iCookie = snapin.Register(this);
+		m_iHScopeItem = 0;
+		m_iParentHScopeItem = 0;
+		m_ChildNodes = new ArrayList(8);
+	}
+
+	~BaseNode()
+	{
+	}
+
+	public virtual void Initialize()
+	{
+		nhUpdate = (OnUserDelegate)Delegate.Combine(nhUpdate, new OnUserDelegate(UpdateThisNode));
+	}
+
+	public void AddChild(BaseNode node)
+	{
+		m_ChildNodes.Add(node);
+	}
+
+	public void Remove(bool removeChildrenOnly)
+	{
+		if (HScopeItem != 0)
+		{
+			Snapin.ConsoleNameSpace.DeleteItem((uint)HScopeItem, Convert.ToInt32(!removeChildrenOnly));
+		}
+		foreach (BaseNode childNode in m_ChildNodes)
+		{
+			if (childNode.NumChildren != 0)
+			{
+				childNode.Remove(removeChildrenOnly: true);
+			}
+			Snapin.Unregister(childNode);
+		}
+		m_ChildNodes.Clear();
+		if (!removeChildrenOnly)
+		{
+			if (ParentHScopeItem != 0 && Snapin.FindNodeByHScope(ParentHScopeItem) != null)
+			{
+				Snapin.ResultViewConsole.SelectScopeItem(ParentHScopeItem);
+			}
+			Snapin.Unregister(this);
+		}
+	}
+
+	public void Insert(BaseNode parent)
+	{
+		IConsoleNameSpace2 consoleNameSpace = Snapin.ConsoleNameSpace;
+		SCOPEDATAITEM a = GetScopeDataItem(parent);
+		consoleNameSpace.InsertItem(ref a);
+		HScopeItem = a.ID;
+		ParentHScopeItem = parent.HScopeItem;
+		ParentNode = parent;
+	}
+
+	public virtual SCOPEDATAITEM GetScopeDataItem(BaseNode parentNode)
+	{
+		return new SCOPEDATAITEM
+		{
+			mask = 110u,
+			nImage = ClosedImageIndex,
+			nOpenImage = OpenImageIndex,
+			relativeID = parentNode.HScopeItem,
+			displayname = (IntPtr)(-1),
+			lParam = Cookie,
+			cChildren = 1
+		};
+	}
+
+	public void SetScopeViewItemImage()
+	{
+		IConsoleNameSpace2 consoleNameSpace = Snapin.ConsoleNameSpace;
+		SCOPEDATAITEM a = new SCOPEDATAITEM
+		{
+			mask = 12u,
+			nImage = ClosedImageIndex,
+			nOpenImage = OpenImageIndex,
+			ID = HScopeItem
+		};
+		consoleNameSpace.SetItem(ref a);
+	}
+
+	public void InsertChildren()
+	{
+		foreach (BaseNode childNode in m_ChildNodes)
+		{
+			childNode.Insert(this);
+		}
+	}
+
+	public virtual void AddMenuItems(IContextMenuCallback piCallback, ref int pInsertionAllowed)
+	{
+		if ((pInsertionAllowed & 1) > 0)
+		{
+			OnAddTopMenu(piCallback);
+		}
+		if ((pInsertionAllowed & 2) > 0)
+		{
+			OnAddNewMenu(piCallback);
+		}
+		if ((pInsertionAllowed & 4) > 0)
+		{
+			OnAddTaskMenu(piCallback);
+		}
+		if ((pInsertionAllowed & 8) > 0)
+		{
+			OnAddViewMenu(piCallback);
+		}
+	}
+
+	public void AddPropertyPage(string title, Type userControlType)
+	{
+		PropertyPage propertyPage = new PropertyPage(title);
+		propertyPage.ControlType = userControlType;
+		m_propertyPages.Add(propertyPage);
+	}
+
+	public virtual string GetResultViewType(ref int pViewOptions)
+	{
+		pViewOptions = 0;
+		return string.Empty;
+	}
+
+	public virtual void GetDisplayInfo(ref RESULTDATAITEM ResultDataItem)
+	{
+		if ((ResultDataItem.mask & 2) != 0)
+		{
+			ResultDataItem.str = Marshal.StringToCoTaskMemUni(m_sDisplayName);
+		}
+		if ((ResultDataItem.mask & 4) != 0)
+		{
+			int num = 0;
+			bool isGlobal = false;
+			num = GetResultViewImageIndex(out isGlobal);
+			if (!isGlobal)
+			{
+				ResultDataItem.nImage = (Cookie << 16) + num;
+			}
+			else
+			{
+				ResultDataItem.nImage = num;
+			}
+		}
+		if ((ResultDataItem.mask & 0x10) != 0)
+		{
+			ResultDataItem.lParam = m_iCookie;
+		}
+		if ((ResultDataItem.mask & 0x20) != 0)
+		{
+			ResultDataItem.nIndex = 0;
+		}
+		if ((ResultDataItem.mask & 0x40) != 0)
+		{
+			ResultDataItem.iIndent = 0;
+		}
+	}
+
+	public virtual void GetDisplayInfo(ref SCOPEDATAITEM sdi)
+	{
+		if ((sdi.mask & 2) != 0)
+		{
+			sdi.displayname = Marshal.StringToCoTaskMemUni(DisplayName);
+		}
+		if ((sdi.mask & 0x10) != 0)
+		{
+			sdi.nState = 0u;
+		}
+		if ((sdi.mask & 0x40) != 0)
+		{
+			sdi.cChildren = NumChildren;
+		}
+		if ((sdi.mask & 4) != 0)
+		{
+			int num = 0;
+			bool isGlobal = false;
+			num = GetScopeViewImageIndex(isClosed: true, out isGlobal);
+			if (!isGlobal)
+			{
+				sdi.nImage = (Cookie << 16) + num;
+			}
+			else
+			{
+				sdi.nImage = num;
+			}
+		}
+		if ((sdi.mask & 8) != 0)
+		{
+			int num2 = 0;
+			bool isGlobal2 = false;
+			num2 = GetScopeViewImageIndex(isClosed: false, out isGlobal2);
+			if (!isGlobal2)
+			{
+				sdi.nImage = (Cookie << 16) + num2;
+			}
+			else
+			{
+				sdi.nImage = num2;
+			}
+		}
+	}
+
+	public virtual void CreatePropertyPages(IPropertySheetCallback lpProvider, IntPtr handle)
+	{
+		CreatePropertyPages(lpProvider, handle, null);
+	}
+
+	public void CreatePropertyPagesModal(IPropertySheetCallback lpProvider, IntPtr handle, string displayName)
+	{
+		if (HavePropertyPages)
+		{
+			if (m_propSheet == null || m_propSheet.isClosed)
+			{
+				CreatePropertySheet(displayName);
+			}
+			else
+			{
+				m_propSheet.Activate();
+			}
+		}
+	}
+
+	public void CreatePropertyPages(IPropertySheetCallback lpProvider, IntPtr handle, string displayName)
+	{
+		if (HavePropertyPages)
+		{
+			if (m_propSheet == null || m_propSheet.isClosed)
+			{
+				ThreadPool.QueueUserWorkItem(CreatePropertySheet, DisplayName);
+			}
+			else
+			{
+				m_propSheet.Activate();
+			}
+		}
+	}
+
+	protected virtual void CreatePropertySheet(object displayName)
+	{
+		m_propSheet = new PropertySheet(this);
+		foreach (PropertyPage propertyPage in m_propertyPages)
+		{
+			m_propSheet.Pages.Add(propertyPage);
+		}
+		m_propSheet.Text = Convert.ToString(displayName);
+		IntPtr hActCtx = default(IntPtr);
+		if (HasThemes())
+		{
+			hActCtx = TurnOnThemes();
+		}
+		m_propSheet.ShowDialog();
+		if (HasThemes())
+		{
+			ReleaseActCtx(hActCtx);
+		}
+		m_propSheet.Pages.Clear();
+		m_propSheet = null;
+	}
+
+	public virtual void OnActivate(bool bActivate)
+	{
+		m_events.Fire(OnActivateKey, this, new ActivateArgs(bActivate));
+	}
+
+	public virtual void OnAddScopePaneImages(IImageList il)
+	{
+		foreach (BaseNode childNode in m_ChildNodes)
+		{
+			childNode.OnAddScopePaneImages(il);
+		}
+		m_events.Fire(OnAddScopePaneImagesKey, this, new AddImagesArgs(il));
+	}
+
+	public virtual void OnAddResultPaneImages(IImageList il)
+	{
+		if (ResultPaneImages != null)
+		{
+			ResultPaneImages.LoadImageList(il, m_iCookie);
+		}
+		foreach (BaseNode childNode in m_ChildNodes)
+		{
+			childNode.OnAddResultPaneImages(il);
+		}
+		m_events.Fire(OnAddResultPaneImagesKey, this, new AddImagesArgs(il));
+	}
+
+	public virtual void OnBtnClick(int CmdId)
+	{
+		m_events.Fire(OnBtnClickKey, this, new CommandArgs(CmdId));
+	}
+
+	public virtual void OnClick()
+	{
+		m_events.Fire(OnClickKey, this, null);
+	}
+
+	public virtual void OnColumnClick(int nCol, bool bAscending)
+	{
+		m_events.Fire(OnColumnClickKey, this, null);
+	}
+
+	public virtual bool OnCutOrRemove(IDataObject ido)
+	{
+		m_events.Fire(OnCutOrRemoveKey, this, new ObjectArgs(ido));
+		return false;
+	}
+
+	public virtual bool OnDblClick()
+	{
+		m_events.Fire(OnDblClickKey, this, null);
+		return false;
+	}
+
+	public virtual void OnDelete()
+	{
+		m_events.Fire(OnDeleteKey, this, null);
+	}
+
+	public virtual void OnDeselectAll()
+	{
+		m_events.Fire(OnDeselectAllKey, this, null);
+	}
+
+	public virtual void OnExpand()
+	{
+		InsertChildren();
+		m_events.Fire(OnExpandKey, this, null);
+	}
+
+	public virtual void OnCollapse()
+	{
+		m_events.Fire(OnCollapseKey, this, null);
+	}
+
+	public virtual bool OnInitOcx(object objOCX)
+	{
+		m_events.Fire(OnInitOcxKey, this, new ObjectArgs(objOCX));
+		return false;
+	}
+
+	public virtual void OnUser(string key, object val)
+	{
+		m_events.Fire(OnUserKey, this, new NameValueArgs(key, val));
+	}
+
+	public virtual void OnQueryProperties()
+	{
+		m_events.Fire(OnQueryPropertiesKey, this, null);
+	}
+
+	public virtual void OnMenuBtnClick(int CmdId, int x, int y)
+	{
+		m_events.Fire(OnMenuBtnClickKey, this, null);
+	}
+
+	public virtual void OnMaximized()
+	{
+		m_events.Fire(OnMaximizedKey, this, null);
+	}
+
+	public virtual void OnMinimized()
+	{
+		m_events.Fire(OnMinimizedKey, this, null);
+	}
+
+	public virtual bool OnQueryPaste(IDataObject ido)
+	{
+		m_events.Fire(OnQueryPasteKey, this, new ObjectArgs(ido));
+		return false;
+	}
+
+	public virtual void OnRefresh()
+	{
+		m_events.Fire(OnRefreshKey, this, null);
+	}
+
+	public virtual void OnRemoveChildren()
+	{
+		m_events.Fire(OnRemoveChildrenKey, this, null);
+	}
+
+	public virtual bool OnTryRename()
+	{
+		return false;
+	}
+
+	public virtual bool OnRename(string newName)
+	{
+		m_events.Fire(OnRenameKey, this, new RenameValueArgs(newName));
+		return false;
+	}
+
+	public virtual void OnSelectScope()
+	{
+		m_Snapin.CurrentScopeNode = this;
+		if (HavePropertyPages)
+		{
+			SetVerbState(MMC_CONSOLE_VERB.PROPERTIES, MMC_BUTTON_STATE.ENABLED, show: true);
+		}
+		else
+		{
+			SetVerbState(MMC_CONSOLE_VERB.PROPERTIES, MMC_BUTTON_STATE.ENABLED, show: false);
+		}
+		m_events.Fire(OnSelectScopeKey, this, null);
+	}
+
+	public virtual void OnDeselectScope()
+	{
+		m_events.Fire(OnDeselectScopeKey, this, null);
+	}
+
+	public virtual void OnSelectResult()
+	{
+		m_events.Fire(OnSelectResultKey, this, null);
+	}
+
+	public virtual void OnDeselectResult()
+	{
+		m_events.Fire(OnDeselectResultKey, this, null);
+	}
+
+	public virtual void OnShow()
+	{
+		m_events.Fire(OnShowKey, this, null);
+	}
+
+	public virtual void OnToolbarClick(int ToolbarCmdId)
+	{
+		m_events.Fire(OnToolbarClickKey, this, new CommandArgs(ToolbarCmdId));
+	}
+
+	public virtual void OnViewChangeScope(BaseNode node)
+	{
+		m_events.Fire(OnViewChangeScopeKey, this, null);
+	}
+
+	public virtual void OnViewChangeResult(BaseNode node)
+	{
+		m_events.Fire(OnViewChangeResultKey, this, null);
+	}
+
+	public virtual void OnContextHelp()
+	{
+		m_events.Fire(OnContextHelpKey, this, null);
+	}
+
+	public virtual void OnPrint()
+	{
+		m_events.Fire(OnPrintKey, this, null);
+	}
+
+	public virtual bool OnPaste(IDataObject ido)
+	{
+		m_events.Fire(OnPasteKey, this, new ObjectArgs(ido));
+		return false;
+	}
+
+	public virtual void OnFilterChange(MMC_FILTER_CHANGE_CODE code, int col)
+	{
+		m_events.Fire(OnFilterChangeKey, this, null);
+	}
+
+	public MenuItem GetMenuItem(uint intCCM, string strItemName)
+	{
+		ArrayList arrayList = null;
+		switch (intCCM)
+		{
+		case 1u:
+			arrayList = m_TopMenuItems;
+			break;
+		case 2u:
+			arrayList = m_NewMenuItems;
+			break;
+		case 4u:
+			arrayList = m_TaskMenuItems;
+			break;
+		case 8u:
+			arrayList = m_ViewMenuItems;
+			break;
+		default:
+			return null;
+		}
+		foreach (object item in arrayList)
+		{
+			MenuItem menuItem = item as MenuItem;
+			if (menuItem.Name == strItemName)
+			{
+				return menuItem;
+			}
+		}
+		return null;
+	}
+
+	public void Command(int nCommandId)
+	{
+		if (nCommandId >= 0 && nCommandId < MenuItemIndex.Count)
+		{
+			MenuItem menuItem = (MenuItem)MenuItemIndex[nCommandId];
+			menuItem.Command(this);
+		}
+	}
+
+	public void AddTopMenuItem(MenuItem item)
+	{
+		if (m_TopMenuItems == null)
+		{
+			m_TopMenuItems = new ArrayList();
+		}
+		item.CommandId = MenuItemIndex.Count;
+		MenuItemIndex.Add(item);
+		m_TopMenuItems.Add(item);
+	}
+
+	public void AddNewMenuItem(MenuItem item)
+	{
+		if (m_NewMenuItems == null)
+		{
+			m_NewMenuItems = new ArrayList();
+		}
+		item.CommandId = MenuItemIndex.Count;
+		MenuItemIndex.Add(item);
+		m_NewMenuItems.Add(item);
+	}
+
+	public void AddTaskMenuItem(MenuItem item)
+	{
+		if (m_TaskMenuItems == null)
+		{
+			m_TaskMenuItems = new ArrayList();
+		}
+		item.CommandId = MenuItemIndex.Count;
+		MenuItemIndex.Add(item);
+		m_TaskMenuItems.Add(item);
+	}
+
+	public void AddViewMenuItem(MenuItem item)
+	{
+		if (m_ViewMenuItems == null)
+		{
+			m_ViewMenuItems = new ArrayList();
+		}
+		item.CommandId = MenuItemIndex.Count;
+		MenuItemIndex.Add(item);
+		m_ViewMenuItems.Add(item);
+	}
+
+	protected virtual void OnAddTopMenu(IContextMenuCallback piCallback)
+	{
+		if (m_TopMenuItems == null)
+		{
+			return;
+		}
+		foreach (MenuItem topMenuItem in m_TopMenuItems)
+		{
+			if (topMenuItem.Visible)
+			{
+				CONTEXTMENUITEM pItem = new CONTEXTMENUITEM
+				{
+					strName = topMenuItem.Name,
+					strStatusBarText = topMenuItem.StatusText,
+					lCommandID = topMenuItem.CommandId,
+					lInsertionPointID = 2684354560u
+				};
+				if (topMenuItem.Name == null)
+				{
+					pItem.fFlags = 2048;
+				}
+				else
+				{
+					pItem.fFlags = 0;
+				}
+				pItem.fSpecialFlags = 0;
+				piCallback.AddItem(ref pItem);
+			}
+		}
+	}
+
+	protected virtual void OnAddNewMenu(IContextMenuCallback piCallback)
+	{
+		if (m_NewMenuItems == null)
+		{
+			return;
+		}
+		foreach (MenuItem newMenuItem in m_NewMenuItems)
+		{
+			if (newMenuItem.Visible)
+			{
+				CONTEXTMENUITEM pItem = new CONTEXTMENUITEM
+				{
+					strName = newMenuItem.Name,
+					strStatusBarText = newMenuItem.StatusText,
+					lCommandID = newMenuItem.CommandId,
+					lInsertionPointID = 2684354561u
+				};
+				if (newMenuItem.Name == null)
+				{
+					pItem.fFlags = 2048;
+				}
+				else
+				{
+					pItem.fFlags = 0;
+				}
+				pItem.fSpecialFlags = 0;
+				piCallback.AddItem(ref pItem);
+			}
+		}
+	}
+
+	protected virtual void OnAddTaskMenu(IContextMenuCallback piCallback)
+	{
+		if (m_TaskMenuItems == null)
+		{
+			return;
+		}
+		foreach (MenuItem taskMenuItem in m_TaskMenuItems)
+		{
+			if (taskMenuItem.Visible)
+			{
+				CONTEXTMENUITEM pItem = new CONTEXTMENUITEM
+				{
+					strName = taskMenuItem.Name,
+					strStatusBarText = taskMenuItem.StatusText,
+					lCommandID = taskMenuItem.CommandId,
+					lInsertionPointID = 2684354562u
+				};
+				if (taskMenuItem.Name == null)
+				{
+					pItem.fFlags = 2048;
+				}
+				else
+				{
+					pItem.fFlags = 0;
+				}
+				pItem.fSpecialFlags = 0;
+				piCallback.AddItem(ref pItem);
+			}
+		}
+	}
+
+	protected virtual void OnAddViewMenu(IContextMenuCallback piCallback)
+	{
+		if (m_ViewMenuItems == null)
+		{
+			return;
+		}
+		foreach (MenuItem viewMenuItem in m_ViewMenuItems)
+		{
+			if (viewMenuItem.Visible)
+			{
+				CONTEXTMENUITEM pItem = new CONTEXTMENUITEM
+				{
+					strName = viewMenuItem.Name,
+					strStatusBarText = viewMenuItem.StatusText,
+					lCommandID = viewMenuItem.CommandId,
+					lInsertionPointID = 2684354563u,
+					fFlags = 0,
+					fSpecialFlags = 0
+				};
+				piCallback.AddItem(ref pItem);
+			}
+		}
+	}
+
+	protected virtual int GetResultViewImageIndex()
+	{
+		if (IsUseSmallIcons())
+		{
+			return SmallImageIndex;
+		}
+		return LargeImageIndex;
+	}
+
+	protected virtual int GetResultViewImageIndex(out bool isGlobal)
+	{
+		isGlobal = false;
+		if (IsUseSmallIcons())
+		{
+			return SmallImageIndex;
+		}
+		return LargeImageIndex;
+	}
+
+	protected virtual int GetScopeViewImageIndex(bool isClosed, out bool isGlobal)
+	{
+		isGlobal = false;
+		if (isClosed)
+		{
+			return ClosedImageIndex;
+		}
+		return OpenImageIndex;
+	}
+
+	protected bool IsUseSmallIcons()
+	{
+		IConsole2 resultViewConsole = Snapin.ResultViewConsole;
+		if (resultViewConsole != null && resultViewConsole is IResultData resultData)
+		{
+			int lViewMode = 0;
+			resultData.GetViewMode(out lViewMode);
+			return lViewMode != 0;
+		}
+		return true;
+	}
+
+	public virtual void ClearPropertyPages()
+	{
+		m_propertyPages.Clear();
+	}
+
+	[DllImport("kernel32.dll", CharSet = CharSet.Auto)]
+	public static extern IntPtr CreateActCtx(ref ACTCTX pActCtx);
+
+	[DllImport("kernel32.dll")]
+	public static extern bool ActivateActCtx(IntPtr hActCtx, out uint lpCookie);
+
+	[DllImport("kernel32.dll")]
+	public static extern bool ReleaseActCtx(IntPtr hActCtx);
+
+	public void RemovePropertySheet()
+	{
+		if (m_propSheet != null && !m_propSheet.isClosed)
+		{
+			m_propSheet.Invoke(m_propSheet.m_CloseHandle, string.Empty, this);
+		}
+	}
+
+	public bool IsSelected()
+	{
+		RESULTDATAITEM rdi = default(RESULTDATAITEM);
+		Snapin.GetSelectedResultDataItem(ref rdi);
+		return rdi.lParam == Cookie;
+	}
+
+	public virtual void UpdateThisNode(string key, object val)
+	{
+		DisplayName = key;
+		IConsoleNameSpace2 consoleNameSpace = Snapin.ConsoleNameSpace;
+		SCOPEDATAITEM a = new SCOPEDATAITEM
+		{
+			mask = 2u,
+			displayname = (IntPtr)(-1),
+			ID = HScopeItem
+		};
+		consoleNameSpace.SetItem(ref a);
+	}
+
+	public static Type GetSystemTypeFromAssembly(string asmNameBeginning, string controlFullName)
+	{
+		Type type = null;
+		try
+		{
+			type = Type.GetType(controlFullName, throwOnError: true);
+			if (type != null)
+			{
+				return type;
+			}
+		}
+		catch
+		{
+		}
+		try
+		{
+			Assembly callingAssembly = Assembly.GetCallingAssembly();
+			callingAssembly.GetType(controlFullName, throwOnError: true);
+		}
+		catch
+		{
+		}
+		bool flag = false;
+		Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
+		foreach (Assembly assembly in assemblies)
+		{
+			if (!assembly.FullName.StartsWith(asmNameBeginning))
+			{
+				continue;
+			}
+			try
+			{
+				flag = true;
+				type = assembly.GetType(controlFullName, throwOnError: true);
+				if (type != null)
+				{
+					return type;
+				}
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show("Failed to get the type AspenTech.APED.FindCompoundGUI.DatabankSpecCtl " + ex.Message);
+			}
+		}
+		if (flag)
+		{
+			return type;
+		}
+		AssemblyName[] referencedAssemblies = Assembly.GetCallingAssembly().GetReferencedAssemblies();
+		foreach (AssemblyName assemblyName in referencedAssemblies)
+		{
+			string fullName = assemblyName.FullName;
+			if (!fullName.StartsWith(asmNameBeginning))
+			{
+				continue;
+			}
+			flag = true;
+			try
+			{
+				Assembly assembly2 = Assembly.Load(fullName);
+				type = assembly2.GetType(controlFullName, throwOnError: true);
+				if (type != null)
+				{
+					return type;
+				}
+			}
+			catch (Exception ex2)
+			{
+				MessageBox.Show("Failed to get the type AspenTech.APED.FindCompoundGUI.DatabankSpecCtl " + ex2.Message);
+			}
+		}
+		return type;
+	}
+}
+public class Component : IComponent, IExtendContextMenu, IExtendControlbar, IExtendPropertySheet
+{
+	protected bool m_MultiSelectionMode;
+
+	protected IConsole2 m_Console;
+
+	protected IControlbar m_pControlbar;
+
+	protected ToolBars m_ToolBars = new ToolBars();
+
+	protected SnapinBase m_Snapin;
+
+	public bool MultiSelectionMode => m_MultiSelectionMode;
+
+	public IConsole2 Console => m_Console;
+
+	public IControlbar ControlBar => m_pControlbar;
+
+	public Component(SnapinBase snapin)
+	{
+		m_Snapin = snapin;
+	}
+
+	public bool AddToolBarInfo(int toolBarId, ToolBarButtonInfo[] buttons, IntPtr[] hBitmaps, int[] numBitMapsFromEachBmpFile)
+	{
+		if (m_ToolBars != null)
+		{
+			return m_ToolBars.AddToolBarInfo(toolBarId, buttons, hBitmaps, numBitMapsFromEachBmpFile);
+		}
+		return false;
+	}
+
+	public bool AddCurrentToolbarsInfo(int toolBarId)
+	{
+		return m_ToolBars.AddCurrentToolbarsInfo(toolBarId);
+	}
+
+	public void Initialize(object pConsole)
+	{
+		m_Console = pConsole as IConsole2;
+	}
+
+	public int Notify(IntPtr lpDataObject, uint aevent, IntPtr arg, IntPtr param)
+	{
+		int result = 1;
+		try
+		{
+			if (lpDataObject == (IntPtr)DataObject.CUSTOMOCX || lpDataObject == (IntPtr)DataObject.CUSTOMWEB)
+			{
+				return result;
+			}
+			IDataObject dataObject = null;
+			if (lpDataObject != (IntPtr)0)
+			{
+				dataObject = (IDataObject)Marshal.GetObjectForIUnknown(lpDataObject);
+			}
+			result = 0;
+			BaseNode baseNode;
+			if (dataObject != null)
+			{
+				baseNode = ((DataObject)dataObject).Node;
+			}
+			else
+			{
+				RESULTDATAITEM selectedItem = m_Snapin.GetSelectedItem((IResultData)m_Console);
+				if (selectedItem.nIndex != -1)
+				{
+					baseNode = m_Snapin.FindNode(selectedItem.lParam);
+				}
+				else
+				{
+					baseNode = m_Snapin.CurrentScopeNode;
+					if (baseNode == null)
+					{
+						baseNode = m_Snapin.RootNode;
+					}
+				}
+			}
+			switch ((MMCN_Notifiy)aevent)
+			{
+			case MMCN_Notifiy.ACTIVATE:
+			{
+				bool bActivate = arg.ToInt32() != 0;
+				baseNode.OnActivate(bActivate);
+				break;
+			}
+			case MMCN_Notifiy.ADD_IMAGES:
+			{
+				IImageList il = (IImageList)Marshal.GetObjectForIUnknown(arg);
+				BaseNode baseNode4 = m_Snapin.FindNodeByHScope((int)param);
+				baseNode4.OnAddResultPaneImages(il);
+				break;
+			}
+			case MMCN_Notifiy.BTN_CLICK:
+			{
+				int cmdId = param.ToInt32();
+				baseNode.OnBtnClick(cmdId);
+				break;
+			}
+			case MMCN_Notifiy.CLICK:
+				baseNode.OnClick();
+				break;
+			case MMCN_Notifiy.COLUMN_CLICK:
+			{
+				int nCol = (int)arg;
+				bool bAscending = (int)param == 0;
+				baseNode.OnColumnClick(nCol, bAscending);
+				break;
+			}
+			case MMCN_Notifiy.CUTORMOVE:
+			{
+				IDataObject ido2 = (IDataObject)Marshal.GetObjectForIUnknown(arg);
+				if (!baseNode.OnCutOrRemove(ido2))
+				{
+					result = 1;
+				}
+				break;
+			}
+			case MMCN_Notifiy.DBLCLICK:
+				result = 1;
+				if (baseNode.OnDblClick())
+				{
+					result = 0;
+				}
+				break;
+			case MMCN_Notifiy.DELETE:
+				baseNode.OnDelete();
+				break;
+			case MMCN_Notifiy.DESELECT_ALL:
+				baseNode.OnDeselectAll();
+				break;
+			case MMCN_Notifiy.EXPAND:
+				if ((int)arg == 0)
+				{
+					baseNode.OnExpand();
+				}
+				else
+				{
+					baseNode.OnCollapse();
+				}
+				break;
+			case MMCN_Notifiy.MENU_BTNCLICK:
+			{
+				MENUBUTTONDATA mENUBUTTONDATA = (MENUBUTTONDATA)Marshal.PtrToStructure(param, typeof(MENUBUTTONDATA));
+				baseNode.OnMenuBtnClick(mENUBUTTONDATA.idCommand, mENUBUTTONDATA.x, mENUBUTTONDATA.y);
+				break;
+			}
+			case MMCN_Notifiy.MINIMIZED:
+				if (arg.ToInt32() == 0)
+				{
+					baseNode.OnMaximized();
+				}
+				else
+				{
+					baseNode.OnMinimized();
+				}
+				break;
+			case MMCN_Notifiy.PASTE:
+			{
+				IDataObject dataObject3 = (IDataObject)Marshal.GetObjectForIUnknown(arg);
+				if (baseNode.OnPaste(dataObject3))
+				{
+					param = Marshal.GetIUnknownForObject(dataObject3);
+				}
+				else
+				{
+					result = 1;
+				}
+				break;
+			}
+			case MMCN_Notifiy.QUERY_PASTE:
+			{
+				IDataObject ido = (IDataObject)Marshal.GetObjectForIUnknown(arg);
+				if (!baseNode.OnQueryPaste(ido))
+				{
+					result = 1;
+				}
+				break;
+			}
+			case MMCN_Notifiy.REFRESH:
+				((IResultData)m_Console).DeleteAllRsltItems();
+				baseNode.OnRefresh();
+				break;
+			case MMCN_Notifiy.PRINT:
+				baseNode.OnPrint();
+				break;
+			case MMCN_Notifiy.REMOVE_CHILDREN:
+			{
+				BaseNode baseNode2 = m_Snapin.FindNodeByHScope((int)arg);
+				baseNode2.OnRemoveChildren();
+				break;
+			}
+			case MMCN_Notifiy.RENAME:
+				if ((int)arg == 0)
+				{
+					if (!baseNode.OnTryRename())
+					{
+						result = 1;
+					}
+				}
+				else if (!baseNode.OnRename(Marshal.PtrToStringAuto(param)))
+				{
+					result = 1;
+				}
+				break;
+			case MMCN_Notifiy.SELECT:
+			{
+				bool flag2 = (short)(int)arg != 0;
+				bool flag3 = (((int)arg >> 16) & 0xFFFF) != 0;
+				if (flag2)
+				{
+					if (flag3)
+					{
+						baseNode.OnSelectScope();
+					}
+					else
+					{
+						baseNode.OnDeselectScope();
+					}
+				}
+				else if (flag3)
+				{
+					baseNode.OnSelectResult();
+				}
+				else
+				{
+					baseNode.OnDeselectResult();
+				}
+				break;
+			}
+			case MMCN_Notifiy.SHOW:
+			{
+				BaseNode baseNode3 = m_Snapin.FindNodeByHScope((int)param);
+				if ((int)arg != 0)
+				{
+					baseNode3.OnShow();
+				}
+				break;
+			}
+			case MMCN_Notifiy.VIEW_CHANGE:
+			{
+				bool flag = (int)arg != 0;
+				IDataObject dataObject2 = null;
+				if (param != (IntPtr)0)
+				{
+					dataObject2 = (IDataObject)Marshal.GetObjectForIUnknown(param);
+				}
+				BaseNode node = ((dataObject2 == null) ? m_Snapin.RootNode : ((DataObject)dataObject2).Node);
+				if (flag)
+				{
+					baseNode.OnViewChangeScope(node);
+				}
+				else
+				{
+					baseNode.OnViewChangeResult(node);
+				}
+				break;
+			}
+			case MMCN_Notifiy.SNAPINHELP:
+				result = 1;
+				break;
+			case MMCN_Notifiy.CONTEXTHELP:
+				baseNode.OnContextHelp();
+				break;
+			case MMCN_Notifiy.INITOCX:
+			{
+				object objectForIUnknown = Marshal.GetObjectForIUnknown(param);
+				result = ((!baseNode.OnInitOcx(objectForIUnknown)) ? 1 : 0);
+				break;
+			}
+			case MMCN_Notifiy.FILTER_CHANGE:
+				baseNode.OnFilterChange((MMC_FILTER_CHANGE_CODE)arg.ToInt32(), param.ToInt32());
+				result = 0;
+				break;
+			case MMCN_Notifiy.GET_FILTER_MENU:
+				result = 1;
+				break;
+			case MMCN_Notifiy.FILTER_OPERATOR:
+				result = 1;
+				break;
+			case MMCN_Notifiy.COLUMNS_CHANGED:
+				result = 0;
+				break;
+			default:
+				result = 1;
+				break;
+			case MMCN_Notifiy.PROPERTY_CHANGE:
+				break;
+			}
+		}
+		catch (SnapinException)
+		{
+			result = 1;
+		}
+		catch (Exception)
+		{
+			result = 1;
+		}
+		return result;
+	}
+
+	public void Destroy(int i)
+	{
+		DetachAndDestroyActiveToolbars();
+	}
+
+	public void QueryDataObject(int cookie, uint type, out IDataObject ppDataObject)
+	{
+		ppDataObject = null;
+		BaseNode baseNode = null;
+		try
+		{
+			if (cookie == -2)
+			{
+				RESULTDATAITEM selectedItem = m_Snapin.GetSelectedItem((IResultData)m_Console);
+				baseNode = m_Snapin.FindNode(selectedItem.lParam);
+				ppDataObject = new DataObject(baseNode);
+				baseNode.MultiSelectMode = true;
+				m_MultiSelectionMode = true;
+			}
+			else
+			{
+				baseNode = m_Snapin.FindNode(cookie);
+				ppDataObject = new DataObject(baseNode);
+				baseNode.MultiSelectMode = false;
+				m_MultiSelectionMode = false;
+			}
+		}
+		catch (SnapinException)
+		{
+		}
+		catch (Exception)
+		{
+		}
+	}
+
+	public int GetResultViewType(int cookie, out IntPtr ppViewType, out int pViewOptions)
+	{
+		pViewOptions = 0;
+		BaseNode baseNode = m_Snapin.FindNode(cookie);
+		if (baseNode != null)
+		{
+			string resultViewType = baseNode.GetResultViewType(ref pViewOptions);
+			ppViewType = Marshal.StringToCoTaskMemUni(resultViewType);
+			return 0;
+		}
+		ppViewType = IntPtr.Zero;
+		return 1;
+	}
+
+	public void GetDisplayInfo(ref RESULTDATAITEM ResultDataItem)
+	{
+		BaseNode baseNode = m_Snapin.FindNode(ResultDataItem.lParam);
+		baseNode.GetDisplayInfo(ref ResultDataItem);
+	}
+
+	public int CompareObjects(IDataObject lpDataObjectA, IDataObject lpDataObjectB)
+	{
+		DataObject dataObject = (DataObject)lpDataObjectA;
+		DataObject dataObject2 = (DataObject)lpDataObjectB;
+		if (dataObject.Node.Cookie != dataObject2.Node.Cookie)
+		{
+			return 1;
+		}
+		return 0;
+	}
+
+	public void AddMenuItems(IntPtr piDataObject, IContextMenuCallback piCallback, ref int pInsertionAllowed)
+	{
+		BaseNode baseNode = null;
+		DataObject dataObject = null;
+		try
+		{
+			if (!(piDataObject == (IntPtr)DataObject.CUSTOMOCX) && !(piDataObject == (IntPtr)DataObject.CUSTOMWEB))
+			{
+				IDataObject dataObject2 = (IDataObject)Marshal.GetObjectForIUnknown(piDataObject);
+				if (MultiSelectionMode)
+				{
+					RESULTDATAITEM selectedItem = m_Snapin.GetSelectedItem((IResultData)m_Console);
+					baseNode = m_Snapin.FindNode(selectedItem.lParam);
+					dataObject = new DataObject(baseNode);
+				}
+				else
+				{
+					dataObject = (DataObject)dataObject2;
+				}
+				if (dataObject.Node != null)
+				{
+					dataObject.Node.AddMenuItems(piCallback, ref pInsertionAllowed);
+				}
+			}
+		}
+		catch (SnapinException)
+		{
+		}
+		catch (Exception)
+		{
+		}
+	}
+
+	public void Command(int lCommandID, IntPtr piDataObject)
+	{
+		BaseNode baseNode = null;
+		DataObject dataObject = null;
+		try
+		{
+			if (!(piDataObject == (IntPtr)DataObject.CUSTOMOCX) && !(piDataObject == (IntPtr)DataObject.CUSTOMWEB))
+			{
+				IDataObject dataObject2 = (IDataObject)Marshal.GetObjectForIUnknown(piDataObject);
+				if (MultiSelectionMode)
+				{
+					RESULTDATAITEM selectedItem = m_Snapin.GetSelectedItem((IResultData)m_Console);
+					baseNode = m_Snapin.FindNode(selectedItem.lParam);
+					dataObject = new DataObject(baseNode);
+				}
+				else
+				{
+					dataObject = (DataObject)dataObject2;
+				}
+				if (dataObject.Node != null)
+				{
+					dataObject.Node.Command(lCommandID);
+				}
+			}
+		}
+		catch (SnapinException)
+		{
+		}
+		catch (Exception)
+		{
+		}
+	}
+
+	public void SetControlbar(IControlbar pControlbar)
+	{
+		try
+		{
+			if (m_pControlbar != null)
+			{
+				DetachAndDestroyActiveToolbars();
+			}
+			m_pControlbar = pControlbar;
+		}
+		catch (Exception ex)
+		{
+			string message = ex.Message;
+		}
+	}
+
+	private void DetachAndDestroyActiveToolbars()
+	{
+		try
+		{
+			object obj = null;
+			IEnumerator activeToolbarsEnum = m_ToolBars.GetActiveToolbarsEnum();
+			while (activeToolbarsEnum.MoveNext())
+			{
+				try
+				{
+					obj = ((DictionaryEntry)activeToolbarsEnum.Current).Value;
+					m_pControlbar.Detach(obj);
+					Marshal.Release((IntPtr)obj);
+				}
+				catch (Exception ex)
+				{
+					string message = ex.Message;
+				}
+			}
+			m_ToolBars.RemoveAllActiveToolbarsFromList();
+		}
+		catch (Exception ex2)
+		{
+			string message2 = ex2.Message;
+		}
+	}
+
+	public void CreateAndAttachToolBars()
+	{
+		int currentToolbarCount = m_ToolBars.GetCurrentToolbarCount();
+		for (int i = 0; i < currentToolbarCount; i++)
+		{
+			try
+			{
+				m_pControlbar.Create(MMC_CONTROL_TYPE.TOOLBAR, this, out var ppUnknown);
+				int currentToolbarItemAtIndex = m_ToolBars.GetCurrentToolbarItemAtIndex(i);
+				if (m_ToolBars.PopulateItoolbarWithToolBarInfo(currentToolbarItemAtIndex, (IToolbar)ppUnknown))
+				{
+					m_pControlbar.Attach(MMC_CONTROL_TYPE.TOOLBAR, ppUnknown);
+					m_ToolBars.AddToActiveToolbarList(currentToolbarItemAtIndex, ppUnknown);
+				}
+			}
+			catch (Exception ex)
+			{
+				string message = ex.Message;
+				break;
+			}
+		}
+	}
+
+	public int ControlbarNotify(uint aevent, IntPtr arg, IntPtr param)
+	{
+		int result = 0;
+		switch ((MMCN_Notifiy)aevent)
+		{
+		case MMCN_Notifiy.SELECT:
+		{
+			bool flag = (short)(int)arg != 0;
+			bool flag2 = (((int)arg >> 16) & 0xFFFF) != 0;
+			if ((int)param <= 0)
+			{
+				break;
+			}
+			IDataObject dataObject2 = (IDataObject)Marshal.GetObjectForIUnknown(param);
+			BaseNode baseNode2 = ((dataObject2 == null) ? m_Snapin.RootNode : ((DataObject)dataObject2).Node);
+			if (flag)
+			{
+				if (flag2)
+				{
+					baseNode2.OnSelectScope();
+				}
+				else
+				{
+					m_ToolBars.ClearCurrentToolbarsInfo();
+					baseNode2.OnDeselectScope();
+				}
+			}
+			else if (flag2)
+			{
+				baseNode2.OnSelectResult();
+			}
+			else
+			{
+				baseNode2.OnDeselectResult();
+			}
+			DetachAndDestroyActiveToolbars();
+			if (m_ToolBars.GetToolBarInfoCount() > 0)
+			{
+				CreateAndAttachToolBars();
+			}
+			break;
+		}
+		case MMCN_Notifiy.BTN_CLICK:
+			if ((int)arg > 0)
+			{
+				IDataObject dataObject = (IDataObject)Marshal.GetObjectForIUnknown(arg);
+				BaseNode baseNode = ((dataObject == null) ? m_Snapin.RootNode : ((DataObject)dataObject).Node);
+				baseNode.OnToolbarClick((int)param);
+			}
+			break;
+		default:
+			result = 1;
+			break;
+		}
+		return result;
+	}
+
+	public virtual int CreatePropertyPages(IPropertySheetCallback lpProvider, IntPtr handle, IDataObject lpDataObject)
+	{
+		DataObject dataObject = (DataObject)lpDataObject;
+		if (dataObject.Node.HavePropertyPages)
+		{
+			dataObject.Node.CreatePropertyPages(lpProvider, handle);
+		}
+		return 1;
+	}
+
+	public virtual int QueryPagesFor(IDataObject lpDataObject)
+	{
+		DataObject dataObject = (DataObject)lpDataObject;
+		dataObject.Node.OnQueryProperties();
+		if (dataObject.Node.HavePropertyPages)
+		{
+			return 0;
+		}
+		return 1;
+	}
+}
+public class ComStream : Stream
+{
+	protected int m_readCount;
+
+	protected int m_writeCount;
+
+	protected UCOMIStream m_comStream;
+
+	public UCOMIStream comStream
+	{
+		get
+		{
+			return m_comStream;
+		}
+		set
+		{
+			m_comStream = value;
+		}
+	}
+
+	public override bool CanRead => true;
+
+	public override bool CanSeek => true;
+
+	public override bool CanWrite => true;
+
+	public override long Length
+	{
+		get
+		{
+			comStream.Stat(out var pstatstg, 0);
+			return pstatstg.cbSize;
+		}
+	}
+
+	public override long Position
+	{
+		get
+		{
+			IntPtr plibNewPosition = default(IntPtr);
+			comStream.Seek(0L, 1, plibNewPosition);
+			return plibNewPosition.ToInt64();
+		}
+		set
+		{
+			comStream.Seek(value, 0, default(IntPtr));
+		}
+	}
+
+	public ComStream(UCOMIStream stream)
+	{
+		comStream = stream;
+	}
+
+	public override void Close()
+	{
+		if (comStream != null)
+		{
+			comStream.Commit(0);
+		}
+		comStream = null;
+	}
+
+	public override void Flush()
+	{
+		if (comStream != null)
+		{
+			comStream.Commit(0);
+		}
+	}
+
+	public override long Seek(long offset, SeekOrigin origin)
+	{
+		IntPtr plibNewPosition = default(IntPtr);
+		comStream.Seek(offset, (int)origin, plibNewPosition);
+		return plibNewPosition.ToInt64();
+	}
+
+	public override int Read([In][Out] byte[] buffer, int offset, int count)
+	{
+		byte[] array = new byte[count];
+		IntPtr pcbRead = default(IntPtr);
+		comStream.Read(array, count, pcbRead);
+		int num = pcbRead.ToInt32();
+		m_readCount += count;
+		int num2 = 0;
+		while (num2 < count)
+		{
+			buffer[offset++] = array[num2++];
+		}
+		return count;
+	}
+
+	public override void SetLength(long value)
+	{
+		comStream.SetSize(value);
+	}
+
+	public override void Write(byte[] buffer, int offset, int count)
+	{
+		IntPtr pcbWritten = default(IntPtr);
+		byte[] array = new byte[count];
+		m_writeCount += count;
+		for (int i = 0; i < count; i++)
+		{
+			array[i] = buffer[offset + i];
+		}
+		comStream.Write(array, count, pcbWritten);
+	}
+}
+public class EventHandlerSet : IDisposable
+{
+	protected Hashtable m_events = new Hashtable();
+
+	public virtual Delegate this[object eventKey]
+	{
+		get
+		{
+			return (Delegate)m_events[eventKey];
+		}
+		set
+		{
+			m_events[eventKey] = value;
+		}
+	}
+
+	public virtual void AddHandler(object eventKey, Delegate handler)
+	{
+		m_events[eventKey] = Delegate.Combine((Delegate)m_events[eventKey], handler);
+	}
+
+	public virtual void RemoveHandler(object eventKey, Delegate handler)
+	{
+		m_events[eventKey] = Delegate.Remove((Delegate)m_events[eventKey], handler);
+	}
+
+	public virtual void Fire(object eventKey, object sender, EventArgs e)
+	{
+		Delegate obj = (Delegate)m_events[eventKey];
+		if ((object)obj != null)
+		{
+			object[] args = new object[2] { sender, e };
+			obj.DynamicInvoke(args);
+		}
+	}
+
+	public void Dispose()
+	{
+		m_events = null;
+	}
+}
+public class FormNode : OCXNode
+{
+	protected Type m_ControlType;
+
+	protected object usercontrol;
+
+	public Type ControlType
+	{
+		get
+		{
+			return m_ControlType;
+		}
+		set
+		{
+			m_ControlType = value;
+		}
+	}
+
+	public object UserControl => usercontrol;
+
+	public FormNode(SnapinBase snapin)
+		: base(snapin)
+	{
+		base.OCXGuid = new Guid("9C294263-45B4-4D5E-B376-5747D2559CC8");
+		base.CreateNew = true;
+	}
+
+	public FormNode(SnapinBase snapin, BaseNode parentNode)
+		: base(snapin, parentNode)
+	{
+		base.OCXGuid = new Guid("9C294263-45B4-4D5E-B376-5747D2559CC8");
+		base.CreateNew = true;
+	}
+
+	public override bool OnInitOcx(object objOCX)
+	{
+		if (!(objOCX is IMMCFormsShim iMMCFormsShim) || ControlType == null)
+		{
+			return false;
+		}
+		Assembly assembly = Assembly.GetAssembly(m_ControlType);
+		IntPtr pUnk = iMMCFormsShim.HostUserControl(assembly.FullName, m_ControlType.ToString());
+		usercontrol = Marshal.GetObjectForIUnknown(pUnk);
+		if (usercontrol is ISnapinLink snapinLink)
+		{
+			snapinLink.ContextNode = this;
+		}
+		return true;
+	}
+}
+public class HTMLNode : BaseNode
+{
+	protected string m_strUrl;
+
+	public string Url
+	{
+		get
+		{
+			return m_strUrl;
+		}
+		set
+		{
+			m_strUrl = value;
+		}
+	}
+
+	public HTMLNode(SnapinBase snapin)
+		: base(snapin)
+	{
+		m_strUrl = "about:blank";
+	}
+
+	public HTMLNode(SnapinBase snapin, BaseNode parentNode)
+		: base(snapin, parentNode)
+	{
+		m_strUrl = "about:blank";
+	}
+
+	public override string GetResultViewType(ref int pViewOptions)
+	{
+		pViewOptions = 0;
+		return Url;
+	}
+}
+public class ImageList : ArrayList
+{
+	protected struct ImageEntry
+	{
+		public object image;
+
+		public IntPtr iconHandle;
+
+		public IntPtr bitmapHandle;
+
+		public ImageEntry(object image)
+		{
+			this.image = image;
+			iconHandle = IntPtr.Zero;
+			bitmapHandle = IntPtr.Zero;
+		}
+	}
+
+	private static Color _TransparentColor;
+
+	protected Hashtable LoadedImages = new Hashtable();
+
+	public static Color TransparentColor
+	{
+		get
+		{
+			return _TransparentColor;
+		}
+		set
+		{
+			_TransparentColor = value;
+		}
+	}
+
+	protected new virtual ImageEntry this[int index]
+	{
+		get
+		{
+			if (index > -1 && index < base.Count)
+			{
+				return (ImageEntry)base[index];
+			}
+			throw new ArgumentOutOfRangeException();
+		}
+		set
+		{
+			if (index > -1 && index < base.Count)
+			{
+				DeleteHandle(index);
+				base[index] = value;
+				return;
+			}
+			throw new ArgumentOutOfRangeException();
+		}
+	}
+
+	public static object FindImage(string name)
+	{
+		if (name != null && name.Length > 0)
+		{
+			try
+			{
+				object obj = null;
+				Assembly executingAssembly = Assembly.GetExecutingAssembly();
+				if ((obj = LoadImage(executingAssembly, name)) != null)
+				{
+					return obj;
+				}
+				Assembly callingAssembly = Assembly.GetCallingAssembly();
+				if ((obj = LoadImage(callingAssembly, name)) != null)
+				{
+					return obj;
+				}
+				Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
+				foreach (Assembly a in assemblies)
+				{
+					if ((obj = LoadImage(a, name)) != null)
+					{
+						return obj;
+					}
+				}
+			}
+			catch (Exception inner)
+			{
+				throw new SnapinException("Image " + name + " not found in app domain assemblies.", inner);
+			}
+		}
+		return null;
+	}
+
+	protected static object LoadImage(Assembly a, string name)
+	{
+		string[] manifestResourceNames = a.GetManifestResourceNames();
+		Stream manifestResourceStream = a.GetManifestResourceStream(name);
+		if (manifestResourceStream != null)
+		{
+			if (Path.GetExtension(name).ToLower() == ".ico")
+			{
+				return new Icon(manifestResourceStream);
+			}
+			if (_TransparentColor == Color.Transparent)
+			{
+				return new Bitmap(manifestResourceStream);
+			}
+			Bitmap bitmap = new Bitmap(manifestResourceStream);
+			bitmap.MakeTransparent(_TransparentColor);
+			return bitmap;
+		}
+		return null;
+	}
+
+	[DllImport("gdi32.dll")]
+	public static extern int DeleteObject(IntPtr hObject);
+
+	[DllImport("user32.dll")]
+	public static extern int DestroyIcon(IntPtr hIcon);
+
+	[DllImport("gdi32.dll")]
+	public static extern IntPtr CreateCompatibleDC(IntPtr hdc);
+
+	[DllImport("gdi32.dll")]
+	public static extern uint DeleteDC(IntPtr hdc);
+
+	[DllImport("gdi32.dll")]
+	internal static extern int GetObject(IntPtr hgdiobj, int cbBuffer, ref DIBSECTION lpvObject);
+
+	[DllImport("gdi32.dll")]
+	internal static extern int SetDIBits(IntPtr hdc, IntPtr hbmp, uint uStartScan, int uScanLines, IntPtr lpvBits, ref BITMAPINFO lpbmi, uint fuColorUse);
+
+	[DllImport("gdi32.dll")]
+	internal static extern IntPtr CreateDIBSection(IntPtr hdc, ref BITMAPINFO pbmi, uint iUsage, out IntPtr ppvBits, IntPtr hSection, uint dwOffset);
+
+	[DllImport("gdi32.dll")]
+	internal static extern int GetDeviceCaps(IntPtr hdc, int nIndex);
+
+	~ImageList()
+	{
+		int i = 0;
+		for (; i < Count; i++)
+		{
+			DeleteHandle(i);
+		}
+	}
+
+	public override int Add(object image)
+	{
+		return base.Add(new ImageEntry(image));
+	}
+
+	public virtual int Add(string name)
+	{
+		if (LoadedImages.ContainsKey(name))
+		{
+			return (int)LoadedImages[name];
+		}
+		int num = base.Add(new ImageEntry(FindImage(name)));
+		LoadedImages.Add(name, num);
+		return num;
+	}
+
+	public virtual int Add(string name, Color transparentColor)
+	{
+		_TransparentColor = transparentColor;
+		return base.Add(new ImageEntry(FindImage(name)));
+	}
+
+	public override void AddRange(ICollection c)
+	{
+		throw new SnapinException("ImageList.AddRange not supported.");
+	}
+
+	public override void Insert(int index, object image)
+	{
+		base.Insert(index, new ImageEntry(image));
+	}
+
+	public virtual void Insert(int index, string name)
+	{
+		base.Insert(index, new ImageEntry(FindImage(name)));
+	}
+
+	public virtual void Replace(int index, Image image)
+	{
+		this[index] = new ImageEntry(image);
+	}
+
+	public virtual void Replace(int index, string name)
+	{
+		this[index] = new ImageEntry(FindImage(name));
+	}
+
+	public virtual void LoadImageList(IImageList il)
+	{
+		LoadImageList(il, 0);
+	}
+
+	public virtual void LoadImageList(IImageList il, int baseCookie)
+	{
+		try
+		{
+			int count = Count;
+			for (int i = 0; i < count; i++)
+			{
+				if (this[i].image != null)
+				{
+					il.ImageListSetIcon(GetIconHandle(i), (baseCookie << 16) + i);
+				}
+			}
+		}
+		catch (Exception ex)
+		{
+			throw new SnapinException("LoadImageList failed. Reason: " + ex.Message);
+		}
+	}
+
+	public virtual void DeleteHandle(int index)
+	{
+		ImageEntry imageEntry = this[index];
+		if (imageEntry.image != null)
+		{
+			if (imageEntry.bitmapHandle != IntPtr.Zero)
+			{
+				DeleteObject(imageEntry.bitmapHandle);
+			}
+			if (imageEntry.iconHandle != IntPtr.Zero && imageEntry.image is Bitmap)
+			{
+				DestroyIcon(imageEntry.iconHandle);
+			}
+		}
+	}
+
+	public virtual IntPtr GetBitmapHandle(int index)
+	{
+		ImageEntry value = this[index];
+		if (value.image != null && value.bitmapHandle == IntPtr.Zero)
+		{
+			Bitmap bm = ((!(value.image is Icon)) ? ((Bitmap)value.image) : ((Icon)value.image).ToBitmap());
+			value.bitmapHandle = GetCompatibleBitmapHandle(bm);
+			this[index] = value;
+		}
+		return value.bitmapHandle;
+	}
+
+	public virtual IntPtr GetIconHandle(int index)
+	{
+		ImageEntry value = this[index];
+		if (value.image != null && value.iconHandle == IntPtr.Zero)
+		{
+			if (value.image is Icon)
+			{
+				value.iconHandle = ((Icon)value.image).Handle;
+			}
+			else
+			{
+				value.iconHandle = ((Bitmap)value.image).GetHicon();
+			}
+			this[index] = value;
+		}
+		return value.iconHandle;
+	}
+
+	internal IntPtr GetCompatibleBitmapHandle(Bitmap bm)
+	{
+		IntPtr hbitmap;
+		IntPtr intPtr = (hbitmap = new Bitmap(bm).GetHbitmap());
+		IntPtr hdc = CreateCompatibleDC(IntPtr.Zero);
+		DIBSECTION lpvObject = default(DIBSECTION);
+		int num = GetObject(hbitmap, Marshal.SizeOf(typeof(DIBSECTION)), ref lpvObject);
+		BITMAPINFO lpbmi = new BITMAPINFO
+		{
+			bmiHeader = lpvObject.dsBmih
+		};
+		BITMAPINFO pbmi = default(BITMAPINFO);
+		pbmi.bmiHeader = lpvObject.dsBmih;
+		pbmi.bmiHeader.biBitCount = (ushort)GetDeviceCaps(hdc, 12);
+		if (pbmi.bmiHeader.biBitCount != lpbmi.bmiHeader.biBitCount)
+		{
+			intPtr = CreateDIBSection(hdc, ref pbmi, 1u, out var _, IntPtr.Zero, 0u);
+			SetDIBits(hdc, intPtr, 0u, lpvObject.dsBmih.biHeight, lpvObject.dsBm.bmBits, ref lpbmi, 1u);
+			DeleteObject(hbitmap);
+		}
+		DeleteDC(hdc);
+		return intPtr;
+	}
+}
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+[Guid("0000010c-0000-0000-C000-000000000046")]
+public interface IPersist
+{
+	void GetClassID(out Guid pClassID);
+}
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+[Guid("00000109-0000-0000-C000-000000000046")]
+public interface IPersistStream : IPersist
+{
+	new void GetClassID(out Guid pClassID);
+
+	[PreserveSig]
+	int IsDirty();
+
+	void Load([In] UCOMIStream pStm);
+
+	void Save([In] UCOMIStream pStm, [In][MarshalAs(UnmanagedType.Bool)] bool fClearDirty);
+
+	void GetSizeMax(out long pcbSize);
+}
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+[Guid("955AB28A-5218-11D0-A985-00C04FD8D565")]
+public interface IComponentData
+{
+	void Initialize([MarshalAs(UnmanagedType.Interface)] object pUnknown);
+
+	void CreateComponent(out IComponent ppComponent);
+
+	[PreserveSig]
+	int Notify(IDataObject lpDataObject, uint aevent, IntPtr arg, IntPtr param);
+
+	void Destroy();
+
+	void QueryDataObject(int cookie, uint type, out IDataObject ppDataObject);
+
+	void GetDisplayInfo(ref SCOPEDATAITEM ResultDataItem);
+
+	[PreserveSig]
+	int CompareObjects(IDataObject lpDataObjectA, IDataObject lpDataObjectB);
+}
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+[Guid("43136EB2-D36C-11CF-ADBC-00AA00A80033")]
+public interface IComponent
+{
+	void Initialize([MarshalAs(UnmanagedType.Interface)] object lpConsole);
+
+	[PreserveSig]
+	int Notify(IntPtr lpDataObject, uint aevent, IntPtr arg, IntPtr param);
+
+	void Destroy(int cookie);
+
+	void QueryDataObject(int cookie, uint type, out IDataObject ppDataObject);
+
+	[PreserveSig]
+	int GetResultViewType(int cookie, out IntPtr ppViewType, out int pViewOptions);
+
+	void GetDisplayInfo(ref RESULTDATAITEM ResultDataItem);
+
+	[PreserveSig]
+	int CompareObjects(IDataObject lpDataObjectA, IDataObject lpDataObjectB);
+}
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+[Guid("1245208C-A151-11D0-A7D7-00C04FD909DD")]
+public interface ISnapinAbout
+{
+	void GetSnapinDescription(out IntPtr lpDescription);
+
+	void GetProvider(out IntPtr pName);
+
+	void GetSnapinVersion(out IntPtr lpVersion);
+
+	void GetSnapinImage(out IntPtr hAppIcon);
+
+	void GetStaticFolderImage(out IntPtr hSmallImage, out IntPtr hSmallImageOpen, out IntPtr hLargeImage, out uint cMask);
+}
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+[Guid("0000010e-0000-0000-C000-000000000046")]
+public interface IDataObject
+{
+	[PreserveSig]
+	int GetData(ref FORMATETC pFormatEtc, ref STGMEDIUM b);
+
+	void GetDataHere(ref FORMATETC pFormatEtc, ref STGMEDIUM b);
+
+	[PreserveSig]
+	int QueryGetData(IntPtr a);
+
+	[PreserveSig]
+	int GetCanonicalFormatEtc(IntPtr a, IntPtr b);
+
+	[PreserveSig]
+	int SetData(IntPtr a, IntPtr b, int c);
+
+	[PreserveSig]
+	int EnumFormatEtc(uint a, IntPtr b);
+
+	[PreserveSig]
+	int DAdvise(IntPtr a, uint b, IntPtr c, ref uint d);
+
+	[PreserveSig]
+	int DUnadvise(uint a);
+
+	[PreserveSig]
+	int EnumDAdvise(IntPtr a);
+}
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+[Guid("4861A010-20F9-11d2-A510-00C04FB6DD2C")]
+public interface ISnapinHelp2
+{
+	[PreserveSig]
+	int GetHelpTopic(out IntPtr lpCompiledHelpFile);
+
+	[PreserveSig]
+	int GetLinkedTopics(out IntPtr lpCompiledHelpFiles);
+}
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+[Guid("cc593830-b926-11d1-8063-0000f875a9ce")]
+public interface IDisplayHelp
+{
+	void ShowTopic([MarshalAs(UnmanagedType.LPWStr)] string pszHelpTopic);
+}
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+[Guid("4F3B7A4F-CFAC-11CF-B8E3-00C04FD8D5B0")]
+public interface IExtendContextMenu
+{
+	void AddMenuItems(IntPtr piDataObject, IContextMenuCallback piCallback, ref int pInsertionAllowed);
+
+	void Command(int lCommandID, IntPtr piDataObject);
+}
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+[Guid("49506520-6F40-11D0-A98B-00C04FD8D565")]
+public interface IExtendControlbar
+{
+	void SetControlbar(IControlbar pControlbar);
+
+	[PreserveSig]
+	int ControlbarNotify(uint aevent, IntPtr arg, IntPtr param);
+}
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+[Guid("85DE64DC-EF21-11cf-A285-00C04FD8DBE6")]
+public interface IExtendPropertySheet
+{
+	[PreserveSig]
+	int CreatePropertyPages(IPropertySheetCallback lpProvider, IntPtr handle, IDataObject lpIDataObject);
+
+	[PreserveSig]
+	int QueryPagesFor(IDataObject lpDataObject);
+}
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+[Guid("85DE64DE-EF21-11cf-A285-00C04FD8DBE6")]
+public interface IPropertySheetProvider
+{
+	void CreatePropertySheet([MarshalAs(UnmanagedType.LPWStr)] string title, int type, int cookie, IDataObject pIDataObjectm, uint dwOptions);
+
+	void FindPropertySheet(int cookie, IComponent lpComponent, IDataObject lpDataObject);
+
+	void AddPrimaryPages([MarshalAs(UnmanagedType.Interface)] object lpUnknown, int bCreateHandle, int hNotifyWindow, int bScopePane);
+
+	void AddExtensionPages();
+
+	void Show(int window, int page);
+}
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+[Guid("85DE64DD-EF21-11cf-A285-00C04FD8DBE6")]
+public interface IPropertySheetCallback
+{
+	void AddPage(IntPtr hPage);
+
+	void RemovePage(IntPtr hPage);
+}
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+[Guid("255F18CC-65DB-11D1-A7DC-00C04FD8D565")]
+public interface IConsoleNameSpace2
+{
+	void InsertItem(ref SCOPEDATAITEM a);
+
+	void DeleteItem(uint a, int b);
+
+	void SetItem(ref SCOPEDATAITEM a);
+
+	void GetItem(ref SCOPEDATAITEM a);
+
+	void GetChildItem(uint a, ref uint b, ref int c);
+
+	void GetNextItem(uint a, ref uint b, ref int c);
+
+	void GetParentItem(uint a, ref uint b, ref int c);
+
+	void Expand(uint a);
+
+	void AddExtension(CLSID a, ref SCOPEDATAITEM b);
+}
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+[Guid("9757abb8-1b32-11d1-a7ce-00c04fd8d565")]
+public interface IHeaderCtrl2
+{
+	void InsertColumn(int nCol, [MarshalAs(UnmanagedType.LPWStr)] string title, int nFormat, int nWidth);
+
+	void DeleteColumn(int nCol);
+
+	void SetColumnText(int nCol, [MarshalAs(UnmanagedType.LPWStr)] string title);
+
+	void GetColumnText(int nCol, out int pText);
+
+	void SetColumnWidth(int nCol, int nWidth);
+
+	void GetColumnWidth(int nCol, out int pWidth);
+
+	void SetChangeTimeOut(uint uTimeout);
+
+	void SetColumnFilter(uint nColumn, uint dwType, IntPtr pFilterData);
+
+	int GetColumnFilter(uint nColumn, ref uint pdwType, ref MMC_FILTERDATA data);
+}
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+[Guid("31DA5FA0-E0EB-11cf-9F21-00AA003CA9F6")]
+public interface IResultData
+{
+	void InsertItem(ref RESULTDATAITEM item);
+
+	void DeleteItem(uint itemID, int nCol);
+
+	void FindItemByLParam(int lParam, out uint pItemID);
+
+	void DeleteAllRsltItems();
+
+	void SetItem(ref RESULTDATAITEM item);
+
+	void GetItem(ref RESULTDATAITEM item);
+
+	void GetNextItem(ref RESULTDATAITEM item);
+
+	void ModifyItemState(int nIndex, uint itemID, uint uAdd, uint uRemove);
+
+	void ModifyViewStyle(int add, int remove);
+
+	void SetViewMode(int lViewMode);
+
+	void GetViewMode(out int lViewMode);
+
+	void UpdateItem(uint itemID);
+
+	void Sort(int nColumn, uint dwSortOptions, int lUserParam);
+
+	void SetDescBarText([MarshalAs(UnmanagedType.LPWStr)] ref string DescText);
+
+	void SetItemCount(int nItemCount, uint dwOptions);
+}
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+[Guid("43136EB8-D36C-11CF-ADBC-00AA00A80033")]
+public interface IImageList
+{
+	void ImageListSetIcon(IntPtr pIcon, int nLoc);
+
+	void ImageListSetStrip(int pBMapSm, int pBMapLg, int nStartLoc, int cMask);
+}
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+[Guid("103D842A-AA63-11D1-A7E1-00C04FD8D565")]
+public interface IConsole2
+{
+	void SetHeader(ref IHeaderCtrl2 pHeader);
+
+	void SetToolbar([MarshalAs(UnmanagedType.Interface)] ref object pToolbar);
+
+	void QueryResultView([MarshalAs(UnmanagedType.Interface)] out object pUnknown);
+
+	void QueryScopeImageList(out IImageList ppImageList);
+
+	void QueryResultImageList(out IImageList ppImageList);
+
+	void UpdateAllViews(IDataObject lpDataObject, int data, int hint);
+
+	void MessageBox([MarshalAs(UnmanagedType.LPWStr)] string lpszText, [MarshalAs(UnmanagedType.LPWStr)] string lpszTitle, uint fuStyle, ref int piRetval);
+
+	void QueryConsoleVerb(out IConsoleVerb ppConsoleVerb);
+
+	void SelectScopeItem(int hScopeItem);
+
+	void GetMainWindow(ref int phwnd);
+
+	void NewWindow(int hScopeItem, uint lOptions);
+
+	void Expand(int hItem, int bExpand);
+
+	void IsTaskpadViewPreferred();
+
+	void SetStatusText([MarshalAs(UnmanagedType.LPWStr)] string pszStatusText);
+}
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+[Guid("43136EB6-D36C-11CF-ADBC-00AA00A80033")]
+internal interface IContextMenuProvider : IContextMenuCallback
+{
+	HRESULT EmptyMenuList();
+
+	HRESULT AddPrimaryExtensionItems([MarshalAs(UnmanagedType.Interface)] object lpUnknown, IDataObject lpDataObject);
+
+	HRESULT AddThirdPartyExtensionItems(IDataObject lpDataObject);
+
+	HRESULT ShowContextMenu(IntPtr hwndParent, int xPos, int yPos, ref long plSelected);
+}
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+[Guid("43136EB7-D36C-11CF-ADBC-00AA00A80033")]
+public interface IContextMenuCallback
+{
+	void AddItem(ref CONTEXTMENUITEM pItem);
+}
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+[Guid("69FB811E-6C1C-11D0-A2CB-00C04FD909DD")]
+public interface IControlbar
+{
+	void Create(MMC_CONTROL_TYPE nType, IExtendControlbar pExtendControlbar, [MarshalAs(UnmanagedType.Interface)] out object ppUnknown);
+
+	void Attach(MMC_CONTROL_TYPE nType, [MarshalAs(UnmanagedType.Interface)] object lpUnknown);
+
+	void Detach([MarshalAs(UnmanagedType.Interface)] object lpUnknown);
+}
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+[Guid("43136EB9-D36C-11CF-ADBC-00AA00A80033")]
+public interface IToolbar
+{
+	void AddBitmap(int nImages, IntPtr hbmp, int cxSize, int cySize, int crMask);
+
+	void AddButtons(int nButtons, ref MMCBUTTON lpButtons);
+
+	void InsertButton(int nIndex, ref MMCBUTTON lpButton);
+
+	void DeleteButton(int nIndex);
+
+	void GetButtonState(int idCommand, MMC_BUTTON_STATE nState, out int pState);
+
+	void SetButtonState(int idCommand, MMC_BUTTON_STATE nState, int bState);
+}
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+[Guid("E49F7A60-74AF-11D0-A286-00C04FD8FE93")]
+public interface IConsoleVerb
+{
+	void GetVerbState(MMC_CONSOLE_VERB eCmdID, MMC_BUTTON_STATE nState, ref int pState);
+
+	void SetVerbState(MMC_CONSOLE_VERB eCmdID, MMC_BUTTON_STATE nState, int bState);
+
+	void SetDefaultVerb(MMC_CONSOLE_VERB eCmdID);
+
+	void GetDefaultVerb(ref MMC_CONSOLE_VERB peCmdID);
+}
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+[Guid("B8F882F8-3D93-401c-A4D4-E3A9943E858D")]
+public interface IMMCFormsShim
+{
+	IntPtr HostUserControl(string Assembly, string Class);
+}
+public enum MMC
+{
+	MULTI_SELECT_COOKIE = -2
+}
+public enum MMC_FILTER_CHANGE_CODE
+{
+	MFCC_DISABLE,
+	MFCC_ENABLE,
+	MFCC_VALUE_CHANGE
+}
+public struct MMC_FILTERDATA
+{
+	public IntPtr pszText;
+
+	public int cchTextMax;
+
+	public int lValue;
+}
+public enum MMCLV
+{
+	AUTO = -1
+}
+public enum LVIS
+{
+	FOCUSED = 1,
+	SELECTED
+}
+public enum ColumnHeaderFormat
+{
+	LEFT = 0,
+	RIGHT = 1,
+	CENTER = 2,
+	JUSTIFYMASK = 3,
+	IMAGE = 2048,
+	BITMAP_ON_RIGHT = 4096,
+	COL_HAS_IMAGES = 32768
+}
+public enum ColumnHeaderWidth
+{
+	AUTO_WIDTH = -1,
+	HIDE_COLUMN = -4
+}
+public enum TBSTATE
+{
+	CHECKED = 1,
+	PRESSED = 2,
+	ENABLED = 4,
+	HIDDEN = 8,
+	INDETERMINATE = 0x10,
+	WRAP = 0x20,
+	ELLIPSES = 0x40,
+	MARKED = 0x80
+}
+public enum TBSTYLE
+{
+	BUTTON = 0,
+	SEP = 1,
+	CHECK = 2,
+	GROUP = 4,
+	CHECKGROUP = 6,
+	DROPDOWN = 8,
+	AUTOSIZE = 16,
+	NOPREFIX = 32
+}
+public class EN
+{
+	public const uint SETFOCUS = 256u;
+
+	public const uint KILLFOCUS = 512u;
+
+	public const uint CHANGE = 768u;
+
+	public const uint UPDATE = 1024u;
+
+	public const uint ERRSPACE = 1280u;
+
+	public const uint MAXTEXT = 1281u;
+
+	public const uint HSCROLL = 1537u;
+
+	public const uint VSCROLL = 1538u;
+}
+public enum PSM
+{
+	SETCURSEL = 1125,
+	REMOVEPAGE,
+	ADDPAGE,
+	CHANGED
+}
+public enum PSNRET
+{
+	NOERROR,
+	INVALID,
+	INVALID_NOCHANGEPAGE
+}
+public class PSN
+{
+	public const uint FIRST = 4294967096u;
+
+	public const uint LAST = 4294966997u;
+
+	public const uint SETACTIVE = 4294967096u;
+
+	public const uint KILLACTIVE = 4294967095u;
+
+	public const uint APPLY = 4294967094u;
+
+	public const uint RESET = 4294967093u;
+
+	public const uint HELP = 4294967091u;
+
+	public const uint WIZBACK = 4294967090u;
+
+	public const uint WIZNEXT = 4294967089u;
+
+	public const uint WIZFINISH = 4294967088u;
+
+	public const uint QUERYCANCEL = 4294967087u;
+
+	public const uint GETOBJECT = 4294967086u;
+}
+public enum WM
+{
+	WINDOWPOSCHANGING = 70,
+	CHILDACTIVATE = 34,
+	WINDOWPOSCHANGED = 71,
+	NOTIFY = 78,
+	SHOWWINDOW = 24,
+	NCPAINT = 133,
+	PAINT = 15,
+	ERASEBKGND = 20,
+	CTLCOLORDLG = 310,
+	INITDIALOG = 272,
+	COMMAND = 273,
+	DESTROY = 2,
+	CREATE = 1,
+	MOVE = 3,
+	SIZE = 5,
+	ACTIVATEAPP = 28,
+	ACTIVATE = 6
+}
+public enum DS
+{
+	SETFONT = 64,
+	FIXEDSYS = 8
+}
+public enum PSPCB
+{
+	ADDREF,
+	RELEASE,
+	CREATE
+}
+public enum PSP
+{
+	DEFAULT = 0,
+	DLGINDIRECT = 1,
+	USEHICON = 2,
+	USEICONID = 4,
+	USETITLE = 8,
+	RTLREADING = 0x10,
+	HASHELP = 0x20,
+	USEREFPARENT = 0x40,
+	USECALLBACK = 0x80,
+	PREMATURE = 0x400,
+	HIDEHEADER = 0x800,
+	USEHEADERTITLE = 0x1000,
+	USEHEADERSUBTITLE = 0x2000
+}
+public class HRESULT
+{
+	public const int S_OK = 0;
+
+	public const int S_FALSE = 1;
+
+	public const int E_NOTIMPL = -2147467263;
+}
+public class IMAGE
+{
+	public const int BITMAP = 0;
+
+	public const int CURSOR = 1;
+
+	public const int ICON = 2;
+}
+public enum CCT
+{
+	SCOPE = 32768,
+	RESULT = 32769,
+	SNAPIN_MANAGER = 32770,
+	UNINITIALIZED = 65535
+}
+public enum MMC_BUTTON_STATE
+{
+	ENABLED = 1,
+	CHECKED = 2,
+	HIDDEN = 4,
+	INDETERMINATE = 8,
+	BUTTONPRESSED = 0x10
+}
+public class MMC_VERB
+{
+	public const int NONE = 0;
+
+	public const int OPEN = 32768;
+
+	public const int COPY = 32769;
+
+	public const int PASTE = 32770;
+
+	public const int DELETE = 32771;
+
+	public const int PROPERTIES = 32772;
+
+	public const int RENAME = 32773;
+
+	public const int REFRESH = 32774;
+
+	public const int PRINT = 32775;
+
+	public const int CUT = 32776;
+
+	public const int MAX = 32777;
+
+	public const int FIRST = 32768;
+
+	public const int LAST = 32776;
+}
+public enum MMC_CONSOLE_VERB
+{
+	NONE = 0,
+	OPEN = 32768,
+	COPY = 32769,
+	PASTE = 32770,
+	DELETE = 32771,
+	PROPERTIES = 32772,
+	RENAME = 32773,
+	REFRESH = 32774,
+	PRINT = 32775,
+	CUT = 32776,
+	MAX = 32777,
+	FIRST = 32768,
+	LAST = 32776
+}
+public enum ImageListOptions
+{
+	LEAVE_LARGE_ICON = 1073741824,
+	LEAVE_SMALL_ICON = 536870912
+}
+public enum ViewMode
+{
+	Icon,
+	Report,
+	SmallIcon,
+	List,
+	Filtered
+}
+public enum MMC_CONTROL_TYPE
+{
+	TOOLBAR,
+	MENUBUTTON,
+	COMBOBOXBAR
+}
+public class CCM
+{
+	public const uint INSERTIONALLOWED_TOP = 1u;
+
+	public const uint INSERTIONALLOWED_NEW = 2u;
+
+	public const uint INSERTIONALLOWED_TASK = 4u;
+
+	public const uint INSERTIONALLOWED_VIEW = 8u;
+
+	public const uint INSERTIONPOINTID_PRIMARY_TOP = 2684354560u;
+
+	public const uint INSERTIONPOINTID_PRIMARY_NEW = 2684354561u;
+
+	public const uint INSERTIONPOINTID_PRIMARY_TASK = 2684354562u;
+
+	public const uint INSERTIONPOINTID_PRIMARY_VIEW = 2684354563u;
+
+	public const uint INSERTIONPOINTID_3RDPARTY_NEW = 2415919105u;
+
+	public const uint INSERTIONPOINTID_3RDPARTY_TASK = 2415919106u;
+
+	public const uint INSERTIONPOINTID_ROOT_MENU = 2147483648u;
+}
+public enum MMC_VIEW_OPTIONS
+{
+	NONE = 0,
+	CREATENEW = 16,
+	EXCLUDE_SCOPE_ITEMS_FROM_LIST = 64,
+	FILTERED = 8,
+	LEXICAL_SORT = 128,
+	NOLISTVIEWS = 1,
+	MULTISELECT = 2,
+	OWNERDATALIST = 4,
+	USEFONTLINKING = 32,
+	ACTIVATE = 6
+}
+public enum MMCN_Notifiy
+{
+	ACTIVATE = 32769,
+	ADD_IMAGES = 32770,
+	BTN_CLICK = 32771,
+	CLICK = 32772,
+	COLUMN_CLICK = 32773,
+	CONTEXTMENU = 32774,
+	CUTORMOVE = 32775,
+	COLUMNS_CHANGED = 32802,
+	DBLCLICK = 32776,
+	DELETE = 32777,
+	DESELECT_ALL = 32778,
+	EXPAND = 32779,
+	HELP = 32780,
+	MENU_BTNCLICK = 32781,
+	MINIMIZED = 32782,
+	PASTE = 32783,
+	PROPERTY_CHANGE = 32784,
+	QUERY_PASTE = 32785,
+	REFRESH = 32786,
+	REMOVE_CHILDREN = 32787,
+	RENAME = 32788,
+	SELECT = 32789,
+	SHOW = 32790,
+	VIEW_CHANGE = 32791,
+	SNAPINHELP = 32792,
+	CONTEXTHELP = 32793,
+	INITOCX = 32794,
+	FILTER_CHANGE = 32795,
+	GET_FILTER_MENU = 32796,
+	FILTER_OPERATOR = 32797,
+	PRINT = 32798
+}
+public enum SDI
+{
+	STR = 2,
+	IMAGE = 4,
+	OPENIMAGE = 8,
+	STATE = 16,
+	PARAM = 32,
+	CHILDREN = 64,
+	PARENT = 0,
+	PREVIOUS = 268435456,
+	NEXT = 536870912,
+	FIRST = 134217728
+}
+public enum RDI
+{
+	STR = 2,
+	IMAGE = 4,
+	STATE = 8,
+	PARAM = 0x10,
+	INDEX = 0x20,
+	INDENT = 0x40
+}
+public class MF
+{
+	public const int INSERT = 0;
+
+	public const int CHANGE = 128;
+
+	public const int APPEND = 256;
+
+	public const int DELETE = 512;
+
+	public const int REMOVE = 4096;
+
+	public const int BYCOMMAND = 0;
+
+	public const int BYPOSITION = 1024;
+
+	public const int SEPARATOR = 2048;
+
+	public const int ENABLED = 0;
+
+	public const int GRAYED = 1;
+
+	public const int DISABLED = 2;
+
+	public const int UNCHECKED = 0;
+
+	public const int CHECKED = 8;
+
+	public const int USECHECKBITMAPS = 512;
+
+	public const int STRING = 0;
+
+	public const int BITMAP = 4;
+
+	public const int OWNERDRAW = 256;
+
+	public const int POPUP = 16;
+
+	public const int MENUBARBREAK = 32;
+
+	public const int MENUBREAK = 64;
+
+	public const int UNHILITE = 0;
+
+	public const int HILITE = 128;
+
+	public const int DEFAULT = 4096;
+
+	public const int SYSMENU = 8192;
+
+	public const int HELP = 16384;
+
+	public const int RIGHTJUSTIFY = 16384;
+
+	public const int MOUSESELECT = 32768;
+}
+public class ACTCTX_FLAG
+{
+	public const uint PROCESSOR_ARCHITECTURE_VALID = 1u;
+
+	public const uint LANGID_VALID = 2u;
+
+	public const uint ASSEMBLY_DIRECTORY_VALID = 4u;
+
+	public const uint RESOURCE_NAME_VALID = 8u;
+
+	public const uint SET_PROCESS_DEFAULT = 16u;
+
+	public const uint APPLICATION_NAME_VALID = 32u;
+
+	public const uint HMODULE_VALID = 128u;
+}
+public struct MENUBUTTONDATA
+{
+	public int idCommand;
+
+	public int x;
+
+	public int y;
+}
+public struct MMCBUTTON
+{
+	public int nBitmap;
+
+	public int idCommand;
+
+	public byte fsState;
+
+	public byte fsType;
+
+	[MarshalAs(UnmanagedType.LPWStr)]
+	public string lpButtonText;
+
+	[MarshalAs(UnmanagedType.LPWStr)]
+	public string lpTooltipText;
+
+	public MMCBUTTON(int nBitmap, int idCommand, string lpButtonText, string lpTooltipText)
+	{
+		this.nBitmap = nBitmap;
+		this.idCommand = idCommand;
+		fsState = 4;
+		fsType = 4;
+		this.lpButtonText = lpButtonText;
+		this.lpTooltipText = lpTooltipText;
+	}
+
+	public MMCBUTTON(int nBitmap, int idCommand, TBSTATE fsState, TBSTYLE fsType, string lpButtonText, string lpTooltipText)
+	{
+		this.nBitmap = nBitmap;
+		this.idCommand = idCommand;
+		this.fsState = (byte)fsState;
+		this.fsType = (byte)fsType;
+		this.lpButtonText = lpButtonText;
+		this.lpTooltipText = lpTooltipText;
+	}
+}
+[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+internal struct LOGFONT
+{
+	public int lfHeight;
+
+	public int lfWidth;
+
+	public int lfEscapement;
+
+	public int lfOrientation;
+
+	public int lfWeight;
+
+	public byte lfItalic;
+
+	public byte lfUnderline;
+
+	public byte lfStrikeOut;
+
+	public byte lfCharSet;
+
+	public byte lfOutPrecision;
+
+	public byte lfClipPrecision;
+
+	public byte lfQuality;
+
+	public byte lfPitchAndFamily;
+
+	[MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+	public string lfFaceName;
+}
+[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+public struct TEXTMETRIC
+{
+	public int tmHeight;
+
+	public int tmAscent;
+
+	public int tmDescent;
+
+	public int tmInternalLeading;
+
+	public int tmExternalLeading;
+
+	public int tmAveCharWidth;
+
+	public int tmMaxCharWidth;
+
+	public int tmWeight;
+
+	public int tmOverhang;
+
+	public int tmDigitizedAspectX;
+
+	public int tmDigitizedAspectY;
+
+	private char tmFirstChar;
+
+	private char tmLastChar;
+
+	private char tmDefaultChar;
+
+	private char tmBreakChar;
+
+	private byte tmItalic;
+
+	private byte tmUnderlined;
+
+	private byte tmStruckOut;
+
+	private byte tmPitchAndFamily;
+
+	private byte tmCharSet;
+}
+public struct CONTEXTMENUITEM
+{
+	[MarshalAs(UnmanagedType.LPWStr)]
+	public string strName;
+
+	[MarshalAs(UnmanagedType.LPWStr)]
+	public string strStatusBarText;
+
+	public int lCommandID;
+
+	public uint lInsertionPointID;
+
+	public int fFlags;
+
+	public int fSpecialFlags;
+}
+public struct SCOPEDATAITEM
+{
+	public uint mask;
+
+	public IntPtr displayname;
+
+	public int nImage;
+
+	public int nOpenImage;
+
+	public uint nState;
+
+	public int cChildren;
+
+	public int lParam;
+
+	public int relativeID;
+
+	public int ID;
+}
+public struct RESULTDATAITEM
+{
+	public uint mask;
+
+	public int bScopeItem;
+
+	public int itemID;
+
+	public int nIndex;
+
+	public int nCol;
+
+	public IntPtr str;
+
+	public int nImage;
+
+	public uint nState;
+
+	public int lParam;
+
+	public int iIndent;
+}
+public struct CLSID
+{
+	public uint x;
+
+	public ushort s1;
+
+	public ushort s2;
+
+	public byte[] c;
+}
+public struct FORMATETC
+{
+	public int cfFormat;
+
+	public int ptd;
+
+	public uint dwAspect;
+
+	public int lindex;
+
+	public uint tymed;
+}
+public struct PROPSHEETPAGE
+{
+	public uint dwSize;
+
+	public uint dwFlags;
+
+	public IntPtr hInstance;
+
+	public IntPtr pResource;
+
+	public IntPtr hIcon;
+
+	public string pszTitle;
+
+	public DialogProc pfnDlgProc;
+
+	public IntPtr lParam;
+
+	public PropSheetPageProc pfnCallback;
+
+	public int pcRefParent;
+
+	public string pszHeaderTitle;
+
+	public string pszHeaderSubTitle;
+}
+[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto, Pack = 2)]
+internal struct DLGTEMPLATE
+{
+	internal uint style;
+
+	internal uint dwExtendedStyle;
+
+	internal ushort cdit;
+
+	internal short x;
+
+	internal short y;
+
+	internal short cx;
+
+	internal short cy;
+
+	internal short wMenuResource;
+
+	internal short wWindowClass;
+
+	internal short wTitleArray;
+
+	internal short wFontPointSize;
+
+	[MarshalAs(UnmanagedType.LPWStr)]
+	internal string szFontTypeface;
+}
+public struct STGMEDIUM
+{
+	public uint tymed;
+
+	public int hGlobal;
+
+	public object pUnkForRelease;
+}
+public struct userFLAG_STGMEDIUM
+{
+	public int ContextFlags;
+
+	public int fPassOwnership;
+
+	public STGMEDIUM Stgmed;
+}
+public struct NMHDR
+{
+	public int hwndFrom;
+
+	public uint idFrom;
+
+	public uint code;
+}
+[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto, Pack = 1)]
+internal struct DIBSECTION
+{
+	internal BITMAP dsBm;
+
+	internal BITMAPINFOHEADER dsBmih;
+
+	internal uint dsBitfields0;
+
+	internal uint dsBitfields1;
+
+	internal uint dsBitfields2;
+
+	internal IntPtr dshSection;
+
+	internal uint dsOffset;
+}
+[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto, Pack = 1)]
+internal struct BITMAP
+{
+	internal int bmType;
+
+	internal int bmWidth;
+
+	internal int bmHeight;
+
+	internal int bmWidthBytes;
+
+	internal ushort bmPlanes;
+
+	internal ushort bmBitsPixel;
+
+	internal IntPtr bmBits;
+}
+[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto, Pack = 1)]
+internal struct BITMAPINFOHEADER
+{
+	internal int biSize;
+
+	internal int biWidth;
+
+	internal int biHeight;
+
+	internal ushort biPlanes;
+
+	internal ushort biBitCount;
+
+	internal uint biCompression;
+
+	internal uint biSizeImage;
+
+	internal int biXPelsPerMeter;
+
+	internal int biYPelsPerMeter;
+
+	internal uint biClrUsed;
+
+	internal uint biClrImportant;
+}
+[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto, Pack = 1)]
+internal struct BITMAPINFO
+{
+	internal BITMAPINFOHEADER bmiHeader;
+
+	internal long bmiColors0;
+
+	internal long bmiColors1;
+
+	internal long bmiColors2;
+
+	internal long bmiColors3;
+}
+[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+public struct ACTCTX
+{
+	public uint cbSize;
+
+	public uint dwFlags;
+
+	public string lpSource;
+
+	public ushort wProcessorArchitecture;
+
+	public ushort wLangId;
+
+	public string lpAssemblyDirectory;
+
+	public string lpResourceName;
+
+	public string lpApplicationName;
+
+	public IntPtr hModule;
+}
+public delegate bool DialogProc(IntPtr hwndDlg, uint uMsg, IntPtr wParam, IntPtr lParam);
+public delegate uint PropSheetPageProc(IntPtr hwnd, uint uMsg, IntPtr lParam);
+[Guid("320879B0-AFD9-4277-9543-788AB588EDF0")]
+public interface ISnapinLink
+{
+	BaseNode ContextNode { get; set; }
+}
+public interface IPropertyPageContext
+{
+	PropertyPage PropertyPage { get; set; }
+}
+public class ListNode : BaseNode
+{
+	public ListNode(SnapinBase snapin)
+		: base(snapin)
+	{
+	}
+
+	public ListNode(SnapinBase snapin, BaseNode parentNode)
+		: base(snapin, parentNode)
+	{
+	}
+}
+public delegate void MenuCommandHandler(object item, BaseNode node);
+public class MenuItem
+{
+	protected string m_Name;
+
+	protected bool m_Visible;
+
+	protected string m_StatusText;
+
+	protected int m_nCommandId;
+
+	public ArrayList m_Children;
+
+	public string Name
+	{
+		get
+		{
+			return m_Name;
+		}
+		set
+		{
+			m_Name = value;
+		}
+	}
+
+	public bool Visible
+	{
+		get
+		{
+			return m_Visible;
+		}
+		set
+		{
+			m_Visible = value;
+		}
+	}
+
+	public string StatusText
+	{
+		get
+		{
+			return m_StatusText;
+		}
+		set
+		{
+			m_StatusText = value;
+		}
+	}
+
+	public int CommandId
+	{
+		get
+		{
+			return m_nCommandId;
+		}
+		set
+		{
+			m_nCommandId = value;
+		}
+	}
+
+	public event MenuCommandHandler Handler;
+
+	public MenuItem()
+	{
+	}
+
+	public MenuItem(string Name, string StatusText, MenuCommandHandler handler)
+	{
+		m_Name = Name;
+		m_StatusText = StatusText;
+		if (handler != null)
+		{
+			Handler += handler;
+		}
+		m_nCommandId = 0;
+		m_Visible = true;
+	}
+
+	public void Command(BaseNode node)
+	{
+		OnCommand(node);
+	}
+
+	protected virtual void OnCommand(BaseNode node)
+	{
+		if (this.Handler != null)
+		{
+			this.Handler(this, node);
+		}
+	}
+}
+public delegate void NodeNotificationHandler(object sender, NodeEventArgs args);
+public class NodeEventArgs : EventArgs
+{
+}
+public class ActivateArgs : NodeEventArgs
+{
+	public bool m_activate;
+
+	public ActivateArgs(bool activate)
+	{
+		m_activate = activate;
+	}
+}
+public class AddImagesArgs : NodeEventArgs
+{
+	public IImageList m_il;
+
+	public AddImagesArgs(IImageList il)
+	{
+		m_il = il;
+	}
+}
+public class CommandArgs : NodeEventArgs
+{
+	public int m_command;
+
+	public CommandArgs(int command)
+	{
+		m_command = command;
+	}
+}
+public class ObjectArgs : NodeEventArgs
+{
+	public object m_object;
+
+	public ObjectArgs(object obj)
+	{
+		m_object = obj;
+	}
+}
+public class NameValueArgs : NodeEventArgs
+{
+	private string m_key;
+
+	private object m_val;
+
+	public string Key
+	{
+		get
+		{
+			return m_key;
+		}
+		set
+		{
+			m_key = value;
+		}
+	}
+
+	public object Val
+	{
+		get
+		{
+			return m_val;
+		}
+		set
+		{
+			m_val = value;
+		}
+	}
+
+	public NameValueArgs()
+	{
+		m_key = null;
+		m_val = null;
+	}
+
+	public NameValueArgs(string key, object val)
+	{
+		m_key = key;
+		m_val = val;
+	}
+}
+public class ToolbarBaseValueArgs : NodeEventArgs
+{
+	private IToolbar m_toolbar;
+
+	private IControlbar m_ctrlbar;
+
+	public IToolbar Toolbar
+	{
+		get
+		{
+			return m_toolbar;
+		}
+		set
+		{
+			m_toolbar = value;
+		}
+	}
+
+	public IControlbar ControlBar
+	{
+		get
+		{
+			return m_ctrlbar;
+		}
+		set
+		{
+			m_ctrlbar = value;
+		}
+	}
+
+	public ToolbarBaseValueArgs(IControlbar ControlBar, IToolbar Toolbar)
+	{
+		m_ctrlbar = ControlBar;
+		m_toolbar = Toolbar;
+	}
+}
+public class SetToolbarValueArgs : ToolbarBaseValueArgs
+{
+	private bool m_bScope;
+
+	private bool m_bSelect;
+
+	public bool bScope => m_bScope;
+
+	public bool bSelect => m_bSelect;
+
+	public SetToolbarValueArgs(IControlbar Controlbar, IToolbar Toolbar, bool bScope, bool bSelect)
+		: base(Controlbar, Toolbar)
+	{
+		m_bScope = bScope;
+		m_bSelect = bSelect;
+	}
+}
+public class ToolbarCommandValueArgs : ToolbarBaseValueArgs
+{
+	private MMC_CONSOLE_VERB m_verb;
+
+	public MMC_CONSOLE_VERB verb => m_verb;
+
+	public ToolbarCommandValueArgs(IControlbar Controlbar, IToolbar Toolbar, MMC_CONSOLE_VERB verb)
+		: base(Controlbar, Toolbar)
+	{
+		m_verb = verb;
+	}
+}
+public class RenameValueArgs : NodeEventArgs
+{
+	private string m_newName;
+
+	public string NewName
+	{
+		get
+		{
+			return m_newName;
+		}
+		set
+		{
+			m_newName = value;
+		}
+	}
+
+	public RenameValueArgs(string NewName)
+	{
+		m_newName = NewName;
+	}
+}
+public class OCXNode : BaseNode
+{
+	protected Guid m_guidOCX;
+
+	protected bool m_bCreateNew;
+
+	public Guid OCXGuid
+	{
+		get
+		{
+			return m_guidOCX;
+		}
+		set
+		{
+			m_guidOCX = value;
+		}
+	}
+
+	public bool CreateNew
+	{
+		get
+		{
+			return m_bCreateNew;
+		}
+		set
+		{
+			m_bCreateNew = value;
+		}
+	}
+
+	public OCXNode(SnapinBase snapin)
+		: base(snapin)
+	{
+		m_bCreateNew = false;
+	}
+
+	public OCXNode(SnapinBase snapin, BaseNode parentNode)
+		: base(snapin, parentNode)
+	{
+		m_bCreateNew = false;
+	}
+
+	public override string GetResultViewType(ref int pViewOptions)
+	{
+		pViewOptions = 0;
+		if (CreateNew)
+		{
+			pViewOptions = 16;
+		}
+		return string.Concat("{", OCXGuid, "}");
+	}
+}
+public delegate void OnUserDelegate(string key, object val);
+public class PropertySheet : Form
+{
+	protected Button m_btnOk;
+
+	protected Button m_btnCancel;
+
+	protected Button m_btnApply;
+
+	private PropertySheetTabControl m_tc;
+
+	private PropertyPageList m_alPages = new PropertyPageList();
+
+	private bool m_fClosed;
+
+	private BaseNode m_ParentNode;
+
+	public OnUserDelegate m_CloseHandle;
+
+	public PropertyPageList Pages => m_alPages;
+
+	public PropertySheetTabControl Tabs => m_tc;
+
+	public BaseNode Node => m_ParentNode;
+
+	public bool isClosed => m_fClosed;
+
+	public PropertySheet(BaseNode node)
+	{
+		m_ParentNode = node;
+		base.FormBorderStyle = FormBorderStyle.FixedDialog;
+		base.Icon = null;
+		base.ShowInTaskbar = false;
+		base.MaximizeBox = false;
+		base.MinimizeBox = false;
+		m_fClosed = false;
+		InitializeComponent();
+		if (m_CloseHandle == null)
+		{
+			m_CloseHandle = (OnUserDelegate)Delegate.Combine(m_CloseHandle, new OnUserDelegate(ClosePropertySheet));
+		}
+	}
+
+	public new DialogResult ShowDialog()
+	{
+		base.Controls.Clear();
+		int num = 240;
+		int num2 = 0;
+		foreach (PropertyPage alPage in m_alPages)
+		{
+			if (alPage.Size.Width > num)
+			{
+				num = alPage.Size.Width;
+			}
+			if (alPage.Size.Height > num2)
+			{
+				num2 = alPage.Size.Height;
+			}
+		}
+		m_tc = new PropertySheetTabControl();
+		foreach (PropertyPage alPage2 in m_alPages)
+		{
+			alPage2.PropertySheet = this;
+			m_tc.TabPages.Add(alPage2.CreateTabPage());
+		}
+		m_tc.Location = new Point(4, 5);
+		m_tc.SelectedIndexChanging += onTabPageChanged;
+		m_tc.TabIndex = 0;
+		base.Controls.Add(m_tc);
+		IntPtr handle = m_tc.Handle;
+		num2 += m_tc.Location.Y + m_tc.ItemSize.Height;
+		m_tc.Size = new Size(num, num2);
+		int num3 = m_tc.TabPages[0].Size.Height;
+		m_tc.Multiline = true;
+		m_tc.SizeMode = TabSizeMode.FillToRight;
+		int num4 = m_tc.TabPages[0].Size.Height;
+		num2 += num3 - num4;
+		m_tc.Size = new Size(num, num2);
+		num2 += 15;
+		m_btnApply = new Button();
+		m_btnApply.Size = new Size(75, 23);
+		m_btnApply.Location = new Point(num - m_btnApply.Width + 4, num2);
+		m_btnApply.Text = "Apply";
+		m_btnApply.Enabled = false;
+		m_btnApply.TabIndex = 3;
+		m_btnApply.Click += onApplyClick;
+		m_btnApply.FlatStyle = FlatStyle.System;
+		base.Controls.Add(m_btnApply);
+		m_btnCancel = new Button();
+		m_btnCancel.Size = new Size(75, 23);
+		m_btnCancel.Location = new Point(m_btnApply.Location.X - m_btnCancel.Width - 5, num2);
+		m_btnCancel.Text = "Cancel";
+		m_btnCancel.Click += onCancelClick;
+		m_btnCancel.TabIndex = 2;
+		m_btnCancel.FlatStyle = FlatStyle.System;
+		base.Controls.Add(m_btnCancel);
+		m_btnOk = new Button();
+		m_btnOk.Size = new Size(75, 23);
+		m_btnOk.Location = new Point(m_btnCancel.Location.X - m_btnOk.Width - 5, num2);
+		m_btnOk.Text = "OK";
+		m_btnOk.TabIndex = 1;
+		m_btnOk.Click += onOkClick;
+		m_btnOk.FlatStyle = FlatStyle.System;
+		base.Controls.Add(m_btnOk);
+		num2 += m_btnOk.Height;
+		base.ClientSize = new Size(num + 8, num2 + 5);
+		base.AcceptButton = m_btnOk;
+		base.CancelButton = m_btnCancel;
+		base.Closing += onCloseClick;
+		return base.ShowDialog();
+	}
+
+	private bool onTabPageChanged()
+	{
+		PropertyPage propertyPage = m_alPages[m_tc.SelectedIndex];
+		return propertyPage.ValidateData();
+	}
+
+	private void onCloseClick(object o, CancelEventArgs e)
+	{
+		Node.EditMode = false;
+		e.Cancel = false;
+		onCancelClick(o, e);
+	}
+
+	private void onOkClick(object o, EventArgs e)
+	{
+		PropertyPage propertyPage = m_alPages[m_tc.SelectedIndex];
+		if (propertyPage.ValidateData())
+		{
+			base.DialogResult = DialogResult.OK;
+			onApplyClick(o, e);
+			FakeClose();
+		}
+	}
+
+	private void onCancelClick(object o, EventArgs e)
+	{
+		base.DialogResult = DialogResult.Cancel;
+		foreach (PropertyPage alPage in m_alPages)
+		{
+			alPage.onCancel();
+		}
+		FakeClose();
+	}
+
+	private void onApplyClick(object o, EventArgs e)
+	{
+		PropertyPage propertyPage = m_alPages[m_tc.SelectedIndex];
+		if (propertyPage.ValidateData())
+		{
+			SendApplyToAll();
+			m_btnApply.Enabled = false;
+		}
+	}
+
+	public void ActivateApplyButton()
+	{
+		if (m_btnApply != null)
+		{
+			m_btnApply.Enabled = true;
+		}
+	}
+
+	private void SendApplyToAll()
+	{
+		foreach (PropertyPage alPage in m_alPages)
+		{
+			alPage.onApply();
+		}
+	}
+
+	private void InitializeComponent()
+	{
+		this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
+		base.ClientSize = new System.Drawing.Size(292, 273);
+		base.Name = "PropertySheet";
+		base.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+	}
+
+	private void FakeClose()
+	{
+		m_fClosed = true;
+		Close();
+	}
+
+	public virtual void ClosePropertySheet(string key, object val)
+	{
+		base.DialogResult = DialogResult.Cancel;
+		foreach (PropertyPage alPage in m_alPages)
+		{
+			alPage.onCancel();
+		}
+		FakeClose();
+	}
+}
+public class PropertyPage
+{
+	protected PropertySheet m_PropSheet;
+
+	protected string m_sTitle;
+
+	protected Type m_ControlType;
+
+	protected UserControl m_Control;
+
+	public Type ControlType
+	{
+		get
+		{
+			return m_ControlType;
+		}
+		set
+		{
+			m_ControlType = value;
+		}
+	}
+
+	public PropertySheet PropertySheet
+	{
+		get
+		{
+			return m_PropSheet;
+		}
+		set
+		{
+			m_PropSheet = value;
+		}
+	}
+
+	protected UserControl MainControl
+	{
+		get
+		{
+			try
+			{
+				if (m_Control == null)
+				{
+					m_Control = (UserControl)Activator.CreateInstance(ControlType);
+					if (m_Control is IPropertyPageContext propertyPageContext)
+					{
+						propertyPageContext.PropertyPage = this;
+					}
+				}
+			}
+			catch (Exception inner)
+			{
+				throw new SnapinException("Failed to create user control", inner);
+			}
+			return m_Control;
+		}
+	}
+
+	public string Title
+	{
+		get
+		{
+			return m_sTitle;
+		}
+		set
+		{
+			m_sTitle = value;
+		}
+	}
+
+	public Size Size
+	{
+		get
+		{
+			return MainControl.Size;
+		}
+		set
+		{
+			MainControl.Size = value;
+		}
+	}
+
+	public event EventHandler validate;
+
+	public event EventHandler apply;
+
+	public event EventHandler cancel;
+
+	public PropertyPage(string title)
+	{
+		m_sTitle = title;
+	}
+
+	public TabPage CreateTabPage()
+	{
+		TabPage tabPage = new TabPage();
+		UserControl mainControl = MainControl;
+		mainControl.Location = new Point(0, 0);
+		mainControl.Size = Size;
+		mainControl.TabIndex = 0;
+		tabPage.Controls.Add(mainControl);
+		tabPage.Size = Size;
+		tabPage.Text = Title;
+		return tabPage;
+	}
+
+	public virtual bool ValidateData()
+	{
+		if (this.validate != null)
+		{
+			ValidateEventArgs e = new ValidateEventArgs();
+			this.validate(this, e);
+			return e.Valid;
+		}
+		return true;
+	}
+
+	public virtual void onApply()
+	{
+		if (this.apply != null)
+		{
+			this.apply(this, null);
+		}
+	}
+
+	public virtual void onCancel()
+	{
+		if (this.cancel != null)
+		{
+			this.cancel(this, null);
+		}
+	}
+
+	protected void ActivateApply()
+	{
+		m_PropSheet.ActivateApplyButton();
+	}
+}
+public class ValidateEventArgs : EventArgs
+{
+	protected bool valid = true;
+
+	public bool Valid
+	{
+		get
+		{
+			return valid;
+		}
+		set
+		{
+			valid = value;
+		}
+	}
+}
+public delegate bool CheckValidation();
+public class PropertySheetTabControl : TabControl
+{
+	private CheckValidation onSelectedIndexChanging;
+
+	public event CheckValidation SelectedIndexChanging
+	{
+		add
+		{
+			onSelectedIndexChanging = (CheckValidation)Delegate.Combine(onSelectedIndexChanging, value);
+		}
+		remove
+		{
+			onSelectedIndexChanging = (CheckValidation)Delegate.Remove(onSelectedIndexChanging, value);
+		}
+	}
+
+	protected override void WndProc(ref Message m)
+	{
+		try
+		{
+			if (m.Msg == 8270 && ((NMHDR)Marshal.PtrToStructure(m.LParam, default(NMHDR).GetType())).code == 4294966744u && onSelectedIndexChanging != null && !onSelectedIndexChanging())
+			{
+				m.Result = (IntPtr)1;
+			}
+			else
+			{
+				base.WndProc(ref m);
+			}
+		}
+		catch (Exception)
+		{
+		}
+	}
+}
+public class PropertyPageList : ArrayList
+{
+	public new PropertyPage this[int index] => (PropertyPage)base[index];
+
+	public override void Clear()
+	{
+		for (int i = 0; i < base.Count; i++)
+		{
+			base[i] = null;
+		}
+		base.Clear();
+	}
+}
+public class ReportNode : BaseNode
+{
+	protected IConsole2 m_Console;
+
+	protected DataTable m_table;
+
+	protected Hashtable m_filters;
+
+	public IHeaderCtrl2 HeaderCtrl => (IHeaderCtrl2)m_Console;
+
+	public IResultData ResultData => (IResultData)m_Console;
+
+	public DataTable Table
+	{
+		get
+		{
+			return m_table;
+		}
+		set
+		{
+			m_table = value;
+		}
+	}
+
+	public ReportNode(SnapinBase snapin)
+		: base(snapin)
+	{
+	}
+
+	public ReportNode(SnapinBase snapin, BaseNode parentNode)
+		: base(snapin, parentNode)
+	{
+	}
+
+	public override void OnShow()
+	{
+		m_Console = m_Snapin.ResultViewConsole;
+		OnShowHeader(HeaderCtrl);
+		OnShowData(ResultData, refreshAll: true);
+		ResultData.SetViewMode(GetViewType());
+		base.OnShow();
+	}
+
+	public virtual int GetViewType()
+	{
+		return 1;
+	}
+
+	public virtual void OnShowHeader(IHeaderCtrl2 header)
+	{
+		try
+		{
+			if (m_table == null)
+			{
+				return;
+			}
+			foreach (DataColumn column in m_table.Columns)
+			{
+				string columnName = column.ColumnName;
+				int ordinal = column.Ordinal;
+				int nWidth = -1;
+				DataColumn[] primaryKey = m_table.PrimaryKey;
+				foreach (DataColumn dataColumn2 in primaryKey)
+				{
+					if (column == dataColumn2)
+					{
+						nWidth = -4;
+					}
+				}
+				header.InsertColumn(ordinal, columnName, 0, nWidth);
+			}
+		}
+		catch (COMException ex)
+		{
+			throw ex;
+		}
+		catch (Exception ex2)
+		{
+			throw ex2;
+		}
+	}
+
+	public virtual void OnShowData(IResultData ResultData, bool refreshAll)
+	{
+		if (m_table == null)
+		{
+			return;
+		}
+		int num = 1;
+		foreach (DataRow row in m_table.Rows)
+		{
+			if (CheckItem(row))
+			{
+				if (row.RowState == DataRowState.Unchanged && refreshAll)
+				{
+					InsertItem(row, num);
+				}
+				else if (row.RowState == DataRowState.Added)
+				{
+					InsertItem(row, num);
+				}
+				else if (row.RowState == DataRowState.Modified)
+				{
+					SetItem(row, num);
+				}
+			}
+			num++;
+		}
+		Table.AcceptChanges();
+	}
+
+	public virtual void InsertItem(DataRow row, int nRow)
+	{
+		if (row != null)
+		{
+			RESULTDATAITEM item = default(RESULTDATAITEM);
+			row.ToString();
+			item.mask = 22u;
+			item.nImage = -1;
+			item.str = (IntPtr)(-1);
+			item.nCol = 0;
+			item.lParam = GetItemLParam(nRow);
+			ResultData.InsertItem(ref item);
+		}
+	}
+
+	public virtual void SetItem(DataRow row, int nRow)
+	{
+		if (row != null)
+		{
+			int itemLParam = GetItemLParam(nRow);
+			RESULTDATAITEM item = default(RESULTDATAITEM);
+			row.ToString();
+			item.mask = 18u;
+			item.str = (IntPtr)(-1);
+			item.nCol = 0;
+			ResultData.FindItemByLParam(itemLParam, out var pItemID);
+			item.lParam = itemLParam;
+			item.itemID = (int)pItemID;
+			ResultData.SetItem(ref item);
+		}
+	}
+
+	public virtual void UpdateItem(int lParam)
+	{
+		ResultData.FindItemByLParam(lParam, out var pItemID);
+		ResultData.UpdateItem(pItemID);
+	}
+
+	public virtual void DeleteItem(int lParam)
+	{
+		ResultData.FindItemByLParam(lParam, out var pItemID);
+		ResultData.DeleteItem(pItemID, 0);
+	}
+
+	public virtual void GetItem(out RESULTDATAITEM ResultDataItem, uint pItemID)
+	{
+		RESULTDATAITEM item = new RESULTDATAITEM
+		{
+			mask = 2u,
+			itemID = (int)pItemID,
+			nCol = 0
+		};
+		ResultData.GetItem(ref item);
+		ResultDataItem = item;
+	}
+
+	public virtual RESULTDATAITEM GetSelectedItem()
+	{
+		return GetSelectedItem(-1);
+	}
+
+	public virtual RESULTDATAITEM GetSelectedItem(int nIndex)
+	{
+		RESULTDATAITEM item = new RESULTDATAITEM
+		{
+			mask = 8u,
+			nCol = 0,
+			nIndex = nIndex,
+			nState = 2u
+		};
+		ResultData.GetNextItem(ref item);
+		return item;
+	}
+
+	public virtual int GetTableRowID(int lParam)
+	{
+		return (lParam >> 16) - 1;
+	}
+
+	public virtual int GetItemLParam(int nRow)
+	{
+		return m_iCookie | (nRow << 16);
+	}
+
+	public override void GetDisplayInfo(ref RESULTDATAITEM rdi)
+	{
+		bool flag = true;
+		int num = 0;
+		if (Table != null)
+		{
+			num = GetTableRowID(rdi.lParam);
+			int nCol = rdi.nCol;
+			if ((rdi.mask & 2) != 0)
+			{
+				string s = base.DisplayName;
+				if (num >= 0 && num < Table.Rows.Count && nCol >= 0 && nCol < Table.Columns.Count)
+				{
+					s = Table.Rows[num].ItemArray[nCol].ToString();
+					flag = false;
+				}
+				rdi.str = Marshal.StringToCoTaskMemUni(s);
+			}
+		}
+		if ((rdi.mask & 4) != 0)
+		{
+			int num2 = base.LargeImageIndex;
+			if (IsUseSmallIcons())
+			{
+				num2 = base.SmallImageIndex;
+			}
+			rdi.nImage = (base.Cookie << 16) + num2;
+		}
+		if (flag)
+		{
+			base.GetDisplayInfo(ref rdi);
+		}
+	}
+
+	public override void OnFilterChange(MMC_FILTER_CHANGE_CODE code, int col)
+	{
+		switch (code)
+		{
+		case MMC_FILTER_CHANGE_CODE.MFCC_DISABLE:
+			m_filters = null;
+			break;
+		case MMC_FILTER_CHANGE_CODE.MFCC_VALUE_CHANGE:
+		{
+			IConsole2 resultViewConsole = base.Snapin.ResultViewConsole;
+			IHeaderCtrl2 headerCtrl = resultViewConsole as IHeaderCtrl2;
+			uint pdwType = 0u;
+			MMC_FILTERDATA data = new MMC_FILTERDATA
+			{
+				pszText = IntPtr.Zero
+			};
+			try
+			{
+				int num = 1000;
+				data.pszText = Marshal.AllocCoTaskMem(num);
+				data.cchTextMax = num;
+				int columnFilter = headerCtrl.GetColumnFilter((uint)col, ref pdwType, ref data);
+				string text = Marshal.PtrToStringAuto(data.pszText);
+				if (m_filters == null)
+				{
+					m_filters = new Hashtable();
+				}
+				if (text.Length == 0 || text.Length >= num / 2)
+				{
+					m_filters.Remove(col);
+				}
+				else
+				{
+					m_filters[col] = text;
+				}
+				if (m_filters.Count == 0)
+				{
+					m_filters = null;
+				}
+				RemoveAllItems();
+			}
+			finally
+			{
+				if (!data.pszText.Equals(IntPtr.Zero))
+				{
+					Marshal.FreeCoTaskMem(data.pszText);
+				}
+			}
+			break;
+		}
+		}
+		base.OnFilterChange(code, col);
+	}
+
+	public virtual void RemoveAllItems()
+	{
+		try
+		{
+			IConsole2 resultViewConsole = base.Snapin.ResultViewConsole;
+			if (resultViewConsole != null && resultViewConsole is IResultData resultData)
+			{
+				resultData.DeleteAllRsltItems();
+				OnShowData(resultData, refreshAll: true);
+			}
+		}
+		catch (Exception)
+		{
+		}
+	}
+
+	public virtual bool CheckItem(DataRow row)
+	{
+		if (m_filters == null)
+		{
+			return true;
+		}
+		object[] itemArray = row.ItemArray;
+		for (int i = 0; i < itemArray.Length; i++)
+		{
+			if (m_filters[i] is string value && itemArray[i] != null && itemArray[i].ToString().IndexOf(value) == -1)
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+}
+public class SnapinBase : Control, IComponentData, IExtendPropertySheet, IExtendContextMenu, IPersistStream, IPersist
+{
+	protected BaseNode m_currentScopeNode;
+
+	protected Component m_Component;
+
+	protected IConsole2 m_Console;
+
+	protected IConsoleNameSpace2 m_ConsoleNameSpace;
+
+	protected HybridDictionary m_Nodes = new HybridDictionary(8);
+
+	protected int m_NodeId;
+
+	protected ImageList m_Images = new ImageList();
+
+	protected SnapinStateBase m_SnapinState;
+
+	public BaseNode CurrentScopeNode
+	{
+		get
+		{
+			return m_currentScopeNode;
+		}
+		set
+		{
+			m_currentScopeNode = value;
+		}
+	}
+
+	public ImageList Images => m_Images;
+
+	public Guid Guid
+	{
+		get
+		{
+			object[] customAttributes = GetType().GetCustomAttributes(typeof(GuidAttribute), inherit: true);
+			if (customAttributes.Length == 0)
+			{
+				throw new SnapinException("Failed ot find GuidAttribute on SnapinBase class");
+			}
+			return new Guid(((GuidAttribute)customAttributes[0]).Value);
+		}
+	}
+
+	public BaseNode RootNode
+	{
+		get
+		{
+			return (BaseNode)m_Nodes[0];
+		}
+		set
+		{
+			m_Nodes[0] = value;
+		}
+	}
+
+	public IConsole2 ResultViewConsole => m_Component.Console;
+
+	public IConsole2 Console => m_Console;
+
+	public IConsoleNameSpace2 ConsoleNameSpace => m_ConsoleNameSpace;
+
+	public IHeaderCtrl2 HeaderCtrl => (IHeaderCtrl2)m_Console;
+
+	public virtual SnapinStateBase SnapinState
+	{
+		get
+		{
+			return m_SnapinState;
+		}
+		set
+		{
+			m_SnapinState = value;
+		}
+	}
+
+	public bool AddToolBarInfo(int toolBarId, ToolBarButtonInfo[] buttons, IntPtr[] hBitmaps, int[] numBitMapsFromEachBmpFile)
+	{
+		if (m_Component != null)
+		{
+			return m_Component.AddToolBarInfo(toolBarId, buttons, hBitmaps, numBitMapsFromEachBmpFile);
+		}
+		return false;
+	}
+
+	public bool AddCurrentToolbarsInfo(int toolBarId)
+	{
+		return m_Component.AddCurrentToolbarsInfo(toolBarId);
+	}
+
+	public SnapinBase()
+	{
+		IntPtr handle = base.Handle;
+		SnapinState = CreateSnapinState();
+	}
+
+	public virtual RESULTDATAITEM GetSelectedItem(IResultData ResultData)
+	{
+		return GetSelectedItem(ResultData, -1);
+	}
+
+	public virtual RESULTDATAITEM GetSelectedItem(IResultData ResultData, int nIndex)
+	{
+		RESULTDATAITEM item = new RESULTDATAITEM
+		{
+			mask = 8u,
+			nCol = 0,
+			nIndex = nIndex,
+			nState = 2u
+		};
+		ResultData.GetNextItem(ref item);
+		return item;
+	}
+
+	public BaseNode FindNode(int cookie)
+	{
+		int num = cookie & 0xFFFF;
+		BaseNode baseNode = (BaseNode)m_Nodes[num];
+		if (baseNode == null)
+		{
+			throw new SnapinException("Failed to find Node with cookie " + num);
+		}
+		return baseNode;
+	}
+
+	public BaseNode FindNodeByHScope(int HScopeID)
+	{
+		foreach (BaseNode value in m_Nodes.Values)
+		{
+			if (value.HScopeItem == HScopeID)
+			{
+				return value;
+			}
+		}
+		return null;
+	}
+
+	public int Register(BaseNode newNode)
+	{
+		int nodeId = m_NodeId;
+		m_Nodes.Add(nodeId, newNode);
+		m_NodeId++;
+		return nodeId;
+	}
+
+	public void Unregister(BaseNode node)
+	{
+		m_Nodes.Remove(node.Cookie);
+		node.RemovePropertySheet();
+	}
+
+	public int AddImage(string iconResourceName)
+	{
+		return m_Images.Add(iconResourceName);
+	}
+
+	public int AddImage(string iconResourceName, Color transparentColor)
+	{
+		return m_Images.Add(iconResourceName, transparentColor);
+	}
+
+	public int AddImage(Icon icon)
+	{
+		return m_Images.Add(icon);
+	}
+
+	public void Initialize(object pUnknown)
+	{
+		try
+		{
+			m_Console = (IConsole2)pUnknown;
+			m_ConsoleNameSpace = (IConsoleNameSpace2)pUnknown;
+			foreach (BaseNode value in m_Nodes.Values)
+			{
+				value.Initialize();
+			}
+			IImageList ppImageList = null;
+			m_Console.QueryScopeImageList(out ppImageList);
+			m_Images.LoadImageList(ppImageList);
+			RootNode.OnAddScopePaneImages(ppImageList);
+		}
+		catch (Exception ex)
+		{
+			throw ex;
+		}
+	}
+
+	public virtual void CreateComponent(out IComponent ppComponent)
+	{
+		if (m_Component == null)
+		{
+			m_Component = new Component(this);
+		}
+		ppComponent = m_Component;
+	}
+
+	public int Notify(IDataObject lpDataObject, uint aevent, IntPtr arg, IntPtr param)
+	{
+		int result = 0;
+		try
+		{
+			DataObject dataObject = (DataObject)lpDataObject;
+			BaseNode baseNode = ((dataObject == null) ? RootNode : dataObject.Node);
+			switch ((MMCN_Notifiy)aevent)
+			{
+			case MMCN_Notifiy.EXPAND:
+				if ((int)arg != 0)
+				{
+					if (baseNode.HScopeItem == 0)
+					{
+						baseNode.HScopeItem = (int)param;
+					}
+					baseNode.OnExpand();
+				}
+				else
+				{
+					baseNode.OnCollapse();
+				}
+				break;
+			case MMCN_Notifiy.DELETE:
+				baseNode.OnDelete();
+				break;
+			case MMCN_Notifiy.BTN_CLICK:
+			{
+				int cmdId = param.ToInt32();
+				baseNode.OnBtnClick(cmdId);
+				break;
+			}
+			case MMCN_Notifiy.RENAME:
+				if ((int)arg == 0)
+				{
+					if (!baseNode.OnTryRename())
+					{
+						result = 1;
+					}
+				}
+				else if (!baseNode.OnRename(Marshal.PtrToStringAuto(param)))
+				{
+					result = 1;
+				}
+				break;
+			default:
+				result = 1;
+				break;
+			}
+		}
+		catch (SnapinException)
+		{
+			result = 1;
+		}
+		catch (Exception ex2)
+		{
+			throw ex2;
+		}
+		return result;
+	}
+
+	public virtual void Destroy()
+	{
+	}
+
+	public virtual void QueryDataObject(int cookie, uint type, out IDataObject ppDataObject)
+	{
+		ppDataObject = new DataObject(FindNode(cookie));
+	}
+
+	public virtual void GetDisplayInfo(ref SCOPEDATAITEM sdi)
+	{
+		BaseNode baseNode = FindNode(sdi.lParam);
+		baseNode.GetDisplayInfo(ref sdi);
+	}
+
+	public int CompareObjects(IDataObject lpDataObjectA, IDataObject lpDataObjectB)
+	{
+		DataObject dataObject = (DataObject)lpDataObjectA;
+		DataObject dataObject2 = (DataObject)lpDataObjectB;
+		if (dataObject.Node.Cookie != dataObject2.Node.Cookie)
+		{
+			return 1;
+		}
+		return 0;
+	}
+
+	public virtual int CreatePropertyPages(IPropertySheetCallback lpProvider, IntPtr handle, IDataObject lpDataObject)
+	{
+		DataObject dataObject = (DataObject)lpDataObject;
+		if (dataObject.Node.HavePropertyPages)
+		{
+			dataObject.Node.CreatePropertyPages(lpProvider, handle);
+		}
+		return 1;
+	}
+
+	public virtual int QueryPagesFor(IDataObject lpDataObject)
+	{
+		DataObject dataObject = (DataObject)lpDataObject;
+		dataObject.Node.OnQueryProperties();
+		if (dataObject.Node.HavePropertyPages)
+		{
+			return 0;
+		}
+		return 1;
+	}
+
+	public void AddMenuItems(IntPtr piDataObject, IContextMenuCallback piCallback, ref int pInsertionAllowed)
+	{
+		DataObject dataObject = null;
+		try
+		{
+			IDataObject dataObject2 = (IDataObject)Marshal.GetObjectForIUnknown(piDataObject);
+			dataObject = (DataObject)dataObject2;
+			if (dataObject.Node != null)
+			{
+				dataObject.Node.AddMenuItems(piCallback, ref pInsertionAllowed);
+			}
+		}
+		catch (SnapinException)
+		{
+		}
+		catch (Exception)
+		{
+		}
+	}
+
+	public void Command(int lCommandID, IntPtr piDataObject)
+	{
+		DataObject dataObject = null;
+		try
+		{
+			IDataObject dataObject2 = (IDataObject)Marshal.GetObjectForIUnknown(piDataObject);
+			dataObject = (DataObject)dataObject2;
+			if (dataObject.Node != null)
+			{
+				dataObject.Node.Command(lCommandID);
+			}
+		}
+		catch (SnapinException)
+		{
+		}
+		catch (Exception)
+		{
+		}
+	}
+
+	[ComRegisterFunction]
+	public static void RegisterSnapIn(Type t)
+	{
+		SnapinRegistrar.Register(t.Assembly);
+	}
+
+	[ComUnregisterFunction]
+	public static void UnregisterSnapIn(Type t)
+	{
+		SnapinRegistrar.UnRegister(t.Assembly);
+	}
+
+	public virtual SnapinStateBase CreateSnapinState()
+	{
+		return new SnapinStateBase();
+	}
+
+	public void GetClassID(out Guid pClassID)
+	{
+		pClassID = Guid;
+	}
+
+	public int IsDirty()
+	{
+		if (SnapinState != null)
+		{
+			if (SnapinState.Dirty)
+			{
+				return 0;
+			}
+			return -1;
+		}
+		return -1;
+	}
+
+	public void Load(UCOMIStream pStm)
+	{
+		try
+		{
+			ComStream comStream = new ComStream(pStm);
+			SnapinState.ReadState(comStream);
+			comStream.Close();
+		}
+		catch (Exception)
+		{
+		}
+	}
+
+	public void Save(UCOMIStream pStm, [In][MarshalAs(UnmanagedType.Bool)] bool fClearDirty)
+	{
+		try
+		{
+			ComStream comStream = new ComStream(pStm);
+			SnapinState.WriteState(comStream);
+			comStream.Close();
+		}
+		catch (Exception)
+		{
+		}
+	}
+
+	public void GetSizeMax(out long pcbSize)
+	{
+		throw new Exception("MMC didn't use to call GetSizeMax. Implement this.");
+	}
+
+	public int InitNew()
+	{
+		if (SnapinState == null)
+		{
+			SnapinState = CreateSnapinState();
+			return 0;
+		}
+		Marshal.ThrowExceptionForHR(-2147418113);
+		return 0;
+	}
+
+	internal void GetSelectedResultDataItem(ref RESULTDATAITEM rdi)
+	{
+		rdi.mask = 8u;
+		rdi.nCol = 0;
+		rdi.nIndex = -1;
+		rdi.nState = 2u;
+		IResultData resultData = m_Component.Console as IResultData;
+		resultData.GetNextItem(ref rdi);
+	}
+}
+public class DataObject : IDataObject
+{
+	protected static ushort s_DisplayName;
+
+	protected static ushort s_NodeType;
+
+	protected static ushort s_SZNodeType;
+
+	protected static ushort s_SnapinClsid;
+
+	protected static ushort s_Snapins;
+
+	protected static ushort s_Objects;
+
+	protected static ushort s_IsMsObj;
+
+	protected static ushort s_Cookies;
+
+	protected BaseNode m_NodeData;
+
+	public static readonly int NULL;
+
+	public static readonly int CUSTOMOCX;
+
+	public static readonly int CUSTOMWEB;
+
+	public BaseNode Node => m_NodeData;
+
+	public DataObject(BaseNode initData)
+	{
+		m_NodeData = initData;
+	}
+
+	static DataObject()
+	{
+		NULL = 0;
+		CUSTOMOCX = -1;
+		CUSTOMWEB = -2;
+		s_NodeType = RegisterClipboardFormat("CCF_NODETYPE");
+		s_SZNodeType = RegisterClipboardFormat("CCF_SZNODETYPE");
+		s_SnapinClsid = RegisterClipboardFormat("CCF_SNAPIN_CLASSID");
+		s_DisplayName = RegisterClipboardFormat("CCF_DISPLAY_NAME");
+		s_Snapins = RegisterClipboardFormat("CCF_MULTI_SELECT_SNAPINS");
+		s_Objects = RegisterClipboardFormat("CCF_OBJECT_TYPES_IN_MULTI_SELECT");
+		s_IsMsObj = RegisterClipboardFormat("CCF_MMC_MULTISELECT_DATAOBJECT");
+		s_Cookies = RegisterClipboardFormat("CCF_MULTISELECT_COOKIES");
+	}
+
+	public void GetDataHere(ref FORMATETC pFormatEtc, ref STGMEDIUM pMedium)
+	{
+		try
+		{
+			byte[] buffer = new byte[2];
+			ushort num = (ushort)pFormatEtc.cfFormat;
+			MemoryStream memoryStream = new MemoryStream(128);
+			Encoding encoding = new UnicodeEncoding();
+			BinaryWriter binaryWriter = new BinaryWriter(memoryStream, encoding);
+			if (num == s_DisplayName || num == s_SZNodeType)
+			{
+				if (num == s_DisplayName)
+				{
+					binaryWriter.Write(m_NodeData.DisplayName.ToCharArray());
+				}
+				else
+				{
+					binaryWriter.Write(buffer);
+				}
+			}
+			else if (num == s_NodeType || num == s_SnapinClsid)
+			{
+				binaryWriter.Write(((num != s_NodeType) ? m_NodeData.Snapin.Guid : m_NodeData.Guid).ToByteArray());
+			}
+			UCOMIStream ppstm = null;
+			CreateStreamOnHGlobal(pMedium.hGlobal, 0, out ppstm);
+			if (ppstm == null)
+			{
+				throw new SnapinException("Fail to CreateStreamOnHGlobal");
+			}
+			binaryWriter.Flush();
+			IntPtr intPtr = Marshal.AllocCoTaskMem(4);
+			ppstm.Write(memoryStream.GetBuffer(), (int)memoryStream.Length, intPtr);
+			int num2 = Marshal.ReadInt32(intPtr);
+			Marshal.FreeCoTaskMem(intPtr);
+			if (num2 != memoryStream.Length)
+			{
+				throw new SnapinException("Cannot write the data provided.");
+			}
+		}
+		catch (SnapinException)
+		{
+		}
+	}
+
+	public int GetData(ref FORMATETC pFormatetcIn, ref STGMEDIUM pMedium)
+	{
+		return -2147467263;
+	}
+
+	public int QueryGetData(IntPtr a)
+	{
+		return -2147467263;
+	}
+
+	public int GetCanonicalFormatEtc(IntPtr a, IntPtr b)
+	{
+		return -2147467263;
+	}
+
+	public int SetData(IntPtr a, IntPtr b, int c)
+	{
+		return -2147467263;
+	}
+
+	public int EnumFormatEtc(uint a, IntPtr b)
+	{
+		return -2147467263;
+	}
+
+	public int DAdvise(IntPtr a, uint b, IntPtr c, ref uint d)
+	{
+		return -2147467263;
+	}
+
+	public int DUnadvise(uint a)
+	{
+		return -2147467263;
+	}
+
+	public int EnumDAdvise(IntPtr a)
+	{
+		return -2147467263;
+	}
+
+	[DllImport("ole32.dll")]
+	protected static extern int CreateStreamOnHGlobal(int hGlobal, int fDeleteOnRelease, out UCOMIStream ppstm);
+
+	[DllImport("user32.dll", CharSet = CharSet.Unicode)]
+	protected static extern ushort RegisterClipboardFormat(string format);
+}
+public class SnapinException : ApplicationException
+{
+	public SnapinException(string message)
+		: base(message)
+	{
+	}
+
+	public SnapinException(string message, Exception inner)
+		: base(message, inner)
+	{
+	}
+}
+[AttributeUsage(AttributeTargets.Class)]
+public class SnapinInAttribute : Attribute
+{
+	protected string m_name;
+
+	protected string m_provider;
+
+	protected string m_version;
+
+	protected bool m_standAlone;
+
+	public string Namestring
+	{
+		get
+		{
+			return m_name;
+		}
+		set
+		{
+			m_name = value;
+		}
+	}
+
+	public bool StandAlone
+	{
+		get
+		{
+			return m_standAlone;
+		}
+		set
+		{
+			m_standAlone = value;
+		}
+	}
+
+	public string Provider
+	{
+		get
+		{
+			return m_provider;
+		}
+		set
+		{
+			m_provider = value;
+		}
+	}
+
+	public string Version => m_version;
+
+	public SnapinInAttribute()
+	{
+		m_name = "unknown";
+		m_provider = "unknown";
+		m_standAlone = true;
+		m_version = null;
+	}
+
+	public SnapinInAttribute(string namestring, string provider)
+	{
+		m_name = namestring;
+		m_provider = provider;
+		m_standAlone = true;
+		m_version = null;
+	}
+
+	public SnapinInAttribute(string namestring, string provider, string version)
+	{
+		m_name = namestring;
+		m_provider = provider;
+		m_standAlone = true;
+		m_version = version;
+	}
+
+	public SnapinInAttribute(string namestring, string provider, string version, bool standAlone)
+	{
+		m_name = namestring;
+		m_provider = provider;
+		m_version = version;
+		m_standAlone = standAlone;
+	}
+}
+[AttributeUsage(AttributeTargets.Class)]
+public class AboutSnapinAttribute : Attribute
+{
+	protected Type m_SnapinType;
+
+	public Type SnapinType => m_SnapinType;
+
+	public AboutSnapinAttribute(Type type)
+	{
+		m_SnapinType = type;
+	}
+}
+public class SnapinStateBase
+{
+	protected bool m_dirty;
+
+	public bool Dirty
+	{
+		get
+		{
+			return m_dirty;
+		}
+		set
+		{
+			m_dirty = value;
+		}
+	}
+
+	public virtual void ReadState(ComStream stream)
+	{
+	}
+
+	protected virtual string readString(StreamReader br)
+	{
+		StringBuilder stringBuilder = new StringBuilder();
+		char value;
+		while ((value = (char)br.Read()) != '|')
+		{
+			stringBuilder.Append(value);
+		}
+		return stringBuilder.ToString();
+	}
+
+	public virtual void WriteState(ComStream stream)
+	{
+	}
+}
+internal class SnapinRegistrar
+{
+	public static void Register()
+	{
+		Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
+		foreach (Assembly a in assemblies)
+		{
+			Register(a);
+		}
+	}
+
+	public static void Register(Assembly a)
+	{
+		SnapReg snapReg = new SnapReg();
+		snapReg.Register(a);
+	}
+
+	public static void UnRegister()
+	{
+		Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
+		foreach (Assembly a in assemblies)
+		{
+			UnRegister(a);
+		}
+	}
+
+	public static void UnRegister(Assembly a)
+	{
+		SnapReg snapReg = new SnapReg();
+		snapReg.UnRegister(a);
+	}
+}
+internal class SnapinRegInfo
+{
+	public Type fSnapinType;
+
+	public string fGUID;
+
+	public SnapinInAttribute fAttrib;
+
+	public SnapinAboutRegistration fAboutReg;
+}
+internal class SnapinAboutRegistration
+{
+	public string fGUID;
+
+	public AboutSnapinAttribute fAboutAttrib;
+}
+internal class SnapReg
+{
+	private ArrayList fSnapinRegInfos = new ArrayList();
+
+	private Hashtable fSnapinAboutRegistrations = new Hashtable();
+
+	public void UnRegister(Assembly asm)
+	{
+		Type[] types = asm.GetTypes();
+		foreach (Type type in types)
+		{
+			if (Marshal.IsTypeVisibleFromCom(type) && type.IsClass && (type.IsPublic || type.IsNestedPublic) && !type.IsImport)
+			{
+				FindAttributes(type);
+			}
+		}
+		PrepareAttribute();
+		UnRegister();
+	}
+
+	public void Register(Assembly asm)
+	{
+		Type[] types = asm.GetTypes();
+		foreach (Type type in types)
+		{
+			if (Marshal.IsTypeVisibleFromCom(type) && type.IsClass && (type.IsPublic || type.IsNestedPublic) && !type.IsImport)
+			{
+				FindAttributes(type);
+			}
+		}
+		PrepareAttribute();
+		Register();
+	}
+
+	private void FindAttributes(Type t)
+	{
+		string text = "{" + Marshal.GenerateGuidForType(t).ToString().ToUpper() + "}";
+		object[] customAttributes = t.GetCustomAttributes(typeof(SnapinInAttribute), inherit: true);
+		if (customAttributes.Length != 0 && customAttributes[0] is SnapinInAttribute fAttrib)
+		{
+			SnapinRegInfo snapinRegInfo = new SnapinRegInfo();
+			snapinRegInfo.fAttrib = fAttrib;
+			snapinRegInfo.fGUID = text.ToUpper();
+			snapinRegInfo.fSnapinType = t;
+			fSnapinRegInfos.Add(snapinRegInfo);
+		}
+		customAttributes = t.GetCustomAttributes(typeof(AboutSnapinAttribute), inherit: true);
+		if (customAttributes.Length != 0 && customAttributes[0] is AboutSnapinAttribute aboutSnapinAttribute)
+		{
+			SnapinAboutRegistration snapinAboutRegistration = new SnapinAboutRegistration();
+			snapinAboutRegistration.fAboutAttrib = aboutSnapinAttribute;
+			snapinAboutRegistration.fGUID = text.ToUpper();
+			fSnapinAboutRegistrations.Add(aboutSnapinAttribute.SnapinType.ToString(), snapinAboutRegistration);
+		}
+	}
+
+	private void PrepareAttribute()
+	{
+		foreach (SnapinRegInfo fSnapinRegInfo in fSnapinRegInfos)
+		{
+			if (!(fSnapinAboutRegistrations[fSnapinRegInfo.fSnapinType.ToString()] is SnapinAboutRegistration fAboutReg))
+			{
+				throw new ApplicationException("Failed to locate a Snapin About object for the snapin: " + fSnapinRegInfo.fSnapinType.ToString());
+			}
+			fSnapinRegInfo.fAboutReg = fAboutReg;
+		}
+	}
+
+	private void Register()
+	{
+		foreach (SnapinRegInfo fSnapinRegInfo in fSnapinRegInfos)
+		{
+			RegistryKey registryKey = Registry.LocalMachine.OpenSubKey("Software\\Microsoft\\MMC\\Snapins", writable: true);
+			registryKey = registryKey.CreateSubKey(fSnapinRegInfo.fGUID);
+			registryKey.SetValue("NameString", fSnapinRegInfo.fAttrib.Namestring);
+			registryKey.SetValue("About", fSnapinRegInfo.fAboutReg.fGUID);
+			if (fSnapinRegInfo.fAttrib.StandAlone)
+			{
+				registryKey.CreateSubKey("StandAlone");
+			}
+		}
+	}
+
+	private void UnRegister()
+	{
+		foreach (SnapinRegInfo fSnapinRegInfo in fSnapinRegInfos)
+		{
+			try
+			{
+				RegistryKey registryKey = Registry.LocalMachine.OpenSubKey("Software\\Microsoft\\MMC\\Snapins", writable: true);
+				registryKey.DeleteSubKeyTree(fSnapinRegInfo.fGUID);
+			}
+			catch (ArgumentException)
+			{
+			}
+			catch (SecurityException)
+			{
+			}
+		}
+	}
+}
+public class SortListNode : BaseNode
+{
+	protected IConsole2 m_Console;
+
+	protected SortedList m_List;
+
+	protected ArrayList m_HeaderInfo;
+
+	public IHeaderCtrl2 HeaderCtrl => (IHeaderCtrl2)m_Console;
+
+	public IResultData ResultData => (IResultData)m_Console;
+
+	public SortedList DataList
+	{
+		get
+		{
+			return m_List;
+		}
+		set
+		{
+			m_List = value;
+		}
+	}
+
+	public ArrayList HeaderInfo
+	{
+		get
+		{
+			return m_HeaderInfo;
+		}
+		set
+		{
+			m_HeaderInfo = value;
+		}
+	}
+
+	public SortListNode(SnapinBase snapin)
+		: base(snapin)
+	{
+	}
+
+	public SortListNode(SnapinBase snapin, BaseNode parentNode)
+		: base(snapin, parentNode)
+	{
+	}
+
+	public override void OnShow()
+	{
+		m_Console = m_Snapin.ResultViewConsole;
+		OnShowHeader(HeaderCtrl);
+		OnShowData(ResultData);
+		ResultData.SetViewMode(1);
+		base.OnShow();
+	}
+
+	public virtual void OnShowHeader(IHeaderCtrl2 header)
+	{
+		try
+		{
+			if (m_HeaderInfo != null)
+			{
+				for (int i = 0; i < m_HeaderInfo.Count; i++)
+				{
+					string title = m_HeaderInfo[i] as string;
+					int nWidth = -1;
+					header.InsertColumn(i, title, 0, nWidth);
+				}
+			}
+		}
+		catch (COMException ex)
+		{
+			throw ex;
+		}
+		catch (Exception ex2)
+		{
+			throw ex2;
+		}
+	}
+
+	public virtual void OnShowData(IResultData ResultData)
+	{
+		if (m_List != null)
+		{
+			for (int i = 0; i < m_List.Count; i++)
+			{
+				InsertItem(m_List.IndexOfValue(i), i + 1);
+			}
+		}
+	}
+
+	public virtual void InsertItem(object row, int nRow)
+	{
+		if (row != null)
+		{
+			RESULTDATAITEM item = default(RESULTDATAITEM);
+			row.ToString();
+			item.mask = 22u;
+			item.nImage = -1;
+			item.str = (IntPtr)(-1);
+			item.nCol = 0;
+			item.lParam = GetItemLParam(nRow);
+			ResultData.InsertItem(ref item);
+		}
+	}
+
+	public virtual void SetItem(object row, int nRow)
+	{
+		if (row != null)
+		{
+			int itemLParam = GetItemLParam(nRow);
+			RESULTDATAITEM item = default(RESULTDATAITEM);
+			row.ToString();
+			item.mask = 18u;
+			item.str = (IntPtr)(-1);
+			item.nCol = 0;
+			ResultData.FindItemByLParam(itemLParam, out var pItemID);
+			item.lParam = itemLParam;
+			item.itemID = (int)pItemID;
+			ResultData.SetItem(ref item);
+		}
+	}
+
+	public virtual void UpdateItem(int lParam)
+	{
+		ResultData.FindItemByLParam(lParam, out var pItemID);
+		ResultData.UpdateItem(pItemID);
+	}
+
+	public virtual void DeleteItem(int lParam)
+	{
+		ResultData.FindItemByLParam(lParam, out var pItemID);
+		ResultData.DeleteItem(pItemID, 0);
+	}
+
+	public virtual void GetItem(out RESULTDATAITEM ResultDataItem, uint pItemID)
+	{
+		RESULTDATAITEM item = new RESULTDATAITEM
+		{
+			mask = 2u,
+			itemID = (int)pItemID,
+			nCol = 0
+		};
+		ResultData.GetItem(ref item);
+		ResultDataItem = item;
+	}
+
+	public virtual RESULTDATAITEM GetSelectedItem()
+	{
+		return GetSelectedItem(-1);
+	}
+
+	public virtual RESULTDATAITEM GetSelectedItem(int nIndex)
+	{
+		RESULTDATAITEM item = new RESULTDATAITEM
+		{
+			mask = 8u,
+			nCol = 0,
+			nIndex = nIndex,
+			nState = 2u
+		};
+		ResultData.GetNextItem(ref item);
+		return item;
+	}
+
+	public virtual int GetTableRowID(int lParam)
+	{
+		return (lParam >> 16) - 1;
+	}
+
+	public virtual int GetItemLParam(int nRow)
+	{
+		return m_iCookie | (nRow << 16);
+	}
+}
+public class ToolBarButtonInfo
+{
+	public const byte TBSTATE_CHECKED = 1;
+
+	public const byte TBSTATE_PRESSED = 2;
+
+	public const byte TBSTATE_ENABLED = 4;
+
+	public const byte TBSTATE_HIDDEN = 8;
+
+	public const byte TBSTATE_INDETERMINATE = 16;
+
+	public const byte TBSTYLE_BUTTON = 0;
+
+	public const byte TBSTYLE_SEP = 1;
+
+	public const byte TBSTYLE_CHECK = 2;
+
+	public const byte TBSTYLE_GROUP = 4;
+
+	public const byte TBSTYLE_CHECKGROUP = 6;
+
+	public int bmpIndex;
+
+	public string strTooltip;
+
+	public string strText;
+
+	public int idCommand;
+
+	public byte tbStyle;
+
+	public byte tbState;
+
+	public ToolBarButtonInfo(int indexBmp, string text, string strTooltipText, int iIdCommand, byte tbstyle, byte tbstate)
+	{
+		bmpIndex = indexBmp;
+		strText = text;
+		strTooltip = strTooltipText;
+		idCommand = iIdCommand;
+		tbStyle = tbstyle;
+		tbState = tbstate;
+	}
+}
+public class ToolBarInfo
+{
+	public int m_idToolbar;
+
+	public IntPtr[] m_hBitmaps;
+
+	public int[] m_numBitmapsFromEachBmpHandle;
+
+	public ToolBarButtonInfo[] m_toolBarButtonInfo;
+
+	public int m_NumButtons;
+
+	public ToolBarInfo(int toolbarId, ToolBarButtonInfo[] buttons, IntPtr[] hBitmaps, int[] numBitMapsFromEachBmpFile)
+	{
+		m_hBitmaps = hBitmaps;
+		m_numBitmapsFromEachBmpHandle = numBitMapsFromEachBmpFile;
+		m_NumButtons = buttons.Length;
+		m_toolBarButtonInfo = buttons;
+	}
+}
+public class ToolBars
+{
+	private Hashtable m_ToolbarTable;
+
+	private Hashtable m_ActiveIToolbars;
+
+	private ArrayList m_CurrentToolbarsInfo;
+
+	public ToolBars()
+	{
+		m_ToolbarTable = new Hashtable();
+		m_ActiveIToolbars = new Hashtable();
+		m_CurrentToolbarsInfo = new ArrayList();
+	}
+
+	public bool AddToolBarInfo(int toolBarId, ToolBarButtonInfo[] buttons, IntPtr[] hBitmaps, int[] numBitMapsFromEachBmpFile)
+	{
+		if (m_ToolbarTable.ContainsKey(toolBarId))
+		{
+			return true;
+		}
+		try
+		{
+			ToolBarInfo value = new ToolBarInfo(toolBarId, buttons, hBitmaps, numBitMapsFromEachBmpFile);
+			m_ToolbarTable.Add(toolBarId, value);
+			return true;
+		}
+		catch (ArgumentException)
+		{
+			return false;
+		}
+		catch
+		{
+			return false;
+		}
+	}
+
+	public int GetToolBarInfoCount()
+	{
+		return m_ToolbarTable.Count;
+	}
+
+	private void ClearToolBarInfo()
+	{
+		m_ToolbarTable.Clear();
+	}
+
+	public int GetCurrentToolbarCount()
+	{
+		return m_CurrentToolbarsInfo.Count;
+	}
+
+	public int GetCurrentToolbarItemAtIndex(int index)
+	{
+		if (index < 0 || index >= m_CurrentToolbarsInfo.Count)
+		{
+			return -1;
+		}
+		return (int)m_CurrentToolbarsInfo[index];
+	}
+
+	public void ClearCurrentToolbarsInfo()
+	{
+		m_CurrentToolbarsInfo.Clear();
+	}
+
+	public bool AddCurrentToolbarsInfo(int toolBarId)
+	{
+		if (m_ToolbarTable.ContainsKey(toolBarId))
+		{
+			if (!m_CurrentToolbarsInfo.Contains(toolBarId))
+			{
+				m_CurrentToolbarsInfo.Add(toolBarId);
+			}
+			return true;
+		}
+		return false;
+	}
+
+	public void AddToActiveToolbarList(int toolBarId, object ppUnknown)
+	{
+		m_ActiveIToolbars.Add(toolBarId, ppUnknown);
+	}
+
+	public void RemoveFromActiveToolbarList(int toolBarId)
+	{
+		m_ActiveIToolbars.Remove(toolBarId);
+	}
+
+	public int GetNumActiveToolbars()
+	{
+		return m_ActiveIToolbars.Count;
+	}
+
+	public IEnumerator GetActiveToolbarsEnum()
+	{
+		return m_ActiveIToolbars.GetEnumerator();
+	}
+
+	public void RemoveAllActiveToolbarsFromList()
+	{
+		m_ActiveIToolbars.Clear();
+	}
+
+	public bool PopulateItoolbarWithToolBarInfo(int toolBarId, IToolbar pToolBar)
+	{
+		try
+		{
+			ToolBarInfo toolBarInfo = (ToolBarInfo)m_ToolbarTable[toolBarId];
+			for (int i = 0; i < toolBarInfo.m_hBitmaps.Length; i++)
+			{
+				pToolBar.AddBitmap(toolBarInfo.m_numBitmapsFromEachBmpHandle[i], toolBarInfo.m_hBitmaps[i], 16, 16, Color.Black.ToArgb());
+			}
+			MMCBUTTON[] array = new MMCBUTTON[toolBarInfo.m_NumButtons];
+			for (int j = 0; j < toolBarInfo.m_NumButtons; j++)
+			{
+				array[j].idCommand = toolBarInfo.m_toolBarButtonInfo[j].idCommand;
+				array[j].nBitmap = toolBarInfo.m_toolBarButtonInfo[j].bmpIndex;
+				array[j].lpTooltipText = toolBarInfo.m_toolBarButtonInfo[j].strTooltip;
+				array[j].fsState = toolBarInfo.m_toolBarButtonInfo[j].tbState;
+				array[j].fsType = toolBarInfo.m_toolBarButtonInfo[j].tbStyle;
+				array[j].lpButtonText = toolBarInfo.m_toolBarButtonInfo[j].strText;
+				pToolBar.AddButtons(1, ref array[j]);
+			}
+			return true;
+		}
+		catch (Exception ex)
+		{
+			string message = ex.Message;
+			return false;
+		}
+	}
+}
+public class WizardBase : Form
+{
+	public delegate void RepaintDelegate();
+
+	public delegate void WizardAction(WizardPage[] pages);
+
+	private Container components;
+
+	private TabControl tabWizardPages;
+
+	private Button btnCancel;
+
+	private Button btnNext;
+
+	private Button btnBack;
+
+	protected Bitmap m_Logo;
+
+	protected ArrayList pages = new ArrayList();
+
+	protected DialogResult m_CachedDialogResult;
+
+	public virtual Bitmap Logo
+	{
+		get
+		{
+			return m_Logo;
+		}
+		set
+		{
+			m_Logo = value;
+		}
+	}
+
+	public DialogResult CachedDialogResult
+	{
+		get
+		{
+			return m_CachedDialogResult;
+		}
+		set
+		{
+			m_CachedDialogResult = value;
+		}
+	}
+
+	public WizardBase(string title)
+	{
+		InitializeComponent();
+		Text = title;
+		base.StartPosition = FormStartPosition.CenterScreen;
+	}
+
+	public static void ShowWizard(string title, Bitmap logo, WizardPage[] pages, WizardAction wizardAction)
+	{
+		Thread thread = new Thread(new WizardThread(pages, wizardAction, title, logo).Run);
+		thread.Start();
+	}
+
+	public static void ShowException(string msg, Exception e)
+	{
+		StringBuilder stringBuilder = new StringBuilder();
+		stringBuilder.Append(string.Concat(msg, e, "\n"));
+		stringBuilder.Append(e.StackTrace);
+		MessageBox.Show(stringBuilder.ToString());
+	}
+
+	public void AddWizardPage(WizardPage wp)
+	{
+		wp.WizardBase = this;
+		wp.Add_WizardPageStateChange(CheckWizardStatus);
+		pages.Add(wp);
+		InitPages();
+	}
+
+	public void RemoveWizardPage(WizardPage wp)
+	{
+		wp.Remove_WizardPageStateChange(CheckWizardStatus);
+		wp.WizardBase = null;
+		pages.Remove(wp);
+		InitPages();
+	}
+
+	public void CheckWizardStatus(WizardPage wp)
+	{
+		try
+		{
+			if (wp.WizardPageValid)
+			{
+				btnNext.Enabled = true;
+			}
+			else
+			{
+				btnNext.Enabled = false;
+			}
+		}
+		catch (Exception e)
+		{
+			ShowException("Failed to check the wizard", e);
+		}
+	}
+
+	public void InitPages()
+	{
+		tabWizardPages.SuspendLayout();
+		tabWizardPages.Controls.Clear();
+		int num = 0;
+		IEnumerator enumerator = pages.GetEnumerator();
+		while (enumerator.MoveNext())
+		{
+			num++;
+			WizardPage wizardPage = (WizardPage)enumerator.Current;
+			TabPage tabPage = new TabPage("Page: " + num);
+			tabPage.Controls.Add(wizardPage);
+			if (m_Logo != null)
+			{
+				wizardPage.pictWizLogo.Image = m_Logo.GetThumbnailImage(48, 48, null, IntPtr.Zero);
+			}
+			tabWizardPages.Controls.Add(tabPage);
+		}
+		tabWizardPages.ResumeLayout(performLayout: true);
+		InitButtons();
+	}
+
+	protected void InitButtons()
+	{
+		try
+		{
+			if (tabWizardPages.SelectedIndex == tabWizardPages.TabCount - 1)
+			{
+				btnNext.Text = "&Finish";
+			}
+			else
+			{
+				btnNext.Text = "&Next >";
+			}
+			if (tabWizardPages.SelectedIndex == 0)
+			{
+				btnBack.Enabled = false;
+			}
+			else
+			{
+				btnBack.Enabled = true;
+			}
+			WizardPage wp = (WizardPage)tabWizardPages.SelectedTab.Controls[0];
+			CheckWizardStatus(wp);
+		}
+		catch (Exception e)
+		{
+			ShowException("Cannot initButton", e);
+		}
+	}
+
+	protected override void Dispose(bool disposing)
+	{
+		lock (this)
+		{
+			Monitor.PulseAll(this);
+		}
+		if (disposing && components != null)
+		{
+			components.Dispose();
+		}
+		base.Dispose(disposing);
+	}
+
+	private void InitializeComponent()
+	{
+		this.tabWizardPages = new System.Windows.Forms.TabControl();
+		this.btnCancel = new System.Windows.Forms.Button();
+		this.btnNext = new System.Windows.Forms.Button();
+		this.btnBack = new System.Windows.Forms.Button();
+		base.SuspendLayout();
+		this.tabWizardPages.Location = new System.Drawing.Point(-1, -23);
+		this.tabWizardPages.Name = "tabWizardPages";
+		this.tabWizardPages.SelectedIndex = 0;
+		this.tabWizardPages.Size = new System.Drawing.Size(499, 367);
+		this.tabWizardPages.TabIndex = 0;
+		this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
+		this.btnCancel.Location = new System.Drawing.Point(408, 352);
+		this.btnCancel.Name = "btnCancel";
+		this.btnCancel.Size = new System.Drawing.Size(80, 24);
+		this.btnCancel.TabIndex = 1;
+		this.btnCancel.Text = "&Cancel";
+		this.btnCancel.Click += new System.EventHandler(btnCancel_Click);
+		this.btnNext.Location = new System.Drawing.Point(320, 352);
+		this.btnNext.Name = "btnNext";
+		this.btnNext.Size = new System.Drawing.Size(80, 24);
+		this.btnNext.TabIndex = 2;
+		this.btnNext.Text = "&Next >";
+		this.btnNext.Click += new System.EventHandler(btnNext_Click);
+		this.btnBack.Location = new System.Drawing.Point(240, 352);
+		this.btnBack.Name = "btnBack";
+		this.btnBack.Size = new System.Drawing.Size(80, 24);
+		this.btnBack.TabIndex = 3;
+		this.btnBack.Text = "< &Back";
+		this.btnBack.Click += new System.EventHandler(btnBack_Click);
+		base.AcceptButton = this.btnNext;
+		this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
+		base.CancelButton = this.btnCancel;
+		base.ClientSize = new System.Drawing.Size(496, 381);
+		base.Controls.Add(this.btnBack);
+		base.Controls.Add(this.btnNext);
+		base.Controls.Add(this.btnCancel);
+		base.Controls.Add(this.tabWizardPages);
+		base.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+		base.MaximizeBox = false;
+		base.MinimizeBox = false;
+		base.Name = "WizardBase";
+		base.TopMost = true;
+		base.Click += new System.EventHandler(WizardBase_Click);
+		base.VisibleChanged += new System.EventHandler(WizardBase_VisibleChanged);
+		base.ResumeLayout(false);
+	}
+
+	private void btnBack_Click(object sender, EventArgs e)
+	{
+		int selectedIndex = tabWizardPages.SelectedIndex;
+		if (selectedIndex > 0)
+		{
+			tabWizardPages.SelectedIndex = selectedIndex - 1;
+		}
+		InitButtons();
+	}
+
+	private void btnNext_Click(object sender, EventArgs e)
+	{
+		int selectedIndex = tabWizardPages.SelectedIndex;
+		int tabCount = tabWizardPages.TabCount;
+		if (selectedIndex < tabCount - 1)
+		{
+			tabWizardPages.SelectedIndex = selectedIndex + 1;
+			InitButtons();
+		}
+		else
+		{
+			CachedDialogResult = DialogResult.OK;
+			Close();
+		}
+	}
+
+	private void btnCancel_Click(object sender, EventArgs e)
+	{
+		CachedDialogResult = DialogResult.Cancel;
+		Close();
+	}
+
+	private void WizardBase_Click(object sender, EventArgs e)
+	{
+		Invoke(new RepaintDelegate(RepaintMe));
+	}
+
+	private void RepaintMe()
+	{
+		Invalidate();
+		Update();
+	}
+
+	private void WizardBase_VisibleChanged(object sender, EventArgs e)
+	{
+		Invoke(new RepaintDelegate(RepaintMe));
+	}
+}
+internal class WizardThread
+{
+	protected WizardBase m_Form;
+
+	protected DialogResult formResult;
+
+	protected WizardPage[] m_Pages;
+
+	protected WizardBase.WizardAction m_Action;
+
+	protected string m_Title;
+
+	protected Bitmap m_Logo;
+
+	public DialogResult CachedDialogResult => m_Form.CachedDialogResult;
+
+	public WizardThread(WizardPage[] pages, WizardBase.WizardAction act, string title, Bitmap logo)
+	{
+		m_Pages = pages;
+		m_Action = act;
+		m_Title = title;
+		m_Logo = logo;
+	}
+
+	public void Run()
+	{
+		try
+		{
+			m_Form = new WizardBase(m_Title);
+			for (int i = 0; i < m_Pages.Length; i++)
+			{
+				m_Form.AddWizardPage(m_Pages[i]);
+			}
+			m_Form.Logo = m_Logo;
+			m_Form.InitPages();
+			formResult = m_Form.ShowDialog();
+			try
+			{
+				if (m_Form.CachedDialogResult == DialogResult.OK)
+				{
+					m_Action(m_Pages);
+				}
+			}
+			finally
+			{
+				m_Form.Dispose();
+			}
+		}
+		catch (Exception e)
+		{
+			WizardBase.ShowException("Caught an exception", e);
+		}
+	}
+}
+public class WizardPage : UserControl
+{
+	public delegate void WizardPageChanged(WizardPage me);
+
+	private Panel pnlHeader;
+
+	public PictureBox pictWizLogo;
+
+	protected Label lblExpandedDescription;
+
+	protected Label lblPageCaption;
+
+	private Container components;
+
+	protected ArrayList listeners = new ArrayList();
+
+	protected WizardBase wizardBase;
+
+	protected BaseNode node;
+
+	public BaseNode Node => node;
+
+	public WizardBase WizardBase
+	{
+		get
+		{
+			return wizardBase;
+		}
+		set
+		{
+			wizardBase = value;
+		}
+	}
+
+	public bool PageReady => true;
+
+	public virtual bool WizardPageValid => true;
+
+	public WizardPage()
+	{
+		InitializeComponent();
+	}
+
+	public WizardPage(BaseNode Node)
+	{
+		node = Node;
+		InitializeComponent();
+	}
+
+	public void Add_WizardPageStateChange(WizardPageChanged listener)
+	{
+		listeners.Add(listener);
+	}
+
+	public void Remove_WizardPageStateChange(WizardPageChanged listener)
+	{
+		listeners.Remove(listener);
+	}
+
+	public void FirePageChange()
+	{
+		object[] array = listeners.ToArray();
+		int i = 0;
+		for (int num = array.Length; i < num; i++)
+		{
+			Invoke((WizardPageChanged)array[i], this);
+		}
+	}
+
+	protected override void Dispose(bool disposing)
+	{
+		if (disposing && components != null)
+		{
+			components.Dispose();
+		}
+		base.Dispose(disposing);
+	}
+
+	private void InitializeComponent()
+	{
+		this.pnlHeader = new System.Windows.Forms.Panel();
+		this.pictWizLogo = new System.Windows.Forms.PictureBox();
+		this.lblExpandedDescription = new System.Windows.Forms.Label();
+		this.lblPageCaption = new System.Windows.Forms.Label();
+		this.pnlHeader.SuspendLayout();
+		base.SuspendLayout();
+		this.pnlHeader.BackColor = System.Drawing.SystemColors.Window;
+		this.pnlHeader.Controls.Add(this.pictWizLogo);
+		this.pnlHeader.Controls.Add(this.lblExpandedDescription);
+		this.pnlHeader.Controls.Add(this.lblPageCaption);
+		this.pnlHeader.Location = new System.Drawing.Point(0, 0);
+		this.pnlHeader.Name = "pnlHeader";
+		this.pnlHeader.Size = new System.Drawing.Size(496, 64);
+		this.pnlHeader.TabIndex = 1;
+		this.pictWizLogo.Location = new System.Drawing.Point(440, 8);
+		this.pictWizLogo.Name = "pictWizLogo";
+		this.pictWizLogo.Size = new System.Drawing.Size(48, 48);
+		this.pictWizLogo.TabIndex = 2;
+		this.pictWizLogo.TabStop = false;
+		this.lblExpandedDescription.Location = new System.Drawing.Point(48, 32);
+		this.lblExpandedDescription.Name = "lblExpandedDescription";
+		this.lblExpandedDescription.Size = new System.Drawing.Size(320, 24);
+		this.lblExpandedDescription.TabIndex = 1;
+		this.lblExpandedDescription.Text = "Wizard page explanation";
+		this.lblPageCaption.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25f, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, 0);
+		this.lblPageCaption.Location = new System.Drawing.Point(16, 16);
+		this.lblPageCaption.Name = "lblPageCaption";
+		this.lblPageCaption.Size = new System.Drawing.Size(352, 16);
+		this.lblPageCaption.TabIndex = 0;
+		this.lblPageCaption.Text = "Wizard page caption";
+		base.Controls.Add(this.pnlHeader);
+		base.Name = "WizardPage";
+		base.Size = new System.Drawing.Size(496, 328);
+		this.pnlHeader.ResumeLayout(false);
+		base.ResumeLayout(false);
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

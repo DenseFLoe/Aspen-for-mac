@@ -1,0 +1,789 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using System.Resources;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
+using System.Runtime.Versioning;
+using System.Threading;
+using System.Threading.Tasks;
+using FxResources.Microsoft.Extensions.Hosting.Abstractions;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Diagnostics.Metrics;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: TargetFramework(".NETCoreApp,Version=v8.0", FrameworkDisplayName = ".NET 8.0")]
+[assembly: AssemblyMetadata("Serviceable", "True")]
+[assembly: AssemblyMetadata("PreferInbox", "True")]
+[assembly: AssemblyDefaultAlias("Microsoft.Extensions.Hosting.Abstractions")]
+[assembly: NeutralResourcesLanguage("en-US")]
+[assembly: CLSCompliant(true)]
+[assembly: AssemblyMetadata("IsTrimmable", "True")]
+[assembly: DefaultDllImportSearchPaths(DllImportSearchPath.System32 | DllImportSearchPath.AssemblyDirectory)]
+[assembly: AssemblyCompany("Microsoft Corporation")]
+[assembly: AssemblyCopyright("© Microsoft Corporation. All rights reserved.")]
+[assembly: AssemblyDescription("Hosting and startup abstractions for applications.")]
+[assembly: AssemblyFileVersion("8.0.23.53103")]
+[assembly: AssemblyInformationalVersion("8.0.0+5535e31a712343a63f5d7d796cd874e563e5ac14")]
+[assembly: AssemblyProduct("Microsoft® .NET")]
+[assembly: AssemblyTitle("Microsoft.Extensions.Hosting.Abstractions")]
+[assembly: AssemblyMetadata("RepositoryUrl", "https://github.com/dotnet/runtime")]
+[assembly: AssemblyVersion("8.0.0.0")]
+[module: RefSafetyRules(11)]
+[module: NullablePublicOnly(false)]
+namespace FxResources.Microsoft.Extensions.Hosting.Abstractions
+{
+	internal static class SR
+	{
+	}
+}
+namespace System
+{
+	internal static class ThrowHelper
+	{
+		internal static void ThrowIfNull([NotNull] object argument, [CallerArgumentExpression("argument")] string paramName = null)
+		{
+			if (argument == null)
+			{
+				Throw(paramName);
+			}
+		}
+
+		[DoesNotReturn]
+		private static void Throw(string paramName)
+		{
+			throw new ArgumentNullException(paramName);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		[return: NotNull]
+		public static string IfNullOrWhitespace([NotNull] string argument, [CallerArgumentExpression("argument")] string paramName = "")
+		{
+			if (string.IsNullOrWhiteSpace(argument))
+			{
+				if (argument == null)
+				{
+					throw new ArgumentNullException(paramName);
+				}
+				throw new ArgumentException(paramName, "Argument is whitespace");
+			}
+			return argument;
+		}
+	}
+	internal static class Obsoletions
+	{
+		internal const string SharedUrlFormat = "https://aka.ms/dotnet-warnings/{0}";
+
+		internal const string SystemTextEncodingUTF7Message = "The UTF-7 encoding is insecure and should not be used. Consider using UTF-8 instead.";
+
+		internal const string SystemTextEncodingUTF7DiagId = "SYSLIB0001";
+
+		internal const string PrincipalPermissionAttributeMessage = "PrincipalPermissionAttribute is not honored by the runtime and must not be used.";
+
+		internal const string PrincipalPermissionAttributeDiagId = "SYSLIB0002";
+
+		internal const string CodeAccessSecurityMessage = "Code Access Security is not supported or honored by the runtime.";
+
+		internal const string CodeAccessSecurityDiagId = "SYSLIB0003";
+
+		internal const string ConstrainedExecutionRegionMessage = "The Constrained Execution Region (CER) feature is not supported.";
+
+		internal const string ConstrainedExecutionRegionDiagId = "SYSLIB0004";
+
+		internal const string GlobalAssemblyCacheMessage = "The Global Assembly Cache is not supported.";
+
+		internal const string GlobalAssemblyCacheDiagId = "SYSLIB0005";
+
+		internal const string ThreadAbortMessage = "Thread.Abort is not supported and throws PlatformNotSupportedException.";
+
+		internal const string ThreadResetAbortMessage = "Thread.ResetAbort is not supported and throws PlatformNotSupportedException.";
+
+		internal const string ThreadAbortDiagId = "SYSLIB0006";
+
+		internal const string DefaultCryptoAlgorithmsMessage = "The default implementation of this cryptography algorithm is not supported.";
+
+		internal const string DefaultCryptoAlgorithmsDiagId = "SYSLIB0007";
+
+		internal const string CreatePdbGeneratorMessage = "The CreatePdbGenerator API is not supported and throws PlatformNotSupportedException.";
+
+		internal const string CreatePdbGeneratorDiagId = "SYSLIB0008";
+
+		internal const string AuthenticationManagerMessage = "The AuthenticationManager Authenticate and PreAuthenticate methods are not supported and throw PlatformNotSupportedException.";
+
+		internal const string AuthenticationManagerDiagId = "SYSLIB0009";
+
+		internal const string RemotingApisMessage = "This Remoting API is not supported and throws PlatformNotSupportedException.";
+
+		internal const string RemotingApisDiagId = "SYSLIB0010";
+
+		internal const string BinaryFormatterMessage = "BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.";
+
+		internal const string BinaryFormatterDiagId = "SYSLIB0011";
+
+		internal const string CodeBaseMessage = "Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location instead.";
+
+		internal const string CodeBaseDiagId = "SYSLIB0012";
+
+		internal const string EscapeUriStringMessage = "Uri.EscapeUriString can corrupt the Uri string in some cases. Consider using Uri.EscapeDataString for query string components instead.";
+
+		internal const string EscapeUriStringDiagId = "SYSLIB0013";
+
+		internal const string WebRequestMessage = "WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.";
+
+		internal const string WebRequestDiagId = "SYSLIB0014";
+
+		internal const string DisablePrivateReflectionAttributeMessage = "DisablePrivateReflectionAttribute has no effect in .NET 6.0+.";
+
+		internal const string DisablePrivateReflectionAttributeDiagId = "SYSLIB0015";
+
+		internal const string GetContextInfoMessage = "Use the Graphics.GetContextInfo overloads that accept arguments for better performance and fewer allocations.";
+
+		internal const string GetContextInfoDiagId = "SYSLIB0016";
+
+		internal const string StrongNameKeyPairMessage = "Strong name signing is not supported and throws PlatformNotSupportedException.";
+
+		internal const string StrongNameKeyPairDiagId = "SYSLIB0017";
+
+		internal const string ReflectionOnlyLoadingMessage = "ReflectionOnly loading is not supported and throws PlatformNotSupportedException.";
+
+		internal const string ReflectionOnlyLoadingDiagId = "SYSLIB0018";
+
+		internal const string RuntimeEnvironmentMessage = "RuntimeEnvironment members SystemConfigurationFile, GetRuntimeInterfaceAsIntPtr, and GetRuntimeInterfaceAsObject are not supported and throw PlatformNotSupportedException.";
+
+		internal const string RuntimeEnvironmentDiagId = "SYSLIB0019";
+
+		internal const string JsonSerializerOptionsIgnoreNullValuesMessage = "JsonSerializerOptions.IgnoreNullValues is obsolete. To ignore null values when serializing, set DefaultIgnoreCondition to JsonIgnoreCondition.WhenWritingNull.";
+
+		internal const string JsonSerializerOptionsIgnoreNullValuesDiagId = "SYSLIB0020";
+
+		internal const string DerivedCryptographicTypesMessage = "Derived cryptographic types are obsolete. Use the Create method on the base type instead.";
+
+		internal const string DerivedCryptographicTypesDiagId = "SYSLIB0021";
+
+		internal const string RijndaelMessage = "The Rijndael and RijndaelManaged types are obsolete. Use Aes instead.";
+
+		internal const string RijndaelDiagId = "SYSLIB0022";
+
+		internal const string RNGCryptoServiceProviderMessage = "RNGCryptoServiceProvider is obsolete. To generate a random number, use one of the RandomNumberGenerator static methods instead.";
+
+		internal const string RNGCryptoServiceProviderDiagId = "SYSLIB0023";
+
+		internal const string AppDomainCreateUnloadMessage = "Creating and unloading AppDomains is not supported and throws an exception.";
+
+		internal const string AppDomainCreateUnloadDiagId = "SYSLIB0024";
+
+		internal const string SuppressIldasmAttributeMessage = "SuppressIldasmAttribute has no effect in .NET 6.0+.";
+
+		internal const string SuppressIldasmAttributeDiagId = "SYSLIB0025";
+
+		internal const string X509CertificateImmutableMessage = "X509Certificate and X509Certificate2 are immutable. Use the appropriate constructor to create a new certificate.";
+
+		internal const string X509CertificateImmutableDiagId = "SYSLIB0026";
+
+		internal const string PublicKeyPropertyMessage = "PublicKey.Key is obsolete. Use the appropriate method to get the public key, such as GetRSAPublicKey.";
+
+		internal const string PublicKeyPropertyDiagId = "SYSLIB0027";
+
+		internal const string X509CertificatePrivateKeyMessage = "X509Certificate2.PrivateKey is obsolete. Use the appropriate method to get the private key, such as GetRSAPrivateKey, or use the CopyWithPrivateKey method to create a new instance with a private key.";
+
+		internal const string X509CertificatePrivateKeyDiagId = "SYSLIB0028";
+
+		internal const string ProduceLegacyHmacValuesMessage = "ProduceLegacyHmacValues is obsolete. Producing legacy HMAC values is not supported.";
+
+		internal const string ProduceLegacyHmacValuesDiagId = "SYSLIB0029";
+
+		internal const string UseManagedSha1Message = "HMACSHA1 always uses the algorithm implementation provided by the platform. Use a constructor without the useManagedSha1 parameter.";
+
+		internal const string UseManagedSha1DiagId = "SYSLIB0030";
+
+		internal const string CryptoConfigEncodeOIDMessage = "EncodeOID is obsolete. Use the ASN.1 functionality provided in System.Formats.Asn1.";
+
+		internal const string CryptoConfigEncodeOIDDiagId = "SYSLIB0031";
+
+		internal const string CorruptedStateRecoveryMessage = "Recovery from corrupted process state exceptions is not supported; HandleProcessCorruptedStateExceptionsAttribute is ignored.";
+
+		internal const string CorruptedStateRecoveryDiagId = "SYSLIB0032";
+
+		internal const string Rfc2898CryptDeriveKeyMessage = "Rfc2898DeriveBytes.CryptDeriveKey is obsolete and is not supported. Use PasswordDeriveBytes.CryptDeriveKey instead.";
+
+		internal const string Rfc2898CryptDeriveKeyDiagId = "SYSLIB0033";
+
+		internal const string CmsSignerCspParamsCtorMessage = "CmsSigner(CspParameters) is obsolete and is not supported. Use an alternative constructor instead.";
+
+		internal const string CmsSignerCspParamsCtorDiagId = "SYSLIB0034";
+
+		internal const string SignerInfoCounterSigMessage = "ComputeCounterSignature without specifying a CmsSigner is obsolete and is not supported. Use the overload that accepts a CmsSigner.";
+
+		internal const string SignerInfoCounterSigDiagId = "SYSLIB0035";
+
+		internal const string RegexCompileToAssemblyMessage = "Regex.CompileToAssembly is obsolete and not supported. Use the GeneratedRegexAttribute with the regular expression source generator instead.";
+
+		internal const string RegexCompileToAssemblyDiagId = "SYSLIB0036";
+
+		internal const string AssemblyNameMembersMessage = "AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete and not supported.";
+
+		internal const string AssemblyNameMembersDiagId = "SYSLIB0037";
+
+		internal const string SystemDataSerializationFormatBinaryMessage = "SerializationFormat.Binary is obsolete and should not be used. See https://aka.ms/serializationformat-binary-obsolete for more information.";
+
+		internal const string SystemDataSerializationFormatBinaryDiagId = "SYSLIB0038";
+
+		internal const string TlsVersion10and11Message = "TLS versions 1.0 and 1.1 have known vulnerabilities and are not recommended. Use a newer TLS version instead, or use SslProtocols.None to defer to OS defaults.";
+
+		internal const string TlsVersion10and11DiagId = "SYSLIB0039";
+
+		internal const string EncryptionPolicyMessage = "EncryptionPolicy.NoEncryption and AllowEncryption significantly reduce security and should not be used in production code.";
+
+		internal const string EncryptionPolicyDiagId = "SYSLIB0040";
+
+		internal const string Rfc2898OutdatedCtorMessage = "The default hash algorithm and iteration counts in Rfc2898DeriveBytes constructors are outdated and insecure. Use a constructor that accepts the hash algorithm and the number of iterations.";
+
+		internal const string Rfc2898OutdatedCtorDiagId = "SYSLIB0041";
+
+		internal const string EccXmlExportImportMessage = "ToXmlString and FromXmlString have no implementation for ECC types, and are obsolete. Use a standard import and export format such as ExportSubjectPublicKeyInfo or ImportSubjectPublicKeyInfo for public keys and ExportPkcs8PrivateKey or ImportPkcs8PrivateKey for private keys.";
+
+		internal const string EccXmlExportImportDiagId = "SYSLIB0042";
+
+		internal const string EcDhPublicKeyBlobMessage = "ECDiffieHellmanPublicKey.ToByteArray() and the associated constructor do not have a consistent and interoperable implementation on all platforms. Use ECDiffieHellmanPublicKey.ExportSubjectPublicKeyInfo() instead.";
+
+		internal const string EcDhPublicKeyBlobDiagId = "SYSLIB0043";
+
+		internal const string AssemblyNameCodeBaseMessage = "AssemblyName.CodeBase and AssemblyName.EscapedCodeBase are obsolete. Using them for loading an assembly is not supported.";
+
+		internal const string AssemblyNameCodeBaseDiagId = "SYSLIB0044";
+
+		internal const string CryptoStringFactoryMessage = "Cryptographic factory methods accepting an algorithm name are obsolete. Use the parameterless Create factory method on the algorithm type instead.";
+
+		internal const string CryptoStringFactoryDiagId = "SYSLIB0045";
+
+		internal const string ControlledExecutionRunMessage = "ControlledExecution.Run method may corrupt the process and should not be used in production code.";
+
+		internal const string ControlledExecutionRunDiagId = "SYSLIB0046";
+
+		internal const string XmlSecureResolverMessage = "XmlSecureResolver is obsolete. Use XmlResolver.ThrowingResolver instead when attempting to forbid XML external entity resolution.";
+
+		internal const string XmlSecureResolverDiagId = "SYSLIB0047";
+
+		internal const string RsaEncryptDecryptValueMessage = "RSA.EncryptValue and DecryptValue are not supported and throw NotSupportedException. Use RSA.Encrypt and RSA.Decrypt instead.";
+
+		internal const string RsaEncryptDecryptDiagId = "SYSLIB0048";
+
+		internal const string JsonSerializerOptionsAddContextMessage = "JsonSerializerOptions.AddContext is obsolete. To register a JsonSerializerContext, use either the TypeInfoResolver or TypeInfoResolverChain properties.";
+
+		internal const string JsonSerializerOptionsAddContextDiagId = "SYSLIB0049";
+
+		internal const string LegacyFormatterMessage = "Formatter-based serialization is obsolete and should not be used.";
+
+		internal const string LegacyFormatterDiagId = "SYSLIB0050";
+
+		internal const string LegacyFormatterImplMessage = "This API supports obsolete formatter-based serialization. It should not be called or extended by application code.";
+
+		internal const string LegacyFormatterImplDiagId = "SYSLIB0051";
+
+		internal const string RegexExtensibilityImplMessage = "This API supports obsolete mechanisms for Regex extensibility. It is not supported.";
+
+		internal const string RegexExtensibilityDiagId = "SYSLIB0052";
+
+		internal const string AesGcmTagConstructorMessage = "AesGcm should indicate the required tag size for encryption and decryption. Use a constructor that accepts the tag size.";
+
+		internal const string AesGcmTagConstructorDiagId = "SYSLIB0053";
+	}
+	internal static class SR
+	{
+		private static readonly bool s_usingResourceKeys = AppContext.TryGetSwitch("System.Resources.UseSystemResourceKeys", out var isEnabled) && isEnabled;
+
+		private static ResourceManager s_resourceManager;
+
+		internal static ResourceManager ResourceManager => s_resourceManager ?? (s_resourceManager = new ResourceManager(typeof(SR)));
+
+		internal static string HostAbortedExceptionMessage => GetResourceString("HostAbortedExceptionMessage");
+
+		internal static bool UsingResourceKeys()
+		{
+			return s_usingResourceKeys;
+		}
+
+		private static string GetResourceString(string resourceKey)
+		{
+			if (UsingResourceKeys())
+			{
+				return resourceKey;
+			}
+			string result = null;
+			try
+			{
+				result = ResourceManager.GetString(resourceKey);
+			}
+			catch (MissingManifestResourceException)
+			{
+			}
+			return result;
+		}
+
+		private static string GetResourceString(string resourceKey, string defaultString)
+		{
+			string resourceString = GetResourceString(resourceKey);
+			if (!(resourceKey == resourceString) && resourceString != null)
+			{
+				return resourceString;
+			}
+			return defaultString;
+		}
+
+		internal static string Format(string resourceFormat, object p1)
+		{
+			if (UsingResourceKeys())
+			{
+				return string.Join(", ", resourceFormat, p1);
+			}
+			return string.Format(resourceFormat, p1);
+		}
+
+		internal static string Format(string resourceFormat, object p1, object p2)
+		{
+			if (UsingResourceKeys())
+			{
+				return string.Join(", ", resourceFormat, p1, p2);
+			}
+			return string.Format(resourceFormat, p1, p2);
+		}
+
+		internal static string Format(string resourceFormat, object p1, object p2, object p3)
+		{
+			if (UsingResourceKeys())
+			{
+				return string.Join(", ", resourceFormat, p1, p2, p3);
+			}
+			return string.Format(resourceFormat, p1, p2, p3);
+		}
+
+		internal static string Format(string resourceFormat, params object[] args)
+		{
+			if (args != null)
+			{
+				if (UsingResourceKeys())
+				{
+					return resourceFormat + ", " + string.Join(", ", args);
+				}
+				return string.Format(resourceFormat, args);
+			}
+			return resourceFormat;
+		}
+
+		internal static string Format(IFormatProvider provider, string resourceFormat, object p1)
+		{
+			if (UsingResourceKeys())
+			{
+				return string.Join(", ", resourceFormat, p1);
+			}
+			return string.Format(provider, resourceFormat, p1);
+		}
+
+		internal static string Format(IFormatProvider provider, string resourceFormat, object p1, object p2)
+		{
+			if (UsingResourceKeys())
+			{
+				return string.Join(", ", resourceFormat, p1, p2);
+			}
+			return string.Format(provider, resourceFormat, p1, p2);
+		}
+
+		internal static string Format(IFormatProvider provider, string resourceFormat, object p1, object p2, object p3)
+		{
+			if (UsingResourceKeys())
+			{
+				return string.Join(", ", resourceFormat, p1, p2, p3);
+			}
+			return string.Format(provider, resourceFormat, p1, p2, p3);
+		}
+
+		internal static string Format(IFormatProvider provider, string resourceFormat, params object[] args)
+		{
+			if (args != null)
+			{
+				if (UsingResourceKeys())
+				{
+					return resourceFormat + ", " + string.Join(", ", args);
+				}
+				return string.Format(provider, resourceFormat, args);
+			}
+			return resourceFormat;
+		}
+	}
+}
+namespace Microsoft.Extensions.DependencyInjection
+{
+	public static class ServiceCollectionHostedServiceExtensions
+	{
+		public static IServiceCollection AddHostedService<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THostedService>(this IServiceCollection services) where THostedService : class, IHostedService
+		{
+			services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, THostedService>());
+			return services;
+		}
+
+		public static IServiceCollection AddHostedService<THostedService>(this IServiceCollection services, Func<IServiceProvider, THostedService> implementationFactory) where THostedService : class, IHostedService
+		{
+			services.TryAddEnumerable(ServiceDescriptor.Singleton((Func<IServiceProvider, IHostedService>)implementationFactory));
+			return services;
+		}
+	}
+}
+namespace Microsoft.Extensions.Hosting
+{
+	public abstract class BackgroundService : IHostedService, IDisposable
+	{
+		private Task _executeTask;
+
+		private CancellationTokenSource _stoppingCts;
+
+		public virtual Task? ExecuteTask => _executeTask;
+
+		protected abstract Task ExecuteAsync(CancellationToken stoppingToken);
+
+		public virtual Task StartAsync(CancellationToken cancellationToken)
+		{
+			_stoppingCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+			_executeTask = ExecuteAsync(_stoppingCts.Token);
+			if (_executeTask.IsCompleted)
+			{
+				return _executeTask;
+			}
+			return Task.CompletedTask;
+		}
+
+		public virtual async Task StopAsync(CancellationToken cancellationToken)
+		{
+			if (_executeTask == null)
+			{
+				return;
+			}
+			try
+			{
+				_stoppingCts.Cancel();
+			}
+			finally
+			{
+				TaskCompletionSource<object> taskCompletionSource = new TaskCompletionSource<object>();
+				using (cancellationToken.Register(delegate(object s)
+				{
+					((TaskCompletionSource<object>)s).SetCanceled();
+				}, taskCompletionSource))
+				{
+					await Task.WhenAny(_executeTask, taskCompletionSource.Task).ConfigureAwait(continueOnCapturedContext: false);
+				}
+			}
+		}
+
+		public virtual void Dispose()
+		{
+			_stoppingCts?.Cancel();
+		}
+	}
+	[Obsolete("EnvironmentName has been deprecated. Use Microsoft.Extensions.Hosting.Environments instead.")]
+	public static class EnvironmentName
+	{
+		public static readonly string Development = "Development";
+
+		public static readonly string Staging = "Staging";
+
+		public static readonly string Production = "Production";
+	}
+	public static class Environments
+	{
+		public static readonly string Development = "Development";
+
+		public static readonly string Staging = "Staging";
+
+		public static readonly string Production = "Production";
+	}
+	[Serializable]
+	public sealed class HostAbortedException : Exception
+	{
+		[Obsolete("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+		private HostAbortedException(SerializationInfo info, StreamingContext context)
+			: base(info, context)
+		{
+		}
+
+		public HostAbortedException()
+			: base(System.SR.HostAbortedExceptionMessage)
+		{
+		}
+
+		public HostAbortedException(string? message)
+			: base(message)
+		{
+		}
+
+		public HostAbortedException(string? message, Exception? innerException)
+			: base(message, innerException)
+		{
+		}
+	}
+	public class HostBuilderContext
+	{
+		public IHostEnvironment HostingEnvironment { get; set; }
+
+		public IConfiguration Configuration { get; set; }
+
+		public IDictionary<object, object> Properties { get; }
+
+		public HostBuilderContext(IDictionary<object, object> properties)
+		{
+			System.ThrowHelper.ThrowIfNull(properties, "properties");
+			Properties = properties;
+		}
+	}
+	public static class HostDefaults
+	{
+		public static readonly string ApplicationKey = "applicationName";
+
+		public static readonly string EnvironmentKey = "environment";
+
+		public static readonly string ContentRootKey = "contentRoot";
+	}
+	public static class HostEnvironmentEnvExtensions
+	{
+		public static bool IsDevelopment(this IHostEnvironment hostEnvironment)
+		{
+			System.ThrowHelper.ThrowIfNull(hostEnvironment, "hostEnvironment");
+			return hostEnvironment.IsEnvironment(Environments.Development);
+		}
+
+		public static bool IsStaging(this IHostEnvironment hostEnvironment)
+		{
+			System.ThrowHelper.ThrowIfNull(hostEnvironment, "hostEnvironment");
+			return hostEnvironment.IsEnvironment(Environments.Staging);
+		}
+
+		public static bool IsProduction(this IHostEnvironment hostEnvironment)
+		{
+			System.ThrowHelper.ThrowIfNull(hostEnvironment, "hostEnvironment");
+			return hostEnvironment.IsEnvironment(Environments.Production);
+		}
+
+		public static bool IsEnvironment(this IHostEnvironment hostEnvironment, string environmentName)
+		{
+			System.ThrowHelper.ThrowIfNull(hostEnvironment, "hostEnvironment");
+			return string.Equals(hostEnvironment.EnvironmentName, environmentName, StringComparison.OrdinalIgnoreCase);
+		}
+	}
+	public static class HostingAbstractionsHostBuilderExtensions
+	{
+		public static IHost Start(this IHostBuilder hostBuilder)
+		{
+			return hostBuilder.StartAsync().GetAwaiter().GetResult();
+		}
+
+		public static async Task<IHost> StartAsync(this IHostBuilder hostBuilder, CancellationToken cancellationToken = default(CancellationToken))
+		{
+			IHost host = hostBuilder.Build();
+			await host.StartAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+			return host;
+		}
+	}
+	public static class HostingAbstractionsHostExtensions
+	{
+		public static void Start(this IHost host)
+		{
+			host.StartAsync().GetAwaiter().GetResult();
+		}
+
+		public static async Task StopAsync(this IHost host, TimeSpan timeout)
+		{
+			using CancellationTokenSource cts = new CancellationTokenSource(timeout);
+			await host.StopAsync(cts.Token).ConfigureAwait(continueOnCapturedContext: false);
+		}
+
+		public static void WaitForShutdown(this IHost host)
+		{
+			host.WaitForShutdownAsync().GetAwaiter().GetResult();
+		}
+
+		public static void Run(this IHost host)
+		{
+			host.RunAsync().GetAwaiter().GetResult();
+		}
+
+		public static async Task RunAsync(this IHost host, CancellationToken token = default(CancellationToken))
+		{
+			try
+			{
+				await host.StartAsync(token).ConfigureAwait(continueOnCapturedContext: false);
+				await host.WaitForShutdownAsync(token).ConfigureAwait(continueOnCapturedContext: false);
+			}
+			finally
+			{
+				if (host is IAsyncDisposable asyncDisposable)
+				{
+					await asyncDisposable.DisposeAsync().ConfigureAwait(continueOnCapturedContext: false);
+				}
+				else
+				{
+					host.Dispose();
+				}
+			}
+		}
+
+		public static async Task WaitForShutdownAsync(this IHost host, CancellationToken token = default(CancellationToken))
+		{
+			IHostApplicationLifetime requiredService = host.Services.GetRequiredService<IHostApplicationLifetime>();
+			token.Register(delegate(object state)
+			{
+				((IHostApplicationLifetime)state).StopApplication();
+			}, requiredService);
+			TaskCompletionSource<object> taskCompletionSource = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+			requiredService.ApplicationStopping.Register(delegate(object obj)
+			{
+				TaskCompletionSource<object> taskCompletionSource2 = (TaskCompletionSource<object>)obj;
+				taskCompletionSource2.TrySetResult(null);
+			}, taskCompletionSource);
+			await taskCompletionSource.Task.ConfigureAwait(continueOnCapturedContext: false);
+			await host.StopAsync(CancellationToken.None).ConfigureAwait(continueOnCapturedContext: false);
+		}
+	}
+	public static class HostingEnvironmentExtensions
+	{
+		public static bool IsDevelopment(this IHostingEnvironment hostingEnvironment)
+		{
+			System.ThrowHelper.ThrowIfNull(hostingEnvironment, "hostingEnvironment");
+			return hostingEnvironment.IsEnvironment(EnvironmentName.Development);
+		}
+
+		public static bool IsStaging(this IHostingEnvironment hostingEnvironment)
+		{
+			System.ThrowHelper.ThrowIfNull(hostingEnvironment, "hostingEnvironment");
+			return hostingEnvironment.IsEnvironment(EnvironmentName.Staging);
+		}
+
+		public static bool IsProduction(this IHostingEnvironment hostingEnvironment)
+		{
+			System.ThrowHelper.ThrowIfNull(hostingEnvironment, "hostingEnvironment");
+			return hostingEnvironment.IsEnvironment(EnvironmentName.Production);
+		}
+
+		public static bool IsEnvironment(this IHostingEnvironment hostingEnvironment, string environmentName)
+		{
+			System.ThrowHelper.ThrowIfNull(hostingEnvironment, "hostingEnvironment");
+			return string.Equals(hostingEnvironment.EnvironmentName, environmentName, StringComparison.OrdinalIgnoreCase);
+		}
+	}
+	[Obsolete("IApplicationLifetime has been deprecated. Use Microsoft.Extensions.Hosting.IHostApplicationLifetime instead.")]
+	public interface IApplicationLifetime
+	{
+		CancellationToken ApplicationStarted { get; }
+
+		CancellationToken ApplicationStopping { get; }
+
+		CancellationToken ApplicationStopped { get; }
+
+		void StopApplication();
+	}
+	public interface IHost : IDisposable
+	{
+		IServiceProvider Services { get; }
+
+		Task StartAsync(CancellationToken cancellationToken = default(CancellationToken));
+
+		Task StopAsync(CancellationToken cancellationToken = default(CancellationToken));
+	}
+	public interface IHostApplicationBuilder
+	{
+		IDictionary<object, object> Properties { get; }
+
+		IConfigurationManager Configuration { get; }
+
+		IHostEnvironment Environment { get; }
+
+		ILoggingBuilder Logging { get; }
+
+		IMetricsBuilder Metrics { get; }
+
+		IServiceCollection Services { get; }
+
+		void ConfigureContainer<TContainerBuilder>(IServiceProviderFactory<TContainerBuilder> factory, Action<TContainerBuilder>? configure = null) where TContainerBuilder : notnull;
+	}
+	public interface IHostApplicationLifetime
+	{
+		CancellationToken ApplicationStarted { get; }
+
+		CancellationToken ApplicationStopping { get; }
+
+		CancellationToken ApplicationStopped { get; }
+
+		void StopApplication();
+	}
+	public interface IHostBuilder
+	{
+		IDictionary<object, object> Properties { get; }
+
+		IHostBuilder ConfigureHostConfiguration(Action<IConfigurationBuilder> configureDelegate);
+
+		IHostBuilder ConfigureAppConfiguration(Action<HostBuilderContext, IConfigurationBuilder> configureDelegate);
+
+		IHostBuilder ConfigureServices(Action<HostBuilderContext, IServiceCollection> configureDelegate);
+
+		IHostBuilder UseServiceProviderFactory<TContainerBuilder>(IServiceProviderFactory<TContainerBuilder> factory) where TContainerBuilder : notnull;
+
+		IHostBuilder UseServiceProviderFactory<TContainerBuilder>(Func<HostBuilderContext, IServiceProviderFactory<TContainerBuilder>> factory) where TContainerBuilder : notnull;
+
+		IHostBuilder ConfigureContainer<TContainerBuilder>(Action<HostBuilderContext, TContainerBuilder> configureDelegate);
+
+		IHost Build();
+	}
+	public interface IHostedLifecycleService : IHostedService
+	{
+		Task StartingAsync(CancellationToken cancellationToken);
+
+		Task StartedAsync(CancellationToken cancellationToken);
+
+		Task StoppingAsync(CancellationToken cancellationToken);
+
+		Task StoppedAsync(CancellationToken cancellationToken);
+	}
+	public interface IHostedService
+	{
+		Task StartAsync(CancellationToken cancellationToken);
+
+		Task StopAsync(CancellationToken cancellationToken);
+	}
+	public interface IHostEnvironment
+	{
+		string EnvironmentName { get; set; }
+
+		string ApplicationName { get; set; }
+
+		string ContentRootPath { get; set; }
+
+		IFileProvider ContentRootFileProvider { get; set; }
+	}
+	[Obsolete("IHostingEnvironment has been deprecated. Use Microsoft.Extensions.Hosting.IHostEnvironment instead.")]
+	public interface IHostingEnvironment
+	{
+		string EnvironmentName { get; set; }
+
+		string ApplicationName { get; set; }
+
+		string ContentRootPath { get; set; }
+
+		IFileProvider ContentRootFileProvider { get; set; }
+	}
+	public interface IHostLifetime
+	{
+		Task WaitForStartAsync(CancellationToken cancellationToken);
+
+		Task StopAsync(CancellationToken cancellationToken);
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

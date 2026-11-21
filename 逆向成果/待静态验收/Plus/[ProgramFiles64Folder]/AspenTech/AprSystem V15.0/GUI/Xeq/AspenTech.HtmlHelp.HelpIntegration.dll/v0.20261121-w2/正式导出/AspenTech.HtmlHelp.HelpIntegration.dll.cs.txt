@@ -1,0 +1,428 @@
+using System;
+using System.CodeDom.Compiler;
+using System.ComponentModel;
+using System.Configuration;
+using System.Diagnostics;
+using System.Globalization;
+using System.Reflection;
+using System.Resources;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Text;
+using System.Windows;
+using System.Windows.Threading;
+using AspenTech.HtmlHelp.HelpCefViewer;
+using AspenTech.HtmlHelp.HelpInfrastructure;
+using AspenTech.HtmlHelp.Logging;
+using Microsoft.Practices.Composite.Events;
+using Microsoft.Practices.Composite.Modularity;
+using Microsoft.Practices.Unity;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyFileVersion("2023.15.0.2")]
+[assembly: AssemblyTitle("AspenTech.HtmlHelp.HelpIntegration")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("Aspen Technology, INC.")]
+[assembly: AssemblyProduct("AspenTech.HtmlHelp.HelpIntegration")]
+[assembly: AssemblyCopyright("Copyright © Aspen Technology, Inc. 2023")]
+[assembly: AssemblyTrademark("")]
+[assembly: ComVisible(false)]
+[assembly: ThemeInfo(ResourceDictionaryLocation.None, ResourceDictionaryLocation.SourceAssembly)]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("2023.15.0.2")]
+namespace AspenTech.HtmlHelp.HelpIntegration
+{
+	public class CHtmlHelpHelper : IHtmlHelpHelper
+	{
+		private readonly IUnityContainer _unityContainer;
+
+		private readonly Dispatcher _dispatcher;
+
+		private static IEventAggregator myEventAggregator;
+
+		private string myHtmlHelpRoot;
+
+		private string myHtmlHelpRootPrefix;
+
+		private string myProductName;
+
+		private string myProductExternalVersion;
+
+		private string myProductInternalVersion;
+
+		private string myProdDisplayName;
+
+		private string myHelpSelfExtractApp;
+
+		private bool mydisplayMoreThanOnce;
+
+		private IHtmlHelpViewer htmlHelpHostWin;
+
+		private CHtmlHelpLogging myLogger = new CHtmlHelpLogging();
+
+		private bool myManageLibLifetime = true;
+
+		public bool UseWinFormsBrowser { get; set; }
+
+		public bool UseAspenTechStdIcon { get; set; }
+
+		public IUnityContainer Container => _unityContainer;
+
+		public int HtmlHelpWinHeight
+		{
+			get
+			{
+				return 0;
+			}
+			set
+			{
+			}
+		}
+
+		public int HtmlHelpWinWidth
+		{
+			get
+			{
+				return 0;
+			}
+			set
+			{
+			}
+		}
+
+		public CHtmlHelpHelper(IUnityContainer unityContainer)
+		{
+			if (unityContainer == null)
+			{
+				throw new ArgumentNullException("unityContainer");
+			}
+			_unityContainer = unityContainer;
+			_dispatcher = Dispatcher.CurrentDispatcher;
+			myHtmlHelpRoot = "about:blank";
+			myProductName = "ProductName";
+			myProductExternalVersion = "ExternalVersion";
+			myProductInternalVersion = "100";
+			myEventAggregator = UnityContainerExtensions.Resolve<IEventAggregator>(Container, Array.Empty<ResolverOverride>());
+			if (myEventAggregator != null)
+			{
+				myEventAggregator.GetEvent<HtmlHelpShowHelpViewerEvent>().Subscribe(ExchangeHelpTopicHandle);
+				myEventAggregator.GetEvent<HtmlHelpNavigateToEvent>().Subscribe(HtmlHelpNavigateToHandle);
+			}
+		}
+
+		public void InitHtmlHelpSystem(string strProduct, string strExternalVersion, string strInternalVersion, string strHelpRoot)
+		{
+			InitHtmlHelpSystem(strProduct, strExternalVersion, strInternalVersion, strHelpRoot, string.Empty, string.Empty, bNoSelfExtract: false);
+		}
+
+		public void InitHtmlHelpSystem(string strProduct, string strExternalVersion, string strInternalVersion, string strHelpRoot, string strProdDspName)
+		{
+			InitHtmlHelpSystem(strProduct, strExternalVersion, strInternalVersion, strHelpRoot, strProdDspName, string.Empty, bNoSelfExtract: false);
+		}
+
+		public void InitHtmlHelpSystem(string strProduct, string strExternalVersion, string strInternalVersion, string strHelpRoot, string strProdDspName, string strHelpExtractApp, bool bNoSelfExtract, bool displayMoreThanOnce)
+		{
+			mydisplayMoreThanOnce = displayMoreThanOnce;
+			InitHtmlHelpSystem(strProduct, strExternalVersion, strInternalVersion, strHelpRoot, strProdDspName, strHelpExtractApp, bNoSelfExtract);
+		}
+
+		public void InitHtmlHelpSystem(string strProduct, string strExternalVersion, string strInternalVersion, string strHelpRoot, string strProdDspName, string strHelpExtractApp, bool bNoSelfExtract)
+		{
+			myProductName = strProduct;
+			myProductExternalVersion = strExternalVersion;
+			myProductInternalVersion = strInternalVersion;
+			myHtmlHelpRoot = strHelpRoot;
+			myHtmlHelpRootPrefix = myHtmlHelpRoot + "#";
+			myProdDisplayName = strProdDspName;
+			myHelpSelfExtractApp = strHelpExtractApp;
+		}
+
+		private void CheckHelpExtractStatCode(string strHelpFolder)
+		{
+			HtmlHelpSystemUtil.CheckExtractStat(myProductName, myProdDisplayName, myProductExternalVersion, myProductInternalVersion, strHelpFolder, myHelpSelfExtractApp);
+		}
+
+		public void HtmlHelpDisplayF1Link(string HelpWebLink)
+		{
+			try
+			{
+				if (!string.IsNullOrWhiteSpace(HelpWebLink))
+				{
+					HtmlHelpDisplayLink(HelpWebLink, bLogExclude: false);
+				}
+			}
+			catch (Exception)
+			{
+			}
+		}
+
+		public void HtmlHelpDispose()
+		{
+			if (htmlHelpHostWin != null)
+			{
+				htmlHelpHostWin.FreeHtmlHelpSystem();
+				htmlHelpHostWin = null;
+			}
+			if (myManageLibLifetime)
+			{
+				HtmlHelpCefLibMgr.Shutdown();
+			}
+			if (myLogger != null)
+			{
+				myLogger.StopLogging();
+			}
+		}
+
+		public void SetVisible(bool visible)
+		{
+			if (htmlHelpHostWin != null)
+			{
+				htmlHelpHostWin.SetVisible(visible);
+			}
+		}
+
+		private void ExtHelpLinkForExchange(string strExtHelpLink)
+		{
+			if (string.IsNullOrEmpty(strExtHelpLink) || myEventAggregator == null || _dispatcher == null)
+			{
+				return;
+			}
+			_dispatcher.BeginInvoke(DispatcherPriority.Input, (Action)delegate
+			{
+				try
+				{
+					myEventAggregator.GetEvent<HtmlHelpViewerNavigatingEvent>().Publish(new HtmlHelpViewerNavigatingEventArgs
+					{
+						HelpFileRelativeURL = strExtHelpLink
+					});
+				}
+				catch (Exception)
+				{
+				}
+			});
+		}
+
+		private void HelpTopicVisitLogForExchange(string strHelpLink, bool bFromExt)
+		{
+			string.IsNullOrEmpty(strHelpLink);
+		}
+
+		private void ReleaseHtmlHelpHandle()
+		{
+			if (htmlHelpHostWin != null)
+			{
+				htmlHelpHostWin = null;
+			}
+			if (myLogger != null)
+			{
+				myLogger.PauseLogging();
+			}
+		}
+
+		private void HelpDisplayLangHandle(string strHelpDisplayLang)
+		{
+			if (myLogger != null)
+			{
+				myLogger.HelpDisplayLangHandle(strHelpDisplayLang);
+			}
+		}
+
+		private void ConfigHtmlHelpSystem(string strHelpWebLink, bool bLogExclude)
+		{
+			if (htmlHelpHostWin != null)
+			{
+				htmlHelpHostWin.FreeHtmlHelpSystem();
+			}
+			if (myLogger != null && myLogger.InitLogging())
+			{
+				htmlHelpHostWin = new HtmlHelpWindowHost(strHelpWebLink, myProductName, myProductExternalVersion, myProductInternalVersion, myHtmlHelpRoot, myProdDisplayName, UseWinFormsBrowser, UseAspenTechStdIcon);
+				if (htmlHelpHostWin != null)
+				{
+					htmlHelpHostWin.ConfigHtmlHelpWin(ExtHelpLinkForExchange, HelpTopicVisitLogForExchange, ReleaseHtmlHelpHandle, HelpDisplayLangHandle);
+					htmlHelpHostWin.ActiveHelpWindow();
+				}
+			}
+		}
+
+		private void HtmlHelpDisplayLink(string HelpWebLink, bool bLogExclude)
+		{
+			if (myHtmlHelpRoot == "about:blank" || myProductName == "ProductName" || myProductExternalVersion == "ExternalVersion")
+			{
+				StringBuilder stringBuilder = new StringBuilder();
+				stringBuilder.AppendFormat("Please provide the proper landing page, product and version information to set up the help system.  \n\nCurrently, landing page={0}\nProduct={1}\nExternalVersion={2}", myHtmlHelpRoot, myProductName, myProductExternalVersion);
+				MessageBox.Show(stringBuilder.ToString());
+			}
+			else if (htmlHelpHostWin == null || mydisplayMoreThanOnce)
+			{
+				ConfigHtmlHelpSystem(HelpWebLink, bLogExclude);
+			}
+			else
+			{
+				htmlHelpHostWin.HtmlHelpNavigateTo(HelpWebLink, bLogExclude);
+			}
+		}
+
+		private void ExchangeHelpTopicHandle(HtmlHelpShowHelpViewerEventArgs exHelpTopicArg)
+		{
+			if (exHelpTopicArg == null)
+			{
+				return;
+			}
+			string helpFileRelativeURL = exHelpTopicArg.HelpFileRelativeURL;
+			if (string.IsNullOrWhiteSpace(helpFileRelativeURL))
+			{
+				return;
+			}
+			helpFileRelativeURL = ((!helpFileRelativeURL.StartsWith("#")) ? (myHtmlHelpRootPrefix + helpFileRelativeURL) : (myHtmlHelpRoot + helpFileRelativeURL));
+			try
+			{
+				HtmlHelpDisplayLink(helpFileRelativeURL, bLogExclude: true);
+			}
+			catch (Exception)
+			{
+			}
+		}
+
+		private void HtmlHelpNavigateToHandle(HtmlHelpNavigateToEventArgs helpNavArgs)
+		{
+			if (helpNavArgs != null)
+			{
+				HtmlHelpDisplayF1Link(helpNavArgs.HelpTopicUrl);
+			}
+		}
+
+		public void IgnoreExchangeEvents()
+		{
+			myManageLibLifetime = false;
+			if (myEventAggregator != null)
+			{
+				myEventAggregator.GetEvent<HtmlHelpShowHelpViewerEvent>().Unsubscribe(ExchangeHelpTopicHandle);
+			}
+		}
+
+		public bool IsHelpExtractDone(ref bool bIsDone)
+		{
+			return HtmlHelpSystemUtil.IsHelpExtractDone(myProductName, myProductInternalVersion, ref bIsDone);
+		}
+
+		public void CloseOpenedHelpWindow()
+		{
+			if (htmlHelpHostWin != null)
+			{
+				htmlHelpHostWin.CloseOpenedHelpWindow();
+			}
+		}
+	}
+	[Module(ModuleName = "AspenTech.HtmlHelp.HelpIntegration.HtmlHelpIntegrationModule")]
+	public class HtmlHelpIntegrationModule : IModule
+	{
+		public const string ModuleName = "AspenTech.HtmlHelp.HelpIntegration.HtmlHelpIntegrationModule";
+
+		private readonly IUnityContainer _unityContainer;
+
+		public IUnityContainer Container => _unityContainer;
+
+		public HtmlHelpIntegrationModule(IUnityContainer unityContainer)
+		{
+			if (unityContainer == null)
+			{
+				throw new ArgumentNullException("unityContainer");
+			}
+			_unityContainer = unityContainer;
+		}
+
+		public void Initialize()
+		{
+			//IL_0006: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0015: Expected O, but got Unknown
+			UnityContainerExtensions.RegisterType<IHtmlHelpHelper, CHtmlHelpHelper>(Container, (LifetimeManager)new ContainerControlledLifetimeManager(), Array.Empty<InjectionMember>());
+			UnityContainerExtensions.RegisterType<IHtmlHelpHelper, CHtmlHelpHelper>(Container, "NewInstances", Array.Empty<InjectionMember>());
+		}
+	}
+	public interface IHtmlHelpHelper
+	{
+		int HtmlHelpWinHeight { get; set; }
+
+		int HtmlHelpWinWidth { get; set; }
+
+		bool UseWinFormsBrowser { get; set; }
+
+		bool UseAspenTechStdIcon { get; set; }
+
+		void InitHtmlHelpSystem(string strProduct, string strExternalVersion, string strInternalVersion, string strHelpRoot);
+
+		void InitHtmlHelpSystem(string strProduct, string strExternalVersion, string strInternalVersion, string strHelpRoot, string strProdDspName);
+
+		void InitHtmlHelpSystem(string strProduct, string strExternalVersion, string strInternalVersion, string strHelpRoot, string strProdDspName, string strHelpExtractApp, bool bNoSelfExtract);
+
+		void InitHtmlHelpSystem(string strProduct, string strExternalVersion, string strInternalVersion, string strHelpRoot, string strProdDspName, string strHelpExtractApp, bool bNoSelfExtract, bool displayMoreThanOnce);
+
+		void HtmlHelpDisplayF1Link(string HelpWebLink);
+
+		void HtmlHelpDispose();
+
+		void IgnoreExchangeEvents();
+
+		bool IsHelpExtractDone(ref bool bIsDone);
+
+		void SetVisible(bool visible);
+
+		void CloseOpenedHelpWindow();
+	}
+}
+namespace AspenTech.HtmlHelp.HelpIntegration.Properties
+{
+	[GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
+	[DebuggerNonUserCode]
+	[CompilerGenerated]
+	internal class Resources
+	{
+		private static ResourceManager resourceMan;
+
+		private static CultureInfo resourceCulture;
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		internal static ResourceManager ResourceManager
+		{
+			get
+			{
+				if (resourceMan == null)
+				{
+					resourceMan = new ResourceManager("AspenTech.HtmlHelp.HelpIntegration.Properties.Resources", typeof(Resources).Assembly);
+				}
+				return resourceMan;
+			}
+		}
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		internal static CultureInfo Culture
+		{
+			get
+			{
+				return resourceCulture;
+			}
+			set
+			{
+				resourceCulture = value;
+			}
+		}
+
+		internal Resources()
+		{
+		}
+	}
+	[CompilerGenerated]
+	[GeneratedCode("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "16.10.0.0")]
+	internal sealed class Settings : ApplicationSettingsBase
+	{
+		private static Settings defaultInstance = (Settings)SettingsBase.Synchronized(new Settings());
+
+		public static Settings Default => defaultInstance;
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

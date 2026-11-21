@@ -1,0 +1,230 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using AspenTech.Hydraulics.Data;
+using AspenTech.Hydraulics.Framework;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyCompany("Aspen Technology, Inc.")]
+[assembly: AssemblyProduct("Aspen Hydraulics")]
+[assembly: AssemblyCopyright("Copyright © Aspen Technology, Inc. 2024")]
+[assembly: AssemblyTitle("")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyDelaySign(false)]
+[assembly: AssemblyKeyFile("..\\..\\..\\packages\\AspenTech.StrongName.SNK.1.0.0\\content\\AspenTech.snk")]
+[assembly: AssemblyKeyName("")]
+[assembly: AssemblyFileVersion("41.0.0.99")]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.0")]
+namespace AspenTech.Hydraulics.InterfacesForSteadyStateUnitOp;
+
+public interface IPipeSegmentSS
+{
+}
+public interface IValveSS
+{
+}
+public interface IMultiSegPipeSS
+{
+	void SetMassFlowCallBackOnInternalPipes();
+}
+public interface ISwageSS
+{
+}
+public interface ITeeSS
+{
+}
+public interface IBendSS
+{
+}
+public interface IOrificeSS
+{
+}
+public interface IBleedSS
+{
+}
+public interface ISeparatorSS
+{
+}
+public interface IFlareTipSS
+{
+}
+public interface IControlValveSS
+{
+}
+public interface IReliefValveSS
+{
+}
+public interface IPumpSS
+{
+}
+public interface ICompressorSS
+{
+}
+[ComVisible(false)]
+public interface ISSUnitOp
+{
+	Properties ExtraParameters { get; }
+
+	double Duty { get; set; }
+
+	double ExternalTemperature { get; set; }
+
+	bool IncludeKineticEnergy { get; set; }
+
+	bool CheckChoking { get; set; }
+
+	int GetCalculationMethod();
+
+	void SetCalculationMethod(int Method);
+
+	void SetRequiredAccuracy(double Tol);
+
+	void InitialiseUnitOp(UnitOp arg);
+
+	void OverallMassBalanceEquation(out double[] LHS, out double RHS);
+
+	void ComponentMassBalanceEquation(out double[,] LHS, out double[] RHS, out int nEqns);
+
+	bool Balance(double[] portTypes, bool forceExcludeKE, bool includeSonicCorrectionToKE);
+}
+public interface ISSUnitOpTwoPort : ISSUnitOp
+{
+	void InletPressureCalc(ref ChokeReport xx);
+
+	void OutletPressureCalc(ref ChokeReport xx);
+
+	void Solve();
+}
+public interface ISSUnitOpMultiPort : ISSUnitOp
+{
+	void InletPressureCalc(int portOne, int portTwo);
+
+	void OutletPressureCalc(int portOne, int portTwo);
+}
+public interface IPipeFittingSolver
+{
+}
+public interface IPipeFittingSolverTwoPort : IPipeFittingSolver
+{
+	void InletPressureCalc(UnitOp UnitOp, ref ChokeReport xx);
+
+	void OutletPressureCalc(UnitOp UnitOp, ref ChokeReport xx);
+}
+public interface IPipeSegmentSolver : IPipeFittingSolverTwoPort, IPipeFittingSolver
+{
+}
+public interface ISwageSolver : IPipeFittingSolverTwoPort, IPipeFittingSolver
+{
+}
+public interface IFlareTipSolver : IPipeFittingSolverTwoPort, IPipeFittingSolver
+{
+}
+public interface IBendSolver : IPipeFittingSolverTwoPort, IPipeFittingSolver
+{
+}
+public interface IOrificeSolver : IPipeFittingSolverTwoPort, IPipeFittingSolver
+{
+}
+public interface IValveSolver : IPipeFittingSolverTwoPort, IPipeFittingSolver
+{
+}
+public interface IPumpSolver : IPipeFittingSolverTwoPort, IPipeFittingSolver
+{
+}
+public interface ICompressorSolver : IPipeFittingSolverTwoPort, IPipeFittingSolver
+{
+}
+public interface IBleedSolver : IPipeFittingSolverTwoPort, IPipeFittingSolver
+{
+}
+public interface IGateValveSolver : IValveSolver, IPipeFittingSolverTwoPort, IPipeFittingSolver
+{
+}
+public interface IBallValveSolver : IValveSolver, IPipeFittingSolverTwoPort, IPipeFittingSolver
+{
+	double OpenAngle { get; set; }
+
+	double BlindAngle { get; set; }
+}
+public interface IButterflyValveSolver : IValveSolver, IPipeFittingSolverTwoPort, IPipeFittingSolver
+{
+	double OpenAngle { get; set; }
+
+	double DiscToPipeDiameterRatio { get; set; }
+}
+public interface IGlobeValveSolver : IValveSolver, IPipeFittingSolverTwoPort, IPipeFittingSolver
+{
+	double Openness { get; set; }
+}
+public interface IPipeFittingSolverMultiPort : IPipeFittingSolver
+{
+	void InletPressureCalc(UnitOp UnitOp, int PortOne, int PortTwo);
+
+	void OutletPressureCalc(UnitOp UnitOp, int PortOne, int PortTwo);
+}
+public interface ITeeSolver : IPipeFittingSolverMultiPort, IPipeFittingSolver
+{
+}
+public interface ISeparatorSolver : IPipeFittingSolverMultiPort, IPipeFittingSolver
+{
+}
+[ComVisible(false)]
+public enum FlowDir
+{
+	Unknown = -1,
+	In,
+	Out
+}
+[ComVisible(false)]
+public enum CalculationMethodForTwoPortFitting
+{
+	HTFSMethod = 0,
+	CraneMethod = 1,
+	Crane_HTFSMethod = 2,
+	AspenPlusMethod = 3,
+	BeggsAndBrill = 11,
+	ClientDefinedMethod1 = 9001,
+	ClientDefinedMethod2 = 9002,
+	ClientDefinedMethod3 = 9003,
+	ClientDefinedMethod4 = 9004,
+	ClientDefinedMethod5 = 9005
+}
+[ComVisible(false)]
+public enum CalculationMethodForMultiPortFitting
+{
+	BalanceStaticPressure = 0,
+	BalanceTotalPressure = 1,
+	MillerCharts = 2,
+	ClientDefinedMethod1 = 9001,
+	ClientDefinedMethod2 = 9002,
+	ClientDefinedMethod3 = 9003,
+	ClientDefinedMethod4 = 9004,
+	ClientDefinedMethod5 = 9005
+}
+[ComVisible(false)]
+public struct EnumeratedProperty
+{
+	public string Description;
+
+	public int Value;
+}
+[ComVisible(false)]
+public struct ChokeReport
+{
+	public double Enthalpy;
+
+	public bool IsChoked;
+
+	public IPort Port;
+
+	public double Pressure;
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

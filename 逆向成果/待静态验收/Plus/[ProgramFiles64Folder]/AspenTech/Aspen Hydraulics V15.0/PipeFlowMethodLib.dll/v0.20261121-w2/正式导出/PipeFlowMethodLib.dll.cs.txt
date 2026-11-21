@@ -1,0 +1,582 @@
+using System;
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
+using AHResources;
+using AspenTech.Hydraulics.FluidFlowInterfaceAndEnum;
+using AspenTech.Hydraulics.HTFSMethodLib;
+using AspenTech.Hydraulics.PropertyUtilities;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyCompany("Aspen Technology, Inc.")]
+[assembly: AssemblyProduct("Aspen Hydraulics")]
+[assembly: AssemblyCopyright("Copyright © Aspen Technology, Inc. 2024")]
+[assembly: AssemblyTitle("")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyDelaySign(false)]
+[assembly: AssemblyKeyFile("..\\..\\..\\..\\packages\\AspenTech.StrongName.SNK.1.0.0\\content\\AspenTech.snk")]
+[assembly: AssemblyKeyName("")]
+[assembly: AssemblyFileVersion("41.0.0.99")]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.0")]
+namespace AspenTech.Hydraulics.PipeFlowMethodLib;
+
+public class PipeFlow
+{
+	public static double FrictionFactorOfFanning(double Re, double RelativeRoughness)
+	{
+		double num = 3.6;
+		double num2 = 6.9;
+		double num3 = 3.7;
+		double y = 1.11;
+		double num4 = 0.0;
+		try
+		{
+			num4 = num * Math.Log10(num2 / Re + Math.Pow(RelativeRoughness / num3, y));
+			return 1.0 / (num4 * num4);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "FrictionFactorOfFanning"), innerException);
+		}
+	}
+
+	public static double FrictionFactorOfMoody(double Re, double RelativeRoughness)
+	{
+		try
+		{
+			if (Re == 0.0)
+			{
+				return 0.0;
+			}
+			double x = 16.0 / Re;
+			double x2 = 5.68E-09 * Re * Re * 0.25;
+			double x3 = Math.Pow(1.73736 * Math.Log(1.0 / (Math.Pow(7.0 / Re, 0.9) + 0.27 * RelativeRoughness)), -2.0);
+			return Math.Pow(Math.Pow(Math.Pow(Math.Pow(x2, -8.0) + Math.Pow(x3, -8.0), -0.125), 12.0) + Math.Pow(x, 12.0), 1.0 / 12.0);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "FrictionFactorOfMoody"), innerException);
+		}
+	}
+
+	public static double DPaDzCorrection(double MeanVelocity, double Vsg, double density, double pressure)
+	{
+		double num = 0.0;
+		try
+		{
+			num = MeanVelocity * Vsg * density / pressure;
+			if (num >= 1.0)
+			{
+				return RealValue.FEMPTY;
+			}
+			return 1.0 - num;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "DPaDzCorrection"), innerException);
+		}
+	}
+
+	public static double VoidFactionOfHomogeneousFlow(IFlowStream stream)
+	{
+		try
+		{
+			if (stream.NumberOfPhases == 1)
+			{
+				if (stream.GetPhaseByID(1).PhaseType == PhaseType.Liquid)
+				{
+					return 0.0;
+				}
+				return 1.0;
+			}
+			return TwoPhaseFlow.VoidFractionInPipe(stream.CombinedLiquidPhase.Density.Value, stream.GetPhaseByType(PhaseType.Vapour).Density.Value, stream.GetPhaseByType(PhaseType.Vapour).MassFraction.Value, 1.0);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "VoidFractionOfHomogeneousFlow"), innerException);
+		}
+	}
+
+	public static double VoidFactionOfHTFS(IFlowStream stream, double diam, double angle)
+	{
+		double num = 0.0;
+		double num2 = 0.0;
+		IPhase phase = null;
+		IPhase phase2 = null;
+		double num3 = 0.0;
+		try
+		{
+			if (stream.NumberOfPhases == 1)
+			{
+				if (stream.GetPhaseByID(1).PhaseType == PhaseType.Liquid)
+				{
+					return 0.0;
+				}
+				return 1.0;
+			}
+			num = HTFSUtility.FlowArea(diam);
+			num2 = HTFSUtility.CalculateMassFlux(stream.MassFlowrate.Value, num);
+			phase = stream.CombinedLiquidPhase;
+			phase2 = stream.GetPhaseByType(PhaseType.Vapour);
+			return TwoPhaseFlow.HTFSVoidFraction(num2, phase2.MassFraction.Value, phase.Density.Value, phase2.Density.Value, phase.Viscosity.Value, phase2.Viscosity.Value, angle);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "VoidFractionOfHTFS"), innerException);
+		}
+	}
+
+	internal double DunsAndRosL1Fun(double pnd)
+	{
+		double num = 30.0;
+		double num2 = 62.0;
+		double num3 = 1.01;
+		double num4 = 1.99;
+		double num5 = 0.0;
+		try
+		{
+			if (pnd < num)
+			{
+				return num4;
+			}
+			if (pnd > num2)
+			{
+				return num3;
+			}
+			return num3 + Math.Log10(num2 / pnd) * (num4 - num3) / Math.Log10(num2 / num);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "DunsAndRosL1Fun"), innerException);
+		}
+	}
+
+	internal double DunsAndRosL2Fun(double pnd)
+	{
+		double num = 62.0;
+		double num2 = 1.1;
+		double val = 0.2;
+		double num3 = 0.96;
+		double num4 = 0.0;
+		try
+		{
+			if (pnd > num)
+			{
+				return num2;
+			}
+			num4 = num2 + num3 * Math.Log10(pnd / num);
+			return Math.Max(val, num4);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "DunsAndRosL2Fun"), innerException);
+		}
+	}
+
+	internal double DunsAndRosL3Fun(double pnle)
+	{
+		double num = 3.0;
+		double num2 = -2.69;
+		double num3 = -0.096;
+		double num4 = 0.662;
+		try
+		{
+			double num5 = Math.Log10(pnle);
+			double y = num3 + (num4 - num3) * Math.Exp((0.0 - num) * (num5 - num2));
+			return Math.Pow(10.0, y);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "DunsAndRosL3Fun"), innerException);
+		}
+	}
+
+	internal double DunsAndRosL4Fun(double pnd)
+	{
+		double num = -2.55;
+		double num2 = 5.43;
+		double num3 = -1.79;
+		double val = -0.5 * num2 / num;
+		double val2 = 1.61;
+		try
+		{
+			double val3 = Math.Log10(pnd);
+			val3 = Math.Min(val2, Math.Max(val, val3));
+			double y = num3 + val3 * (num2 + val3 * num);
+			return Math.Pow(10.0, y);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "DunsAndRosL4Fun"), innerException);
+		}
+	}
+
+	public static FlowRegimeEnum FlowRegimeOfBeggsAndBrill(IFlowStream stream, double diam, out double volumeFractionL, out double Fr, out double vm)
+	{
+		FlowRegimeEnum result = FlowRegimeEnum.Liquid;
+		double num = 0.0;
+		double num2 = 0.0;
+		IPhase phase = null;
+		IPhase phase2 = null;
+		Fr = 0.0;
+		volumeFractionL = 0.0;
+		vm = 0.0;
+		try
+		{
+			if (stream.NumberOfPhases < 2)
+			{
+				result = ((stream.GetPhaseByID(1).PhaseType != PhaseType.Vapour) ? FlowRegimeEnum.Liquid : FlowRegimeEnum.Vapour);
+			}
+			else
+			{
+				phase = stream.CombinedLiquidPhase;
+				phase2 = stream.GetPhaseByType(PhaseType.Vapour);
+				num = stream.MassFlowrate.Value * (1.0 - phase2.MassFraction.Value) / phase.Density.Value;
+				num2 = stream.MassFlowrate.Value * phase2.MassFraction.Value / phase2.Density.Value;
+				volumeFractionL = num / (num + num2);
+				vm = (num + num2) / (Math.PI * diam * diam * 0.25);
+				Fr = vm * vm / (9.80665 * diam);
+				LConstantsOfBeggsAndBrill(volumeFractionL, out var L, out var L2, out var L3, out var L4);
+				if ((volumeFractionL < 0.01 && Fr < L) || (volumeFractionL >= 0.01 && Fr < L2))
+				{
+					result = FlowRegimeEnum.Segregated;
+				}
+				else if (volumeFractionL >= 0.01 && L2 <= Fr && Fr <= L3)
+				{
+					result = FlowRegimeEnum.Transition;
+				}
+				else if ((0.01 <= volumeFractionL && volumeFractionL < 0.4 && L3 < Fr && Fr <= L) || (volumeFractionL >= 0.4 && L3 < Fr && Fr <= L4))
+				{
+					result = FlowRegimeEnum.Intermittent;
+				}
+				else if ((volumeFractionL < 0.4 && Fr >= L) || (volumeFractionL >= 0.4 && Fr > L4))
+				{
+					result = FlowRegimeEnum.Distributed;
+				}
+			}
+			return result;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "FlowRegimeOfBeggsAndBrill"), innerException);
+		}
+	}
+
+	internal static void LConstantsOfBeggsAndBrill(double volumeFractionL, out double L1, out double L2, out double L3, out double L4)
+	{
+		L1 = 316.0 * Math.Pow(volumeFractionL, 0.302);
+		L2 = 0.000925 * Math.Pow(volumeFractionL, -2.468);
+		L3 = 0.1 * Math.Pow(volumeFractionL, -1.452);
+		L4 = 0.5 * Math.Pow(volumeFractionL, -6.738);
+	}
+
+	internal static double CConstanOfBeggsAndBrill(double volumeFractionL, double Nlv, double Fr, FlowRegimeEnum pattern, double angle)
+	{
+		double num = 0.0;
+		try
+		{
+			if (angle >= 0.0)
+			{
+				switch (pattern)
+				{
+				case FlowRegimeEnum.Stratified:
+				case FlowRegimeEnum.Wavy:
+				case FlowRegimeEnum.Annular:
+				case FlowRegimeEnum.Segregated:
+					num = (1.0 - volumeFractionL) * Math.Log(0.011 * Math.Pow(volumeFractionL, -3.768) * Math.Pow(Nlv, 3.539) * Math.Pow(Fr, -1.614));
+					break;
+				case FlowRegimeEnum.Plug:
+				case FlowRegimeEnum.Slug:
+				case FlowRegimeEnum.Intermittent:
+					num = (1.0 - volumeFractionL) * Math.Log(2.96 * Math.Pow(volumeFractionL, 0.305) * Math.Pow(Nlv, -0.4473) * Math.Pow(Fr, 0.0978));
+					break;
+				default:
+					num = 0.0;
+					break;
+				}
+			}
+			else
+			{
+				num = (1.0 - volumeFractionL) * Math.Log(4.7 * Math.Pow(volumeFractionL, -0.3692) * Math.Pow(Nlv, 0.1244) * Math.Pow(Fr, -0.5056));
+			}
+			if (num < 0.0)
+			{
+				num = 0.0;
+			}
+			return num;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "CConstantOfBeggsAndBrill"), innerException);
+		}
+	}
+
+	internal static double HoldupOfBeggsAndBrillForHorizontalPipe(double volumeFractionL, double Fr, FlowRegimeEnum pattern)
+	{
+		try
+		{
+			switch (pattern)
+			{
+			case FlowRegimeEnum.Stratified:
+			case FlowRegimeEnum.Wavy:
+			case FlowRegimeEnum.Annular:
+			case FlowRegimeEnum.Segregated:
+				return 0.98 * Math.Pow(volumeFractionL, 0.4846) / Math.Pow(Fr, 0.0868);
+			case FlowRegimeEnum.Plug:
+			case FlowRegimeEnum.Slug:
+			case FlowRegimeEnum.Intermittent:
+				return 0.845 * Math.Pow(volumeFractionL, 0.5351) / Math.Pow(Fr, 0.0173);
+			default:
+				return 1.065 * Math.Pow(volumeFractionL, 0.5824) / Math.Pow(Fr, 0.0609);
+			}
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "HoldupOfBeggsAndBrillForHorizontalPipe"), innerException);
+		}
+	}
+
+	public static double VoidFractionOfBeggsAndBrill(IFlowStream stream, double diam, double angle)
+	{
+		IPhase phase = null;
+		IPhase phase2 = null;
+		double num = 0.0;
+		double num2 = 0.0;
+		double num3 = 0.0;
+		double num4 = 0.0;
+		double num5 = 0.0;
+		try
+		{
+			if (stream.NumberOfPhases < 2)
+			{
+				if (stream.GetPhaseByID(1).PhaseType == PhaseType.Vapour)
+				{
+					return 1.0;
+				}
+				return 0.0;
+			}
+			phase = stream.CombinedLiquidPhase;
+			phase2 = stream.GetPhaseByType(PhaseType.Vapour);
+			num5 = stream.MassFlowrate.Value * (1.0 - phase2.MassFraction.Value) / phase.Density.Value / (Math.PI / 4.0 * diam * diam);
+			num4 = num5 * Math.Pow(phase.Density.Value / (9.80665 * phase.SurfaceTension.Value), 0.25);
+			double volumeFractionL;
+			double Fr;
+			double vm;
+			FlowRegimeEnum flowRegimeEnum = FlowRegimeOfBeggsAndBrill(stream, diam, out volumeFractionL, out Fr, out vm);
+			LConstantsOfBeggsAndBrill(volumeFractionL, out var _, out var L2, out var L3, out var _);
+			double num6 = (L3 - Fr) / (L3 - L2);
+			if (flowRegimeEnum == FlowRegimeEnum.Transition)
+			{
+				double num7 = CConstanOfBeggsAndBrill(volumeFractionL, num4, Fr, FlowRegimeEnum.Segregated, angle);
+				double num8 = HoldupOfBeggsAndBrillForHorizontalPipe(volumeFractionL, Fr, FlowRegimeEnum.Segregated);
+				double num9 = CConstanOfBeggsAndBrill(volumeFractionL, num4, Fr, FlowRegimeEnum.Intermittent, angle);
+				double num10 = HoldupOfBeggsAndBrillForHorizontalPipe(volumeFractionL, Fr, FlowRegimeEnum.Intermittent);
+				num3 = num6 * num8 * (1.0 + num7 * (Math.Sin(HTFSUtility.DegreesToRads(1.8 * angle)) - 0.333 * Math.Pow(Math.Sin(HTFSUtility.DegreesToRads(1.8 * angle)), 3.0))) + (1.0 - num6) * num10 * (1.0 + num9 * (Math.Sin(HTFSUtility.DegreesToRads(1.8 * angle)) - 0.333 * Math.Pow(Math.Sin(HTFSUtility.DegreesToRads(1.8 * angle)), 3.0)));
+			}
+			else
+			{
+				num2 = HoldupOfBeggsAndBrillForHorizontalPipe(volumeFractionL, Fr, flowRegimeEnum);
+				double num11 = CConstanOfBeggsAndBrill(volumeFractionL, num4, Fr, flowRegimeEnum, angle);
+				num3 = num2 * (1.0 + num11 * (Math.Sin(HTFSUtility.DegreesToRads(1.8 * angle)) - 0.333 * Math.Pow(Math.Sin(HTFSUtility.DegreesToRads(1.8 * angle)), 3.0)));
+			}
+			if (angle > 0.0)
+			{
+				num3 *= 0.924;
+				if (num3 < volumeFractionL)
+				{
+					num3 = volumeFractionL;
+				}
+			}
+			else if (angle < 0.0)
+			{
+				num3 *= 0.685;
+			}
+			return 1.0 - num3;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "VoidFractionOfBeggsAndBrill"), innerException);
+		}
+	}
+
+	public static double PressreGradientOfBeggsAndBrill(IFlowStream stream, double diam, double angle, double roughness)
+	{
+		double num = 0.0;
+		IPhase phase = null;
+		IPhase phase2 = null;
+		double num2 = 0.0;
+		double num3 = 0.0;
+		double num4 = 0.0;
+		double num5 = 0.0;
+		double num6 = 0.0;
+		double num7 = 0.0;
+		double num8 = 0.0;
+		double num9 = 0.0;
+		double num10 = 0.0;
+		double num11 = 0.0;
+		double num12 = 0.0;
+		double num13 = 0.0;
+		try
+		{
+			double volumeFractionL;
+			double Fr;
+			double vm;
+			FlowRegimeEnum flowRegimeEnum = FlowRegimeOfBeggsAndBrill(stream, diam, out volumeFractionL, out Fr, out vm);
+			num = 1.0 - VoidFractionOfBeggsAndBrill(stream, diam, angle);
+			num4 = volumeFractionL / (num * num);
+			if (num4 == 1.0)
+			{
+				num9 = 0.0;
+			}
+			else if (num4 > 1.0 && num4 < 1.2)
+			{
+				num9 = Math.Log(2.2 * num4 - 1.2);
+			}
+			else
+			{
+				double num14 = Math.Log(num4);
+				num9 = num14 / (-0.0523 + 3.182 * num14 - 0.8725 * num14 * num14 + 0.01853 * Math.Pow(num14, 4.0));
+			}
+			num8 = Math.Exp(num9);
+			phase = stream.CombinedLiquidPhase;
+			phase2 = stream.GetPhaseByType(PhaseType.Vapour);
+			num2 = phase.Density.Value * volumeFractionL + phase2.Density.Value * (1.0 - volumeFractionL);
+			num3 = phase.Density.Value * num + phase2.Density.Value * (1.0 - num);
+			num11 = phase.Viscosity.Value * volumeFractionL + phase2.Viscosity.Value * (1.0 - volumeFractionL);
+			num5 = num2 * vm * diam / num11;
+			num7 = FrictionFactorOfMoody(num5, roughness / diam);
+			num6 = num7 * num8;
+			num12 = stream.MassFlowrate.Value * phase2.MassFraction.Value / (phase2.Density.Value * 0.25 * Math.PI * diam * diam);
+			num10 = vm * num12 * num2 / phase.Pressure.Value;
+			num13 = (2.0 * num6 * num2 * vm * vm / diam + num3 * 9.80665 * Math.Sin(HTFSUtility.DegreesToRads(angle))) / (1.0 - num10);
+			return 0.0 - num13;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "PressureGradientOfBeggsAndBrill"), innerException);
+		}
+	}
+
+	public static double PressreGradientOfSinglePhaseFlow(IFlowStream stream, double diam, double angle, double roughness)
+	{
+		IPhase phase = null;
+		double num = 0.0;
+		double num2 = 0.0;
+		double num3 = 0.0;
+		double num4 = 0.0;
+		try
+		{
+			phase = stream.GetPhaseByID(1);
+			num = stream.MassFlowrate.Value / HTFSUtility.FlowArea(diam);
+			num2 = SinglePhaseFlow.ReynoldsNumber(num, diam, phase.Viscosity.Value);
+			num3 = FrictionfactorOfChurchill(num2, roughness / diam);
+			num4 = 2.0 * num3 * num * num / (phase.Density.Value * diam) + phase.Density.Value * 9.80665 * Math.Sin(HTFSUtility.DegreesToRads(angle));
+			return 0.0 - num4;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "PressreGradientOfSinglePhaseFlow"), innerException);
+		}
+	}
+
+	public static double FrictionPressureGradientOfSinglePhaseFlow(IFlowStream stream, double diam, double roughness)
+	{
+		IPhase phase = null;
+		double num = 0.0;
+		double num2 = 0.0;
+		double num3 = 0.0;
+		double num4 = 0.0;
+		try
+		{
+			phase = stream.GetPhaseByID(1);
+			num = stream.MassFlowrate.Value / HTFSUtility.FlowArea(diam);
+			num2 = SinglePhaseFlow.ReynoldsNumber(num, diam, phase.Viscosity.Value);
+			num3 = FrictionfactorOfChurchill(num2, roughness / diam);
+			num3 = FrictionFactorOfMoody(num2, roughness / diam);
+			num4 = 2.0 * num3 * num * num / (phase.Density.Value * diam);
+			return 0.0 - num4;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "FrictionPressureGradientOfSinglePhaseFlow"), innerException);
+		}
+	}
+
+	public static double FrictionfactorOfChurchill(double Re, double ed)
+	{
+		double y = 16.0;
+		double num = 12.0;
+		try
+		{
+			double num2 = Math.Pow(7.0 / Re, 0.9) + 0.27 * ed;
+			double num3 = Math.Pow(37530.0 / Re, y);
+			double num4 = Math.Pow(2.457 * Math.Log(1.0 / num2), y);
+			double x = Math.Pow(8.0 / Re, num) + Math.Pow(num4 + num3, -1.5);
+			return 2.0 * Math.Pow(x, 1.0 / num);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(Resources.ChurchillCorrFailed, innerException);
+		}
+	}
+
+	public static double aDPDZcorrection(double velocity, double density, double pressure)
+	{
+		double num = velocity * velocity * density / pressure;
+		if (num >= 1.0 || num < 0.0)
+		{
+			return RealValue.FEMPTY;
+		}
+		return 1.0 - num;
+	}
+
+	public static void GetSupVelocities(IFlowStream stream, double diameter, ref double vsg, ref double vsl, ref double vm)
+	{
+		IPhase phaseByType = stream.GetPhaseByType(PhaseType.Vapour);
+		IPhase combinedLiquidPhase = stream.CombinedLiquidPhase;
+		double num = stream.MassFlowrate.Value / HTFSUtility.FlowArea(diameter);
+		vsg = num * phaseByType.MassFraction.Value / phaseByType.Density.Value;
+		vsl = num * combinedLiquidPhase.MassFraction.Value / combinedLiquidPhase.Density.Value;
+		vm = vsg + vsl;
+	}
+
+	public static double GetWallisBubbleVelocity(IFlowStream stream, double diameter)
+	{
+		double fEMPTY = RealValue.FEMPTY;
+		IPhase combinedLiquidPhase = stream.CombinedLiquidPhase;
+		IPhase phaseByType = stream.GetPhaseByType(PhaseType.Vapour);
+		if (combinedLiquidPhase == null || phaseByType == null || diameter <= 0.0)
+		{
+			return fEMPTY;
+		}
+		double value = combinedLiquidPhase.Density.Value;
+		double value2 = phaseByType.Density.Value;
+		double value3 = combinedLiquidPhase.SurfaceTension.Value;
+		double value4 = combinedLiquidPhase.Viscosity.Value;
+		double num = 9.80665 * diameter * diameter * (value - value2) / value3;
+		double num2 = Math.Sqrt(9.80665 * value * (value - value2) * diameter * diameter * diameter) / value4;
+		double num3 = 1.0;
+		if (num2 <= 18.0)
+		{
+			num3 = 2.5;
+		}
+		else if (num2 > 18.0 && num2 < 250.0)
+		{
+			num3 = 69.0 / Math.Pow(num2, 0.35);
+		}
+		else if (num2 >= 250.0)
+		{
+			num3 = 10.0;
+		}
+		double num4 = 0.345 * (1.0 - Math.Exp(-0.029 * num2)) * (1.0 - Math.Exp((3.37 - num) / num3));
+		return num4 * 9.80665 * diameter * (value - value2) / value;
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

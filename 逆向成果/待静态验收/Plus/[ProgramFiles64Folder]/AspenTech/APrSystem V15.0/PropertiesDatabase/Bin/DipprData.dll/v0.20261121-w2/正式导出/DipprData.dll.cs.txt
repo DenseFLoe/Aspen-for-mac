@@ -1,0 +1,1512 @@
+using System;
+using System.Collections;
+using System.Data.OleDb;
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
+using System.Windows.Forms;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyCompany("AspenTech")]
+[assembly: AssemblyProduct("Aspen Properties Enterprise Database V15")]
+[assembly: AssemblyCopyright("Copyright © 2025 Aspen Technology, Inc.")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyFileVersion("41.0.0.11")]
+[assembly: AssemblyDelaySign(false)]
+[assembly: AssemblyKeyFile("..\\..\\..\\..\\aped.snk")]
+[assembly: AssemblyKeyName("")]
+[assembly: AssemblyTitle("APED DIPPR Data Convertor")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.1")]
+namespace AspenTech.APED.DipprData;
+
+public class Associations
+{
+	public delegate void AssociationErrorEventHandler(object sender, AssociationErrorEventArgs e);
+
+	private static ArrayList compProperties;
+
+	private static SortedList compPropValueObjList;
+
+	private static string previousCompId;
+
+	public event AssociationErrorEventHandler AssociationErrorEvent;
+
+	public Associations(IDatabank dbank, IPropertyValueManager propertyValueManager, string compId, string compIdType)
+	{
+		ICollection c = null;
+		if (compId != previousCompId)
+		{
+			propertyValueManager.GetAllUnaryPropertyValues(dbank, compId, compIdType, ref c);
+			previousCompId = compId;
+			ArrayList arrayList = new ArrayList(c);
+			compProperties = new ArrayList(arrayList.Count);
+			compPropValueObjList = new SortedList(arrayList.Count);
+			for (int i = 0; i < arrayList.Count; i++)
+			{
+			}
+		}
+	}
+
+	public void AddAssociations(Database myDatabase, IDatabaseObject dbObj, string myIdentity, string CasId, string nameString, IChangeControlManager ccm, IDatabaseObjectAssocationManager myAssociationManager, IPropertyManager propertyManager, IDatabank testDatabank)
+	{
+		//IL_0022: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0028: Expected O, but got Unknown
+		//IL_0029: Unknown result type (might be due to invalid IL or missing references)
+		try
+		{
+			((IDatabaseObjectIdentity)dbObj).Database = (IDatabase)(object)myDatabase;
+			((IDatabaseObjectIdentity)dbObj).Identity = myIdentity;
+			IDatabaseObjectMoniker val = default(IDatabaseObjectMoniker);
+			dbObj.GetMoniker(ref val);
+			IPropertyValue val2 = (IPropertyValue)compPropValueObjList[nameString];
+			IDatabaseObjectMoniker val3 = default(IDatabaseObjectMoniker);
+			((IDatabaseObject)val2).GetMoniker(ref val3);
+			myAssociationManager.AssociateObjects(val3, val);
+			ccm.ApproveLast();
+		}
+		catch (Exception ex)
+		{
+			string associationError = "Error in setting an association. " + ex.Message;
+			OnAssociationError(new AssociationErrorEventArgs(associationError));
+		}
+	}
+
+	public static ArrayList GetAllCompoundProperties(IDatabank dbank, IPropertyManager propertyManager, string compId, string compIdType)
+	{
+		return compProperties;
+	}
+
+	public bool CheckProperty(string CasId, string nameString, IPropertyValueManager propertyValueManager, IDatabank testDatabank)
+	{
+		try
+		{
+			IPropertyValue val = default(IPropertyValue);
+			propertyValueManager.GetUnaryPropertyValue(testDatabank, CasId, "CASRN", nameString, ref val);
+			if (val != null)
+			{
+				return true;
+			}
+			return false;
+		}
+		catch
+		{
+			return false;
+		}
+	}
+
+	protected virtual void OnAssociationError(AssociationErrorEventArgs e)
+	{
+		if (this.AssociationErrorEvent != null)
+		{
+			this.AssociationErrorEvent(this, e);
+		}
+	}
+}
+public class AssociationErrorEventArgs : EventArgs
+{
+	private readonly string myError;
+
+	public string AssociationError => myError;
+
+	public AssociationErrorEventArgs(string AssociationError)
+	{
+		myError = AssociationError;
+	}
+}
+public enum DIPPRSchemaVersion
+{
+	intermediate_public06_xp = 1,
+	dippr801_jan2010
+}
+public class Connections
+{
+	public delegate void ConnectErrorEventHandler(object sender, ConnectErrorEventArgs e);
+
+	private OleDbConnection conn;
+
+	private SqlServerDatabase myDatabase;
+
+	private string DBpathJet;
+
+	private ISundryDataManager sdm;
+
+	private IChangeControlManager ccm;
+
+	private IDatabaseObjectAssocationManager myAssociationManager;
+
+	private ICompoundPropertyGateway myCompoundGateway;
+
+	private IPropertyValueManager propertyValueManager;
+
+	private IDatabank testDatabank;
+
+	private IDatabankCollection databanks;
+
+	private ICitationManager citManager;
+
+	private DIPPRSchemaVersion myDipprSchemaVersion;
+
+	public event ConnectErrorEventHandler ConnectErrorEvent;
+
+	private void DataSetup(string DbDatabank)
+	{
+		//IL_0062: Unknown result type (might be due to invalid IL or missing references)
+		//IL_006c: Expected O, but got Unknown
+		sdm = ((Database)myDatabase).SundryDataManager;
+		ccm = ((Database)myDatabase).ChangeControlManager;
+		ccm.RejectLast();
+		myAssociationManager = ((Database)myDatabase).AssociationManager;
+		((Database)myDatabase).EnumerateDatabanks(ref databanks);
+		testDatabank = databanks[(object)DbDatabank];
+		myCompoundGateway = (ICompoundPropertyGateway)new CompoundPropertyGateway();
+		myCompoundGateway.Databanks = databanks;
+		propertyValueManager = ((ISupportsPropertyValues)myDatabase).PropertyValueManager;
+		citManager = ((ISupportsCitations)myDatabase).CitationManager;
+	}
+
+	public void SetDbConnections(string dipprPath, IDatabase database, string DbDatabank)
+	{
+		//IL_0044: Unknown result type (might be due to invalid IL or missing references)
+		//IL_004e: Expected O, but got Unknown
+		DBpathJet = dipprPath;
+		if (dipprPath != "")
+		{
+			ConnectToDippr();
+		}
+		if (DBpathJet.ToLowerInvariant().Contains("intermediate_public06_xp"))
+		{
+			myDipprSchemaVersion = DIPPRSchemaVersion.intermediate_public06_xp;
+		}
+		else
+		{
+			myDipprSchemaVersion = DIPPRSchemaVersion.dippr801_jan2010;
+		}
+		try
+		{
+			myDatabase = (SqlServerDatabase)database;
+			DataSetup(DbDatabank);
+		}
+		catch (Exception ex)
+		{
+			string message = ex.Message;
+			OnConnectError(new ConnectErrorEventArgs(message));
+		}
+	}
+
+	public void SetDbConnections(string dipprPath, string dbServer, string AfwIdentify, string initialCatalog, string username, string password, string DbDatabank)
+	{
+		DBpathJet = dipprPath;
+		if (dipprPath != "")
+		{
+			ConnectToDippr();
+		}
+		ConnectToAped(dbServer, AfwIdentify, initialCatalog, username, password);
+		DataSetup(DbDatabank);
+	}
+
+	public void TransferSundryData(string DataType, string DbDatabank, string[] casAndDipprId)
+	{
+		try
+		{
+			switch (DataType)
+			{
+			case "Notes":
+			{
+				SundryDataNotes sundryDataNotes = new SundryDataNotes(myDipprSchemaVersion);
+				sundryDataNotes.NotesErrorEvent += OnNotesError;
+				sundryDataNotes.NotesData(conn, casAndDipprId, citManager, ccm, testDatabank);
+				break;
+			}
+			case "References":
+			{
+				SundryDataReferences sundryDataReferences = new SundryDataReferences(myDipprSchemaVersion);
+				sundryDataReferences.ReferencesErrorEvent += OnReferencesError;
+				sundryDataReferences.ReferenceData(conn, casAndDipprId, citManager, ccm, testDatabank);
+				break;
+			}
+			case "Errors":
+			{
+				SundryDataErrors sundryDataErrors = new SundryDataErrors(myDipprSchemaVersion);
+				sundryDataErrors.ErrorsErrorEvent += OnErrorsError;
+				sundryDataErrors.DataInfoData(conn, casAndDipprId, citManager, ccm, testDatabank);
+				break;
+			}
+			}
+		}
+		catch (Exception ex)
+		{
+			string connectError = "Error in Connections. " + ex.Message;
+			OnConnectError(new ConnectErrorEventArgs(connectError));
+		}
+	}
+
+	public ArrayList GetReferenceIds(string DbDatabank, ArrayList myComponents)
+	{
+		ArrayList arrayList = new ArrayList();
+		SundryDataReferences sundryDataReferences = new SundryDataReferences(myDipprSchemaVersion);
+		sundryDataReferences.ReferencesErrorEvent += OnReferencesError;
+		return sundryDataReferences.GetIds(conn, (Database)(object)myDatabase, DbDatabank, myComponents);
+	}
+
+	private void OnNotesError(object sender, NotesErrorEventArgs e)
+	{
+		OnConnectError(new ConnectErrorEventArgs(e.NotesError));
+	}
+
+	private void OnReferencesError(object sender, ReferencesErrorEventArgs e)
+	{
+		OnConnectError(new ConnectErrorEventArgs(e.ReferencesError));
+	}
+
+	private void OnErrorsError(object sender, ErrorsErrorEventArgs e)
+	{
+		OnConnectError(new ConnectErrorEventArgs(e.ErrorsError));
+	}
+
+	private void ConnectToDippr()
+	{
+		try
+		{
+			conn = new OleDbConnection();
+			conn.ConnectionString = "Provider=Microsoft.Jet.OLEDB.4.0;Data source= " + DBpathJet;
+			conn.Open();
+		}
+		catch (Exception ex)
+		{
+			string message = ex.Message;
+			OnConnectError(new ConnectErrorEventArgs(message));
+		}
+	}
+
+	private void ConnectToAped(string dbServer, string AfwIdentify, string initialCatalog, string username, string password)
+	{
+		//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+		//IL_000b: Expected O, but got Unknown
+		try
+		{
+			myDatabase = new SqlServerDatabase();
+			myDatabase.Connect(AfwIdentify, dbServer, username, password, initialCatalog);
+		}
+		catch (Exception ex)
+		{
+			string message = ex.Message;
+			OnConnectError(new ConnectErrorEventArgs(message));
+		}
+	}
+
+	public void GetComponents(string ComponentSource, string myDatabank, out ArrayList ComponentList)
+	{
+		if (ComponentSource == "Aped")
+		{
+			GetApedComponents(myDatabank, out var myComponents);
+			ComponentList = myComponents;
+		}
+		else
+		{
+			ComponentList = null;
+		}
+	}
+
+	private void GetApedComponents(string myDatabank, out ArrayList myComponents)
+	{
+		//IL_00da: Unknown result type (might be due to invalid IL or missing references)
+		//IL_00e1: Expected O, but got Unknown
+		//IL_0020: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0027: Expected O, but got Unknown
+		//IL_013a: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0141: Expected O, but got Unknown
+		IDatabank val = null;
+		IDatabankCollection val2 = default(IDatabankCollection);
+		((Database)myDatabase).EnumerateDatabanks(ref val2);
+		foreach (IDatabank item in (IEnumerable)val2)
+		{
+			IDatabank val3 = item;
+			if (val3.Name == myDatabank)
+			{
+				val = val3;
+			}
+		}
+		if (val == null)
+		{
+			string connectError = "Error - could not find the databank " + myDatabank;
+			OnConnectError(new ConnectErrorEventArgs(connectError));
+			myComponents = null;
+			return;
+		}
+		val2.Clear();
+		val2.Add(val);
+		ICompoundManager val4 = null;
+		ISupportsCompounds val5 = (ISupportsCompounds)(object)myDatabase;
+		if (val5 != null)
+		{
+			val4 = val5.CompoundManager;
+		}
+		ArrayList arrayList = new ArrayList();
+		arrayList.Add(val);
+		ICollection collection = default(ICollection);
+		val4.Find((ICollection)arrayList, 1, "", (string)null, (ICollection)null, (string[])null, ref collection);
+		myComponents = new ArrayList();
+		foreach (FoundCompounds item2 in collection)
+		{
+			FoundCompounds val6 = item2;
+			try
+			{
+				IDatabank databank = val6.Databank;
+				ICollection identifierValues = val6.IdentifierValues;
+				if (identifierValues == null || identifierValues.Count <= 0)
+				{
+					continue;
+				}
+				Array array = Array.CreateInstance(typeof(IIdentifierValue), identifierValues.Count);
+				identifierValues.CopyTo(array, 0);
+				for (int i = 0; i < array.Length; i++)
+				{
+					IIdentifierValue val7 = (IIdentifierValue)array.GetValue(i);
+					if (val7 != null)
+					{
+						string text = "";
+						string[] array2 = (string[])val7.ValueList;
+						IIdentifier identifier = val7.Identifier;
+						if (identifier.Name.ToUpperInvariant().CompareTo("CASRN") == 0)
+						{
+							text = array2[0];
+						}
+						string[] array3 = new string[2]
+						{
+							text,
+							GetDipprComponentId(text)
+						};
+						if (array3[1] != "")
+						{
+							myComponents.Add(array3);
+						}
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+				string message = ex.Message;
+				OnConnectError(new ConnectErrorEventArgs(message));
+				myComponents = null;
+			}
+		}
+	}
+
+	private string GetDipprComponentId(string cas)
+	{
+		try
+		{
+			string result = "";
+			int num = 0;
+			string text = "";
+			text = ((myDipprSchemaVersion != DIPPRSchemaVersion.intermediate_public06_xp) ? ("SELECT Chem_Info.ChemID FROM Chem_Info WHERE Chem_Info.CASN = '" + cas + "'") : ("SELECT Chem_Info.Value, Chem_Info.ChemID FROM Chem_Info WHERE (((Chem_Info.Value)='" + cas + "') AND ((Chem_Info.PropertyID)='CASN'))"));
+			OleDbCommand oleDbCommand = new OleDbCommand(text, conn);
+			OleDbDataReader oleDbDataReader = oleDbCommand.ExecuteReader();
+			while (oleDbDataReader.Read())
+			{
+				string text2 = oleDbDataReader["ChemID"].ToString();
+				char[] array = text2.ToCharArray();
+				if (array.Length <= 4 || array[0] != '2')
+				{
+					result = oleDbDataReader["ChemID"].ToString();
+					num++;
+				}
+			}
+			if (num > 1)
+			{
+				string connectError = "ERROR! The component with CASN " + cas + " has more than 1 Dippr Component ID";
+				OnConnectError(new ConnectErrorEventArgs(connectError));
+			}
+			oleDbDataReader.Close();
+			return result;
+		}
+		catch (Exception ex)
+		{
+			string message = ex.Message;
+			OnConnectError(new ConnectErrorEventArgs(message));
+			return "";
+		}
+	}
+
+	public void AddNoteData(string DbDatabank, string CasId, string CompProperty, string CompNote, string IdentityToUse)
+	{
+		SundryDataNotes sundryDataNotes = new SundryDataNotes(myDipprSchemaVersion);
+		string[] value = new string[3] { CompProperty, CompNote, "" };
+		ArrayList arrayList = new ArrayList();
+		arrayList.Add(value);
+		sundryDataNotes.AddUserNote((Database)(object)myDatabase, DbDatabank, arrayList, CasId, IdentityToUse);
+	}
+
+	public void AddReferenceData(string DbDatabank, string CasId, string CompProperty, string Title, string Pages, string Journal, string Date, string Book, string Volume, string Publisher, string Notes, string Authors, string IdentityToUse)
+	{
+		SundryDataReferences sundryDataReferences = new SundryDataReferences(myDipprSchemaVersion);
+		string[] value = new string[11]
+		{
+			CompProperty, Title, Pages, Journal, Date, Book, Volume, Publisher, Notes, Authors,
+			""
+		};
+		ArrayList arrayList = new ArrayList();
+		arrayList.Add(value);
+		sundryDataReferences.AddUserReference((Database)(object)myDatabase, DbDatabank, arrayList, CasId, IdentityToUse);
+	}
+
+	public void GetReferenceData(string DbDatabank, string CasId, out ArrayList ReferenceData, string PropertyName)
+	{
+		SundryDataReferences sundryDataReferences = new SundryDataReferences(myDipprSchemaVersion);
+		sundryDataReferences.GetUserReference((Database)(object)myDatabase, DbDatabank, out var refArray, CasId, PropertyName);
+		ReferenceData = refArray;
+	}
+
+	public void GetNoteData(string DbDatabank, string CasId, out ArrayList NoteData, string PropertyName)
+	{
+		SundryDataNotes sundryDataNotes = new SundryDataNotes(myDipprSchemaVersion);
+		sundryDataNotes.GetUserNote((Database)(object)myDatabase, DbDatabank, out var refArray, CasId, PropertyName);
+		NoteData = refArray;
+	}
+
+	public void GetErrorData(string DbDatabank, string CasId, out ArrayList ErrorData, string PropertyName)
+	{
+		SundryDataErrors sundryDataErrors = new SundryDataErrors(myDipprSchemaVersion);
+		sundryDataErrors.GetUserError((Database)(object)myDatabase, DbDatabank, out var refArray, CasId, PropertyName);
+		ErrorData = refArray;
+	}
+
+	protected virtual void OnConnectError(ConnectErrorEventArgs e)
+	{
+		if (this.ConnectErrorEvent != null)
+		{
+			this.ConnectErrorEvent(this, e);
+		}
+	}
+
+	public void TransferExtraCitations()
+	{
+		//IL_009d: Unknown result type (might be due to invalid IL or missing references)
+		//IL_00a3: Expected O, but got Unknown
+		try
+		{
+			string cmdText = "SELECT * FROM ExtraCitations";
+			OleDbCommand oleDbCommand = new OleDbCommand(cmdText, conn);
+			OleDbDataReader oleDbDataReader = oleDbCommand.ExecuteReader();
+			while (oleDbDataReader.Read())
+			{
+				PropertyCitationsObject val = new PropertyCitationsObject(oleDbDataReader[14].ToString(), oleDbDataReader[6].ToString(), oleDbDataReader[9].ToString(), oleDbDataReader[7].ToString(), oleDbDataReader[11].ToString(), oleDbDataReader[13].ToString(), oleDbDataReader[8].ToString(), oleDbDataReader[10].ToString(), oleDbDataReader[12].ToString(), oleDbDataReader[5].ToString());
+				citManager.AddCitation(testDatabank, oleDbDataReader[2].ToString(), "ALIAS", oleDbDataReader[3].ToString(), val);
+			}
+		}
+		catch
+		{
+			throw;
+		}
+	}
+}
+public class ConnectErrorEventArgs : EventArgs
+{
+	private readonly string myError;
+
+	public string ConnectError => myError;
+
+	public ConnectErrorEventArgs(string ConnectError)
+	{
+		myError = ConnectError;
+	}
+}
+public class SundryDataErrors
+{
+	public delegate void ErrorsErrorEventHandler(object sender, ErrorsErrorEventArgs e);
+
+	private string[] prefix = new string[2] { "SELECT Const_Values.PropertyID, Const_Values.Error FROM Const_Values WHERE ( ((Const_Values.ChemID)=", "SELECT Tdep_Coefficients.Error, Tdep_Coefficients.PropertyID, Tdep_Coefficients.ChemID FROM Tdep_Coefficients WHERE (((Tdep_Coefficients.Coef_Set_ID)='A') AND ((Tdep_Coefficients.ChemID)=" };
+
+	private string[] sufix = new string[2] { "))", "))" };
+
+	private string[] prefix1 = new string[2] { "SELECT Const_Values.PropertyID, Sources.Error FROM Const_Values INNER JOIN Sources ON Const_Values.SourceID = Sources.SourceID WHERE ( ((Const_Values.ChemID)=", "SELECT Tdep_Error.Error, Tdep_Set_Info.PropertyID, Tdep_Set_Info.ChemID FROM ((Tdep_Set_Info INNER JOIN Tdep_Coefficients ON Tdep_Set_Info.Coeff_SetID = Tdep_Coefficients.Coeff_SetID) INNER JOIN Tdep_Error ON  Tdep_Coefficients.ErrorID = Tdep_Error.ErrorID) WHERE (((Tdep_Coefficients.Coeff_Set_Order)='A') AND ((Tdep_Set_Info.ChemID)=" };
+
+	private string[] sufix1 = new string[2] { "))", "))" };
+
+	private DIPPRSchemaVersion myDipprSchemaVersion;
+
+	public event ErrorsErrorEventHandler ErrorsErrorEvent;
+
+	public SundryDataErrors(DIPPRSchemaVersion dsv)
+	{
+		myDipprSchemaVersion = dsv;
+	}
+
+	public void DataInfoData(OleDbConnection conn, string[] casAndDipprId, ICitationManager citMgr, IChangeControlManager ccm, IDatabank testDatabank)
+	{
+		try
+		{
+			GetComponentErrors(conn, casAndDipprId[1], out var notesArray);
+			AddDataInfoData(notesArray, casAndDipprId[0], citMgr, ccm, testDatabank);
+			GC.Collect();
+		}
+		catch (Exception ex)
+		{
+			string errorsError = "Error in ErrorsData. " + ex.Message;
+			OnErrorsError(new ErrorsErrorEventArgs(errorsError));
+		}
+	}
+
+	private void GetComponentErrors(OleDbConnection conn, string myCompId, out SortedList notesArray)
+	{
+		//IL_0115: Unknown result type (might be due to invalid IL or missing references)
+		//IL_011f: Expected O, but got Unknown
+		notesArray = null;
+		try
+		{
+			ArrayList arrayList = new ArrayList();
+			for (int i = 0; i < prefix.GetLength(0); i++)
+			{
+				OleDbCommand oleDbCommand = null;
+				oleDbCommand = ((myDipprSchemaVersion != DIPPRSchemaVersion.intermediate_public06_xp) ? new OleDbCommand(prefix1[i] + myCompId + sufix1[i], conn) : new OleDbCommand(prefix[i] + myCompId + sufix[i], conn));
+				OleDbDataReader oleDbDataReader = oleDbCommand.ExecuteReader();
+				TranslatePropNames translatePropNames = new TranslatePropNames();
+				while (oleDbDataReader.Read())
+				{
+					if (translatePropNames.CheckPropName(oleDbDataReader["PropertyID"].ToString(), out var AspenPropName))
+					{
+						string[] value = new string[2]
+						{
+							AspenPropName,
+							oleDbDataReader["Error"].ToString()
+						};
+						arrayList.Add(value);
+					}
+				}
+				oleDbDataReader.Close();
+			}
+			notesArray = new SortedList(arrayList.Count);
+			for (int j = 0; j < arrayList.Count; j++)
+			{
+				try
+				{
+					notesArray.Add(((string[])arrayList[j])[0], (object)new PropertyDataInfoObject("", ((string[])arrayList[j])[1], "", ""));
+				}
+				catch
+				{
+				}
+			}
+		}
+		catch (Exception ex)
+		{
+			string errorsError = "Error in GetComponentErrors. " + ex.Message;
+			OnErrorsError(new ErrorsErrorEventArgs(errorsError));
+			SortedList sortedList = new SortedList();
+			notesArray = sortedList;
+		}
+	}
+
+	private void AddDataInfoData(SortedList notesArray, string CasId, ICitationManager citMgr, IChangeControlManager ccm, IDatabank testDatabank)
+	{
+		//IL_000b: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0011: Expected O, but got Unknown
+		try
+		{
+			for (int i = 0; i < notesArray.Count; i++)
+			{
+				PropertyDataInfoObject val = (PropertyDataInfoObject)notesArray.GetByIndex(i);
+				if (!(val.Uncertainty == "") || !(val.UncertaintySource == ""))
+				{
+					citMgr.AddDataInfo(testDatabank, CasId, "CASRN", (string)notesArray.GetKey(i), val);
+					ccm.ApproveLast();
+				}
+			}
+		}
+		catch (Exception ex)
+		{
+			string errorsError = "Error in AddErrorsData. " + ex.Message;
+			OnErrorsError(new ErrorsErrorEventArgs(errorsError));
+		}
+	}
+
+	public void GetUserError(Database myDatabase, string myDatabank, out ArrayList refArray, string CasId, string PropertyName)
+	{
+		GetSundryData(out refArray, myDatabase, myDatabank, CasId, PropertyName);
+	}
+
+	private void GetSundryData(out ArrayList refArray, Database myDatabase, string myDatabank, string CasId, string PropertyName)
+	{
+		//IL_0050: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0057: Expected O, but got Unknown
+		//IL_0073: Unknown result type (might be due to invalid IL or missing references)
+		//IL_00a5: Unknown result type (might be due to invalid IL or missing references)
+		//IL_00ac: Expected O, but got Unknown
+		//IL_00ba: Unknown result type (might be due to invalid IL or missing references)
+		//IL_00c1: Expected O, but got Unknown
+		if (CasId == "")
+		{
+			MessageBox.Show("Missing Cas Id");
+			refArray = null;
+			return;
+		}
+		if (PropertyName == "")
+		{
+			MessageBox.Show("Missing Property Name");
+			refArray = null;
+			return;
+		}
+		ArrayList arrayList = new ArrayList();
+		IDatabankCollection val = default(IDatabankCollection);
+		myDatabase.EnumerateDatabanks(ref val);
+		IDatabank val2 = val[(object)myDatabank];
+		ICompoundPropertyGateway val3 = (ICompoundPropertyGateway)new CompoundPropertyGateway();
+		val3.Databanks = val;
+		IPropertyValue val4 = default(IPropertyValue);
+		val3.GetCompoundProperty(CasId, "CASRN", PropertyName, ref val4);
+		IDatabaseObjectMoniker val5 = default(IDatabaseObjectMoniker);
+		((IDatabaseObject)val4).GetMoniker(ref val5);
+		ISundryDataManager sundryDataManager = myDatabase.SundryDataManager;
+		IDatabaseObjectMoniker[] array = default(IDatabaseObjectMoniker[]);
+		myDatabase.AssociationManager.FindAssociatedObjects(val5, (DatabaseObjectType)(-1), ref array);
+		for (int i = 0; i < array.Length; i++)
+		{
+			try
+			{
+				IDatabaseObjectMoniker val6 = (IDatabaseObjectMoniker)array.GetValue(i);
+				PropertyDataInfoObject val7 = (PropertyDataInfoObject)sundryDataManager.GetItem(((IDatabaseObjectIdentity)val6).Identity);
+				string[] value = new string[2]
+				{
+					((IDatabaseObjectIdentity)val6).Identity,
+					val7.Uncertainty
+				};
+				arrayList.Add(value);
+			}
+			catch
+			{
+			}
+		}
+		refArray = arrayList;
+	}
+
+	protected virtual void OnErrorsError(ErrorsErrorEventArgs e)
+	{
+		if (this.ErrorsErrorEvent != null)
+		{
+			this.ErrorsErrorEvent(this, e);
+		}
+	}
+
+	private void OnAssociationError(object sender, AssociationErrorEventArgs e)
+	{
+		OnErrorsError(new ErrorsErrorEventArgs(e.AssociationError));
+	}
+}
+public class ErrorsErrorEventArgs : EventArgs
+{
+	private readonly string myError;
+
+	public string ErrorsError => myError;
+
+	public ErrorsErrorEventArgs(string ErrorsError)
+	{
+		myError = ErrorsError;
+	}
+}
+public class SundryDataNotes
+{
+	public delegate void NotesErrorEventHandler(object sender, NotesErrorEventArgs e);
+
+	private string[] prefix = new string[2] { "SELECT Const_Values.PropertyID, Notes.Note, Notes.NoteID FROM Notes INNER JOIN Const_Values ON Notes.NoteID = Const_Values.NoteID WHERE (((Const_Values.ChemID)=", "SELECT Notes.NoteID, Tdep_Coefficients.ChemID, Tdep_Coefficients.PropertyID, Notes.Note FROM Notes INNER JOIN Tdep_Coefficients ON Notes.NoteID = Tdep_Coefficients.NoteID WHERE (((Tdep_Coefficients.ChemID)=" };
+
+	private string[] sufix = new string[2] { "))", "))" };
+
+	private string[] prefix1 = new string[2] { "SELECT Const_Values.PropertyID, Notes.Note, Notes.NoteID FROM Notes INNER JOIN Const_Values ON Notes.NoteID = Const_Values.NoteID WHERE (((Const_Values.ChemID)=", "SELECT DISTINCT Notes.NoteID, Tdep_Set_Info.ChemID, Tdep_Set_Info.PropertyID, Notes.Note FROM Notes , Tdep_Coefficients, Tdep_Set_Info WHERE Notes.NoteID = Tdep_Coefficients.NoteID AND Tdep_Coefficients.Coeff_SetID = Tdep_Set_Info.Coeff_SetID AND (((Tdep_Set_Info.ChemID) = " };
+
+	private string[] sufix1 = new string[2] { "))", "))" };
+
+	private DIPPRSchemaVersion myDipprSchemaVersion;
+
+	public event NotesErrorEventHandler NotesErrorEvent;
+
+	public SundryDataNotes(DIPPRSchemaVersion dsv)
+	{
+		myDipprSchemaVersion = dsv;
+	}
+
+	public void NotesData(OleDbConnection conn, string[] casAndDipprId, ICitationManager citMgr, IChangeControlManager ccm, IDatabank testDatabank)
+	{
+		try
+		{
+			GetComponentNotes(conn, casAndDipprId[1], out var notesArray);
+			string identityToUse = "";
+			AddNotesData(notesArray, casAndDipprId[0], identityToUse, citMgr, ccm, testDatabank);
+			GC.Collect();
+		}
+		catch (Exception ex)
+		{
+			string notesError = "Error in NotesData. " + ex.Message;
+			OnNotesError(new NotesErrorEventArgs(notesError));
+		}
+	}
+
+	private void GetComponentNotes(OleDbConnection conn, string myCompId, out SortedList notesArray)
+	{
+		//IL_011f: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0129: Expected O, but got Unknown
+		notesArray = null;
+		try
+		{
+			ArrayList arrayList = new ArrayList();
+			for (int i = 0; i < prefix.GetLength(0); i++)
+			{
+				OleDbCommand oleDbCommand = null;
+				oleDbCommand = ((myDipprSchemaVersion != DIPPRSchemaVersion.intermediate_public06_xp) ? new OleDbCommand(prefix1[i] + myCompId + sufix1[i], conn) : new OleDbCommand(prefix[i] + myCompId + sufix[i], conn));
+				OleDbDataReader oleDbDataReader = oleDbCommand.ExecuteReader();
+				TranslatePropNames translatePropNames = new TranslatePropNames();
+				while (oleDbDataReader.Read())
+				{
+					if (translatePropNames.CheckPropName(oleDbDataReader["PropertyID"].ToString(), out var AspenPropName))
+					{
+						string[] value = new string[3]
+						{
+							AspenPropName,
+							oleDbDataReader["Note"].ToString(),
+							oleDbDataReader["NoteID"].ToString()
+						};
+						arrayList.Add(value);
+					}
+				}
+				oleDbDataReader.Close();
+			}
+			notesArray = new SortedList(arrayList.Count);
+			for (int j = 0; j < arrayList.Count; j++)
+			{
+				try
+				{
+					notesArray.Add(((string[])arrayList[j])[0], (object)new NotesObject("Delete it when we cleanup NotesObject of sundry data support", ((string[])arrayList[j])[1]));
+				}
+				catch
+				{
+				}
+			}
+		}
+		catch (Exception ex)
+		{
+			string text = "Error in GetComponentNotes. " + ex.Message;
+			SortedList sortedList = new SortedList();
+			notesArray = sortedList;
+		}
+	}
+
+	private void AddNotesData(SortedList notesArray, string CasId, string IdentityToUse, ICitationManager citMgr, IChangeControlManager ccm, IDatabank testDatabank)
+	{
+		//IL_0021: Unknown result type (might be due to invalid IL or missing references)
+		//IL_002b: Expected O, but got Unknown
+		try
+		{
+			for (int i = 0; i < notesArray.Count; i++)
+			{
+				citMgr.AddNote(testDatabank, CasId, "CASRN", (string)notesArray.GetKey(i), (NotesObject)notesArray.GetByIndex(i));
+				ccm.ApproveLast();
+			}
+		}
+		catch (Exception ex)
+		{
+			string notesError = "Error in AddToSundryData. " + ex.Message;
+			OnNotesError(new NotesErrorEventArgs(notesError));
+		}
+	}
+
+	private void GetUniqueNoteName(ISundryDataManager sdm, string CasId, out string myName)
+	{
+		//IL_0024: Unknown result type (might be due to invalid IL or missing references)
+		//IL_002a: Expected O, but got Unknown
+		string text = "";
+		for (int i = 1; i < 5000; i++)
+		{
+			text = CasId + "_UserAddedNote_" + i;
+			NotesObject val = (NotesObject)sdm.GetItem(text);
+			if (val == null)
+			{
+				myName = text;
+				return;
+			}
+		}
+		myName = "";
+	}
+
+	public void AddUserNote(Database myDatabase, string myDatabank, ArrayList notesArray, string CasId, string IdentityToUse)
+	{
+		//IL_002c: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0033: Expected O, but got Unknown
+		ISundryDataManager sundryDataManager = myDatabase.SundryDataManager;
+		IChangeControlManager changeControlManager = myDatabase.ChangeControlManager;
+		changeControlManager.RejectLast();
+		IDatabaseObjectAssocationManager associationManager = myDatabase.AssociationManager;
+		IDatabankCollection val = default(IDatabankCollection);
+		myDatabase.EnumerateDatabanks(ref val);
+		IDatabank val2 = val[(object)myDatabank];
+		ICompoundPropertyGateway val3 = (ICompoundPropertyGateway)new CompoundPropertyGateway();
+		val3.Databanks = val;
+		SortedList sortedList = default(SortedList);
+		val3.GetProperties(ref sortedList);
+		IPropertyValueManager propertyValueManager = ((ISupportsPropertyValues)myDatabase).PropertyValueManager;
+	}
+
+	public void GetUserNote(Database myDatabase, string myDatabank, out ArrayList refArray, string CasId, string PropertyName)
+	{
+		GetSundryData(out refArray, myDatabase, myDatabank, CasId, PropertyName);
+	}
+
+	private void GetSundryData(out ArrayList refArray, Database myDatabase, string myDatabank, string CasId, string PropertyName)
+	{
+		//IL_0050: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0057: Expected O, but got Unknown
+		//IL_0073: Unknown result type (might be due to invalid IL or missing references)
+		//IL_00a5: Unknown result type (might be due to invalid IL or missing references)
+		//IL_00ac: Expected O, but got Unknown
+		//IL_00ba: Unknown result type (might be due to invalid IL or missing references)
+		//IL_00c1: Expected O, but got Unknown
+		if (CasId == "")
+		{
+			MessageBox.Show("Missing Cas Id");
+			refArray = null;
+			return;
+		}
+		if (PropertyName == "")
+		{
+			MessageBox.Show("Missing Property Name");
+			refArray = null;
+			return;
+		}
+		ArrayList arrayList = new ArrayList();
+		IDatabankCollection val = default(IDatabankCollection);
+		myDatabase.EnumerateDatabanks(ref val);
+		IDatabank val2 = val[(object)myDatabank];
+		ICompoundPropertyGateway val3 = (ICompoundPropertyGateway)new CompoundPropertyGateway();
+		val3.Databanks = val;
+		IPropertyValue val4 = default(IPropertyValue);
+		val3.GetCompoundProperty(CasId, "CASRN", PropertyName, ref val4);
+		IDatabaseObjectMoniker val5 = default(IDatabaseObjectMoniker);
+		((IDatabaseObject)val4).GetMoniker(ref val5);
+		ISundryDataManager sundryDataManager = myDatabase.SundryDataManager;
+		IDatabaseObjectMoniker[] array = default(IDatabaseObjectMoniker[]);
+		myDatabase.AssociationManager.FindAssociatedObjects(val5, (DatabaseObjectType)(-1), ref array);
+		for (int i = 0; i < array.Length; i++)
+		{
+			try
+			{
+				IDatabaseObjectMoniker val6 = (IDatabaseObjectMoniker)array.GetValue(i);
+				NotesObject val7 = (NotesObject)sundryDataManager.GetItem(((IDatabaseObjectIdentity)val6).Identity);
+				string[] value = new string[2]
+				{
+					((IDatabaseObjectIdentity)val6).Identity,
+					val7.Note
+				};
+				arrayList.Add(value);
+			}
+			catch
+			{
+			}
+		}
+		refArray = arrayList;
+	}
+
+	protected virtual void OnNotesError(NotesErrorEventArgs e)
+	{
+		if (this.NotesErrorEvent != null)
+		{
+			this.NotesErrorEvent(this, e);
+		}
+	}
+
+	private void OnAssociationError(object sender, AssociationErrorEventArgs e)
+	{
+		OnNotesError(new NotesErrorEventArgs(e.AssociationError));
+	}
+}
+public class NotesErrorEventArgs : EventArgs
+{
+	private readonly string myError;
+
+	public string NotesError => myError;
+
+	public NotesErrorEventArgs(string NotesError)
+	{
+		myError = NotesError;
+	}
+}
+public class SundryDataReferences
+{
+	public delegate void ReferencesErrorEventHandler(object sender, ReferencesErrorEventArgs e);
+
+	private string[] prefix = new string[2] { "SELECT Const_Values.PropertyID, Reference_List.RefID, Reference_List.Title, Reference_List.Page, Reference_List.Journal, Reference_List.Date, Reference_List.Book, Reference_List.Vol, Reference_List.Publisher, Reference_List.Notes, Const_Values.ChemID FROM Reference_List INNER JOIN Const_Values ON Reference_List.RefID = Const_Values.RefID WHERE (((Const_Values.ChemID)=", "SELECT Tdep_Set_Info.PropertyID, Tdep_Set_Info.RefID, Reference_List.Title, Reference_List.Page, Reference_List.Journal, Reference_List.Date, Reference_List.Book, Reference_List.Vol, Reference_List.Publisher, Reference_List.Notes, Tdep_Set_Info.ChemID FROM Reference_List INNER JOIN Tdep_Set_Info ON Reference_List.RefID = Tdep_Set_Info.RefID WHERE (((Tdep_Set_Info.Acceptance)='A') AND ((Tdep_Set_Info.ChemID)=" };
+
+	private string[] sufix = new string[2] { "))", "))" };
+
+	private string[] prefix1 = new string[2] { "SELECT Const_Values.PropertyID, Reference_List.RefID, Reference_List.Title, Reference_List.Page, Reference_List.Journal, Reference_List.Ref_Date, Reference_List.Book, Reference_List.Vol, Reference_List.Publisher, Reference_List.Ref_Notes, Const_Values.ChemID FROM Reference_List INNER JOIN Const_Values ON Reference_List.RefID = Const_Values.RefID WHERE (((Const_Values.ChemID)=", "SELECT Tdep_Set_Info.PropertyID, Tdep_Set_Info.RefID, Reference_List.Title, Reference_List.Page, Reference_List.Journal, Reference_List.Ref_Date, Reference_List.Book, Reference_List.Vol, Reference_List.Publisher, Reference_List.Ref_Notes, Tdep_Set_Info.ChemID FROM Reference_List INNER JOIN Tdep_Set_Info ON Reference_List.RefID = Tdep_Set_Info.RefID WHERE (((Tdep_Set_Info.ChemID)=" };
+
+	private string[] sufix1 = new string[2] { "))", "))" };
+
+	private const string authorPrefix = "SELECT Author_List.RefID, Author_List.Sequence, Author_List.Person FROM Author_List WHERE (((Author_List.RefID)=";
+
+	private const string authorSufix = "))";
+
+	private const string dipprReference = "Predicted by Project Staff at The Pennsylvania State University using either published or internal methods";
+
+	private ArrayList referencesArrayList;
+
+	private DIPPRSchemaVersion myDipprSchemaVersion;
+
+	public event ReferencesErrorEventHandler ReferencesErrorEvent;
+
+	public SundryDataReferences(DIPPRSchemaVersion dsv)
+	{
+		myDipprSchemaVersion = dsv;
+		referencesArrayList = new ArrayList();
+	}
+
+	public void ReferenceData(OleDbConnection conn, string[] casAndDipprId, ICitationManager citMgr, IChangeControlManager ccm, IDatabank testDatabank)
+	{
+		try
+		{
+			GetComponentReferences(conn, casAndDipprId[1], out var notesArray);
+			string identityToUse = "";
+			AddCitationsData(notesArray, casAndDipprId[0], identityToUse, citMgr, ccm, testDatabank);
+			GC.Collect();
+		}
+		catch (Exception ex)
+		{
+			string referencesError = "Error in ReferenceData. " + ex.Message;
+			OnReferencesError(new ReferencesErrorEventArgs(referencesError));
+		}
+	}
+
+	public ArrayList GetIds(OleDbConnection conn, Database myDatabase, string myDatabank, ArrayList myComponents)
+	{
+		try
+		{
+			ArrayList arrayList = new ArrayList();
+			for (int i = 0; i < myComponents.Count; i++)
+			{
+				string[] array = (string[])myComponents[i];
+				string text = array[1];
+				for (int j = 0; j < prefix.GetLength(0); j++)
+				{
+					OleDbCommand oleDbCommand = null;
+					oleDbCommand = ((myDipprSchemaVersion != DIPPRSchemaVersion.intermediate_public06_xp) ? new OleDbCommand(prefix1[j] + text + sufix1[j], conn) : new OleDbCommand(prefix[j] + text + sufix[j], conn));
+					OleDbDataReader oleDbDataReader = oleDbCommand.ExecuteReader();
+					TranslatePropNames translatePropNames = new TranslatePropNames();
+					while (oleDbDataReader.Read())
+					{
+						if (translatePropNames.CheckPropName(oleDbDataReader["PropertyID"].ToString(), out var _))
+						{
+							string value = oleDbDataReader["RefID"].ToString();
+							if (arrayList.IndexOf(value) == -1)
+							{
+								arrayList.Add(value);
+							}
+						}
+					}
+					oleDbDataReader.Close();
+				}
+			}
+			return arrayList;
+		}
+		catch (Exception ex)
+		{
+			string referencesError = "Error in GetIds. " + ex.Message;
+			OnReferencesError(new ReferencesErrorEventArgs(referencesError));
+			return new ArrayList();
+		}
+	}
+
+	private void GetComponentReferences(OleDbConnection conn, string myCompId, out SortedList notesArray)
+	{
+		//IL_074f: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0756: Expected O, but got Unknown
+		notesArray = null;
+		ArrayList arrayList = new ArrayList();
+		int num = 0;
+		try
+		{
+			ArrayList arrayList2 = new ArrayList();
+			for (int i = 0; i < prefix.GetLength(0); i++)
+			{
+				OleDbCommand oleDbCommand = null;
+				oleDbCommand = ((myDipprSchemaVersion != DIPPRSchemaVersion.intermediate_public06_xp) ? new OleDbCommand(prefix1[i] + myCompId + sufix1[i], conn) : new OleDbCommand(prefix[i] + myCompId + sufix[i], conn));
+				OleDbDataReader oleDbDataReader = oleDbCommand.ExecuteReader();
+				TranslatePropNames translatePropNames = new TranslatePropNames();
+				while (oleDbDataReader.Read())
+				{
+					if (!translatePropNames.CheckPropName(oleDbDataReader["PropertyID"].ToString(), out var AspenPropName))
+					{
+						continue;
+					}
+					if (AspenPropName.CompareTo("PLXANT") == 0 && GlobalControl.DIPPR == 1)
+					{
+						GlobalControl.bDIPPR = true;
+						string[] array = null;
+						array = ((myDipprSchemaVersion != DIPPRSchemaVersion.intermediate_public06_xp) ? new string[11]
+						{
+							AspenPropName,
+							oleDbDataReader["Title"].ToString(),
+							oleDbDataReader["Page"].ToString(),
+							oleDbDataReader["Journal"].ToString(),
+							oleDbDataReader["Ref_Date"].ToString(),
+							oleDbDataReader["Book"].ToString(),
+							oleDbDataReader["Vol"].ToString(),
+							oleDbDataReader["Publisher"].ToString(),
+							oleDbDataReader["Ref_Notes"].ToString(),
+							oleDbDataReader["RefID"].ToString(),
+							oleDbDataReader["RefID"].ToString()
+						} : new string[11]
+						{
+							AspenPropName,
+							oleDbDataReader["Title"].ToString(),
+							oleDbDataReader["Page"].ToString(),
+							oleDbDataReader["Journal"].ToString(),
+							oleDbDataReader["Date"].ToString(),
+							oleDbDataReader["Book"].ToString(),
+							oleDbDataReader["Vol"].ToString(),
+							oleDbDataReader["Publisher"].ToString(),
+							oleDbDataReader["Notes"].ToString(),
+							oleDbDataReader["RefID"].ToString(),
+							oleDbDataReader["RefID"].ToString()
+						});
+						arrayList.Add(array);
+					}
+					if (i == 0)
+					{
+						bool flag = false;
+						for (int j = 0; j < arrayList2.Count; j++)
+						{
+							string[] array2 = (string[])arrayList2[j];
+							string text = array2[0].ToString();
+							if (text == AspenPropName)
+							{
+								flag = true;
+							}
+						}
+						if (!flag)
+						{
+							string[] array3 = null;
+							array3 = ((myDipprSchemaVersion != DIPPRSchemaVersion.intermediate_public06_xp) ? new string[11]
+							{
+								AspenPropName,
+								oleDbDataReader["Title"].ToString(),
+								oleDbDataReader["Page"].ToString(),
+								oleDbDataReader["Journal"].ToString(),
+								oleDbDataReader["Ref_Date"].ToString(),
+								oleDbDataReader["Book"].ToString(),
+								oleDbDataReader["Vol"].ToString(),
+								oleDbDataReader["Publisher"].ToString(),
+								oleDbDataReader["Ref_Notes"].ToString(),
+								oleDbDataReader["RefID"].ToString(),
+								oleDbDataReader["RefID"].ToString()
+							} : new string[11]
+							{
+								AspenPropName,
+								oleDbDataReader["Title"].ToString(),
+								oleDbDataReader["Page"].ToString(),
+								oleDbDataReader["Journal"].ToString(),
+								oleDbDataReader["Date"].ToString(),
+								oleDbDataReader["Book"].ToString(),
+								oleDbDataReader["Vol"].ToString(),
+								oleDbDataReader["Publisher"].ToString(),
+								oleDbDataReader["Notes"].ToString(),
+								oleDbDataReader["RefID"].ToString(),
+								oleDbDataReader["RefID"].ToString()
+							});
+							arrayList2.Add(array3);
+						}
+						continue;
+					}
+					bool flag2 = false;
+					for (int k = 0; k < arrayList2.Count; k++)
+					{
+						string[] array4 = (string[])arrayList2[k];
+						string text2 = array4[0].ToString();
+						if (text2 == AspenPropName)
+						{
+							flag2 = true;
+						}
+					}
+					string[] array5 = null;
+					array5 = ((myDipprSchemaVersion != DIPPRSchemaVersion.intermediate_public06_xp) ? new string[11]
+					{
+						AspenPropName,
+						oleDbDataReader["Title"].ToString(),
+						oleDbDataReader["Page"].ToString(),
+						oleDbDataReader["Journal"].ToString(),
+						oleDbDataReader["Ref_Date"].ToString(),
+						oleDbDataReader["Book"].ToString(),
+						oleDbDataReader["Vol"].ToString(),
+						oleDbDataReader["Publisher"].ToString(),
+						oleDbDataReader["Ref_Notes"].ToString(),
+						oleDbDataReader["RefID"].ToString(),
+						oleDbDataReader["RefID"].ToString()
+					} : new string[11]
+					{
+						AspenPropName,
+						oleDbDataReader["Title"].ToString(),
+						oleDbDataReader["Page"].ToString(),
+						oleDbDataReader["Journal"].ToString(),
+						oleDbDataReader["Date"].ToString(),
+						oleDbDataReader["Book"].ToString(),
+						oleDbDataReader["Vol"].ToString(),
+						oleDbDataReader["Publisher"].ToString(),
+						oleDbDataReader["Notes"].ToString(),
+						oleDbDataReader["RefID"].ToString(),
+						oleDbDataReader["RefID"].ToString()
+					});
+					arrayList2.Add(array5);
+				}
+				oleDbDataReader.Close();
+			}
+			notesArray = new SortedList(arrayList2.Count);
+			for (int l = 0; l < arrayList2.Count; l++)
+			{
+				string[] array6 = (string[])arrayList2[l];
+				string referenceId = array6[9].ToString();
+				array6[9] = GetAuthors(referenceId, conn);
+				PropertyCitationsObject value = new PropertyCitationsObject("DipprCitation_" + array6[10], array6[1], array6[2], array6[3], array6[4], array6[5], array6[6], array6[7], array6[8], array6[9]);
+				try
+				{
+					notesArray.Add(array6[0], value);
+				}
+				catch (Exception ex)
+				{
+					string message = ex.Message;
+					if (array6[0].CompareTo("PLXANT") == 0 && GlobalControl.DIPPR == 1)
+					{
+						num++;
+					}
+				}
+			}
+		}
+		catch (Exception ex2)
+		{
+			string referencesError = "Error in GetComponentReferences. " + ex2.Message;
+			OnReferencesError(new ReferencesErrorEventArgs(referencesError));
+			SortedList sortedList = new SortedList();
+			notesArray = sortedList;
+		}
+	}
+
+	private string GetAuthors(string ReferenceId, OleDbConnection conn)
+	{
+		try
+		{
+			string result = "";
+			if (ReferenceId == "")
+			{
+				return result;
+			}
+			ArrayList arrayList = new ArrayList();
+			OleDbCommand oleDbCommand = new OleDbCommand("SELECT Author_List.RefID, Author_List.Sequence, Author_List.Person FROM Author_List WHERE (((Author_List.RefID)=" + ReferenceId + "))", conn);
+			OleDbDataReader oleDbDataReader = oleDbCommand.ExecuteReader();
+			while (oleDbDataReader.Read())
+			{
+				string[] value = new string[2]
+				{
+					oleDbDataReader["Sequence"].ToString(),
+					oleDbDataReader["Person"].ToString()
+				};
+				arrayList.Add(value);
+			}
+			oleDbDataReader.Close();
+			return SortAuthors(arrayList);
+		}
+		catch (Exception ex)
+		{
+			string referencesError = "Error in GetAuthors. " + ex.Message;
+			OnReferencesError(new ReferencesErrorEventArgs(referencesError));
+			return "";
+		}
+	}
+
+	private string SortAuthors(ArrayList strNotes)
+	{
+		try
+		{
+			string text = "";
+			for (int i = 1; i <= strNotes.Count; i++)
+			{
+				for (int j = 1; j <= strNotes.Count; j++)
+				{
+					string[] array = (string[])strNotes[j - 1];
+					if (array[0] == i.ToString())
+					{
+						text = ((!(text == "")) ? (text + "; " + array[1]) : array[1]);
+					}
+				}
+			}
+			return text;
+		}
+		catch (Exception ex)
+		{
+			string referencesError = "Error in SortAuthors. " + ex.Message;
+			OnReferencesError(new ReferencesErrorEventArgs(referencesError));
+			return "";
+		}
+	}
+
+	private void AddCitationsData(SortedList refArray, string CasId, string IdentityToUse, ICitationManager citMgr, IChangeControlManager ccm, IDatabank testDatabank)
+	{
+		//IL_0021: Unknown result type (might be due to invalid IL or missing references)
+		//IL_002b: Expected O, but got Unknown
+		try
+		{
+			for (int i = 0; i < refArray.Count; i++)
+			{
+				citMgr.AddCitation(testDatabank, CasId, "CASRN", (string)refArray.GetKey(i), (PropertyCitationsObject)refArray.GetByIndex(i));
+				ccm.ApproveLast();
+			}
+		}
+		catch (Exception ex)
+		{
+			string referencesError = "Error in AddToSundryData. " + ex.Message;
+			OnReferencesError(new ReferencesErrorEventArgs(referencesError));
+		}
+	}
+
+	private void GetUniqueReferenceName(ISundryDataManager sdm, string CasId, out string myName)
+	{
+		//IL_0024: Unknown result type (might be due to invalid IL or missing references)
+		//IL_002a: Expected O, but got Unknown
+		string text = "";
+		for (int i = 1; i < 5000; i++)
+		{
+			text = CasId + "_UserAddedReference_" + i;
+			PropertyCitationsObject val = (PropertyCitationsObject)sdm.GetItem(text);
+			if (val == null)
+			{
+				myName = text;
+				return;
+			}
+		}
+		myName = "";
+	}
+
+	public void AddUserReference(Database myDatabase, string myDatabank, ArrayList refArray, string CasId, string IdentityToUse)
+	{
+		//IL_002c: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0033: Expected O, but got Unknown
+		ISundryDataManager sundryDataManager = myDatabase.SundryDataManager;
+		IChangeControlManager changeControlManager = myDatabase.ChangeControlManager;
+		changeControlManager.RejectLast();
+		IDatabaseObjectAssocationManager associationManager = myDatabase.AssociationManager;
+		IDatabankCollection val = default(IDatabankCollection);
+		myDatabase.EnumerateDatabanks(ref val);
+		IDatabank val2 = val[(object)myDatabank];
+		ICompoundPropertyGateway val3 = (ICompoundPropertyGateway)new CompoundPropertyGateway();
+		val3.Databanks = val;
+		SortedList sortedList = default(SortedList);
+		val3.GetProperties(ref sortedList);
+		IPropertyValueManager propertyValueManager = ((ISupportsPropertyValues)myDatabase).PropertyValueManager;
+	}
+
+	public void GetUserReference(Database myDatabase, string myDatabank, out ArrayList refArray, string CasId, string PropertyName)
+	{
+		GetSundryData(out refArray, myDatabase, myDatabank, CasId, PropertyName);
+	}
+
+	private void GetSundryData(out ArrayList refArray, Database myDatabase, string myDatabank, string CasId, string PropertyName)
+	{
+		//IL_0050: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0057: Expected O, but got Unknown
+		//IL_0073: Unknown result type (might be due to invalid IL or missing references)
+		//IL_00a8: Unknown result type (might be due to invalid IL or missing references)
+		//IL_00af: Expected O, but got Unknown
+		//IL_00bd: Unknown result type (might be due to invalid IL or missing references)
+		//IL_00c4: Expected O, but got Unknown
+		if (CasId == "")
+		{
+			MessageBox.Show("Missing Cas Id");
+			refArray = null;
+			return;
+		}
+		if (PropertyName == "")
+		{
+			MessageBox.Show("Missing Property Name");
+			refArray = null;
+			return;
+		}
+		ArrayList arrayList = new ArrayList();
+		IDatabankCollection val = default(IDatabankCollection);
+		myDatabase.EnumerateDatabanks(ref val);
+		IDatabank val2 = val[(object)myDatabank];
+		ICompoundPropertyGateway val3 = (ICompoundPropertyGateway)new CompoundPropertyGateway();
+		val3.Databanks = val;
+		IPropertyValue val4 = default(IPropertyValue);
+		val3.GetCompoundProperty(CasId, "CASRN", PropertyName, ref val4);
+		IDatabaseObjectMoniker val5 = default(IDatabaseObjectMoniker);
+		((IDatabaseObject)val4).GetMoniker(ref val5);
+		ISundryDataManager sundryDataManager = myDatabase.SundryDataManager;
+		IDatabaseObjectMoniker[] array = default(IDatabaseObjectMoniker[]);
+		myDatabase.AssociationManager.FindAssociatedObjects(val5, (DatabaseObjectType)(-1), ref array);
+		for (int i = 0; i < array.Length; i++)
+		{
+			try
+			{
+				IDatabaseObjectMoniker val6 = (IDatabaseObjectMoniker)array.GetValue(i);
+				PropertyCitationsObject val7 = (PropertyCitationsObject)sundryDataManager.GetItem(((IDatabaseObjectIdentity)val6).Identity);
+				string[] value = new string[10]
+				{
+					((IDatabaseObjectIdentity)val6).Identity,
+					val7.Title,
+					val7.Pages,
+					val7.Journal,
+					val7.Date,
+					val7.Book,
+					val7.Volume,
+					val7.Publisher,
+					val7.Notes,
+					val7.Authors
+				};
+				arrayList.Add(value);
+			}
+			catch
+			{
+			}
+		}
+		refArray = arrayList;
+	}
+
+	protected virtual void OnReferencesError(ReferencesErrorEventArgs e)
+	{
+		if (this.ReferencesErrorEvent != null)
+		{
+			this.ReferencesErrorEvent(this, e);
+		}
+	}
+
+	private void OnAssociationError(object sender, AssociationErrorEventArgs e)
+	{
+		OnReferencesError(new ReferencesErrorEventArgs(e.AssociationError));
+	}
+}
+public class ReferencesErrorEventArgs : EventArgs
+{
+	private readonly string myError;
+
+	public string ReferencesError => myError;
+
+	public ReferencesErrorEventArgs(string ReferencesError)
+	{
+		myError = ReferencesError;
+	}
+}
+public class TranslatePropNames
+{
+	private ArrayList dipprProp;
+
+	private ArrayList aspenProp;
+
+	public TranslatePropNames()
+	{
+		SetupArrayLists();
+	}
+
+	private void SetupArrayLists()
+	{
+		dipprProp = new ArrayList();
+		aspenProp = new ArrayList();
+		dipprProp.Add("MW");
+		aspenProp.Add("MW");
+		dipprProp.Add("TC");
+		aspenProp.Add("TC");
+		dipprProp.Add("PC");
+		aspenProp.Add("PC");
+		dipprProp.Add("VC");
+		aspenProp.Add("VC");
+		dipprProp.Add("ZC");
+		aspenProp.Add("ZC");
+		dipprProp.Add("MP");
+		aspenProp.Add("FREEZEPT");
+		dipprProp.Add("NBP");
+		aspenProp.Add("TB");
+		dipprProp.Add("HFOR");
+		aspenProp.Add("DHFORM");
+		dipprProp.Add("GFOR");
+		aspenProp.Add("DGFORM");
+		dipprProp.Add("ACEN");
+		aspenProp.Add("OMEGA");
+		dipprProp.Add("RG");
+		aspenProp.Add("RGYR");
+		dipprProp.Add("SOLP");
+		aspenProp.Add("DELTA");
+		dipprProp.Add("DM");
+		aspenProp.Add("MUP");
+		dipprProp.Add("TPT");
+		aspenProp.Add("TPT");
+		dipprProp.Add("TPP");
+		aspenProp.Add("TPP");
+		dipprProp.Add("ENT");
+		aspenProp.Add("ENT");
+		dipprProp.Add("HFUS");
+		aspenProp.Add("HFUS");
+		dipprProp.Add("HCOM");
+		aspenProp.Add("HCOM");
+		dipprProp.Add("RI");
+		aspenProp.Add("REFINDEX");
+		dipprProp.Add("FP");
+		aspenProp.Add("FLASHPT");
+		dipprProp.Add("FLML");
+		aspenProp.Add("FLML");
+		dipprProp.Add("FLMU");
+		aspenProp.Add("FLMU");
+		dipprProp.Add("AIT");
+		aspenProp.Add("AIT");
+		dipprProp.Add("VDWV");
+		aspenProp.Add("GMUQR");
+		dipprProp.Add("VDWA");
+		aspenProp.Add("GMUQQ");
+		dipprProp.Add("SDN");
+		aspenProp.Add("DNSDIP");
+		dipprProp.Add("LDN");
+		aspenProp.Add("DNLDIP");
+		dipprProp.Add("VP");
+		aspenProp.Add("PLXANT");
+		dipprProp.Add("HVP");
+		aspenProp.Add("DHVLDP");
+		dipprProp.Add("SCP");
+		aspenProp.Add("CPSDIP");
+		dipprProp.Add("LCP");
+		aspenProp.Add("CPLDIP");
+		dipprProp.Add("ICP");
+		aspenProp.Add("CPIGDP");
+		dipprProp.Add("SVR");
+		aspenProp.Add("SVRDIP");
+		dipprProp.Add("LVS");
+		aspenProp.Add("MULDIP");
+		dipprProp.Add("VVS");
+		aspenProp.Add("MUVDIP");
+		dipprProp.Add("LTC");
+		aspenProp.Add("KLDIP");
+		dipprProp.Add("VTC");
+		aspenProp.Add("KVDIP");
+		dipprProp.Add("ST");
+		aspenProp.Add("SIGDIP");
+	}
+
+	public bool CheckPropName(string DipprPropName, out string AspenPropName)
+	{
+		AspenPropName = "";
+		if (dipprProp.IndexOf(DipprPropName) >= 0)
+		{
+			AspenPropName = aspenProp[dipprProp.IndexOf(DipprPropName)].ToString();
+			return true;
+		}
+		return false;
+	}
+
+	public void GetApedPropertyNames(out ArrayList apedPropList)
+	{
+		apedPropList = aspenProp;
+	}
+
+	public void GetDipprPropertyNames(out ArrayList dipprPropList)
+	{
+		dipprPropList = dipprProp;
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

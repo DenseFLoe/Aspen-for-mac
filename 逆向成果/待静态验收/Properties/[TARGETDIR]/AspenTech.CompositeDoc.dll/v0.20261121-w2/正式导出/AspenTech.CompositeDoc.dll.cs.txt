@@ -1,0 +1,3059 @@
+using System;
+using System.CodeDom.Compiler;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Drawing;
+using System.Globalization;
+using System.IO;
+using System.Net;
+using System.Reflection;
+using System.Resources;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Security.Permissions;
+using System.Text;
+using System.Windows.Forms;
+using System.Xml;
+using Microsoft.Win32;
+using Xceed.FileSystem;
+using Xceed.Zip;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyTitle("Aspen Composite Document")]
+[assembly: AssemblyDescription("Aspen Composite Document")]
+[assembly: AssemblyCompany("Aspen Technology")]
+[assembly: AssemblyProduct("Aspen Composite Document")]
+[assembly: AssemblyCopyright("Copyright 2021")]
+[assembly: ComVisible(false)]
+[assembly: CLSCompliant(true)]
+[assembly: AssemblyFileVersion("40.0.0.0")]
+[assembly: TargetFramework(".NETFramework,Version=v4.0,Profile=Client", FrameworkDisplayName = ".NET Framework 4 Client Profile")]
+[assembly: SecurityPermission(SecurityAction.RequestMinimum)]
+[assembly: AssemblyVersion("40.0.0.0")]
+namespace AspenTech.CompositeDoc;
+
+internal class Global
+{
+	private static ResourceManager _rm = new ResourceManager("AspenTech.CompositeDoc.Strings", Assembly.GetExecutingAssembly(), null);
+
+	internal static ResourceManager RM => _rm;
+
+	internal static string GetString(string key)
+	{
+		string result = string.Empty;
+		if (RM != null)
+		{
+			try
+			{
+				result = RM.GetString(key);
+			}
+			catch
+			{
+			}
+		}
+		return result;
+	}
+
+	internal static string GetString(string key, object sender)
+	{
+		_ = string.Empty;
+		string name = sender.GetType().Name;
+		return GetString(key, name);
+	}
+
+	internal static string GetString(string key, string className)
+	{
+		return GetString(GetFullKeyString(className, key));
+	}
+
+	private static string GetFullKeyString(string className, string key)
+	{
+		return className + "___" + key;
+	}
+}
+public class MoreInfoForm : Form
+{
+	private IPackage m_Package;
+
+	private IContainer components;
+
+	private Button closeButton;
+
+	private Label label2;
+
+	private TextBox prerequisitesTextBox1;
+
+	private SplitContainer splitContainer1;
+
+	private TextBox commentsTextBox;
+
+	private Label label1;
+
+	private Button cmdOk;
+
+	private FlowLayoutPanel flowButtons;
+
+	public string Comments
+	{
+		get
+		{
+			return commentsTextBox.Text;
+		}
+		set
+		{
+			commentsTextBox.Text = value;
+		}
+	}
+
+	public string Prerequisites
+	{
+		get
+		{
+			return prerequisitesTextBox1.Text;
+		}
+		set
+		{
+			prerequisitesTextBox1.Text = value;
+		}
+	}
+
+	public MoreInfoForm(IPackage package)
+	{
+		InitializeComponent();
+		m_Package = package;
+		Comments = m_Package.Comments;
+		Prerequisites = m_Package.Prerequsities;
+	}
+
+	private void closeButton_Click(object sender, EventArgs e)
+	{
+		Close();
+	}
+
+	private void cmdOk_Click(object sender, EventArgs e)
+	{
+		m_Package.Comments = Comments;
+		m_Package.Prerequsities = Prerequisites;
+		Close();
+	}
+
+	protected override void Dispose(bool disposing)
+	{
+		if (disposing && components != null)
+		{
+			components.Dispose();
+		}
+		base.Dispose(disposing);
+	}
+
+	private void InitializeComponent()
+	{
+		System.ComponentModel.ComponentResourceManager componentResourceManager = new System.ComponentModel.ComponentResourceManager(typeof(AspenTech.CompositeDoc.MoreInfoForm));
+		this.closeButton = new System.Windows.Forms.Button();
+		this.label2 = new System.Windows.Forms.Label();
+		this.prerequisitesTextBox1 = new System.Windows.Forms.TextBox();
+		this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+		this.commentsTextBox = new System.Windows.Forms.TextBox();
+		this.label1 = new System.Windows.Forms.Label();
+		this.cmdOk = new System.Windows.Forms.Button();
+		this.flowButtons = new System.Windows.Forms.FlowLayoutPanel();
+		((System.ComponentModel.ISupportInitialize)this.splitContainer1).BeginInit();
+		this.splitContainer1.Panel1.SuspendLayout();
+		this.splitContainer1.Panel2.SuspendLayout();
+		this.splitContainer1.SuspendLayout();
+		this.flowButtons.SuspendLayout();
+		base.SuspendLayout();
+		componentResourceManager.ApplyResources(this.closeButton, "closeButton");
+		this.closeButton.DialogResult = System.Windows.Forms.DialogResult.Cancel;
+		this.closeButton.Name = "closeButton";
+		this.closeButton.UseVisualStyleBackColor = true;
+		this.closeButton.Click += new System.EventHandler(closeButton_Click);
+		componentResourceManager.ApplyResources(this.label2, "label2");
+		this.label2.Name = "label2";
+		this.prerequisitesTextBox1.AcceptsReturn = true;
+		componentResourceManager.ApplyResources(this.prerequisitesTextBox1, "prerequisitesTextBox1");
+		this.prerequisitesTextBox1.Name = "prerequisitesTextBox1";
+		componentResourceManager.ApplyResources(this.splitContainer1, "splitContainer1");
+		this.splitContainer1.Name = "splitContainer1";
+		this.splitContainer1.Panel1.Controls.Add(this.commentsTextBox);
+		this.splitContainer1.Panel1.Controls.Add(this.label1);
+		this.splitContainer1.Panel2.Controls.Add(this.flowButtons);
+		this.splitContainer1.Panel2.Controls.Add(this.label2);
+		this.splitContainer1.Panel2.Controls.Add(this.prerequisitesTextBox1);
+		this.splitContainer1.TabStop = false;
+		this.commentsTextBox.AcceptsReturn = true;
+		componentResourceManager.ApplyResources(this.commentsTextBox, "commentsTextBox");
+		this.commentsTextBox.Name = "commentsTextBox";
+		componentResourceManager.ApplyResources(this.label1, "label1");
+		this.label1.Name = "label1";
+		componentResourceManager.ApplyResources(this.cmdOk, "cmdOk");
+		this.cmdOk.DialogResult = System.Windows.Forms.DialogResult.Cancel;
+		this.cmdOk.Name = "cmdOk";
+		this.cmdOk.UseVisualStyleBackColor = true;
+		this.cmdOk.Click += new System.EventHandler(cmdOk_Click);
+		componentResourceManager.ApplyResources(this.flowButtons, "flowButtons");
+		this.flowButtons.Controls.Add(this.closeButton);
+		this.flowButtons.Controls.Add(this.cmdOk);
+		this.flowButtons.Name = "flowButtons";
+		componentResourceManager.ApplyResources(this, "$this");
+		base.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+		base.Controls.Add(this.splitContainer1);
+		base.Name = "MoreInfoForm";
+		this.splitContainer1.Panel1.ResumeLayout(false);
+		this.splitContainer1.Panel1.PerformLayout();
+		this.splitContainer1.Panel2.ResumeLayout(false);
+		this.splitContainer1.Panel2.PerformLayout();
+		((System.ComponentModel.ISupportInitialize)this.splitContainer1).EndInit();
+		this.splitContainer1.ResumeLayout(false);
+		this.flowButtons.ResumeLayout(false);
+		this.flowButtons.PerformLayout();
+		base.ResumeLayout(false);
+	}
+}
+[ComVisible(true)]
+[Guid("8F57F21E-77B2-428D-8CF7-60D7BAE5C2E5")]
+[ProgId("AspenCompositeDoc.Package.32")]
+[ClassInterface(ClassInterfaceType.None)]
+public class AspenPackage : IPackage
+{
+	private class WinWrapper : IWin32Window
+	{
+		private IntPtr hwnd;
+
+		public IntPtr Handle => hwnd;
+
+		public WinWrapper(IntPtr handle)
+		{
+			hwnd = handle;
+		}
+	}
+
+	private FileMode m_Mode;
+
+	private AbstractFile m_File;
+
+	private ZippedFolder m_Archive;
+
+	private StreamFile m_OriginalStream;
+
+	private string m_LocalPath = "";
+
+	private string m_OriginalPath = "";
+
+	private string m_RootUri = "";
+
+	private string m_RootContentType = "";
+
+	private string m_ID = "";
+
+	private string m_Comments = "";
+
+	private string m_Prerequisites = "";
+
+	private int m_Version;
+
+	private const int m_SaveVersion = 1;
+
+	private bool m_Changed;
+
+	public const int BlockSize = 32768;
+
+	public string ID => m_ID;
+
+	public string LocalFileName => m_LocalPath;
+
+	public int ManifestVersion => m_Version;
+
+	public string OriginalFileName => m_OriginalPath;
+
+	public string RootContentType
+	{
+		get
+		{
+			return m_RootContentType;
+		}
+		set
+		{
+			m_RootContentType = value;
+			m_Archive.Comment = GetDocInfo();
+		}
+	}
+
+	public IPart RootPart
+	{
+		get
+		{
+			return GetRootPart();
+		}
+		set
+		{
+			m_RootUri = value.Uri;
+			m_Archive.Comment = GetDocInfo();
+		}
+	}
+
+	public string RootUri => m_RootUri;
+
+	public string Comments
+	{
+		get
+		{
+			return m_Comments;
+		}
+		set
+		{
+			if (m_Comments != value)
+			{
+				m_Comments = value;
+				m_Changed = true;
+				m_Archive.Comment = GetDocInfo();
+			}
+		}
+	}
+
+	public string Prerequsities
+	{
+		get
+		{
+			return m_Prerequisites;
+		}
+		set
+		{
+			if (m_Prerequisites != value)
+			{
+				m_Prerequisites = value;
+				m_Changed = true;
+				m_Archive.Comment = GetDocInfo();
+			}
+		}
+	}
+
+	public long Size
+	{
+		get
+		{
+			if (m_File != null && m_File.Exists)
+			{
+				return m_File.Size;
+			}
+			return 0L;
+		}
+	}
+
+	internal ZippedFolder Archive => m_Archive;
+
+	public AspenPackage()
+	{
+		m_ID = Guid.NewGuid().ToString().ToUpper();
+	}
+
+	static AspenPackage()
+	{
+		Xceed.Zip.Licenser.LicenseKey = "SFN36A14WB6W4K5Y8ZA";
+	}
+
+	public bool SetRootUri(string path)
+	{
+		if (m_RootUri == "")
+		{
+			return false;
+		}
+		IPart part = null;
+		IPart[] parts = GetParts();
+		for (int i = 0; i < parts.Length; i++)
+		{
+			if (parts[i].IsRoot)
+			{
+				part = parts[i];
+				break;
+			}
+		}
+		if (part == null)
+		{
+			return false;
+		}
+		bool result = part.SetAbsoluteUri(path);
+		m_Archive.Comment = GetDocInfo();
+		return result;
+	}
+
+	private void ForceDelete(string absPath)
+	{
+		if (File.Exists(absPath))
+		{
+			FileInfo fileInfo = new FileInfo(absPath);
+			if ((fileInfo.Attributes & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
+			{
+				fileInfo.Attributes = --fileInfo.Attributes;
+			}
+			File.Delete(absPath);
+		}
+	}
+
+	public void Close()
+	{
+		if (m_Archive != null && m_Changed)
+		{
+			m_Archive.Comment = GetDocInfo();
+		}
+		if (m_LocalPath != m_OriginalPath && m_Changed)
+		{
+			UploadWebFile(m_OriginalPath, m_LocalPath);
+			File.Delete(m_LocalPath);
+			m_LocalPath = null;
+		}
+		else if (m_OriginalStream != null)
+		{
+			m_File.CopyTo(m_OriginalStream, replaceIfExists: true);
+		}
+		m_Changed = false;
+		m_Archive = null;
+		m_OriginalStream = null;
+	}
+
+	public IPart CreatePart(string absPath, string contentType)
+	{
+		return CreatePart(absPath, contentType, isRequired: false);
+	}
+
+	public IPart CreatePart(string absPath, string contentType, bool isRequired)
+	{
+		return CreatePart(absPath, contentType, isRequired, forcePartToBeLinked: false);
+	}
+
+	public IPart CreatePart(string absPath, string contentType, bool isRequired, bool forcePartToBeLinked)
+	{
+		bool flag = false;
+		if (m_RootUri != null && m_RootUri.Length != 0)
+		{
+			flag = true;
+		}
+		if (!flag)
+		{
+			return CreateRootPart(absPath, contentType);
+		}
+		string uri = absPath;
+		bool isAbsolutePath = true;
+		if (!forcePartToBeLinked)
+		{
+			string pathRelativeToRoot = GetPathRelativeToRoot(absPath);
+			if (!string.IsNullOrEmpty(pathRelativeToRoot))
+			{
+				isAbsolutePath = false;
+				uri = pathRelativeToRoot;
+			}
+		}
+		AspenPart aspenPart = new AspenPart(this, uri, contentType, isRoot: false, isRequired, isAbsolutePath);
+		m_Changed = true;
+		aspenPart.LoadFromFile(absPath);
+		m_Archive.Comment = GetDocInfo();
+		return aspenPart;
+	}
+
+	public IPart CreatePartWithSpecifiedUri(string uriForPartInCompFile, string absPathToFileOnDisk, string contentType, bool isRequired)
+	{
+		if (m_RootUri != null && m_RootUri.Length == 0)
+		{
+			return null;
+		}
+		if (uriForPartInCompFile.Length < 1)
+		{
+			return null;
+		}
+		IPart[] parts = GetParts();
+		foreach (IPart part in parts)
+		{
+			if (uriForPartInCompFile == part.Uri)
+			{
+				return null;
+			}
+		}
+		AspenPart aspenPart = new AspenPart(this, uriForPartInCompFile, contentType, isRoot: false, isRequired, isAbsolutePath: true, forceEmbed: true);
+		m_Changed = true;
+		aspenPart.LoadFromFile(absPathToFileOnDisk);
+		m_Archive.Comment = GetDocInfo();
+		return aspenPart;
+	}
+
+	public IPart CreateRootPart(string absPath, string contentType)
+	{
+		string text = (m_RootUri = absPath);
+		if (text.StartsWith("/"))
+		{
+			text = text.Remove(0, 1);
+		}
+		AspenPart aspenPart = new AspenPart(this, text, contentType, isRoot: true, isRequired: true, isAbsolutePath: true);
+		m_Changed = true;
+		aspenPart.LoadFromFile(absPath);
+		m_Archive.Comment = GetDocInfo();
+		return aspenPart;
+	}
+
+	public IPart CreateEmbeddedPart(string absPathToFileOnDisk, string contentType, bool isRequired, string uriForPartInCompFile)
+	{
+		return CreatePartWithSpecifiedUri(uriForPartInCompFile, absPathToFileOnDisk, contentType, isRequired);
+	}
+
+	public IPart CreateEmbeddedPart(string absPathToFileOnDisk, string contentType, bool isRequired)
+	{
+		string text = GetPathRelativeToRoot(absPathToFileOnDisk);
+		if (string.IsNullOrEmpty(text))
+		{
+			text = Path.GetFileName(absPathToFileOnDisk);
+		}
+		if (string.IsNullOrEmpty(text))
+		{
+			return null;
+		}
+		return CreatePartWithSpecifiedUri(text, absPathToFileOnDisk, contentType, isRequired);
+	}
+
+	public IPart CreateLinkedPart(string absPathToFileOnDisk, string contentType, bool isRequired)
+	{
+		return CreatePart(absPathToFileOnDisk, contentType, isRequired, forcePartToBeLinked: true);
+	}
+
+	public IPart CreateRootPartWithSpecifiedUri(string absPartUriInCompfile, string actualPathToFileOnDisk, string contentType)
+	{
+		if (RootPart != null)
+		{
+			DeletePart(RootUri);
+		}
+		string text = (m_RootUri = absPartUriInCompfile);
+		if (text.StartsWith("/"))
+		{
+			text = text.Remove(0, 1);
+		}
+		AspenPart aspenPart = new AspenPart(this, text, contentType, isRoot: true, isRequired: true, isAbsolutePath: true);
+		m_Changed = true;
+		aspenPart.LoadFromFile(actualPathToFileOnDisk);
+		m_Archive.Comment = GetDocInfo();
+		return aspenPart;
+	}
+
+	public bool DeletePart(string partUri)
+	{
+		try
+		{
+			(m_Archive.GetFile(partUri) as ZippedFile).Delete();
+			m_Changed = true;
+		}
+		catch
+		{
+			return false;
+		}
+		m_Archive.Comment = GetDocInfo();
+		return true;
+	}
+
+	public IPart GetRootPart()
+	{
+		if (!string.IsNullOrEmpty(RootUri))
+		{
+			return GetPart(RootUri);
+		}
+		return null;
+	}
+
+	public IPart GetPart(string partUri)
+	{
+		string text = partUri;
+		if (text.StartsWith(".\\"))
+		{
+			text = text.Remove(0, 2);
+		}
+		while (text.StartsWith("/") || text.StartsWith("\\"))
+		{
+			text = text.Remove(0, 1);
+		}
+		if (m_Archive.GetFile(text) is ZippedFile { Exists: not false } zippedFile)
+		{
+			return new AspenPart(this, text, string.Compare(text, RootUri, ignoreCase: true, CultureInfo.CurrentCulture) == 0, zippedFile.Comment);
+		}
+		return null;
+	}
+
+	public IPart[] GetParts()
+	{
+		if (m_Archive == null)
+		{
+			return null;
+		}
+		AbstractFile[] files = m_Archive.GetFiles(true, "");
+		IPart[] array = new IPart[files.Length];
+		for (int i = 0; i < files.Length; i++)
+		{
+			ZippedFile zippedFile = files[i] as ZippedFile;
+			string text = zippedFile.FullName;
+			if (text.StartsWith(".\\"))
+			{
+				text = text.Remove(0, 2);
+			}
+			while (text.StartsWith("/") || text.StartsWith("\\"))
+			{
+				text = text.Remove(0, 1);
+			}
+			array[i] = new AspenPart(this, text, string.Compare(text, RootUri, ignoreCase: true, CultureInfo.CurrentCulture) == 0, zippedFile.Comment);
+		}
+		return array;
+	}
+
+	public bool Open(string filePath, FileMode mode, bool checkWriteAccess)
+	{
+		Close();
+		m_Mode = mode;
+		m_OriginalPath = filePath;
+		CultureInfo currentCulture = CultureInfo.CurrentCulture;
+		if (filePath.StartsWith("http:", ignoreCase: true, currentCulture) || filePath.StartsWith("https:", ignoreCase: true, currentCulture))
+		{
+			m_LocalPath = GetTempLocalFile();
+			DownloadWebFile(m_OriginalPath, m_LocalPath);
+		}
+		else
+		{
+			m_LocalPath = m_OriginalPath;
+		}
+		try
+		{
+			m_File = new DiskFile(m_LocalPath);
+			m_Archive = new ZipArchive(m_File);
+			ParseDocInfo(m_Archive.Comment);
+			if (checkWriteAccess)
+			{
+				string comment = m_Archive.Comment;
+				m_Archive.Comment = "0";
+				m_Archive.Comment = comment;
+			}
+			return true;
+		}
+		catch
+		{
+			return false;
+		}
+	}
+
+	public bool Open(string filePath, FileMode mode)
+	{
+		return Open(filePath, mode, checkWriteAccess: false);
+	}
+
+	public bool OpenStream(Stream stream)
+	{
+		Close();
+		try
+		{
+			m_OriginalStream = new StreamFile(stream);
+			m_File = new MemoryFile();
+			if (m_OriginalStream.Size > 0)
+			{
+				m_OriginalStream.CopyTo(m_File, replaceIfExists: true);
+			}
+			m_Archive = new ZipArchive(m_File);
+			ParseDocInfo(m_Archive.Comment);
+			return true;
+		}
+		catch
+		{
+			return false;
+		}
+	}
+
+	public byte[] SaveToData()
+	{
+		MemoryStream memoryStream = new MemoryStream();
+		StreamFile destinationFile = new StreamFile(memoryStream);
+		try
+		{
+			m_File.CopyTo(destinationFile, replaceIfExists: true);
+			memoryStream.Seek(0L, SeekOrigin.Begin);
+			byte[] array = new byte[memoryStream.Length];
+			memoryStream.Write(array, 0, array.Length);
+			return array;
+		}
+		finally
+		{
+			memoryStream.Close();
+		}
+	}
+
+	public bool SaveToDirectory(string path)
+	{
+		IPart[] parts = GetParts();
+		if (parts == null)
+		{
+			return false;
+		}
+		string text = path;
+		if (!path.EndsWith(Path.DirectorySeparatorChar.ToString()))
+		{
+			text += Path.DirectorySeparatorChar;
+		}
+		List<string> list = new List<string>();
+		IPart[] array = parts;
+		for (int i = 0; i < array.Length; i++)
+		{
+			AspenPart aspenPart = (AspenPart)array[i];
+			if (aspenPart.IsLinkOnly)
+			{
+				continue;
+			}
+			string text2 = text;
+			text2 = ((!aspenPart.IsRoot) ? (text2 + aspenPart.Uri) : (text2 + aspenPart.Name));
+			string directoryName = Path.GetDirectoryName(text2);
+			if (!Directory.Exists(directoryName))
+			{
+				try
+				{
+					Directory.CreateDirectory(directoryName);
+				}
+				catch
+				{
+					return false;
+				}
+			}
+			if (!aspenPart.SaveToFile(text2))
+			{
+				list.Add(aspenPart.Name);
+			}
+		}
+		if (list.Count > 0)
+		{
+			return false;
+		}
+		return true;
+	}
+
+	public void Touch()
+	{
+		m_Changed = true;
+	}
+
+	public bool ShowManifest(IntPtr parentWindow)
+	{
+		m_Archive.Comment = GetDocInfo();
+		bool changed = m_Changed;
+		using ManifestForm manifestForm = new ManifestForm(this);
+		if (parentWindow == IntPtr.Zero)
+		{
+			manifestForm.ShowDialog();
+		}
+		else
+		{
+			manifestForm.ShowDialog(new WinWrapper(parentWindow));
+		}
+		return m_Changed != changed;
+	}
+
+	public bool RefreshContents()
+	{
+		AbstractFile[] files = m_Archive.GetFiles(true, "");
+		try
+		{
+			for (int i = 0; i < files.Length; i++)
+			{
+				(files[i] as ZippedFile).Refresh();
+			}
+		}
+		catch
+		{
+			return false;
+		}
+		m_Changed = true;
+		m_Archive.Comment = GetDocInfo();
+		return true;
+	}
+
+	private void ParseDocInfo(string xmlComment)
+	{
+		if (!(xmlComment != ""))
+		{
+			return;
+		}
+		xmlComment = CommentTextEncoder.DecodeComment(xmlComment);
+		XmlDocument xmlDocument = new XmlDocument();
+		xmlDocument.LoadXml(xmlComment);
+		XmlNode documentElement = xmlDocument.DocumentElement;
+		XmlNode xmlNode = documentElement.SelectSingleNode("/CompoundFile/ManifestVersion");
+		if (xmlNode != null)
+		{
+			m_Version = int.Parse(xmlNode.InnerText);
+		}
+		xmlNode = documentElement.SelectSingleNode("/CompoundFile/DocumentID");
+		if (xmlNode != null)
+		{
+			m_ID = xmlNode.InnerText;
+		}
+		xmlNode = documentElement.SelectSingleNode("/CompoundFile/RootFile/FilePath");
+		if (xmlNode != null)
+		{
+			m_RootUri = xmlNode.InnerText;
+			while (m_RootUri.StartsWith("/") || m_RootUri.StartsWith("\\"))
+			{
+				m_RootUri = m_RootUri.Remove(0, 1);
+			}
+		}
+		xmlNode = documentElement.SelectSingleNode("/CompoundFile/RootFile/ContentType");
+		if (xmlNode != null)
+		{
+			m_RootContentType = xmlNode.InnerText;
+		}
+		xmlNode = documentElement.SelectSingleNode("/CompoundFile/Description/Comments");
+		if (xmlNode != null)
+		{
+			m_Comments = xmlNode.InnerText;
+		}
+		xmlNode = documentElement.SelectSingleNode("/CompoundFile/Description/Prerequisites");
+		if (xmlNode != null)
+		{
+			m_Prerequisites = xmlNode.InnerText;
+		}
+	}
+
+	private string GetDocInfo()
+	{
+		StringWriter stringWriter = new StringWriter(CultureInfo.InvariantCulture);
+		XmlTextWriter xmlTextWriter = new XmlTextWriter(stringWriter);
+		xmlTextWriter.Formatting = Formatting.Indented;
+		xmlTextWriter.WriteStartDocument(standalone: true);
+		xmlTextWriter.WriteStartElement("CompoundFile");
+		xmlTextWriter.WriteElementString("ManifestVersion", 1.ToString());
+		xmlTextWriter.WriteElementString("DocumentID", m_ID);
+		xmlTextWriter.WriteStartElement("RootFile");
+		xmlTextWriter.WriteElementString("FilePath", m_RootUri);
+		xmlTextWriter.WriteElementString("ContentType", m_RootContentType);
+		xmlTextWriter.WriteEndElement();
+		xmlTextWriter.WriteStartElement("Description");
+		xmlTextWriter.WriteElementString("Comments", m_Comments);
+		xmlTextWriter.WriteElementString("Prerequisites", m_Prerequisites);
+		xmlTextWriter.WriteEndElement();
+		xmlTextWriter.WriteEndElement();
+		xmlTextWriter.WriteEndDocument();
+		xmlTextWriter.Close();
+		return CommentTextEncoder.EncodeComment(stringWriter.ToString());
+	}
+
+	private static void UploadWebFile(string address, string fileName)
+	{
+		WebClient obj = new WebClient
+		{
+			Credentials = CredentialCache.DefaultCredentials
+		};
+		FileStream fileStream = File.OpenRead(fileName);
+		Stream stream = obj.OpenWrite(address, "PUT");
+		try
+		{
+			byte[] array = new byte[fileStream.Length];
+			int count = fileStream.Read(array, 0, array.Length);
+			stream.Write(array, 0, count);
+		}
+		finally
+		{
+			fileStream.Close();
+			stream.Close();
+		}
+	}
+
+	private static string GetTempLocalFile()
+	{
+		string tempFileName = Path.GetTempFileName();
+		StringBuilder stringBuilder = new StringBuilder(1024);
+		GetLongPathName(tempFileName, stringBuilder, (uint)stringBuilder.Capacity);
+		return stringBuilder.ToString();
+	}
+
+	private static void DownloadWebFile(string address, string localFile)
+	{
+		WebClient webClient = new WebClient();
+		webClient.Credentials = CredentialCache.DefaultCredentials;
+		webClient.DownloadFile(address, localFile);
+	}
+
+	[DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+	private static extern uint GetLongPathName(string lpszShortPath, [Out] StringBuilder lpszLongPath, uint cchBuffer);
+
+	private string GetPathRelativeToRoot(string origFilename)
+	{
+		string fileName = Path.GetFileName(origFilename);
+		string directoryName = Path.GetDirectoryName(m_RootUri);
+		string directoryName2 = Path.GetDirectoryName(origFilename);
+		CultureInfo currentCulture = CultureInfo.CurrentCulture;
+		if (string.Compare(directoryName, directoryName2, ignoreCase: true, currentCulture) == 0)
+		{
+			return fileName;
+		}
+		string value = directoryName + Path.DirectorySeparatorChar;
+		bool num = directoryName2.StartsWith(value, ignoreCase: true, currentCulture);
+		StringBuilder stringBuilder = new StringBuilder(1024);
+		NativeMethods.PathRelativePathTo(stringBuilder, RootUri, 0u, origFilename, 0u);
+		if (stringBuilder.ToString().StartsWith("../") || stringBuilder.ToString().StartsWith("..\\"))
+		{
+			stringBuilder = new StringBuilder(stringBuilder.ToString().Substring(3));
+		}
+		if (num)
+		{
+			return stringBuilder.ToString();
+		}
+		return "";
+	}
+}
+public class AspenPart : IPart
+{
+	private AspenPackage m_Package;
+
+	private string m_ContentType;
+
+	private string m_Uri;
+
+	private bool m_IsRoot;
+
+	private bool m_IsRequired;
+
+	private bool m_AddedByUser;
+
+	private DateTime m_LastModified = DateTime.MinValue;
+
+	private long m_Size = -1L;
+
+	private bool m_IsLinkOnly;
+
+	public string ContentType
+	{
+		get
+		{
+			return m_ContentType;
+		}
+		set
+		{
+			m_ContentType = value;
+			UpdatePartComment();
+		}
+	}
+
+	public bool IsRequired
+	{
+		get
+		{
+			return m_IsRequired;
+		}
+		set
+		{
+			if (!m_IsRoot)
+			{
+				m_IsRequired = value;
+				UpdatePartComment();
+				m_Package.Touch();
+			}
+		}
+	}
+
+	public bool AddedByUser
+	{
+		get
+		{
+			return m_AddedByUser;
+		}
+		set
+		{
+			m_AddedByUser = value;
+			UpdatePartComment();
+			m_Package.Touch();
+		}
+	}
+
+	public bool IsLinkOnly => m_IsLinkOnly;
+
+	public DateTime LastModified
+	{
+		get
+		{
+			if (m_LastModified == DateTime.MinValue)
+			{
+				ReadPartProperties();
+			}
+			return m_LastModified;
+		}
+	}
+
+	public long Size
+	{
+		get
+		{
+			if (m_Size == -1)
+			{
+				ReadPartProperties();
+			}
+			return m_Size;
+		}
+	}
+
+	public bool IsRoot => m_IsRoot;
+
+	public string Uri => m_Uri;
+
+	public string Name
+	{
+		get
+		{
+			return Path.GetFileName(m_Uri);
+		}
+		set
+		{
+			GetFile().Name = value;
+			m_Uri = FilePath + Path.DirectorySeparatorChar + value;
+			m_Package.Touch();
+		}
+	}
+
+	public string FilePath
+	{
+		get
+		{
+			string directoryName = Path.GetDirectoryName(m_Uri);
+			if (!(directoryName == "."))
+			{
+				return directoryName;
+			}
+			return "";
+		}
+	}
+
+	internal AspenPart(AspenPackage package, string uri, string contentType, bool isRoot, bool isRequired, bool isAbsolutePath)
+	{
+		m_Package = package;
+		m_Uri = uri;
+		m_ContentType = contentType;
+		m_IsRequired = isRequired;
+		m_IsRoot = isRoot;
+		m_IsLinkOnly = isAbsolutePath && !m_IsRoot;
+	}
+
+	internal AspenPart(AspenPackage package, string uri, string contentType, bool isRoot, bool isRequired, bool isAbsolutePath, bool forceEmbed)
+	{
+		m_Package = package;
+		m_Uri = uri;
+		m_ContentType = contentType;
+		m_IsRequired = isRequired;
+		m_IsRoot = isRoot;
+		m_IsLinkOnly = isAbsolutePath && !m_IsRoot;
+		if (forceEmbed)
+		{
+			m_IsLinkOnly = false;
+		}
+	}
+
+	internal AspenPart(AspenPackage package, string uri, bool isRoot, string xml)
+	{
+		m_Package = package;
+		m_Uri = uri;
+		ParsePartInfo(xml);
+	}
+
+	public string GetPartInfo()
+	{
+		StringWriter stringWriter = new StringWriter(CultureInfo.InvariantCulture);
+		XmlTextWriter xmlTextWriter = new XmlTextWriter(stringWriter);
+		xmlTextWriter.Formatting = Formatting.Indented;
+		xmlTextWriter.WriteStartDocument(standalone: true);
+		xmlTextWriter.WriteStartElement("Part");
+		xmlTextWriter.WriteElementString("ContentType", m_ContentType);
+		xmlTextWriter.WriteElementString("Required", m_IsRequired ? "1" : "0");
+		xmlTextWriter.WriteElementString("AddedByUser", m_AddedByUser ? "1" : "0");
+		xmlTextWriter.WriteElementString("IsRootPart", m_IsRoot ? "1" : "0");
+		xmlTextWriter.WriteElementString("IsLinkPart", m_IsLinkOnly ? "1" : "0");
+		xmlTextWriter.WriteEndElement();
+		xmlTextWriter.WriteEndDocument();
+		xmlTextWriter.Close();
+		return CommentTextEncoder.EncodeComment(stringWriter.ToString());
+	}
+
+	private void ParsePartInfo(string xml)
+	{
+		if (xml != "")
+		{
+			xml = CommentTextEncoder.DecodeComment(xml);
+			XmlDocument xmlDocument = new XmlDocument();
+			xmlDocument.LoadXml(xml);
+			XmlElement documentElement = xmlDocument.DocumentElement;
+			XmlNode xmlNode = documentElement.SelectSingleNode("/Part/ContentType");
+			if (xmlNode != null)
+			{
+				m_ContentType = xmlNode.InnerText;
+			}
+			xmlNode = documentElement.SelectSingleNode("/Part/Required");
+			if (xmlNode != null)
+			{
+				m_IsRequired = xmlNode.InnerText == "1";
+			}
+			xmlNode = documentElement.SelectSingleNode("/Part/AddedByUser");
+			if (xmlNode != null)
+			{
+				m_AddedByUser = xmlNode.InnerText == "1";
+			}
+			xmlNode = documentElement.SelectSingleNode("/Part/IsRootPart");
+			if (xmlNode != null)
+			{
+				m_IsRoot = xmlNode.InnerText == "1";
+			}
+			xmlNode = documentElement.SelectSingleNode("/Part/IsLinkPart");
+			if (xmlNode != null)
+			{
+				m_IsLinkOnly = xmlNode.InnerText == "1";
+			}
+		}
+		else
+		{
+			m_IsRequired = false;
+			m_AddedByUser = false;
+			m_ContentType = "";
+			m_IsLinkOnly = false;
+		}
+	}
+
+	private ZippedFile CreateFile()
+	{
+		string text = Directory.GetParent(m_Package.RootUri).ToString();
+		if (!text.EndsWith(Path.DirectorySeparatorChar.ToString()))
+		{
+			text += Path.DirectorySeparatorChar;
+		}
+		while (m_Uri.StartsWith(".") || m_Uri.StartsWith("\\") || m_Uri.StartsWith("/"))
+		{
+			m_Uri = m_Uri.Substring(1);
+		}
+		if (m_IsRoot)
+		{
+			text = m_Uri;
+		}
+		else
+		{
+			text += m_Uri;
+		}
+		ZippedFile obj = m_Package.Archive.CreateFile(m_Uri, replaceIfExists: true) as ZippedFile;
+		obj.Comment = GetPartInfo();
+		return obj;
+	}
+
+	private ZippedFile GetFile()
+	{
+		return m_Package.Archive.GetFile(m_Uri) as ZippedFile;
+	}
+
+	private void UpdateZipFile()
+	{
+		ZippedFile zippedFile = CreateFile();
+		if (zippedFile != null)
+		{
+			m_Package.Archive.CreateFile(zippedFile.Name, replaceIfExists: true);
+		}
+	}
+
+	private void UpdatePartComment()
+	{
+		string partInfo = GetPartInfo();
+		(m_Package.Archive.GetFile(m_Uri) as ZippedFile).Comment = partInfo;
+	}
+
+	private void ReadPartProperties()
+	{
+		if (!m_IsLinkOnly)
+		{
+			ZippedFile file = GetFile();
+			if (file != null)
+			{
+				m_Size = file.Size;
+				m_LastModified = file.LastWriteDateTime;
+			}
+		}
+		else if (File.Exists(m_Uri))
+		{
+			FileInfo fileInfo = new FileInfo(m_Uri);
+			m_Size = fileInfo.Length;
+			m_LastModified = fileInfo.LastWriteTime;
+		}
+	}
+
+	public Stream GetStream(FileMode mode)
+	{
+		if (m_IsLinkOnly)
+		{
+			return null;
+		}
+		string text = m_Uri;
+		if (text.StartsWith("/"))
+		{
+			text = text.Remove(0, 1);
+		}
+		if (mode == FileMode.Open)
+		{
+			if (m_Package.Archive.GetFile(text) is ZippedFile zippedFile)
+			{
+				m_IsRoot = text == m_Package.RootUri;
+				return zippedFile.OpenRead();
+			}
+			return null;
+		}
+		ZippedFile obj = m_Package.Archive.CreateFile(text, replaceIfExists: true) as ZippedFile;
+		obj.Comment = GetPartInfo();
+		m_Package.Touch();
+		return obj.OpenWrite(overwrite: true);
+	}
+
+	public bool LoadFromFile(string filePath)
+	{
+		if (!File.Exists(filePath))
+		{
+			return false;
+		}
+		bool result = false;
+		ZippedFile zippedFile = m_Package.Archive.CreateFile(m_Uri, replaceIfExists: true) as ZippedFile;
+		zippedFile.Comment = GetPartInfo();
+		FileStream fileStream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+		try
+		{
+			if (!m_IsLinkOnly)
+			{
+				byte[] array = new byte[fileStream.Length];
+				fileStream.Read(array, 0, array.Length);
+				Stream stream = zippedFile.OpenWrite(overwrite: true);
+				stream.Write(array, 0, array.Length);
+				stream.Close();
+			}
+			zippedFile.CreationDateTime = File.GetCreationTime(filePath);
+			zippedFile.LastWriteDateTime = File.GetLastWriteTime(filePath);
+			m_Package.Touch();
+			result = true;
+		}
+		catch
+		{
+			result = false;
+		}
+		finally
+		{
+			fileStream.Close();
+		}
+		return result;
+	}
+
+	public bool SaveToFile(string filePath)
+	{
+		if (m_IsLinkOnly)
+		{
+			return false;
+		}
+		Stream stream = GetFile().OpenRead();
+		FileStream fileStream = File.Create(filePath);
+		try
+		{
+			byte[] array = new byte[32768];
+			while (true)
+			{
+				int num = stream.Read(array, 0, array.Length);
+				if (num <= 0)
+				{
+					break;
+				}
+				fileStream.Write(array, 0, num);
+			}
+			return true;
+		}
+		catch
+		{
+			return false;
+		}
+		finally
+		{
+			fileStream.Close();
+			stream.Close();
+		}
+	}
+
+	public bool Refresh()
+	{
+		string filePath = FilePath;
+		AbstractFile file = m_Package.Archive.GetFile(m_Uri);
+		FileStream fileStream = File.OpenRead(filePath);
+		try
+		{
+			byte[] array = new byte[fileStream.Length];
+			fileStream.Read(array, 0, array.Length);
+			Stream stream = file.OpenWrite(overwrite: true);
+			stream.Write(array, 0, array.Length);
+			stream.Close();
+			file.CreationDateTime = File.GetCreationTime(filePath);
+			file.LastWriteDateTime = File.GetLastWriteTime(filePath);
+			m_Package.Touch();
+			return true;
+		}
+		catch
+		{
+			return false;
+		}
+		finally
+		{
+			fileStream.Close();
+		}
+	}
+
+	public bool LoadFromData(byte[] data)
+	{
+		if (m_IsLinkOnly)
+		{
+			return false;
+		}
+		ZippedFile zippedFile = null;
+		try
+		{
+			zippedFile = CreateFile();
+		}
+		catch
+		{
+			return false;
+		}
+		try
+		{
+			using Stream stream = zippedFile.OpenWrite(overwrite: true);
+			stream.Write(data, 0, data.Length);
+		}
+		catch
+		{
+			return false;
+		}
+		m_Package.Touch();
+		return true;
+	}
+
+	public byte[] SaveToData()
+	{
+		if (m_IsLinkOnly)
+		{
+			using (Stream stream = File.OpenRead(m_Uri))
+			{
+				_ = Size;
+				byte[] array = new byte[Size];
+				stream.Read(array, 0, array.Length);
+				return array;
+			}
+		}
+		using Stream stream2 = GetFile().OpenRead();
+		byte[] array2 = new byte[Size];
+		stream2.Read(array2, 0, array2.Length);
+		stream2.Close();
+		return array2;
+	}
+
+	public bool SetAbsoluteUri(string path)
+	{
+		if (!m_IsLinkOnly && !m_IsRoot)
+		{
+			return false;
+		}
+		m_Uri = path;
+		m_Package.Touch();
+		return true;
+	}
+}
+internal class CommentTextEncoder
+{
+	private static double current_version = 1.0;
+
+	private static string compoundFileIdentifier = "Aspen_Compound_File_Settings";
+
+	private static string arrow = "-->";
+
+	public static string EncodeComment(string unicodeToEncode)
+	{
+		string text = bytesToAscii(Encoding.Unicode.GetBytes(unicodeToEncode));
+		return CreateVersionString() + text;
+	}
+
+	public static string DecodeComment(string encodedString)
+	{
+		if (!GetSettingsVersion(encodedString, out var version))
+		{
+			return encodedString;
+		}
+		if (Math.Floor(version) > Math.Floor(current_version))
+		{
+			MessageBox.Show(Global.GetString("CommentTextEncoder___LaterEncodingMsg"), "Aspen Compound File", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
+		}
+		byte[] bytes = decodeComment(GetEncodedPartOfComment(encodedString));
+		return Encoding.Unicode.GetString(bytes);
+	}
+
+	private static string CreateVersionString()
+	{
+		NumberFormatInfo numberFormatInfo = new NumberFormatInfo();
+		numberFormatInfo.NumberDecimalSeparator = ".";
+		return compoundFileIdentifier + "_v" + current_version.ToString("#0.0#", numberFormatInfo) + arrow;
+	}
+
+	private static bool GetSettingsVersion(string settingsString, out double version)
+	{
+		version = 99.0;
+		if (!settingsString.StartsWith(compoundFileIdentifier))
+		{
+			return false;
+		}
+		int num = settingsString.IndexOf(arrow);
+		if (num < 0)
+		{
+			return false;
+		}
+		int num2 = compoundFileIdentifier.Length + 2;
+		if (num <= num2)
+		{
+			return false;
+		}
+		string text = settingsString.Substring(num2, num - num2);
+		text = text.Replace(",", ".");
+		try
+		{
+			NumberFormatInfo numberFormatInfo = new NumberFormatInfo();
+			numberFormatInfo.NumberDecimalSeparator = ".";
+			double num3 = Convert.ToDouble(text, numberFormatInfo);
+			if (num3 <= 0.0)
+			{
+				return false;
+			}
+			version = num3;
+			return true;
+		}
+		catch
+		{
+		}
+		return false;
+	}
+
+	private static string GetEncodedPartOfComment(string fullCommentString)
+	{
+		if (!GetSettingsVersion(fullCommentString, out var _))
+		{
+			return "";
+		}
+		int num = fullCommentString.IndexOf(arrow);
+		if (num < 0)
+		{
+			return "";
+		}
+		return fullCommentString.Substring(num + arrow.Length);
+	}
+
+	private static string bytesToAscii(byte[] b)
+	{
+		int num = b.Length;
+		StringBuilder stringBuilder = new StringBuilder("");
+		for (int i = 0; i < num; i++)
+		{
+			string text = b[i].ToString("X");
+			if (text.Length == 1)
+			{
+				stringBuilder.Append("0");
+			}
+			stringBuilder.Append(text);
+		}
+		return stringBuilder.ToString();
+	}
+
+	private static byte[] decodeComment(string comment)
+	{
+		int num = comment.Length / 2;
+		byte[] array = new byte[num];
+		for (int i = 0; i < num; i++)
+		{
+			string text = comment.Substring(i * 2, 2);
+			int value = 16 * CharToNum(text.Substring(0, 1)) + CharToNum(text.Substring(1, 1));
+			array[i] = Convert.ToByte(value);
+		}
+		return array;
+	}
+
+	private static int CharToNum(string c)
+	{
+		return c.ToUpper() switch
+		{
+			"0" => 0, 
+			"1" => 1, 
+			"2" => 2, 
+			"3" => 3, 
+			"4" => 4, 
+			"5" => 5, 
+			"6" => 6, 
+			"7" => 7, 
+			"8" => 8, 
+			"9" => 9, 
+			"A" => 10, 
+			"B" => 11, 
+			"C" => 12, 
+			"D" => 13, 
+			"E" => 14, 
+			"F" => 15, 
+			_ => 0, 
+		};
+	}
+}
+internal class ManifestForm : Form
+{
+	private enum FileAddType
+	{
+		NotDefined,
+		EmbedFile,
+		LinkFile
+	}
+
+	private Label label1;
+
+	private ListView fileListView;
+
+	private Label fileLabel;
+
+	private ColumnHeader nameCcolumnHeader;
+
+	private ColumnHeader pathColumnHeader;
+
+	private Button addButton;
+
+	private Button removeButton;
+
+	private IContainer components;
+
+	private Label label2;
+
+	private TextBox rootTextBox;
+
+	private Label label3;
+
+	private ToolTip toolTip1;
+
+	private Button moreButton;
+
+	private ColumnHeader dateColumnHeader;
+
+	private ColumnHeader sizeColumnHeader;
+
+	private StatusStrip statusStrip1;
+
+	private ToolStripStatusLabel statusLengthLabel;
+
+	private ToolStripStatusLabel statusNumberLabel;
+
+	private Button viewButton;
+
+	private Button extractButton;
+
+	private Button cmdClose;
+
+	private Panel panFileLists;
+
+	private SplitContainer split;
+
+	private ListView fileListViewForLinks;
+
+	private ColumnHeader colHdrName;
+
+	private ColumnHeader colHdrPath;
+
+	private ColumnHeader colHdrModified;
+
+	private ColumnHeader colHdrSize;
+
+	private SplitContainer splitEmbedPanel;
+
+	private Label label4;
+
+	private SplitContainer splitLink;
+
+	private Label label5;
+
+	private ColumnHeader typeColumnHeader;
+
+	private ColumnHeader colHdrType;
+
+	private IPackage m_Package;
+
+	private Button linkButton;
+
+	private ContextMenuStrip contextMenuEmbed;
+
+	private ToolStripMenuItem contextMenuRemove;
+
+	private ToolStripMenuItem contextMenuView;
+
+	private ToolStripMenuItem contextMenuExtract;
+
+	private ToolStripSeparator contextMenuSep1;
+
+	private ToolStripMenuItem contextMenuEmbedNew;
+
+	private ContextMenuStrip contextMenuLink;
+
+	private ToolStripMenuItem contextMenuLinkAdd;
+
+	private ToolStripSeparator toolStripSeparator1;
+
+	private ToolStripMenuItem contextMenuLinkRemove;
+
+	private ToolStripMenuItem contextMenuLinkView;
+
+	private ToolStripSeparator toolStripSeparator2;
+
+	private ToolStripMenuItem contextMenuLinkEmbedFile;
+
+	private static readonly string _aspenCompoundFile = "Aspen Compound File";
+
+	private bool m_RootTextBoxSelected;
+
+	private FlowLayoutPanel flowBtnsLeft;
+
+	private readonly string m_HelpFileRegKeyName = "AspenCompoundFile320.chm";
+
+	public string FileName
+	{
+		get
+		{
+			return fileLabel.Text;
+		}
+		set
+		{
+			fileLabel.Text = value;
+		}
+	}
+
+	public ManifestForm(IPackage package)
+	{
+		InitializeComponent();
+		m_Package = package;
+		LoadParts();
+	}
+
+	protected override void Dispose(bool disposing)
+	{
+		if (disposing && components != null)
+		{
+			components.Dispose();
+		}
+		base.Dispose(disposing);
+	}
+
+	private void InitializeComponent()
+	{
+		this.components = new System.ComponentModel.Container();
+		System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(AspenTech.CompositeDoc.ManifestForm));
+		this.label1 = new System.Windows.Forms.Label();
+		this.fileListView = new System.Windows.Forms.ListView();
+		this.nameCcolumnHeader = new System.Windows.Forms.ColumnHeader();
+		this.pathColumnHeader = new System.Windows.Forms.ColumnHeader();
+		this.typeColumnHeader = new System.Windows.Forms.ColumnHeader();
+		this.dateColumnHeader = new System.Windows.Forms.ColumnHeader();
+		this.sizeColumnHeader = new System.Windows.Forms.ColumnHeader();
+		this.contextMenuEmbed = new System.Windows.Forms.ContextMenuStrip(this.components);
+		this.contextMenuEmbedNew = new System.Windows.Forms.ToolStripMenuItem();
+		this.contextMenuSep1 = new System.Windows.Forms.ToolStripSeparator();
+		this.contextMenuRemove = new System.Windows.Forms.ToolStripMenuItem();
+		this.contextMenuView = new System.Windows.Forms.ToolStripMenuItem();
+		this.contextMenuExtract = new System.Windows.Forms.ToolStripMenuItem();
+		this.fileLabel = new System.Windows.Forms.Label();
+		this.addButton = new System.Windows.Forms.Button();
+		this.removeButton = new System.Windows.Forms.Button();
+		this.label2 = new System.Windows.Forms.Label();
+		this.rootTextBox = new System.Windows.Forms.TextBox();
+		this.label3 = new System.Windows.Forms.Label();
+		this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
+		this.moreButton = new System.Windows.Forms.Button();
+		this.viewButton = new System.Windows.Forms.Button();
+		this.extractButton = new System.Windows.Forms.Button();
+		this.linkButton = new System.Windows.Forms.Button();
+		this.cmdClose = new System.Windows.Forms.Button();
+		this.statusStrip1 = new System.Windows.Forms.StatusStrip();
+		this.statusLengthLabel = new System.Windows.Forms.ToolStripStatusLabel();
+		this.statusNumberLabel = new System.Windows.Forms.ToolStripStatusLabel();
+		this.panFileLists = new System.Windows.Forms.Panel();
+		this.split = new System.Windows.Forms.SplitContainer();
+		this.splitEmbedPanel = new System.Windows.Forms.SplitContainer();
+		this.label4 = new System.Windows.Forms.Label();
+		this.splitLink = new System.Windows.Forms.SplitContainer();
+		this.label5 = new System.Windows.Forms.Label();
+		this.fileListViewForLinks = new System.Windows.Forms.ListView();
+		this.colHdrName = new System.Windows.Forms.ColumnHeader();
+		this.colHdrPath = new System.Windows.Forms.ColumnHeader();
+		this.colHdrType = new System.Windows.Forms.ColumnHeader();
+		this.colHdrModified = new System.Windows.Forms.ColumnHeader();
+		this.colHdrSize = new System.Windows.Forms.ColumnHeader();
+		this.contextMenuLink = new System.Windows.Forms.ContextMenuStrip(this.components);
+		this.contextMenuLinkAdd = new System.Windows.Forms.ToolStripMenuItem();
+		this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+		this.contextMenuLinkRemove = new System.Windows.Forms.ToolStripMenuItem();
+		this.contextMenuLinkView = new System.Windows.Forms.ToolStripMenuItem();
+		this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
+		this.contextMenuLinkEmbedFile = new System.Windows.Forms.ToolStripMenuItem();
+		this.flowBtnsLeft = new System.Windows.Forms.FlowLayoutPanel();
+		this.contextMenuEmbed.SuspendLayout();
+		this.statusStrip1.SuspendLayout();
+		this.panFileLists.SuspendLayout();
+		((System.ComponentModel.ISupportInitialize)this.split).BeginInit();
+		this.split.Panel1.SuspendLayout();
+		this.split.Panel2.SuspendLayout();
+		this.split.SuspendLayout();
+		((System.ComponentModel.ISupportInitialize)this.splitEmbedPanel).BeginInit();
+		this.splitEmbedPanel.Panel1.SuspendLayout();
+		this.splitEmbedPanel.Panel2.SuspendLayout();
+		this.splitEmbedPanel.SuspendLayout();
+		((System.ComponentModel.ISupportInitialize)this.splitLink).BeginInit();
+		this.splitLink.Panel1.SuspendLayout();
+		this.splitLink.Panel2.SuspendLayout();
+		this.splitLink.SuspendLayout();
+		this.contextMenuLink.SuspendLayout();
+		this.flowBtnsLeft.SuspendLayout();
+		base.SuspendLayout();
+		resources.ApplyResources(this.label1, "label1");
+		this.label1.Name = "label1";
+		this.fileListView.Columns.AddRange(new System.Windows.Forms.ColumnHeader[5] { this.nameCcolumnHeader, this.pathColumnHeader, this.typeColumnHeader, this.dateColumnHeader, this.sizeColumnHeader });
+		this.fileListView.ContextMenuStrip = this.contextMenuEmbed;
+		resources.ApplyResources(this.fileListView, "fileListView");
+		this.fileListView.HideSelection = false;
+		this.fileListView.Name = "fileListView";
+		this.fileListView.UseCompatibleStateImageBehavior = false;
+		this.fileListView.View = System.Windows.Forms.View.Details;
+		this.fileListView.SelectedIndexChanged += new System.EventHandler(fileListView_SelectedIndexChanged);
+		this.fileListView.Enter += new System.EventHandler(fileListView_Enter);
+		resources.ApplyResources(this.nameCcolumnHeader, "nameCcolumnHeader");
+		resources.ApplyResources(this.pathColumnHeader, "pathColumnHeader");
+		resources.ApplyResources(this.typeColumnHeader, "typeColumnHeader");
+		resources.ApplyResources(this.dateColumnHeader, "dateColumnHeader");
+		resources.ApplyResources(this.sizeColumnHeader, "sizeColumnHeader");
+		this.contextMenuEmbed.Items.AddRange(new System.Windows.Forms.ToolStripItem[5] { this.contextMenuEmbedNew, this.contextMenuSep1, this.contextMenuRemove, this.contextMenuView, this.contextMenuExtract });
+		this.contextMenuEmbed.Name = "contextMenu";
+		resources.ApplyResources(this.contextMenuEmbed, "contextMenuEmbed");
+		this.contextMenuEmbedNew.Name = "contextMenuEmbedNew";
+		resources.ApplyResources(this.contextMenuEmbedNew, "contextMenuEmbedNew");
+		this.contextMenuEmbedNew.Click += new System.EventHandler(contextMenuEmbedNew_Click);
+		this.contextMenuSep1.Name = "contextMenuSep1";
+		resources.ApplyResources(this.contextMenuSep1, "contextMenuSep1");
+		this.contextMenuRemove.Name = "contextMenuRemove";
+		resources.ApplyResources(this.contextMenuRemove, "contextMenuRemove");
+		this.contextMenuRemove.Click += new System.EventHandler(contextMenuRemove_Click);
+		this.contextMenuView.Name = "contextMenuView";
+		resources.ApplyResources(this.contextMenuView, "contextMenuView");
+		this.contextMenuView.Click += new System.EventHandler(contextMenuView_Click);
+		this.contextMenuExtract.Name = "contextMenuExtract";
+		resources.ApplyResources(this.contextMenuExtract, "contextMenuExtract");
+		this.contextMenuExtract.Click += new System.EventHandler(contextMenuExtract_Click);
+		resources.ApplyResources(this.fileLabel, "fileLabel");
+		this.fileLabel.ForeColor = System.Drawing.Color.Navy;
+		this.fileLabel.Name = "fileLabel";
+		resources.ApplyResources(this.addButton, "addButton");
+		this.addButton.Name = "addButton";
+		this.toolTip1.SetToolTip(this.addButton, resources.GetString("addButton.ToolTip"));
+		this.addButton.Click += new System.EventHandler(addButton_Click);
+		resources.ApplyResources(this.removeButton, "removeButton");
+		this.removeButton.Name = "removeButton";
+		this.toolTip1.SetToolTip(this.removeButton, resources.GetString("removeButton.ToolTip"));
+		this.removeButton.Click += new System.EventHandler(removeButton_Click);
+		resources.ApplyResources(this.label2, "label2");
+		this.label2.Name = "label2";
+		resources.ApplyResources(this.rootTextBox, "rootTextBox");
+		this.rootTextBox.BackColor = System.Drawing.SystemColors.Window;
+		this.rootTextBox.Name = "rootTextBox";
+		this.rootTextBox.ReadOnly = true;
+		this.toolTip1.SetToolTip(this.rootTextBox, resources.GetString("rootTextBox.ToolTip"));
+		this.rootTextBox.TextChanged += new System.EventHandler(rootTextBox_TextChanged);
+		this.rootTextBox.Enter += new System.EventHandler(rootTextBox_Enter);
+		this.rootTextBox.Leave += new System.EventHandler(rootTextBox_Leave);
+		resources.ApplyResources(this.label3, "label3");
+		this.label3.Name = "label3";
+		resources.ApplyResources(this.moreButton, "moreButton");
+		this.moreButton.Name = "moreButton";
+		this.toolTip1.SetToolTip(this.moreButton, resources.GetString("moreButton.ToolTip"));
+		this.moreButton.Click += new System.EventHandler(moreButton_Click);
+		resources.ApplyResources(this.viewButton, "viewButton");
+		this.viewButton.Name = "viewButton";
+		this.toolTip1.SetToolTip(this.viewButton, resources.GetString("viewButton.ToolTip"));
+		this.viewButton.Click += new System.EventHandler(viewButton_Click);
+		resources.ApplyResources(this.extractButton, "extractButton");
+		this.extractButton.Name = "extractButton";
+		this.toolTip1.SetToolTip(this.extractButton, resources.GetString("extractButton.ToolTip"));
+		this.extractButton.Click += new System.EventHandler(extractButton_Click);
+		resources.ApplyResources(this.linkButton, "linkButton");
+		this.linkButton.Name = "linkButton";
+		this.toolTip1.SetToolTip(this.linkButton, resources.GetString("linkButton.ToolTip"));
+		this.linkButton.Click += new System.EventHandler(linkButton_Click);
+		resources.ApplyResources(this.cmdClose, "cmdClose");
+		this.cmdClose.Name = "cmdClose";
+		this.cmdClose.Click += new System.EventHandler(cmdClose_Click);
+		this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[2] { this.statusLengthLabel, this.statusNumberLabel });
+		resources.ApplyResources(this.statusStrip1, "statusStrip1");
+		this.statusStrip1.Name = "statusStrip1";
+		this.statusLengthLabel.Name = "statusLengthLabel";
+		resources.ApplyResources(this.statusLengthLabel, "statusLengthLabel");
+		this.statusNumberLabel.Name = "statusNumberLabel";
+		resources.ApplyResources(this.statusNumberLabel, "statusNumberLabel");
+		resources.ApplyResources(this.panFileLists, "panFileLists");
+		this.panFileLists.BackColor = System.Drawing.SystemColors.Control;
+		this.panFileLists.Controls.Add(this.split);
+		this.panFileLists.Name = "panFileLists";
+		resources.ApplyResources(this.split, "split");
+		this.split.Name = "split";
+		this.split.Panel1.Controls.Add(this.splitEmbedPanel);
+		this.split.Panel2.Controls.Add(this.splitLink);
+		resources.ApplyResources(this.splitEmbedPanel, "splitEmbedPanel");
+		this.splitEmbedPanel.FixedPanel = System.Windows.Forms.FixedPanel.Panel1;
+		this.splitEmbedPanel.Name = "splitEmbedPanel";
+		this.splitEmbedPanel.Panel1.Controls.Add(this.label4);
+		this.splitEmbedPanel.Panel2.Controls.Add(this.fileListView);
+		this.label4.BackColor = System.Drawing.Color.FromArgb(192, 255, 255);
+		resources.ApplyResources(this.label4, "label4");
+		this.label4.Name = "label4";
+		resources.ApplyResources(this.splitLink, "splitLink");
+		this.splitLink.FixedPanel = System.Windows.Forms.FixedPanel.Panel1;
+		this.splitLink.Name = "splitLink";
+		this.splitLink.Panel1.Controls.Add(this.label5);
+		this.splitLink.Panel2.Controls.Add(this.fileListViewForLinks);
+		this.label5.BackColor = System.Drawing.Color.FromArgb(255, 255, 192);
+		resources.ApplyResources(this.label5, "label5");
+		this.label5.ForeColor = System.Drawing.Color.Red;
+		this.label5.Name = "label5";
+		this.fileListViewForLinks.Columns.AddRange(new System.Windows.Forms.ColumnHeader[5] { this.colHdrName, this.colHdrPath, this.colHdrType, this.colHdrModified, this.colHdrSize });
+		this.fileListViewForLinks.ContextMenuStrip = this.contextMenuLink;
+		resources.ApplyResources(this.fileListViewForLinks, "fileListViewForLinks");
+		this.fileListViewForLinks.HideSelection = false;
+		this.fileListViewForLinks.Name = "fileListViewForLinks";
+		this.fileListViewForLinks.UseCompatibleStateImageBehavior = false;
+		this.fileListViewForLinks.View = System.Windows.Forms.View.Details;
+		this.fileListViewForLinks.SelectedIndexChanged += new System.EventHandler(fileListViewForLinks_SelectedIndexChanged);
+		this.fileListViewForLinks.Enter += new System.EventHandler(fileListViewForLinks_Enter);
+		resources.ApplyResources(this.colHdrName, "colHdrName");
+		resources.ApplyResources(this.colHdrPath, "colHdrPath");
+		resources.ApplyResources(this.colHdrType, "colHdrType");
+		resources.ApplyResources(this.colHdrModified, "colHdrModified");
+		resources.ApplyResources(this.colHdrSize, "colHdrSize");
+		this.contextMenuLink.Items.AddRange(new System.Windows.Forms.ToolStripItem[6] { this.contextMenuLinkAdd, this.toolStripSeparator1, this.contextMenuLinkRemove, this.contextMenuLinkView, this.toolStripSeparator2, this.contextMenuLinkEmbedFile });
+		this.contextMenuLink.Name = "contextMenu";
+		resources.ApplyResources(this.contextMenuLink, "contextMenuLink");
+		this.contextMenuLink.Opening += new System.ComponentModel.CancelEventHandler(contextMenuLink_Opening);
+		this.contextMenuLinkAdd.Name = "contextMenuLinkAdd";
+		resources.ApplyResources(this.contextMenuLinkAdd, "contextMenuLinkAdd");
+		this.contextMenuLinkAdd.Click += new System.EventHandler(contextMenuLinkAdd_Click);
+		this.toolStripSeparator1.Name = "toolStripSeparator1";
+		resources.ApplyResources(this.toolStripSeparator1, "toolStripSeparator1");
+		this.contextMenuLinkRemove.Name = "contextMenuLinkRemove";
+		resources.ApplyResources(this.contextMenuLinkRemove, "contextMenuLinkRemove");
+		this.contextMenuLinkRemove.Click += new System.EventHandler(contextMenuLinkRemove_Click);
+		this.contextMenuLinkView.Name = "contextMenuLinkView";
+		resources.ApplyResources(this.contextMenuLinkView, "contextMenuLinkView");
+		this.contextMenuLinkView.Click += new System.EventHandler(contextMenuLinkView_Click);
+		this.toolStripSeparator2.Name = "toolStripSeparator2";
+		resources.ApplyResources(this.toolStripSeparator2, "toolStripSeparator2");
+		this.contextMenuLinkEmbedFile.Name = "contextMenuLinkEmbedFile";
+		resources.ApplyResources(this.contextMenuLinkEmbedFile, "contextMenuLinkEmbedFile");
+		this.contextMenuLinkEmbedFile.Click += new System.EventHandler(toolStripMenuItem1_Click);
+		resources.ApplyResources(this.flowBtnsLeft, "flowBtnsLeft");
+		this.flowBtnsLeft.BackColor = System.Drawing.SystemColors.Control;
+		this.flowBtnsLeft.Controls.Add(this.addButton);
+		this.flowBtnsLeft.Controls.Add(this.linkButton);
+		this.flowBtnsLeft.Controls.Add(this.removeButton);
+		this.flowBtnsLeft.Controls.Add(this.viewButton);
+		this.flowBtnsLeft.Controls.Add(this.extractButton);
+		this.flowBtnsLeft.Controls.Add(this.moreButton);
+		this.flowBtnsLeft.Name = "flowBtnsLeft";
+		resources.ApplyResources(this, "$this");
+		base.Controls.Add(this.cmdClose);
+		base.Controls.Add(this.flowBtnsLeft);
+		base.Controls.Add(this.panFileLists);
+		base.Controls.Add(this.statusStrip1);
+		base.Controls.Add(this.label3);
+		base.Controls.Add(this.rootTextBox);
+		base.Controls.Add(this.label2);
+		base.Controls.Add(this.fileLabel);
+		base.Controls.Add(this.label1);
+		base.MinimizeBox = false;
+		base.Name = "ManifestForm";
+		base.ShowInTaskbar = false;
+		base.Load += new System.EventHandler(ManifestForm_Load);
+		base.HelpRequested += new System.Windows.Forms.HelpEventHandler(ManifestForm_HelpRequested);
+		this.contextMenuEmbed.ResumeLayout(false);
+		this.statusStrip1.ResumeLayout(false);
+		this.statusStrip1.PerformLayout();
+		this.panFileLists.ResumeLayout(false);
+		this.split.Panel1.ResumeLayout(false);
+		this.split.Panel2.ResumeLayout(false);
+		((System.ComponentModel.ISupportInitialize)this.split).EndInit();
+		this.split.ResumeLayout(false);
+		this.splitEmbedPanel.Panel1.ResumeLayout(false);
+		this.splitEmbedPanel.Panel2.ResumeLayout(false);
+		((System.ComponentModel.ISupportInitialize)this.splitEmbedPanel).EndInit();
+		this.splitEmbedPanel.ResumeLayout(false);
+		this.splitLink.Panel1.ResumeLayout(false);
+		this.splitLink.Panel2.ResumeLayout(false);
+		((System.ComponentModel.ISupportInitialize)this.splitLink).EndInit();
+		this.splitLink.ResumeLayout(false);
+		this.contextMenuLink.ResumeLayout(false);
+		this.flowBtnsLeft.ResumeLayout(false);
+		this.flowBtnsLeft.PerformLayout();
+		base.ResumeLayout(false);
+		base.PerformLayout();
+	}
+
+	private void LoadParts()
+	{
+		if (m_Package == null)
+		{
+			return;
+		}
+		Cursor.Current = Cursors.WaitCursor;
+		try
+		{
+			FileName = m_Package.OriginalFileName;
+			fileListView.Items.Clear();
+			fileListViewForLinks.Items.Clear();
+			IPart[] parts = m_Package.GetParts();
+			for (int i = 0; i < parts.Length; i++)
+			{
+				AspenPart aspenPart = (AspenPart)parts[i];
+				if (!aspenPart.IsRoot)
+				{
+					if (aspenPart.IsLinkOnly)
+					{
+						fileListViewForLinks.Items.Add(GetItem(aspenPart));
+					}
+					else
+					{
+						fileListView.Items.Add(GetItem(aspenPart));
+					}
+				}
+			}
+			if (m_Package.RootPart != null)
+			{
+				rootTextBox.Text = m_Package.RootPart.Uri;
+			}
+			UpdateStatus();
+		}
+		finally
+		{
+			Cursor.Current = Cursors.Default;
+		}
+		UpdateAddButtonsEnabled();
+	}
+
+	private void SetRootFileTextboxSelected(bool isSelected)
+	{
+		Font font = rootTextBox.Font;
+		Font font2 = new Font(font.FontFamily, font.Size, isSelected ? FontStyle.Bold : FontStyle.Regular);
+		rootTextBox.Font = font2;
+		m_RootTextBoxSelected = isSelected;
+	}
+
+	private string GetPartNameForList(IPart part)
+	{
+		if (part == null)
+		{
+			return "";
+		}
+		if (part.IsRoot)
+		{
+			return part.Uri;
+		}
+		string text = "";
+		if (!part.IsLinkOnly)
+		{
+			return part.Name;
+		}
+		if (!File.Exists(part.Uri))
+		{
+			return string.Format("{0} [{1}]", part.Name, Global.GetString("ManifestForm___FileMissing"));
+		}
+		return part.Name;
+	}
+
+	private void UpdateStatus()
+	{
+		if (m_Package == null)
+		{
+			return;
+		}
+		long size = (m_Package as AspenPackage).Size;
+		statusLengthLabel.Text = ((size == 1) ? Global.GetString("ManifestForm___OneByte") : string.Format("{0} {1}", size, Global.GetString("ManifestForm___Bytes")));
+		int num = 0;
+		IPart[] parts = m_Package.GetParts();
+		for (int i = 0; i < parts.Length; i++)
+		{
+			if (!parts[i].IsLinkOnly)
+			{
+				num++;
+			}
+		}
+		statusNumberLabel.Text = ((num == 1) ? Global.GetString("ManifestForm___OneFile") : string.Format("{0} {1}", num, Global.GetString("ManifestForm___Files")));
+	}
+
+	private void UpdateButtonsEnabled()
+	{
+		bool flag = false;
+		bool flag2 = false;
+		bool flag3 = false;
+		flag = fileListView.SelectedIndices.Count > 0;
+		flag2 = fileListViewForLinks.SelectedIndices.Count > 0;
+		flag3 = m_RootTextBoxSelected;
+		if (m_RootTextBoxSelected && m_Package.RootPart != null)
+		{
+			m_RootTextBoxSelected = true;
+		}
+		removeButton.Enabled = (flag || flag2) && !flag3;
+		extractButton.Enabled = flag || flag3;
+		viewButton.Enabled = flag || flag2 || flag3;
+		contextMenuRemove.Enabled = flag && !flag3;
+		contextMenuView.Enabled = flag;
+		contextMenuExtract.Enabled = flag;
+		contextMenuLinkRemove.Enabled = flag2;
+		contextMenuLinkView.Enabled = flag2;
+		contextMenuLinkEmbedFile.Enabled = flag2;
+	}
+
+	private void addButton_Click(object sender, EventArgs e)
+	{
+		AddEmbeddedPart();
+	}
+
+	private List<string> AddEmbeddedPart(string[] pathsToAdd)
+	{
+		if (pathsToAdd == null || pathsToAdd.Length == 0)
+		{
+			new List<string>();
+		}
+		List<string> list = new List<string>();
+		List<string> list2 = new List<string>();
+		foreach (string text in pathsToAdd)
+		{
+			try
+			{
+				m_Package.CreateEmbeddedPart(text, "", isRequired: false).AddedByUser = true;
+				list2.Add(text);
+			}
+			catch
+			{
+				list.Add(text);
+				m_Package.DeletePart(text);
+			}
+		}
+		UpdateStatus();
+		if (list.Count > 0)
+		{
+			ShowMsgFilesCouldNotBeAdded(list);
+		}
+		LoadParts();
+		UpdateButtonsEnabled();
+		return list2;
+	}
+
+	private List<string> PromptForFiles(FileAddType addType)
+	{
+		List<string> result = new List<string>();
+		string text = "";
+		switch (addType)
+		{
+		case FileAddType.EmbedFile:
+			text = Global.GetString("ManifestForm___SelectFilesToAddTitle");
+			break;
+		case FileAddType.LinkFile:
+			text = Global.GetString("ManifestForm___SelectFilesToLinkTitle");
+			break;
+		}
+		if (string.IsNullOrWhiteSpace(text))
+		{
+			return result;
+		}
+		string filter = string.Format("{0} (*.*)|*.*", Global.GetString("ManifestForm___AllFiles"));
+		using (OpenFileDialog openFileDialog = new OpenFileDialog())
+		{
+			openFileDialog.Filter = filter;
+			openFileDialog.Multiselect = true;
+			string localFileName = m_Package.LocalFileName;
+			openFileDialog.InitialDirectory = Path.GetDirectoryName(localFileName);
+			string title = text;
+			openFileDialog.Title = title;
+			if (openFileDialog.ShowDialog() == DialogResult.OK)
+			{
+				try
+				{
+					result = new List<string>(openFileDialog.FileNames);
+				}
+				catch
+				{
+				}
+			}
+		}
+		return result;
+	}
+
+	private void ShowMsgFilesCouldNotBeAdded(List<string> filesNotAdded)
+	{
+		string text = Global.GetString("ManifestForm___FilesNotAdded") + ":\r\n\r\n";
+		foreach (string item in filesNotAdded)
+		{
+			text = text + item + "\r\n";
+		}
+		MessageBox.Show(text, _aspenCompoundFile, MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+	}
+
+	private void AddEmbeddedPart()
+	{
+		List<string> list = PromptForFiles(FileAddType.EmbedFile);
+		if (list != null && list.Count != 0)
+		{
+			AddEmbeddedPart(list.ToArray());
+		}
+	}
+
+	private void AddLinkedPart()
+	{
+		List<string> list = PromptForFiles(FileAddType.LinkFile);
+		if (list == null || list.Count == 0)
+		{
+			return;
+		}
+		List<string> list2 = new List<string>();
+		foreach (string item in list)
+		{
+			try
+			{
+				m_Package.CreatePart(item, "", isRequired: false, forcePartToBeLinked: true).AddedByUser = true;
+			}
+			catch
+			{
+				list2.Add(item);
+				m_Package.DeletePart(item);
+			}
+		}
+		UpdateStatus();
+		if (list2.Count > 0)
+		{
+			ShowMsgFilesCouldNotBeAdded(list2);
+		}
+		LoadParts();
+		UpdateButtonsEnabled();
+	}
+
+	private void RemoveSelectedPart()
+	{
+		ListView listView = null;
+		if (fileListViewForLinks.SelectedIndices.Count > 0)
+		{
+			listView = fileListViewForLinks;
+		}
+		if (fileListView.SelectedIndices.Count > 0)
+		{
+			listView = fileListView;
+		}
+		if (listView == null)
+		{
+			return;
+		}
+		object[] array = new object[listView.SelectedItems.Count];
+		listView.SelectedItems.CopyTo(array, 0);
+		List<string> list = new List<string>();
+		object[] array2 = array;
+		for (int i = 0; i < array2.Length; i++)
+		{
+			ListViewItem listViewItem = (ListViewItem)array2[i];
+			if (listViewItem.Tag is AspenPart)
+			{
+				AspenPart aspenPart = listViewItem.Tag as AspenPart;
+				if (!aspenPart.IsLinkOnly && aspenPart.IsRequired)
+				{
+					list.Add(aspenPart.Name);
+				}
+			}
+		}
+		string empty = string.Empty;
+		string empty2 = string.Empty;
+		empty2 = _aspenCompoundFile;
+		if (listView.SelectedItems.Count == 1)
+		{
+			empty = ((list.Count != 0) ? Global.GetString("ManifestForm___AreYouSureRemoveRequiredFile") : Global.GetString("ManifestForm___AreYouSureRemoveFile"));
+		}
+		else if (list.Count == 0)
+		{
+			empty = Global.GetString("ManifestForm___AreYouSureRemoveFiles");
+		}
+		else if (list.Count == listView.SelectedItems.Count)
+		{
+			empty = Global.GetString("ManifestForm___AreYouSureRemoveRequiredFiles");
+		}
+		else
+		{
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.Append(Global.GetString("ManifestForm___NumberOfSelectedFiles"));
+			stringBuilder.Append(": ");
+			stringBuilder.Append(listView.SelectedItems.Count.ToString());
+			stringBuilder.Append("\r\n");
+			stringBuilder.Append(Global.GetString("ManifestForm___NumberOfSelectedFilesRequired"));
+			stringBuilder.Append(": ");
+			stringBuilder.Append(list.Count.ToString());
+			stringBuilder.Append("\r\n\r\n");
+			int num = 0;
+			foreach (string item in list)
+			{
+				if (num >= 10)
+				{
+					stringBuilder.AppendLine("...");
+					break;
+				}
+				stringBuilder.AppendLine(item);
+				num++;
+			}
+			stringBuilder.Append("\r\n");
+			stringBuilder.Append(Global.GetString("ManifestForm___AreYouSureRemoveReqFiles"));
+			empty = stringBuilder.ToString();
+		}
+		MessageBoxIcon messageBoxIcon = ((list.Count > 0) ? MessageBoxIcon.Exclamation : MessageBoxIcon.Question);
+		if (MessageBox.Show(this, empty, empty2, MessageBoxButtons.YesNo, messageBoxIcon) == DialogResult.Yes)
+		{
+			array2 = array;
+			for (int i = 0; i < array2.Length; i++)
+			{
+				ListViewItem listViewItem2 = (ListViewItem)array2[i];
+				AspenPart aspenPart2 = listViewItem2.Tag as AspenPart;
+				m_Package.DeletePart(aspenPart2.Uri);
+				listView.Items.Remove(listViewItem2);
+			}
+			UpdateStatus();
+		}
+	}
+
+	private void ViewSelectedPart()
+	{
+		IPart part = null;
+		if (m_RootTextBoxSelected)
+		{
+			part = m_Package.RootPart;
+		}
+		else
+		{
+			if (fileListView.SelectedIndices.Count <= 0)
+			{
+				if (fileListViewForLinks.SelectedIndices.Count == 0)
+				{
+					return;
+				}
+				IPart part2 = fileListViewForLinks.SelectedItems[0].Tag as IPart;
+				try
+				{
+					if (!File.Exists(part2.Uri))
+					{
+						MessageBox.Show(Global.GetString("ManifestForm___LinkedFileNotExist"), _aspenCompoundFile, MessageBoxButtons.OK, MessageBoxIcon.Hand);
+					}
+					else
+					{
+						LaunchAppFile(part2.Uri, waitFinish: true);
+					}
+					return;
+				}
+				catch (Exception ex)
+				{
+					MessageBox.Show(string.Format("{0}: {1}", Global.GetString("ManifestForm___ErrorLaunchingFile"), ex.Message), _aspenCompoundFile, MessageBoxButtons.OK, MessageBoxIcon.Hand);
+					return;
+				}
+			}
+			part = fileListView.SelectedItems[0].Tag as IPart;
+		}
+		if (part == null)
+		{
+			return;
+		}
+		string text = CreateTemporaryDirectory();
+		try
+		{
+			string filePath = Path.Combine(text, part.Name);
+			part.SaveToFile(filePath);
+			LaunchAppFile(filePath, waitFinish: true);
+		}
+		finally
+		{
+			try
+			{
+				Directory.Delete(text, recursive: true);
+			}
+			catch
+			{
+			}
+		}
+	}
+
+	private void LinkToEmbedResponse()
+	{
+		List<string> list = new List<string>();
+		List<string> list2 = new List<string>();
+		if (fileListViewForLinks.SelectedItems.Count == 0)
+		{
+			return;
+		}
+		List<AspenPart> list3 = new List<AspenPart>();
+		foreach (ListViewItem selectedItem in fileListViewForLinks.SelectedItems)
+		{
+			if (selectedItem.Tag is AspenPart)
+			{
+				list3.Add(selectedItem.Tag as AspenPart);
+			}
+		}
+		foreach (AspenPart item in list3)
+		{
+			if (item != null)
+			{
+				string uri = item.Uri;
+				if (File.Exists(uri))
+				{
+					list.Add(uri);
+				}
+				else
+				{
+					list2.Add(uri);
+				}
+			}
+		}
+		int num = list.Count + list2.Count;
+		if (num < 1)
+		{
+			return;
+		}
+		if (list.Count == 0)
+		{
+			StringBuilder stringBuilder = new StringBuilder();
+			if (num > 1)
+			{
+				stringBuilder.Append(Global.GetString("ManifestForm___NoneOfFilesToEmbedFound"));
+			}
+			else
+			{
+				stringBuilder.Append(string.Format("{0} ({1}).", Global.GetString("ManifestForm___FileToEmbedNotFound"), list2[0]));
+			}
+			MessageBox.Show(stringBuilder.ToString(), _aspenCompoundFile, MessageBoxButtons.OK, MessageBoxIcon.Hand);
+			return;
+		}
+		StringBuilder stringBuilder2 = new StringBuilder();
+		if (list.Count > 0 && list2.Count > 0)
+		{
+			stringBuilder2.Append(Global.GetString("ManifestForm___NumLinkedFilesChoseToEmbed"));
+			stringBuilder2.Append(": ");
+			stringBuilder2.Append(num.ToString());
+			stringBuilder2.Append("\r\n");
+			stringBuilder2.Append(Global.GetString("ManifestForm___LinkedFilesNotFoundAtSpecifiedPaths"));
+			stringBuilder2.Append(string.Format(" ({0} {1}):", list2.Count, Global.GetString("ManifestForm___total")));
+			stringBuilder2.Append("\r\n");
+			int num2 = 0;
+			foreach (string item2 in list2)
+			{
+				stringBuilder2.Append("\r\n");
+				if (num2 > 9)
+				{
+					stringBuilder2.Append(string.Format("...{0}", Global.GetString("ManifestForm___MoreFiles")));
+					break;
+				}
+				stringBuilder2.Append(item2);
+				num2++;
+			}
+			stringBuilder2.Append("\r\n\r\n");
+			string value = ((list2.Count > 1) ? Global.GetString("ManifestForm___DoYouWantToEmbedFilesFound") : Global.GetString("ManifestForm___DoYouWantToEmbedFileFound"));
+			stringBuilder2.Append(value);
+		}
+		else
+		{
+			if (num > 1)
+			{
+				stringBuilder2.Append(Global.GetString("ManifestForm___YouSelectedToEmbedLinkedFiles"));
+			}
+			else
+			{
+				stringBuilder2.Append(Global.GetString("ManifestForm___YouSelectedToEmbedLinkedFile"));
+			}
+			stringBuilder2.Append(":\r\n\r\n");
+			int num3 = 0;
+			foreach (string item3 in list)
+			{
+				if (num3 > 9)
+				{
+					stringBuilder2.Append(string.Format("...{0}", Global.GetString("ManifestForm___MoreFiles")));
+					break;
+				}
+				stringBuilder2.Append(item3);
+				num3++;
+			}
+			stringBuilder2.Append("\r\n\r\n");
+			stringBuilder2.Append(Global.GetString("ManifestForm___DoYouWantToContinue"));
+		}
+		if (MessageBox.Show(stringBuilder2.ToString(), _aspenCompoundFile, MessageBoxButtons.YesNoCancel, (list2.Count > 0) ? MessageBoxIcon.Hand : MessageBoxIcon.None) != DialogResult.Yes)
+		{
+			return;
+		}
+		List<string> list4 = AddEmbeddedPart(list.ToArray());
+		foreach (string item4 in list)
+		{
+			if (!list4.Contains(item4))
+			{
+				continue;
+			}
+			try
+			{
+				if (m_Package.DeletePart(item4))
+				{
+					RemoveListViewItem(item4, isLinkItem: true);
+				}
+			}
+			catch
+			{
+			}
+		}
+		UpdateStatus();
+	}
+
+	private void RemoveListViewItem(string path, bool isLinkItem)
+	{
+		ListView listView = null;
+		listView = (isLinkItem ? fileListViewForLinks : fileListView);
+		foreach (ListViewItem item in listView.Items)
+		{
+			AspenPart aspenPart = null;
+			if (item.Tag != null && item.Tag is AspenPart)
+			{
+				aspenPart = item.Tag as AspenPart;
+			}
+			if (aspenPart != null && string.Compare(aspenPart.Uri, path, StringComparison.InvariantCultureIgnoreCase) == 0)
+			{
+				try
+				{
+					listView.Items.Remove(item);
+				}
+				catch
+				{
+				}
+			}
+		}
+	}
+
+	private ListViewItem GetItem(IPart part)
+	{
+		string[] obj = new string[5]
+		{
+			GetPartNameForList(part),
+			part.FilePath,
+			null,
+			null,
+			null
+		};
+		string text = part.ContentType;
+		if (string.IsNullOrEmpty(text))
+		{
+			string extension = Path.GetExtension(part.Name);
+			if (!string.IsNullOrEmpty(extension))
+			{
+				uint pcchOut = 0u;
+				NativeMethods.AssocQueryString(NativeMethods.AssocF.Init_DefaultToStar, NativeMethods.AssocStr.FriendlyDocName, extension, null, null, ref pcchOut);
+				StringBuilder stringBuilder = new StringBuilder((int)pcchOut);
+				NativeMethods.AssocQueryString(NativeMethods.AssocF.Init_DefaultToStar, NativeMethods.AssocStr.FriendlyDocName, extension, null, stringBuilder, ref pcchOut);
+				text = stringBuilder.ToString();
+			}
+		}
+		obj[2] = text;
+		obj[3] = part.LastModified.ToString("g");
+		obj[4] = $"{part.Size:n0}";
+		ListViewItem listViewItem = new ListViewItem(obj);
+		listViewItem.Tag = part;
+		if (part.IsLinkOnly && !File.Exists(part.Uri))
+		{
+			listViewItem.BackColor = Color.Pink;
+		}
+		return listViewItem;
+	}
+
+	private void removeButton_Click(object sender, EventArgs e)
+	{
+		RemoveSelectedPart();
+	}
+
+	private void fileListView_SelectedIndexChanged(object sender, EventArgs e)
+	{
+		int count = fileListView.SelectedItems.Count;
+		removeButton.Enabled = count > 0;
+		fileListViewForLinks.SelectedIndices.Clear();
+		UpdateButtonsEnabled();
+	}
+
+	private void moreButton_Click(object sender, EventArgs e)
+	{
+		using MoreInfoForm moreInfoForm = new MoreInfoForm(m_Package);
+		moreInfoForm.ShowDialog(this);
+	}
+
+	private void UpdateForButtonLayout()
+	{
+		cmdClose.Top = flowBtnsLeft.Top + addButton.Top;
+		int num = flowBtnsLeft.Left + flowBtnsLeft.Width - cmdClose.Left + 32;
+		if (num > 0)
+		{
+			base.Width += num;
+		}
+	}
+
+	private void viewButton_Click(object sender, EventArgs e)
+	{
+		ViewSelectedPart();
+	}
+
+	private static string CreateTemporaryDirectory()
+	{
+		string tempPath = Path.GetTempPath();
+		tempPath += "AspenCompFile";
+		string text = tempPath;
+		int num = 2;
+		while (Directory.Exists(text))
+		{
+			text = tempPath + num++;
+		}
+		Directory.CreateDirectory(text);
+		return text;
+	}
+
+	private static void LaunchAppFile(string filePath, bool waitFinish)
+	{
+		Process process = new Process();
+		try
+		{
+			process.StartInfo.UseShellExecute = true;
+			process.StartInfo.WorkingDirectory = Path.GetDirectoryName(filePath);
+			process.StartInfo.FileName = filePath;
+			process.StartInfo.Arguments = filePath;
+			process.Start();
+			if (waitFinish)
+			{
+				process.WaitForExit();
+			}
+		}
+		catch (Exception ex)
+		{
+			MessageBox.Show(string.Format("{0}: {1}", Global.GetString("ManifestForm___ErrorWhileAttemptingToViewFile"), ex.Message), _aspenCompoundFile, MessageBoxButtons.OK, MessageBoxIcon.Hand);
+		}
+	}
+
+	private void extractButton_Click(object sender, EventArgs e)
+	{
+		ExtractButtonResponse();
+	}
+
+	private void ExtractButtonResponse()
+	{
+		if (fileListView.SelectedIndices.Count == 0 && !m_RootTextBoxSelected)
+		{
+			return;
+		}
+		FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog();
+		if (folderBrowserDialog.ShowDialog() != DialogResult.OK)
+		{
+			return;
+		}
+		List<IPart> list = new List<IPart>();
+		List<string> list2 = new List<string>();
+		if (m_RootTextBoxSelected)
+		{
+			IPart rootPart = m_Package.RootPart;
+			if (rootPart != null)
+			{
+				list.Add(rootPart);
+				list2.Add(Path.Combine(folderBrowserDialog.SelectedPath, rootPart.Name));
+			}
+		}
+		for (int i = 0; i < fileListView.SelectedIndices.Count; i++)
+		{
+			if (fileListView.SelectedItems[i].Tag is IPart)
+			{
+				list.Add(fileListView.SelectedItems[i].Tag as IPart);
+				list2.Add(Path.Combine(folderBrowserDialog.SelectedPath, (fileListView.SelectedItems[i].Tag as IPart).Name));
+			}
+		}
+		int count = list.Count;
+		int num = 0;
+		for (int j = 0; j < list.Count; j++)
+		{
+			try
+			{
+				list[j].SaveToFile(list2[j]);
+			}
+			catch
+			{
+				num++;
+			}
+		}
+		if (num == 0)
+		{
+			MessageBox.Show((list.Count == 1) ? Global.GetString("ManifestForm___FileSavedSuccessfully") : Global.GetString("ManifestForm___FilesSavedSuccessfully"), _aspenCompoundFile, MessageBoxButtons.OK, MessageBoxIcon.None);
+			return;
+		}
+		string empty = string.Empty;
+		empty = ((list.Count != 1) ? string.Format("{0}\r\n\r\n{1}: {2}\r\n{3}: {4}", Global.GetString("ManifestForm___SomeFilesWereNotSavedSuccessfully"), Global.GetString("ManifestForm___NumOfFilesAttemptedSaved"), count, Global.GetString("ManifestForm___NumOfFilesNotSavedOK"), num) : Global.GetString("ManifestForm___FileNotSavedSuccessfully"));
+		MessageBox.Show(empty, _aspenCompoundFile, MessageBoxButtons.OK, MessageBoxIcon.Hand);
+	}
+
+	private void cmdClose_Click(object sender, EventArgs e)
+	{
+		Close();
+	}
+
+	private void UpdateAddButtonsEnabled()
+	{
+		if (m_Package == null)
+		{
+			addButton.Enabled = false;
+			addButton.Text = string.Format("{0}...", Global.GetString("ManifestForm___AddRootFile"));
+		}
+		else if (m_Package.RootUri.Length < 1)
+		{
+			addButton.Enabled = true;
+			addButton.Text = string.Format("{0}...", Global.GetString("ManifestForm___AddRootFile"));
+		}
+		else
+		{
+			addButton.Enabled = true;
+			addButton.Text = string.Format("{0}...", Global.GetString("ManifestForm___EmbedNewFiles"));
+		}
+	}
+
+	private void fileListViewForLinks_SelectedIndexChanged(object sender, EventArgs e)
+	{
+		int count = fileListViewForLinks.SelectedItems.Count;
+		removeButton.Enabled = count > 0;
+		Button button = viewButton;
+		bool enabled = (extractButton.Enabled = count == 1);
+		button.Enabled = enabled;
+		fileListView.SelectedIndices.Clear();
+		UpdateButtonsEnabled();
+	}
+
+	private void rootTextBox_Enter(object sender, EventArgs e)
+	{
+		SetRootFileTextboxSelected(isSelected: true);
+		bool enabled = m_Package.RootPart != null;
+		fileListView.SelectedIndices.Clear();
+		fileListViewForLinks.SelectedIndices.Clear();
+		removeButton.Enabled = false;
+		viewButton.Enabled = enabled;
+		extractButton.Enabled = enabled;
+		moreButton.Enabled = enabled;
+	}
+
+	private void rootTextBox_Leave(object sender, EventArgs e)
+	{
+	}
+
+	private void fileListView_Enter(object sender, EventArgs e)
+	{
+		SetRootFileTextboxSelected(isSelected: false);
+		UpdateButtonsEnabled();
+	}
+
+	private void fileListViewForLinks_Enter(object sender, EventArgs e)
+	{
+		SetRootFileTextboxSelected(isSelected: false);
+		UpdateButtonsEnabled();
+	}
+
+	private void rootTextBox_TextChanged(object sender, EventArgs e)
+	{
+	}
+
+	private void ManifestForm_HelpRequested(object sender, HelpEventArgs hlpevent)
+	{
+		string helpFileFullPath = GetHelpFileFullPath();
+		if (string.IsNullOrEmpty(helpFileFullPath))
+		{
+			return;
+		}
+		try
+		{
+			if (File.Exists(helpFileFullPath))
+			{
+				Help.ShowHelp(this, helpFileFullPath);
+			}
+		}
+		catch
+		{
+		}
+	}
+
+	private string GetHelpFileFullPath()
+	{
+		try
+		{
+			RegistryKey localMachine = Registry.LocalMachine;
+			if (localMachine == null)
+			{
+				return string.Empty;
+			}
+			RegistryKey registryKey = localMachine.OpenSubKey("Software");
+			if (registryKey == null)
+			{
+				return string.Empty;
+			}
+			registryKey = registryKey.OpenSubKey("Microsoft");
+			if (registryKey == null)
+			{
+				return string.Empty;
+			}
+			registryKey = registryKey.OpenSubKey("Windows");
+			if (registryKey == null)
+			{
+				return string.Empty;
+			}
+			registryKey = registryKey.OpenSubKey("HTML Help");
+			if (registryKey == null)
+			{
+				return string.Empty;
+			}
+			string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(m_HelpFileRegKeyName);
+			if (string.IsNullOrEmpty(fileNameWithoutExtension))
+			{
+				return string.Empty;
+			}
+			object value = registryKey.GetValue(fileNameWithoutExtension);
+			if (value == null)
+			{
+				return string.Empty;
+			}
+			return Path.Combine(value.ToString().Trim(), m_HelpFileRegKeyName);
+		}
+		catch
+		{
+			return string.Empty;
+		}
+	}
+
+	private void linkButton_Click(object sender, EventArgs e)
+	{
+		AddLinkedPart();
+	}
+
+	private void contextMenuLink_Opening(object sender, CancelEventArgs e)
+	{
+	}
+
+	private void contextMenuRemove_Click(object sender, EventArgs e)
+	{
+		if (fileListView.SelectedIndices.Count != 0)
+		{
+			RemoveSelectedPart();
+		}
+	}
+
+	private void contextMenuLinkRemove_Click(object sender, EventArgs e)
+	{
+		if (fileListViewForLinks.SelectedIndices.Count != 0)
+		{
+			RemoveSelectedPart();
+		}
+	}
+
+	private void contextMenuView_Click(object sender, EventArgs e)
+	{
+		if (fileListView.SelectedIndices.Count != 0)
+		{
+			ViewSelectedPart();
+		}
+	}
+
+	private void contextMenuLinkView_Click(object sender, EventArgs e)
+	{
+		if (fileListViewForLinks.SelectedItems.Count != 0)
+		{
+			ViewSelectedPart();
+		}
+	}
+
+	private void contextMenuEmbedNew_Click(object sender, EventArgs e)
+	{
+		AddEmbeddedPart();
+	}
+
+	private void contextMenuLinkAdd_Click(object sender, EventArgs e)
+	{
+		AddLinkedPart();
+	}
+
+	private void toolStripMenuItem1_Click(object sender, EventArgs e)
+	{
+		if (fileListViewForLinks.SelectedIndices.Count != 0)
+		{
+			LinkToEmbedResponse();
+		}
+	}
+
+	private void contextMenuExtract_Click(object sender, EventArgs e)
+	{
+		if (fileListView.SelectedIndices.Count != 0)
+		{
+			ExtractButtonResponse();
+		}
+	}
+
+	private void ManifestForm_Load(object sender, EventArgs e)
+	{
+		UpdateForButtonLayout();
+	}
+}
+internal static class NativeMethods
+{
+	[Flags]
+	public enum AssocF
+	{
+		Init_NoRemapCLSID = 1,
+		Init_ByExeName = 2,
+		Open_ByExeName = 2,
+		Init_DefaultToStar = 4,
+		Init_DefaultToFolder = 8,
+		NoUserSettings = 0x10,
+		NoTruncate = 0x20,
+		Verify = 0x40,
+		RemapRunDll = 0x80,
+		NoFixUps = 0x100,
+		IgnoreBaseClass = 0x200
+	}
+
+	[Flags]
+	public enum AssocStr
+	{
+		Command = 1,
+		Executable = 2,
+		FriendlyDocName = 3,
+		FriendlyAppName = 4,
+		NoOpen = 5,
+		ShellNewValue = 6,
+		DDECommand = 7,
+		DDEIfExec = 8,
+		DDEApplication = 9,
+		DDETopic = 0xA
+	}
+
+	[DllImport("shlwapi.dll", CharSet = CharSet.Auto)]
+	public static extern bool PathRelativePathTo([Out] StringBuilder pszPath, [In] string pszFrom, [In] uint dwAttrFrom, [In] string pszTo, [In] uint dwAttrTo);
+
+	[DllImport("shlwapi.dll", CharSet = CharSet.Auto)]
+	public static extern uint AssocQueryString([In] AssocF flags, [In] AssocStr str, [In] string pszAssoc, [In] string pszExtra, [Out] StringBuilder pszOut, [In][Out] ref uint pcchOut);
+}
+[ComVisible(true)]
+[Guid("D6040D47-D9E7-40A8-9DB8-0590E11CB0F0")]
+public interface IPackage
+{
+	int ManifestVersion { get; }
+
+	string ID { get; }
+
+	string LocalFileName { get; }
+
+	string OriginalFileName { get; }
+
+	IPart RootPart { get; set; }
+
+	string RootUri { get; }
+
+	string Comments { get; set; }
+
+	string Prerequsities { get; set; }
+
+	void Close();
+
+	IPart CreateRootPart(string partUri, string contentType);
+
+	IPart CreateRootPartWithSpecifiedUri(string absPartUriInCompfile, string actualPathToFileOnDisk, string contentType);
+
+	bool SetRootUri(string path);
+
+	IPart CreatePart(string absPath, string contentType, bool isRequired);
+
+	IPart CreatePart(string absPath, string contentType, bool isRequired, bool forcePartToBeLinked);
+
+	IPart CreatePartWithSpecifiedUri(string uriForPartInCompFile, string absPathToFileOnDisk, string contentType, bool isRequired);
+
+	IPart CreateEmbeddedPart(string absPathToFileOnDisk, string contentType, bool isRequired, string uriForPartInCompFile);
+
+	IPart CreateEmbeddedPart(string absPathToFileOnDisk, string contentType, bool isRequired);
+
+	IPart CreateLinkedPart(string absPathToFileOnDisk, string contentType, bool isRequired);
+
+	bool DeletePart(string partUri);
+
+	IPart GetPart(string partUri);
+
+	IPart[] GetParts();
+
+	bool Open(string filePath, FileMode mode);
+
+	bool Open(string filePath, FileMode mode, bool checkWriteAccess);
+
+	bool OpenStream(Stream stream);
+
+	bool SaveToDirectory(string dirPath);
+
+	bool RefreshContents();
+
+	bool ShowManifest(IntPtr parentWindow);
+}
+[ComVisible(true)]
+[Guid("9E57018A-54AC-44A0-9A89-007BA04C6F7C")]
+public interface IPart
+{
+	string ContentType { get; }
+
+	string FilePath { get; }
+
+	bool IsRoot { get; }
+
+	bool IsLinkOnly { get; }
+
+	string Name { get; set; }
+
+	string Uri { get; }
+
+	bool IsRequired { get; set; }
+
+	bool AddedByUser { get; set; }
+
+	DateTime LastModified { get; }
+
+	long Size { get; }
+
+	Stream GetStream(FileMode mode);
+
+	bool LoadFromFile(string filePath);
+
+	bool LoadFromData(byte[] data);
+
+	bool SaveToFile(string filePath);
+
+	byte[] SaveToData();
+
+	bool Refresh();
+
+	bool SetAbsoluteUri(string path);
+}
+[GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
+[DebuggerNonUserCode]
+[CompilerGenerated]
+internal class Strings
+{
+	private static ResourceManager resourceMan;
+
+	private static CultureInfo resourceCulture;
+
+	[EditorBrowsable(EditorBrowsableState.Advanced)]
+	internal static ResourceManager ResourceManager
+	{
+		get
+		{
+			if (resourceMan == null)
+			{
+				resourceMan = new ResourceManager("AspenTech.CompositeDoc.Strings", typeof(Strings).Assembly);
+			}
+			return resourceMan;
+		}
+	}
+
+	[EditorBrowsable(EditorBrowsableState.Advanced)]
+	internal static CultureInfo Culture
+	{
+		get
+		{
+			return resourceCulture;
+		}
+		set
+		{
+			resourceCulture = value;
+		}
+	}
+
+	internal static string CommentTextEncoder___LaterEncodingMsg => ResourceManager.GetString("CommentTextEncoder___LaterEncodingMsg", resourceCulture);
+
+	internal static string ManifestForm___AddRootFile => ResourceManager.GetString("ManifestForm___AddRootFile", resourceCulture);
+
+	internal static string ManifestForm___AllFiles => ResourceManager.GetString("ManifestForm___AllFiles", resourceCulture);
+
+	internal static string ManifestForm___AreYouSureRemoveFile => ResourceManager.GetString("ManifestForm___AreYouSureRemoveFile", resourceCulture);
+
+	internal static string ManifestForm___AreYouSureRemoveFiles => ResourceManager.GetString("ManifestForm___AreYouSureRemoveFiles", resourceCulture);
+
+	internal static string ManifestForm___AreYouSureRemoveReqFiles => ResourceManager.GetString("ManifestForm___AreYouSureRemoveReqFiles", resourceCulture);
+
+	internal static string ManifestForm___AreYouSureRemoveRequiredFile => ResourceManager.GetString("ManifestForm___AreYouSureRemoveRequiredFile", resourceCulture);
+
+	internal static string ManifestForm___AreYouSureRemoveRequiredFiles => ResourceManager.GetString("ManifestForm___AreYouSureRemoveRequiredFiles", resourceCulture);
+
+	internal static string ManifestForm___Bytes => ResourceManager.GetString("ManifestForm___Bytes", resourceCulture);
+
+	internal static string ManifestForm___DoYouWantToContinue => ResourceManager.GetString("ManifestForm___DoYouWantToContinue", resourceCulture);
+
+	internal static string ManifestForm___DoYouWantToEmbedFileFound => ResourceManager.GetString("ManifestForm___DoYouWantToEmbedFileFound", resourceCulture);
+
+	internal static string ManifestForm___DoYouWantToEmbedFilesFound => ResourceManager.GetString("ManifestForm___DoYouWantToEmbedFilesFound", resourceCulture);
+
+	internal static string ManifestForm___EmbedNewFiles => ResourceManager.GetString("ManifestForm___EmbedNewFiles", resourceCulture);
+
+	internal static string ManifestForm___ErrorLaunchingFile => ResourceManager.GetString("ManifestForm___ErrorLaunchingFile", resourceCulture);
+
+	internal static string ManifestForm___ErrorWhileAttemptingToViewFile => ResourceManager.GetString("ManifestForm___ErrorWhileAttemptingToViewFile", resourceCulture);
+
+	internal static string ManifestForm___FileMissing => ResourceManager.GetString("ManifestForm___FileMissing", resourceCulture);
+
+	internal static string ManifestForm___FileNotSavedSuccessfully => ResourceManager.GetString("ManifestForm___FileNotSavedSuccessfully", resourceCulture);
+
+	internal static string ManifestForm___Files => ResourceManager.GetString("ManifestForm___Files", resourceCulture);
+
+	internal static string ManifestForm___FileSavedSuccessfully => ResourceManager.GetString("ManifestForm___FileSavedSuccessfully", resourceCulture);
+
+	internal static string ManifestForm___FilesNotAdded => ResourceManager.GetString("ManifestForm___FilesNotAdded", resourceCulture);
+
+	internal static string ManifestForm___FilesSavedSuccessfully => ResourceManager.GetString("ManifestForm___FilesSavedSuccessfully", resourceCulture);
+
+	internal static string ManifestForm___FilesWereNotSavedSuccessfully => ResourceManager.GetString("ManifestForm___FilesWereNotSavedSuccessfully", resourceCulture);
+
+	internal static string ManifestForm___FileToEmbedNotFound => ResourceManager.GetString("ManifestForm___FileToEmbedNotFound", resourceCulture);
+
+	internal static string ManifestForm___LinkedFileNotExist => ResourceManager.GetString("ManifestForm___LinkedFileNotExist", resourceCulture);
+
+	internal static string ManifestForm___LinkedFilesNotFoundAtSpecifiedPaths => ResourceManager.GetString("ManifestForm___LinkedFilesNotFoundAtSpecifiedPaths", resourceCulture);
+
+	internal static string ManifestForm___MoreFiles => ResourceManager.GetString("ManifestForm___MoreFiles", resourceCulture);
+
+	internal static string ManifestForm___NoneOfFilesToEmbedFound => ResourceManager.GetString("ManifestForm___NoneOfFilesToEmbedFound", resourceCulture);
+
+	internal static string ManifestForm___NumberOfSelectedFiles => ResourceManager.GetString("ManifestForm___NumberOfSelectedFiles", resourceCulture);
+
+	internal static string ManifestForm___NumberOfSelectedFilesRequired => ResourceManager.GetString("ManifestForm___NumberOfSelectedFilesRequired", resourceCulture);
+
+	internal static string ManifestForm___NumLinkedFilesChoseToEmbed => ResourceManager.GetString("ManifestForm___NumLinkedFilesChoseToEmbed", resourceCulture);
+
+	internal static string ManifestForm___NumOfFilesAttemptedSaved => ResourceManager.GetString("ManifestForm___NumOfFilesAttemptedSaved", resourceCulture);
+
+	internal static string ManifestForm___NumOfFilesNotSavedOK => ResourceManager.GetString("ManifestForm___NumOfFilesNotSavedOK", resourceCulture);
+
+	internal static string ManifestForm___OneByte => ResourceManager.GetString("ManifestForm___OneByte", resourceCulture);
+
+	internal static string ManifestForm___OneFile => ResourceManager.GetString("ManifestForm___OneFile", resourceCulture);
+
+	internal static string ManifestForm___RemoveFilesTitle => ResourceManager.GetString("ManifestForm___RemoveFilesTitle", resourceCulture);
+
+	internal static string ManifestForm___RemoveFileTitle => ResourceManager.GetString("ManifestForm___RemoveFileTitle", resourceCulture);
+
+	internal static string ManifestForm___SelectFilesToAddTitle => ResourceManager.GetString("ManifestForm___SelectFilesToAddTitle", resourceCulture);
+
+	internal static string ManifestForm___SelectFilesToLinkTitle => ResourceManager.GetString("ManifestForm___SelectFilesToLinkTitle", resourceCulture);
+
+	internal static string ManifestForm___SomeFilesWereNotSavedSuccessfully => ResourceManager.GetString("ManifestForm___SomeFilesWereNotSavedSuccessfully", resourceCulture);
+
+	internal static string ManifestForm___total => ResourceManager.GetString("ManifestForm___total", resourceCulture);
+
+	internal static string ManifestForm___YouSelectedToEmbedLinkedFile => ResourceManager.GetString("ManifestForm___YouSelectedToEmbedLinkedFile", resourceCulture);
+
+	internal static string ManifestForm___YouSelectedToEmbedLinkedFiles => ResourceManager.GetString("ManifestForm___YouSelectedToEmbedLinkedFiles", resourceCulture);
+
+	internal Strings()
+	{
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

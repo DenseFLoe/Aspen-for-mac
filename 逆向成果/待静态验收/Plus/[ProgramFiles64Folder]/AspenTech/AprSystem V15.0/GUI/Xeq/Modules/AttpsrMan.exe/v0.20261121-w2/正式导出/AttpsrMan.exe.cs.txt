@@ -1,0 +1,564 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Management;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Text;
+using System.Xml;
+using AspenTech.ColumnAnalysis.UserInterfaces.AttpsrWrapper;
+using AspenTech.ColumnAnalysis.UserInterfaces.CADataType;
+using Microsoft.Win32;
+using SMLib;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyTitle("AttpsrMan")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("Aspen Technology, Inc.")]
+[assembly: AssemblyProduct("AttpsrMan")]
+[assembly: AssemblyCopyright("Copyright © Aspen Technology 2022")]
+[assembly: AssemblyTrademark("")]
+[assembly: ComVisible(false)]
+[assembly: Guid("f16f6793-aca8-4776-8373-693abaf855db")]
+[assembly: AssemblyFileVersion("41.0.0.52")]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.52")]
+namespace AttpsrMan;
+
+internal class ATTPSREngine
+{
+	[DllImport("ATTPSR.DLL", CallingConvention = CallingConvention.Cdecl, EntryPoint = "TPSR_CreateTODMasterObj")]
+	public static extern IntPtr CreateTODMasterObj();
+
+	[DllImport("ATTPSR.DLL", CallingConvention = CallingConvention.Cdecl, EntryPoint = "TPSR_CreateTrayFromTODMasterObj")]
+	public static extern int CreateTrayFromTODMasterObj(IntPtr pTODMasterObj);
+
+	[DllImport("ATTPSR.DLL", CallingConvention = CallingConvention.Cdecl)]
+	public static extern bool TPSR_UpdateTrayForTODMasterObj(IntPtr pTODMasterObj, int ISECNO, int iTrayID, IntPtr IntTrayPrm, IntPtr RealTrayPrm);
+
+	[DllImport("ATTPSR.DLL", CallingConvention = CallingConvention.Cdecl)]
+	public static extern bool TPSR_GetTrayInfoForTODMasterObj(IntPtr pTODMasterObj, int iTrayID, out IntPtr pdTLf, out IntPtr pdTVf, out IntPtr pdTL_weep, out IntPtr pdTV_weep, out IntPtr pdTL_ult, out IntPtr pdTV_ult, out IntPtr pdTL_dump, out IntPtr pdTV_dump, out IntPtr pdTL_ent, out IntPtr pdTV_ent, out IntPtr pdTL_dcb, out IntPtr pdTV_dcb, out IntPtr pdTL_maxdp, out IntPtr pdTV_maxdp, out IntPtr pdTL_comb, out IntPtr pdTV_comb, out IntPtr pdTL_low, out IntPtr pdTV_low, out IntPtr pdTL_high, out IntPtr pdTV_high, out IntPtr pdTL_range, out IntPtr pdTV_range, out IntPtr piTMechanism, out IntPtr pdTOpPt, out int pjmax, out IntPtr pdTraygeom, out IntPtr piTMessages);
+
+	[DllImport("ATTPSR.DLL", CallingConvention = CallingConvention.Cdecl, EntryPoint = "TPSR_IsAllTraysFromTODMasterObjReady")]
+	public static extern bool IsAllTraysFromTODMasterObjReady(IntPtr pTODMasterObj);
+
+	[DllImport("ATTPSR.DLL", CallingConvention = CallingConvention.Cdecl, EntryPoint = "TPSR_DestroyTODMasterObj")]
+	public static extern void DestroyTODMasterObj(IntPtr pTODMasterObj);
+
+	[DllImport("ATTPSR.DLL", CallingConvention = CallingConvention.Cdecl)]
+	public static extern void ATTPSR_TOD_DEFAULT(ref int pd_IRATE, ref double pd_L, ref double pd_V, ref double pd_RHOL, ref double pd_RHOV, IntPtr pd_INTINPUT, IntPtr pd_REALINPUT, IntPtr INTOUTPUT, IntPtr pd_REALOUTPUT, IntPtr pd_arrInt);
+
+	[DllImport("ATTPSR.DLL", CallingConvention = CallingConvention.Cdecl)]
+	public static extern void ATTPSR_TOD_DCBALANCE(IntPtr INTINPUT, IntPtr REALINPUT, IntPtr INTOUTPUT, IntPtr REALOUTPUT, IntPtr arrInt);
+
+	[DllImport("ATTPSR.DLL", CallingConvention = CallingConvention.Cdecl)]
+	public static extern void ATTPSR_TOD_GEOMETRY(IntPtr INTINPUT, IntPtr REALINPUT, IntPtr INTOUTPUT, IntPtr REALOUTPUT, IntPtr arrInt);
+
+	[DllImport("ATTPSR.DLL", CallingConvention = CallingConvention.Cdecl)]
+	public static extern void ATTPSR_TOD_VALVESNCAPS(ref int iwhich, ref int number, ref double density, ref double d, ref double fd);
+}
+internal class AttpsrManWrapper
+{
+	private IntPtr pdTLf;
+
+	private IntPtr pdTVf;
+
+	private IntPtr pdTL_weep;
+
+	private IntPtr pdTV_weep;
+
+	private IntPtr pdTL_ult;
+
+	private IntPtr pdTV_ult;
+
+	private IntPtr pdTL_dump;
+
+	private IntPtr pdTV_dump;
+
+	private IntPtr pdTL_ent;
+
+	private IntPtr pdTV_ent;
+
+	private IntPtr pdTL_dcb;
+
+	private IntPtr pdTV_dcb;
+
+	private IntPtr pdTL_maxdp;
+
+	private IntPtr pdTV_maxdp;
+
+	private IntPtr pdTL_comb;
+
+	private IntPtr pdTV_comb;
+
+	private IntPtr piTMechanism;
+
+	private IntPtr pdTL_low;
+
+	private IntPtr pdTV_low;
+
+	private IntPtr pdTL_high;
+
+	private IntPtr pdTV_high;
+
+	private IntPtr pdTL_range;
+
+	private IntPtr pdTV_range;
+
+	private IntPtr pdTOpPt;
+
+	private IntPtr pdTraygeom;
+
+	private IntPtr piTMessages;
+
+	private int dimension;
+
+	private int IntArrayLength = 25;
+
+	private int RealArrayLength = 42;
+
+	private int MessageArrayLength = 100;
+
+	internal TrayReturnData GetTrayHydroProfileAndCurvesData(int[] IntTrayPrm, double[] RealTrayPrm)
+	{
+		TrayReturnData result = null;
+		IntPtr intPtr = Marshal.AllocHGlobal(4 * IntArrayLength);
+		IntPtr intPtr2 = Marshal.AllocHGlobal(8 * RealArrayLength);
+		Marshal.Copy(IntTrayPrm, 0, intPtr, IntTrayPrm.Length);
+		Marshal.Copy(RealTrayPrm, 0, intPtr2, RealTrayPrm.Length);
+		IntPtr pTODMasterObj = ATTPSREngine.CreateTODMasterObj();
+		try
+		{
+			int iSECNO = 0;
+			int iTrayID = ATTPSREngine.CreateTrayFromTODMasterObj(pTODMasterObj);
+			ATTPSREngine.TPSR_UpdateTrayForTODMasterObj(pTODMasterObj, iSECNO, iTrayID, intPtr, intPtr2);
+			ATTPSREngine.TPSR_GetTrayInfoForTODMasterObj(pTODMasterObj, iTrayID, out pdTLf, out pdTVf, out pdTL_weep, out pdTV_weep, out pdTL_ult, out pdTV_ult, out pdTL_dump, out pdTV_dump, out pdTL_ent, out pdTV_ent, out pdTL_dcb, out pdTV_dcb, out pdTL_maxdp, out pdTV_maxdp, out pdTL_comb, out pdTV_comb, out pdTL_low, out pdTV_low, out pdTL_high, out pdTV_high, out pdTL_range, out pdTV_range, out piTMechanism, out pdTOpPt, out dimension, out pdTraygeom, out piTMessages);
+			result = ParseData();
+		}
+		catch (Exception)
+		{
+		}
+		finally
+		{
+			ATTPSREngine.DestroyTODMasterObj(pTODMasterObj);
+			pTODMasterObj = IntPtr.Zero;
+		}
+		return result;
+	}
+
+	private TrayReturnData ParseData()
+	{
+		TrayReturnData trayReturnData = new TrayReturnData();
+		int num = 125;
+		int num2 = 100;
+		double[] array = new double[dimension];
+		double[] array2 = new double[dimension];
+		double[] array3 = new double[dimension];
+		double[] array4 = new double[dimension];
+		double[] array5 = new double[dimension];
+		double[] array6 = new double[dimension];
+		double[] array7 = new double[dimension];
+		double[] array8 = new double[dimension];
+		double[] array9 = new double[dimension];
+		double[] array10 = new double[dimension];
+		double[] array11 = new double[dimension];
+		double[] array12 = new double[dimension];
+		double[] array13 = new double[dimension];
+		double[] array14 = new double[dimension];
+		double[] array15 = new double[dimension];
+		double[] array16 = new double[dimension];
+		int[] array17 = new int[dimension];
+		double[] array18 = new double[2];
+		double[] array19 = new double[2];
+		double[] array20 = new double[2];
+		double[] array21 = new double[2];
+		double[] array22 = new double[2];
+		double[] array23 = new double[2];
+		double[] array24 = new double[2];
+		double[] array25 = new double[num];
+		int[] array26 = new int[num2];
+		Marshal.Copy(pdTLf, array, 0, dimension);
+		Marshal.Copy(pdTVf, array2, 0, dimension);
+		Marshal.Copy(pdTL_weep, array3, 0, dimension);
+		Marshal.Copy(pdTV_weep, array4, 0, dimension);
+		Marshal.Copy(pdTL_ult, array5, 0, dimension);
+		Marshal.Copy(pdTV_ult, array6, 0, dimension);
+		Marshal.Copy(pdTL_dump, array7, 0, dimension);
+		Marshal.Copy(pdTV_dump, array8, 0, dimension);
+		Marshal.Copy(pdTL_ent, array9, 0, dimension);
+		Marshal.Copy(pdTV_ent, array10, 0, dimension);
+		Marshal.Copy(pdTL_dcb, array11, 0, dimension);
+		Marshal.Copy(pdTV_dcb, array12, 0, dimension);
+		Marshal.Copy(pdTL_maxdp, array13, 0, dimension);
+		Marshal.Copy(pdTV_maxdp, array14, 0, dimension);
+		Marshal.Copy(pdTL_comb, array15, 0, dimension);
+		Marshal.Copy(pdTV_comb, array16, 0, dimension);
+		Marshal.Copy(piTMechanism, array17, 0, dimension);
+		Marshal.Copy(pdTL_low, array18, 0, 2);
+		Marshal.Copy(pdTV_low, array19, 0, 2);
+		Marshal.Copy(pdTL_high, array20, 0, 2);
+		Marshal.Copy(pdTV_high, array21, 0, 2);
+		Marshal.Copy(pdTL_range, array22, 0, 2);
+		Marshal.Copy(pdTV_range, array23, 0, 2);
+		Marshal.Copy(pdTOpPt, array24, 0, 2);
+		Marshal.Copy(pdTraygeom, array25, 0, num);
+		Marshal.Copy(piTMessages, array26, 0, num2);
+		trayReturnData.Dimension = dimension;
+		trayReturnData.JetFloodCurveLiquidFlowPoints = array.ToList();
+		trayReturnData.JetFloodCurveVaporFlowPoints = array2.ToList();
+		trayReturnData.WeepingCurveLiquidFlowPoints = array3.ToList();
+		trayReturnData.WeepingCurveVaporFlowPoints = array4.ToList();
+		trayReturnData.UltimateCapacityCurveLiquidFlowPoints = array5.ToList();
+		trayReturnData.UltimateCapacityCurveVaporFlowPoints = array6.ToList();
+		trayReturnData.DumpCurveLiquidFlowPoints = array7.ToList();
+		trayReturnData.DumpCurveVaporFlowPoints = array8.ToList();
+		trayReturnData.MaximumEntrainmentCurveLiquidFlowPoints = array9.ToList();
+		trayReturnData.MaximumEntrainmentCurveVaporFlowPoints = array10.ToList();
+		trayReturnData.DowncomerBackupCurveLiquidFlowPoints = array11.ToList();
+		trayReturnData.DowncomerBackupCurveVaporFlowPoints = array12.ToList();
+		trayReturnData.MaximumAcceptablePressureDropCurveLiquidFlowPoints = array13.ToList();
+		trayReturnData.MaximumAcceptablePressureDropCurveVaporFlowPoints = array14.ToList();
+		trayReturnData.CombinedCurveLiquidFlowPoints = array15.ToList();
+		trayReturnData.CombinedCurveVaporFlowPoints = array16.ToList();
+		trayReturnData.Mechanism = array17.ToList();
+		trayReturnData.MinimumWeirLoadCurveLiquidFlowPoints = array18.ToList();
+		trayReturnData.MinimumWeirLoadCurveVaporFlowPoints = array19.ToList();
+		trayReturnData.MaximumWeirLoadCurveLiquidFlowPoints = array20.ToList();
+		trayReturnData.MaximumWeirLoadCurveVaporFlowPoints = array21.ToList();
+		trayReturnData.OperatingPointsLiquidFlow = array22.ToList();
+		trayReturnData.OperatingPointsVaporFlow = array23.ToList();
+		trayReturnData.ActualOperationPoint = array24.ToList();
+		trayReturnData.SummaryInfo = array25.ToList();
+		trayReturnData.Messages = array26.ToList();
+		return trayReturnData;
+	}
+
+	internal void GetTrayGeometry(int[] intInput, double[] realInput, int[] arrayInt, CABalancedData resultData)
+	{
+		IntPtr iNTOUTPUT = Marshal.AllocHGlobal(IntPtr.Size * 25);
+		IntPtr rEALOUTPUT = Marshal.AllocHGlobal(200);
+		IntPtr intPtr = Marshal.AllocHGlobal(IntPtr.Size * 25);
+		IntPtr intPtr2 = Marshal.AllocHGlobal(200);
+		IntPtr intPtr3 = Marshal.AllocHGlobal(IntPtr.Size * 25);
+		IntPtr[] array = new IntPtr[intInput.Length];
+		IntPtr[] array2 = new IntPtr[arrayInt.Length];
+		Array.Copy(intInput, array, intInput.Length);
+		Array.Copy(arrayInt, array2, arrayInt.Length);
+		Marshal.Copy(array, 0, intPtr, intInput.Length);
+		Marshal.Copy(realInput, 0, intPtr2, realInput.Length);
+		Marshal.Copy(array2, 0, intPtr3, arrayInt.Length);
+		ATTPSREngine.ATTPSR_TOD_GEOMETRY(intPtr, intPtr2, iNTOUTPUT, rEALOUTPUT, intPtr3);
+	}
+
+	internal List<GeometryResultsData> UpdateTrayGeometry(int nTray, List<TrayGeometryInputData> rInputDataAll)
+	{
+		IntPtr intPtr = Marshal.AllocHGlobal(IntPtr.Size * 25);
+		IntPtr intPtr2 = Marshal.AllocHGlobal(200);
+		IntPtr intPtr3 = Marshal.AllocHGlobal(IntPtr.Size * 25);
+		IntPtr intPtr4 = Marshal.AllocHGlobal(200);
+		IntPtr intPtr5 = Marshal.AllocHGlobal(IntPtr.Size * 25);
+		List<GeometryResultsData> list = new List<GeometryResultsData>();
+		for (int i = 0; i < nTray; i++)
+		{
+			TrayGeometryInputData trayGeometryInputData = rInputDataAll[i];
+			IntPtr[] array = new IntPtr[trayGeometryInputData.IntInput.Length];
+			IntPtr[] array2 = new IntPtr[trayGeometryInputData.ArrayInt.Length];
+			Array.Copy(trayGeometryInputData.IntInput, array, trayGeometryInputData.IntInput.Length);
+			Array.Copy(trayGeometryInputData.ArrayInt, array2, trayGeometryInputData.ArrayInt.Length);
+			Marshal.Copy(array, 0, intPtr3, trayGeometryInputData.IntInput.Length);
+			Marshal.Copy(trayGeometryInputData.RealInput, 0, intPtr4, trayGeometryInputData.RealInput.Length);
+			Marshal.Copy(array2, 0, intPtr5, trayGeometryInputData.ArrayInt.Length);
+			ATTPSREngine.ATTPSR_TOD_GEOMETRY(intPtr3, intPtr4, intPtr, intPtr2, intPtr5);
+			GeometryResultsData geometryResultsData = new GeometryResultsData();
+			Marshal.Copy(intPtr2, geometryResultsData.GeometryRealValues, 0, 25);
+			list.Add(geometryResultsData);
+		}
+		Marshal.FreeHGlobal(intPtr3);
+		Marshal.FreeHGlobal(intPtr4);
+		Marshal.FreeHGlobal(intPtr5);
+		Marshal.FreeHGlobal(intPtr);
+		Marshal.FreeHGlobal(intPtr2);
+		return list;
+	}
+}
+public class AttpsrMan
+{
+	[STAThread]
+	private static void Main(string[] args)
+	{
+		//IL_0013: Unknown result type (might be due to invalid IL or missing references)
+		try
+		{
+			if (SetAttpsrPath() && args != null && args.Length != 0)
+			{
+				new SMLib(args[0]);
+			}
+		}
+		catch (Exception)
+		{
+		}
+	}
+
+	private static bool SetAttpsrPath()
+	{
+		string text = string.Empty;
+		try
+		{
+			text = GetAPlusAttpsrDllLocation();
+		}
+		catch
+		{
+		}
+		string path = text + "\\attpsr.dll";
+		if (string.IsNullOrEmpty(text) || !File.Exists(path))
+		{
+			return false;
+		}
+		string text2 = Environment.GetEnvironmentVariable("PATH");
+		if (text2[text2.Length - 1] != ';')
+		{
+			text2 += ";";
+		}
+		text2 += text;
+		Environment.SetEnvironmentVariable("PATH", text2);
+		return true;
+	}
+
+	private static string GetHYSYSAttpsrDllLocation()
+	{
+		string result = string.Empty;
+		if (Registry.LocalMachine.OpenSubKey("SOFTWARE\\AspenTech\\Setup", writable: false) != null)
+		{
+			string name = string.Format("\\HYSYS.SimulationCase.{0}\\shell\\open\\command", "V15.0");
+			RegistryKey registryKey = Registry.ClassesRoot.OpenSubKey(name);
+			if (registryKey != null)
+			{
+				string text = registryKey.GetValue("").ToString();
+				string[] array = text.Split('\0', '"');
+				if (array != null)
+				{
+					string path = string.Empty;
+					for (int i = 0; i < array.Length; i++)
+					{
+						if (array[i].Contains("exe") || array[i].Contains("EXE"))
+						{
+							path = array[i];
+							break;
+						}
+					}
+					if (File.Exists(path))
+					{
+						text = Path.GetDirectoryName(path);
+						if (File.Exists(text + "\\attpsr.dll"))
+						{
+							result = text;
+						}
+					}
+				}
+			}
+		}
+		return result;
+	}
+
+	private static string GetAPlusAttpsrDllLocation()
+	{
+		string result = string.Empty;
+		RegistryKey localMachine = Registry.LocalMachine;
+		RegistryKey registryKey = null;
+		registryKey = ((!(DistinguishOSAddressWidth() == "32")) ? localMachine.OpenSubKey("SOFTWARE\\Wow6432Node\\AspenTech\\Aspen Plus") : localMachine.OpenSubKey("SOFTWARE\\AspenTech\\Aspen Plus"));
+		RegistryKey registryKey2 = registryKey.OpenSubKey("41.0").OpenSubKey("aplus");
+		if (registryKey2 != null)
+		{
+			result = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(registryKey2.GetValue("asptop").ToString()))) + "\\AprSystem V15.0\\Engine\\Xeq";
+		}
+		return result;
+	}
+
+	private static string DistinguishOSAddressWidth()
+	{
+		string result = string.Empty;
+		try
+		{
+			ConnectionOptions options = new ConnectionOptions();
+			ManagementScope scope = new ManagementScope("\\\\localhost", options);
+			ObjectQuery query = new ObjectQuery("select AddressWidth from Win32_Processor");
+			ManagementObject managementObject = new ManagementObjectSearcher(scope, query).Get().Cast<ManagementObject>().FirstOrDefault();
+			if (managementObject != null)
+			{
+				result = managementObject["AddressWidth"].ToString();
+			}
+			return result;
+		}
+		catch (Exception)
+		{
+			return result;
+		}
+	}
+}
+public class TrayReturnDataAA
+{
+	private Dictionary<int, double> _WeirLoading = new Dictionary<int, double>();
+
+	private Dictionary<int, double> _DCLoading = new Dictionary<int, double>();
+
+	private Dictionary<int, double> _DCChoke = new Dictionary<int, double>();
+
+	private double _MaxV_entrainrain;
+
+	private int _MaxV_entrainrainIndex;
+
+	public bool bInitialized { get; set; }
+
+	public int TrayID { get; set; }
+
+	public int Dimension { get; set; }
+
+	public List<double> JetFloodCurveLiquidFlowPoints { get; set; }
+
+	public List<double> JetFloodCurveVaporFlowPoints { get; set; }
+
+	public List<double> WeepingCurveLiquidFlowPoints { get; set; }
+
+	public List<double> WeepingCurveVaporFlowPoints { get; set; }
+
+	public List<double> UltimateCapacityCurveLiquidFlowPoints { get; set; }
+
+	public List<double> UltimateCapacityCurveVaporFlowPoints { get; set; }
+
+	public List<double> DumpCurveLiquidFlowPoints { get; set; }
+
+	public List<double> DumpCurveVaporFlowPoints { get; set; }
+
+	public List<double> MaximumEntrainmentCurveLiquidFlowPoints { get; set; }
+
+	public List<double> MaximumEntrainmentCurveVaporFlowPoints { get; set; }
+
+	public List<double> DowncomerBackupCurveLiquidFlowPoints { get; set; }
+
+	public List<double> DowncomerBackupCurveVaporFlowPoints { get; set; }
+
+	public List<double> MaximumAcceptablePressureDropCurveLiquidFlowPoints { get; set; }
+
+	public List<double> MaximumAcceptablePressureDropCurveVaporFlowPoints { get; set; }
+
+	public List<double> CombinedCurveLiquidFlowPoints { get; set; }
+
+	public List<double> CombinedCurveVaporFlowPoints { get; set; }
+
+	public List<int> Mechanism { get; set; }
+
+	public List<double> MinimumWeirLoadCurveLiquidFlowPoints { get; set; }
+
+	public List<double> MinimumWeirLoadCurveVaporFlowPoints { get; set; }
+
+	public List<double> MaximumWeirLoadCurveLiquidFlowPoints { get; set; }
+
+	public List<double> MaximumWeirLoadCurveVaporFlowPoints { get; set; }
+
+	public List<double> OperatingPointsLiquidFlow { get; set; }
+
+	public List<double> OperatingPointsVaporFlow { get; set; }
+
+	public List<double> ActualOperationPoint { get; set; }
+
+	public List<double> SummaryInfo { get; set; }
+
+	public List<int> Messages { get; set; }
+
+	public Dictionary<int, double> WeirLoading
+	{
+		get
+		{
+			return _WeirLoading;
+		}
+		set
+		{
+			_WeirLoading = value;
+		}
+	}
+
+	public Dictionary<int, double> DCLoading
+	{
+		get
+		{
+			return _DCLoading;
+		}
+		set
+		{
+			_DCLoading = value;
+		}
+	}
+
+	public Dictionary<int, double> DCChoke
+	{
+		get
+		{
+			return _DCChoke;
+		}
+		set
+		{
+			_DCChoke = value;
+		}
+	}
+
+	public double MinL => OperatingPointsVaporFlow[0];
+
+	public double MaxL => OperatingPointsVaporFlow[1];
+
+	public double MaxV_entrainrain => _MaxV_entrainrain;
+
+	public int MaxV_entrainrainIndex => _MaxV_entrainrainIndex;
+
+	private XmlDocument SaveXML()
+	{
+		XmlDocument xmlDocument = new XmlDocument();
+		XmlNode xmlNode = xmlDocument.CreateElement("TrayData");
+		xmlDocument.AppendChild(xmlNode);
+		XmlNode xmlNode2 = xmlDocument.CreateElement("ID");
+		xmlNode2.InnerText = TrayID.ToString();
+		xmlNode.AppendChild(xmlNode2);
+		xmlDocument.CreateElement("Dimension");
+		xmlNode2.InnerText = Dimension.ToString();
+		xmlNode.AppendChild(xmlNode2);
+		string text = "";
+		_ = JetFloodCurveLiquidFlowPoints.Count;
+		int num = 0;
+		foreach (double jetFloodCurveLiquidFlowPoint in JetFloodCurveLiquidFlowPoints)
+		{
+			text += jetFloodCurveLiquidFlowPoint;
+			if (++num != JetFloodCurveLiquidFlowPoints.Count)
+			{
+				text += ",";
+			}
+		}
+		XmlNode xmlNode3 = xmlDocument.CreateElement("JetFloodCurveLiquidFlowPoints");
+		xmlNode3.InnerText = text;
+		xmlNode.AppendChild(xmlNode3);
+		return xmlDocument;
+	}
+
+	public string Export()
+	{
+		MemoryStream memoryStream = new MemoryStream();
+		XmlTextWriter w = new XmlTextWriter(memoryStream, null)
+		{
+			Formatting = Formatting.Indented
+		};
+		SaveXML().Save(w);
+		StreamReader streamReader = new StreamReader(memoryStream, Encoding.UTF8);
+		memoryStream.Position = 0L;
+		string result = streamReader.ReadToEnd();
+		streamReader.Close();
+		memoryStream.Close();
+		return result;
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

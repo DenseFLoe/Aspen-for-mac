@@ -1,0 +1,1714 @@
+using System;
+using System.CodeDom.Compiler;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Configuration;
+using System.Diagnostics;
+using System.Globalization;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
+using System.Windows.Input;
+using System.Windows.Markup;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Threading;
+using AspenTech.InContextGuidance.CfsNet;
+using AspenTech.InContextGuidance.ExchangeIntegration;
+using AspenTech.InContextGuidance.Localization;
+using AspenTech.InContextGuidance.Widgets.Internals;
+using AspenTech.InContextGuidance.Widgets.Primitive;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyCompany("Aspen Technology, Inc.")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCopyright("Copyright © Aspen Technology 2022")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyFileVersion("15.0.0.0")]
+[assembly: AssemblyTitle("AspenTech.InContextGuidance.Widgets")]
+[assembly: AssemblyDescription("InContextGuidance widgets library.")]
+[assembly: AssemblyProduct("AspenTech.InContextGuidance.Widgets")]
+[assembly: ComVisible(false)]
+[assembly: ThemeInfo(ResourceDictionaryLocation.None, ResourceDictionaryLocation.SourceAssembly)]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("15.0.0.0")]
+namespace AspenTech.InContextGuidance.Widgets
+{
+	public class SearchEventArgs : EventArgs
+	{
+		public string SearchString { get; }
+
+		public SearchEventArgs(string searchString)
+		{
+			SearchString = searchString;
+		}
+	}
+	public class FeedbackEventArgs : EventArgs
+	{
+		public string FeedbackPrefix { get; }
+
+		public FeedbackEventArgs(string feedbackPrefix)
+		{
+			FeedbackPrefix = feedbackPrefix;
+		}
+	}
+	public class UrlEventArgs : EventArgs
+	{
+		public string Url { get; }
+
+		public UrlEventArgs(string url)
+		{
+			Url = url;
+		}
+	}
+	public class InContextGuidanceRelayActionButton : InContextGuidanceButton
+	{
+		public static readonly DependencyProperty InContextGuidancePropertiesGeneratorProperty = DependencyProperty.Register("InContextGuidancePropertiesGenerator", typeof(Func<InContextGuidanceRelayActionButton, InContextGuidancePropertiesRequestedEventArgs>), typeof(InContextGuidanceRelayActionButton));
+
+		public static readonly RoutedEvent InContextGuidancePropertiesRequestedEvent = EventManager.RegisterRoutedEvent("InContextGuidancePropertiesRequested", RoutingStrategy.Bubble, typeof(EventHandler<InContextGuidancePropertiesRequestedEventArgs>), typeof(InContextGuidanceRelayActionButton));
+
+		public Func<InContextGuidanceRelayActionButton, InContextGuidancePropertiesRequestedEventArgs> InContextGuidancePropertiesGenerator
+		{
+			get
+			{
+				return (Func<InContextGuidanceRelayActionButton, InContextGuidancePropertiesRequestedEventArgs>)GetValue(InContextGuidancePropertiesGeneratorProperty);
+			}
+			set
+			{
+				SetValue(InContextGuidancePropertiesGeneratorProperty, value);
+			}
+		}
+
+		public event EventHandler<InContextGuidancePropertiesRequestedEventArgs> InContextGuidancePropertiesRequested
+		{
+			add
+			{
+				AddHandler(InContextGuidancePropertiesRequestedEvent, value);
+			}
+			remove
+			{
+				RemoveHandler(InContextGuidancePropertiesRequestedEvent, value);
+			}
+		}
+
+		public InContextGuidanceRelayActionButton()
+		{
+			base.Loaded += InContextGuidanceRelayActionButton_Loaded;
+			CommandManager.RequerySuggested += delegate
+			{
+				OnCommandManagerRequerySuggested();
+			};
+		}
+
+		protected virtual void OnInContextGuidancePropertiesRequested(InContextGuidancePropertiesRequestedEventArgs args)
+		{
+			args.RoutedEvent = InContextGuidancePropertiesRequestedEvent;
+			args.Source = this;
+			RaiseEvent(args);
+		}
+
+		protected virtual void OnCommandManagerRequerySuggested()
+		{
+			TryRequeryContextProperties();
+		}
+
+		private void InContextGuidanceRelayActionButton_Loaded(object sender, RoutedEventArgs e)
+		{
+			TryRequeryContextProperties();
+		}
+
+		public void TryRequeryContextProperties()
+		{
+			if (ExchangeAdapter.Default.SuccessfullyInitialized && base.IsLoaded)
+			{
+				RequestAndUpdateInContextGuidanceProperties();
+			}
+		}
+
+		private void RequestAndUpdateInContextGuidanceProperties()
+		{
+			InContextGuidancePropertiesRequestedEventArgs e = InContextGuidancePropertiesGenerator?.Invoke(this);
+			if (e == null)
+			{
+				e = new InContextGuidancePropertiesRequestedEventArgs
+				{
+					ProductName = base.ProductName,
+					ProductVersion = base.ProductVersion,
+					ContextId = base.ContextId,
+					Visibility = base.Visibility
+				};
+			}
+			OnInContextGuidancePropertiesRequested(e);
+			if (base.ProductName != e.ProductName)
+			{
+				base.ProductName = e.ProductName;
+			}
+			if (base.ProductVersion != e.ProductVersion)
+			{
+				base.ProductVersion = e.ProductVersion;
+			}
+			if (base.ContextId != e.ContextId)
+			{
+				base.ContextId = e.ContextId;
+			}
+			if (base.Visibility != e.Visibility)
+			{
+				base.Visibility = e.Visibility;
+			}
+		}
+	}
+	[TemplatePart(Name = "PART_TextBox", Type = typeof(TextBox))]
+	public class SearchBox : InContextControlBase
+	{
+		private const string PART_TextBox = "PART_TextBox";
+
+		public static readonly DependencyProperty ImageProperty;
+
+		public static readonly DependencyProperty PlaceholderProperty;
+
+		public static readonly DependencyProperty TextProperty;
+
+		public static readonly DependencyProperty IsPopupSuppressedProperty;
+
+		private DispatcherOperation _processEnterOperation;
+
+		private DispatcherOperation _updatePopupOperation;
+
+		private SearchBoxPopup _internalPopup;
+
+		private TextBox _textBox;
+
+		public ImageSource Image
+		{
+			get
+			{
+				return (ImageSource)GetValue(ImageProperty);
+			}
+			set
+			{
+				SetValue(ImageProperty, value);
+			}
+		}
+
+		public string Placeholder
+		{
+			get
+			{
+				return (string)GetValue(PlaceholderProperty);
+			}
+			set
+			{
+				SetValue(PlaceholderProperty, value);
+			}
+		}
+
+		public string Text
+		{
+			get
+			{
+				return (string)GetValue(TextProperty);
+			}
+			set
+			{
+				SetValue(TextProperty, value);
+			}
+		}
+
+		public bool IsPopupSuppressed
+		{
+			get
+			{
+				return (bool)GetValue(IsPopupSuppressedProperty);
+			}
+			set
+			{
+				SetValue(IsPopupSuppressedProperty, value);
+			}
+		}
+
+		protected SearchBoxPopup InternalPopup => _internalPopup ?? (_internalPopup = new SearchBoxPopup(this));
+
+		static SearchBox()
+		{
+			ImageProperty = DependencyProperty.Register("Image", typeof(ImageSource), typeof(SearchBox), new FrameworkPropertyMetadata(ImageResources.Search));
+			PlaceholderProperty = DependencyProperty.Register("Placeholder", typeof(string), typeof(SearchBox), new FrameworkPropertyMetadata(InContextGuidanceResources.Widgets_SearchBox_Placeholder));
+			TextProperty = DependencyProperty.Register("Text", typeof(string), typeof(SearchBox), new FrameworkPropertyMetadata(OnTextPropertyChanged));
+			IsPopupSuppressedProperty = DependencyProperty.Register("IsPopupSuppressed", typeof(bool), typeof(SearchBox), new FrameworkPropertyMetadata(false, OnIsPopupSuppressedPropertyChanged));
+			FrameworkElement.DefaultStyleKeyProperty.OverrideMetadata(typeof(SearchBox), new FrameworkPropertyMetadata(typeof(SearchBox)));
+		}
+
+		public override void OnApplyTemplate()
+		{
+			_textBox = GetTemplateChild("PART_TextBox") as TextBox;
+			base.OnApplyTemplate();
+		}
+
+		protected virtual void OnTextChanged(string oldValue, string newValue)
+		{
+		}
+
+		protected override void OnContextChanged(IndexedContent oldValue, IndexedContent newValue)
+		{
+			base.OnContextChanged(oldValue, newValue);
+			UpdatePopup();
+		}
+
+		protected override async void OnPreviewMouseUp(MouseButtonEventArgs e)
+		{
+			base.OnPreviewMouseUp(e);
+			if (base.Context == null)
+			{
+				await UpdateContextAsync();
+			}
+			InvalidatePopupStatus();
+		}
+
+		protected override void OnKeyDown(KeyEventArgs e)
+		{
+			if (e.Key == Key.Return)
+			{
+				NotifyEntered();
+			}
+			base.OnKeyDown(e);
+		}
+
+		private void NotifyEntered()
+		{
+			if (_processEnterOperation == null)
+			{
+				_processEnterOperation = base.Dispatcher.BeginInvoke((Action)delegate
+				{
+					base.Commands.ResolvedSearch.Execute(Text);
+					_processEnterOperation = null;
+				}, DispatcherPriority.Input);
+			}
+		}
+
+		private void InvalidatePopupStatus()
+		{
+			if (_updatePopupOperation == null)
+			{
+				_updatePopupOperation = base.Dispatcher.BeginInvoke((Action)delegate
+				{
+					UpdatePopup();
+					_updatePopupOperation = null;
+				}, DispatcherPriority.Input);
+			}
+		}
+
+		private void UpdatePopup()
+		{
+			if (CanShowPopup())
+			{
+				if (!InternalPopup.IsOpen)
+				{
+					InternalPopup.IsOpen = true;
+				}
+			}
+			else if (InternalPopup.IsOpen)
+			{
+				InternalPopup.IsOpen = false;
+			}
+		}
+
+		private bool CanShowPopup()
+		{
+			if (IsPopupSuppressed)
+			{
+				return false;
+			}
+			if (!string.IsNullOrWhiteSpace(Text))
+			{
+				return false;
+			}
+			if (base.Context == null)
+			{
+				return false;
+			}
+			if (_textBox == null)
+			{
+				return false;
+			}
+			if (!_textBox.IsKeyboardFocusWithin && !InternalPopup.IsKeyboardFocusWithin)
+			{
+				return false;
+			}
+			return true;
+		}
+
+		private static void OnTextPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			SearchBox obj = d as SearchBox;
+			obj.OnTextChanged((string)e.OldValue, (string)e.NewValue);
+			obj.UpdatePopup();
+		}
+
+		private static void OnIsPopupSuppressedPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			(d as SearchBox).UpdatePopup();
+		}
+	}
+	public class InContextGuidanceButton : InContextControlBase
+	{
+		public static readonly DependencyProperty ImageProperty;
+
+		public static readonly DependencyProperty DateTimeDisplayFormatProperty;
+
+		public ImageSource Image
+		{
+			get
+			{
+				return (ImageSource)GetValue(ImageProperty);
+			}
+			set
+			{
+				SetValue(ImageProperty, value);
+			}
+		}
+
+		public string DateTimeDisplayFormat
+		{
+			get
+			{
+				return (string)GetValue(DateTimeDisplayFormatProperty);
+			}
+			set
+			{
+				SetValue(DateTimeDisplayFormatProperty, value);
+			}
+		}
+
+		public InContextGuidanceButtonNegativeBehaviors NegativeBehaviors { get; }
+
+		static InContextGuidanceButton()
+		{
+			ImageProperty = DependencyProperty.Register("Image", typeof(ImageSource), typeof(InContextGuidanceButton), new FrameworkPropertyMetadata(ImageResources.Information));
+			DateTimeDisplayFormatProperty = DependencyProperty.Register("DateTimeDisplayFormat", typeof(string), typeof(InContextGuidanceButton), new FrameworkPropertyMetadata());
+			FrameworkElement.DefaultStyleKeyProperty.OverrideMetadata(typeof(InContextGuidanceButton), new FrameworkPropertyMetadata(typeof(InContextGuidanceButton)));
+		}
+
+		public InContextGuidanceButton()
+		{
+			NegativeBehaviors = new InContextGuidanceButtonNegativeBehaviors(this);
+		}
+
+		protected override void OnContextIdChanged(string oldValue, string newValue)
+		{
+			base.OnContextIdChanged(oldValue, newValue);
+			NegativeBehaviors?.UpdateUsability();
+		}
+
+		protected override void OnContextChanged(IndexedContent oldValue, IndexedContent newValue)
+		{
+			base.OnContextChanged(oldValue, newValue);
+			NegativeBehaviors?.UpdateUsability();
+		}
+
+		protected override void OnIsInContextGuidanceFeatureClosedChanged(bool oldValue, bool newValue)
+		{
+			base.OnIsInContextGuidanceFeatureClosedChanged(oldValue, newValue);
+			NegativeBehaviors?.UpdateUsability();
+		}
+
+		protected override void OnIsExchangeInitializedSuccessfullyChanged(bool oldValue, bool newValue)
+		{
+			base.OnIsExchangeInitializedSuccessfullyChanged(oldValue, newValue);
+			NegativeBehaviors?.UpdateUsability();
+		}
+
+		protected override void OnIsCfsAvailableChanged(bool? oldValue, bool? newValue)
+		{
+			base.OnIsCfsAvailableChanged(oldValue, newValue);
+			NegativeBehaviors?.UpdateUsability();
+		}
+
+		protected override void OnMouseRightButtonDown(MouseButtonEventArgs e)
+		{
+			if (e.ClickCount == 2)
+			{
+				MessageBox.Show("ContextId:\n\n" + base.ContextId, "Information for Debugging, Will be Removed Eventually");
+			}
+			base.OnMouseRightButtonDown(e);
+		}
+
+		protected override void OnPreviewMouseLeftButtonUp(MouseButtonEventArgs e)
+		{
+			base.Dispatcher.BeginInvoke(new Action(ShowPopup), DispatcherPriority.Loaded);
+			base.OnPreviewMouseLeftButtonUp(e);
+		}
+
+		protected void ShowPopup()
+		{
+			if (NegativeBehaviors.ResolvedIsEnabled)
+			{
+				new InContextButtonPopup(this).IsOpen = true;
+			}
+		}
+	}
+}
+namespace AspenTech.InContextGuidance.Widgets.Properties
+{
+	[CompilerGenerated]
+	[GeneratedCode("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "16.10.0.0")]
+	internal sealed class Settings : ApplicationSettingsBase
+	{
+		private static Settings defaultInstance = (Settings)SettingsBase.Synchronized(new Settings());
+
+		public static Settings Default => defaultInstance;
+	}
+}
+namespace AspenTech.InContextGuidance.Widgets.Primitive
+{
+	public class InContextControlCommands : DependencyObject
+	{
+		public static readonly DependencyProperty SearchProperty = DependencyProperty.Register("Search", typeof(ICommand), typeof(InContextControlCommands), new PropertyMetadata(OnSearchPropertyChanged));
+
+		private static readonly DependencyPropertyKey ResolvedSearchPropertyKey = DependencyProperty.RegisterReadOnly("ResolvedSearch", typeof(ICommand), typeof(InContextControlCommands), new PropertyMetadata());
+
+		public static readonly DependencyProperty ResolvedSearchProperty = ResolvedSearchPropertyKey.DependencyProperty;
+
+		public static readonly DependencyProperty ItemClickedProperty = DependencyProperty.Register("ItemClicked", typeof(ICommand), typeof(InContextControlCommands), new PropertyMetadata(OnItemClickedPropertyChanged));
+
+		private static readonly DependencyPropertyKey ResolvedItemClickedPropertyKey = DependencyProperty.RegisterReadOnly("ResolvedItemClicked", typeof(ICommand), typeof(InContextControlCommands), new PropertyMetadata());
+
+		public static readonly DependencyProperty ResolvedItemClickedProperty = ResolvedItemClickedPropertyKey.DependencyProperty;
+
+		public static readonly DependencyProperty FeedbackProperty = DependencyProperty.Register("Feedback", typeof(ICommand), typeof(InContextControlCommands), new PropertyMetadata(OnFeedbackPropertyChanged));
+
+		private static readonly DependencyPropertyKey ResolvedFeedbackPropertyKey = DependencyProperty.RegisterReadOnly("ResolvedFeedback", typeof(ICommand), typeof(InContextControlCommands), new PropertyMetadata());
+
+		public static readonly DependencyProperty ResolvedFeedbackProperty = ResolvedFeedbackPropertyKey.DependencyProperty;
+
+		public ICommand Search
+		{
+			get
+			{
+				return (ICommand)GetValue(SearchProperty);
+			}
+			set
+			{
+				SetValue(SearchProperty, value);
+			}
+		}
+
+		public ICommand ResolvedSearch
+		{
+			get
+			{
+				return (ICommand)GetValue(ResolvedSearchProperty);
+			}
+			private set
+			{
+				SetValue(ResolvedSearchPropertyKey, value);
+			}
+		}
+
+		public ICommand ItemClicked
+		{
+			get
+			{
+				return (ICommand)GetValue(ItemClickedProperty);
+			}
+			set
+			{
+				SetValue(ItemClickedProperty, value);
+			}
+		}
+
+		public ICommand ResolvedItemClicked
+		{
+			get
+			{
+				return (ICommand)GetValue(ResolvedItemClickedProperty);
+			}
+			private set
+			{
+				SetValue(ResolvedItemClickedPropertyKey, value);
+			}
+		}
+
+		public ICommand Feedback
+		{
+			get
+			{
+				return (ICommand)GetValue(FeedbackProperty);
+			}
+			set
+			{
+				SetValue(FeedbackProperty, value);
+			}
+		}
+
+		public ICommand ResolvedFeedback
+		{
+			get
+			{
+				return (ICommand)GetValue(ResolvedFeedbackProperty);
+			}
+			private set
+			{
+				SetValue(ResolvedFeedbackPropertyKey, value);
+			}
+		}
+
+		public InContextControlBase Owner { get; }
+
+		public event EventHandler<SearchEventArgs> SearchExecuted;
+
+		public event EventHandler<UrlEventArgs> UrlOpened;
+
+		public InContextControlCommands(InContextControlBase owner)
+		{
+			Owner = owner ?? throw new ArgumentNullException("owner");
+			RefreshResolvedSearch();
+			RefreshResolvedItemClicked();
+			RefreshResolvedFeedback();
+		}
+
+		private void RefreshResolvedSearch()
+		{
+			ResolvedSearch = Search ?? new DelegateCommand(delegate(object x)
+			{
+				DoDefaultSearch(x as string);
+			});
+		}
+
+		private void RefreshResolvedItemClicked()
+		{
+			ResolvedItemClicked = ItemClicked ?? new DelegateCommand(delegate(object x)
+			{
+				DoDefaultItemClicked(x as string);
+			});
+		}
+
+		private void RefreshResolvedFeedback()
+		{
+			ResolvedFeedback = Feedback ?? new DelegateCommand(delegate(object x)
+			{
+				DoDefaultFeedback(x as string);
+			});
+		}
+
+		private void DoDefaultSearch(string searchString)
+		{
+			ExchangeAdapter.Default.SearchExchange(searchString);
+			this.SearchExecuted?.Invoke(this, new SearchEventArgs(searchString));
+		}
+
+		private void DoDefaultItemClicked(string url)
+		{
+			OpenUrl(url);
+		}
+
+		private void DoDefaultFeedback(string feedbackPrefix)
+		{
+			OpenUrl(CreateFeedbackUrl(feedbackPrefix));
+		}
+
+		private string CreateFeedbackUrl(string feedbackPrefix)
+		{
+			if (!string.IsNullOrWhiteSpace(feedbackPrefix))
+			{
+				string text = Uri.EscapeUriString(Owner.Context?.Id ?? Owner.ContextId);
+				if (feedbackPrefix.Contains('?'))
+				{
+					return feedbackPrefix + "&ctxid=" + text;
+				}
+				return feedbackPrefix + "?ctxid=" + text;
+			}
+			return feedbackPrefix;
+		}
+
+		private void OpenUrl(string url)
+		{
+			ExchangeAdapter.Default.OpenBrowser(url);
+			this.UrlOpened?.Invoke(this, new UrlEventArgs(url));
+		}
+
+		private static void OnSearchPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			(d as InContextControlCommands).RefreshResolvedSearch();
+		}
+
+		private static void OnItemClickedPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			(d as InContextControlCommands).RefreshResolvedItemClicked();
+		}
+
+		private static void OnFeedbackPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			(d as InContextControlCommands).RefreshResolvedFeedback();
+		}
+	}
+	public enum NegativeBehavior
+	{
+		Disabled,
+		Invisible
+	}
+	public class InContextGuidanceButtonNegativeBehaviors : DependencyObject
+	{
+		public static readonly DependencyProperty WhenInContxtGuidanceFeatureIsClosedProperty = DependencyProperty.Register("WhenInContxtGuidanceFeatureIsClosed", typeof(NegativeBehavior), typeof(InContextGuidanceButtonNegativeBehaviors), new PropertyMetadata(NegativeBehavior.Disabled, OnSettingPropertyChanged));
+
+		public static readonly DependencyProperty WhenExchangeInitializationFailedProperty = DependencyProperty.Register("WhenExchangeInitializationFailed", typeof(NegativeBehavior), typeof(InContextGuidanceButtonNegativeBehaviors), new PropertyMetadata(NegativeBehavior.Invisible, OnSettingPropertyChanged));
+
+		public static readonly DependencyProperty WhenCfsIsUnavailableProperty = DependencyProperty.Register("WhenCfsIsUnavailable", typeof(NegativeBehavior), typeof(InContextGuidanceButtonNegativeBehaviors), new PropertyMetadata(NegativeBehavior.Disabled, OnSettingPropertyChanged));
+
+		public static readonly DependencyProperty WhenContextIdIsNullOrEmptyProperty = DependencyProperty.Register("WhenContextIdIsNullOrEmpty", typeof(NegativeBehavior), typeof(InContextGuidanceButtonNegativeBehaviors), new PropertyMetadata(NegativeBehavior.Invisible, OnSettingPropertyChanged));
+
+		public static readonly DependencyProperty WhenContextIsNotFoundProperty = DependencyProperty.Register("WhenContextIsNotFound", typeof(NegativeBehavior), typeof(InContextGuidanceButtonNegativeBehaviors), new PropertyMetadata(NegativeBehavior.Invisible, OnSettingPropertyChanged));
+
+		private static readonly DependencyPropertyKey ResolvedVisiblityPropertyKey = DependencyProperty.RegisterReadOnly("ResolvedVisiblity", typeof(Visibility), typeof(InContextGuidanceButtonNegativeBehaviors), new PropertyMetadata(Visibility.Collapsed));
+
+		public static readonly DependencyProperty ResolvedVisiblityProperty = ResolvedVisiblityPropertyKey.DependencyProperty;
+
+		private static readonly DependencyPropertyKey ResolvedIsEnabledPropertyKey = DependencyProperty.RegisterReadOnly("ResolvedIsEnabled", typeof(bool), typeof(InContextGuidanceButtonNegativeBehaviors), new PropertyMetadata(false));
+
+		public static readonly DependencyProperty ResolvedIsEnabledProperty = ResolvedIsEnabledPropertyKey.DependencyProperty;
+
+		private readonly InContextGuidanceButton _owner;
+
+		public NegativeBehavior WhenInContxtGuidanceFeatureIsClosed
+		{
+			get
+			{
+				return (NegativeBehavior)GetValue(WhenInContxtGuidanceFeatureIsClosedProperty);
+			}
+			set
+			{
+				SetValue(WhenInContxtGuidanceFeatureIsClosedProperty, value);
+			}
+		}
+
+		public NegativeBehavior WhenExchangeInitializationFailed
+		{
+			get
+			{
+				return (NegativeBehavior)GetValue(WhenExchangeInitializationFailedProperty);
+			}
+			set
+			{
+				SetValue(WhenExchangeInitializationFailedProperty, value);
+			}
+		}
+
+		public NegativeBehavior WhenCfsIsUnavailable
+		{
+			get
+			{
+				return (NegativeBehavior)GetValue(WhenCfsIsUnavailableProperty);
+			}
+			set
+			{
+				SetValue(WhenCfsIsUnavailableProperty, value);
+			}
+		}
+
+		public NegativeBehavior WhenContextIdIsNullOrEmpty
+		{
+			get
+			{
+				return (NegativeBehavior)GetValue(WhenContextIdIsNullOrEmptyProperty);
+			}
+			set
+			{
+				SetValue(WhenContextIdIsNullOrEmptyProperty, value);
+			}
+		}
+
+		public NegativeBehavior WhenContextIsNotFound
+		{
+			get
+			{
+				return (NegativeBehavior)GetValue(WhenContextIsNotFoundProperty);
+			}
+			set
+			{
+				SetValue(WhenContextIsNotFoundProperty, value);
+			}
+		}
+
+		public Visibility ResolvedVisiblity
+		{
+			get
+			{
+				return (Visibility)GetValue(ResolvedVisiblityProperty);
+			}
+			private set
+			{
+				SetValue(ResolvedVisiblityPropertyKey, value);
+			}
+		}
+
+		public bool ResolvedIsEnabled
+		{
+			get
+			{
+				return (bool)GetValue(ResolvedIsEnabledProperty);
+			}
+			private set
+			{
+				SetValue(ResolvedIsEnabledPropertyKey, value);
+			}
+		}
+
+		public InContextGuidanceButtonNegativeBehaviors(InContextGuidanceButton owner)
+		{
+			_owner = owner ?? throw new ArgumentNullException("owner");
+			UpdateUsability();
+		}
+
+		public void UpdateUsability()
+		{
+			ResolvedIsEnabled = CalculateEnablement();
+			ResolvedVisiblity = CalculateVisibility();
+		}
+
+		private Visibility CalculateVisibility()
+		{
+			if (!_owner.IsExchangeInitializedSuccessfully && WhenExchangeInitializationFailed == NegativeBehavior.Invisible)
+			{
+				return Visibility.Collapsed;
+			}
+			if (string.IsNullOrWhiteSpace(_owner.ContextId) && WhenContextIdIsNullOrEmpty == NegativeBehavior.Invisible)
+			{
+				return Visibility.Collapsed;
+			}
+			if (_owner.IsInContextGuidanceFeatureClosed && WhenInContxtGuidanceFeatureIsClosed == NegativeBehavior.Invisible)
+			{
+				return Visibility.Collapsed;
+			}
+			if (_owner.Visibility == Visibility.Visible && !string.IsNullOrWhiteSpace(_owner.ContextId) && !_owner.IsInContextGuidanceFeatureClosed && _owner.IsExchangeInitializedSuccessfully)
+			{
+				if (_owner.IsCfsAvailable != true && WhenCfsIsUnavailable == NegativeBehavior.Invisible)
+				{
+					return Visibility.Collapsed;
+				}
+				if (_owner.IsCfsAvailable == true && _owner.Context == null && WhenContextIsNotFound == NegativeBehavior.Invisible)
+				{
+					return Visibility.Collapsed;
+				}
+			}
+			return Visibility.Visible;
+		}
+
+		private bool CalculateEnablement()
+		{
+			if (!_owner.IsInContextGuidanceFeatureClosed && _owner.IsExchangeInitializedSuccessfully)
+			{
+				return _owner.Context != null;
+			}
+			return false;
+		}
+
+		private static void OnSettingPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			(d as InContextGuidanceButtonNegativeBehaviors).UpdateUsability();
+		}
+	}
+	public class InContextGuidancePropertiesRequestedEventArgs : RoutedEventArgs
+	{
+		public CfsProductName ProductName { get; set; }
+
+		public CfsProductVersion ProductVersion { get; set; }
+
+		public string ContextId { get; set; }
+
+		public Visibility Visibility { get; set; }
+	}
+	public class TransparentButton : Button
+	{
+		static TransparentButton()
+		{
+			FrameworkElement.DefaultStyleKeyProperty.OverrideMetadata(typeof(TransparentButton), new FrameworkPropertyMetadata(typeof(TransparentButton)));
+		}
+	}
+	public class HyperlinkButton : Control
+	{
+		public static readonly DependencyProperty TextProperty;
+
+		public static readonly DependencyProperty TextWrappingProperty;
+
+		public static readonly DependencyProperty TextTrimmingProperty;
+
+		public static readonly DependencyProperty CommandProperty;
+
+		public static readonly DependencyProperty CommandParameterProperty;
+
+		public string Text
+		{
+			get
+			{
+				return (string)GetValue(TextProperty);
+			}
+			set
+			{
+				SetValue(TextProperty, value);
+			}
+		}
+
+		public TextWrapping TextWrapping
+		{
+			get
+			{
+				return (TextWrapping)GetValue(TextWrappingProperty);
+			}
+			set
+			{
+				SetValue(TextWrappingProperty, value);
+			}
+		}
+
+		public TextTrimming TextTrimming
+		{
+			get
+			{
+				return (TextTrimming)GetValue(TextTrimmingProperty);
+			}
+			set
+			{
+				SetValue(TextTrimmingProperty, value);
+			}
+		}
+
+		public ICommand Command
+		{
+			get
+			{
+				return (ICommand)GetValue(CommandProperty);
+			}
+			set
+			{
+				SetValue(CommandProperty, value);
+			}
+		}
+
+		public object CommandParameter
+		{
+			get
+			{
+				return GetValue(CommandParameterProperty);
+			}
+			set
+			{
+				SetValue(CommandParameterProperty, value);
+			}
+		}
+
+		static HyperlinkButton()
+		{
+			TextProperty = DependencyProperty.Register("Text", typeof(string), typeof(HyperlinkButton));
+			TextWrappingProperty = DependencyProperty.Register("TextWrapping", typeof(TextWrapping), typeof(HyperlinkButton), new FrameworkPropertyMetadata(TextWrapping.Wrap));
+			TextTrimmingProperty = DependencyProperty.Register("TextTrimming", typeof(TextTrimming), typeof(HyperlinkButton), new PropertyMetadata(TextTrimming.None));
+			CommandProperty = DependencyProperty.Register("Command", typeof(ICommand), typeof(HyperlinkButton));
+			CommandParameterProperty = DependencyProperty.Register("CommandParameter", typeof(object), typeof(HyperlinkButton));
+			FrameworkElement.DefaultStyleKeyProperty.OverrideMetadata(typeof(HyperlinkButton), new FrameworkPropertyMetadata(typeof(HyperlinkButton)));
+		}
+
+		public static void OpenDefaultWebBrowser(string url)
+		{
+			try
+			{
+				if (!string.IsNullOrWhiteSpace(url))
+				{
+					Process.Start(url);
+				}
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine(ex.Message);
+			}
+		}
+	}
+	public class InContextButtonPopup : Popup, IComponentConnector
+	{
+		private static readonly DependencyPropertyKey TopPointerMarginPropertyKey = DependencyProperty.RegisterReadOnly("TopPointerMargin", typeof(Thickness), typeof(InContextButtonPopup), new FrameworkPropertyMetadata(new Thickness(0.0, 1.5, 20.0, 0.0)));
+
+		public static readonly DependencyProperty TopPointerMarginProperty = TopPointerMarginPropertyKey.DependencyProperty;
+
+		private static readonly DependencyPropertyKey BottomPointerMarginPropertyKey = DependencyProperty.RegisterReadOnly("BottomPointerMargin", typeof(Thickness), typeof(InContextButtonPopup), new FrameworkPropertyMetadata(new Thickness(0.0, 0.0, 20.0, 1.5)));
+
+		public static readonly DependencyProperty BottomPointerMarginProperty = BottomPointerMarginPropertyKey.DependencyProperty;
+
+		private static readonly DependencyPropertyKey TopPointerVisibilityPropertyKey = DependencyProperty.RegisterReadOnly("TopPointerVisibility", typeof(Visibility), typeof(InContextButtonPopup), new FrameworkPropertyMetadata(Visibility.Visible));
+
+		public static readonly DependencyProperty TopPointerVisibilityProperty = TopPointerVisibilityPropertyKey.DependencyProperty;
+
+		private static readonly DependencyPropertyKey BottomPointerVisibilityPropertyKey = DependencyProperty.RegisterReadOnly("BottomPointerVisibility", typeof(Visibility), typeof(InContextButtonPopup), new FrameworkPropertyMetadata(Visibility.Collapsed));
+
+		public static readonly DependencyProperty BottomPointerVisibilityProperty = BottomPointerVisibilityPropertyKey.DependencyProperty;
+
+		private bool _contentLoaded;
+
+		public Thickness TopPointerMargin
+		{
+			get
+			{
+				return (Thickness)GetValue(TopPointerMarginProperty);
+			}
+			private set
+			{
+				SetValue(TopPointerMarginPropertyKey, value);
+			}
+		}
+
+		public Thickness BottomPointerMargin
+		{
+			get
+			{
+				return (Thickness)GetValue(BottomPointerMarginProperty);
+			}
+			private set
+			{
+				SetValue(BottomPointerMarginPropertyKey, value);
+			}
+		}
+
+		public Visibility TopPointerVisibility
+		{
+			get
+			{
+				return (Visibility)GetValue(TopPointerVisibilityProperty);
+			}
+			private set
+			{
+				SetValue(TopPointerVisibilityPropertyKey, value);
+			}
+		}
+
+		public Visibility BottomPointerVisibility
+		{
+			get
+			{
+				return (Visibility)GetValue(BottomPointerVisibilityProperty);
+			}
+			private set
+			{
+				SetValue(BottomPointerVisibilityPropertyKey, value);
+			}
+		}
+
+		public InContextGuidanceButton Owner { get; }
+
+		public InContextButtonPopup(InContextGuidanceButton owner)
+		{
+			Owner = owner ?? throw new ArgumentNullException("owner");
+			InitializeComponent();
+			base.PlacementTarget = owner;
+			base.Placement = PlacementMode.Bottom;
+			if (!SystemParameters.MenuDropAlignment)
+			{
+				SetBinding(Popup.HorizontalOffsetProperty, new Binding
+				{
+					Source = base.Child,
+					Path = new PropertyPath(FrameworkElement.ActualWidthProperty),
+					Converter = new PopupLeftMoveHorizontalOffsetConverter
+					{
+						AdditionOffset = 20.0
+					}
+				});
+			}
+		}
+
+		protected override void OnOpened(EventArgs e)
+		{
+			if (base.Child is FrameworkElement frameworkElement)
+			{
+				Point point = frameworkElement.TranslatePoint(new Point(frameworkElement.ActualWidth, 0.0), Owner);
+				TopPointerMargin = new Thickness(0.0, 1.5, point.X, 0.0);
+				BottomPointerMargin = new Thickness(0.0, 0.0, point.X, 1.5);
+				bool flag = point.X > frameworkElement.ActualWidth - 36.0;
+				TopPointerVisibility = ((flag || !(point.Y > 0.0)) ? Visibility.Collapsed : Visibility.Visible);
+				BottomPointerVisibility = ((flag || TopPointerVisibility == Visibility.Visible) ? Visibility.Collapsed : Visibility.Visible);
+			}
+			base.OnOpened(e);
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/AspenTech.InContextGuidance.Widgets;component/primitive/incontextbuttonpopup.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		internal Delegate _CreateDelegate(Type delegateType, string handler)
+		{
+			return Delegate.CreateDelegate(delegateType, this, handler);
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			_contentLoaded = true;
+		}
+	}
+	public abstract class InContextControlBase : Control
+	{
+		public static readonly DependencyProperty ProductNameProperty;
+
+		public static readonly DependencyProperty ProductVersionProperty;
+
+		public static readonly DependencyProperty ProductLanguageProperty;
+
+		public static readonly DependencyProperty ContextIdProperty;
+
+		private static readonly DependencyPropertyKey ContextPropertyKey;
+
+		public static readonly DependencyProperty ContextProperty;
+
+		public static readonly DependencyProperty IsInContextGuidanceFeatureClosedProperty;
+
+		private static readonly DependencyProperty IsExchangeInitializedSuccessfullyProperty;
+
+		private static readonly DependencyPropertyKey IsCfsAvailablePropertyKey;
+
+		public static readonly DependencyProperty IsCfsAvailableProperty;
+
+		private DispatcherOperation _updateOperation;
+
+		public CfsProductName ProductName
+		{
+			get
+			{
+				return (CfsProductName)GetValue(ProductNameProperty);
+			}
+			set
+			{
+				SetValue(ProductNameProperty, value);
+			}
+		}
+
+		public CfsProductVersion ProductVersion
+		{
+			get
+			{
+				return (CfsProductVersion)GetValue(ProductVersionProperty);
+			}
+			set
+			{
+				SetValue(ProductVersionProperty, value);
+			}
+		}
+
+		public CfsProductLanguage? ProductLanguage
+		{
+			get
+			{
+				return (CfsProductLanguage?)GetValue(ProductLanguageProperty);
+			}
+			set
+			{
+				SetValue(ProductLanguageProperty, value);
+			}
+		}
+
+		public string ContextId
+		{
+			get
+			{
+				return (string)GetValue(ContextIdProperty);
+			}
+			set
+			{
+				SetValue(ContextIdProperty, value);
+			}
+		}
+
+		public IndexedContent Context
+		{
+			get
+			{
+				return (IndexedContent)GetValue(ContextProperty);
+			}
+			private set
+			{
+				SetValue(ContextPropertyKey, value);
+			}
+		}
+
+		public bool? IsCfsAvailable
+		{
+			get
+			{
+				return (bool?)GetValue(IsCfsAvailableProperty);
+			}
+			private set
+			{
+				SetValue(IsCfsAvailablePropertyKey, value);
+			}
+		}
+
+		public bool IsInContextGuidanceFeatureClosed
+		{
+			get
+			{
+				return (bool)GetValue(IsInContextGuidanceFeatureClosedProperty);
+			}
+			set
+			{
+				SetValue(IsInContextGuidanceFeatureClosedProperty, value);
+			}
+		}
+
+		public bool IsExchangeInitializedSuccessfully => (bool)GetValue(IsExchangeInitializedSuccessfullyProperty);
+
+		public InContextControlCommands Commands { get; }
+
+		static InContextControlBase()
+		{
+			ProductNameProperty = DependencyProperty.Register("ProductName", typeof(CfsProductName), typeof(InContextControlBase), new FrameworkPropertyMetadata(CfsProductName.AspenPlus, OnSettingsPropertyChanged));
+			ProductVersionProperty = DependencyProperty.Register("ProductVersion", typeof(CfsProductVersion), typeof(InContextControlBase), new FrameworkPropertyMetadata(CfsProductVersion.V14, OnSettingsPropertyChanged));
+			ProductLanguageProperty = DependencyProperty.Register("ProductLanguage", typeof(CfsProductLanguage?), typeof(InContextControlBase), new FrameworkPropertyMetadata(OnSettingsPropertyChanged));
+			ContextIdProperty = DependencyProperty.Register("ContextId", typeof(string), typeof(InContextControlBase), new FrameworkPropertyMetadata(OnContextIdPropertyChanged));
+			ContextPropertyKey = DependencyProperty.RegisterReadOnly("Context", typeof(IndexedContent), typeof(InContextControlBase), new FrameworkPropertyMetadata(OnContextPropertyChanged));
+			ContextProperty = ContextPropertyKey.DependencyProperty;
+			IsInContextGuidanceFeatureClosedProperty = DependencyProperty.Register("IsInContextGuidanceFeatureClosed", typeof(bool), typeof(InContextControlBase), new FrameworkPropertyMetadata(false, OnIsInContextGuidanceFeatureClosedPropertyChanged));
+			IsExchangeInitializedSuccessfullyProperty = DependencyProperty.Register("IsExchangeInitializedSuccessfully", typeof(bool), typeof(InContextControlBase), new FrameworkPropertyMetadata(false, OnIsExchangeInitializedSuccessfullyPropertyChanged));
+			IsCfsAvailablePropertyKey = DependencyProperty.RegisterReadOnly("IsCfsAvailable", typeof(bool?), typeof(InContextControlBase), new FrameworkPropertyMetadata(OnIsCfsAvailablePropertyChanged));
+			IsCfsAvailableProperty = IsCfsAvailablePropertyKey.DependencyProperty;
+			UIElement.VisibilityProperty.OverrideMetadata(typeof(InContextControlBase), new FrameworkPropertyMetadata(OnVisibilityPropertyChanged));
+		}
+
+		protected InContextControlBase()
+		{
+			Commands = new InContextControlCommands(this);
+			SetBinding(IsExchangeInitializedSuccessfullyProperty, new Binding("SuccessfullyInitialized")
+			{
+				Source = ExchangeAdapter.Default,
+				Mode = BindingMode.OneWay
+			});
+		}
+
+		protected virtual void OnContextIdChanged(string oldValue, string newValue)
+		{
+		}
+
+		protected virtual void OnContextChanged(IndexedContent oldValue, IndexedContent newValue)
+		{
+		}
+
+		protected virtual void OnVisibilityChanged(Visibility oldValue, Visibility newValue)
+		{
+		}
+
+		protected virtual void OnIsInContextGuidanceFeatureClosedChanged(bool oldValue, bool newValue)
+		{
+		}
+
+		protected virtual void OnIsExchangeInitializedSuccessfullyChanged(bool oldValue, bool newValue)
+		{
+		}
+
+		protected virtual void OnIsCfsAvailableChanged(bool? oldValue, bool? newValue)
+		{
+		}
+
+		public void InvalidateContext()
+		{
+			if (_updateOperation == null)
+			{
+				_updateOperation = base.Dispatcher.BeginInvoke(new Action(InternalUpdateContextAsync));
+			}
+		}
+
+		private async void InternalUpdateContextAsync()
+		{
+			await UpdateContextAsync();
+			_updateOperation = null;
+		}
+
+		protected async Task UpdateContextAsync()
+		{
+			if (IsReadyToRequestContext())
+			{
+				CfsResult<IndexedContent> cfsResult = await CfsClient.GetIndexedContentAsync(ProductName, CfsProductVersion.V14, ContextId, ProductLanguage);
+				IsCfsAvailable = !cfsResult.FailedToConnectServer;
+				Context = cfsResult.Data;
+			}
+			else
+			{
+				Context = null;
+			}
+		}
+
+		private bool IsReadyToRequestContext()
+		{
+			if (base.Visibility != Visibility.Visible)
+			{
+				return false;
+			}
+			if (string.IsNullOrWhiteSpace(ContextId))
+			{
+				return false;
+			}
+			if (IsInContextGuidanceFeatureClosed)
+			{
+				return false;
+			}
+			if (!IsExchangeInitializedSuccessfully)
+			{
+				return false;
+			}
+			return true;
+		}
+
+		private static void OnVisibilityPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			InContextControlBase obj = d as InContextControlBase;
+			obj.InvalidateContext();
+			obj.OnVisibilityChanged((Visibility)e.OldValue, (Visibility)e.NewValue);
+		}
+
+		private static void OnSettingsPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			(d as InContextControlBase).InvalidateContext();
+		}
+
+		private static void OnContextIdPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			InContextControlBase obj = d as InContextControlBase;
+			obj.InvalidateContext();
+			obj.OnContextIdChanged((string)e.OldValue, (string)e.NewValue);
+		}
+
+		private static void OnContextPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			(d as InContextControlBase).OnContextChanged((IndexedContent)e.OldValue, (IndexedContent)e.NewValue);
+		}
+
+		private static void OnIsInContextGuidanceFeatureClosedPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			InContextControlBase obj = d as InContextControlBase;
+			obj.InvalidateContext();
+			obj.OnIsInContextGuidanceFeatureClosedChanged((bool)e.OldValue, (bool)e.NewValue);
+		}
+
+		private static void OnIsExchangeInitializedSuccessfullyPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			InContextControlBase obj = d as InContextControlBase;
+			obj.InvalidateContext();
+			obj.OnIsExchangeInitializedSuccessfullyChanged((bool)e.OldValue, (bool)e.NewValue);
+		}
+
+		private static void OnIsCfsAvailablePropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			InContextControlBase obj = d as InContextControlBase;
+			obj.InvalidateContext();
+			obj.OnIsCfsAvailableChanged((bool?)e.OldValue, (bool?)e.NewValue);
+		}
+	}
+	public class SearchBoxPopup : Popup, IComponentConnector
+	{
+		private bool _contentLoaded;
+
+		public SearchBox Owner { get; }
+
+		public SearchBoxPopup(SearchBox owner)
+		{
+			Owner = owner ?? throw new ArgumentNullException("owner");
+			InitializeComponent();
+			base.PlacementTarget = owner;
+			base.Placement = PlacementMode.Bottom;
+			if (!SystemParameters.MenuDropAlignment)
+			{
+				SetBinding(Popup.HorizontalOffsetProperty, new Binding
+				{
+					Source = base.Child,
+					Path = new PropertyPath(FrameworkElement.ActualWidthProperty),
+					Converter = new PopupLeftMoveHorizontalOffsetConverter
+					{
+						AdditionOffset = 200.0
+					}
+				});
+			}
+			else
+			{
+				base.HorizontalOffset = -25.0;
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/AspenTech.InContextGuidance.Widgets;component/primitive/searchboxpopup.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		internal Delegate _CreateDelegate(Type delegateType, string handler)
+		{
+			return Delegate.CreateDelegate(delegateType, this, handler);
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			_contentLoaded = true;
+		}
+	}
+}
+namespace AspenTech.InContextGuidance.Widgets.Internals
+{
+	internal static class HelperMethods
+	{
+		public static T GetAncestor<T>(DependencyObject descendant, DependencyObject upperLimit) where T : DependencyObject
+		{
+			if (descendant != null)
+			{
+				DependencyObject dependencyObject = descendant;
+				while (dependencyObject != null && dependencyObject != upperLimit)
+				{
+					if (dependencyObject is T result)
+					{
+						return result;
+					}
+					DependencyObject dependencyObject2 = null;
+					if (dependencyObject is Visual)
+					{
+						dependencyObject2 = VisualTreeHelper.GetParent(dependencyObject);
+					}
+					if (dependencyObject2 == null)
+					{
+						dependencyObject2 = LogicalTreeHelper.GetParent(dependencyObject);
+					}
+					dependencyObject = dependencyObject2;
+				}
+			}
+			return null;
+		}
+
+		public static void OpenUriWithDefaultBrowser(object parameter)
+		{
+			try
+			{
+				if (parameter is string fileName)
+				{
+					Process.Start(fileName);
+				}
+			}
+			catch (Exception)
+			{
+			}
+		}
+	}
+	public static class ImageResources
+	{
+		private static readonly Dictionary<string, ImageSource> _imageSources = new Dictionary<string, ImageSource>();
+
+		public static ImageSource Information => GetFromLocalFile("Information.png");
+
+		public static ImageSource Search => GetFromLocalFile("Search.png");
+
+		public static ImageSource DefaultBigger => GetFromLocalFile("DefaultBigger.png");
+
+		public static ImageSource DefaultSmaller => GetFromLocalFile("DefaultSmaller.png");
+
+		private static ImageSource GetFromLocalFile(string imageFileName)
+		{
+			if (!_imageSources.ContainsKey(imageFileName))
+			{
+				StringBuilder stringBuilder = new StringBuilder();
+				stringBuilder.Append("pack://application:,,,/");
+				stringBuilder.Append(typeof(ImageResources).Assembly.FullName);
+				stringBuilder.Append(";component/Images/");
+				stringBuilder.Append(imageFileName);
+				_imageSources.Add(imageFileName, new BitmapImage(new Uri(stringBuilder.ToString(), UriKind.RelativeOrAbsolute)));
+			}
+			return _imageSources[imageFileName];
+		}
+	}
+	public class SearchBoxPlaceholderVisibilityConverter : IValueConverter
+	{
+		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			return (!string.IsNullOrEmpty(value as string)) ? Visibility.Collapsed : Visibility.Visible;
+		}
+
+		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			throw new NotImplementedException();
+		}
+	}
+	public class SearchBoxPlaceholderBackgroundConverter : IMultiValueConverter
+	{
+		public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+		{
+			if (values != null && values.Length == 2)
+			{
+				object obj = values[0];
+				bool flag = default(bool);
+				int num;
+				if (obj is bool)
+				{
+					flag = (bool)obj;
+					num = 1;
+				}
+				else
+				{
+					num = 0;
+				}
+				if (((uint)num & (flag ? 1u : 0u)) != 0 && string.IsNullOrWhiteSpace(values[1] as string))
+				{
+					return Brushes.White;
+				}
+			}
+			return Brushes.Transparent;
+		}
+
+		public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+		{
+			throw new NotImplementedException();
+		}
+	}
+	public class SearchBoxBackgroundConverter : IMultiValueConverter
+	{
+		public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+		{
+			if (values != null && values.Length == 2 && values[0] is bool flag && values[1] is string value && flag && !string.IsNullOrWhiteSpace(value))
+			{
+				return Brushes.White;
+			}
+			return Brushes.Transparent;
+		}
+
+		public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+		{
+			throw new NotImplementedException();
+		}
+	}
+	public class InContextGuidanceButtonTooltipConverter : IValueConverter
+	{
+		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			bool? flag = value as bool?;
+			if (flag.HasValue && flag.Value)
+			{
+				return InContextGuidanceResources.Widgets_InContextGuidanceButton_Tooltip_Enabled;
+			}
+			return InContextGuidanceResources.Widgets_InContextGuidanceButton_Tooltip_Disabled;
+		}
+
+		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			throw new NotImplementedException();
+		}
+	}
+	public class SearchBoxTooltipConverter : IValueConverter
+	{
+		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			if (value is bool && !(bool)value)
+			{
+				return InContextGuidanceResources.Widgets_InContextGuidanceButton_Tooltip_Disabled;
+			}
+			return DependencyProperty.UnsetValue;
+		}
+
+		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			throw new NotImplementedException();
+		}
+	}
+	public class DateTimeOffsetDisplayConverter : IMultiValueConverter
+	{
+		public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+		{
+			if (values != null && values.Length == 2 && values[0] is DateTimeOffset dateTimeOffset && dateTimeOffset > DateTimeOffset.MinValue)
+			{
+				if (values[1] is string text)
+				{
+					return dateTimeOffset.LocalDateTime.ToString(text);
+				}
+				return dateTimeOffset.LocalDateTime.ToShortDateString();
+			}
+			return null;
+		}
+
+		public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+		{
+			throw new NotImplementedException();
+		}
+	}
+	public class InContextButtonOpacityConverter : IValueConverter
+	{
+		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			return ((bool)value) ? 1.0 : 0.5;
+		}
+
+		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			throw new NotImplementedException();
+		}
+	}
+	public class ContentItemImageConverter : IValueConverter
+	{
+		public ImageSource DefaultImageSource { get; set; }
+
+		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			if (value is ImageSource result)
+			{
+				return result;
+			}
+			return DefaultImageSource;
+		}
+
+		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			throw new NotImplementedException();
+		}
+	}
+	public class FontSizeConverter : IValueConverter
+	{
+		public double ScaleFactor { get; set; } = 1.0;
+
+		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			if (value is double num)
+			{
+				return num * ScaleFactor;
+			}
+			return SystemFonts.CaptionFontSize;
+		}
+
+		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			throw new NotImplementedException();
+		}
+	}
+	public class PopupLeftMoveHorizontalOffsetConverter : IValueConverter
+	{
+		public double AdditionOffset { get; set; }
+
+		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			if (value is double num)
+			{
+				return AdditionOffset - num;
+			}
+			return 0.0;
+		}
+
+		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			throw new NotImplementedException();
+		}
+	}
+	public class TrimmedTooltipVisiblityConverter : IValueConverter
+	{
+		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			if (value is FrameworkElement frameworkElement)
+			{
+				frameworkElement.Measure(new Size(double.PositiveInfinity, frameworkElement.ActualHeight));
+				if (frameworkElement.ActualWidth < frameworkElement.DesiredSize.Width)
+				{
+					return Visibility.Visible;
+				}
+			}
+			return Visibility.Collapsed;
+		}
+
+		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			throw new NotImplementedException();
+		}
+	}
+	public class FirstLetterUppercaseConverter : IValueConverter
+	{
+		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			if (value is string text)
+			{
+				if (string.Equals(text, "e-learning", StringComparison.InvariantCultureIgnoreCase))
+				{
+					return "eLearning";
+				}
+				if (!string.IsNullOrWhiteSpace(text))
+				{
+					return char.ToUpper(text[0]) + text.Substring(1);
+				}
+			}
+			return value;
+		}
+
+		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			throw new NotImplementedException();
+		}
+	}
+	internal class DelegateCommand : ICommand
+	{
+		private readonly Action<object> _executeAction;
+
+		private readonly Func<object, bool> _canExecuteFunc;
+
+		public event EventHandler CanExecuteChanged;
+
+		public DelegateCommand(Action<object> executeAction, Func<object, bool> canExecuteFunc = null)
+		{
+			_executeAction = executeAction ?? throw new ArgumentNullException("executeAction");
+			if (canExecuteFunc != null)
+			{
+				_canExecuteFunc = canExecuteFunc;
+				CommandManager.RequerySuggested += CommandManager_RequerySuggested;
+			}
+		}
+
+		private void CommandManager_RequerySuggested(object sender, EventArgs e)
+		{
+			RaiseCanExecuteChanged();
+		}
+
+		public bool CanExecute(object parameter)
+		{
+			if (_canExecuteFunc != null)
+			{
+				return _canExecuteFunc(parameter);
+			}
+			return true;
+		}
+
+		public void Execute(object parameter)
+		{
+			if (CanExecute(parameter))
+			{
+				_executeAction(parameter);
+			}
+		}
+
+		public void RaiseCanExecuteChanged()
+		{
+			this.CanExecuteChanged?.Invoke(this, EventArgs.Empty);
+		}
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

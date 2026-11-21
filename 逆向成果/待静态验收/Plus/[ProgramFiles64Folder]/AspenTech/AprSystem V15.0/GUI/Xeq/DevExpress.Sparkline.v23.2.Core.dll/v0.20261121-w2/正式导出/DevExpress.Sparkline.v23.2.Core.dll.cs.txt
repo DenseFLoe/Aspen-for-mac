@@ -1,0 +1,4645 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Data;
+using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Globalization;
+using System.Reflection;
+using System.Resources;
+using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
+using System.Security;
+using DevExpress.Data;
+using DevExpress.Data.Browsing;
+using DevExpress.Data.Export;
+using DevExpress.Drawing;
+using DevExpress.Drawing.Internal;
+using DevExpress.Sparkline;
+using DevExpress.Sparkline.Core;
+using DevExpress.Sparkline.Localization;
+using DevExpress.Utils;
+using DevExpress.Utils.Design;
+using DevExpress.Utils.Drawing;
+using DevExpress.Utils.Localization;
+using DevExpress.Utils.Localization.Internal;
+using DevExpress.Utils.Serializing;
+using DevExpress.Utils.Serializing.Helpers;
+using DevExpress.XtraPrinting;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyTitle("DevExpress.Sparkline.Core")]
+[assembly: AssemblyDescription("DevExpress.Sparkline.Core")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("Developer Express Inc.")]
+[assembly: AssemblyProduct("DevExpress.Sparkline.Core")]
+[assembly: AssemblyCopyright("Copyright © 2000-2024 Developer Express Inc.")]
+[assembly: AssemblyTrademark("DevExpress.Sparkline.Core")]
+[assembly: CLSCompliant(true)]
+[assembly: AllowPartiallyTrustedCallers]
+[assembly: NeutralResourcesLanguage("en-US")]
+[assembly: AssemblyFileVersion("23.2.4.0")]
+[assembly: SatelliteContractVersion("23.2.0.0")]
+[assembly: TargetFramework(".NETFramework,Version=v4.5.2", FrameworkDisplayName = ".NET Framework 4.5.2")]
+[assembly: AssemblyVersion("23.2.4.0")]
+namespace DevExpress.ChartRangeControlClient.Core
+{
+	public class BindingSourceClientSeries : IClientSeries, ISparklineExtendedData, ISparklineSettings
+	{
+		private readonly List<SparklinePoint> points;
+
+		private readonly SparklineRange range;
+
+		private SparklineViewBase view;
+
+		public PaddingInfo Padding { get; set; } = PaddingInfo.Empty;
+
+		public SparklineViewBase View
+		{
+			get
+			{
+				return view;
+			}
+			set
+			{
+				view = value;
+			}
+		}
+
+		public List<SparklinePoint> Points => points;
+
+		SparklineViewBase ISparklineSettings.View => View;
+
+		PaddingInfo ISparklineSettings.Padding => Padding;
+
+		SparklineRange ISparklineSettings.ValueRange => range;
+
+		IList<SparklinePoint> ISparklineExtendedData.Points => Points;
+
+		public BindingSourceClientSeries()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0006: Unknown result type (might be due to invalid IL or missing references)
+			points = new List<SparklinePoint>();
+			range = new SparklineRange();
+		}
+	}
+	public class BindingSource : IDisposable
+	{
+		private class SeriesAccumulator
+		{
+			private BindingSource bindingSource;
+
+			private DataBrowser browser;
+
+			private Dictionary<object, BindingSourceClientSeries> seriesCache;
+
+			private int seriesCounter;
+
+			public List<BindingSourceClientSeries> Series => new List<BindingSourceClientSeries>(seriesCache.Values);
+
+			public BindingSourceClientSeries CurrentSeries
+			{
+				get
+				{
+					object obj = ((browser != null) ? browser.Current : bindingSource.ItemsSource);
+					if (!IsNull(obj))
+					{
+						if (!seriesCache.TryGetValue(obj, out var value))
+						{
+							value = new BindingSourceClientSeries();
+							bindingSource.AdjustSeries(obj, value, seriesCounter++);
+							seriesCache.Add(obj, value);
+						}
+						return value;
+					}
+					return null;
+				}
+			}
+
+			public SeriesAccumulator(BindingSource bindingSource)
+			{
+				this.bindingSource = bindingSource;
+				seriesCounter = 0;
+				seriesCache = new Dictionary<object, BindingSourceClientSeries>();
+				if (!string.IsNullOrEmpty(bindingSource.seriesDataMember))
+				{
+					browser = bindingSource.GetDataBrowser(bindingSource.seriesDataMember);
+				}
+			}
+		}
+
+		private readonly SparklineScaleType scaleType;
+
+		private readonly Dictionary<string, DataBrowser> dataBrowserCache;
+
+		private readonly DataContextBase dataContext;
+
+		private readonly IBindingSourceDelegate sourceDelegate;
+
+		private List<IClientSeries> seriesCache;
+
+		private bool isDisposed;
+
+		private object itemsSource;
+
+		private string valueDataMember;
+
+		private string seriesDataMember;
+
+		private string argumentDataMember;
+
+		private bool IsBindingPossible
+		{
+			get
+			{
+				if (argumentDataMember != null && valueDataMember != null)
+				{
+					return itemsSource != null;
+				}
+				return false;
+			}
+		}
+
+		public bool IsDisposed => isDisposed;
+
+		public DataContextBase DataContext => dataContext;
+
+		public object ItemsSource
+		{
+			get
+			{
+				return itemsSource;
+			}
+			set
+			{
+				if (itemsSource != value)
+				{
+					UnsubscribeSource();
+					itemsSource = value;
+					SubscribeSource();
+					ClearContext();
+					RaiseBindingChanged();
+				}
+			}
+		}
+
+		public string SeriesDataMember
+		{
+			get
+			{
+				return seriesDataMember;
+			}
+			set
+			{
+				if (seriesDataMember != value)
+				{
+					seriesDataMember = value;
+					RaiseBindingChanged();
+				}
+			}
+		}
+
+		public string ArgumentDataMember
+		{
+			get
+			{
+				return argumentDataMember;
+			}
+			set
+			{
+				if (argumentDataMember != value)
+				{
+					argumentDataMember = value;
+					RaiseBindingChanged();
+				}
+			}
+		}
+
+		public string ValueDataMember
+		{
+			get
+			{
+				return valueDataMember;
+			}
+			set
+			{
+				if (valueDataMember != value)
+				{
+					valueDataMember = value;
+					RaiseBindingChanged();
+				}
+			}
+		}
+
+		public SparklineScaleType ScaleType => scaleType;
+
+		private static bool IsNumericType(Type type)
+		{
+			Type type2 = ((type != null) ? Nullable.GetUnderlyingType(type) : null);
+			Type type3 = ((type2 != null) ? type2 : type);
+			if (type3 != null)
+			{
+				TypeCode typeCode = DXTypeExtensions.GetTypeCode(type3);
+				if (typeCode >= TypeCode.SByte)
+				{
+					return typeCode <= TypeCode.Decimal;
+				}
+				return false;
+			}
+			return false;
+		}
+
+		private static bool IsDateTimeType(Type type)
+		{
+			Type type2 = ((type != null) ? Nullable.GetUnderlyingType(type) : null);
+			Type type3 = ((type2 != null) ? type2 : type);
+			return type3 == typeof(DateTime);
+		}
+
+		private static bool IsTimeSpanType(Type type)
+		{
+			Type type2 = ((type != null) ? Nullable.GetUnderlyingType(type) : null);
+			Type type3 = ((type2 != null) ? type2 : type);
+			return type3 == typeof(TimeSpan);
+		}
+
+		private static bool IsNull(object value)
+		{
+			if (value != null)
+			{
+				return value is DBNull;
+			}
+			return true;
+		}
+
+		private static PropertyDescriptor GetPropertyDescriptor(DataBrowser browser, string dataMember)
+		{
+			if (!string.IsNullOrEmpty(dataMember))
+			{
+				PropertyDescriptorCollection itemProperties = browser.GetItemProperties();
+				for (int i = 0; i < itemProperties.Count; i++)
+				{
+					PropertyDescriptor propertyDescriptor = itemProperties[i];
+					if (propertyDescriptor.Name == dataMember)
+					{
+						return propertyDescriptor;
+					}
+				}
+			}
+			if (dataMember.Contains("."))
+			{
+				int num = dataMember.IndexOf('.');
+				return GetPropertyDescriptor(browser, dataMember.Substring(num + 1));
+			}
+			return null;
+		}
+
+		internal static double MapDateTimeValue(DateTime value)
+		{
+			return (value - DateTime.MinValue).TotalMilliseconds;
+		}
+
+		public BindingSource(SparklineScaleType scaleType, IBindingSourceDelegate sourceDelegate)
+		{
+			//IL_0020: Unknown result type (might be due to invalid IL or missing references)
+			//IL_002a: Expected O, but got Unknown
+			this.sourceDelegate = sourceDelegate;
+			this.scaleType = scaleType;
+			dataBrowserCache = new Dictionary<string, DataBrowser>();
+			dataContext = new DataContextBase();
+		}
+
+		public void Dispose()
+		{
+			if (!isDisposed)
+			{
+				if (dataContext != null)
+				{
+					dataContext.Dispose();
+				}
+				UnsubscribeSource();
+				ClearContext();
+				isDisposed = true;
+			}
+		}
+
+		private void ItemsSourceCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+		{
+			RaiseBindingChanged();
+		}
+
+		private void ItemsSourceBindingListChanged(object sender, ListChangedEventArgs e)
+		{
+			RaiseBindingChanged();
+		}
+
+		private void ItemsSourceDataSetCollectionChanged(object sender, CollectionChangeEventArgs e)
+		{
+			if (e.Element is DataTable table)
+			{
+				UnsubscribeDataTable(table);
+				CollectionChangeAction action = e.Action;
+				if (action == CollectionChangeAction.Add || action == CollectionChangeAction.Refresh)
+				{
+					SubscribeDataTable(table);
+				}
+			}
+		}
+
+		private void ItemsSourceDataSetColumnChanged(object sender, DataColumnChangeEventArgs e)
+		{
+			RaiseBindingChanged();
+		}
+
+		private void ItemsSourceDataSetTableCleared(object sender, DataTableClearEventArgs e)
+		{
+			RaiseBindingChanged();
+		}
+
+		private void ItemsSourceDataSetRowDeleted(object sender, DataRowChangeEventArgs e)
+		{
+			RaiseBindingChanged();
+		}
+
+		private void ItemsSourceDataSetRowChanged(object sender, DataRowChangeEventArgs e)
+		{
+			RaiseBindingChanged();
+		}
+
+		private void RaiseBindingChanged()
+		{
+			seriesCache = null;
+			if (sourceDelegate != null)
+			{
+				sourceDelegate.BindingChanged();
+			}
+		}
+
+		private void SubscribeDataTable(DataTable table)
+		{
+			UnsubscribeDataTable(table);
+			table.ColumnChanged += ItemsSourceDataSetColumnChanged;
+			table.RowChanged += ItemsSourceDataSetRowChanged;
+			table.RowDeleted += ItemsSourceDataSetRowDeleted;
+			table.TableCleared += ItemsSourceDataSetTableCleared;
+		}
+
+		private void UnsubscribeDataTable(DataTable table)
+		{
+			table.ColumnChanged -= ItemsSourceDataSetColumnChanged;
+			table.RowChanged -= ItemsSourceDataSetRowChanged;
+			table.RowDeleted -= ItemsSourceDataSetRowDeleted;
+			table.TableCleared -= ItemsSourceDataSetTableCleared;
+		}
+
+		private void SubscribeSource()
+		{
+			if (itemsSource == null)
+			{
+				return;
+			}
+			if (itemsSource is INotifyCollectionChanged)
+			{
+				((INotifyCollectionChanged)itemsSource).CollectionChanged += ItemsSourceCollectionChanged;
+			}
+			else if (itemsSource is IBindingList)
+			{
+				((IBindingList)itemsSource).ListChanged += ItemsSourceBindingListChanged;
+			}
+			else if (itemsSource is DataSet)
+			{
+				DataSet dataSet = (DataSet)itemsSource;
+				dataSet.Tables.CollectionChanged += ItemsSourceDataSetCollectionChanged;
+				for (int i = 0; i < dataSet.Tables.Count; i++)
+				{
+					SubscribeDataTable(dataSet.Tables[i]);
+				}
+			}
+		}
+
+		private void UnsubscribeSource()
+		{
+			if (itemsSource == null)
+			{
+				return;
+			}
+			if (itemsSource is INotifyCollectionChanged)
+			{
+				((INotifyCollectionChanged)itemsSource).CollectionChanged -= ItemsSourceCollectionChanged;
+			}
+			else if (itemsSource is IBindingList)
+			{
+				((IBindingList)itemsSource).ListChanged -= ItemsSourceBindingListChanged;
+			}
+			else if (itemsSource is DataSet)
+			{
+				DataSet dataSet = (DataSet)itemsSource;
+				dataSet.Tables.CollectionChanged -= ItemsSourceDataSetCollectionChanged;
+				for (int i = 0; i < dataSet.Tables.Count; i++)
+				{
+					UnsubscribeDataTable(dataSet.Tables[i]);
+				}
+			}
+		}
+
+		private void ClearContext()
+		{
+			dataContext.Clear();
+			dataBrowserCache.Clear();
+			seriesCache = null;
+		}
+
+		private DataBrowser GetDataBrowser(string dataMember)
+		{
+			if (!dataBrowserCache.TryGetValue(dataMember, out var value))
+			{
+				value = dataContext.GetDataBrowser(itemsSource, dataMember, true);
+				dataBrowserCache.Add(dataMember, value);
+			}
+			return value;
+		}
+
+		private DataBrowser CreateDataBrowser(string dataMember)
+		{
+			//IL_0080: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0086: Expected O, but got Unknown
+			DataBrowser val = dataContext.GetDataBrowser(itemsSource, string.Empty, true);
+			if (val == null)
+			{
+				return null;
+			}
+			string text = dataMember;
+			string text2 = string.Empty;
+			ListBrowser val2 = (ListBrowser)(object)((val is ListBrowser) ? val : null);
+			while (!string.IsNullOrEmpty(text) && val.FindItemProperty(text, false) == null)
+			{
+				try
+				{
+					int num = text.IndexOf('.');
+					if (num == -1)
+					{
+						break;
+					}
+					if (!string.IsNullOrEmpty(text2))
+					{
+						text2 += ".";
+					}
+					text2 += text.Substring(0, num);
+					val = dataContext[itemsSource, text2];
+					if (val is ListBrowser)
+					{
+						val2 = (ListBrowser)val;
+					}
+					text = text.Substring(num + 1, text.Length - num - 1);
+					continue;
+				}
+				catch
+				{
+				}
+				break;
+			}
+			if (val2 == null)
+			{
+				return val;
+			}
+			return (DataBrowser)(object)val2;
+		}
+
+		private bool CheckArgumentCompatibility(DataBrowser rootBrowser)
+		{
+			PropertyDescriptor propertyDescriptor = GetPropertyDescriptor(rootBrowser, argumentDataMember);
+			if (propertyDescriptor != null)
+			{
+				if (scaleType == SparklineScaleType.Numeric)
+				{
+					return IsNumericType(propertyDescriptor.PropertyType);
+				}
+				if (scaleType == SparklineScaleType.DateTime)
+				{
+					return IsDateTimeType(propertyDescriptor.PropertyType);
+				}
+				if (scaleType == SparklineScaleType.TimeSpan)
+				{
+					return IsTimeSpanType(propertyDescriptor.PropertyType);
+				}
+			}
+			return false;
+		}
+
+		private bool CheckValueCompatibility(DataBrowser rootBrowser)
+		{
+			PropertyDescriptor propertyDescriptor = GetPropertyDescriptor(rootBrowser, valueDataMember);
+			if (propertyDescriptor != null)
+			{
+				return IsNumericType(propertyDescriptor.PropertyType);
+			}
+			return false;
+		}
+
+		private bool CheckItemsSourceCompatibility(DataBrowser rootBrowser)
+		{
+			if (CheckArgumentCompatibility(rootBrowser))
+			{
+				return CheckValueCompatibility(rootBrowser);
+			}
+			return false;
+		}
+
+		private void AdjustSeries(object dataSourceValue, BindingSourceClientSeries series, int seriesCounter)
+		{
+			if (sourceDelegate != null)
+			{
+				sourceDelegate.AdjustSeries(dataSourceValue, series, seriesCounter);
+			}
+			else
+			{
+				series.View = new LineSparklineView();
+			}
+		}
+
+		private void ReadSource()
+		{
+			if (!IsBindingPossible)
+			{
+				return;
+			}
+			DataBrowser val = CreateDataBrowser(string.IsNullOrEmpty(seriesDataMember) ? argumentDataMember : seriesDataMember);
+			if (!CheckItemsSourceCompatibility(val))
+			{
+				return;
+			}
+			DataBrowser dataBrowser = GetDataBrowser(valueDataMember);
+			if (dataBrowser == null)
+			{
+				return;
+			}
+			SeriesAccumulator seriesAccumulator = new SeriesAccumulator(this);
+			for (int i = 0; i < val.Count; i++)
+			{
+				val.Position = i;
+				if (seriesAccumulator.CurrentSeries == null)
+				{
+					continue;
+				}
+				DataBrowser dataBrowser2 = GetDataBrowser(argumentDataMember);
+				if (dataBrowser2 != null)
+				{
+					object current = dataBrowser.Current;
+					object current2 = dataBrowser2.Current;
+					if (!IsNull(current2) && !IsNull(current))
+					{
+						double value = Convert.ToDouble(current);
+						double argument = ((scaleType == SparklineScaleType.Numeric) ? Convert.ToDouble(current2) : ((scaleType != SparklineScaleType.TimeSpan) ? MapDateTimeValue(Convert.ToDateTime(current2)) : ((TimeSpan)current2).TotalMilliseconds));
+						seriesAccumulator.CurrentSeries.Points.Add(new SparklinePoint(argument, value));
+					}
+				}
+			}
+			seriesCache.AddRange(seriesAccumulator.Series);
+		}
+
+		public IList<IClientSeries> GetSeries()
+		{
+			if (seriesCache == null)
+			{
+				seriesCache = new List<IClientSeries>();
+				ReadSource();
+			}
+			return seriesCache;
+		}
+
+		public void RefreshData()
+		{
+			seriesCache = null;
+			RaiseBindingChanged();
+		}
+	}
+	public class GridUnit
+	{
+		public double Spacing { get; set; }
+
+		public double Unit { get; set; }
+
+		public double Step => Spacing * Unit;
+
+		public GridUnit(double unit, double spacing)
+		{
+			Spacing = spacing;
+			Unit = unit;
+		}
+	}
+	public sealed class SeriesProviderPair
+	{
+		private readonly IClientSeries series;
+
+		private readonly SparklineDataProvider dataProvider;
+
+		public IClientSeries Series => series;
+
+		public SparklineDataProvider DataProvider => dataProvider;
+
+		public SeriesProviderPair(IClientSeries series, SparklineDataProvider provider)
+		{
+			this.series = series;
+			dataProvider = provider;
+		}
+	}
+	public sealed class SeriesInteraction
+	{
+		private readonly List<SeriesProviderPair> dataProviders;
+
+		private readonly SparklineInteractionRanges interactionRanges;
+
+		public int Count => dataProviders.Count;
+
+		public bool HasDataToPresent => Count > 0;
+
+		public SparklineInteractionRanges Ranges => interactionRanges;
+
+		public SeriesProviderPair this[int index] => dataProviders[index];
+
+		public SeriesInteraction()
+		{
+			dataProviders = new List<SeriesProviderPair>();
+			interactionRanges = new SparklineInteractionRanges();
+		}
+
+		private void UpdateRanges(SparklineDataProvider provider)
+		{
+			List<SparklinePoint> sortedPoints = provider.SortedPoints;
+			int count = sortedPoints.Count;
+			if (count == 1)
+			{
+				interactionRanges.DataArgumentRange.Extend(sortedPoints[0].Argument - 0.5);
+				interactionRanges.DataArgumentRange.Extend(sortedPoints[0].Argument + 0.5);
+				interactionRanges.DataValueRange.Extend(sortedPoints[0].Value - 0.5);
+				interactionRanges.DataValueRange.Extend(sortedPoints[0].Value + 0.5);
+				interactionRanges.UpdateMinPointDistance(1.0);
+				return;
+			}
+			for (int i = 0; i < count; i++)
+			{
+				SparklinePoint sparklinePoint = sortedPoints[i];
+				interactionRanges.DataArgumentRange.Extend(sparklinePoint.Argument);
+				interactionRanges.DataValueRange.Extend(sparklinePoint.Value);
+				if (count > 1 && i > 0)
+				{
+					interactionRanges.UpdateMinPointDistance(sparklinePoint.Argument - sortedPoints[i - 1].Argument);
+				}
+			}
+		}
+
+		public void Clear()
+		{
+			dataProviders.Clear();
+			interactionRanges.Invalidate();
+		}
+
+		public void Add(IClientSeries series)
+		{
+			SparklineDataProvider sparklineDataProvider = new SparklineDataProvider(series, interactionRanges.VisualArgumentRange);
+			sparklineDataProvider.AllowPaddingCorrection = false;
+			UpdateRanges(sparklineDataProvider);
+			dataProviders.Add(new SeriesProviderPair(series, sparklineDataProvider));
+		}
+
+		public double NormalizeArgument(double argument)
+		{
+			SparklineRangeData actualDataArgumentRange = interactionRanges.ActualDataArgumentRange;
+			double num = argument - actualDataArgumentRange.Min;
+			double delta = actualDataArgumentRange.Delta;
+			if (SparklineMathUtils.IsValidDouble(delta) && SparklineMathUtils.IsValidDouble(num))
+			{
+				if (delta == 0.0)
+				{
+					return 0.0;
+				}
+				return num / delta;
+			}
+			return 0.0;
+		}
+
+		public double GetArgument(double normalizedArgument)
+		{
+			if (SparklineMathUtils.IsValidDouble(normalizedArgument))
+			{
+				SparklineRangeData actualDataArgumentRange = interactionRanges.ActualDataArgumentRange;
+				double delta = actualDataArgumentRange.Delta;
+				if (SparklineMathUtils.IsValidDouble(delta) && SparklineMathUtils.IsValidDouble(actualDataArgumentRange.Min))
+				{
+					return normalizedArgument * delta + actualDataArgumentRange.Min;
+				}
+			}
+			return 0.0;
+		}
+	}
+	public enum SnapBounds
+	{
+		None,
+		Minimum,
+		Maximum,
+		Both
+	}
+	public sealed class ChartCoreClient
+	{
+		private readonly SeriesInteraction interaction;
+
+		private readonly SparklinePaintersCache sparklinePaintersCache;
+
+		private IClientDataProvider dataProvider;
+
+		private IChartCoreClientDelegate clientDelegate;
+
+		public IClientDataProvider DataProvider
+		{
+			get
+			{
+				return dataProvider;
+			}
+			set
+			{
+				if (dataProvider != value)
+				{
+					if (dataProvider != null)
+					{
+						dataProvider.SetDataChangedDelegate(null);
+					}
+					dataProvider = value;
+					if (dataProvider != null)
+					{
+						dataProvider.SetDataChangedDelegate(DataProviderDataChanged);
+					}
+					DataProviderDataChanged(dataProvider);
+				}
+			}
+		}
+
+		public bool HasDataToPresent => interaction.HasDataToPresent;
+
+		public SeriesInteraction Interaction => interaction;
+
+		public IChartCoreClientDelegate Delegate
+		{
+			get
+			{
+				return clientDelegate;
+			}
+			set
+			{
+				if (clientDelegate != value)
+				{
+					clientDelegate = value;
+					UpdateInteraction();
+				}
+			}
+		}
+
+		public ChartCoreClient()
+		{
+			interaction = new SeriesInteraction();
+			sparklinePaintersCache = new SparklinePaintersCache();
+		}
+
+		private void DataProviderDataChanged(IClientDataProvider provider)
+		{
+			UpdateInteraction();
+		}
+
+		private void UpdateInteraction()
+		{
+			interaction.Clear();
+			if (dataProvider != null)
+			{
+				IList<IClientSeries> series = dataProvider.Series;
+				for (int i = 0; i < series.Count; i++)
+				{
+					interaction.Add(series[i]);
+				}
+			}
+			if (clientDelegate != null)
+			{
+				clientDelegate.InteractionUpdated();
+			}
+		}
+
+		private GridUnit GetAutoGridUnit(double min, double max, double width, IChartCoreClientGridOptions gridOptions)
+		{
+			double num = max - min;
+			double delta = interaction.Ranges.ActualDataArgumentRange.Delta;
+			double pixelPerUnit = gridOptions.PixelPerUnit;
+			if (SparklineMathUtils.IsValidDouble(num) && SparklineMathUtils.IsValidDouble(delta) && delta > 0.0 && num > 0.0)
+			{
+				double num2 = width * delta / num;
+				double num3 = Math.Max(1.0, Math.Floor(num2 / pixelPerUnit));
+				return gridOptions.GridMapping.SelectGridUnit(delta / num3);
+			}
+			return null;
+		}
+
+		private double RoundNormalValue(double normalizedValue, GridUnit unit, IChartCoreClientGridMapping gridMapping)
+		{
+			if (SparklineMathUtils.AreDoublesEqual(normalizedValue, 0.0) || SparklineMathUtils.AreDoublesEqual(normalizedValue, 1.0))
+			{
+				return normalizedValue;
+			}
+			double value = GetValue(normalizedValue);
+			double gridValue = gridMapping.GetGridValue(unit, gridMapping.FloorValue(unit, value));
+			double num = 0.0;
+			num = ((!((value - gridValue) / unit.Step > 0.5)) ? gridValue : gridMapping.GetGridValue(unit, gridMapping.CeilValue(unit, value)));
+			return Normalize(num);
+		}
+
+		private double FloorNormalValue(double normalizedValue, GridUnit unit, IChartCoreClientGridMapping gridMapping)
+		{
+			if (SparklineMathUtils.AreDoublesEqual(normalizedValue, 0.0))
+			{
+				return 0.0;
+			}
+			double value = GetValue(normalizedValue);
+			double index = gridMapping.FloorValue(unit, value);
+			return Normalize(gridMapping.GetGridValue(unit, index));
+		}
+
+		private double CeilNormalValue(double normalizedValue, GridUnit unit, IChartCoreClientGridMapping gridMapping)
+		{
+			if (SparklineMathUtils.AreDoublesEqual(normalizedValue, 1.0))
+			{
+				return 1.0;
+			}
+			double value = GetValue(normalizedValue);
+			double index = gridMapping.CeilValue(unit, value);
+			return Normalize(gridMapping.GetGridValue(unit, index));
+		}
+
+		private double ShiftNormalValue(double normalizedValue, GridUnit unit, IChartCoreClientGridMapping gridMapping, double offset)
+		{
+			double value = GetValue(normalizedValue);
+			double num = gridMapping.FloorValue(unit, value) + offset;
+			if (num > 0.0)
+			{
+				return Normalize(gridMapping.GetGridValue(unit, num));
+			}
+			return 0.0;
+		}
+
+		public void DrawContent(IGraphicsCache cache, Rectangle bounds, Matrix normalTransform)
+		{
+			if (!interaction.HasDataToPresent)
+			{
+				return;
+			}
+			for (int i = 0; i < interaction.Count; i++)
+			{
+				SeriesProviderPair seriesProviderPair = interaction[i];
+				if (seriesProviderPair.Series.View != null)
+				{
+					BaseSparklinePainter painter = sparklinePaintersCache.GetPainter(seriesProviderPair.Series.View);
+					painter.Initialize(seriesProviderPair.DataProvider, seriesProviderPair.Series, bounds, interaction.Ranges, normalTransform);
+					painter.Draw(cache);
+				}
+			}
+		}
+
+		public void DrawContent(Graphics graphics, Rectangle bounds, Matrix normalTransform)
+		{
+			if (!interaction.HasDataToPresent)
+			{
+				return;
+			}
+			for (int i = 0; i < interaction.Count; i++)
+			{
+				SeriesProviderPair seriesProviderPair = interaction[i];
+				if (seriesProviderPair.Series.View != null)
+				{
+					BaseSparklinePainter painter = sparklinePaintersCache.GetPainter(seriesProviderPair.Series.View);
+					painter.Initialize(seriesProviderPair.DataProvider, seriesProviderPair.Series, bounds, interaction.Ranges, normalTransform);
+					painter.Draw(graphics);
+				}
+			}
+		}
+
+		public double Normalize(double value)
+		{
+			double num = interaction.NormalizeArgument(value);
+			if (num < 0.0)
+			{
+				num = 0.0;
+			}
+			else if (num > 1.0)
+			{
+				num = 1.0;
+			}
+			return num;
+		}
+
+		public double GetValue(double normalizedValue)
+		{
+			return interaction.GetArgument(normalizedValue);
+		}
+
+		public List<object> GenerateGrid(double min, double max, double width, IChartCoreClientGridOptions gridOptions)
+		{
+			List<object> list = new List<object>();
+			GridUnit gridUnit = null;
+			gridUnit = ((!gridOptions.Auto) ? gridOptions.GridUnit : GetAutoGridUnit(min, max, width, gridOptions));
+			if (gridUnit != null)
+			{
+				IChartCoreClientGridMapping gridMapping = gridOptions.GridMapping;
+				if ((max - min) / gridUnit.Step > width)
+				{
+					return list;
+				}
+				if (gridUnit != null)
+				{
+					double num = gridMapping.CeilValue(gridUnit, min);
+					double num2 = gridMapping.FloorValue(gridUnit, max);
+					double num3 = num;
+					do
+					{
+						list.Add(gridOptions.GridMapping.GetGridValue(gridUnit, num3++));
+					}
+					while (num3 <= num2);
+				}
+			}
+			return list;
+		}
+
+		public void SnapNormalRange(SparklineRangeData range, SnapBounds changedBounds, IChartCoreClientGridOptions gridOptions)
+		{
+			GridUnit snapUnit = gridOptions.SnapUnit;
+			IChartCoreClientGridMapping gridMapping = gridOptions.GridMapping;
+			double num = RoundNormalValue(range.Min, snapUnit, gridMapping);
+			double num2 = RoundNormalValue(range.Max, snapUnit, gridMapping);
+			if (SparklineMathUtils.AreDoublesEqual(num, num2))
+			{
+				double num3 = num;
+				if (SparklineMathUtils.AreDoublesEqual(range.Min, range.Max))
+				{
+					switch (changedBounds)
+					{
+					case SnapBounds.None:
+					case SnapBounds.Both:
+						if (num3 - range.Min > 0.0)
+						{
+							num = ShiftNormalValue(num3, snapUnit, gridMapping, -1.0);
+						}
+						else
+						{
+							num2 = ShiftNormalValue(num3, snapUnit, gridMapping, 1.0);
+						}
+						break;
+					case SnapBounds.Minimum:
+						num = ShiftNormalValue(num3, snapUnit, gridMapping, -1.0);
+						break;
+					case SnapBounds.Maximum:
+						num2 = ShiftNormalValue(num3, snapUnit, gridMapping, 1.0);
+						break;
+					}
+				}
+				else
+				{
+					double num4 = Math.Abs(num3 - range.Min);
+					double num5 = Math.Abs(num3 - range.Max);
+					if (num4 > num5)
+					{
+						num = FloorNormalValue(range.Min, snapUnit, gridMapping);
+					}
+					else
+					{
+						num2 = CeilNormalValue(range.Max, snapUnit, gridMapping);
+					}
+				}
+			}
+			range.Set(num, num2);
+		}
+
+		public void SetCustomArgumentRange(SparklineRangeData range)
+		{
+			Interaction.Ranges.CustomDataArgumentRange.Set(range.Min, range.Max);
+		}
+	}
+	public interface IClientSeries : ISparklineExtendedData, ISparklineSettings
+	{
+	}
+	public delegate void DataChangedDelegate(IClientDataProvider provider);
+	public interface IClientDataProvider
+	{
+		IList<IClientSeries> Series { get; }
+
+		void SetDataChangedDelegate(DataChangedDelegate dataChangedDelegate);
+	}
+	public interface IBindingSourceDelegate
+	{
+		void BindingChanged();
+
+		void AdjustSeries(object dataSourceValue, BindingSourceClientSeries series, int seriesCounter);
+	}
+	public interface IChartCoreClientDelegate
+	{
+		void InteractionUpdated();
+	}
+	public interface IChartCoreClientGridOptions
+	{
+		bool Auto { get; }
+
+		GridUnit GridUnit { get; }
+
+		GridUnit SnapUnit { get; }
+
+		double PixelPerUnit { get; }
+
+		IChartCoreClientGridMapping GridMapping { get; }
+	}
+	public interface IChartCoreClientGridMapping
+	{
+		GridUnit SelectGridUnit(double unit);
+
+		double CeilValue(GridUnit unit, double value);
+
+		double FloorValue(GridUnit unit, double value);
+
+		double GetGridValue(GridUnit unit, double index);
+	}
+}
+namespace DevExpress.Sparkline
+{
+	[DXDisplayName(typeof(ResFinder), "DevExpress.Sparkline.SparklineRange")]
+	public sealed class SparklineRange
+	{
+		private const double DefaultLimit1 = 0.0;
+
+		private const double DefaultLimit2 = 1.0;
+
+		private const bool DefaultAuto = true;
+
+		private double limit1;
+
+		private double limit2 = 1.0;
+
+		private bool isAuto = true;
+
+		internal double Min => Math.Min(limit1, limit2);
+
+		internal double Max => Math.Max(limit1, limit2);
+
+		[DXLocalizedDescription(typeof(ResFinder), "DevExpress.Sparkline.SparklineRange.Limit1")]
+		[DXDisplayName(typeof(ResFinder), "DevExpress.Sparkline.SparklineRange.Limit1")]
+		[DefaultValue(0.0)]
+		[XtraSerializableProperty]
+		public double Limit1
+		{
+			get
+			{
+				return limit1;
+			}
+			set
+			{
+				if (limit1 != value)
+				{
+					limit1 = value;
+					if (!isAuto)
+					{
+						OnPropertiesChanged();
+					}
+				}
+			}
+		}
+
+		[DXLocalizedDescription(typeof(ResFinder), "DevExpress.Sparkline.SparklineRange.Limit2")]
+		[DXDisplayName(typeof(ResFinder), "DevExpress.Sparkline.SparklineRange.Limit2")]
+		[DefaultValue(1.0)]
+		[XtraSerializableProperty]
+		public double Limit2
+		{
+			get
+			{
+				return limit2;
+			}
+			set
+			{
+				if (limit2 != value)
+				{
+					limit2 = value;
+					if (!isAuto)
+					{
+						OnPropertiesChanged();
+					}
+				}
+			}
+		}
+
+		[DXLocalizedDescription(typeof(ResFinder), "DevExpress.Sparkline.SparklineRange.IsAuto")]
+		[DXDisplayName(typeof(ResFinder), "DevExpress.Sparkline.SparklineRange.IsAuto")]
+		[TypeConverter(typeof(BooleanTypeConverter))]
+		[DefaultValue(true)]
+		[XtraSerializableProperty]
+		public bool IsAuto
+		{
+			get
+			{
+				return isAuto;
+			}
+			set
+			{
+				if (isAuto != value)
+				{
+					isAuto = value;
+					OnPropertiesChanged();
+				}
+			}
+		}
+
+		[Browsable(false)]
+		public event EventHandler PropertiesChanged;
+
+		public SparklineRange()
+		{
+		}
+
+		public SparklineRange(double min, double max)
+		{
+			limit1 = min;
+			limit2 = max;
+			isAuto = false;
+		}
+
+		private void OnPropertiesChanged()
+		{
+			if (this.PropertiesChanged != null)
+			{
+				this.PropertiesChanged(this, EventArgs.Empty);
+			}
+		}
+
+		public override string ToString()
+		{
+			return $"SparklineRange [{Min}:{Max}]";
+		}
+	}
+	internal class ResFinder
+	{
+	}
+	[RuntimeObject]
+	public class SparklinePoint
+	{
+		internal int Index { get; set; }
+
+		public double Argument { get; set; }
+
+		public double Value { get; set; }
+
+		public SparklinePoint(double argument, double value)
+		{
+			Argument = argument;
+			Value = value;
+		}
+
+		public override string ToString()
+		{
+			return $"({Argument}, {Value}";
+		}
+	}
+	[DXDisplayName(typeof(ResFinder), "DevExpress.Sparkline.AreaSparklineView")]
+	public class AreaSparklineView : LineSparklineView, IAreaSparklineInfo, ILineSparklineAdditionalInfo, ISparklineInfo
+	{
+		private const byte defaultAreaOpacity = 135;
+
+		private byte areaOpacity = 135;
+
+		[DXLocalizedDescription(typeof(ResFinder), "DevExpress.Sparkline.AreaSparklineView.AreaOpacity")]
+		[XtraSerializableProperty]
+		[DXDisplayName(typeof(ResFinder), "PropertyNamesRes", "DevExpress.Sparkline.AreaSparklineView.AreaOpacity")]
+		public byte AreaOpacity
+		{
+			get
+			{
+				return areaOpacity;
+			}
+			set
+			{
+				if (areaOpacity != value)
+				{
+					areaOpacity = value;
+					OnPropertiesChanged();
+				}
+			}
+		}
+
+		[Description("Gets the type of the sparkline view.")]
+		[DXDisplayName(typeof(ResFinder), "DevExpress.Sparkline.AreaSparklineView.Type")]
+		public override SparklineViewType Type => SparklineViewType.Area;
+
+		ExportSparklineType ISparklineInfo.SparklineType => (ExportSparklineType)0;
+
+		bool ISparklineInfo.SpecificSparklineType => true;
+
+		private bool ShouldSerializeAreaOpacity()
+		{
+			return areaOpacity != 135;
+		}
+
+		protected override bool XtraShouldSerialize(string propertyName)
+		{
+			if (propertyName == "AreaOpacity")
+			{
+				return ShouldSerializeAreaOpacity();
+			}
+			return base.XtraShouldSerialize(propertyName);
+		}
+
+		private void ResetAreaOpacity()
+		{
+			areaOpacity = 135;
+		}
+
+		protected override string GetViewName()
+		{
+			return SparklineLocalizer.GetString(SparklineStringId.viewArea);
+		}
+
+		public override void Assign(SparklineViewBase view)
+		{
+			base.Assign(view);
+			if (view is AreaSparklineView areaSparklineView)
+			{
+				areaOpacity = areaSparklineView.areaOpacity;
+			}
+		}
+
+		public override void Visit(ISparklineViewVisitor visitor)
+		{
+			visitor.Visit(this);
+		}
+	}
+	[DXDisplayName(typeof(ResFinder), "DevExpress.Sparkline.BarSparklineViewBase")]
+	public abstract class BarSparklineViewBase : SparklineViewBase
+	{
+		private const int defaultBarDistance = 2;
+
+		private int barDistance = 2;
+
+		[DXLocalizedDescription(typeof(ResFinder), "DevExpress.Sparkline.BarSparklineViewBase.BarDistance")]
+		[XtraSerializableProperty]
+		[DXDisplayName(typeof(ResFinder), "PropertyNamesRes", "DevExpress.Sparkline.BarSparklineViewBase.BarDistance")]
+		public int BarDistance
+		{
+			get
+			{
+				return barDistance;
+			}
+			set
+			{
+				if (barDistance != value)
+				{
+					barDistance = value;
+					OnPropertiesChanged();
+				}
+			}
+		}
+
+		private bool ShouldSerializeBarDistance()
+		{
+			return barDistance != 2;
+		}
+
+		protected override bool XtraShouldSerialize(string propertyName)
+		{
+			if (propertyName == "BarDistance")
+			{
+				return ShouldSerializeBarDistance();
+			}
+			return base.XtraShouldSerialize(propertyName);
+		}
+
+		private void ResetBarDistance()
+		{
+			barDistance = 2;
+		}
+
+		public override void Assign(SparklineViewBase view)
+		{
+			base.Assign(view);
+			if (view is BarSparklineViewBase barSparklineViewBase)
+			{
+				barDistance = barSparklineViewBase.barDistance;
+			}
+		}
+	}
+	[DXDisplayName(typeof(ResFinder), "DevExpress.Sparkline.BarSparklineView")]
+	public class BarSparklineView : BarSparklineViewBase, IBarSparklineInfo, ISparklineInfo
+	{
+		protected override bool DefaultHighlightNegativePoints => false;
+
+		[Description("Gets the type of the sparkline view.")]
+		[DXDisplayName(typeof(ResFinder), "DevExpress.Sparkline.BarSparklineView.Type")]
+		public override SparklineViewType Type => SparklineViewType.Bar;
+
+		ExportSparklineType ISparklineInfo.SparklineType => (ExportSparklineType)1;
+
+		protected override string GetViewName()
+		{
+			return SparklineLocalizer.GetString(SparklineStringId.viewBar);
+		}
+
+		public override void Visit(ISparklineViewVisitor visitor)
+		{
+			visitor.Visit(this);
+		}
+	}
+	[TypeConverter(typeof(EnumTypeConverter))]
+	[ResourceFinder(typeof(ResFinder), "PropertyNamesRes")]
+	public enum SparklineViewType
+	{
+		Line,
+		Area,
+		Bar,
+		WinLoss
+	}
+	public interface ISparklineViewVisitor
+	{
+		void Visit(LineSparklineView view);
+
+		void Visit(AreaSparklineView view);
+
+		void Visit(BarSparklineView view);
+
+		void Visit(WinLossSparklineView view);
+	}
+	[DXDisplayName(typeof(ResFinder), "DevExpress.Sparkline.WinLossSparklineView")]
+	public class WinLossSparklineView : BarSparklineViewBase, IBarSparklineInfo, ISparklineInfo
+	{
+		protected override bool DefaultHighlightNegativePoints => true;
+
+		[Description("Gets the type of the sparkline view.")]
+		[DXDisplayName(typeof(ResFinder), "DevExpress.Sparkline.WinLossSparklineView.Type")]
+		public override SparklineViewType Type => SparklineViewType.WinLoss;
+
+		ExportSparklineType ISparklineInfo.SparklineType => (ExportSparklineType)2;
+
+		protected override string GetViewName()
+		{
+			return SparklineLocalizer.GetString(SparklineStringId.viewWinLoss);
+		}
+
+		public override void Visit(ISparklineViewVisitor visitor)
+		{
+			visitor.Visit(this);
+		}
+	}
+	[DXDisplayName(typeof(ResFinder), "DevExpress.Sparkline.SparklineViewBase")]
+	public abstract class SparklineViewBase : IXtraSupportShouldSerialize, ISparklineInfo
+	{
+		private const bool defaultHighlightMaxPoint = false;
+
+		private const bool defaultHighlightMinPoint = false;
+
+		private const bool defaultHighlightStartPoint = false;
+
+		private const bool defaultHighlightEndPoint = false;
+
+		private bool highlightMaxPoint;
+
+		private bool highlightMinPoint;
+
+		private bool highlightStartPoint;
+
+		private bool highlightEndPoint;
+
+		private bool highlightNegativePoints;
+
+		private Color color;
+
+		private Color maxPointColor;
+
+		private Color minPointColor;
+
+		private Color startPointColor;
+
+		private Color endPointColor;
+
+		private Color negativePointColor;
+
+		private ISparklineAppearanceProvider appearanceProvider;
+
+		protected abstract bool DefaultHighlightNegativePoints { get; }
+
+		protected internal ISparklineAppearanceProvider AppearanceProvider
+		{
+			get
+			{
+				return appearanceProvider;
+			}
+			set
+			{
+				appearanceProvider = value;
+			}
+		}
+
+		[Browsable(false)]
+		public Color ActualColor
+		{
+			get
+			{
+				if (!color.IsEmpty)
+				{
+					return color;
+				}
+				if (AppearanceProvider == null)
+				{
+					return Color.Empty;
+				}
+				return AppearanceProvider.Color;
+			}
+		}
+
+		[Browsable(false)]
+		public Color ActualMaxPointColor
+		{
+			get
+			{
+				if (!maxPointColor.IsEmpty)
+				{
+					return maxPointColor;
+				}
+				if (AppearanceProvider == null)
+				{
+					return Color.Empty;
+				}
+				return AppearanceProvider.MaxPointColor;
+			}
+		}
+
+		[Browsable(false)]
+		public Color ActualMinPointColor
+		{
+			get
+			{
+				if (!minPointColor.IsEmpty)
+				{
+					return minPointColor;
+				}
+				if (AppearanceProvider == null)
+				{
+					return Color.Empty;
+				}
+				return AppearanceProvider.MinPointColor;
+			}
+		}
+
+		[Browsable(false)]
+		public Color ActualStartPointColor
+		{
+			get
+			{
+				if (!startPointColor.IsEmpty)
+				{
+					return startPointColor;
+				}
+				if (AppearanceProvider == null)
+				{
+					return Color.Empty;
+				}
+				return AppearanceProvider.StartPointColor;
+			}
+		}
+
+		[Browsable(false)]
+		public Color ActualEndPointColor
+		{
+			get
+			{
+				if (!endPointColor.IsEmpty)
+				{
+					return endPointColor;
+				}
+				if (AppearanceProvider == null)
+				{
+					return Color.Empty;
+				}
+				return AppearanceProvider.EndPointColor;
+			}
+		}
+
+		[Browsable(false)]
+		public Color ActualNegativePointColor
+		{
+			get
+			{
+				if (!negativePointColor.IsEmpty)
+				{
+					return negativePointColor;
+				}
+				if (AppearanceProvider == null)
+				{
+					return Color.Empty;
+				}
+				return AppearanceProvider.NegativePointColor;
+			}
+		}
+
+		[XtraSerializableProperty]
+		[Browsable(false)]
+		public abstract SparklineViewType Type { get; }
+
+		[DXLocalizedDescription(typeof(ResFinder), "DevExpress.Sparkline.SparklineViewBase.HighlightNegativePoints")]
+		[XtraSerializableProperty]
+		[DXDisplayName(typeof(ResFinder), "PropertyNamesRes", "DevExpress.Sparkline.SparklineViewBase.HighlightNegativePoints")]
+		[TypeConverter(typeof(BooleanTypeConverter))]
+		public bool HighlightNegativePoints
+		{
+			get
+			{
+				return highlightNegativePoints;
+			}
+			set
+			{
+				if (highlightNegativePoints != value)
+				{
+					highlightNegativePoints = value;
+					OnPropertiesChanged();
+				}
+			}
+		}
+
+		[DXLocalizedDescription(typeof(ResFinder), "DevExpress.Sparkline.SparklineViewBase.HighlightMaxPoint")]
+		[XtraSerializableProperty]
+		[DXDisplayName(typeof(ResFinder), "PropertyNamesRes", "DevExpress.Sparkline.SparklineViewBase.HighlightMaxPoint")]
+		[TypeConverter(typeof(BooleanTypeConverter))]
+		public bool HighlightMaxPoint
+		{
+			get
+			{
+				return highlightMaxPoint;
+			}
+			set
+			{
+				if (highlightMaxPoint != value)
+				{
+					highlightMaxPoint = value;
+					OnPropertiesChanged();
+				}
+			}
+		}
+
+		[DXLocalizedDescription(typeof(ResFinder), "DevExpress.Sparkline.SparklineViewBase.HighlightMinPoint")]
+		[XtraSerializableProperty]
+		[DXDisplayName(typeof(ResFinder), "PropertyNamesRes", "DevExpress.Sparkline.SparklineViewBase.HighlightMinPoint")]
+		[TypeConverter(typeof(BooleanTypeConverter))]
+		public bool HighlightMinPoint
+		{
+			get
+			{
+				return highlightMinPoint;
+			}
+			set
+			{
+				if (highlightMinPoint != value)
+				{
+					highlightMinPoint = value;
+					OnPropertiesChanged();
+				}
+			}
+		}
+
+		[DXLocalizedDescription(typeof(ResFinder), "DevExpress.Sparkline.SparklineViewBase.HighlightStartPoint")]
+		[XtraSerializableProperty]
+		[DXDisplayName(typeof(ResFinder), "PropertyNamesRes", "DevExpress.Sparkline.SparklineViewBase.HighlightStartPoint")]
+		[TypeConverter(typeof(BooleanTypeConverter))]
+		public bool HighlightStartPoint
+		{
+			get
+			{
+				return highlightStartPoint;
+			}
+			set
+			{
+				if (highlightStartPoint != value)
+				{
+					highlightStartPoint = value;
+					OnPropertiesChanged();
+				}
+			}
+		}
+
+		[DXLocalizedDescription(typeof(ResFinder), "DevExpress.Sparkline.SparklineViewBase.HighlightEndPoint")]
+		[XtraSerializableProperty]
+		[DXDisplayName(typeof(ResFinder), "PropertyNamesRes", "DevExpress.Sparkline.SparklineViewBase.HighlightEndPoint")]
+		[TypeConverter(typeof(BooleanTypeConverter))]
+		public bool HighlightEndPoint
+		{
+			get
+			{
+				return highlightEndPoint;
+			}
+			set
+			{
+				if (highlightEndPoint != value)
+				{
+					highlightEndPoint = value;
+					OnPropertiesChanged();
+				}
+			}
+		}
+
+		[DXLocalizedDescription(typeof(ResFinder), "DevExpress.Sparkline.SparklineViewBase.Color")]
+		[XtraSerializableProperty]
+		[DXDisplayName(typeof(ResFinder), "PropertyNamesRes", "DevExpress.Sparkline.SparklineViewBase.Color")]
+		public Color Color
+		{
+			get
+			{
+				return color;
+			}
+			set
+			{
+				if (color != value)
+				{
+					color = value;
+					OnPropertiesChanged();
+				}
+			}
+		}
+
+		[DXLocalizedDescription(typeof(ResFinder), "DevExpress.Sparkline.SparklineViewBase.MaxPointColor")]
+		[XtraSerializableProperty]
+		[DXDisplayName(typeof(ResFinder), "PropertyNamesRes", "DevExpress.Sparkline.SparklineViewBase.MaxPointColor")]
+		public Color MaxPointColor
+		{
+			get
+			{
+				return maxPointColor;
+			}
+			set
+			{
+				if (maxPointColor != value)
+				{
+					maxPointColor = value;
+					OnPropertiesChanged();
+				}
+			}
+		}
+
+		[DXLocalizedDescription(typeof(ResFinder), "DevExpress.Sparkline.SparklineViewBase.MinPointColor")]
+		[XtraSerializableProperty]
+		[DXDisplayName(typeof(ResFinder), "PropertyNamesRes", "DevExpress.Sparkline.SparklineViewBase.MinPointColor")]
+		public Color MinPointColor
+		{
+			get
+			{
+				return minPointColor;
+			}
+			set
+			{
+				if (minPointColor != value)
+				{
+					minPointColor = value;
+					OnPropertiesChanged();
+				}
+			}
+		}
+
+		[DXLocalizedDescription(typeof(ResFinder), "DevExpress.Sparkline.SparklineViewBase.StartPointColor")]
+		[XtraSerializableProperty]
+		[DXDisplayName(typeof(ResFinder), "PropertyNamesRes", "DevExpress.Sparkline.SparklineViewBase.StartPointColor")]
+		public Color StartPointColor
+		{
+			get
+			{
+				return startPointColor;
+			}
+			set
+			{
+				if (startPointColor != value)
+				{
+					startPointColor = value;
+					OnPropertiesChanged();
+				}
+			}
+		}
+
+		[DXLocalizedDescription(typeof(ResFinder), "DevExpress.Sparkline.SparklineViewBase.EndPointColor")]
+		[XtraSerializableProperty]
+		[DXDisplayName(typeof(ResFinder), "PropertyNamesRes", "DevExpress.Sparkline.SparklineViewBase.EndPointColor")]
+		public Color EndPointColor
+		{
+			get
+			{
+				return endPointColor;
+			}
+			set
+			{
+				if (endPointColor != value)
+				{
+					endPointColor = value;
+					OnPropertiesChanged();
+				}
+			}
+		}
+
+		[DXLocalizedDescription(typeof(ResFinder), "DevExpress.Sparkline.SparklineViewBase.NegativePointColor")]
+		[XtraSerializableProperty]
+		[DXDisplayName(typeof(ResFinder), "PropertyNamesRes", "DevExpress.Sparkline.SparklineViewBase.NegativePointColor")]
+		public Color NegativePointColor
+		{
+			get
+			{
+				return negativePointColor;
+			}
+			set
+			{
+				if (negativePointColor != value)
+				{
+					negativePointColor = value;
+					OnPropertiesChanged();
+				}
+			}
+		}
+
+		Color ISparklineInfo.ColorSeries => ActualColor;
+
+		Color ISparklineInfo.ColorNegative => ActualNegativePointColor;
+
+		Color ISparklineInfo.ColorMarker => Color.Empty;
+
+		double ISparklineInfo.LineWeight => 1.0;
+
+		bool ISparklineInfo.DisplayMarkers => false;
+
+		ExportSparklineType ISparklineInfo.SparklineType => (ExportSparklineType)(-1);
+
+		Color ISparklineInfo.ColorFirst => ActualStartPointColor;
+
+		Color ISparklineInfo.ColorLast => ActualEndPointColor;
+
+		Color ISparklineInfo.ColorHigh => ActualMaxPointColor;
+
+		Color ISparklineInfo.ColorLow => ActualMinPointColor;
+
+		bool ISparklineInfo.HighlightNegative => HighlightNegativePoints;
+
+		bool ISparklineInfo.HighlightFirst => HighlightStartPoint;
+
+		bool ISparklineInfo.HighlightLast => HighlightEndPoint;
+
+		bool ISparklineInfo.HighlightHighest => HighlightMaxPoint;
+
+		bool ISparklineInfo.HighlightLowest => HighlightMinPoint;
+
+		bool ISparklineInfo.SpecificSparklineType => false;
+
+		[Browsable(false)]
+		public event EventHandler PropertiesChanged;
+
+		public static SparklineViewBase CreateView(SparklineViewType viewType)
+		{
+			return viewType switch
+			{
+				SparklineViewType.Line => new LineSparklineView(), 
+				SparklineViewType.Area => new AreaSparklineView(), 
+				SparklineViewType.Bar => new BarSparklineView(), 
+				SparklineViewType.WinLoss => new WinLossSparklineView(), 
+				_ => null, 
+			};
+		}
+
+		protected SparklineViewBase()
+		{
+			highlightNegativePoints = DefaultHighlightNegativePoints;
+		}
+
+		private bool ShouldSerializeHighlightMaxPoint()
+		{
+			return highlightMaxPoint;
+		}
+
+		private bool ShouldSerializeHighlightMinPoint()
+		{
+			return highlightMinPoint;
+		}
+
+		private bool ShouldSerializeHighlightStartPoint()
+		{
+			return highlightStartPoint;
+		}
+
+		private bool ShouldSerializeHighlightEndPoint()
+		{
+			return highlightEndPoint;
+		}
+
+		private bool ShouldSerializeColor()
+		{
+			return !color.IsEmpty;
+		}
+
+		private bool ShouldSerializeMaxPointColor()
+		{
+			return !maxPointColor.IsEmpty;
+		}
+
+		private bool ShouldSerializeMinPointColor()
+		{
+			return !minPointColor.IsEmpty;
+		}
+
+		private bool ShouldSerializeStartPointColor()
+		{
+			return !startPointColor.IsEmpty;
+		}
+
+		private bool ShouldSerializeEndPointColor()
+		{
+			return !endPointColor.IsEmpty;
+		}
+
+		private bool ShouldSerializeNegativePointColor()
+		{
+			return !negativePointColor.IsEmpty;
+		}
+
+		private bool ShouldSerializeHighlightNegativePoints()
+		{
+			return highlightNegativePoints != DefaultHighlightNegativePoints;
+		}
+
+		protected virtual bool XtraShouldSerialize(string propertyName)
+		{
+			return propertyName switch
+			{
+				"Type" => true, 
+				"HighlightMaxPoint" => ShouldSerializeHighlightMaxPoint(), 
+				"HighlightMinPoint" => ShouldSerializeHighlightMinPoint(), 
+				"HighlightStartPoint" => ShouldSerializeHighlightStartPoint(), 
+				"HighlightEndPoint" => ShouldSerializeHighlightEndPoint(), 
+				"Color" => ShouldSerializeColor(), 
+				"MaxPointColor" => ShouldSerializeMaxPointColor(), 
+				"MinPointColor" => ShouldSerializeMinPointColor(), 
+				"StartPointColor" => ShouldSerializeStartPointColor(), 
+				"EndPointColor" => ShouldSerializeEndPointColor(), 
+				"NegativePointColor" => ShouldSerializeNegativePointColor(), 
+				"HighlightNegativePoints" => ShouldSerializeHighlightNegativePoints(), 
+				_ => false, 
+			};
+		}
+
+		private void ResetHighlightMaxPoint()
+		{
+			highlightMaxPoint = false;
+		}
+
+		private void ResetHighlightMinPoint()
+		{
+			highlightMinPoint = false;
+		}
+
+		private void ResetHighlightStartPoint()
+		{
+			highlightStartPoint = false;
+		}
+
+		private void ResetHighlightEndPoint()
+		{
+			highlightEndPoint = false;
+		}
+
+		private void ResetColor()
+		{
+			color = Color.Empty;
+		}
+
+		private void ResetMaxPointColor()
+		{
+			maxPointColor = Color.Empty;
+		}
+
+		private void ResetMinPointColor()
+		{
+			minPointColor = Color.Empty;
+		}
+
+		private void ResetStartPointColor()
+		{
+			startPointColor = Color.Empty;
+		}
+
+		private void ResetEndPointColor()
+		{
+			endPointColor = Color.Empty;
+		}
+
+		private void ResetNegativePointColor()
+		{
+			negativePointColor = Color.Empty;
+		}
+
+		private void ResetHighlightNegativePoints()
+		{
+			highlightNegativePoints = DefaultHighlightNegativePoints;
+		}
+
+		bool IXtraSupportShouldSerialize.ShouldSerialize(string propertyName)
+		{
+			return XtraShouldSerialize(propertyName);
+		}
+
+		protected void OnPropertiesChanged()
+		{
+			if (this.PropertiesChanged != null)
+			{
+				this.PropertiesChanged(this, EventArgs.Empty);
+			}
+		}
+
+		protected abstract string GetViewName();
+
+		protected internal virtual BaseSparklinePainter CreatePainter()
+		{
+			return SparklineViewPainterFactory.Create(this);
+		}
+
+		public virtual void Assign(SparklineViewBase view)
+		{
+			if (view != null)
+			{
+				highlightMaxPoint = view.highlightMaxPoint;
+				highlightMinPoint = view.highlightMinPoint;
+				highlightStartPoint = view.highlightStartPoint;
+				highlightEndPoint = view.highlightEndPoint;
+				color = view.color;
+				maxPointColor = view.maxPointColor;
+				minPointColor = view.minPointColor;
+				startPointColor = view.startPointColor;
+				endPointColor = view.endPointColor;
+				negativePointColor = view.negativePointColor;
+				appearanceProvider = view.appearanceProvider;
+				highlightNegativePoints = view.HighlightNegativePoints;
+			}
+		}
+
+		public override string ToString()
+		{
+			return GetViewName();
+		}
+
+		public abstract void Visit(ISparklineViewVisitor visitor);
+	}
+	[DXDisplayName(typeof(ResFinder), "DevExpress.Sparkline.LineSparklineView")]
+	public class LineSparklineView : SparklineViewBase, ILineSparklineAdditionalInfo, ISparklineInfo
+	{
+		private const bool defaultShowMarkers = false;
+
+		private const bool defaultEnableAntialiasing = true;
+
+		private const int defaultLineWidth = 1;
+
+		private const int defaultMarkerSize = 5;
+
+		private const int defaultMaxPointMarkerSize = 5;
+
+		private const int defaultMinPointMarkerSize = 5;
+
+		private const int defaultStartPointMarkerSize = 5;
+
+		private const int defaultEndPointMarkerSize = 5;
+
+		private const int defaultNegativePointMarkerSize = 5;
+
+		private bool showMarkers;
+
+		private bool enableAntialiasing = true;
+
+		private float scaleFactor = 1f;
+
+		private int lineWidth = 1;
+
+		private int markerSize = 5;
+
+		private int maxPointMarkerSize = 5;
+
+		private int minPointMarkerSize = 5;
+
+		private int startPointMarkerSize = 5;
+
+		private int endPointMarkerSize = 5;
+
+		private int negativePointMarkerSize = 5;
+
+		private Color markerColor;
+
+		protected override bool DefaultHighlightNegativePoints => false;
+
+		[Browsable(false)]
+		public Color ActualMarkerColor
+		{
+			get
+			{
+				if (!markerColor.IsEmpty)
+				{
+					return markerColor;
+				}
+				if (base.AppearanceProvider == null)
+				{
+					return Color.Empty;
+				}
+				return base.AppearanceProvider.MarkerColor;
+			}
+		}
+
+		[Browsable(false)]
+		public int ActualMarkerSize => (int)(ScaleFactor * (float)MarkerSize + 0.49f);
+
+		[Browsable(false)]
+		public int ActualMinPointMarkerSize => (int)(ScaleFactor * (float)MinPointMarkerSize + 0.49f);
+
+		[Browsable(false)]
+		public int ActualEndPointMarkerSize => (int)(ScaleFactor * (float)EndPointMarkerSize + 0.49f);
+
+		[Browsable(false)]
+		public int ActualMaxPointMarkerSize => (int)(ScaleFactor * (float)MaxPointMarkerSize + 0.49f);
+
+		[Browsable(false)]
+		public int ActualNegativePointMarkerSize => (int)(ScaleFactor * (float)NegativePointMarkerSize + 0.49f);
+
+		[Browsable(false)]
+		public int ActualStartPointMarkerSize => (int)(ScaleFactor * (float)StartPointMarkerSize + 0.49f);
+
+		[Browsable(false)]
+		public int ActualLineWidth => (int)(ScaleFactor * (float)LineWidth + 0.49f);
+
+		[Browsable(false)]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		public float ScaleFactor
+		{
+			get
+			{
+				return scaleFactor;
+			}
+			set
+			{
+				scaleFactor = value;
+			}
+		}
+
+		[DXLocalizedDescription(typeof(ResFinder), "DevExpress.Sparkline.LineSparklineView.LineWidth")]
+		[XtraSerializableProperty]
+		[DXDisplayName(typeof(ResFinder), "PropertyNamesRes", "DevExpress.Sparkline.LineSparklineView.LineWidth")]
+		public int LineWidth
+		{
+			get
+			{
+				return lineWidth;
+			}
+			set
+			{
+				if (value < 1)
+				{
+					throw new ArgumentException();
+				}
+				if (lineWidth != value)
+				{
+					lineWidth = value;
+					OnPropertiesChanged();
+				}
+			}
+		}
+
+		[DXLocalizedDescription(typeof(ResFinder), "DevExpress.Sparkline.LineSparklineView.ShowMarkers")]
+		[XtraSerializableProperty]
+		[DXDisplayName(typeof(ResFinder), "PropertyNamesRes", "DevExpress.Sparkline.LineSparklineView.ShowMarkers")]
+		[TypeConverter(typeof(BooleanTypeConverter))]
+		public bool ShowMarkers
+		{
+			get
+			{
+				return showMarkers;
+			}
+			set
+			{
+				if (showMarkers != value)
+				{
+					showMarkers = value;
+					OnPropertiesChanged();
+				}
+			}
+		}
+
+		[DXLocalizedDescription(typeof(ResFinder), "DevExpress.Sparkline.LineSparklineView.MarkerSize")]
+		[XtraSerializableProperty]
+		[DXDisplayName(typeof(ResFinder), "PropertyNamesRes", "DevExpress.Sparkline.LineSparklineView.MarkerSize")]
+		public int MarkerSize
+		{
+			get
+			{
+				return markerSize;
+			}
+			set
+			{
+				if (markerSize != value)
+				{
+					markerSize = value;
+					OnPropertiesChanged();
+				}
+			}
+		}
+
+		[DXLocalizedDescription(typeof(ResFinder), "DevExpress.Sparkline.LineSparklineView.MaxPointMarkerSize")]
+		[XtraSerializableProperty]
+		[DXDisplayName(typeof(ResFinder), "PropertyNamesRes", "DevExpress.Sparkline.LineSparklineView.MaxPointMarkerSize")]
+		public int MaxPointMarkerSize
+		{
+			get
+			{
+				return maxPointMarkerSize;
+			}
+			set
+			{
+				if (maxPointMarkerSize != value)
+				{
+					maxPointMarkerSize = value;
+					OnPropertiesChanged();
+				}
+			}
+		}
+
+		[DXLocalizedDescription(typeof(ResFinder), "DevExpress.Sparkline.LineSparklineView.MinPointMarkerSize")]
+		[XtraSerializableProperty]
+		[DXDisplayName(typeof(ResFinder), "PropertyNamesRes", "DevExpress.Sparkline.LineSparklineView.MinPointMarkerSize")]
+		public int MinPointMarkerSize
+		{
+			get
+			{
+				return minPointMarkerSize;
+			}
+			set
+			{
+				if (minPointMarkerSize != value)
+				{
+					minPointMarkerSize = value;
+					OnPropertiesChanged();
+				}
+			}
+		}
+
+		[DXLocalizedDescription(typeof(ResFinder), "DevExpress.Sparkline.LineSparklineView.StartPointMarkerSize")]
+		[XtraSerializableProperty]
+		[DXDisplayName(typeof(ResFinder), "PropertyNamesRes", "DevExpress.Sparkline.LineSparklineView.StartPointMarkerSize")]
+		public int StartPointMarkerSize
+		{
+			get
+			{
+				return startPointMarkerSize;
+			}
+			set
+			{
+				if (startPointMarkerSize != value)
+				{
+					startPointMarkerSize = value;
+					OnPropertiesChanged();
+				}
+			}
+		}
+
+		[DXLocalizedDescription(typeof(ResFinder), "DevExpress.Sparkline.LineSparklineView.EndPointMarkerSize")]
+		[XtraSerializableProperty]
+		[DXDisplayName(typeof(ResFinder), "PropertyNamesRes", "DevExpress.Sparkline.LineSparklineView.EndPointMarkerSize")]
+		public int EndPointMarkerSize
+		{
+			get
+			{
+				return endPointMarkerSize;
+			}
+			set
+			{
+				if (endPointMarkerSize != value)
+				{
+					endPointMarkerSize = value;
+					OnPropertiesChanged();
+				}
+			}
+		}
+
+		[DXLocalizedDescription(typeof(ResFinder), "DevExpress.Sparkline.LineSparklineView.NegativePointMarkerSize")]
+		[XtraSerializableProperty]
+		[DXDisplayName(typeof(ResFinder), "PropertyNamesRes", "DevExpress.Sparkline.LineSparklineView.NegativePointMarkerSize")]
+		public int NegativePointMarkerSize
+		{
+			get
+			{
+				return negativePointMarkerSize;
+			}
+			set
+			{
+				if (negativePointMarkerSize != value)
+				{
+					negativePointMarkerSize = value;
+					OnPropertiesChanged();
+				}
+			}
+		}
+
+		[DXLocalizedDescription(typeof(ResFinder), "DevExpress.Sparkline.LineSparklineView.MarkerColor")]
+		[XtraSerializableProperty]
+		[DXDisplayName(typeof(ResFinder), "PropertyNamesRes", "DevExpress.Sparkline.LineSparklineView.MarkerColor")]
+		public Color MarkerColor
+		{
+			get
+			{
+				return markerColor;
+			}
+			set
+			{
+				if (markerColor != value)
+				{
+					markerColor = value;
+					OnPropertiesChanged();
+				}
+			}
+		}
+
+		[DXLocalizedDescription(typeof(ResFinder), "DevExpress.Sparkline.LineSparklineView.EnableAntialiasing")]
+		[XtraSerializableProperty]
+		[DXDisplayName(typeof(ResFinder), "PropertyNamesRes", "DevExpress.Sparkline.LineSparklineView.EnableAntialiasing")]
+		[TypeConverter(typeof(BooleanTypeConverter))]
+		public bool EnableAntialiasing
+		{
+			get
+			{
+				return enableAntialiasing;
+			}
+			set
+			{
+				if (enableAntialiasing != value)
+				{
+					enableAntialiasing = value;
+					OnPropertiesChanged();
+				}
+			}
+		}
+
+		[Description("Gets the type of the sparkline view.")]
+		[DXDisplayName(typeof(ResFinder), "DevExpress.Sparkline.LineSparklineView.Type")]
+		public override SparklineViewType Type => SparklineViewType.Line;
+
+		Color ISparklineInfo.ColorMarker => MarkerColor;
+
+		double ISparklineInfo.LineWeight => ActualLineWidth;
+
+		bool ISparklineInfo.DisplayMarkers => ShowMarkers;
+
+		ExportSparklineType ISparklineInfo.SparklineType => (ExportSparklineType)0;
+
+		private bool ShouldSerializeLineWidth()
+		{
+			return lineWidth != 1;
+		}
+
+		private bool ShouldSerializeShowMarkers()
+		{
+			return showMarkers;
+		}
+
+		private bool ShouldSerializeMarkerSize()
+		{
+			return markerSize != 5;
+		}
+
+		private bool ShouldSerializeMaxPointMarkerSize()
+		{
+			return maxPointMarkerSize != 5;
+		}
+
+		private bool ShouldSerializeMinPointMarkerSize()
+		{
+			return minPointMarkerSize != 5;
+		}
+
+		private bool ShouldSerializeStartPointMarkerSize()
+		{
+			return startPointMarkerSize != 5;
+		}
+
+		private bool ShouldSerializeEndPointMarkerSize()
+		{
+			return endPointMarkerSize != 5;
+		}
+
+		private bool ShouldSerializeNegativePointMarkerSize()
+		{
+			return negativePointMarkerSize != 5;
+		}
+
+		private bool ShouldSerializeMarkerColor()
+		{
+			return !markerColor.IsEmpty;
+		}
+
+		private bool ShouldSerializeEnableAntialiasing()
+		{
+			return !enableAntialiasing;
+		}
+
+		protected override bool XtraShouldSerialize(string propertyName)
+		{
+			return propertyName switch
+			{
+				"LineWidth" => ShouldSerializeLineWidth(), 
+				"ShowMarkers" => ShouldSerializeShowMarkers(), 
+				"MarkerSize" => ShouldSerializeMarkerSize(), 
+				"MaxPointMarkerSize" => ShouldSerializeMaxPointMarkerSize(), 
+				"MinPointMarkerSize" => ShouldSerializeMinPointMarkerSize(), 
+				"StartPointMarkerSize" => ShouldSerializeStartPointMarkerSize(), 
+				"EndPointMarkerSize" => ShouldSerializeEndPointMarkerSize(), 
+				"NegativePointMarkerSize" => ShouldSerializeNegativePointMarkerSize(), 
+				"MarkerColor" => ShouldSerializeMarkerColor(), 
+				"EnableAntialiasing" => ShouldSerializeEnableAntialiasing(), 
+				_ => base.XtraShouldSerialize(propertyName), 
+			};
+		}
+
+		private void ResetLineWidth()
+		{
+			lineWidth = 1;
+		}
+
+		private void ResetShowMarkers()
+		{
+			showMarkers = false;
+		}
+
+		private void ResetMarkerSize()
+		{
+			markerSize = 5;
+		}
+
+		private void ResetMaxPointMarkerSize()
+		{
+			maxPointMarkerSize = 5;
+		}
+
+		private void ResetMinPointMarkerSize()
+		{
+			minPointMarkerSize = 5;
+		}
+
+		private void ResetStartPointMarkerSize()
+		{
+			startPointMarkerSize = 5;
+		}
+
+		private void ResetEndPointMarkerSize()
+		{
+			endPointMarkerSize = 5;
+		}
+
+		private void ResetNegativePointMarkerSize()
+		{
+			negativePointMarkerSize = 5;
+		}
+
+		private void ResetMarkerColor()
+		{
+			markerColor = Color.Empty;
+		}
+
+		private void ResetEnableAntialiasing()
+		{
+			enableAntialiasing = true;
+		}
+
+		protected override string GetViewName()
+		{
+			return SparklineLocalizer.GetString(SparklineStringId.viewLine);
+		}
+
+		public void SetSizeForAllMarkers(int markerSize)
+		{
+			MarkerSize = markerSize;
+			MaxPointMarkerSize = markerSize;
+			MinPointMarkerSize = markerSize;
+			StartPointMarkerSize = markerSize;
+			EndPointMarkerSize = markerSize;
+			NegativePointMarkerSize = markerSize;
+		}
+
+		public override void Assign(SparklineViewBase view)
+		{
+			base.Assign(view);
+			if (view is LineSparklineView lineSparklineView)
+			{
+				enableAntialiasing = lineSparklineView.enableAntialiasing;
+				showMarkers = lineSparklineView.showMarkers;
+				lineWidth = lineSparklineView.lineWidth;
+				markerSize = lineSparklineView.markerSize;
+				maxPointMarkerSize = lineSparklineView.maxPointMarkerSize;
+				minPointMarkerSize = lineSparklineView.minPointMarkerSize;
+				startPointMarkerSize = lineSparklineView.startPointMarkerSize;
+				endPointMarkerSize = lineSparklineView.endPointMarkerSize;
+				negativePointMarkerSize = lineSparklineView.negativePointMarkerSize;
+				markerColor = lineSparklineView.markerColor;
+			}
+		}
+
+		public override void Visit(ISparklineViewVisitor visitor)
+		{
+			visitor.Visit(this);
+		}
+	}
+}
+namespace DevExpress.Sparkline.Localization
+{
+	public enum SparklineStringId
+	{
+		viewLine,
+		viewArea,
+		viewBar,
+		viewWinLoss
+	}
+	public static class SparklineLocalizationHelper
+	{
+		public static string GetSparklineViewName(SparklineViewType type)
+		{
+			return type switch
+			{
+				SparklineViewType.Line => SparklineLocalizer.GetString(SparklineStringId.viewLine), 
+				SparklineViewType.Area => SparklineLocalizer.GetString(SparklineStringId.viewArea), 
+				SparklineViewType.Bar => SparklineLocalizer.GetString(SparklineStringId.viewBar), 
+				SparklineViewType.WinLoss => SparklineLocalizer.GetString(SparklineStringId.viewWinLoss), 
+				_ => string.Empty, 
+			};
+		}
+	}
+	public class SparklineResLocalizer : XtraResXLocalizer<SparklineStringId>
+	{
+		public SparklineResLocalizer()
+			: base((XtraLocalizer<SparklineStringId>)new SparklineLocalizer())
+		{
+		}
+
+		protected override ResourceManager CreateResourceManagerCore()
+		{
+			return XtraLocalizer.CreateResourceManager<SparklineStringId>((XtraResXLocalizer<SparklineStringId>)this, "DevExpress.Sparkline.LocalizationRes", typeof(SparklineResLocalizer));
+		}
+	}
+	public class SparklineLocalizer : XtraLocalizer<SparklineStringId>
+	{
+		public static XtraLocalizer<SparklineStringId> Active
+		{
+			get
+			{
+				return XtraLocalizer<SparklineStringId>.Active;
+			}
+			set
+			{
+				XtraLocalizer<SparklineStringId>.Active = value;
+			}
+		}
+
+		static SparklineLocalizer()
+		{
+			XtraLocalizer<SparklineStringId>.SetActiveLocalizerProvider((ActiveLocalizerProvider<SparklineStringId>)(object)new DefaultActiveLocalizerProvider<SparklineStringId>(CreateDefaultLocalizer()));
+		}
+
+		public static XtraLocalizer<SparklineStringId> CreateDefaultLocalizer()
+		{
+			return (XtraLocalizer<SparklineStringId>)(object)new SparklineResLocalizer();
+		}
+
+		public static string GetString(SparklineStringId id)
+		{
+			return Active.GetLocalizedString(id);
+		}
+
+		protected override void PopulateStringTable()
+		{
+			((XtraLocalizer<SparklineStringId>)this).AddString(SparklineStringId.viewLine, "Line");
+			((XtraLocalizer<SparklineStringId>)this).AddString(SparklineStringId.viewArea, "Area");
+			((XtraLocalizer<SparklineStringId>)this).AddString(SparklineStringId.viewBar, "Bar");
+			((XtraLocalizer<SparklineStringId>)this).AddString(SparklineStringId.viewWinLoss, "WinLoss");
+		}
+
+		public override XtraLocalizer<SparklineStringId> CreateResXLocalizer()
+		{
+			return (XtraLocalizer<SparklineStringId>)(object)new SparklineResLocalizer();
+		}
+	}
+}
+namespace DevExpress.Sparkline.Core
+{
+	public interface ISparklineAppearanceProvider
+	{
+		Color Color { get; }
+
+		Color MarkerColor { get; }
+
+		Color MaxPointColor { get; }
+
+		Color MinPointColor { get; }
+
+		Color StartPointColor { get; }
+
+		Color EndPointColor { get; }
+
+		Color NegativePointColor { get; }
+	}
+	public static class SparklineAppearanceHelper
+	{
+		public static void SetSparklineAppearanceProvider(SparklineViewBase view, ISparklineAppearanceProvider appearanceProvider)
+		{
+			if (view != null)
+			{
+				view.AppearanceProvider = appearanceProvider;
+			}
+		}
+
+		public static ISparklineAppearanceProvider GetSparklineAppearanceProvider(SparklineViewBase view)
+		{
+			return view?.AppearanceProvider;
+		}
+	}
+	public sealed class SparklineRangeData
+	{
+		private double min;
+
+		private double max;
+
+		public double Min => min;
+
+		public double Max => max;
+
+		public double Delta => Max - Min;
+
+		public bool IsValid
+		{
+			get
+			{
+				if (!double.IsNaN(Min))
+				{
+					return !double.IsNaN(Max);
+				}
+				return false;
+			}
+		}
+
+		public SparklineRangeData()
+		{
+			Invalidate();
+		}
+
+		public SparklineRangeData(double min, double max)
+		{
+			this.min = min;
+			this.max = max;
+		}
+
+		internal void Extend(double value)
+		{
+			if (SparklineMathUtils.IsValidDouble(value))
+			{
+				if (double.IsNaN(min))
+				{
+					min = value;
+				}
+				else if (min > value)
+				{
+					min = value;
+				}
+				if (double.IsNaN(max))
+				{
+					max = value;
+				}
+				else if (max < value)
+				{
+					max = value;
+				}
+			}
+		}
+
+		internal void Invalidate()
+		{
+			min = double.NaN;
+			max = double.NaN;
+		}
+
+		public void Set(double min, double max)
+		{
+			this.min = min;
+			this.max = max;
+		}
+
+		public bool InRange(double value)
+		{
+			if (value >= min)
+			{
+				return value <= max;
+			}
+			return false;
+		}
+
+		public override string ToString()
+		{
+			if (IsValid)
+			{
+				return $"SparklineRange [{min}:{max}]";
+			}
+			return "Invalid SparklineRange";
+		}
+	}
+	public sealed class SparklineInteractionRanges
+	{
+		private readonly SparklineRangeData dataArgumentRange;
+
+		private readonly SparklineRangeData dataValueRange;
+
+		private readonly SparklineRangeData visualArgumentRange;
+
+		private readonly SparklineRangeData customDataArgumentRange;
+
+		private double minPointDistance;
+
+		public SparklineRangeData ActualDataArgumentRange
+		{
+			get
+			{
+				if (!customDataArgumentRange.IsValid)
+				{
+					return dataArgumentRange;
+				}
+				return customDataArgumentRange;
+			}
+		}
+
+		public SparklineRangeData DataArgumentRange => dataArgumentRange;
+
+		public SparklineRangeData DataValueRange => dataValueRange;
+
+		public SparklineRangeData VisualArgumentRange => visualArgumentRange;
+
+		public SparklineRangeData CustomDataArgumentRange => customDataArgumentRange;
+
+		public double MinPointDistance => minPointDistance;
+
+		internal SparklineInteractionRanges()
+		{
+			dataArgumentRange = new SparklineRangeData();
+			dataValueRange = new SparklineRangeData();
+			customDataArgumentRange = new SparklineRangeData();
+			visualArgumentRange = new SparklineRangeData(0.0, 1.0);
+			minPointDistance = double.NaN;
+		}
+
+		internal void Invalidate()
+		{
+			dataArgumentRange.Invalidate();
+			dataValueRange.Invalidate();
+			minPointDistance = double.NaN;
+		}
+
+		internal void UpdateMinPointDistance(double value)
+		{
+			if (SparklineMathUtils.IsValidDouble(value) && (double.IsNaN(minPointDistance) || minPointDistance > value))
+			{
+				minPointDistance = value;
+			}
+		}
+	}
+	public sealed class SparklineIndexRange
+	{
+		private int min;
+
+		private int max;
+
+		public int Min
+		{
+			get
+			{
+				return min;
+			}
+			set
+			{
+				if (value < 0)
+				{
+					throw new ArgumentException("Index must be greater than or equal to 0.", "MinMaxIndexes.Max");
+				}
+				min = value;
+			}
+		}
+
+		public int Max
+		{
+			get
+			{
+				return max;
+			}
+			set
+			{
+				if (value < 0)
+				{
+					throw new ArgumentException("Index must be greater than or equal to 0.", "MinMaxIndexes.Max");
+				}
+				max = value;
+			}
+		}
+
+		public bool IsValid
+		{
+			get
+			{
+				if (min >= 0)
+				{
+					return max >= 0;
+				}
+				return false;
+			}
+		}
+
+		internal SparklineIndexRange()
+			: this(-1, -1)
+		{
+		}
+
+		internal SparklineIndexRange(int start, int end)
+		{
+			min = start;
+			max = end;
+		}
+
+		public override string ToString()
+		{
+			return $"IndexRange [{min}:{max}]";
+		}
+	}
+	public class SparklineViewPainterFactory : ISparklineViewVisitor
+	{
+		private BaseSparklinePainter Result { get; set; }
+
+		public static BaseSparklinePainter Create(SparklineViewBase view)
+		{
+			SparklineViewPainterFactory sparklineViewPainterFactory = new SparklineViewPainterFactory();
+			view.Visit(sparklineViewPainterFactory);
+			return sparklineViewPainterFactory.Result;
+		}
+
+		public void Visit(LineSparklineView view)
+		{
+			Result = new LineSparklinePainter();
+		}
+
+		public void Visit(AreaSparklineView view)
+		{
+			Result = new AreaSparklinePainter();
+		}
+
+		public void Visit(BarSparklineView view)
+		{
+			Result = new BarSparklinePainter();
+		}
+
+		public void Visit(WinLossSparklineView view)
+		{
+			Result = new WinLossSparklinePainter();
+		}
+	}
+	public class CommonSparklineRenderer : ISparklineRenderer, IDisposable
+	{
+		private readonly IDXGraphics dxGraphics;
+
+		private readonly Stack<DXSmoothingMode> antialiasingStack = new Stack<DXSmoothingMode>();
+
+		private readonly Stack<DXRegion> clippingCache = new Stack<DXRegion>();
+
+		private DXDrawingPrimitivesCache cache;
+
+		public CommonSparklineRenderer(IDXGraphics dxGraphics)
+		{
+			this.dxGraphics = dxGraphics;
+			cache = new DXDrawingPrimitivesCache();
+		}
+
+		void ISparklineRenderer.DrawLine(PointF point1, PointF point2, Color color, int thickness)
+		{
+			dxGraphics.DrawLine(cache.GetPen(color, thickness), point1, point2);
+		}
+
+		void ISparklineRenderer.DrawLines(PointF[] points, Color color, int thickness)
+		{
+			dxGraphics.DrawLines(cache.GetPen(color, thickness), points);
+		}
+
+		void ISparklineRenderer.FillEllipse(float x, float y, float width, float height, Color color)
+		{
+			dxGraphics.FillEllipse(cache.GetSolidBrush(color), new RectangleF(x, y, width, height));
+		}
+
+		void ISparklineRenderer.FillPolygon(PointF[] points, Color color)
+		{
+			dxGraphics.FillPolygon(cache.GetSolidBrush(color), points);
+		}
+
+		void ISparklineRenderer.FillRectangle(float x, float y, float width, float height, Color color)
+		{
+			dxGraphics.FillRectangle(cache.GetSolidBrush(color), new RectangleF(x, y, width, height));
+		}
+
+		void ISparklineRenderer.RestoreAntialiasingMode()
+		{
+			if (antialiasingStack.Count > 0)
+			{
+				dxGraphics.SmoothingMode = antialiasingStack.Pop();
+			}
+		}
+
+		void ISparklineRenderer.RestoreClip()
+		{
+			if (clippingCache.Count > 0)
+			{
+				dxGraphics.SetClip(clippingCache.Pop());
+			}
+		}
+
+		void ISparklineRenderer.SetAntialiasingMode(SmoothingMode mode)
+		{
+			antialiasingStack.Push(dxGraphics.SmoothingMode);
+			dxGraphics.SmoothingMode = (DXSmoothingMode)mode;
+		}
+
+		void ISparklineRenderer.SetClip(Rectangle rect)
+		{
+			clippingCache.Push(dxGraphics.GetClip());
+			dxGraphics.SetClip(rect, DXClipCombineMode.Intersect);
+		}
+
+		void IDisposable.Dispose()
+		{
+			if (clippingCache.Count > 0)
+			{
+				dxGraphics.SetClip(clippingCache.Pop());
+			}
+			if (cache != null)
+			{
+				cache.Dispose();
+				cache = null;
+			}
+		}
+	}
+	public class DirectXSparklineRenderer : ISparklineRenderer, IDisposable
+	{
+		private readonly Stack<IGraphicsClipState> clippingCache = new Stack<IGraphicsClipState>();
+
+		protected IGraphicsCache Cache { get; private set; }
+
+		public DirectXSparklineRenderer(IGraphicsCache cache)
+		{
+			Cache = cache;
+		}
+
+		void ISparklineRenderer.SetAntialiasingMode(SmoothingMode mode)
+		{
+		}
+
+		void ISparklineRenderer.RestoreAntialiasingMode()
+		{
+		}
+
+		void ISparklineRenderer.SetClip(Rectangle rect)
+		{
+			clippingCache.Push(Cache.SaveAndSetClip((RectangleF)rect, true));
+		}
+
+		void ISparklineRenderer.RestoreClip()
+		{
+			Cache.RestoreClip(clippingCache.Pop());
+		}
+
+		void ISparklineRenderer.FillPolygon(PointF[] points, Color color)
+		{
+			Cache.FillPolygon(points, color);
+		}
+
+		void ISparklineRenderer.FillEllipse(float x, float y, float width, float height, Color color)
+		{
+			Cache.FillEllipse(x, y, width, height, color);
+		}
+
+		void ISparklineRenderer.FillRectangle(float x, float y, float width, float height, Color color)
+		{
+			Cache.FillRectangle(color, new RectangleF(x, y, width, height));
+		}
+
+		void ISparklineRenderer.DrawLine(PointF point1, PointF point2, Color color, int thickness)
+		{
+			Cache.DrawLine(point1, point2, color, thickness);
+		}
+
+		void ISparklineRenderer.DrawLines(PointF[] points, Color color, int thickness)
+		{
+			Cache.DrawLines(points, color, thickness);
+		}
+
+		void IDisposable.Dispose()
+		{
+			foreach (IGraphicsClipState item in clippingCache)
+			{
+				((IDisposable)item).Dispose();
+			}
+		}
+	}
+	public interface ISparklineRenderer : IDisposable
+	{
+		void SetAntialiasingMode(SmoothingMode mode);
+
+		void RestoreAntialiasingMode();
+
+		void SetClip(Rectangle rect);
+
+		void RestoreClip();
+
+		void FillPolygon(PointF[] points, Color color);
+
+		void FillEllipse(float x, float y, float width, float height, Color color);
+
+		void FillRectangle(float x, float y, float width, float height, Color color);
+
+		void DrawLine(PointF point1, PointF point2, Color color, int thickness);
+
+		void DrawLines(PointF[] points, Color color, int thickness);
+	}
+	public interface ISparklineSettings
+	{
+		PaddingInfo Padding { get; }
+
+		SparklineViewBase View { get; }
+
+		SparklineRange ValueRange { get; }
+	}
+	public enum SparklineScaleType
+	{
+		Numeric,
+		DateTime,
+		TimeSpan,
+		Unknown
+	}
+	public interface ISparklineData
+	{
+		IList<double> Values { get; }
+	}
+	public interface ISparklineExtendedData
+	{
+		IList<SparklinePoint> Points { get; }
+	}
+	public class RuntimeObjectAttribute : Attribute
+	{
+	}
+	public class SparklinePointArgumentComparer : IComparer<SparklinePoint>
+	{
+		public int Compare(SparklinePoint x, SparklinePoint y)
+		{
+			return x.Argument.CompareTo(y.Argument);
+		}
+	}
+	public class SparklinePointArgumentAndIndexComparer : IComparer<SparklinePoint>
+	{
+		public int Compare(SparklinePoint x, SparklinePoint y)
+		{
+			int num = x.Argument.CompareTo(y.Argument);
+			if (num == 0 && x.Index >= 0 && y.Index >= 0)
+			{
+				return x.Index.CompareTo(y.Index);
+			}
+			return num;
+		}
+	}
+	public class SparklineDataWrapper : ISparklineExtendedData
+	{
+		private readonly List<SparklinePoint> points = new List<SparklinePoint>();
+
+		private SparklineRangeData range;
+
+		public IList<SparklinePoint> Points => points;
+
+		public SparklineRangeData Range
+		{
+			get
+			{
+				return range;
+			}
+			set
+			{
+				range = value;
+			}
+		}
+
+		public SparklineDataWrapper(ISparklineData data)
+			: this(data?.Values)
+		{
+		}
+
+		public SparklineDataWrapper(IList<double> values)
+		{
+			if (values != null)
+			{
+				for (int i = 0; i < values.Count; i++)
+				{
+					Points.Add(new SparklinePoint(i, values[i]));
+				}
+				range = new SparklineRangeData(0.0, 1.0);
+			}
+		}
+	}
+	public class BarSparklineMapping : SparklineMappingBase
+	{
+		protected internal BarSparklineMapping(Rectangle bounds)
+			: base(bounds)
+		{
+		}
+
+		protected override SparklineRangeData CorrectValueRange(SparklineRangeData range)
+		{
+			double num = range.Min;
+			double num2 = range.Max;
+			if (num >= 0.0 && num2 >= 0.0)
+			{
+				if (num < 0.0)
+				{
+					num = 0.0;
+				}
+				if (num == num2)
+				{
+					num = 0.0;
+				}
+			}
+			if (num < 0.0 && num2 < 0.0)
+			{
+				if (num2 > 0.0)
+				{
+					num2 = 0.0;
+				}
+				if (num == num2)
+				{
+					num2 = 0.0;
+				}
+			}
+			return base.CorrectValueRange(new SparklineRangeData(num, num2));
+		}
+
+		protected override SparklineRangeData CorrectArgumentRange(double minPointDistance, SparklineRangeData range)
+		{
+			return new SparklineRangeData(range.Min - minPointDistance * 0.5, range.Max + minPointDistance * 0.5);
+		}
+	}
+	public abstract class SparklineMappingBase
+	{
+		private readonly Rectangle bounds;
+
+		private double scaleX;
+
+		private double yZeroValue;
+
+		private double minPointsDistancePx;
+
+		private int screenYZeroValue;
+
+		private SparklineRangeData argumentRange;
+
+		private SparklineRangeData valueRange;
+
+		private SparklineRangeData originalArgumentRange;
+
+		private SparklineRangeData originalValueRange;
+
+		private Matrix normalTransform;
+
+		public int ScreenYZeroValue => screenYZeroValue;
+
+		public double MinPointsDistancePx => minPointsDistancePx;
+
+		public double ScaleX => scaleX;
+
+		public Rectangle Bounds => bounds;
+
+		public SparklineRangeData ValueRange => valueRange;
+
+		private static SparklineMappingBase Create(SparklineViewType viewType, Rectangle bounds)
+		{
+			if (bounds.Width <= 0 || bounds.Height <= 0)
+			{
+				return null;
+			}
+			return viewType switch
+			{
+				SparklineViewType.Bar => new BarSparklineMapping(bounds), 
+				SparklineViewType.WinLoss => new WinLossSparklineMapping(bounds), 
+				_ => new LineSparklineMapping(bounds), 
+			};
+		}
+
+		public static SparklineMappingBase Create(SparklineViewType viewType, Rectangle bounds, SparklineDataProvider dataProvider)
+		{
+			SparklineMappingBase sparklineMappingBase = Create(viewType, bounds);
+			sparklineMappingBase?.Initialize(dataProvider);
+			return sparklineMappingBase;
+		}
+
+		public static SparklineMappingBase Create(SparklineViewType viewType, Rectangle bounds, SparklineDataProvider dataProvider, SparklineInteractionRanges ranges, Matrix normalTransform)
+		{
+			SparklineMappingBase sparklineMappingBase = Create(viewType, bounds);
+			sparklineMappingBase?.Initialize(dataProvider, ranges, normalTransform);
+			return sparklineMappingBase;
+		}
+
+		protected SparklineMappingBase(Rectangle bounds)
+		{
+			this.bounds = bounds;
+		}
+
+		private void Initialize(SparklineDataProvider dataProvider)
+		{
+			originalValueRange = dataProvider.OriginalValueRange;
+			originalArgumentRange = dataProvider.DataArgumentRange;
+			double minInternalArgumentDistance = GetMinInternalArgumentDistance(dataProvider.SortedPoints, originalArgumentRange);
+			argumentRange = CorrectArgumentRange(minInternalArgumentDistance, originalArgumentRange);
+			valueRange = CorrectValueRange(dataProvider.DataValueRange);
+			scaleX = CalculateScaleX();
+			minPointsDistancePx = scaleX * minInternalArgumentDistance;
+			yZeroValue = CalculateZeroValue();
+			screenYZeroValue = MapYValueToScreen(yZeroValue);
+		}
+
+		private void Initialize(SparklineDataProvider dataProvider, SparklineInteractionRanges ranges, Matrix normalTransform)
+		{
+			this.normalTransform = normalTransform;
+			originalValueRange = dataProvider.OriginalValueRange;
+			originalArgumentRange = ranges.ActualDataArgumentRange;
+			argumentRange = CorrectArgumentRange(ranges.MinPointDistance, originalArgumentRange);
+			valueRange = CorrectValueRange(ranges.DataValueRange);
+			scaleX = CalculateScaleX();
+			minPointsDistancePx = scaleX * ranges.MinPointDistance;
+			yZeroValue = CalculateZeroValue();
+			screenYZeroValue = MapYValueToScreen(yZeroValue);
+		}
+
+		private double GetMinInternalArgumentDistance(IList<SparklinePoint> points, SparklineRangeData argumentRange)
+		{
+			if (points.Count == 0)
+			{
+				return 0.0;
+			}
+			double num = double.NaN;
+			for (int i = 1; i < points.Count; i++)
+			{
+				double argument = points[i].Argument;
+				double argument2 = points[i - 1].Argument;
+				if (argumentRange.InRange(argument) || argumentRange.InRange(argument2))
+				{
+					double num2 = argument - argument2;
+					if (num2 != 0.0 && (double.IsNaN(num) || num > num2))
+					{
+						num = num2;
+					}
+				}
+			}
+			if (double.IsNaN(num))
+			{
+				return 0.5;
+			}
+			return num;
+		}
+
+		private double CalculateScaleX()
+		{
+			if (argumentRange.Max == argumentRange.Min)
+			{
+				return 0.0;
+			}
+			return (double)Bounds.Width / (argumentRange.Max - argumentRange.Min);
+		}
+
+		protected virtual SparklineRangeData CorrectArgumentRange(double minPointDistance, SparklineRangeData range)
+		{
+			return range;
+		}
+
+		protected virtual SparklineRangeData CorrectValueRange(SparklineRangeData range)
+		{
+			if (range.Min == range.Max)
+			{
+				return new SparklineRangeData(range.Min - 0.5, range.Max + 0.5);
+			}
+			return range;
+		}
+
+		protected virtual double CorrectValue(double value)
+		{
+			return value;
+		}
+
+		protected virtual double CalculateZeroValue()
+		{
+			if (!(valueRange.Min > 0.0))
+			{
+				if (!(valueRange.Max < 0.0))
+				{
+					return 0.0;
+				}
+				return valueRange.Max;
+			}
+			return valueRange.Min;
+		}
+
+		public bool IsMinValuePoint(double value)
+		{
+			return originalValueRange.Min == value;
+		}
+
+		public bool IsMaxValuePoint(double value)
+		{
+			return originalValueRange.Max == value;
+		}
+
+		public bool IsStartPoint(double argument)
+		{
+			return argument == originalArgumentRange.Min;
+		}
+
+		public bool IsEndPoint(double argument)
+		{
+			return argument == originalArgumentRange.Max;
+		}
+
+		public int MapYValueToScreen(double value)
+		{
+			return Bounds.Y + SparklineMathUtils.Round((valueRange.Max - CorrectValue(value)) / (valueRange.Max - valueRange.Min) * (double)Bounds.Height);
+		}
+
+		public int MapXValueToScreen(double value)
+		{
+			return Bounds.X + SparklineMathUtils.Round((value - argumentRange.Min) * ScaleX);
+		}
+
+		public Point MapPoint(double argument, double value)
+		{
+			double num = 0.0;
+			if (valueRange.Delta != 0.0)
+			{
+				num = (valueRange.Max - CorrectValue(value)) / valueRange.Delta;
+			}
+			double num2 = 0.0;
+			if (argumentRange.Delta != 0.0)
+			{
+				num2 = (argument - argumentRange.Min) / argumentRange.Delta;
+			}
+			PointF pointF = new PointF((float)num2, (float)num);
+			if (normalTransform != null)
+			{
+				PointF[] array = new PointF[1] { pointF };
+				normalTransform.TransformPoints(array);
+				pointF = array[0];
+			}
+			return new Point(SparklineMathUtils.Round((float)Bounds.X + pointF.X * (float)bounds.Width), SparklineMathUtils.Round((float)Bounds.Y + pointF.Y * (float)bounds.Height));
+		}
+
+		public PointF MapPointF(double argument, double value)
+		{
+			double num = 0.0;
+			if (valueRange.Delta != 0.0)
+			{
+				num = (valueRange.Max - CorrectValue(value)) / valueRange.Delta;
+			}
+			double num2 = 0.0;
+			if (argumentRange.Delta != 0.0)
+			{
+				num2 = (argument - argumentRange.Min) / argumentRange.Delta;
+			}
+			PointF pointF = new PointF((float)num2, (float)num);
+			if (normalTransform != null)
+			{
+				PointF[] array = new PointF[1] { pointF };
+				normalTransform.TransformPoints(array);
+				pointF = array[0];
+			}
+			return new PointF(SparklineMathUtils.Round((float)Bounds.X + pointF.X * (float)bounds.Width), SparklineMathUtils.Round((float)Bounds.Y + pointF.Y * (float)bounds.Height));
+		}
+	}
+	public class LineSparklineMapping : SparklineMappingBase
+	{
+		protected internal LineSparklineMapping(Rectangle bounds)
+			: base(bounds)
+		{
+		}
+	}
+	public class WinLossSparklineMapping : BarSparklineMapping
+	{
+		protected internal WinLossSparklineMapping(Rectangle bounds)
+			: base(bounds)
+		{
+		}
+
+		protected override double CalculateZeroValue()
+		{
+			return 0.0;
+		}
+
+		protected override SparklineRangeData CorrectValueRange(SparklineRangeData range)
+		{
+			return new SparklineRangeData(-1.0, 1.0);
+		}
+
+		protected override double CorrectValue(double value)
+		{
+			return Math.Sign(value);
+		}
+	}
+	public class AreaSparklinePainter : LineSparklinePainter
+	{
+		private AreaSparklineView AreaView => (AreaSparklineView)base.View;
+
+		public override SparklineViewType SparklineType => SparklineViewType.Area;
+
+		protected override void DrawWholeGeometry(ISparklineRenderer renderer, Color color, List<PointF> points)
+		{
+			if (points.Count == 0)
+			{
+				return;
+			}
+			Color color2 = Color.FromArgb(AreaView.AreaOpacity, color);
+			if (points.Count == 1)
+			{
+				renderer.DrawLine(points[0], new PointF(points[0].X, base.Mapping.ScreenYZeroValue), color2, AreaView.ActualLineWidth);
+				return;
+			}
+			renderer.SetClip(base.Mapping.Bounds);
+			List<PointF> list = new List<PointF>(points);
+			for (int num = points.Count - 1; num >= 0; num--)
+			{
+				list.Add(new PointF(points[num].X, base.Mapping.ScreenYZeroValue));
+			}
+			renderer.SetAntialiasingMode(SmoothingMode.None);
+			renderer.FillPolygon(list.ToArray(), color2);
+			renderer.RestoreAntialiasingMode();
+			renderer.RestoreClip();
+			base.DrawWholeGeometry(renderer, color, points);
+		}
+	}
+	public class BarSparklinePainter : BaseSparklinePainter
+	{
+		private BarSparklineViewBase BarView => (BarSparklineViewBase)base.View;
+
+		protected override bool EnableAntialiasing => false;
+
+		public override SparklineViewType SparklineType => SparklineViewType.Bar;
+
+		private void DrawBar(ISparklineRenderer renderer, int barWidth, int halfBarWidth, int i, PointF screenPoint)
+		{
+			screenPoint.X -= halfBarWidth;
+			float height = Math.Abs(screenPoint.Y - (float)base.Mapping.ScreenYZeroValue);
+			PointPresentationType pointPresentationType = GetPointPresentationType(i);
+			Color pointColor = GetPointColor(pointPresentationType);
+			renderer.FillRectangle(screenPoint.X, Math.Min(screenPoint.Y, base.Mapping.ScreenYZeroValue), barWidth, height, pointColor);
+		}
+
+		protected override PaddingInfo GetMarkersPadding()
+		{
+			//IL_0002: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0008: Unknown result type (might be due to invalid IL or missing references)
+			return default(PaddingInfo);
+		}
+
+		protected override void DrawInternal(ISparklineRenderer renderer)
+		{
+			renderer.SetClip(base.Mapping.Bounds);
+			int num = Math.Max(1, SparklineMathUtils.Round(base.Mapping.MinPointsDistancePx) - BarView.BarDistance);
+			int halfBarWidth = (int)Math.Round((double)num / 2.0);
+			if (base.MappedPoints != null)
+			{
+				foreach (SparklineMappedPointInfo mappedPoint in base.MappedPoints)
+				{
+					DrawBar(renderer, num, halfBarWidth, mappedPoint.Index, mappedPoint.Point);
+				}
+			}
+			else
+			{
+				int indexOfFirstPointForDrawing = GetIndexOfFirstPointForDrawing();
+				int indexOfLastPointForDrawing = GetIndexOfLastPointForDrawing();
+				for (int i = indexOfFirstPointForDrawing; i <= indexOfLastPointForDrawing; i++)
+				{
+					SparklinePoint sparklinePoint = base.DataProvider.SortedPoints[i];
+					if (SparklineMathUtils.IsValidDouble(sparklinePoint.Value) && SparklineMathUtils.IsValidDouble(sparklinePoint.Argument))
+					{
+						PointF screenPoint = base.Mapping.MapPointF(sparklinePoint.Argument, sparklinePoint.Value);
+						DrawBar(renderer, num, halfBarWidth, i, screenPoint);
+					}
+				}
+			}
+			renderer.RestoreClip();
+		}
+
+		public override List<SparklineMappedPointInfo> GetMappedPoints()
+		{
+			int indexOfFirstPointForDrawing = GetIndexOfFirstPointForDrawing();
+			int indexOfLastPointForDrawing = GetIndexOfLastPointForDrawing();
+			List<SparklineMappedPointInfo> list = new List<SparklineMappedPointInfo>();
+			if (base.Mapping != null)
+			{
+				for (int i = indexOfFirstPointForDrawing; i <= indexOfLastPointForDrawing; i++)
+				{
+					SparklinePoint sparklinePoint = base.DataProvider.SortedPoints[i];
+					if (SparklineMathUtils.IsValidDouble(sparklinePoint.Value) && SparklineMathUtils.IsValidDouble(sparklinePoint.Argument))
+					{
+						list.Add(new SparklineMappedPointInfo
+						{
+							Point = base.Mapping.MapPointF(sparklinePoint.Argument, sparklinePoint.Value),
+							Index = i
+						});
+					}
+				}
+			}
+			return list;
+		}
+	}
+	public enum PointPresentationType
+	{
+		HighPoint,
+		LowPoint,
+		StartPoint,
+		EndPoint,
+		NegativePoint,
+		SimplePoint
+	}
+	public abstract class BaseSparklinePainter
+	{
+		private Rectangle clippingBounds;
+
+		private SparklineDataProvider dataProvider;
+
+		private SparklineMappingBase mapping;
+
+		private SparklineViewBase view;
+
+		protected SparklineDataProvider DataProvider => dataProvider;
+
+		protected SparklineViewBase View => view;
+
+		protected abstract bool EnableAntialiasing { get; }
+
+		internal SparklineMappingBase Mapping => mapping;
+
+		public abstract SparklineViewType SparklineType { get; }
+
+		public List<SparklineMappedPointInfo> MappedPoints { get; set; }
+
+		internal void DrawContent(ISparklineRenderer renderer)
+		{
+			if (mapping != null)
+			{
+				if (EnableAntialiasing)
+				{
+					renderer.SetAntialiasingMode(SmoothingMode.HighQuality);
+				}
+				renderer.SetClip(clippingBounds);
+				DrawInternal(renderer);
+				renderer.RestoreClip();
+				if (EnableAntialiasing)
+				{
+					renderer.RestoreAntialiasingMode();
+				}
+			}
+		}
+
+		private Rectangle InflateRelatively(Rectangle rect, SparklineRangeData range)
+		{
+			rect.Width = SparklineMathUtils.Round((double)rect.Width / (range.Max - range.Min));
+			rect.X = SparklineMathUtils.Round((double)rect.X - (double)rect.Width * range.Min);
+			return rect;
+		}
+
+		private PaddingInfo DeterminePadding(ISparklineSettings settings)
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0006: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0009: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0019: Unknown result type (might be due to invalid IL or missing references)
+			//IL_001e: Unknown result type (might be due to invalid IL or missing references)
+			//IL_003a: Unknown result type (might be due to invalid IL or missing references)
+			//IL_003f: Unknown result type (might be due to invalid IL or missing references)
+			//IL_005b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0060: Unknown result type (might be due to invalid IL or missing references)
+			//IL_007c: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0081: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0093: Unknown result type (might be due to invalid IL or missing references)
+			PaddingInfo markersPadding = GetMarkersPadding();
+			PaddingInfo result = default(PaddingInfo);
+			int left = ((PaddingInfo)(ref markersPadding)).Left;
+			PaddingInfo padding = settings.Padding;
+			((PaddingInfo)(ref result)).Left = Math.Max(left, ((PaddingInfo)(ref padding)).Left);
+			int right = ((PaddingInfo)(ref markersPadding)).Right;
+			padding = settings.Padding;
+			((PaddingInfo)(ref result)).Right = Math.Max(right, ((PaddingInfo)(ref padding)).Right);
+			int top = ((PaddingInfo)(ref markersPadding)).Top;
+			padding = settings.Padding;
+			((PaddingInfo)(ref result)).Top = Math.Max(top, ((PaddingInfo)(ref padding)).Top);
+			int bottom = ((PaddingInfo)(ref markersPadding)).Bottom;
+			padding = settings.Padding;
+			((PaddingInfo)(ref result)).Bottom = Math.Max(bottom, ((PaddingInfo)(ref padding)).Bottom);
+			return result;
+		}
+
+		protected int GetIndexOfFirstPointForDrawing()
+		{
+			if (DataProvider.FilteredPointRange.Min != 0)
+			{
+				return DataProvider.FilteredPointRange.Min - 1;
+			}
+			return 0;
+		}
+
+		protected int GetIndexOfLastPointForDrawing()
+		{
+			if (DataProvider.FilteredPointRange.Max != DataProvider.SortedPoints.Count - 1)
+			{
+				return DataProvider.FilteredPointRange.Max + 1;
+			}
+			return DataProvider.SortedPoints.Count - 1;
+		}
+
+		protected internal PointPresentationType GetPointPresentationType(int index)
+		{
+			if (index >= 0 && index < DataProvider.SortedPoints.Count)
+			{
+				if (View.HighlightMaxPoint && mapping.IsMaxValuePoint(DataProvider.SortedPoints[index].Value))
+				{
+					return PointPresentationType.HighPoint;
+				}
+				if (View.HighlightMinPoint && mapping.IsMinValuePoint(DataProvider.SortedPoints[index].Value))
+				{
+					return PointPresentationType.LowPoint;
+				}
+				if (View.HighlightStartPoint && mapping.IsStartPoint(DataProvider.SortedPoints[index].Argument))
+				{
+					return PointPresentationType.StartPoint;
+				}
+				if (View.HighlightEndPoint && mapping.IsEndPoint(DataProvider.SortedPoints[index].Argument))
+				{
+					return PointPresentationType.EndPoint;
+				}
+				if (View.HighlightNegativePoints && DataProvider.SortedPoints[index].Value < 0.0)
+				{
+					return PointPresentationType.NegativePoint;
+				}
+			}
+			return PointPresentationType.SimplePoint;
+		}
+
+		protected internal virtual Color GetPointColor(PointPresentationType pointType)
+		{
+			return pointType switch
+			{
+				PointPresentationType.HighPoint => View.ActualMaxPointColor, 
+				PointPresentationType.LowPoint => View.ActualMinPointColor, 
+				PointPresentationType.StartPoint => View.ActualStartPointColor, 
+				PointPresentationType.EndPoint => View.ActualEndPointColor, 
+				PointPresentationType.NegativePoint => View.ActualNegativePointColor, 
+				_ => View.ActualColor, 
+			};
+		}
+
+		protected abstract void DrawInternal(ISparklineRenderer renderer);
+
+		protected abstract PaddingInfo GetMarkersPadding();
+
+		public abstract List<SparklineMappedPointInfo> GetMappedPoints();
+
+		public void Initialize(ISparklineData data, ISparklineSettings settings, Rectangle bounds)
+		{
+			Initialize(new SparklineDataProvider(new SparklineDataWrapper(data), new SparklineRangeData(0.0, 1.0)), settings, bounds, null, null);
+		}
+
+		public void Initialize(SparklineDataProvider dataProvider, ISparklineSettings settings, Rectangle bounds, SparklineInteractionRanges interactionRanges, Matrix normalTransform)
+		{
+			//IL_0098: Unknown result type (might be due to invalid IL or missing references)
+			//IL_008f: Unknown result type (might be due to invalid IL or missing references)
+			//IL_009d: Unknown result type (might be due to invalid IL or missing references)
+			if (dataProvider == null || settings == null)
+			{
+				return;
+			}
+			this.dataProvider = dataProvider;
+			if (!settings.ValueRange.IsAuto)
+			{
+				dataProvider.DataValueRange = new SparklineRangeData(settings.ValueRange.Min, settings.ValueRange.Max);
+			}
+			view = settings.View;
+			if (view == null || view.Type != SparklineType)
+			{
+				throw new ArgumentException("Incorrect sparkline view");
+			}
+			mapping = null;
+			if (dataProvider.SortedPoints.Count > 0)
+			{
+				PaddingInfo val = (dataProvider.AllowPaddingCorrection ? DeterminePadding(settings) : settings.Padding);
+				Rectangle rectangle = InflateRelatively(bounds, dataProvider.FilterRange);
+				Rectangle bounds2 = new Rectangle(rectangle.X + ((PaddingInfo)(ref val)).Left, rectangle.Y + ((PaddingInfo)(ref val)).Top, rectangle.Width - ((PaddingInfo)(ref val)).Left - ((PaddingInfo)(ref val)).Right, rectangle.Height - ((PaddingInfo)(ref val)).Top - ((PaddingInfo)(ref val)).Bottom);
+				clippingBounds = bounds;
+				if (interactionRanges != null)
+				{
+					mapping = SparklineMappingBase.Create(View.Type, bounds2, dataProvider, interactionRanges, normalTransform);
+				}
+				else
+				{
+					mapping = SparklineMappingBase.Create(View.Type, bounds2, dataProvider);
+				}
+			}
+		}
+
+		public void Draw(Graphics graphics, IGraphicsCache cache)
+		{
+			if (cache != null)
+			{
+				Draw(cache);
+			}
+			else
+			{
+				Draw(graphics);
+			}
+		}
+
+		public void Draw(IGraphicsCache cache)
+		{
+			if (cache.UseDirectXPaint)
+			{
+				using (ISparklineRenderer renderer = new DirectXSparklineRenderer(cache))
+				{
+					DrawContent(renderer);
+					return;
+				}
+			}
+			Draw(cache.Graphics);
+		}
+
+		public void Draw(Graphics graphics)
+		{
+			using GdiPlusGraphics graphics2 = new GdiPlusGraphics(graphics);
+			Draw((IDXGraphics)graphics2);
+		}
+
+		public void Draw(IDXGraphics graphics)
+		{
+			using CommonSparklineRenderer renderer = new CommonSparklineRenderer(graphics);
+			DrawContent(renderer);
+		}
+	}
+	public class SparklineMappedPointInfo
+	{
+		public PointF Point { get; set; }
+
+		public int Index { get; set; }
+	}
+	public class LineSparklinePainter : BaseSparklinePainter
+	{
+		private const int GDIErrorCriteria = 8125;
+
+		private LineSparklineView LineView => (LineSparklineView)base.View;
+
+		protected override bool EnableAntialiasing => LineView.EnableAntialiasing;
+
+		public override SparklineViewType SparklineType => SparklineViewType.Line;
+
+		private static bool IsPointVisible(Rectangle bounds, PointF point)
+		{
+			if (point.X >= (float)bounds.Left && point.X <= (float)bounds.Right && point.Y >= (float)bounds.Top)
+			{
+				return point.Y <= (float)bounds.Bottom;
+			}
+			return false;
+		}
+
+		private static void AddIntersection(List<PointF> segment, CohenSutherlandLineClipAlgorithm algorithm, PointF point1, PointF point2)
+		{
+			Tuple<PointF, PointF> cutLine = algorithm.GetCutLine(point1, point2);
+			if (cutLine != null)
+			{
+				if (cutLine.Item1 == point1 || cutLine.Item1 == point2)
+				{
+					segment.Add(cutLine.Item2);
+				}
+				else
+				{
+					segment.Add(cutLine.Item1);
+				}
+			}
+		}
+
+		private void DrawMarkers(ISparklineRenderer renderer, List<PointF> points, List<int> pointsIndexes)
+		{
+			for (int i = 0; i < points.Count; i++)
+			{
+				if (IsPointVisible(base.Mapping.Bounds, points[i]))
+				{
+					PointPresentationType pointPresentationType = GetPointPresentationType(pointsIndexes[i]);
+					if (pointPresentationType != PointPresentationType.SimplePoint || LineView.ShowMarkers)
+					{
+						Color pointColor = GetPointColor(pointPresentationType);
+						float markerSize = GetMarkerSize(pointPresentationType);
+						float num = 0.5f * markerSize;
+						renderer.FillEllipse(points[i].X - num, points[i].Y - num, markerSize, markerSize, pointColor);
+					}
+				}
+			}
+		}
+
+		private void DrawLineSegment(ISparklineRenderer renderer, Color color, List<PointF> segment)
+		{
+			if (segment.Count > 1)
+			{
+				renderer.DrawLines(segment.ToArray(), color, LineView.ActualLineWidth);
+			}
+		}
+
+		protected override PaddingInfo GetMarkersPadding()
+		{
+			//IL_00e3: Unknown result type (might be due to invalid IL or missing references)
+			double num = LineView.ActualLineWidth;
+			if (LineView.HighlightStartPoint)
+			{
+				num = Math.Max(num, LineView.ActualStartPointMarkerSize);
+			}
+			if (LineView.HighlightEndPoint)
+			{
+				num = Math.Max(num, LineView.ActualEndPointMarkerSize);
+			}
+			if (LineView.HighlightMaxPoint)
+			{
+				num = Math.Max(num, LineView.ActualMaxPointMarkerSize);
+			}
+			if (LineView.HighlightMinPoint)
+			{
+				num = Math.Max(num, LineView.ActualMinPointMarkerSize);
+			}
+			if (LineView.HighlightNegativePoints)
+			{
+				num = Math.Max(num, LineView.ActualNegativePointMarkerSize);
+			}
+			if (LineView.ShowMarkers)
+			{
+				num = Math.Max(num, LineView.ActualMarkerSize);
+			}
+			int num2 = (int)Math.Ceiling(0.5 * num);
+			return new PaddingInfo(num2, num2, num2, num2);
+		}
+
+		protected virtual void DrawWholeGeometry(ISparklineRenderer renderer, Color color, List<PointF> points)
+		{
+			CohenSutherlandLineClipAlgorithm cohenSutherlandLineClipAlgorithm = new CohenSutherlandLineClipAlgorithm(base.Mapping.Bounds);
+			List<PointF> list = new List<PointF>(points.Count);
+			for (int i = 0; i < points.Count; i++)
+			{
+				if (IsPointVisible(base.Mapping.Bounds, points[i]))
+				{
+					if (i > 0 && list.Count == 0)
+					{
+						AddIntersection(list, cohenSutherlandLineClipAlgorithm, points[i - 1], points[i]);
+					}
+					list.Add(points[i]);
+				}
+				else if (list.Count > 0)
+				{
+					AddIntersection(list, cohenSutherlandLineClipAlgorithm, list[list.Count - 1], points[i]);
+					DrawLineSegment(renderer, color, list);
+					list.Clear();
+				}
+				else if (i > 0)
+				{
+					Tuple<PointF, PointF> cutLine = cohenSutherlandLineClipAlgorithm.GetCutLine(points[i], points[i - 1]);
+					if (cutLine != null)
+					{
+						renderer.DrawLine(cutLine.Item1, cutLine.Item2, color, LineView.ActualLineWidth);
+					}
+				}
+			}
+			DrawLineSegment(renderer, color, list);
+		}
+
+		public override List<SparklineMappedPointInfo> GetMappedPoints()
+		{
+			int indexOfFirstPointForDrawing = GetIndexOfFirstPointForDrawing();
+			int indexOfLastPointForDrawing = GetIndexOfLastPointForDrawing();
+			List<SparklineMappedPointInfo> list = new List<SparklineMappedPointInfo>();
+			if (base.Mapping == null)
+			{
+				return list;
+			}
+			for (int i = indexOfFirstPointForDrawing; i <= indexOfLastPointForDrawing; i++)
+			{
+				SparklinePoint sparklinePoint = base.DataProvider.SortedPoints[i];
+				if (SparklineMathUtils.IsValidDouble(sparklinePoint.Value) && SparklineMathUtils.IsValidDouble(sparklinePoint.Argument))
+				{
+					list.Add(new SparklineMappedPointInfo
+					{
+						Point = base.Mapping.MapPointF(sparklinePoint.Argument, sparklinePoint.Value),
+						Index = i
+					});
+				}
+			}
+			return list;
+		}
+
+		protected override void DrawInternal(ISparklineRenderer renderer)
+		{
+			List<PointF> list = new List<PointF>();
+			List<int> list2 = new List<int>();
+			if (base.MappedPoints != null)
+			{
+				foreach (SparklineMappedPointInfo mappedPoint in base.MappedPoints)
+				{
+					list.Add(mappedPoint.Point);
+					list2.Add(mappedPoint.Index);
+				}
+				DrawWholeGeometry(renderer, base.View.ActualColor, list);
+				DrawMarkers(renderer, list, list2);
+				return;
+			}
+			int indexOfFirstPointForDrawing = GetIndexOfFirstPointForDrawing();
+			int indexOfLastPointForDrawing = GetIndexOfLastPointForDrawing();
+			for (int i = indexOfFirstPointForDrawing; i <= indexOfLastPointForDrawing; i++)
+			{
+				SparklinePoint sparklinePoint = base.DataProvider.SortedPoints[i];
+				if (SparklineMathUtils.IsValidDouble(sparklinePoint.Value) && SparklineMathUtils.IsValidDouble(sparklinePoint.Argument) && list2.Count < 8125)
+				{
+					list.Add(base.Mapping.MapPointF(sparklinePoint.Argument, sparklinePoint.Value));
+					list2.Add(i);
+					continue;
+				}
+				if (list2.Count >= 8125)
+				{
+					i--;
+				}
+				DrawWholeGeometry(renderer, base.View.ActualColor, list);
+				DrawMarkers(renderer, list, list2);
+				list.Clear();
+				list2.Clear();
+			}
+			DrawWholeGeometry(renderer, base.View.ActualColor, list);
+			DrawMarkers(renderer, list, list2);
+		}
+
+		protected internal float GetMarkerSize(PointPresentationType pointType)
+		{
+			return pointType switch
+			{
+				PointPresentationType.HighPoint => LineView.ActualMaxPointMarkerSize, 
+				PointPresentationType.LowPoint => LineView.ActualMinPointMarkerSize, 
+				PointPresentationType.StartPoint => LineView.ActualStartPointMarkerSize, 
+				PointPresentationType.EndPoint => LineView.ActualEndPointMarkerSize, 
+				PointPresentationType.NegativePoint => LineView.ActualNegativePointMarkerSize, 
+				_ => LineView.ActualMarkerSize, 
+			};
+		}
+
+		protected internal override Color GetPointColor(PointPresentationType pointType)
+		{
+			if (pointType == PointPresentationType.SimplePoint)
+			{
+				return LineView.ActualMarkerColor;
+			}
+			return base.GetPointColor(pointType);
+		}
+	}
+	public class WinLossSparklinePainter : BarSparklinePainter
+	{
+		public override SparklineViewType SparklineType => SparklineViewType.WinLoss;
+	}
+	public class SparklineDrawingCache : IDisposable
+	{
+		private readonly Dictionary<Color, SolidBrush> brushes = new Dictionary<Color, SolidBrush>();
+
+		private readonly Dictionary<Color, Pen> pens = new Dictionary<Color, Pen>();
+
+		private bool disposed;
+
+		private Color ToUnknownColor(Color color)
+		{
+			if (color.IsKnownColor)
+			{
+				return Color.FromArgb(color.A, color.R, color.G, color.B);
+			}
+			return color;
+		}
+
+		protected virtual void Dispose(bool disposing)
+		{
+			if (disposed)
+			{
+				return;
+			}
+			if (disposing)
+			{
+				foreach (SolidBrush value in brushes.Values)
+				{
+					value.Dispose();
+				}
+				brushes.Clear();
+				foreach (Pen value2 in pens.Values)
+				{
+					value2.Dispose();
+				}
+				pens.Clear();
+			}
+			disposed = true;
+		}
+
+		public SolidBrush GetSolidBrush(Color color)
+		{
+			color = ToUnknownColor(color);
+			if (!brushes.ContainsKey(color))
+			{
+				brushes.Add(color, new SolidBrush(color));
+			}
+			return brushes[color];
+		}
+
+		public Pen GetPen(Color color)
+		{
+			color = ToUnknownColor(color);
+			if (!pens.ContainsKey(color))
+			{
+				pens.Add(color, new Pen(color));
+			}
+			return pens[color];
+		}
+
+		public void Dispose()
+		{
+			Dispose(disposing: true);
+			GC.SuppressFinalize(this);
+		}
+	}
+	public class SparklinePaintersCache
+	{
+		private readonly Dictionary<SparklineViewType, BaseSparklinePainter> painters = new Dictionary<SparklineViewType, BaseSparklinePainter>();
+
+		public BaseSparklinePainter GetPainter(SparklineViewBase view)
+		{
+			if (!painters.ContainsKey(view.Type))
+			{
+				painters.Add(view.Type, view.CreatePainter());
+			}
+			return painters[view.Type];
+		}
+	}
+	public class SparklineDataProvider
+	{
+		private readonly ISparklineExtendedData data;
+
+		private readonly List<SparklinePoint> sortedPoints;
+
+		private readonly SparklineRangeData filterRange;
+
+		private bool allowPaddingCorrection;
+
+		private SparklineIndexRange filteredPointRange;
+
+		private SparklineRangeData dataValueRange;
+
+		private SparklineRangeData originalValueRange;
+
+		private SparklineRangeData dataArgumentRange;
+
+		public ISparklineExtendedData Data => data;
+
+		public List<SparklinePoint> SortedPoints => sortedPoints;
+
+		public SparklineIndexRange FilteredPointRange => filteredPointRange;
+
+		public SparklineRangeData DataArgumentRange => dataArgumentRange;
+
+		public SparklineRangeData FilterRange => filterRange;
+
+		public SparklineRangeData OriginalValueRange => originalValueRange;
+
+		public SparklineRangeData DataValueRange
+		{
+			get
+			{
+				return dataValueRange;
+			}
+			set
+			{
+				dataValueRange = value;
+			}
+		}
+
+		public bool AllowPaddingCorrection
+		{
+			get
+			{
+				return allowPaddingCorrection;
+			}
+			set
+			{
+				allowPaddingCorrection = value;
+			}
+		}
+
+		public SparklineDataProvider(ISparklineExtendedData data)
+			: this(data, new SparklineRangeData(0.0, 1.0))
+		{
+		}
+
+		public SparklineDataProvider(ISparklineExtendedData data, SparklineRangeData filterRange)
+		{
+			this.data = data;
+			this.filterRange = filterRange;
+			allowPaddingCorrection = true;
+			if (data.Points != null)
+			{
+				for (int i = 0; i < data.Points.Count; i++)
+				{
+					data.Points[i].Index = i;
+				}
+			}
+			sortedPoints = FilterValidPoints(data.Points);
+			sortedPoints.Sort(new SparklinePointArgumentAndIndexComparer());
+			FilterPointsWithRange();
+			FindValueRange();
+		}
+
+		private void FindValueRange()
+		{
+			double num = double.MaxValue;
+			double num2 = double.MinValue;
+			for (int i = 0; i < sortedPoints.Count; i++)
+			{
+				double value = sortedPoints[i].Value;
+				if (SparklineMathUtils.IsValidDouble(value))
+				{
+					if (value < num)
+					{
+						num = value;
+					}
+					if (value > num2)
+					{
+						num2 = value;
+					}
+				}
+			}
+			if (SparklineMathUtils.IsValidDouble(num) && SparklineMathUtils.IsValidDouble(num2))
+			{
+				dataValueRange = new SparklineRangeData(num, num2);
+				originalValueRange = new SparklineRangeData(num, num2);
+			}
+			else
+			{
+				dataValueRange = new SparklineRangeData();
+				originalValueRange = new SparklineRangeData();
+			}
+		}
+
+		private void FilterPointsWithRange()
+		{
+			if (sortedPoints.Count == 0)
+			{
+				filteredPointRange = new SparklineIndexRange(-1, -1);
+				dataArgumentRange = new SparklineRangeData();
+				return;
+			}
+			if (sortedPoints.Count == 1)
+			{
+				filteredPointRange = new SparklineIndexRange(0, 0);
+				dataArgumentRange = new SparklineRangeData(sortedPoints[0].Argument, sortedPoints[0].Argument);
+				return;
+			}
+			if (sortedPoints.Count == 2)
+			{
+				filteredPointRange = new SparklineIndexRange(0, 1);
+				dataArgumentRange = new SparklineRangeData(sortedPoints[0].Argument, sortedPoints[1].Argument);
+				return;
+			}
+			dataArgumentRange = new SparklineRangeData(sortedPoints[0].Argument, sortedPoints[sortedPoints.Count - 1].Argument);
+			double argument = sortedPoints[0].Argument;
+			double num = sortedPoints[sortedPoints.Count - 1].Argument - sortedPoints[0].Argument;
+			double argument2 = argument + num * filterRange.Min;
+			double argument3 = argument + num * filterRange.Max;
+			SparklinePointArgumentComparer comparer = new SparklinePointArgumentComparer();
+			filteredPointRange = new SparklineIndexRange();
+			int num2 = sortedPoints.BinarySearch(new SparklinePoint(argument2, double.NaN), comparer);
+			if (num2 < 0)
+			{
+				num2 = ~num2;
+			}
+			while (num2 > 0 && sortedPoints[num2].Argument == sortedPoints[num2 - 1].Argument)
+			{
+				num2--;
+			}
+			filteredPointRange.Min = num2;
+			int i = sortedPoints.BinarySearch(new SparklinePoint(argument3, double.NaN), comparer);
+			if (i < 0)
+			{
+				i = ~i - 1;
+			}
+			for (; i < sortedPoints.Count - 1 && sortedPoints[i].Argument == sortedPoints[i + 1].Argument; i++)
+			{
+			}
+			filteredPointRange.Max = i;
+		}
+
+		private List<SparklinePoint> FilterValidPoints(IList<SparklinePoint> points)
+		{
+			List<SparklinePoint> list;
+			if (points != null)
+			{
+				list = new List<SparklinePoint>(points.Count);
+				for (int i = 0; i < points.Count; i++)
+				{
+					SparklinePoint sparklinePoint = points[i];
+					if (SparklineMathUtils.IsValidDouble(sparklinePoint.Argument))
+					{
+						list.Add(sparklinePoint);
+					}
+				}
+			}
+			else
+			{
+				list = new List<SparklinePoint>();
+			}
+			return list;
+		}
+	}
+	public static class SparklineMathUtils
+	{
+		public static bool IsValidDouble(double value)
+		{
+			if (!double.IsNaN(value))
+			{
+				return !double.IsInfinity(value);
+			}
+			return false;
+		}
+
+		public static int Round(double value)
+		{
+			return (int)Math.Round(value);
+		}
+
+		public static bool AreDoublesEqual(double a, double b)
+		{
+			return Math.Abs(a - b) <= double.Epsilon;
+		}
+	}
+	public class CohenSutherlandLineClipAlgorithm
+	{
+		private const int LEFT = 1;
+
+		private const int RIGHT = 2;
+
+		private const int TOP = 4;
+
+		private const int BOTTOM = 8;
+
+		private readonly Rectangle bounds;
+
+		public CohenSutherlandLineClipAlgorithm(Rectangle bounds)
+		{
+			this.bounds = bounds;
+		}
+
+		private int CalculateOutCode(PointF point)
+		{
+			int num = 0;
+			if (point.X < (float)bounds.Left)
+			{
+				num |= 1;
+			}
+			else if (point.X > (float)bounds.Right)
+			{
+				num |= 2;
+			}
+			if (point.Y < (float)bounds.Top)
+			{
+				num |= 4;
+			}
+			else if (point.Y > (float)bounds.Bottom)
+			{
+				num |= 8;
+			}
+			return num;
+		}
+
+		public Tuple<PointF, PointF> GetCutLine(PointF p1, PointF p2)
+		{
+			int num = CalculateOutCode(p1);
+			int num2 = CalculateOutCode(p2);
+			bool flag = false;
+			while (true)
+			{
+				if ((num | num2) == 0)
+				{
+					flag = true;
+					break;
+				}
+				if ((num & num2) != 0)
+				{
+					break;
+				}
+				float x = float.NaN;
+				float y = float.NaN;
+				int num3 = ((num != 0) ? num : num2);
+				if ((num3 & 8) != 0)
+				{
+					x = p1.X + (p2.X - p1.X) * ((float)bounds.Bottom - p1.Y) / (p2.Y - p1.Y);
+					y = bounds.Bottom;
+				}
+				else if ((num3 & 4) != 0)
+				{
+					x = p1.X + (p2.X - p1.X) * ((float)bounds.Top - p1.Y) / (p2.Y - p1.Y);
+					y = bounds.Top;
+				}
+				else if ((num3 & 2) != 0)
+				{
+					y = p1.Y + (p2.Y - p1.Y) * ((float)bounds.Right - p1.X) / (p2.X - p1.X);
+					x = bounds.Right;
+				}
+				else if ((num3 & 1) != 0)
+				{
+					y = p1.Y + (p2.Y - p1.Y) * ((float)bounds.Left - p1.X) / (p2.X - p1.X);
+					x = bounds.Left;
+				}
+				if (num3 == num)
+				{
+					p1 = new PointF(x, y);
+					num = CalculateOutCode(p1);
+				}
+				else
+				{
+					p2 = new PointF(x, y);
+					num2 = CalculateOutCode(p2);
+				}
+			}
+			if (flag)
+			{
+				return new Tuple<PointF, PointF>(p1, p2);
+			}
+			return null;
+		}
+	}
+	public enum DateTimeMeasureUnit
+	{
+		Millisecond,
+		Second,
+		Minute,
+		Hour,
+		Day,
+		Week,
+		Month,
+		Quarter,
+		Year
+	}
+	public enum TimeSpanMeasureUnit
+	{
+		Millisecond,
+		Second,
+		Minute,
+		Hour,
+		Day
+	}
+	public static class SparklineDateTimeUtils
+	{
+		private const int HoursInDay = 24;
+
+		private const int MinutesInDay = 1440;
+
+		private const int SecondsInDay = 86400;
+
+		private const int MillisecondsInDay = 86400000;
+
+		private static DayOfWeek FirstDayOfWeek => CultureInfo.CurrentUICulture.DateTimeFormat.FirstDayOfWeek;
+
+		private static int GetActualDayOfWeek(DateTime dateTime)
+		{
+			int num = dateTime.DayOfWeek - FirstDayOfWeek;
+			if (num < 0)
+			{
+				num += 7;
+			}
+			return num;
+		}
+
+		private static double TotalFloorMonths(DateTime dateTime)
+		{
+			return dateTime.Year * 12 + dateTime.Month - 13;
+		}
+
+		private static DateTime AddMonths(DateTimeMeasureUnit measureUnit, DateTime date, double range, double factor)
+		{
+			range *= factor;
+			DateTime fromDate = Floor(date, DateTimeMeasureUnit.Month);
+			range += Difference(fromDate, date, measureUnit);
+			int num = (int)Math.Floor(range);
+			double num2 = range - (double)num;
+			DateTime dateTime = fromDate.AddMonths(num);
+			int days = (dateTime.AddMonths(1) - dateTime).Days;
+			return dateTime.AddDays((double)days * num2);
+		}
+
+		public static DateTime Floor(DateTime dateTime, DateTimeMeasureUnit measureUnit)
+		{
+			DayOfWeek firstDayOfWeek = FirstDayOfWeek;
+			switch (measureUnit)
+			{
+			case DateTimeMeasureUnit.Year:
+				return new DateTime(dateTime.Year, 1, 1);
+			case DateTimeMeasureUnit.Month:
+				return new DateTime(dateTime.Year, dateTime.Month, 1);
+			case DateTimeMeasureUnit.Day:
+				return new DateTime(dateTime.Year, dateTime.Month, dateTime.Day);
+			case DateTimeMeasureUnit.Hour:
+				return new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, 0, 0);
+			case DateTimeMeasureUnit.Minute:
+				return new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, dateTime.Minute, 0);
+			case DateTimeMeasureUnit.Second:
+				return new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, dateTime.Minute, dateTime.Second);
+			case DateTimeMeasureUnit.Millisecond:
+				return new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, dateTime.Minute, dateTime.Second, dateTime.Millisecond);
+			case DateTimeMeasureUnit.Week:
+			{
+				int actualDayOfWeek = GetActualDayOfWeek(dateTime);
+				DateTime dateTime3 = ((!((dateTime - DateTime.MinValue).TotalDays < (double)actualDayOfWeek)) ? dateTime.AddDays(-actualDayOfWeek) : DateTime.MinValue);
+				return new DateTime(dateTime3.Year, dateTime3.Month, dateTime3.Day);
+			}
+			case DateTimeMeasureUnit.Quarter:
+			{
+				DateTime dateTime2 = dateTime.AddMonths(-((dateTime.Month - 1) % 3));
+				return new DateTime(dateTime2.Year, dateTime2.Month, 1);
+			}
+			default:
+				return dateTime;
+			}
+		}
+
+		public static TimeSpan Floor(TimeSpan timeSpan, TimeSpanMeasureUnit measureUnit)
+		{
+			return measureUnit switch
+			{
+				TimeSpanMeasureUnit.Day => new TimeSpan(timeSpan.Days, 0, 0, 0), 
+				TimeSpanMeasureUnit.Hour => new TimeSpan(timeSpan.Days, timeSpan.Hours, 0, 0), 
+				TimeSpanMeasureUnit.Minute => new TimeSpan(timeSpan.Days, timeSpan.Hours, timeSpan.Minutes, 0), 
+				TimeSpanMeasureUnit.Second => new TimeSpan(timeSpan.Days, timeSpan.Hours, timeSpan.Minutes, timeSpan.Seconds), 
+				TimeSpanMeasureUnit.Millisecond => new TimeSpan(timeSpan.Days, timeSpan.Hours, timeSpan.Minutes, timeSpan.Seconds, timeSpan.Milliseconds), 
+				_ => timeSpan, 
+			};
+		}
+
+		public static DateTime Add(DateTime dateTime, DateTimeMeasureUnit measureUnit, double range)
+		{
+			DayOfWeek firstDayOfWeek = FirstDayOfWeek;
+			DateTime dateTime2 = Floor(dateTime, measureUnit);
+			DateTime dateTime3;
+			switch (measureUnit)
+			{
+			case DateTimeMeasureUnit.Year:
+				dateTime3 = AddMonths(measureUnit, dateTime2, range, 12.0);
+				break;
+			case DateTimeMeasureUnit.Quarter:
+				dateTime3 = AddMonths(measureUnit, dateTime2, range, 3.0);
+				break;
+			case DateTimeMeasureUnit.Month:
+				dateTime3 = AddMonths(measureUnit, dateTime2, range, 1.0);
+				break;
+			case DateTimeMeasureUnit.Week:
+			{
+				int num = 0;
+				if (dateTime2 == DateTime.MinValue)
+				{
+					num = GetActualDayOfWeek(dateTime);
+				}
+				double value = Math.Max(range * 7.0 - (double)num, 0.0);
+				dateTime3 = dateTime2.AddDays(value);
+				break;
+			}
+			case DateTimeMeasureUnit.Day:
+				dateTime3 = dateTime2.AddDays(range);
+				break;
+			case DateTimeMeasureUnit.Hour:
+				dateTime3 = dateTime2.AddHours(range);
+				break;
+			case DateTimeMeasureUnit.Minute:
+				dateTime3 = dateTime2.AddMinutes(range);
+				break;
+			case DateTimeMeasureUnit.Second:
+				dateTime3 = dateTime2.AddSeconds(range);
+				break;
+			case DateTimeMeasureUnit.Millisecond:
+				dateTime3 = dateTime2.AddMilliseconds(range);
+				break;
+			default:
+				dateTime3 = dateTime2;
+				break;
+			}
+			return Round(dateTime3, measureUnit);
+		}
+
+		public static TimeSpan Add(TimeSpan value, TimeSpanMeasureUnit measureUnit, int range)
+		{
+			value = Floor(value, measureUnit);
+			TimeSpan timeSpan = value.Add(measureUnit switch
+			{
+				TimeSpanMeasureUnit.Day => new TimeSpan(range, 0, 0, 0), 
+				TimeSpanMeasureUnit.Hour => new TimeSpan(0, range, 0, 0), 
+				TimeSpanMeasureUnit.Minute => new TimeSpan(0, 0, range, 0), 
+				TimeSpanMeasureUnit.Second => new TimeSpan(0, 0, 0, range), 
+				TimeSpanMeasureUnit.Millisecond => new TimeSpan(0, 0, 0, 0, range), 
+				_ => TimeSpan.Zero, 
+			});
+			return Round(timeSpan, measureUnit);
+		}
+
+		public static double Difference(DateTime fromDate, DateTime toDate, DateTimeMeasureUnit measureUnit)
+		{
+			DateTime dateTime = Floor(fromDate, measureUnit);
+			DateTime dateTime2 = Floor(toDate, measureUnit);
+			switch (measureUnit)
+			{
+			case DateTimeMeasureUnit.Year:
+				return dateTime2.Year - dateTime.Year;
+			case DateTimeMeasureUnit.Quarter:
+				return (TotalFloorMonths(dateTime2) - TotalFloorMonths(dateTime)) / 3.0;
+			case DateTimeMeasureUnit.Month:
+				return TotalFloorMonths(dateTime2) - TotalFloorMonths(dateTime);
+			case DateTimeMeasureUnit.Week:
+			{
+				int num = 0;
+				if (dateTime == DateTime.MinValue)
+				{
+					num = GetActualDayOfWeek(fromDate);
+				}
+				else if (dateTime2 == DateTime.MinValue)
+				{
+					num = GetActualDayOfWeek(toDate);
+				}
+				return ((dateTime2 - dateTime).TotalDays + (double)num) / 7.0;
+			}
+			case DateTimeMeasureUnit.Day:
+				return (dateTime2 - dateTime).TotalDays;
+			case DateTimeMeasureUnit.Hour:
+				return (dateTime2 - dateTime).TotalHours;
+			case DateTimeMeasureUnit.Minute:
+				return (dateTime2 - dateTime).TotalMinutes;
+			case DateTimeMeasureUnit.Second:
+				return (dateTime2 - dateTime).TotalSeconds;
+			case DateTimeMeasureUnit.Millisecond:
+				return (dateTime2 - dateTime).TotalMilliseconds;
+			default:
+				return 0.0;
+			}
+		}
+
+		public static double Difference(TimeSpan from, TimeSpan to, TimeSpanMeasureUnit measureUnit)
+		{
+			TimeSpan timeSpan = Floor(from, measureUnit);
+			TimeSpan timeSpan2 = Floor(to, measureUnit);
+			return measureUnit switch
+			{
+				TimeSpanMeasureUnit.Day => (timeSpan2 - timeSpan).TotalDays, 
+				TimeSpanMeasureUnit.Hour => (timeSpan2 - timeSpan).TotalHours, 
+				TimeSpanMeasureUnit.Minute => (timeSpan2 - timeSpan).TotalMinutes, 
+				TimeSpanMeasureUnit.Second => (timeSpan2 - timeSpan).TotalSeconds, 
+				TimeSpanMeasureUnit.Millisecond => (timeSpan2 - timeSpan).TotalMilliseconds, 
+				_ => 0.0, 
+			};
+		}
+
+		public static DateTime Round(DateTime dateTime, DateTimeMeasureUnit measureUnit)
+		{
+			DayOfWeek firstDayOfWeek = FirstDayOfWeek;
+			int num = ((dateTime.Month == 2) ? 14 : 15);
+			switch (measureUnit)
+			{
+			case DateTimeMeasureUnit.Year:
+				if (dateTime.Month > 6)
+				{
+					dateTime = dateTime.AddYears(1);
+				}
+				return new DateTime(dateTime.Year, 1, 1);
+			case DateTimeMeasureUnit.Month:
+				if (dateTime.Day > num)
+				{
+					dateTime = dateTime.AddMonths(1);
+				}
+				return new DateTime(dateTime.Year, dateTime.Month, 1);
+			case DateTimeMeasureUnit.Day:
+				if (dateTime.Hour > 12 || (dateTime.Hour == 12 && (dateTime.Minute > 0 || dateTime.Second > 0 || dateTime.Millisecond > 0)))
+				{
+					dateTime = dateTime.AddDays(1.0);
+				}
+				return new DateTime(dateTime.Year, dateTime.Month, dateTime.Day);
+			case DateTimeMeasureUnit.Hour:
+				if (dateTime.Minute >= 30)
+				{
+					dateTime = dateTime.AddHours(1.0);
+				}
+				return new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, 0, 0);
+			case DateTimeMeasureUnit.Minute:
+				if (dateTime.Second >= 30)
+				{
+					dateTime = dateTime.AddMinutes(1.0);
+				}
+				return new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, dateTime.Minute, 0);
+			case DateTimeMeasureUnit.Second:
+				if (dateTime.Millisecond >= 500)
+				{
+					dateTime = dateTime.AddSeconds(1.0);
+				}
+				return new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, dateTime.Minute, dateTime.Second);
+			case DateTimeMeasureUnit.Millisecond:
+				return new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, dateTime.Minute, dateTime.Second, dateTime.Millisecond);
+			case DateTimeMeasureUnit.Week:
+			{
+				int num2 = dateTime.DayOfWeek - firstDayOfWeek;
+				if (num2 > 0)
+				{
+					if (num2 > 3)
+					{
+						num2 += 7 - num2;
+					}
+				}
+				else if (num2 <= -4)
+				{
+					num2 -= 7 + num2;
+				}
+				DateTime dateTime3 = dateTime.AddDays(num2);
+				return new DateTime(dateTime3.Year, dateTime3.Month, dateTime3.Day);
+			}
+			case DateTimeMeasureUnit.Quarter:
+			{
+				if (dateTime.Day > num)
+				{
+					dateTime = dateTime.AddMonths(1);
+				}
+				DateTime dateTime2 = dateTime.AddMonths(-1 * ((dateTime.Month - 1) % 3));
+				return new DateTime(dateTime2.Year, dateTime2.Month, 1);
+			}
+			default:
+				return dateTime;
+			}
+		}
+
+		public static TimeSpan Round(TimeSpan timeSpan, TimeSpanMeasureUnit measureUnit)
+		{
+			TimeSpan ts = TimeSpan.Zero;
+			switch (measureUnit)
+			{
+			case TimeSpanMeasureUnit.Day:
+				if (timeSpan.Hours > 12 || (timeSpan.Hours == 12 && (timeSpan.Minutes > 0 || timeSpan.Seconds > 0 || timeSpan.Milliseconds > 0)))
+				{
+					ts = new TimeSpan(1, 0, 0, 0);
+				}
+				break;
+			case TimeSpanMeasureUnit.Hour:
+				if (timeSpan.Minutes >= 30)
+				{
+					ts = new TimeSpan(0, 1, 0, 0);
+				}
+				break;
+			case TimeSpanMeasureUnit.Minute:
+				if (timeSpan.Seconds >= 30)
+				{
+					ts = new TimeSpan(0, 0, 1, 0);
+				}
+				break;
+			case TimeSpanMeasureUnit.Second:
+				if (timeSpan.Milliseconds >= 500)
+				{
+					ts = new TimeSpan(0, 0, 0, 1);
+				}
+				break;
+			}
+			timeSpan = timeSpan.Add(ts);
+			return Floor(timeSpan, measureUnit);
+		}
+
+		public static double SizeOfMeasureUnit(TimeSpanMeasureUnit measureUnit)
+		{
+			return SizeOfMeasureUnit((DateTimeMeasureUnit)measureUnit);
+		}
+
+		public static double SizeOfMeasureUnit(DateTimeMeasureUnit measureUnit)
+		{
+			return measureUnit switch
+			{
+				DateTimeMeasureUnit.Millisecond => 1.0, 
+				DateTimeMeasureUnit.Second => 1000.0, 
+				DateTimeMeasureUnit.Minute => 60000.0, 
+				DateTimeMeasureUnit.Hour => 3600000.0, 
+				DateTimeMeasureUnit.Day => 86400000.0, 
+				DateTimeMeasureUnit.Week => 604800000.0, 
+				DateTimeMeasureUnit.Month => 2592000000.0, 
+				DateTimeMeasureUnit.Quarter => 7776000000.0, 
+				DateTimeMeasureUnit.Year => 31104000000.0, 
+				_ => 1.0, 
+			};
+		}
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

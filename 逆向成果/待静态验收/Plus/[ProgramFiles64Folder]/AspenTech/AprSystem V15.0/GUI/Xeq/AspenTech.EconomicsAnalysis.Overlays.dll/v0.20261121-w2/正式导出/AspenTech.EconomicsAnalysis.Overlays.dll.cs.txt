@@ -1,0 +1,502 @@
+using System;
+using System.CodeDom.Compiler;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
+using System.Windows.Markup;
+using System.Windows.Media;
+using System.Windows.Threading;
+using AspenTech.ActivationDashboard.Infrastructure.Contracts;
+using AspenTech.EconomicsAnalysis.Overlays.ViewModels;
+using AspenTech.EconomicsAnalysis.Overlays.Views;
+using AspenTech.Engineering.FlowsheetOverlay;
+using Microsoft.Practices.Composite.Events;
+using Microsoft.Practices.Composite.Presentation.Events;
+using Microsoft.Practices.Unity;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyTitle("AspenTech.EconomicsAnalysis.Overlays")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("Aspen Technology, Inc.")]
+[assembly: AssemblyProduct("AspenTech.EconomicsAnalysis.Overlays")]
+[assembly: AssemblyCopyright("Copyright © Aspen Technology, Inc. 2013 - 2024")]
+[assembly: AssemblyTrademark("")]
+[assembly: ComVisible(false)]
+[assembly: Guid("5bad487b-753c-444c-953d-9c318ecc7b65")]
+[assembly: AssemblyFileVersion("41.0.0.19")]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.19")]
+namespace AspenTech.EconomicsAnalysis.Overlays
+{
+	public class ConditionalFormatting : Control
+	{
+		private IFlyover _flyover;
+
+		private IUnityContainer _container;
+
+		private IPFDHighlight _pfdHighlight;
+
+		private IEconomicsOverlay _economicsOverlay;
+
+		private GenericUnitOpCollection _uniopCollection;
+
+		~ConditionalFormatting()
+		{
+			_container = null;
+			_economicsOverlay = null;
+			_flyover = null;
+			_pfdHighlight = null;
+			_uniopCollection = null;
+		}
+
+		public void DisplayFormatting(IFlyover flyover, bool bDisplay = true)
+		{
+			if (flyover == null)
+			{
+				throw new ArgumentNullException("flyover");
+			}
+			_flyover = flyover;
+			if (_container == null)
+			{
+				return;
+			}
+			_pfdHighlight = UnityContainerExtensions.Resolve<IPFDHighlight>(_container, Array.Empty<ResolverOverride>());
+			if (_pfdHighlight == null)
+			{
+				return;
+			}
+			_pfdHighlight.ClearHighlights();
+			if (bDisplay && _economicsOverlay != null)
+			{
+				try
+				{
+					_uniopCollection = new GenericUnitOpCollection(_container);
+					_uniopCollection.EquipmentCostItems = (List<EquipmentCostItem>)_economicsOverlay.OnEEOverlayGetEquipmentCostItems();
+					_uniopCollection.SetBlockNameHandleMaps();
+					_pfdHighlight.AddHighlights(false, _uniopCollection.Colors, (object)_uniopCollection, _flyover, false);
+					return;
+				}
+				catch (Exception)
+				{
+					return;
+				}
+			}
+			_uniopCollection = null;
+		}
+
+		private void OnOverlayRefresh(OverlayRefreshEventArgs e)
+		{
+			if (_uniopCollection == null || _container == null || _flyover == null)
+			{
+				return;
+			}
+			base.Dispatcher.BeginInvoke(DispatcherPriority.Normal, (Action)delegate
+			{
+				_pfdHighlight = UnityContainerExtensions.Resolve<IPFDHighlight>(_container, Array.Empty<ResolverOverride>());
+				if (_pfdHighlight != null)
+				{
+					DisplayFormatting(_flyover);
+				}
+			});
+		}
+
+		private void RefreshHighlights()
+		{
+			if (_container != null)
+			{
+				base.Dispatcher.BeginInvoke(DispatcherPriority.Background, (Action)delegate
+				{
+					_pfdHighlight = UnityContainerExtensions.Resolve<IPFDHighlight>(_container, Array.Empty<ResolverOverride>());
+					DisplayFormatting(_flyover);
+				});
+			}
+		}
+
+		public void Load(IUnityContainer container, IEconomicsOverlay economicsOverlay)
+		{
+			if (container == null)
+			{
+				throw new ArgumentNullException("container");
+			}
+			_container = container;
+			if (economicsOverlay == null)
+			{
+				throw new ArgumentNullException("flyover");
+			}
+			_economicsOverlay = economicsOverlay;
+			((CompositePresentationEvent<OverlayRefreshEventArgs>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(_container, Array.Empty<ResolverOverride>()).GetEvent<OverlayRefreshEvent>()).Subscribe((Action<OverlayRefreshEventArgs>)OnOverlayRefresh);
+			if (_economicsOverlay != null)
+			{
+				_economicsOverlay.Load();
+			}
+		}
+
+		public void Unload()
+		{
+			if (_economicsOverlay != null)
+			{
+				_economicsOverlay.Unload();
+			}
+			if (_container != null)
+			{
+				((CompositePresentationEvent<OverlayRefreshEventArgs>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(_container, Array.Empty<ResolverOverride>()).GetEvent<OverlayRefreshEvent>()).Unsubscribe((Action<OverlayRefreshEventArgs>)OnOverlayRefresh);
+			}
+		}
+	}
+	public class EEFlyoverProvider : IFlyover
+	{
+		private IUnityContainer _container;
+
+		public EEFlyoverProvider()
+		{
+		}
+
+		public EEFlyoverProvider(IUnityContainer container)
+		{
+			_container = container;
+		}
+
+		public UserControl GetPopup(string key, object currentCollection)
+		{
+			if (currentCollection is IUnitOpCollection unitOpCollection)
+			{
+				return unitOpCollection.GetPopup(key);
+			}
+			return null;
+		}
+	}
+	internal class GenericUnitOpCollection : IUnitOpCollection
+	{
+		private readonly IUnityContainer _container;
+
+		private List<EquipmentCostItem> _equipmentCostItems;
+
+		private IDictionary<string, Color> _colors;
+
+		public List<EquipmentCostItem> EquipmentCostItems
+		{
+			set
+			{
+				_equipmentCostItems = value;
+			}
+		}
+
+		public IDictionary<string, Color> Colors
+		{
+			get
+			{
+				if (_colors == null)
+				{
+					_colors = new SortedList<string, Color>();
+				}
+				if (_equipmentCostItems != null)
+				{
+					foreach (EquipmentCostItem equipmentCostItem in _equipmentCostItems)
+					{
+						if (!_colors.ContainsKey(equipmentCostItem.Handle))
+						{
+							_colors.Add(equipmentCostItem.Handle, GetUnitOpColor(equipmentCostItem.ColorFormat));
+						}
+					}
+				}
+				return _colors;
+			}
+			internal set
+			{
+				_colors = value;
+			}
+		}
+
+		internal GenericUnitOpCollection(IUnityContainer container)
+		{
+			if (container != null)
+			{
+				_container = container;
+			}
+		}
+
+		public void SetBlockNameHandleMaps()
+		{
+			if (_container == null || _equipmentCostItems == null || _equipmentCostItems.Count() <= 0)
+			{
+				return;
+			}
+			IDictionary<string, string> dictionary = new Dictionary<string, string>();
+			IFlowsheetOverlayManager val = UnityContainerExtensions.Resolve<IFlowsheetOverlayManager>(_container, Array.Empty<ResolverOverride>());
+			if (val == null)
+			{
+				return;
+			}
+			IFlowsheetOverlay val2 = null;
+			List<string> list = new List<string>();
+			foreach (EquipmentCostItem equipmentCostItem in _equipmentCostItems)
+			{
+				if (list.IndexOf(equipmentCostItem.Unit) == -1)
+				{
+					list.Add(equipmentCostItem.Unit);
+				}
+			}
+			foreach (string name in val.Names)
+			{
+				val2 = val.GetOverlay(name);
+				if (val2 == null)
+				{
+					continue;
+				}
+				dictionary = val2.MapBlockNamesToHandles(list);
+				foreach (EquipmentCostItem equipmentCostItem2 in _equipmentCostItems)
+				{
+					if (dictionary.ContainsKey(equipmentCostItem2.Unit))
+					{
+						string value = string.Empty;
+						dictionary.TryGetValue(equipmentCostItem2.Unit, out value);
+						equipmentCostItem2.Handle = value;
+					}
+				}
+			}
+		}
+
+		private Color GetUnitOpColor(int nColor)
+		{
+			return (Color)ColorConverter.ConvertFromString($"#{nColor:X6}");
+		}
+
+		public UserControl GetPopup(string key)
+		{
+			foreach (EquipmentCostItem equipmentCostItem in _equipmentCostItems)
+			{
+				if (equipmentCostItem.Handle == key)
+				{
+					return GetPopup(equipmentCostItem.Unit, equipmentCostItem);
+				}
+			}
+			return null;
+		}
+
+		private UserControl GetPopup(string key, EquipmentCostItem costitem)
+		{
+			return new SimpleStatusPopup(key, costitem);
+		}
+	}
+	public interface IUnitOpCollection
+	{
+		UserControl GetPopup(string key);
+	}
+}
+namespace AspenTech.EconomicsAnalysis.Overlays.Views
+{
+	public class SimpleStatusPopup : UserControl, IComponentConnector
+	{
+		private SimpleStatusViewModel viewModel;
+
+		internal Grid grid;
+
+		private bool _contentLoaded;
+
+		public SimpleStatusPopup(string name, EquipmentCostItem item)
+		{
+			InitializeComponent();
+			viewModel = new SimpleStatusViewModel(name, item);
+			base.DataContext = viewModel;
+			base.MouseLeave += SimpleStatusPopup_MouseLeave;
+		}
+
+		private void SimpleStatusPopup_MouseLeave(object sender, MouseEventArgs e)
+		{
+			if (base.Parent is Popup popup)
+			{
+				popup.IsOpen = false;
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/AspenTech.EconomicsAnalysis.Overlays;component/views/simplelstatuspopup.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			if (connectionId == 1)
+			{
+				grid = (Grid)target;
+			}
+			else
+			{
+				_contentLoaded = true;
+			}
+		}
+	}
+}
+namespace AspenTech.EconomicsAnalysis.Overlays.ViewModels
+{
+	internal class SimpleStatusViewModel : ViewModelBase
+	{
+		private string _name;
+
+		private string _label1 = "Equipment Cost";
+
+		private string _value1;
+
+		private string _label2 = "Installed Cost";
+
+		private string _value2;
+
+		private string _label3 = "Weight";
+
+		private string _value3;
+
+		private string _label4 = "Installed Weight";
+
+		private string _value4;
+
+		private string _label5 = "Operating Cost";
+
+		private string _value5;
+
+		private string _units1;
+
+		private string _units2;
+
+		private string _units3;
+
+		private string _units4;
+
+		private string _units5;
+
+		public string Label1 => _label1;
+
+		public string Label2 => _label2;
+
+		public string Label3 => _label3;
+
+		public string Label4 => _label4;
+
+		public string Label5 => _label5;
+
+		public string Units1 => _units1;
+
+		public string Units2 => _units2;
+
+		public string Units3 => _units3;
+
+		public string Units4 => _units4;
+
+		public string Units5 => _units5;
+
+		public string UnitName => _name;
+
+		public string Value1 => _value1;
+
+		public string Value2 => _value2;
+
+		public string Value3 => _value3;
+
+		public string Value4 => _value4;
+
+		public string Value5 => _value5;
+
+		public SimpleStatusViewModel(string name, EquipmentCostItem costitem)
+		{
+			_name = name;
+			if (!string.IsNullOrEmpty(costitem.CostUnits))
+			{
+				_units1 = costitem.CostUnits;
+				_units2 = costitem.CostUnits;
+				_units5 = costitem.CostUnits + "/HR";
+			}
+			if (!string.IsNullOrEmpty(costitem.WeightUnits))
+			{
+				_units3 = costitem.WeightUnits;
+				_units4 = costitem.WeightUnits;
+			}
+			_value1 = ((costitem.EquipmentCost != string.Empty) ? costitem.EquipmentCost : "0");
+			_value2 = ((costitem.InstalledCost != string.Empty) ? costitem.InstalledCost : "0");
+			_value3 = ((costitem.Weight != string.Empty) ? costitem.Weight : "0");
+			_value4 = ((costitem.InstallWeight != string.Empty) ? costitem.InstallWeight : "0");
+			_value5 = ((costitem.OperatingCost != string.Empty) ? costitem.OperatingCost : "0");
+		}
+	}
+	public class ViewModelBase : INotifyPropertyChanged
+	{
+		public event PropertyChangedEventHandler PropertyChanged;
+
+		protected void OnPropertyChanged(object sender, string propertyName)
+		{
+			if (this.PropertyChanged != null)
+			{
+				this.PropertyChanged(sender, new PropertyChangedEventArgs(propertyName));
+			}
+		}
+
+		protected bool WindowOpened(string title)
+		{
+			foreach (Window window in Application.Current.Windows)
+			{
+				if (window.Title == title)
+				{
+					window.Activate();
+					return true;
+				}
+			}
+			return false;
+		}
+
+		internal Window ShowWindow(UserControl child, string title)
+		{
+			Window window = new Window();
+			Grid grid = new Grid();
+			Thumb thumb = new Thumb();
+			grid.Children.Add(thumb);
+			grid.Children.Add(child);
+			window.Content = grid;
+			window.WindowStyle = WindowStyle.None;
+			window.ResizeMode = ResizeMode.NoResize;
+			window.SizeToContent = SizeToContent.WidthAndHeight;
+			window.Title = title;
+			window.Tag = "EconomicsAnalysis";
+			window.Owner = Application.Current.MainWindow;
+			window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+			window.ShowInTaskbar = false;
+			window.BorderThickness = new Thickness(1.0);
+			window.BorderBrush = Brushes.LightSteelBlue;
+			window.MouseDown += delegate(object sender, MouseButtonEventArgs e)
+			{
+				window.Dispatcher.BeginInvoke(DispatcherPriority.Input, (Action)delegate
+				{
+					thumb.RaiseEvent(e);
+				});
+			};
+			thumb.DragDelta += delegate(object sender, DragDeltaEventArgs e)
+			{
+				window.Left += e.HorizontalChange;
+				window.Top += e.VerticalChange;
+			};
+			window.Show();
+			return window;
+		}
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

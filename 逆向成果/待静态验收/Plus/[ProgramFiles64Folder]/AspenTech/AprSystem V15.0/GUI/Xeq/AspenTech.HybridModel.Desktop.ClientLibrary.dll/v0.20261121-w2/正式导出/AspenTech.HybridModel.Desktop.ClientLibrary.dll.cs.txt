@@ -1,0 +1,468 @@
+using System;
+using System.CodeDom.Compiler;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Configuration;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.IO.Pipes;
+using System.Linq;
+using System.Reflection;
+using System.Resources;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Text;
+using System.Threading;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using AspenTech.HybridModel.Desktop.ClientLibrary.Images;
+using AspenTech.HybridModel.Desktop.ClientLibrary.Internals;
+using AspenTech.HybridModel.Desktop.ClientLibrary.Properties;
+using Microsoft.Win32;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: SuppressIldasm]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("AspenTech")]
+[assembly: AssemblyCopyright("Copyright © AspenTech 2025")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyFileVersion("15.0.0.0")]
+[assembly: AssemblyTitle("AspenTech.HybridModel.Desktop.ClientLibrary")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyProduct("AspenTech.HybridModel.Desktop.ClientLibrary")]
+[assembly: ComVisible(false)]
+[assembly: ThemeInfo(ResourceDictionaryLocation.None, ResourceDictionaryLocation.SourceAssembly)]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("15.0.0.0")]
+namespace AspenTech.HybridModel.Desktop.ClientLibrary
+{
+	public static class AimbButton
+	{
+		public static readonly DependencyProperty UseLaunchCommandProperty = DependencyProperty.RegisterAttached("UseLaunchCommand", typeof(bool), typeof(AimbButton), new PropertyMetadata(false, OnUseLaunchCommandPropertyChanged));
+
+		public static string Title => Resources.AimbButton_Title;
+
+		public static string EnabledTooltip => Resources.AimbButton_EnabledTooltip;
+
+		public static string DisabledTooltip => Resources.AimbButton_DisabledTooltip;
+
+		public static ImageSource LargeRibbonImage => ImageResources.AimbIcon;
+
+		public static bool GetUseLaunchCommand(UIElement d)
+		{
+			return (bool)d.GetValue(UseLaunchCommandProperty);
+		}
+
+		public static void SetUseLaunchCommand(UIElement d, bool value)
+		{
+			d.SetValue(UseLaunchCommandProperty, value);
+		}
+
+		private static void OnUseLaunchCommandPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			if ((bool)e.NewValue)
+			{
+				HookCommand(d);
+			}
+			else
+			{
+				UnhookCommand(d);
+			}
+		}
+
+		private static void HookCommand(DependencyObject d)
+		{
+			if (d is ButtonBase buttonBase)
+			{
+				buttonBase.Command = new LaunchCommand();
+			}
+			else if (d is MenuItem menuItem)
+			{
+				menuItem.Command = new LaunchCommand();
+			}
+		}
+
+		private static void UnhookCommand(DependencyObject d)
+		{
+			if (d is ButtonBase buttonBase)
+			{
+				buttonBase.ClearValue(ButtonBase.CommandProperty);
+			}
+			else if (d is MenuItem menuItem)
+			{
+				menuItem.ClearValue(MenuItem.CommandProperty);
+			}
+		}
+	}
+	public static class Constants
+	{
+		public static class AimbDesktop
+		{
+			public const string ExecutableSubDirV15_0 = "Aspen AI Model Builder for Desktop V15.0";
+
+			public const string ExecutableSubDirV14_6 = "Aspen AI Model Builder for Desktop V14.6";
+
+			public const string ExecutableFileName = "AspenTech.Aimb.WpfApp.exe";
+		}
+
+		public static class AimbLauncher
+		{
+			public const string ExternalVersionV15 = "V15.0";
+
+			public const string AppVersionV15 = "15.0.0.0";
+
+			public const string ExecutableSubDirV15_0 = "Aspen AI Model Builder Cloud Launcher";
+
+			public const string ExecutableSubDirPreV15_0 = "Aspen AI Model Builder";
+
+			public const string ExecutableFileName = "AspenTech.HybridModel.Desktop.ClientApp.exe";
+
+			public const string ProcessName = "AspenTech.HybridModel.Desktop.ClientApp";
+		}
+	}
+	public static class AimbAppHelper
+	{
+		public static void Launch()
+		{
+			Launch(delegate(string file, string arguments)
+			{
+				Process.Start(file, arguments);
+			});
+		}
+
+		public static void Launch(Action<string, string> processStarter)
+		{
+			if (string.Equals(Process.GetCurrentProcess().ProcessName, "AspenTech.HybridModel.Desktop.ClientApp", StringComparison.OrdinalIgnoreCase))
+			{
+				NamedPipeHelper.SendClientMessage("Open_Web_Page");
+				return;
+			}
+			string aimbDesktopExecutable = GetAimbDesktopExecutable();
+			if (!string.IsNullOrEmpty(aimbDesktopExecutable))
+			{
+				processStarter(aimbDesktopExecutable, null);
+				return;
+			}
+			if (Process.GetProcesses().Any((Process x) => string.Equals(x.ProcessName, "AspenTech.HybridModel.Desktop.ClientApp", StringComparison.OrdinalIgnoreCase)))
+			{
+				NamedPipeHelper.SendClientMessage("Open_Web_Page");
+				return;
+			}
+			string aimbLauncherExecutable = GetAimbLauncherExecutable();
+			if (!string.IsNullOrEmpty(aimbLauncherExecutable))
+			{
+				processStarter(aimbLauncherExecutable, "Open_Web_Page");
+				return;
+			}
+			throw new InvalidOperationException(Resources.AimbButton_DisabledTooltip);
+		}
+
+		private static string GetAimbDesktopExecutable()
+		{
+			if (!string.IsNullOrWhiteSpace(LocalMachineRegistryKeys.AspenRoot))
+			{
+				return TryFindExecutableFilePath(LocalMachineRegistryKeys.AspenRoot, new string[2] { "Aspen AI Model Builder for Desktop V15.0", "Aspen AI Model Builder for Desktop V14.6" }, "AspenTech.Aimb.WpfApp.exe");
+			}
+			return null;
+		}
+
+		private static string GetAimbLauncherExecutable()
+		{
+			if (!string.IsNullOrWhiteSpace(LocalMachineRegistryKeys.AspenCommonRoot))
+			{
+				return TryFindExecutableFilePath(LocalMachineRegistryKeys.AspenCommonRoot, new string[2] { "Aspen AI Model Builder Cloud Launcher", "Aspen AI Model Builder" }, "AspenTech.HybridModel.Desktop.ClientApp.exe");
+			}
+			return null;
+		}
+
+		private static string TryFindExecutableFilePath(string parentFolder, IEnumerable<string> testingChildFolders, string executableFileName)
+		{
+			foreach (string testingChildFolder in testingChildFolders)
+			{
+				string text = Path.Combine(parentFolder, testingChildFolder, executableFileName);
+				if (File.Exists(text))
+				{
+					return text;
+				}
+			}
+			return null;
+		}
+	}
+	public static class AspenLanguageSelector
+	{
+		private static readonly List<string> _supportedLanguages = new List<string> { "ENG", "JPN", "CHS" };
+
+		public static void ApplyAspenLanguageSelection()
+		{
+			string keyName = "HKEY_CURRENT_USER\\Software\\AspenTech\\Engineering\\Language";
+			string text = Registry.GetValue(keyName, null, string.Empty) as string;
+			if (string.IsNullOrEmpty(text))
+			{
+				string text2 = Thread.CurrentThread.CurrentUICulture.ThreeLetterWindowsLanguageName;
+				if (!_supportedLanguages.Contains(text2))
+				{
+					text2 = "ENG";
+				}
+				Registry.SetValue(keyName, null, text2);
+				text = text2;
+			}
+			string text3 = text.ToUpperInvariant();
+			string text4 = ((text3 == "CHS") ? "zh-HANS" : ((!(text3 == "JPN")) ? "en-US" : "ja-JP"));
+			if (!string.IsNullOrEmpty(text4))
+			{
+				CultureInfo cultureInfo = null;
+				try
+				{
+					cultureInfo = new CultureInfo(CultureInfo.CreateSpecificCulture(text4).Name, useUserOverride: true);
+				}
+				catch (CultureNotFoundException)
+				{
+				}
+				Thread.CurrentThread.CurrentUICulture = cultureInfo ?? new CultureInfo("en-US");
+			}
+		}
+	}
+	public static class NamedPipeHelper
+	{
+		public const string PipeName = "Aspen_AIMB_Cloud_Launcher_Pipe_Name";
+
+		public const string OpenWebPageCommand = "Open_Web_Page";
+
+		public const string AcivateWindowCommand = "Activate_Window";
+
+		public static void SendClientMessage(string message)
+		{
+			using NamedPipeClientStream namedPipeClientStream = new NamedPipeClientStream(".", "Aspen_AIMB_Cloud_Launcher_Pipe_Name", PipeDirection.Out);
+			namedPipeClientStream.Connect(1000);
+			using StreamWriter streamWriter = new StreamWriter(namedPipeClientStream);
+			streamWriter.WriteLine(message);
+			streamWriter.Flush();
+		}
+	}
+	public class LaunchCommand : ICommand
+	{
+		private bool _isExecuting;
+
+		public event EventHandler CanExecuteChanged
+		{
+			add
+			{
+				CommandManager.RequerySuggested += value;
+			}
+			remove
+			{
+				CommandManager.RequerySuggested -= value;
+			}
+		}
+
+		public void RaiseCanExecuteChanged()
+		{
+			CommandManager.InvalidateRequerySuggested();
+		}
+
+		public bool CanExecute(object parameter)
+		{
+			return true;
+		}
+
+		public void Execute(object parameter)
+		{
+			if (!_isExecuting)
+			{
+				Cursor overrideCursor = Mouse.OverrideCursor;
+				try
+				{
+					_isExecuting = true;
+					Mouse.OverrideCursor = Cursors.Wait;
+					AimbAppHelper.Launch();
+					Mouse.OverrideCursor = overrideCursor;
+					_isExecuting = false;
+				}
+				catch (Exception ex)
+				{
+					Mouse.OverrideCursor = overrideCursor;
+					_isExecuting = false;
+					MessageBox.Show(Resources.AimbButton_Failed + "\n" + ex.Message, Resources.AimbButton_DialogCaption, MessageBoxButton.OK, MessageBoxImage.Hand);
+				}
+			}
+		}
+	}
+}
+namespace AspenTech.HybridModel.Desktop.ClientLibrary.Properties
+{
+	[GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
+	[DebuggerNonUserCode]
+	[CompilerGenerated]
+	public class Resources
+	{
+		private static ResourceManager resourceMan;
+
+		private static CultureInfo resourceCulture;
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		public static ResourceManager ResourceManager
+		{
+			get
+			{
+				if (resourceMan == null)
+				{
+					resourceMan = new ResourceManager("AspenTech.HybridModel.Desktop.ClientLibrary.Properties.Resources", typeof(Resources).Assembly);
+				}
+				return resourceMan;
+			}
+		}
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		public static CultureInfo Culture
+		{
+			get
+			{
+				return resourceCulture;
+			}
+			set
+			{
+				resourceCulture = value;
+			}
+		}
+
+		public static string AimbButton_DialogCaption => ResourceManager.GetString("AimbButton_DialogCaption", resourceCulture);
+
+		public static string AimbButton_DisabledTooltip => ResourceManager.GetString("AimbButton_DisabledTooltip", resourceCulture);
+
+		public static string AimbButton_EnabledTooltip => ResourceManager.GetString("AimbButton_EnabledTooltip", resourceCulture);
+
+		public static string AimbButton_Failed => ResourceManager.GetString("AimbButton_Failed", resourceCulture);
+
+		public static string AimbButton_Title => ResourceManager.GetString("AimbButton_Title", resourceCulture);
+
+		public static string MainWindow_About_Caption => ResourceManager.GetString("MainWindow_About_Caption", resourceCulture);
+
+		public static string MainWindow_ButtonClearMessage => ResourceManager.GetString("MainWindow_ButtonClearMessage", resourceCulture);
+
+		public static string MainWindow_ButtonLaunch => ResourceManager.GetString("MainWindow_ButtonLaunch", resourceCulture);
+
+		public static string MainWindow_ErrorMessage => ResourceManager.GetString("MainWindow_ErrorMessage", resourceCulture);
+
+		public static string MainWindow_MessageBox_Title => ResourceManager.GetString("MainWindow_MessageBox_Title", resourceCulture);
+
+		public static string MainWindow_Title => ResourceManager.GetString("MainWindow_Title", resourceCulture);
+
+		public static string MainWindow_UrlChangingError => ResourceManager.GetString("MainWindow_UrlChangingError", resourceCulture);
+
+		public static string NotifyIcon_Exit => ResourceManager.GetString("NotifyIcon_Exit", resourceCulture);
+
+		public static string NotifyIcon_Open => ResourceManager.GetString("NotifyIcon_Open", resourceCulture);
+
+		internal Resources()
+		{
+		}
+	}
+	[CompilerGenerated]
+	[GeneratedCode("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.0.3.0")]
+	internal sealed class Settings : ApplicationSettingsBase
+	{
+		private static Settings defaultInstance = (Settings)SettingsBase.Synchronized(new Settings());
+
+		public static Settings Default => defaultInstance;
+	}
+}
+namespace AspenTech.HybridModel.Desktop.ClientLibrary.Images
+{
+	internal static class ImageResources
+	{
+		private static readonly Dictionary<string, ImageSource> _imageSources = new Dictionary<string, ImageSource>();
+
+		public static ImageSource AimbIcon => GetImageSource("aimb_large.png");
+
+		private static ImageSource GetImageSource(string imageFileName)
+		{
+			if (!_imageSources.ContainsKey(imageFileName))
+			{
+				StringBuilder stringBuilder = new StringBuilder();
+				stringBuilder.Append("pack://application:,,,/");
+				stringBuilder.Append(typeof(ImageResources).Assembly.FullName);
+				stringBuilder.Append(";component/Images/");
+				stringBuilder.Append(imageFileName);
+				_imageSources.Add(imageFileName, new BitmapImage(new Uri(stringBuilder.ToString(), UriKind.RelativeOrAbsolute)));
+			}
+			return _imageSources[imageFileName];
+		}
+	}
+}
+namespace AspenTech.HybridModel.Desktop.ClientLibrary.Internals
+{
+	internal static class LocalMachineRegistryKeys
+	{
+		private static string _aspenRoot;
+
+		private static bool _aspenRootSearched;
+
+		private static string _aspenCommonRoot;
+
+		private static bool _aspenCommonRootSearched;
+
+		public static string AspenRoot
+		{
+			get
+			{
+				if (!_aspenRootSearched)
+				{
+					_aspenRoot = GetLocalMachineRegistry("SOFTWARE\\AspenTech\\Setup", "ASPENROOT64");
+					_aspenRootSearched = true;
+				}
+				return _aspenRoot;
+			}
+		}
+
+		public static string AspenCommonRoot
+		{
+			get
+			{
+				if (!_aspenCommonRootSearched)
+				{
+					_aspenCommonRoot = GetLocalMachineRegistry("SOFTWARE\\AspenTech\\Setup", "ASPENCOMMON64");
+					_aspenCommonRootSearched = true;
+				}
+				return _aspenCommonRoot;
+			}
+		}
+
+		private static string GetLocalMachineRegistry(string key, string name)
+		{
+			using (RegistryKey registryKey = Registry.LocalMachine.OpenSubKey(key))
+			{
+				if (registryKey != null)
+				{
+					return registryKey.GetValue(name) as string;
+				}
+			}
+			return null;
+		}
+	}
+	internal static class NativeWindowCommands
+	{
+		private const uint SW_RESTORE = 9u;
+
+		[DllImport("user32.dll")]
+		private static extern int ShowWindow(IntPtr hWnd, uint Msg);
+
+		[DllImport("User32.dll")]
+		private static extern int SetForegroundWindow(IntPtr hWnd);
+
+		public static void ActivateRunningProcess(Process process)
+		{
+			ShowWindow(process.MainWindowHandle, 9u);
+			SetForegroundWindow(process.MainWindowHandle);
+		}
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

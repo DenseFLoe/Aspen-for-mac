@@ -1,0 +1,1217 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Windows;
+using System.Windows.Controls;
+using AspenTech.AspenPlus.Happ;
+using AspenTech.AspenPlus.Infrastructure;
+using AspenTech.AspenPlus.Localization.WpfPlotWizards;
+using Microsoft.Practices.Composite.Modularity;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyFileVersion("41.0.0.614")]
+[assembly: AssemblyTitle("WpfPlotWizardsHelper")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("Aspen Technology, Inc.")]
+[assembly: AssemblyProduct("WpfPlotWizardsHelper")]
+[assembly: AssemblyCopyright("Copyright © Aspen Technology 2011 - 2024")]
+[assembly: AssemblyTrademark("")]
+[assembly: ComVisible(false)]
+[assembly: ThemeInfo(ResourceDictionaryLocation.None, ResourceDictionaryLocation.SourceAssembly)]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.614")]
+namespace WpfPlotwizard
+{
+	[ComVisible(false)]
+	public class PlotwizardHelper
+	{
+		private string _helpFileName;
+
+		private long _helpID;
+
+		private string[] type = new string[4]
+		{
+			WpfPLDiscurvesResources.PSDPlotType_Mass_Fraction,
+			WpfPLDiscurvesResources.PSDPlotType_Cumulative_Mass_Fraction,
+			WpfPLDiscurvesResources.PSDPlotType_Mass_Density_Distribution,
+			"RRSB"
+		};
+
+		public PlotwizardHelper()
+			: this("PlotWiz.hlp", 293L)
+		{
+		}
+
+		public PlotwizardHelper(string fileName, long fileId)
+		{
+			_helpFileName = fileName;
+			_helpID = fileId;
+		}
+
+		public void SetMsg(string modelName, string header, string message)
+		{
+			//IL_0018: Unknown result type (might be due to invalid IL or missing references)
+			MMMessageBox.Show(message, modelName + " " + header, (MMMessageBoxButton)0, (MMMessageBoxImage)64, false, 1, "apwn.chm", -1);
+		}
+
+		public void LoadUnitsList(IHNode top, IHWizardPlot wizardPlot, List<string> listUnits)
+		{
+			listUnits.Clear();
+			int num = wizardPlot.get_unitrow((object)null);
+			wizardPlot.get_unitcol((object)null);
+			if (num <= 0)
+			{
+				return;
+			}
+			IHNode iHNode = top.FindNode("Unit Table");
+			try
+			{
+				string path = iHNode.Elements.get_Label(0, num - 1, (object)null);
+				IHNode iHNode2 = iHNode.FindNode(path);
+				if (iHNode2 == null)
+				{
+					return;
+				}
+				int count = iHNode2.Elements.Count;
+				for (int i = 0; i < count; i++)
+				{
+					bool flag = false;
+					string text = iHNode2.Elements.get_Label(0, i, (object)null);
+					for (int j = 0; j < i - 1; j++)
+					{
+						if (listUnits[j].ToString().ToLower() == text.ToLower())
+						{
+							flag = true;
+							break;
+						}
+					}
+					if (!flag)
+					{
+						listUnits.Add(text);
+					}
+				}
+			}
+			catch
+			{
+			}
+		}
+
+		public void SaveUnitsComboText(IHNode top, IHWizardPlot wizardPlot, string sSelectedUnit)
+		{
+			SaveUnitsCombo(top, wizardPlot, sSelectedUnit);
+		}
+
+		public void LoadUnitsCombo(IHNode top, IHWizardPlot wizardPlot, ComboBox unitsCombo)
+		{
+			unitsCombo.Items.Clear();
+			int num = wizardPlot.get_unitrow((object)null);
+			int num2 = wizardPlot.get_unitcol((object)null);
+			if (num <= 0)
+			{
+				return;
+			}
+			IHNode iHNode = top.FindNode("Unit Table");
+			try
+			{
+				string path = iHNode.Elements.get_Label(0, num - 1, (object)null);
+				IHNode iHNode2 = iHNode.FindNode(path);
+				if (iHNode2 == null)
+				{
+					return;
+				}
+				int count = iHNode2.Elements.Count;
+				for (int i = 0; i < count; i++)
+				{
+					bool flag = false;
+					string text = iHNode2.Elements.get_Label(0, i, (object)null);
+					for (int j = 0; j < i - 1; j++)
+					{
+						if (unitsCombo.Items[j].ToString().ToLower() == text.ToLower())
+						{
+							flag = true;
+							break;
+						}
+					}
+					if (!flag)
+					{
+						unitsCombo.Items.Add(text);
+					}
+				}
+				unitsCombo.Text = iHNode2.Elements.get_Label(0, num2 - 1, (object)null);
+			}
+			catch
+			{
+			}
+		}
+
+		public void LoadXUnitsCombo(IHNode top, IHWizardPlot wizardPlot, ComboBox unitsCombo)
+		{
+			unitsCombo.Items.Clear();
+			int xUnitRow = wizardPlot.XUnitRow;
+			int xUnitCol = wizardPlot.XUnitCol;
+			if (xUnitRow <= 0)
+			{
+				return;
+			}
+			IHNode iHNode = top.FindNode("Unit Table");
+			try
+			{
+				string path = iHNode.Elements.get_Label(0, xUnitRow - 1, (object)null);
+				IHNode iHNode2 = iHNode.FindNode(path);
+				if (iHNode2 == null)
+				{
+					return;
+				}
+				int count = iHNode2.Elements.Count;
+				for (int i = 0; i < count; i++)
+				{
+					bool flag = false;
+					string text = iHNode2.Elements.get_Label(0, i, (object)null);
+					for (int j = 0; j < i - 1; j++)
+					{
+						if (unitsCombo.Items[j].ToString().ToLower() == text.ToLower())
+						{
+							flag = true;
+							break;
+						}
+					}
+					if (!flag && !unitsCombo.Items.Contains(text))
+					{
+						unitsCombo.Items.Add(text);
+					}
+				}
+				unitsCombo.Text = iHNode2.Elements.get_Label(0, xUnitCol - 1, (object)null);
+			}
+			catch
+			{
+			}
+		}
+
+		public void SaveUnitsCombo(IHNode top, IHWizardPlot wizardPlot, ComboBox unitsCombo)
+		{
+			SaveUnitsCombo(top, wizardPlot, unitsCombo.Text);
+		}
+
+		public void SaveUnitsCombo(IHNode top, IHWizardPlot wizardPlot, string unit)
+		{
+			int num = wizardPlot.get_unitrow((object)null);
+			int num2 = wizardPlot.get_unitcol((object)null);
+			if (num <= 0)
+			{
+				return;
+			}
+			IHNode iHNode = top.FindNode("Unit Table");
+			try
+			{
+				string path = iHNode.Elements.get_Label(0, num - 1, (object)null);
+				IHNode iHNode2 = iHNode.FindNode(path);
+				if (iHNode2 == null)
+				{
+					return;
+				}
+				string text = iHNode2.Elements.get_Label(0, num2 - 1, (object)null);
+				string text2 = unit.ToLower();
+				if (!(text.ToLower() != text2))
+				{
+					return;
+				}
+				int count = iHNode2.Elements.Count;
+				for (int i = 0; i < count; i++)
+				{
+					string text3 = iHNode2.Elements.get_Label(0, i, (object)null);
+					if (text2 == text3.ToLower())
+					{
+						wizardPlot.set_unitcol((object)null, i + 1);
+					}
+				}
+			}
+			catch
+			{
+			}
+		}
+
+		public void LoadXUnitsList(IHNode top, IHWizardPlot wizardPlot, List<string> listUnits)
+		{
+			listUnits.Clear();
+			int xUnitRow = wizardPlot.XUnitRow;
+			_ = wizardPlot.XUnitCol;
+			if (xUnitRow <= 0)
+			{
+				return;
+			}
+			IHNode iHNode = top.FindNode("Unit Table");
+			try
+			{
+				string path = iHNode.Elements.get_Label(0, xUnitRow - 1, (object)null);
+				IHNode iHNode2 = iHNode.FindNode(path);
+				if (iHNode2 == null)
+				{
+					return;
+				}
+				int count = iHNode2.Elements.Count;
+				for (int i = 0; i < count; i++)
+				{
+					bool flag = false;
+					string text = iHNode2.Elements.get_Label(0, i, (object)null);
+					for (int j = 0; j < i - 1; j++)
+					{
+						if (listUnits[j].ToString().ToLower() == text.ToLower())
+						{
+							flag = true;
+							break;
+						}
+					}
+					if (!flag)
+					{
+						listUnits.Add(text);
+					}
+				}
+			}
+			catch
+			{
+			}
+		}
+
+		public void SaveXUnitsComboText(IHNode top, IHWizardPlot wizardPlot, string sSelectedUnit)
+		{
+			int xUnitRow = wizardPlot.XUnitRow;
+			int xUnitCol = wizardPlot.XUnitCol;
+			if (xUnitRow <= 0)
+			{
+				return;
+			}
+			IHNode iHNode = top.FindNode("Unit Table");
+			try
+			{
+				string path = iHNode.Elements.get_Label(0, xUnitRow - 1, (object)null);
+				IHNode iHNode2 = iHNode.FindNode(path);
+				if (iHNode2 == null)
+				{
+					return;
+				}
+				string text = iHNode2.Elements.get_Label(0, xUnitCol - 1, (object)null);
+				string text2 = sSelectedUnit.ToLower();
+				if (!(text.ToLower() != text2))
+				{
+					return;
+				}
+				int count = iHNode2.Elements.Count;
+				for (int i = 0; i < count; i++)
+				{
+					string text3 = iHNode2.Elements.get_Label(0, i, (object)null);
+					if (text2 == text3.ToLower())
+					{
+						wizardPlot.XUnitCol = i + 1;
+					}
+				}
+			}
+			catch
+			{
+			}
+		}
+
+		public void SaveXUnitsCombo(IHNode top, IHWizardPlot wizardPlot, ComboBox unitsCombo)
+		{
+			int xUnitRow = wizardPlot.XUnitRow;
+			int xUnitCol = wizardPlot.XUnitCol;
+			if (xUnitRow <= 0)
+			{
+				return;
+			}
+			IHNode iHNode = top.FindNode("Unit Table");
+			try
+			{
+				string path = iHNode.Elements.get_Label(0, xUnitRow - 1, (object)null);
+				IHNode iHNode2 = iHNode.FindNode(path);
+				if (iHNode2 == null)
+				{
+					return;
+				}
+				string text = iHNode2.Elements.get_Label(0, xUnitCol - 1, (object)null);
+				string text2 = unitsCombo.Text.ToLower();
+				if (!(text.ToLower() != text2))
+				{
+					return;
+				}
+				int count = iHNode2.Elements.Count;
+				for (int i = 0; i < count; i++)
+				{
+					string text3 = iHNode2.Elements.get_Label(0, i, (object)null);
+					if (text2 == text3.ToLower())
+					{
+						wizardPlot.XUnitCol = i + 1;
+					}
+				}
+			}
+			catch
+			{
+			}
+		}
+
+		public string GetUnitString(IHNode top, IHWizardPlot wizardPlot)
+		{
+			object force = null;
+			string result = string.Empty;
+			int num = wizardPlot.get_unitrow((object)null);
+			int num2 = wizardPlot.get_unitcol((object)null);
+			if (num > 0)
+			{
+				IHNode iHNode = top.Application.Tree.FindNode("Unit Table");
+				try
+				{
+					string path = iHNode.Elements.get_Label(0, num - 1, force);
+					IHNode iHNode2 = iHNode.FindNode(path);
+					if (iHNode2 != null)
+					{
+						result = iHNode2.Elements.get_Label(0, num2 - 1, force);
+					}
+				}
+				catch
+				{
+				}
+			}
+			return result;
+		}
+
+		public string GetXUnitString(IHNode top, IHWizardPlot wizardPlot)
+		{
+			object force = null;
+			string result = string.Empty;
+			int xUnitRow = wizardPlot.XUnitRow;
+			int xUnitCol = wizardPlot.XUnitCol;
+			if (xUnitRow > 0)
+			{
+				IHNode iHNode = top.Application.Tree.FindNode("Unit Table");
+				try
+				{
+					string path = iHNode.Elements.get_Label(0, xUnitRow - 1, force);
+					IHNode iHNode2 = iHNode.FindNode(path);
+					if (iHNode2 != null)
+					{
+						result = iHNode2.Elements.get_Label(0, xUnitCol - 1, force);
+					}
+				}
+				catch
+				{
+				}
+			}
+			return result;
+		}
+
+		public string GetHelpFileName()
+		{
+			return _helpFileName;
+		}
+
+		public long GetHelpID()
+		{
+			return _helpID;
+		}
+
+		public void GetWizardData(IHWizardPlot wizardPlot, int nStep, ref object pObject)
+		{
+			try
+			{
+				pObject = wizardPlot.get_WizardData(nStep);
+			}
+			catch
+			{
+			}
+		}
+
+		public void SetWizardData(IHWizardPlot wizardPlot, int nStep, object pObject)
+		{
+			try
+			{
+				wizardPlot.set_WizardData(nStep, pObject);
+			}
+			catch
+			{
+			}
+		}
+
+		public void CloseForm(UserControl thisFome, bool? dlgResult)
+		{
+			Window window = Window.GetWindow(thisFome);
+			if (window != null && window.IsActive)
+			{
+				window.DialogResult = dlgResult;
+				window.Close();
+			}
+		}
+
+		public string GetSpaces(int length)
+		{
+			string text = "";
+			if (length > 0)
+			{
+				for (int i = 0; i < length; i++)
+				{
+					text += " ";
+				}
+			}
+			return text;
+		}
+
+		public string Join(string[] xW, string sFill, bool bTrail)
+		{
+			string text = "";
+			if (xW != null)
+			{
+				for (int i = 0; i < xW.Length; i++)
+				{
+					if (!string.IsNullOrEmpty(xW[i]))
+					{
+						text += xW[i];
+						if (i != xW.Length - 1 || bTrail)
+						{
+							text += sFill;
+						}
+					}
+					else if (i == xW.Length - 1 && bTrail && text.Length == 0)
+					{
+						text = sFill;
+					}
+				}
+			}
+			return text;
+		}
+
+		public string[] ParseLine(string linein)
+		{
+			string[] array = linein.Split(' ');
+			if (array == null)
+			{
+				return null;
+			}
+			List<string> list = new List<string>();
+			for (int i = 0; i < array.Length; i++)
+			{
+				if (!string.IsNullOrEmpty(array[i]))
+				{
+					list.Add(array[i]);
+				}
+			}
+			if (list.Count == 0)
+			{
+				return null;
+			}
+			return list.ToArray();
+		}
+
+		public List<string> GetUnitOptions(IHNode Context, string unitName)
+		{
+			if (Context == null)
+			{
+				return null;
+			}
+			List<string> list = new List<string>();
+			IHNode iHNode = Context.Application.Tree.FindNode("Unit Table");
+			try
+			{
+				IHNode iHNode2 = iHNode.FindNode(unitName);
+				if (iHNode2 != null)
+				{
+					int count = iHNode2.Elements.Count;
+					for (int i = 0; i < count; i++)
+					{
+						string item = iHNode2.Elements.get_Label(0, i, (object)null);
+						if (!list.Contains(item))
+						{
+							list.Add(item);
+						}
+					}
+				}
+			}
+			catch
+			{
+			}
+			return list;
+		}
+
+		public void SetYData(IHNode context, IHWizardPlot2 wizardPlot, List<string> selectedStreams, List<string> selectedSubStreams, int count, int type, Dictionary<string, List<double>> psdwf)
+		{
+			int num = 0;
+			for (int i = 0; i < selectedStreams.Count; i++)
+			{
+				IHNode iHNode = context.FindNode("../../Streams/" + selectedStreams[i] + "/Output/SUBSATTR/SUBS-ATTR");
+				if (iHNode == null)
+				{
+					continue;
+				}
+				for (int j = 0; j < selectedSubStreams.Count; j++)
+				{
+					string text = selectedSubStreams[j];
+					wizardPlot.PlotVal.NVariables = wizardPlot.PlotVal.NVariables + 1;
+					((IHPlotVal)wizardPlot.PlotVal).set_Label(num, selectedStreams[i] + " " + text);
+					double num2 = 0.0;
+					double num3 = 0.0;
+					double num4 = 0.0;
+					double num5 = 0.0;
+					for (int k = 0; k < count; k++)
+					{
+						try
+						{
+							switch (type)
+							{
+							case 1:
+							{
+								dynamic val3 = iHNode.Elements[text, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[k, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+								if (val3 != null)
+								{
+									num2 = val3;
+								}
+								break;
+							}
+							case 2:
+							case 4:
+							{
+								dynamic val2 = iHNode.Elements[text, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[k, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+								if (val2 != null)
+								{
+									num2 += val2;
+								}
+								break;
+							}
+							case 3:
+							{
+								if (k == 0)
+								{
+									continue;
+								}
+								num5 = psdwf[text][k];
+								num4 = psdwf[text][k - 1];
+								dynamic val = iHNode.Elements[text, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[k, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+								if (val != null)
+								{
+									num2 = val;
+								}
+								num3 = num5 - num4;
+								if (Math.Abs(num3) > 0.0)
+								{
+									num2 /= num3;
+								}
+								break;
+							}
+							}
+							((IHPlotVal)wizardPlot.PlotVal).set_YData(num, k, (short)0, (object)num2);
+						}
+						catch
+						{
+						}
+					}
+					num++;
+				}
+				string[] array = new string[4] { "Mass fraction", "Cumulative mass fraction", "Mass density distribution", "RRSB" };
+				((IHPlotVal)wizardPlot.PlotVal).set_YAxisTitle((object)null, array[type - 1]);
+			}
+		}
+
+		public void SetXData(IHNode context, IHWizardPlot2 wizardPlot, List<string> selectedSubStreams, string path, string plotType)
+		{
+			int num = 0;
+			for (int i = 0; i < selectedSubStreams.Count; i++)
+			{
+				string loc_or_name = selectedSubStreams[i];
+				IHNode iHNode = context.FindNode(path);
+				int count = iHNode.Elements[loc_or_name, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements.Count;
+				wizardPlot.PlotVal.NXVariables = wizardPlot.PlotVal.NXVariables + 1;
+				wizardPlot.PlotVal.NPoints = count;
+				wizardPlot.PlotVal.XAxisTitle = WpfPLDiscurvesResources.PSDXAxisTitle;
+				if (count > 1)
+				{
+					string unitString = iHNode.Elements[loc_or_name, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[1, Type.Missing, Type.Missing, Type.Missing, Type.Missing].UnitString;
+					wizardPlot.PlotVal.XAxisTitle = WpfPLDiscurvesResources.PSDXAxisTitle_F + unitString;
+				}
+				for (int j = 1; j < count; j++)
+				{
+					try
+					{
+						double num2 = 0.0;
+						dynamic val = iHNode.Elements[loc_or_name, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j - 1, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+						dynamic val2 = iHNode.Elements[loc_or_name, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+						num2 = ((!(plotType == type[0]) && !(plotType == type[2])) ? ((double)val2) : ((double)((val + val2) / 2.0)));
+						((IHPlotVal)wizardPlot.PlotVal).set_XData(num, j, (short)0, (object)num2);
+					}
+					catch
+					{
+					}
+				}
+				num++;
+			}
+		}
+
+		public void SetYData(IHNode context, IHWizardPlot2 wizardPlot, string plotType, List<string> selectedStreams, List<string> selectedSubStreams, string[] path)
+		{
+			int num = 0;
+			IHNode iHNode = context.FindNode(path[0]);
+			IHNode iHNode2 = context.FindNode(path[1]);
+			if (iHNode == null)
+			{
+				return;
+			}
+			for (int i = 0; i < selectedSubStreams.Count; i++)
+			{
+				string text = selectedSubStreams[i];
+				iHNode = context.FindNode(path[0]).Elements[text, Type.Missing, Type.Missing, Type.Missing, Type.Missing];
+				iHNode2 = context.FindNode(path[1]).Elements[text, Type.Missing, Type.Missing, Type.Missing, Type.Missing];
+				if (iHNode == null || iHNode.Elements.Count <= 0)
+				{
+					continue;
+				}
+				for (int j = 0; j < selectedStreams.Count; j++)
+				{
+					string text2 = selectedStreams[j];
+					wizardPlot.PlotVal.NVariables = wizardPlot.PlotVal.NVariables + 1;
+					((IHPlotVal)wizardPlot.PlotVal).set_Label(num, text2 + " " + text);
+					int count = iHNode2.Elements.Count;
+					double num2 = 0.0;
+					double num3 = 0.0;
+					double num4 = 0.0;
+					double num5 = 0.0;
+					for (int k = 1; k < count; k++)
+					{
+						try
+						{
+							if (plotType == type[0])
+							{
+								dynamic val = iHNode.Elements[text2, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[k, Type.Missing, Type.Missing, Type.Missing, Type.Missing];
+								if (val != null)
+								{
+									dynamic val2 = val.Value;
+									if (val2 != null)
+									{
+										num2 = val2;
+									}
+								}
+							}
+							else if (plotType == type[1] || plotType == type[3])
+							{
+								dynamic val3 = iHNode.Elements[text2, Type.Missing, Type.Missing, Type.Missing, Type.Missing];
+								if (val3 != null)
+								{
+									val3 = val3.Elements[k];
+									if (val3 != null)
+									{
+										dynamic val4 = val3.Value;
+										if (val4 != null)
+										{
+											num2 += val4;
+										}
+									}
+								}
+							}
+							else if (plotType == type[2])
+							{
+								if (k > 0)
+								{
+									dynamic val5 = iHNode2.Elements[k - 1, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+									if (val5 != null)
+									{
+										num4 = val5;
+									}
+								}
+								dynamic val6 = iHNode2.Elements[k, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+								if (val6 != null)
+								{
+									num5 = val6;
+								}
+								dynamic val7 = iHNode.Elements[text2, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[k, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+								if (val7 != null)
+								{
+									num2 = val7;
+								}
+								num3 = num5 - num4;
+								if (Math.Abs(num3) > 0.0)
+								{
+									num2 /= num3;
+								}
+							}
+							((IHPlotVal)wizardPlot.PlotVal).set_YData(num, k, (short)0, (object)num2);
+						}
+						catch
+						{
+						}
+					}
+					num++;
+				}
+				((IHPlotVal)wizardPlot.PlotVal).set_YAxisTitle((object)null, plotType);
+			}
+		}
+
+		public void ReferencePlot(IHNode context, string subStreamName, List<double> lstXDate, List<double> lstCMY, List<double> lstMDY)
+		{
+			lstXDate.Clear();
+			lstCMY.Clear();
+			lstMDY.Clear();
+			IHNode iHNode = context.FindNode("Input/TYPE/" + subStreamName);
+			if (iHNode == null)
+			{
+				return;
+			}
+			string text = (dynamic)iHNode.get_Value(Type.Missing);
+			iHNode = context.FindNode("Input/LOWER/" + subStreamName);
+			double num = 0.0;
+			if (iHNode != null)
+			{
+				num = (dynamic)iHNode.Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+			}
+			int num2 = 0;
+			double num3 = 0.0;
+			double num4 = 0.0;
+			iHNode = context.FindNode("Input/UPPER/" + subStreamName);
+			if (iHNode != null)
+			{
+				num2 = iHNode.Elements.Count;
+				num3 = (dynamic)iHNode.Elements[num2 - 1, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+			}
+			if (text.CompareTo("GGS") == 0 || text.CompareTo("RRSB") == 0)
+			{
+				return;
+			}
+			if (text.CompareTo("NORMAL") == 0)
+			{
+				iHNode = context.FindNode("Input/STDDEV/" + subStreamName);
+				double num5 = (dynamic)iHNode.get_Value(Type.Missing);
+				iHNode = context.FindNode("Input/D50/" + subStreamName);
+				double num6 = (dynamic)iHNode.get_Value(Type.Missing);
+				double num7 = num;
+				do
+				{
+					lstXDate.Add(num7);
+					double num8 = 1.0 / (num5 * Math.Sqrt(Math.PI * 2.0)) * Math.Exp(-1.0 * Math.Pow(num7 - num6, 2.0) / (2.0 * Math.Pow(num5, 2.0)));
+					num4 += num8;
+					lstMDY.Add(num8);
+					lstCMY.Add(num4);
+					num7 += 1.0;
+				}
+				while (num7 < num3);
+			}
+			else if (text.CompareTo("LOG-NORMAL") == 0)
+			{
+				iHNode = context.FindNode("Input/GMDEV/" + subStreamName);
+				double num9 = (dynamic)iHNode.get_Value(Type.Missing);
+				iHNode = context.FindNode("Input/D50/" + subStreamName);
+				double d = (dynamic)iHNode.get_Value(Type.Missing);
+				double num10 = num;
+				do
+				{
+					lstXDate.Add(num10);
+					double num11 = 1.0 / (num10 * num9 * Math.Sqrt(Math.PI * 2.0)) * Math.Exp(-0.5 * Math.Pow((Math.Log(num10) - Math.Log(d)) / num9, 2.0));
+					num4 += num11;
+					num10 += 1.0;
+					lstMDY.Add(num11);
+					lstCMY.Add(num4);
+				}
+				while (num10 < num3);
+			}
+		}
+	}
+}
+namespace WpfPlotWizardsHelper
+{
+	public class CustomCheckBoxItem : DependencyObject
+	{
+		public static readonly DependencyProperty IsCheckedProperty = DependencyProperty.Register("IsChecked", typeof(bool), typeof(CustomCheckBoxItem));
+
+		public static readonly DependencyProperty ContentProperty = DependencyProperty.Register("Content", typeof(string), typeof(CustomCheckBoxItem));
+
+		public static readonly DependencyProperty TagProperty = DependencyProperty.Register("Tag", typeof(object), typeof(CustomCheckBoxItem));
+
+		public string Content
+		{
+			get
+			{
+				return (string)GetValue(ContentProperty);
+			}
+			set
+			{
+				SetValue(ContentProperty, value);
+			}
+		}
+
+		public bool IsChecked
+		{
+			get
+			{
+				return (bool)GetValue(IsCheckedProperty);
+			}
+			set
+			{
+				SetValue(IsCheckedProperty, value);
+			}
+		}
+
+		public object Tag
+		{
+			get
+			{
+				return GetValue(TagProperty);
+			}
+			set
+			{
+				SetValue(TagProperty, value);
+			}
+		}
+	}
+	public abstract class PlotModuleBase : IModule
+	{
+		public virtual void Initialize()
+		{
+		}
+	}
+}
+namespace AspenTech.AspenPlus.Happ
+{
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("11677780-B72B-11D0-A943-0000C0A118DB")]
+	[CoClass(typeof(object))]
+	[TypeIdentifier]
+	public interface CHPlotVal : IHPlotVal
+	{
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("8E567522-F9BA-11CF-90B2-0000C0A810C4")]
+	[TypeIdentifier]
+	public interface IHNode
+	{
+		[DispId(1610743808)]
+		IHapp Application
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743808)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+
+		void _VtblGap1_5();
+
+		[DispId(1610743814)]
+		object Value
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743814)]
+			[return: MarshalAs(UnmanagedType.Struct)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743814)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.Struct)]
+			set;
+		}
+
+		void _VtblGap2_10();
+
+		[DispId(1610743826)]
+		IHNodeCol Elements
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743826)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+
+		void _VtblGap3_8();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743835)]
+		[return: MarshalAs(UnmanagedType.Interface)]
+		IHNode FindNode([In][MarshalAs(UnmanagedType.BStr)] string path);
+
+		void _VtblGap4_17();
+
+		[DispId(1610743853)]
+		string UnitString
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743853)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+		}
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("89E81F60-019A-11D0-9BE7-0000C05375D5")]
+	[TypeIdentifier]
+	public interface IHNodeCol : IEnumerable
+	{
+		void _VtblGap1_2();
+
+		[DispId(1610743810)]
+		int Count
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743810)]
+			get;
+		}
+
+		void _VtblGap2_3();
+
+		[DispId(0)]
+		IHNode this[[In][MarshalAs(UnmanagedType.Struct)] object loc_or_name, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name2, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name3, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name4, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name5]
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(0)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+
+		void _VtblGap3_2();
+
+		[DispId(1610743817)]
+		string Label
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743817)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743817)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.BStr)]
+			set;
+		}
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("11677780-B72B-11D0-A943-0000C0A118DB")]
+	[TypeIdentifier]
+	public interface IHPlotVal
+	{
+		void _VtblGap1_5();
+
+		[DispId(1610743813)]
+		string XAxisTitle
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743813)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743813)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.BStr)]
+			set;
+		}
+
+		void _VtblGap2_1();
+
+		[DispId(1610743816)]
+		string YAxisTitle
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743816)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743816)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.BStr)]
+			set;
+		}
+
+		void _VtblGap3_1();
+
+		[DispId(1610743819)]
+		string Label
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743819)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743819)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.BStr)]
+			set;
+		}
+
+		void _VtblGap4_1();
+
+		[DispId(1610743822)]
+		int NPoints
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743822)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743822)]
+			[param: In]
+			set;
+		}
+
+		[DispId(1610743824)]
+		int NVariables
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743824)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743824)]
+			[param: In]
+			set;
+		}
+
+		[DispId(1610743826)]
+		int NXVariables
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743826)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743826)]
+			[param: In]
+			set;
+		}
+
+		void _VtblGap5_1();
+
+		[DispId(1610743829)]
+		object XData
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743829)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.Struct)]
+			set;
+		}
+
+		void _VtblGap6_1();
+
+		[DispId(1610743831)]
+		object YData
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743831)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.Struct)]
+			set;
+		}
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("8008C730-1A3E-11D1-8A4D-0000C0237DF9")]
+	[TypeIdentifier]
+	public interface IHWizardPlot
+	{
+		void _VtblGap1_3();
+
+		[DispId(1610743811)]
+		int unitrow
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743811)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743811)]
+			[param: In]
+			set;
+		}
+
+		[DispId(1610743813)]
+		int unitcol
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743813)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743813)]
+			[param: In]
+			set;
+		}
+
+		void _VtblGap2_6();
+
+		[DispId(1610743821)]
+		object WizardData
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743821)]
+			[return: MarshalAs(UnmanagedType.IDispatch)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743821)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.IDispatch)]
+			set;
+		}
+
+		void _VtblGap3_10();
+
+		[DispId(1610743833)]
+		int XUnitRow
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743833)]
+			get;
+		}
+
+		[DispId(1610743834)]
+		int XUnitCol
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743834)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743834)]
+			[param: In]
+			set;
+		}
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("5DA88FB5-5B29-4EAE-ACDF-E45DE2319D99")]
+	[TypeIdentifier]
+	public interface IHWizardPlot2 : IHWizardPlot
+	{
+		[DispId(1610743808)]
+		CHPlotVal PlotVal
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743808)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[DefaultMember("Name")]
+	[Guid("8E567521-F9BA-11CF-90B2-0000C0A810C4")]
+	[TypeIdentifier]
+	public interface IHapp
+	{
+		void _VtblGap1_3();
+
+		[DispId(0)]
+		string Name
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(0)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+		}
+
+		void _VtblGap2_7();
+
+		[DispId(1610743819)]
+		IHNode Tree
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743819)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

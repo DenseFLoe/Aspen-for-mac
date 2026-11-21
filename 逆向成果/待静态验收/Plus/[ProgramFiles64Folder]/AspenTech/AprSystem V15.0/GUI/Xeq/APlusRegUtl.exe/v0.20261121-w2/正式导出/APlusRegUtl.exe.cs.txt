@@ -1,0 +1,559 @@
+using System;
+using System.CodeDom.Compiler;
+using System.Collections;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Resources;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Text;
+using System.Threading;
+using Microsoft.Win32;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyTitle("APlusRegUtl")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("Aspen Technology, Inc.")]
+[assembly: AssemblyProduct("APlusRegUtl")]
+[assembly: AssemblyCopyright("Copyright © Aspen Technology, Inc. 2008 - 2024")]
+[assembly: AssemblyTrademark("")]
+[assembly: ComVisible(false)]
+[assembly: Guid("677430f7-182d-43d1-bcd8-50dbc2ecb6e4")]
+[assembly: AssemblyFileVersion("1.0.0.0")]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("1.0.0.0")]
+namespace APlusRegUtl
+{
+	public static class APregUtl
+	{
+		public static string ExternalVersionString => "V15";
+
+		public static bool IsAspenProperties { get; private set; }
+
+		public static string ApplicationName
+		{
+			get
+			{
+				if (!IsAspenProperties)
+				{
+					return "Aspen Plus";
+				}
+				return "Aspen Properties";
+			}
+		}
+
+		public static string ApplicationNameWithVersion => ApplicationName + " " + ExternalVersionString;
+
+		public static int GetTurboStartSetting()
+		{
+			RegistryKey registryKey = Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Run", writable: false);
+			if (registryKey != null)
+			{
+				string value = ApplicationNameWithVersion + "TurboStart";
+				if (registryKey.GetValueNames().Contains(value))
+				{
+					return 1;
+				}
+			}
+			return 0;
+		}
+
+		public static void ExitTurboApp()
+		{
+			if (EventWaitHandle.TryOpenExisting(ApplicationNameWithVersion + "TurboStartCloseEvent", out var result))
+			{
+				result.Set();
+				result.Close();
+			}
+		}
+
+		public static void DeleteTurboStartSetting()
+		{
+			using RegistryKey registryKey = Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Run", writable: true);
+			if (registryKey != null)
+			{
+				string name = ApplicationNameWithVersion + "TurboStart";
+				if (registryKey.GetValue(name) != null)
+				{
+					registryKey.DeleteValue(name);
+					ExitTurboApp();
+				}
+			}
+		}
+
+		public static void DeleteKeyOpenWithProgids()
+		{
+			RegistryKey registryKey = RegistryKey.FromHandle(Registry.ClassesRoot.Handle, RegistryView.Registry64);
+			string[] array = new string[2] { ".apw", ".bkp" };
+			foreach (string name in array)
+			{
+				registryKey.OpenSubKey(name, writable: true)?.DeleteSubKey("OpenWithProgids", throwOnMissingSubKey: false);
+			}
+		}
+
+		private static void Main(string[] args)
+		{
+			string text = "41.0";
+			Hashtable hashtable = new Hashtable();
+			bool flag = true;
+			bool flag2 = false;
+			bool flag3 = false;
+			bool flag4 = false;
+			bool flag5 = false;
+			bool flag6 = false;
+			bool flag7 = false;
+			bool flag8 = false;
+			bool flag9 = false;
+			bool flag10 = false;
+			string[] array = new string[5] { "AspenPlus.reg", "APrSystemGUI.reg", "APropCoreGUI.reg", "DefVar_APlus.reg", "APHtmlHelp.reg" };
+			string[] array2 = new string[8] { "[APRSYS_GUIXEQ]", "[ASPENPLUS_GUIXEQ]", "[ASPENPROP_GUI_XEQ]", "[ASPENPLUS_ENGINEXEQ]", "[ASPENCOMMON]", "[ASPENPLUS_ROOT]", "[APRSYS_GUICUSTOM]", "[ASPENPROP_ROOT]" };
+			string[] array3 = args;
+			foreach (string text2 in array3)
+			{
+				Console.WriteLine(text2);
+				if (text2.ToLower().CompareTo("/unregister") == 0 || text2.ToLower().CompareTo("/unreg-aprsystem") == 0 || text2.ToLower().CompareTo("/unreg-aprop") == 0 || text2.ToLower().CompareTo("/unreg-hhelp") == 0 || text2.ToLower().CompareTo("/unreg-aplus") == 0)
+				{
+					Console.WriteLine("Unregistering");
+					flag = false;
+					if (text2.ToLower().CompareTo("/unreg-aprsystem") == 0)
+					{
+						flag6 = true;
+					}
+					if (text2.ToLower().CompareTo("/unreg-aprop") == 0)
+					{
+						flag7 = true;
+					}
+					if (text2.ToLower().CompareTo("/unreg-aplus") == 0)
+					{
+						flag8 = true;
+					}
+					if (text2.ToLower().CompareTo("/unreg-hhelp") == 0)
+					{
+						flag9 = true;
+					}
+					continue;
+				}
+				if (text2.ToLower().CompareTo("/keeptempfiles") == 0)
+				{
+					Console.WriteLine("Keeping temp files");
+					continue;
+				}
+				if (text2.ToLower().CompareTo("/help") == 0)
+				{
+					Console.WriteLine("Options are:");
+					Console.WriteLine("  /unregister: remove Aprsystem, Aspen Plus and Aspen proerties keys from the registry");
+					Console.WriteLine("  /keeptempfiles: temporary .reg files will not be deleted");
+					Console.WriteLine("  /All: Add Aprsystem, Aspen Plus and Aspen properties keys to the registry.");
+					Console.WriteLine("  /Reg-Aprsystem: Add Aprsystem keys to the registry.");
+					Console.WriteLine("  /Reg-APlus: Add Aspen Plus keys to the registry.");
+					Console.WriteLine("  /Reg-Aprop: Add Aspen Properties keys to the registry.");
+					Console.WriteLine("  /Reg-hhelp: Add Aspen Plus and Aspen Properties HTML help keys to the registry.");
+					Console.WriteLine("  /UnReg-Aprsystem: Remove Aprsystem keys from the registry.");
+					Console.WriteLine("  /UnReg-Aplus: Remove Aspen Plus keys from the registry.");
+					Console.WriteLine("  /UnReg-Aprop: Remove Aspen Properties keys from the registry.");
+					Console.WriteLine("  /UnReg-hhelp: Remove Aspen Plus and Aspen Properties HTML help keys from the registry.");
+					return;
+				}
+				if (text2.ToLower().CompareTo("/reg-aprsystem") == 0)
+				{
+					Console.WriteLine("Aprsystem Registration");
+					flag2 = true;
+				}
+				else if (text2.ToLower().CompareTo("/reg-aplus") == 0)
+				{
+					Console.WriteLine("Aspen Plus Registration");
+					flag3 = true;
+				}
+				else if (text2.ToLower().CompareTo("/reg-aprop") == 0)
+				{
+					Console.WriteLine("Aspen Properties Registration");
+					flag4 = true;
+				}
+				else if (text2.ToLower().CompareTo("/reg-hhelp") == 0)
+				{
+					Console.WriteLine("Aspen Plus and Aspen Properties HTML help Registration");
+					flag5 = true;
+				}
+				else if (text2.ToLower().CompareTo("/all") == 0)
+				{
+					Console.WriteLine("Register ALL");
+					flag10 = true;
+				}
+				else if (text2.StartsWith("/Version:", StringComparison.OrdinalIgnoreCase))
+				{
+					int num = text2.IndexOf(":");
+					text = text2.Substring(num + 1);
+				}
+			}
+			if (flag8)
+			{
+				IsAspenProperties = false;
+				DeleteTurboStartSetting();
+			}
+			if (flag7)
+			{
+				IsAspenProperties = true;
+				DeleteTurboStartSetting();
+			}
+			hashtable.Add("[ASPENCOMMON]", Environment.GetFolderPath(Environment.SpecialFolder.CommonProgramFiles));
+			RegistryKey registryKey = RegistryKey.FromHandle(Registry.LocalMachine.Handle, RegistryView.Registry64);
+			string name = "SOFTWARE\\AspenTech\\AprSystem\\" + text + "\\mm";
+			RegistryKey registryKey2 = registryKey.OpenSubKey(name, writable: false);
+			if (registryKey2 != null)
+			{
+				string text3 = registryKey2.GetValue("mmcommonxeq").ToString();
+				hashtable.Add("[APRSYS_GUIXEQ]", text3);
+				int num2 = text3.LastIndexOf("\\");
+				if (num2 != -1)
+				{
+					string text4 = text3.Substring(0, num2);
+					text4 += "\\Custom";
+					hashtable.Add("[APRSYS_GUICUSTOM]", text4);
+					Console.WriteLine("APRSYS_GUICUSTOM: " + text4);
+				}
+				registryKey2.Close();
+				Console.WriteLine("APRSYS_GUIXEQ: " + text3);
+			}
+			else
+			{
+				Console.WriteLine("Failed to find APRSYSTEM registry entry");
+				if (flag10 || flag2 || flag6)
+				{
+					return;
+				}
+			}
+			name = "SOFTWARE\\AspenTech\\Aspen Plus\\" + text + "\\mm";
+			RegistryKey registryKey3 = registryKey.OpenSubKey(name, writable: false);
+			if (registryKey3 != null)
+			{
+				string text5 = registryKey3.GetValue("mmxeq").ToString();
+				hashtable.Add("[ASPENPLUS_GUIXEQ]", text5);
+				registryKey3.Close();
+				Console.WriteLine("ASPENPLUS_GUIXEQ: " + text5);
+				int num3 = text5.ToLower().LastIndexOf("\\gui");
+				if (num3 > 0)
+				{
+					string text6 = text5.Substring(0, num3);
+					hashtable.Add("[ASPENPLUS_ROOT]", text6);
+					Console.WriteLine("ASPENPLUS_ROOT: " + text6);
+				}
+				else
+				{
+					Console.WriteLine("ASPENPLUS_ROOT not set");
+				}
+			}
+			else
+			{
+				Console.WriteLine("Failed to find ASPEN PLUS registry entry");
+				if (flag10 || flag3 || flag8)
+				{
+					return;
+				}
+			}
+			name = "SOFTWARE\\AspenTech\\Aspen Plus\\" + text + "\\aplus";
+			RegistryKey registryKey4 = registryKey.OpenSubKey(name, writable: false);
+			if (registryKey4 != null)
+			{
+				string text7 = registryKey4.GetValue("ASPTOP").ToString();
+				hashtable.Add("[ASPENPLUS_ENGINEXEQ]", text7);
+				registryKey4.Close();
+				Console.WriteLine("ASPENPLUS_ENGINEXEQ: " + text7);
+			}
+			name = "SOFTWARE\\AspenTech\\Aspen Properties\\" + text + "\\mm";
+			RegistryKey registryKey5 = registryKey.OpenSubKey(name, writable: false);
+			if (registryKey5 != null && registryKey5.GetValue("mmxeq") != null)
+			{
+				string text8 = registryKey5.GetValue("mmxeq").ToString();
+				hashtable.Add("[ASPENPROP_GUI_XEQ]", text8);
+				registryKey5.Close();
+				registryKey.Close();
+				int num4 = text8.ToLower().LastIndexOf("\\gui");
+				if (num4 > 0)
+				{
+					string text6 = text8.Substring(0, num4);
+					hashtable.Add("[ASPENPROP_ROOT]", text6);
+					Console.WriteLine("ASPENPROP_ROOT: " + text6);
+				}
+				else
+				{
+					Console.WriteLine("ASPENPROP_ROOT not set");
+				}
+			}
+			else
+			{
+				Console.WriteLine("Failed to find ASPEN PROPERTIES registry entry");
+				if (flag10 || flag4 || flag7)
+				{
+					return;
+				}
+			}
+			Assembly executingAssembly = Assembly.GetExecutingAssembly();
+			array3 = array;
+			foreach (string text9 in array3)
+			{
+				Console.WriteLine(text9);
+				if (!((flag2 && text9.CompareTo("APrSystemGUI.reg") == 0) || (flag3 && text9.CompareTo("AspenPlus.reg") == 0) || (flag4 && text9.CompareTo("APropCoreGUI.reg") == 0) || (flag5 && text9.CompareTo("APHtmlHelp.reg") == 0) || (flag6 && text9.CompareTo("APrSystemGUI.reg") == 0) || (flag8 && text9.CompareTo("AspenPlus.reg") == 0) || (flag7 && text9.CompareTo("APropCoreGUI.reg") == 0) || (flag9 && text9.CompareTo("APHtmlHelp.reg") == 0) || flag10))
+				{
+					continue;
+				}
+				StreamReader streamReader = new StreamReader(executingAssembly.GetManifestResourceStream("APlusRegUtl." + text9));
+				string text10 = streamReader.ReadToEnd();
+				streamReader.Close();
+				string[] array4 = array2;
+				foreach (string text11 in array4)
+				{
+					object obj = hashtable[text11];
+					if (obj == null)
+					{
+						continue;
+					}
+					string text12 = obj.ToString();
+					if (text12.Length != 0)
+					{
+						text12 = text12.Replace("\\", "\\\\");
+						if (!text12.EndsWith("\\\\"))
+						{
+							text12 += "\\\\";
+						}
+						text10 = text10.Replace(text11, text12);
+					}
+				}
+				MemoryStream memoryStream = new MemoryStream();
+				StreamWriter streamWriter = new StreamWriter(memoryStream);
+				streamWriter.Write(text10);
+				streamWriter.Flush();
+				memoryStream.Position = 0L;
+				if (!flag)
+				{
+					UnRegedt32(memoryStream);
+				}
+				else
+				{
+					Regedt32(memoryStream);
+				}
+				streamWriter.Close();
+				memoryStream.Close();
+			}
+			DeleteKeyOpenWithProgids();
+		}
+
+		private static void UnRegedt32(MemoryStream tempfile)
+		{
+			string value = "REGEDIT4";
+			string text = "[HKEY_CLASSES_ROOT\\";
+			string text2 = "[HKEY_LOCAL_MACHINE\\";
+			using StreamReader streamReader = new StreamReader(tempfile);
+			while (!streamReader.EndOfStream)
+			{
+				string text3 = streamReader.ReadLine();
+				if (string.IsNullOrEmpty(text3) || text3.StartsWith(value))
+				{
+					continue;
+				}
+				try
+				{
+					if (text3.StartsWith(text))
+					{
+						text3 = text3.Replace(text, "");
+						text3 = text3.Replace("]", "");
+						Registry.ClassesRoot.DeleteSubKeyTree(text3);
+					}
+					else if (text3.StartsWith(text2))
+					{
+						text3 = text3.Replace(text2, "");
+						text3 = text3.Replace("]", "");
+						Registry.LocalMachine.DeleteSubKeyTree(text3);
+					}
+				}
+				catch (Exception ex)
+				{
+					Console.WriteLine(ex.Message);
+				}
+			}
+			streamReader.Close();
+		}
+
+		private static void Regedt32(MemoryStream tempfile)
+		{
+			string value = "REGEDIT4";
+			string text = "[HKEY_CLASSES_ROOT\\";
+			string oldValue = "[HKEY_LOCAL_MACHINE\\";
+			string text2 = "@=";
+			string value2 = "=";
+			string value3 = "dword";
+			StreamReader streamReader = new StreamReader(tempfile);
+			string value4 = "hex(7)";
+			while (!streamReader.EndOfStream)
+			{
+				string text3 = streamReader.ReadLine();
+				if (string.IsNullOrEmpty(text3) || text3.StartsWith(value))
+				{
+					continue;
+				}
+				RegistryKey registryKey;
+				if (text3.StartsWith(text))
+				{
+					text3 = text3.Replace(text, "");
+					text3 = text3.Replace("]", "");
+					registryKey = Registry.ClassesRoot.CreateSubKey(text3);
+				}
+				else
+				{
+					text3 = text3.Replace(oldValue, "");
+					text3 = text3.Replace("]", "");
+					registryKey = Registry.LocalMachine.CreateSubKey(text3);
+				}
+				bool flag = false;
+				while (!flag)
+				{
+					string text4 = streamReader.ReadLine();
+					string name = null;
+					string text5 = null;
+					if (text4 != null && text4 != "")
+					{
+						flag = false;
+						text4 = text4.Replace("\\\"", "\"");
+						text4 = text4.Replace("\\\\", "\\");
+						text5 = text4;
+						if (text5.StartsWith(text2))
+						{
+							text5 = text5.Replace(text2, "");
+							if (text5.StartsWith("\""))
+							{
+								text5 = text5.Substring(1);
+							}
+							if (text5.EndsWith("\""))
+							{
+								text5 = text5.Substring(0, text5.Length - 1);
+							}
+							registryKey.SetValue(name, text5);
+						}
+						else
+						{
+							if (text5.IndexOf(value2) <= -1)
+							{
+								continue;
+							}
+							string[] array = text5.Split('=');
+							name = array[0].Replace("\"", "");
+							text5 = array[1];
+							if (text5.IndexOf(value3) > -1)
+							{
+								text5 = array[1];
+								text5 = text5.Split(':')[1];
+								registryKey.SetValue(name, text5, RegistryValueKind.DWord);
+							}
+							else if (text5.IndexOf(value4) > -1)
+							{
+								flag = false;
+								StringBuilder stringBuilder = new StringBuilder();
+								text5 = text5.Split(':')[1];
+								stringBuilder.Append(text5);
+								while (!flag)
+								{
+									string value5 = streamReader.ReadLine();
+									if (!string.IsNullOrEmpty(value5))
+									{
+										stringBuilder.Append(value5);
+										stringBuilder.Replace("\\", "");
+									}
+									else
+									{
+										flag = true;
+									}
+								}
+								string[] array2 = stringBuilder.ToString().Trim().Split(',');
+								List<string> list = new List<string>();
+								StringBuilder stringBuilder2 = new StringBuilder();
+								for (int i = 0; i < array2.Length; i++)
+								{
+									int num = Convert.ToInt32(array2[i].Trim(), 16);
+									char value6 = (char)num;
+									if (num != 0)
+									{
+										stringBuilder2.Append(value6);
+										continue;
+									}
+									list.Add(stringBuilder2.ToString());
+									stringBuilder2.Clear();
+								}
+								registryKey.SetValue(name, list.ToArray(), RegistryValueKind.MultiString);
+							}
+							else
+							{
+								text5 = text5.Replace("\"", "");
+								registryKey.SetValue(name, text5);
+							}
+						}
+					}
+					else
+					{
+						flag = true;
+					}
+				}
+			}
+			streamReader.Close();
+		}
+	}
+}
+namespace APlusRegUtl.Properties
+{
+	[GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
+	[DebuggerNonUserCode]
+	[CompilerGenerated]
+	public class Resources
+	{
+		private static ResourceManager resourceMan;
+
+		private static CultureInfo resourceCulture;
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		public static ResourceManager ResourceManager
+		{
+			get
+			{
+				if (resourceMan == null)
+				{
+					resourceMan = new ResourceManager("APlusRegUtl.Properties.Resources", typeof(Resources).Assembly);
+				}
+				return resourceMan;
+			}
+		}
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		public static CultureInfo Culture
+		{
+			get
+			{
+				return resourceCulture;
+			}
+			set
+			{
+				resourceCulture = value;
+			}
+		}
+
+		public static string APropCoreGUI => ResourceManager.GetString("APropCoreGUI", resourceCulture);
+
+		public static string APrSystemGUI => ResourceManager.GetString("APrSystemGUI", resourceCulture);
+
+		public static string AspenPlus => ResourceManager.GetString("AspenPlus", resourceCulture);
+
+		public static string DefVar_APlus => ResourceManager.GetString("DefVar_APlus", resourceCulture);
+
+		internal Resources()
+		{
+		}
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

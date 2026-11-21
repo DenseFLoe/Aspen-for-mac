@@ -1,0 +1,318 @@
+using System;
+using System.CodeDom.Compiler;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Threading;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Forms;
+using System.Windows.Markup;
+using AspenHelper;
+using Common;
+using HYSYSHelper;
+using HYSYSObjects;
+using P2InputParser;
+using P2Objects;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyTitle("P2Converter")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("Aspen Technology, Inc.")]
+[assembly: AssemblyProduct("P2Converter")]
+[assembly: AssemblyCopyright("Copyright © 2024 Aspen Technology, Inc.")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyFileVersion("41.0.0.0")]
+[assembly: ComVisible(true)]
+[assembly: Guid("2a1aed5b-855a-42d7-a767-4ddfa80d625e")]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.0")]
+namespace P2ConvertCore;
+
+public class APWaitDlgV150 : Window, IComponentConnector
+{
+	private System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer();
+
+	internal System.Windows.Controls.ProgressBar pgsWaitting;
+
+	private bool _contentLoaded;
+
+	public APWaitDlgV150()
+	{
+		InitializeComponent();
+		timer.Tick += timer_Tick;
+		timer.Interval = 100;
+		timer.Start();
+	}
+
+	private void timer_Tick(object sender, EventArgs e)
+	{
+		if (pgsWaitting.Value >= pgsWaitting.Maximum)
+		{
+			pgsWaitting.Value = pgsWaitting.Minimum;
+			return;
+		}
+		System.Windows.Controls.ProgressBar progressBar = pgsWaitting;
+		double value = progressBar.Value + 1.0;
+		progressBar.Value = value;
+	}
+
+	[DebuggerNonUserCode]
+	[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+	public void InitializeComponent()
+	{
+		if (!_contentLoaded)
+		{
+			_contentLoaded = true;
+			Uri resourceLocator = new Uri("/P2ConvertCore;component/apwaitdlg.xaml", UriKind.Relative);
+			System.Windows.Application.LoadComponent(this, resourceLocator);
+		}
+	}
+
+	[DebuggerNonUserCode]
+	[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+	void IComponentConnector.Connect(int connectionId, object target)
+	{
+		if (connectionId == 1)
+		{
+			pgsWaitting = (System.Windows.Controls.ProgressBar)target;
+		}
+		else
+		{
+			_contentLoaded = true;
+		}
+	}
+}
+[Guid("8074B66A-BE15-49D7-8E2F-0939429F22D6")]
+public interface IP2ConvertCore
+{
+	[DispId(0)]
+	bool ConvertHYSYS(string strFilePath);
+
+	[DispId(1)]
+	P2BaseObject Parse(string strFilePath, out VisualBaseNode visual);
+
+	[DispId(2)]
+	void ConvertHYSYS2(P2BaseObject objects);
+
+	[DispId(3)]
+	void ConvertPlus(string strFilePath, bool bSilence, Action<string> printErrorCallback);
+
+	[DispId(4)]
+	void DisposePlusHapp();
+}
+[Guid("E5D86DA2-98C6-4D81-827A-FBBF4F7E5DB7")]
+[ComVisible(true)]
+public class P2ConvertCoreV150 : IP2ConvertCore
+{
+	private delegate object ConvertPlusDelegate(string filePath);
+
+	private System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer();
+
+	private APWaitDlgV150 waitDlg;
+
+	private ConvertPlusDelegate deleExport2Plus;
+
+	private IAsyncResult iResult;
+
+	private Process procAspenPlus;
+
+	private string strCutterFile;
+
+	private string strOutputFile;
+
+	private string strPlusError;
+
+	private object aspenPlus;
+
+	private Action<string> _printErrorCallback;
+
+	private string _TempPathDirectory;
+
+	public bool ConvertHYSYS(string strFilePath)
+	{
+		P2Parser p2Parser = new P2Parser(strFilePath);
+		P2BaseObject.P2InputFileName = strFilePath;
+		if (P2BaseObject.g_Map != null)
+		{
+			P2BaseObject.g_Map.Clear();
+		}
+		HYSYSBaseObject.Init();
+		if (HYSYSBaseObject.g_Map != null)
+		{
+			HYSYSBaseObject.g_Map.Clear();
+		}
+		if (HYSYSBaseObject.g_mapDefine != null)
+		{
+			HYSYSBaseObject.g_mapDefine.Clear();
+		}
+		if (HYSYSBaseObject.g_mapSpec != null)
+		{
+			HYSYSBaseObject.g_mapSpec.Clear();
+		}
+		NameHelper.Reset();
+		if (BaseObject._Report != null)
+		{
+			BaseObject._Report.ResetP2();
+		}
+		VisualBaseNode txtTree;
+		P2BaseObject p2Tree = p2Parser.Parse(out txtTree);
+		if (HYSYSBaseObject.g_Map != null)
+		{
+			HYSYSBaseObject.g_Map.Clear();
+		}
+		if (BaseObject._Report != null)
+		{
+			BaseObject._Report.ResetHYSYS();
+		}
+		global::HYSYSHelper.HYSYSHelper hYSYSHelper = new global::HYSYSHelper.HYSYSHelper();
+		hYSYSHelper.SetP2Tree(p2Tree);
+		hYSYSHelper.SetHYSYSCase();
+		return true;
+	}
+
+	public P2BaseObject Parse(string strFilePath, out VisualBaseNode visual)
+	{
+		P2Parser p2Parser = new P2Parser(strFilePath);
+		P2BaseObject.P2InputFileName = strFilePath;
+		if (P2BaseObject.g_Map != null)
+		{
+			P2BaseObject.g_Map.Clear();
+		}
+		HYSYSBaseObject.Init();
+		if (HYSYSBaseObject.g_Map != null)
+		{
+			HYSYSBaseObject.g_Map.Clear();
+		}
+		if (HYSYSBaseObject.g_mapDefine != null)
+		{
+			HYSYSBaseObject.g_mapDefine.Clear();
+		}
+		if (HYSYSBaseObject.g_mapSpec != null)
+		{
+			HYSYSBaseObject.g_mapSpec.Clear();
+		}
+		NameHelper.Reset();
+		if (BaseObject._Report != null)
+		{
+			BaseObject._Report.ResetP2();
+		}
+		return p2Parser.Parse(out visual);
+	}
+
+	public void ConvertHYSYS2(P2BaseObject objects)
+	{
+		if (HYSYSBaseObject.g_Map != null)
+		{
+			HYSYSBaseObject.g_Map.Clear();
+		}
+		if (BaseObject._Report != null)
+		{
+			BaseObject._Report.ResetHYSYS();
+		}
+		global::HYSYSHelper.HYSYSHelper hYSYSHelper = new global::HYSYSHelper.HYSYSHelper();
+		hYSYSHelper.SetP2Tree(objects);
+		hYSYSHelper.SetHYSYSCase();
+	}
+
+	public void ConvertPlus(string strFilePath, bool bSilence, Action<string> printErrorCallback)
+	{
+		string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(strFilePath);
+		string text = strFilePath;
+		if (fileNameWithoutExtension.Contains("."))
+		{
+			string path = string.Format("{0}_{1:yyyyMMddHHmmss}{2}", fileNameWithoutExtension.Replace(".", ""), DateTime.Now, Path.GetExtension(strFilePath));
+			text = Path.Combine(Path.GetDirectoryName(strFilePath), path);
+			File.Copy(strFilePath, text, overwrite: true);
+		}
+		deleExport2Plus = ExportPlus;
+		_printErrorCallback = printErrorCallback;
+		iResult = deleExport2Plus.BeginInvoke(text, null, null);
+		timer.Tick += timer_Tick;
+		timer.Interval = 100;
+		timer.Start();
+		waitDlg = new APWaitDlgV150();
+		waitDlg.ShowDialog();
+	}
+
+	private void timer_Tick(object sender, EventArgs e)
+	{
+		if (iResult.AsyncWaitHandle.WaitOne(50, exitContext: false))
+		{
+			aspenPlus = deleExport2Plus.EndInvoke(iResult);
+			timer.Stop();
+			waitDlg.Close();
+			_printErrorCallback?.Invoke(strPlusError);
+			File.Delete(_TempPathDirectory + "\\temp\\" + strOutputFile + ".inp");
+			File.Delete(strPlusError);
+			File.Delete(strCutterFile);
+		}
+	}
+
+	private object ExportPlus(string strFilePath)
+	{
+		_TempPathDirectory = Path.GetDirectoryName(strFilePath);
+		if (!Directory.Exists(_TempPathDirectory + "\\temp"))
+		{
+			Directory.CreateDirectory(_TempPathDirectory + "\\temp");
+		}
+		procAspenPlus = new Process();
+		strCutterFile = _TempPathDirectory + "\\temp\\" + Path.GetFileNameWithoutExtension(strFilePath) + "_cut.inp";
+		global::AspenHelper.AspenHelper.CutBlockName(strFilePath, strCutterFile);
+		strOutputFile = strFilePath;
+		strOutputFile = strOutputFile.Substring(0, strOutputFile.Length - 3) + "asp";
+		strOutputFile = Path.GetFileNameWithoutExtension(strOutputFile);
+		strPlusError = _TempPathDirectory + "\\temp\\error.txt";
+		string arguments = string.Format("\"{0}\" \"{1}\" \"{2}\"", strCutterFile, _TempPathDirectory + "\\temp\\" + strOutputFile + ".inp", strPlusError);
+		string convertFilePath = global::AspenHelper.AspenHelper.GetConvertFilePath();
+		if (string.IsNullOrEmpty(convertFilePath))
+		{
+			System.Windows.MessageBox.Show("Can not find atp3.exe!", "Error", MessageBoxButton.OK, MessageBoxImage.Hand);
+			return null;
+		}
+		procAspenPlus.StartInfo.FileName = "\"" + convertFilePath + "\"";
+		procAspenPlus.StartInfo.Arguments = arguments;
+		procAspenPlus.StartInfo.WorkingDirectory = Environment.CurrentDirectory;
+		procAspenPlus.StartInfo.CreateNoWindow = true;
+		procAspenPlus.Start();
+		while (!procAspenPlus.HasExited)
+		{
+			Thread.Sleep(50);
+		}
+		string text = _TempPathDirectory + "\\temp\\" + strOutputFile + ".inp";
+		convertFilePath = Path.GetDirectoryName(convertFilePath);
+		convertFilePath += "\\aspen.exe";
+		Process process = new Process();
+		process.StartInfo.FileName = "\"" + convertFilePath + "\"";
+		string arguments2 = $"\"{text}\" \"/mmbackup\"";
+		process.StartInfo.Arguments = arguments2;
+		process.StartInfo.WorkingDirectory = Path.GetDirectoryName(text);
+		process.StartInfo.CreateNoWindow = false;
+		process.Start();
+		while (!process.HasExited)
+		{
+			Thread.Sleep(50);
+		}
+		global::AspenHelper.AspenHelper aspenHelper = new global::AspenHelper.AspenHelper(_TempPathDirectory + "\\temp\\" + strOutputFile + ".bkp");
+		SingleAspenPlusDataInstance.Instance.AspenHelpers.Add(aspenHelper);
+		return aspenHelper;
+	}
+
+	public void DisposePlusHapp()
+	{
+		foreach (global::AspenHelper.AspenHelper aspenHelper in SingleAspenPlusDataInstance.Instance.AspenHelpers)
+		{
+			aspenHelper.Dispose();
+		}
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

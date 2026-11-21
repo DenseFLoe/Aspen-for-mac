@@ -1,0 +1,1026 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Drawing;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
+using System.Runtime.Versioning;
+using System.Security.Principal;
+using System.Text;
+using System.Windows.Forms;
+using Microsoft.Win32;
+using NETExtnLoader;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyTitle("RegImage")]
+[assembly: AssemblyDescription("Aspen HYSYS® Register Image")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyProduct("RegImage")]
+[assembly: AssemblyTrademark("")]
+[assembly: ComVisible(false)]
+[assembly: Guid("8943e45d-4905-44f7-a36a-eb815530ac5e")]
+[assembly: AssemblyCompany("AspenTech LTD.")]
+[assembly: AssemblyCopyright("Copyright © AspenTech LTD. 2024")]
+[assembly: AssemblyFileVersion("41.0.0.0")]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.0")]
+namespace RegisterExtension;
+
+public class Extension
+{
+	private bool _isRegistering = true;
+
+	private bool _isSilent;
+
+	private bool _isVerbose;
+
+	private bool _executedFromGUI;
+
+	private bool _isRunningAdmin;
+
+	private bool _useSurrogate;
+
+	private bool? _isCLR;
+
+	private string _typedef;
+
+	private string _fileExtension;
+
+	private string _fileName;
+
+	private string _fullPathName;
+
+	private string _pathName;
+
+	private string _extensionName;
+
+	private string _extensionType;
+
+	private string _extensionDescription;
+
+	private string _registryType;
+
+	public bool IsRegistering
+	{
+		get
+		{
+			return _isRegistering;
+		}
+		set
+		{
+			_isRegistering = value;
+		}
+	}
+
+	public bool IsSilent
+	{
+		get
+		{
+			return _isSilent;
+		}
+		set
+		{
+			_isSilent = value;
+		}
+	}
+
+	public bool IsVerbose
+	{
+		get
+		{
+			return _isVerbose;
+		}
+		set
+		{
+			_isVerbose = value;
+		}
+	}
+
+	public bool ExecutedFromGUI
+	{
+		get
+		{
+			return _executedFromGUI;
+		}
+		set
+		{
+			_executedFromGUI = value;
+		}
+	}
+
+	public string FileExtension
+	{
+		get
+		{
+			return _fileExtension;
+		}
+		set
+		{
+			_fileExtension = value;
+		}
+	}
+
+	public string FileName
+	{
+		get
+		{
+			return _fileName;
+		}
+		set
+		{
+			_fileName = value;
+		}
+	}
+
+	public string FullFileName => _fileName + (_fileExtension.Contains('.') ? "" : ".") + _fileExtension;
+
+	public string FullPathName
+	{
+		get
+		{
+			return _fullPathName;
+		}
+		set
+		{
+			_fullPathName = value;
+		}
+	}
+
+	public string PathName
+	{
+		get
+		{
+			return _pathName;
+		}
+		set
+		{
+			_pathName = value;
+		}
+	}
+
+	public string ExtensionName
+	{
+		get
+		{
+			return _extensionName;
+		}
+		set
+		{
+			_extensionName = value;
+		}
+	}
+
+	public string ExtensionType
+	{
+		get
+		{
+			return _extensionType;
+		}
+		set
+		{
+			_extensionType = value;
+		}
+	}
+
+	public string ExtensionDescription
+	{
+		get
+		{
+			return _extensionDescription;
+		}
+		set
+		{
+			_extensionDescription = value;
+		}
+	}
+
+	public string RegistryType
+	{
+		get
+		{
+			return _registryType;
+		}
+		set
+		{
+			_registryType = value;
+		}
+	}
+
+	public string TypeDef
+	{
+		get
+		{
+			return _typedef;
+		}
+		set
+		{
+			_typedef = value;
+		}
+	}
+
+	public bool IsRunningAsAdmin
+	{
+		get
+		{
+			return _isRunningAdmin;
+		}
+		set
+		{
+			_isRunningAdmin = value;
+		}
+	}
+
+	public bool UseSurrogate
+	{
+		get
+		{
+			return _useSurrogate;
+		}
+		set
+		{
+			_useSurrogate = value;
+		}
+	}
+
+	public bool KnowsIfIsCLR => _isCLR.HasValue;
+
+	public bool IsCLR
+	{
+		get
+		{
+			return _isCLR ?? true;
+		}
+		set
+		{
+			_isCLR = value;
+		}
+	}
+
+	public int RegisterImage(bool AddDllSurrogate = false)
+	{
+		int num = 0;
+		if (!_isRunningAdmin)
+		{
+			if (_isVerbose)
+			{
+				if (_isRegistering)
+				{
+					Output.Stream("Performing non-administrative registration of extension with Aspen HYSYS.");
+				}
+				else
+				{
+					Output.Stream("Performing non-administrative unregistration of extension with Aspen HYSYS.");
+					Output.Stream("If the extension was registered as an administrator, it must be unregistered");
+					Output.Stream("as an administrator as well.");
+				}
+			}
+		}
+		else
+		{
+			if (AddDllSurrogate && !_isRegistering)
+			{
+				num = RegisterDllSurrogate();
+			}
+			if (num >= 0 && IsCLR)
+			{
+				num = RegImage.RegisterCLR(_fullPathName, _isRegistering, _isVerbose);
+			}
+			else if (num >= 0)
+			{
+				num = RegImage.RegisterCOM(_fullPathName, _isRegistering, _isVerbose);
+			}
+			if (num >= 0 && AddDllSurrogate && _isRegistering)
+			{
+				num = RegisterDllSurrogate();
+			}
+		}
+		return num;
+	}
+
+	public void RegisterEDFKeys()
+	{
+		string text = string.Empty;
+		try
+		{
+			ITypeLib typeLib = SafeNativeMethods.LoadTypeLib("HYSYS.tlb");
+			Type type = default(System.Runtime.InteropServices.ComTypes.TYPELIBATTR).GetType();
+			IntPtr ppTLibAttr = Marshal.AllocHGlobal(Marshal.SizeOf(type));
+			typeLib.GetLibAttr(out ppTLibAttr);
+			System.Runtime.InteropServices.ComTypes.TYPELIBATTR tYPELIBATTR = (System.Runtime.InteropServices.ComTypes.TYPELIBATTR)Marshal.PtrToStructure(ppTLibAttr, type);
+			if (tYPELIBATTR.wMajorVerNum != 0)
+			{
+				text = tYPELIBATTR.wMajorVerNum + "." + tYPELIBATTR.wMinorVerNum;
+				if (_typedef == string.Empty || _typedef == null)
+				{
+					_typedef = text;
+				}
+			}
+			typeLib.ReleaseTLibAttr(ppTLibAttr);
+		}
+		catch
+		{
+		}
+		if (_typedef == string.Empty || _typedef == null)
+		{
+			_typedef = "1.1";
+		}
+		string text2 = "Software\\Hyprotech\\HYSYS\\" + _typedef + "\\";
+		_ = _isRegistering;
+		string text3 = ((_registryType == "Variables") ? "Extensions" : "AddIns");
+		if (_isVerbose)
+		{
+			if (text == string.Empty || text == null)
+			{
+				text = "unknown";
+			}
+			Output.Stream(string.Concat(new string[3] { " HYSYS TypeLib:", "\t", text }));
+			Output.Stream(string.Concat(new string[3] { " Object Name:", "\t", _extensionName }));
+			Output.Stream(string.Concat(new string[3] { " Object Type:", "\t", _extensionType }));
+			Output.Stream(string.Concat(new string[3] { " Object Desc:", "\t", _extensionDescription }));
+		}
+		RegistryKey registryKey = (_isRunningAdmin ? Registry.ClassesRoot : Registry.CurrentUser);
+		RegistryKey registryKey2 = registryKey.OpenSubKey(string.Concat(new string[2] { text2, text3 }), writable: true);
+		if (registryKey2 == null)
+		{
+			registryKey2 = registryKey.CreateSubKey(text2 + text3);
+		}
+		if (_isRegistering)
+		{
+			Guid result = Guid.Empty;
+			string text4 = string.Empty;
+			if (!Guid.TryParse(_extensionName, out result))
+			{
+				text4 = _extensionName;
+				if (!_isRunningAdmin)
+				{
+					result = ((!IsCLR) ? GetCOMGuidFromProgID(_extensionName, _fullPathName) : GetCLRGuidFromProgID(_extensionName, _fullPathName));
+					if (result == Guid.Empty)
+					{
+						Output.Stream("Failed to identify CLSID for \"" + _extensionName + "\"");
+						Output.Stream("Could not perform non-administrative registration.");
+						return;
+					}
+				}
+			}
+			RegistryKey registryKey3 = registryKey2.CreateSubKey(_extensionName);
+			registryKey3.SetValue(null, _extensionDescription, RegistryValueKind.String);
+			registryKey3.SetValue("ExtensionDefinitionFile", Path.ChangeExtension(_fullPathName, "edf"));
+			registryKey3.SetValue("ExtensionType", _extensionType);
+			registryKey3.SetValue("NativeType", IsCLR ? "Microsoft .NET Assembly" : "COM");
+			if (UseSurrogate)
+			{
+				registryKey3.SetValue("UseSurrogate", "True");
+			}
+			if (result != Guid.Empty)
+			{
+				registryKey3.SetValue("CLSID", "{" + result.ToString() + "}");
+				if (_isVerbose)
+				{
+					Output.Stream(" Class ID: " + "\t" + result.ToString() + "\n");
+				}
+			}
+			if (text4 != string.Empty)
+			{
+				registryKey3.SetValue("ProgID", _extensionName);
+				if (_isVerbose)
+				{
+					Output.Stream(" Program ID:" + "\t" + _extensionName + "\n");
+				}
+			}
+			registryKey3.Close();
+			Output.Stream("Registering extension...");
+			Output.Stream("Successfully registered the Aspen HYSYS extension \"" + _fullPathName + "\".");
+			Output.Stream("Location: " + registryKey.Name + "\\" + text2);
+		}
+		else
+		{
+			Output.Stream("Unregistering extension...");
+			try
+			{
+				registryKey2.DeleteSubKeyTree(_extensionName);
+				Output.Stream("Successfully unregistered the Aspen HYSYS extension \"" + _fullPathName + "\".");
+				Output.Stream("Location: " + registryKey.Name + "\\" + text2);
+			}
+			catch (SystemException ex)
+			{
+				Output.Stream("ERROR: The extension cannot be unregistered because it is not registered.");
+				if (_isVerbose)
+				{
+					Output.Stream(ex.ToString());
+				}
+			}
+		}
+		registryKey2.Close();
+		if (_typedef != text)
+		{
+			Output.Stream(string.Empty);
+			Output.Stream("WARNING: " + "A Type Library version of " + _typedef + " was specified, but the current registered version of HYSYS is " + text + ".");
+			Output.Stream("Please use caution when using this utility to register extensions for HYSYS.");
+		}
+		Output.Stream(string.Empty);
+	}
+
+	public int RegisterDllSurrogate()
+	{
+		return RegImage.RegisterDllSurrogateKeys(IsCLR ? GetCLRGuidFromProgID(_extensionName, _fullPathName) : GetCOMGuidFromProgID(_extensionName, _fullPathName), _isRegistering, _isVerbose);
+	}
+
+	public static Guid GetCOMGuidFromProgID(string progID, string fileName)
+	{
+		Guid result = Guid.Empty;
+		if (Guid.TryParse(progID, out result))
+		{
+			return result;
+		}
+		ITypeLib typeLib = SafeNativeMethods.LoadTypeLib(fileName);
+		if (typeLib == null)
+		{
+			return result;
+		}
+		typeLib.GetDocumentation(-1, out var strName, out var strDocString, out var dwHelpContext, out var strHelpFile);
+		int typeInfoCount = typeLib.GetTypeInfoCount();
+		for (int i = 0; i < typeInfoCount; i++)
+		{
+			typeLib.GetDocumentation(i, out var strName2, out strDocString, out dwHelpContext, out strHelpFile);
+			string text = strName + "." + strName2;
+			if (!(progID.ToUpper() != text.ToUpper()))
+			{
+				typeLib.GetTypeInfo(i, out var ppTI);
+				if (ppTI != null)
+				{
+					IntPtr ppTypeAttr = IntPtr.Zero;
+					ppTI.GetTypeAttr(out ppTypeAttr);
+					result = ((System.Runtime.InteropServices.ComTypes.TYPEATTR)Marshal.PtrToStructure(ppTypeAttr, typeof(System.Runtime.InteropServices.ComTypes.TYPEATTR))).guid;
+					ppTI.ReleaseTypeAttr(ppTypeAttr);
+				}
+			}
+		}
+		return result;
+	}
+
+	public static Guid GetCLRGuidFromProgID(string progID, string fileName)
+	{
+		using (new AssemblyResolveHelper(Path.GetDirectoryName(fileName)))
+		{
+			Type[] exportedTypes = Assembly.LoadFile(fileName).GetExportedTypes();
+			foreach (Type type in exportedTypes)
+			{
+				string empty = string.Empty;
+				IEnumerable<Attribute> customAttributes = type.GetCustomAttributes(typeof(ProgIdAttribute));
+				empty = ((!customAttributes.Any()) ? type.FullName : (customAttributes.First() as ProgIdAttribute).Value);
+				if (!(progID != empty))
+				{
+					return type.GUID;
+				}
+			}
+			return Guid.Empty;
+		}
+	}
+}
+public static class Output
+{
+	internal static string _stream;
+
+	public static void Stream(string output)
+	{
+		_stream = _stream + output.Normalize() + "\n";
+	}
+
+	public static void WriteStream(bool toGUI)
+	{
+		if (toGUI)
+		{
+			using (OutputWindow outputWindow = new OutputWindow(_stream.ToString()))
+			{
+				outputWindow.TopLevel = true;
+				outputWindow.TopMost = true;
+				outputWindow.ShowDialog();
+				return;
+			}
+		}
+		Console.Write(_stream.ToString());
+	}
+}
+public class OutputWindow : Form
+{
+	private short _counter = 29;
+
+	private IContainer components;
+
+	private Panel headerPanel;
+
+	private PictureBox headerImage;
+
+	private Label headerLabel1;
+
+	private Button commandOK;
+
+	private RichTextBox outputText;
+
+	private Timer timer;
+
+	public OutputWindow(string output)
+	{
+		InitializeComponent();
+		outputText.Text = output;
+	}
+
+	private void timer_Tick(object sender, EventArgs e)
+	{
+		if (_counter == 0)
+		{
+			Dispose();
+			return;
+		}
+		commandOK.Text = "OK [" + _counter + " seconds]";
+		_counter--;
+	}
+
+	protected override void Dispose(bool disposing)
+	{
+		if (disposing && components != null)
+		{
+			components.Dispose();
+		}
+		base.Dispose(disposing);
+	}
+
+	private void InitializeComponent()
+	{
+		this.components = new System.ComponentModel.Container();
+		System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(RegisterExtension.OutputWindow));
+		this.headerPanel = new System.Windows.Forms.Panel();
+		this.headerLabel1 = new System.Windows.Forms.Label();
+		this.headerImage = new System.Windows.Forms.PictureBox();
+		this.commandOK = new System.Windows.Forms.Button();
+		this.outputText = new System.Windows.Forms.RichTextBox();
+		this.timer = new System.Windows.Forms.Timer(this.components);
+		this.headerPanel.SuspendLayout();
+		((System.ComponentModel.ISupportInitialize)this.headerImage).BeginInit();
+		base.SuspendLayout();
+		this.headerPanel.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+		this.headerPanel.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+		this.headerPanel.BackColor = System.Drawing.SystemColors.Window;
+		this.headerPanel.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
+		this.headerPanel.Controls.Add(this.headerLabel1);
+		this.headerPanel.Controls.Add(this.headerImage);
+		this.headerPanel.Location = new System.Drawing.Point(0, 0);
+		this.headerPanel.Name = "headerPanel";
+		this.headerPanel.Size = new System.Drawing.Size(533, 72);
+		this.headerPanel.TabIndex = 1;
+		this.headerLabel1.AutoSize = true;
+		this.headerLabel1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25f, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, 0);
+		this.headerLabel1.Location = new System.Drawing.Point(82, 12);
+		this.headerLabel1.Name = "headerLabel1";
+		this.headerLabel1.Size = new System.Drawing.Size(208, 13);
+		this.headerLabel1.TabIndex = 2;
+		this.headerLabel1.Text = "Aspen HYSYS® Extension Manager";
+		this.headerImage.Image = (System.Drawing.Image)resources.GetObject("headerImage.Image");
+		this.headerImage.Location = new System.Drawing.Point(12, 12);
+		this.headerImage.Name = "headerImage";
+		this.headerImage.Size = new System.Drawing.Size(48, 48);
+		this.headerImage.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+		this.headerImage.TabIndex = 1;
+		this.headerImage.TabStop = false;
+		this.commandOK.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right;
+		this.commandOK.DialogResult = System.Windows.Forms.DialogResult.OK;
+		this.commandOK.Location = new System.Drawing.Point(419, 283);
+		this.commandOK.Name = "commandOK";
+		this.commandOK.Size = new System.Drawing.Size(99, 23);
+		this.commandOK.TabIndex = 2;
+		this.commandOK.Text = "OK [30 seconds]";
+		this.commandOK.UseVisualStyleBackColor = true;
+		this.outputText.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+		this.outputText.BackColor = System.Drawing.SystemColors.Window;
+		this.outputText.ForeColor = System.Drawing.SystemColors.InfoText;
+		this.outputText.Location = new System.Drawing.Point(12, 88);
+		this.outputText.Name = "outputText";
+		this.outputText.Size = new System.Drawing.Size(506, 184);
+		this.outputText.TabIndex = 3;
+		this.outputText.Text = "";
+		this.timer.Enabled = true;
+		this.timer.Interval = 1000;
+		this.timer.Tick += new System.EventHandler(timer_Tick);
+		base.AutoScaleDimensions = new System.Drawing.SizeF(6f, 13f);
+		base.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+		base.ClientSize = new System.Drawing.Size(530, 313);
+		base.Controls.Add(this.outputText);
+		base.Controls.Add(this.commandOK);
+		base.Controls.Add(this.headerPanel);
+		base.Icon = (System.Drawing.Icon)resources.GetObject("$this.Icon");
+		base.Name = "OutputWindow";
+		base.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+		this.Text = "HYSYS Extension Manager";
+		this.headerPanel.ResumeLayout(false);
+		this.headerPanel.PerformLayout();
+		((System.ComponentModel.ISupportInitialize)this.headerImage).EndInit();
+		base.ResumeLayout(false);
+	}
+}
+public class ParsingEngine
+{
+	private Extension _extension;
+
+	public bool ParseCommandLine(string[] args, Extension extension)
+	{
+		bool flag = false;
+		int i = 0;
+		if (extension != null)
+		{
+			_extension = extension;
+			if (args.Length == 0)
+			{
+				Usage();
+			}
+			else
+			{
+				if (new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
+				{
+					_extension.IsRunningAsAdmin = true;
+				}
+				else
+				{
+					_extension.IsRunningAsAdmin = false;
+				}
+				if (args[0].ToLower().EndsWith(".dll", ignoreCase: true, null) || args[i].ToLower().EndsWith(".edf", ignoreCase: true, null))
+				{
+					for (; i < args.Length; i++)
+					{
+						if (args[i] == "/?" || args[i] == "?")
+						{
+							Usage();
+						}
+						if (args[i].ToLower() == "/g")
+						{
+							_extension.ExecutedFromGUI = true;
+						}
+						if (args[i].ToLower() == "/u")
+						{
+							_extension.IsRegistering = false;
+						}
+						if (args[i].ToLower() == "/s")
+						{
+							_extension.IsSilent = true;
+						}
+						if (args[i].ToLower() == "/v")
+						{
+							_extension.IsVerbose = true;
+						}
+						if (args[i].ToLower() == "/l")
+						{
+							_extension.IsRunningAsAdmin = false;
+						}
+						if (args[i].ToLower() == "/c")
+						{
+							_extension.IsCLR = false;
+						}
+						if (args[i].ToLower() == "/n")
+						{
+							_extension.IsCLR = true;
+						}
+						if (args[i].StartsWith("/t", ignoreCase: true, CultureInfo.InvariantCulture))
+						{
+							string[] array = args[i].Split(':', ';', '=', '-');
+							if (array.GetUpperBound(0) == 1)
+							{
+								_extension.TypeDef = array[1].ToString();
+							}
+						}
+						if (args[i].ToLower().EndsWith(".dll", ignoreCase: true, null) || args[i].ToLower().EndsWith(".edf", ignoreCase: true, null))
+						{
+							flag = ParseFileName(args[i].ToString());
+						}
+					}
+				}
+				else
+				{
+					Usage();
+				}
+			}
+		}
+		if (flag)
+		{
+			if (_extension.IsRegistering)
+			{
+				Output.Stream("Attempting to register the HYSYS extension: " + _extension.FullPathName);
+			}
+			else
+			{
+				Output.Stream("Attempting to unregister the HYSYS extension: " + _extension.FullPathName);
+			}
+		}
+		return flag;
+	}
+
+	public bool ParseEDFFile(Extension extension)
+	{
+		if (extension != null)
+		{
+			_extension = extension;
+			using (StreamReader streamReader = new StreamReader(Path.ChangeExtension(_extension.FullPathName, "edf"), Encoding.Default))
+			{
+				if (_extension.IsVerbose)
+				{
+					Output.Stream("Scanning EDF file...");
+				}
+				string text = streamReader.ReadLine();
+				while (text.StartsWith("#") || text.Trim() == string.Empty)
+				{
+					text = streamReader.ReadLine();
+				}
+				if (!text.StartsWith("~~"))
+				{
+					Output.Stream("Error: Not a valid EDF File.");
+					return false;
+				}
+				int num = text.IndexOf('_');
+				int num2 = text.LastIndexOf('_');
+				if (num > 0 && num2 > num && num2 < text.Length - 1)
+				{
+					string text2 = text.Substring(num2 + 1);
+					string text3 = text.Substring(num + 1, num2 - num - 1);
+					if (text2.ToString().ToLower() == "Variables".ToLower())
+					{
+						_extension.RegistryType = text2.ToString();
+						_extension.ExtensionName = text3.ToString();
+					}
+					else if (text2.ToString().ToLower() == "AddIns".ToLower())
+					{
+						_extension.RegistryType = text2.ToString();
+						_extension.ExtensionName = text3.ToString();
+					}
+				}
+				while (!streamReader.EndOfStream)
+				{
+					text = streamReader.ReadLine();
+					if (text.Trim().ToLower().StartsWith("ObjectDescription".ToLower()))
+					{
+						_extension.ExtensionDescription = text.Trim().Replace("ObjectDescription ", "\"").Trim('"');
+					}
+					else if (text.Trim().ToLower().StartsWith("ExtensionType".ToLower()))
+					{
+						_extension.ExtensionType = text.Trim().Replace("ExtensionType ", "\"").Trim('"');
+					}
+					else if (_extension.ExtensionType == null && text.Trim().ToLower().StartsWith("BaseVariables".ToLower()))
+					{
+						if (text.ToLower().Contains("PropPkg".ToLower()))
+						{
+							_extension.ExtensionType = "PropertyPackage";
+						}
+						else if (text.ToLower().Contains("FlowObj".ToLower()))
+						{
+							_extension.ExtensionType = "UnitOperation";
+						}
+						else if (text.ToLower().Contains("Reaction".ToLower()))
+						{
+							_extension.ExtensionType = "KineticReaction";
+						}
+						else if (text.ToLower().Contains("ExchangerDesign".ToLower()))
+						{
+							_extension.ExtensionType = "ExchangerDesign, Base";
+						}
+						else if (text.ToLower().Contains("ExchEndPointDesign".ToLower()))
+						{
+							_extension.ExtensionType = "ExchangerDesign, EndPoint";
+						}
+						else if (text.ToLower().Contains("ExchSimpleDesign".ToLower()))
+						{
+							_extension.ExtensionType = "ExchangerDesign, Simple";
+						}
+						else if (text.ToLower().Contains("ExchWeightedDesign".ToLower()))
+						{
+							_extension.ExtensionType = "ExchangerDesign, Weighted";
+						}
+						else if (text.ToLower().Contains("BaseCorr".ToLower()))
+						{
+							_extension.ExtensionType = "DelIPCorrelation";
+						}
+					}
+				}
+			}
+			return true;
+		}
+		return false;
+	}
+
+	private bool ParseFileName(string fullPathName)
+	{
+		try
+		{
+			string text = Path.ChangeExtension(fullPathName, "dll");
+			string newValue = Uri.HexEscape(' ');
+			if (Uri.IsWellFormedUriString(fullPathName.Replace(" ", newValue), UriKind.Absolute))
+			{
+				Uri uri = new Uri(text);
+				if (uri.Scheme == Uri.UriSchemeFile)
+				{
+					text = uri.LocalPath;
+				}
+			}
+			else
+			{
+				text = Path.GetFullPath(text);
+			}
+			FileInfo fileInfo = new FileInfo(text);
+			if (fileInfo.Exists)
+			{
+				_extension.FullPathName = text;
+				_extension.PathName = Path.GetDirectoryName(text);
+				_extension.FileExtension = Path.GetExtension(text);
+				_extension.FileName = Path.GetFileNameWithoutExtension(text);
+				return true;
+			}
+			Output.Stream("Cannot find the specified file " + fileInfo.FullName);
+			return false;
+		}
+		catch (SystemException ex)
+		{
+			if (_extension.IsVerbose)
+			{
+				Output.Stream(ex.ToString());
+			}
+			return false;
+		}
+	}
+
+	private void Usage()
+	{
+		string empty = string.Empty;
+		empty = empty + "\n" + "Registers an Aspen HYSYS Extension." + "\n\n";
+		empty = empty + "Usage: regextn.exe <filename> /[switches]" + "\n";
+		empty = empty + "Example: " + "regextn.exe c:\\temp\\ext.dll /t:1.2 /v /g" + "\n\n";
+		empty = empty + "Valid Switches:" + "\n";
+		empty = empty + " " + "/?" + "           " + "Usage information" + "\n";
+		empty = empty + " " + "/g" + "           " + "Graphical output" + "\n";
+		empty = empty + " " + "/s" + "           " + "Silent registration" + "\n";
+		empty = empty + " " + "/t:typedef" + "   " + "Type definition" + "\n";
+		empty = empty + " " + "/u" + "           " + "Unregister dll" + "\n";
+		empty = empty + " " + "/v" + "           " + "Verbose output" + "\n";
+		empty = empty + " " + "/l" + "           " + "Local (non-administrator) registration" + "\n";
+		Console.Write(empty);
+	}
+}
+public class RegImage
+{
+	public enum HRESULTVals
+	{
+		E_FAIL = -2147467259,
+		S_OK = 0,
+		S_FALSE = 1
+	}
+
+	public static int RegisterCLR(string fileName, bool register = true, bool verbose = false)
+	{
+		Output.Stream("Image Type: CLR");
+		string currentDirectory = Directory.GetCurrentDirectory();
+		try
+		{
+			using (new AssemblyResolveHelper(Path.GetDirectoryName(fileName)))
+			{
+				Directory.SetCurrentDirectory(Path.GetDirectoryName(fileName));
+				Assembly assembly = Assembly.LoadFile(fileName);
+				RegistrationServices registrationServices = new RegistrationServices();
+				if (register)
+				{
+					bool flag = registrationServices.RegisterAssembly(assembly, AssemblyRegistrationFlags.SetCodeBase);
+					if (verbose)
+					{
+						Output.Stream("Registered Assembly: " + flag);
+					}
+				}
+				else
+				{
+					bool flag = registrationServices.UnregisterAssembly(assembly);
+					if (verbose)
+					{
+						Output.Stream("Unregistered Assembly: " + flag);
+					}
+				}
+			}
+		}
+		catch (Exception ex)
+		{
+			Output.Stream("E10002: CLR Assembly registration exception.");
+			Output.Stream(ex.Message);
+			return -1;
+		}
+		finally
+		{
+			Directory.SetCurrentDirectory(currentDirectory);
+		}
+		return 0;
+	}
+
+	public static int RegisterCOM(string fileName, bool register = true, bool verbose = false)
+	{
+		int num = 0;
+		Output.Stream("Image Type: COM");
+		string currentDirectory = Directory.GetCurrentDirectory();
+		Directory.SetCurrentDirectory(Path.GetDirectoryName(fileName));
+		IntPtr intPtr = SafeNativeMethods.LoadLibrary(fileName);
+		if (intPtr != IntPtr.Zero)
+		{
+			string lpProcName = (register ? "DllRegisterServer" : "DllUnregisterServer");
+			IntPtr procAddress = SafeNativeMethods.GetProcAddress(intPtr, lpProcName);
+			num = ((!(procAddress != IntPtr.Zero)) ? Marshal.GetHRForLastWin32Error() : ((RegisterServerInvoker)Marshal.GetDelegateForFunctionPointer(procAddress, typeof(RegisterServerInvoker)))());
+			SafeNativeMethods.FreeLibrary(intPtr);
+		}
+		else
+		{
+			num = Marshal.GetHRForLastWin32Error();
+		}
+		if (num < 0)
+		{
+			if (verbose)
+			{
+				Output.Stream(Marshal.GetExceptionForHR(num).Message);
+			}
+			Output.Stream("The entry point \"DllRegisterServer\" could not be found.");
+		}
+		Directory.SetCurrentDirectory(currentDirectory);
+		return num;
+	}
+
+	public static int RegisterDllSurrogateKeys(Guid guid, bool register = true, bool verbose = false)
+	{
+		RegistryKey classesRoot = Registry.ClassesRoot;
+		RegistryKey registryKey = classesRoot.OpenSubKey("CLSID\\{" + guid.ToString() + "}", writable: true);
+		if (registryKey == null)
+		{
+			classesRoot.Close();
+			Output.Stream("Failed to identify registered CLSID " + guid.ToString() + ".");
+			return -2147467259;
+		}
+		if (register)
+		{
+			registryKey.SetValue("AppID", "{" + guid.ToString() + "}");
+		}
+		else
+		{
+			registryKey.DeleteValue("AppID", throwOnMissingValue: false);
+		}
+		registryKey.Close();
+		RegistryKey registryKey2 = classesRoot.OpenSubKey("AppID", writable: true);
+		if (register)
+		{
+			registryKey = registryKey2.CreateSubKey("{" + guid.ToString() + "}", writable: true);
+			if (registryKey == null)
+			{
+				registryKey2.Close();
+				Output.Stream("Failed to create AppID key for " + guid.ToString() + ".");
+				return -2147467259;
+			}
+			registryKey.SetValue("DllSurrogate", "");
+			registryKey.Close();
+		}
+		else
+		{
+			registryKey2.DeleteSubKey("{" + guid.ToString() + "}", throwOnMissingSubKey: false);
+		}
+		registryKey2.Close();
+		RegistryKey registryKey3 = Registry.LocalMachine.OpenSubKey("Software\\Classes\\AppID", writable: true);
+		if (register)
+		{
+			registryKey = registryKey3.CreateSubKey("{" + guid.ToString() + "}", writable: false);
+			if (registryKey == null)
+			{
+				registryKey2.Close();
+				registryKey3.Close();
+				Output.Stream("Failed to create LocalMachine AppID key for " + guid.ToString() + ".");
+				return -2147467259;
+			}
+			registryKey.Close();
+		}
+		else
+		{
+			registryKey3.DeleteSubKey("{" + guid.ToString() + "}", throwOnMissingSubKey: false);
+		}
+		registryKey3.Close();
+		return 0;
+	}
+}
+public static class SafeNativeMethods
+{
+	[DllImport("kernel32", CharSet = CharSet.Auto, SetLastError = true)]
+	public static extern IntPtr LoadLibrary(string lpFileName);
+
+	[DllImport("kernel32", SetLastError = true)]
+	public static extern bool FreeLibrary(IntPtr hModule);
+
+	[DllImport("kernel32", ExactSpelling = true, SetLastError = true)]
+	public static extern IntPtr GetProcAddress(IntPtr hModule, string lpProcName);
+
+	[DllImport("oleaut32.dll", CharSet = CharSet.Auto, PreserveSig = false)]
+	public static extern ITypeLib LoadTypeLib(string szFile);
+}
+internal delegate int RegisterServerInvoker();
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

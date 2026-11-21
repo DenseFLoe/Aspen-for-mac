@@ -1,0 +1,355 @@
+using System;
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using AHResources;
+using AspenTech.Hydraulics.PropertyUtilities;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyCompany("Aspen Technology, Inc.")]
+[assembly: AssemblyProduct("Aspen Hydraulics")]
+[assembly: AssemblyCopyright("Copyright © Aspen Technology, Inc. 2024")]
+[assembly: AssemblyTitle("")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyDelaySign(false)]
+[assembly: AssemblyKeyFile("..\\..\\..\\packages\\AspenTech.StrongName.SNK.1.0.0\\content\\AspenTech.snk")]
+[assembly: AssemblyKeyName("")]
+[assembly: AssemblyFileVersion("41.0.0.97")]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.0")]
+namespace AspenTech.Hydraulics.CraneMethodLib;
+
+[ComVisible(false)]
+public class Crane
+{
+	public static double FrictionFactor(double Re, double Diameter)
+	{
+		double num = 0.0;
+		if (Re < 4000.0)
+		{
+			if (Re <= 2000.0)
+			{
+				return 16.0 / Re;
+			}
+			double y = 0.008;
+			double y2 = FrictionFactorInTurbulenceZone(Diameter);
+			return LinearInterpolation(2000.0, y, 4000.0, y2, Re);
+		}
+		return FrictionFactorInTurbulenceZone(Diameter);
+	}
+
+	public static double FrictionFactorInTurbulenceZone(double Diameter)
+	{
+		double num = 1000.0 * Diameter;
+		double num2 = 0.05 / num;
+		double num3 = 1000000000.0;
+		double num4 = Math.Log10(num2 / 3.7065 - 5.042 / num3 * Math.Log10(Math.Pow(num2, 1.1098) / 2.8527 + 5.8505 / Math.Pow(num3, 0.8981)));
+		return 0.25 / (num4 * num4);
+	}
+
+	public static double MultiplierFor90DegreePipeBend(double RadiusToDiameterRatio)
+	{
+		double num = 0.0;
+		switch ((int)RadiusToDiameterRatio)
+		{
+		case 0:
+			return LinearInterpolation(0.0, 30.0, 1.0, 20.0, RadiusToDiameterRatio);
+		case 1:
+			if (RadiusToDiameterRatio < 1.5)
+			{
+				return LinearInterpolation(1.0, 20.0, 1.5, 14.0, RadiusToDiameterRatio);
+			}
+			return LinearInterpolation(1.5, 14.0, 2.0, 12.0, RadiusToDiameterRatio);
+		case 2:
+			return 12.0;
+		case 3:
+			return LinearInterpolation(3.0, 12.0, 4.0, 14.0, RadiusToDiameterRatio);
+		case 4:
+		case 5:
+			return LinearInterpolation(4.0, 14.0, 6.0, 17.0, RadiusToDiameterRatio);
+		case 6:
+		case 7:
+			return LinearInterpolation(6.0, 17.0, 8.0, 24.0, RadiusToDiameterRatio);
+		case 8:
+		case 9:
+			return LinearInterpolation(8.0, 24.0, 10.0, 30.0, RadiusToDiameterRatio);
+		case 10:
+		case 11:
+			return LinearInterpolation(10.0, 30.0, 12.0, 34.0, RadiusToDiameterRatio);
+		case 12:
+		case 13:
+			return LinearInterpolation(12.0, 34.0, 14.0, 38.0, RadiusToDiameterRatio);
+		case 14:
+		case 15:
+			return LinearInterpolation(14.0, 38.0, 16.0, 42.0, RadiusToDiameterRatio);
+		case 16:
+		case 17:
+		case 18:
+		case 19:
+			return LinearInterpolation(16.0, 42.0, 20.0, 50.0, RadiusToDiameterRatio);
+		default:
+			return 50.0;
+		}
+	}
+
+	public static double KFactorForPipeBend(double Diameter, double Radius, double Angle)
+	{
+		double num = Radius / Diameter;
+		double num2 = FrictionFactorInTurbulenceZone(Diameter);
+		double result = 0.0;
+		if (!(Angle <= 0.0))
+		{
+			if (num < 1.0 && Angle <= 180.0)
+			{
+				result = ((Angle <= 45.0) ? (LinearInterpolation(0.0, 0.0, 45.0, 16.0, Angle) * num2) : ((!(Angle <= 90.0)) ? (LinearInterpolation(90.0, 30.0, 180.0, 50.0, Angle) * num2) : (LinearInterpolation(45.0, 16.0, 90.0, 30.0, Angle) * num2)));
+			}
+			else
+			{
+				double num3 = MultiplierFor90DegreePipeBend(num) * num2;
+				result = (Angle / 90.0 - 1.0) * (Math.PI / 4.0 * num2 * num + 0.5 * num3) + num3;
+			}
+		}
+		return result;
+	}
+
+	public static double KFactorForMitreBend(double Diameter, double Angle)
+	{
+		double num = FrictionFactorInTurbulenceZone(Diameter);
+		double num2 = 0.0;
+		if (Angle == 0.0)
+		{
+			return 2.0 * num;
+		}
+		if (Angle <= 15.0)
+		{
+			return LinearInterpolation(0.0, 2.0, 15.0, 4.0, Angle) * num;
+		}
+		if (Angle <= 30.0)
+		{
+			return LinearInterpolation(15.0, 4.0, 30.0, 8.0, Angle) * num;
+		}
+		if (Angle <= 45.0)
+		{
+			return LinearInterpolation(30.0, 8.0, 45.0, 15.0, Angle) * num;
+		}
+		if (Angle <= 60.0)
+		{
+			return LinearInterpolation(45.0, 15.0, 60.0, 25.0, Angle) * num;
+		}
+		if (Angle <= 75.0)
+		{
+			return LinearInterpolation(60.0, 25.0, 75.0, 40.0, Angle) * num;
+		}
+		if (Angle <= 90.0)
+		{
+			return LinearInterpolation(75.0, 40.0, 90.0, 60.0, Angle) * num;
+		}
+		return (60.0 + (Angle / 90.0 - 1.0) * 20.0) * num;
+	}
+
+	private static double LinearInterpolation(double X0, double Y0, double X1, double Y1, double X)
+	{
+		return Y0 + (Y1 - Y0) * (X - X0) / (X1 - X0);
+	}
+
+	public static double CalculateHomogeneousEquivalentDensity(double DensityL, double DensityG, double Quality)
+	{
+		return 1.0 / ((1.0 - Quality) / DensityL + Quality / DensityG);
+	}
+
+	public static double CalculateHomogeneousEquivalentDensity(IFlowStream stream)
+	{
+		if (stream.NumberOfPhases < 2)
+		{
+			return stream.GetPhaseByID(1).Density.Value;
+		}
+		if (stream.GetPhaseByType(PhaseType.Vapour) == null)
+		{
+			return stream.CombinedLiquidPhase.Density.Value;
+		}
+		return CalculateHomogeneousEquivalentDensity(stream.CombinedLiquidPhase.Density.Value, stream.GetPhaseByType(PhaseType.Vapour).Density.Value, stream.GetPhaseByType(PhaseType.Vapour).MassFraction.Value);
+	}
+
+	public static double KFactorFormula1(double DiamRatio, double K1, double Angle)
+	{
+		double result = 0.0;
+		if (K1 > 0.0)
+		{
+			result = K1 / Math.Pow(DiamRatio, 4.0);
+		}
+		else if (Angle > 0.0)
+		{
+			result = 0.8 * Math.Sin(0.5 * Angle) * (1.0 - DiamRatio * DiamRatio) / Math.Pow(DiamRatio, 4.0);
+		}
+		else
+		{
+			Console.WriteLine(Resources.NeedsRatioOrAngle);
+		}
+		return result;
+	}
+
+	public static double KFactorFormula2(double DiamRatio, double K1, double Angle)
+	{
+		double result = 0.0;
+		if (K1 > 0.0)
+		{
+			result = K1 / Math.Pow(DiamRatio, 4.0);
+		}
+		else if (Angle > 0.0)
+		{
+			result = 0.5 * Math.Sqrt(Math.Sin(0.5 * Angle)) * (1.0 - DiamRatio * DiamRatio) / Math.Pow(DiamRatio, 4.0);
+		}
+		else
+		{
+			Console.WriteLine(Resources.NeedsRatioOrAngle);
+		}
+		return result;
+	}
+
+	public static double KFactorFormula3(double DiamRatio, double K1, double Angle)
+	{
+		double result = 0.0;
+		if (K1 > 0.0)
+		{
+			result = K1 / Math.Pow(DiamRatio, 4.0);
+		}
+		else if (Angle > 0.0)
+		{
+			result = 2.6 * Math.Sin(0.5 * Angle) * Math.Pow(1.0 - DiamRatio * DiamRatio, 2.0) / Math.Pow(DiamRatio, 4.0);
+		}
+		else
+		{
+			Console.WriteLine(Resources.NeedsRatioOrAngle);
+		}
+		return result;
+	}
+
+	public static double KFactorFormula4(double DiamRatio, double K1, double Angle)
+	{
+		double result = 0.0;
+		if (K1 > 0.0)
+		{
+			result = K1 / Math.Pow(DiamRatio, 4.0);
+		}
+		else if (Angle > 0.0)
+		{
+			result = Math.Pow(1.0 - DiamRatio * DiamRatio, 2.0) / Math.Pow(DiamRatio, 4.0);
+		}
+		else
+		{
+			Console.WriteLine(Resources.NeedsRatioOrAngle);
+		}
+		return result;
+	}
+
+	public static double KFactorFormula5(double DiamRatio, double K1, double Angle)
+	{
+		return K1 / Math.Pow(DiamRatio, 4.0) + KFactorFormula1(DiamRatio, 0.0, Angle) + KFactorFormula3(DiamRatio, 0.0, Angle);
+	}
+
+	public static double KFactorFormula6(double DiamRatio, double K1, double Angle)
+	{
+		return K1 / Math.Pow(DiamRatio, 4.0) + KFactorFormula2(DiamRatio, 0.0, Angle) + KFactorFormula4(DiamRatio, 0.0, Angle);
+	}
+
+	public static double KFactorFormula7(double DiamRatio, double K1, double Angle)
+	{
+		double num = 0.0;
+		if (Angle == 180.0)
+		{
+			return K1 / Math.Pow(DiamRatio, 4.0) + KFactorFormula2(DiamRatio, 0.0, Angle) + KFactorFormula4(DiamRatio, 0.0, Angle);
+		}
+		return (K1 + DiamRatio * (0.5 * (1.0 - DiamRatio * DiamRatio) + Math.Pow(1.0 - DiamRatio * DiamRatio, 2.0))) / Math.Pow(DiamRatio, 4.0);
+	}
+
+	public static double KFactorForFlushInlet(double RDRatio)
+	{
+		if (RDRatio == 0.0)
+		{
+			return 0.5;
+		}
+		if (RDRatio <= 0.02)
+		{
+			return LinearInterpolation(0.0, 0.5, 0.02, 0.28, RDRatio);
+		}
+		if (RDRatio <= 0.04)
+		{
+			return LinearInterpolation(0.02, 0.28, 0.04, 0.24, RDRatio);
+		}
+		if (RDRatio <= 0.06)
+		{
+			return LinearInterpolation(0.04, 0.24, 0.06, 0.15, RDRatio);
+		}
+		if (RDRatio <= 0.1)
+		{
+			return LinearInterpolation(0.06, 0.15, 0.1, 0.09, RDRatio);
+		}
+		if (RDRatio <= 0.15)
+		{
+			return LinearInterpolation(0.1, 0.09, 0.15, 0.04, RDRatio);
+		}
+		return 0.04;
+	}
+
+	public static double KFactorForOrifice(double PipeDiam, double ThroatDiam, double PlateThickness)
+	{
+		double num = 0.0;
+		double num2 = ThroatDiam * ThroatDiam / PipeDiam / PipeDiam;
+		double num3 = 1.0 - num2 + 0.707 * Math.Pow(1.0 - num2, 0.375);
+		return Math.Pow(num3 / num2, 2.0);
+	}
+
+	public static double SonicVelocity(IFlowStream stream, IPhysicalPropertyPackage pIPPP)
+	{
+		double fEMPTY = RealValue.FEMPTY;
+		IPhase phaseByID = stream.GetPhaseByID(0);
+		double value = phaseByID.Pressure.Value;
+		double value2 = phaseByID.Density.Value;
+		double value3 = phaseByID.Temperature.Value;
+		double num = ((stream.NumberOfPhases >= 2) ? (-100.0) : 100.0);
+		IFlowStream flowStream = (IFlowStream)stream.Clone();
+		try
+		{
+			FlashCalculationLevelEnum flashLevel = pIPPP.FlashLevel;
+			pIPPP.FlashLevel = FlashCalculationLevelEnum.Thermal;
+			if (flowStream.NumberOfPhases < 2)
+			{
+				pIPPP.ReflashStreamWithSameComposition(flowStream, FlashType.PTFlash, value, value3 + 0.1);
+				double value4 = flowStream.GetPhaseByID(0).Density.Value;
+				double num2 = Math.Pow((1.0 / value4 - 1.0 / value2) / 0.1, 2.0);
+				pIPPP.ReflashStreamWithSameComposition(flowStream, FlashType.PTFlash, value + num, value3);
+				value4 = flowStream.GetPhaseByID(0).Density.Value;
+				double num3 = num / (1.0 / value4 - 1.0 / value2);
+				double num4 = phaseByID.Cp.Value + num2 / num3;
+				double num5 = num / (value4 - value2);
+				fEMPTY = Math.Sqrt(phaseByID.Cp.Value / num4 * num5);
+			}
+			else
+			{
+				double value5 = phaseByID.Entropy.Value;
+				pIPPP.ReflashStreamWithSameComposition(flowStream, FlashType.PSFlash, value + num, value5);
+				double value4 = flowStream.GetPhaseByID(0).Density.Value;
+				fEMPTY = ((!(Math.Abs(value2 - value4) < 1E-10)) ? Math.Sqrt(Math.Abs(num / (value4 - value2))) : 0.0);
+			}
+			pIPPP.FlashLevel = flashLevel;
+			return fEMPTY;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(Resources.CantGetSonicVelocity, innerException);
+		}
+	}
+
+	public static double HomogeneousViscosity(double quality, double VisL, double VisG)
+	{
+		return 1.0 / (quality / VisG + (1.0 - quality) / VisL);
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

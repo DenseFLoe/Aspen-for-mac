@@ -1,0 +1,315 @@
+using System;
+using System.CodeDom.Compiler;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Configuration;
+using System.Diagnostics;
+using System.Drawing;
+using System.Globalization;
+using System.Reflection;
+using System.Resources;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Markup;
+using Microsoft.Win32;
+using SelectAspenLanguage.Properties;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyTitle("SelectAspenLanguage")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("Aspen Technology, INC.")]
+[assembly: AssemblyProduct("SelectAspenLanguage")]
+[assembly: AssemblyCopyright("Copyright © Aspen Technology, INC. 2022")]
+[assembly: AssemblyTrademark("")]
+[assembly: ComVisible(false)]
+[assembly: ThemeInfo(ResourceDictionaryLocation.None, ResourceDictionaryLocation.SourceAssembly)]
+[assembly: AssemblyFileVersion("40.0.0.0")]
+[assembly: TargetFramework(".NETFramework,Version=v4.5", FrameworkDisplayName = ".NET Framework 4.5")]
+[assembly: AssemblyVersion("40.0.0.0")]
+namespace SelectAspenLanguage
+{
+	public class App : Application
+	{
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			base.StartupUri = new Uri("Window1.xaml", UriKind.Relative);
+		}
+
+		[STAThread]
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public static void Main()
+		{
+			App app = new App();
+			app.InitializeComponent();
+			app.Run();
+		}
+	}
+	public class Window1 : Window, IComponentConnector
+	{
+		internal Button OKButton;
+
+		internal Button ApplyButton;
+
+		internal Button CancelButton;
+
+		private bool _contentLoaded;
+
+		public Window1()
+		{
+			InitializeComponent();
+			base.Title = SelectAspenLanguage.Properties.Resources.strTitle;
+			OKButton.Content = SelectAspenLanguage.Properties.Resources.strOK;
+			ApplyButton.Content = SelectAspenLanguage.Properties.Resources.strApply;
+			CancelButton.Content = SelectAspenLanguage.Properties.Resources.strCancel;
+		}
+
+		private void OnCancelClick(object sender, RoutedEventArgs e)
+		{
+			Close();
+		}
+
+		private void OnApplyClick(object sender, RoutedEventArgs e)
+		{
+			((LanguageList)FindResource("myDataSource")).SetRegistryToCurrent();
+		}
+
+		private void OnOKClick(object sender, RoutedEventArgs e)
+		{
+			((LanguageList)FindResource("myDataSource")).SetRegistryToCurrent();
+			Close();
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/SelectAspenLanguage;component/window1.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			switch (connectionId)
+			{
+			case 1:
+				OKButton = (Button)target;
+				OKButton.Click += OnOKClick;
+				break;
+			case 2:
+				ApplyButton = (Button)target;
+				ApplyButton.Click += OnApplyClick;
+				break;
+			case 3:
+				CancelButton = (Button)target;
+				CancelButton.Click += OnCancelClick;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+	public class LanguageItem : INotifyPropertyChanged
+	{
+		private string _name;
+
+		public string Code { get; set; }
+
+		public string Name
+		{
+			get
+			{
+				return _name;
+			}
+			set
+			{
+				_name = value;
+				FirePropertyChanged("Name");
+			}
+		}
+
+		public event PropertyChangedEventHandler PropertyChanged;
+
+		public LanguageItem(string init, string code)
+		{
+			Name = init;
+			Code = code;
+		}
+
+		protected void FirePropertyChanged(string propertyName)
+		{
+			if (this.PropertyChanged != null)
+			{
+				this.PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+			}
+		}
+	}
+	public class LanguageList : ObservableCollection<LanguageItem>
+	{
+		private string regentry = "HKEY_CURRENT_USER\\Software\\AspenTech\\Engineering\\Language";
+
+		private string _currentString;
+
+		public LanguageItem CurrentSelection { get; set; }
+
+		public string Description => Resources.strDescription;
+
+		public string CurrentString
+		{
+			get
+			{
+				return _currentString;
+			}
+			set
+			{
+				_currentString = value;
+				OnPropertyChanged(new PropertyChangedEventArgs("CurrentString"));
+			}
+		}
+
+		public LanguageList()
+		{
+			Add(new LanguageItem(Resources.strEnglish, "eng"));
+			Add(new LanguageItem(Resources.strJapanese, "jpn"));
+			Add(new LanguageItem(Resources.strChinese, "chs"));
+			Add(new LanguageItem(Resources.strRussian, "rus"));
+			string text = Registry.GetValue(regentry, null, "eng") as string;
+			if (text == null)
+			{
+				text = "eng";
+			}
+			string text2 = null;
+			using (IEnumerator<LanguageItem> enumerator = GetEnumerator())
+			{
+				while (enumerator.MoveNext())
+				{
+					LanguageItem current = enumerator.Current;
+					if (string.Compare(current.Code, text, StringComparison.InvariantCultureIgnoreCase) == 0)
+					{
+						text2 = current.Name;
+						CurrentSelection = current;
+						break;
+					}
+				}
+			}
+			if (text2 == null)
+			{
+				text2 = "English";
+				Registry.SetValue(regentry, null, "eng");
+			}
+			CurrentString = Resources.strCurrent + text2;
+		}
+
+		public void SetRegistryToCurrent()
+		{
+			if (CurrentSelection != null)
+			{
+				Registry.SetValue(regentry, null, CurrentSelection.Code);
+				CurrentString = Resources.strCurrent + CurrentSelection.Name;
+			}
+		}
+	}
+}
+namespace SelectAspenLanguage.Properties
+{
+	[GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
+	[DebuggerNonUserCode]
+	[CompilerGenerated]
+	public class Resources
+	{
+		private static ResourceManager resourceMan;
+
+		private static CultureInfo resourceCulture;
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		public static ResourceManager ResourceManager
+		{
+			get
+			{
+				if (resourceMan == null)
+				{
+					resourceMan = new ResourceManager("SelectAspenLanguage.Properties.Resources", typeof(Resources).Assembly);
+				}
+				return resourceMan;
+			}
+		}
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		public static CultureInfo Culture
+		{
+			get
+			{
+				return resourceCulture;
+			}
+			set
+			{
+				resourceCulture = value;
+			}
+		}
+
+		public static Bitmap MiddleHeader => (Bitmap)ResourceManager.GetObject("MiddleHeader", resourceCulture);
+
+		public static string strApply => ResourceManager.GetString("strApply", resourceCulture);
+
+		public static string strCancel => ResourceManager.GetString("strCancel", resourceCulture);
+
+		public static string strChinese => ResourceManager.GetString("strChinese", resourceCulture);
+
+		public static string strCurrent => ResourceManager.GetString("strCurrent", resourceCulture);
+
+		public static string strDescription => ResourceManager.GetString("strDescription", resourceCulture);
+
+		public static string strEnglish => ResourceManager.GetString("strEnglish", resourceCulture);
+
+		public static string strFrench => ResourceManager.GetString("strFrench", resourceCulture);
+
+		public static string strGerman => ResourceManager.GetString("strGerman", resourceCulture);
+
+		public static string strItalian => ResourceManager.GetString("strItalian", resourceCulture);
+
+		public static string strJapanese => ResourceManager.GetString("strJapanese", resourceCulture);
+
+		public static string strKorean => ResourceManager.GetString("strKorean", resourceCulture);
+
+		public static string strOK => ResourceManager.GetString("strOK", resourceCulture);
+
+		public static string strPortuguese => ResourceManager.GetString("strPortuguese", resourceCulture);
+
+		public static string strRussian => ResourceManager.GetString("strRussian", resourceCulture);
+
+		public static string strSpanish => ResourceManager.GetString("strSpanish", resourceCulture);
+
+		public static string strTitle => ResourceManager.GetString("strTitle", resourceCulture);
+
+		internal Resources()
+		{
+		}
+	}
+	[CompilerGenerated]
+	[GeneratedCode("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "15.1.0.0")]
+	public sealed class Settings : ApplicationSettingsBase
+	{
+		private static Settings defaultInstance = (Settings)SettingsBase.Synchronized(new Settings());
+
+		public static Settings Default => defaultInstance;
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

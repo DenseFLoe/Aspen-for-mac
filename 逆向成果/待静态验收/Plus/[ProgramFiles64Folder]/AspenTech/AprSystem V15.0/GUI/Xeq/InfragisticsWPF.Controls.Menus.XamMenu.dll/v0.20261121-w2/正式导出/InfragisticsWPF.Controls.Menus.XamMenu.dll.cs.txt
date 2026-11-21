@@ -1,0 +1,5684 @@
+#define WPF
+using System;
+using System.CodeDom.Compiler;
+using System.Collections;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Configuration;
+using System.Diagnostics;
+using System.Globalization;
+using System.Linq;
+using System.Reflection;
+using System.Resources;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Security;
+using System.Windows;
+using System.Windows.Automation;
+using System.Windows.Automation.Peers;
+using System.Windows.Automation.Provider;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
+using System.Windows.Input;
+using System.Windows.Markup;
+using System.Windows.Media;
+using System.Windows.Media.Media3D;
+using System.Windows.Threading;
+using Infragistics;
+using Infragistics.AutomationPeers;
+using Infragistics.Controls;
+using Infragistics.Controls.Menus;
+using Infragistics.Controls.Menus.Primitives;
+using Infragistics.Controls.Primitives;
+using Infragistics.Themes;
+using Infragistics.Windows;
+using Infragistics.Windows.Licensing;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyTitle("InfragisticsWPF.Controls.Menus.XamMenu")]
+[assembly: AssemblyDescription("Menu Component for WPF - Release Version")]
+[assembly: AssemblyConfiguration("Release")]
+[assembly: AssemblyCompany("Infragistics Inc.")]
+[assembly: AssemblyProduct("Infragistics Ultimate")]
+[assembly: AssemblyCopyright("Copyright (c) Infragistics, Inc. 2009 - 2021")]
+[assembly: AssemblyTrademark("")]
+[assembly: ComVisible(false)]
+[assembly: AllowPartiallyTrustedCallers]
+[assembly: Guid("91d00fdd-5a87-4dac-8786-dd93f5fba3d7")]
+[assembly: AssemblyFileVersion("21.2.20212.9")]
+[assembly: SatelliteContractVersion("21.2.0.0")]
+[assembly: CLSCompliant(true)]
+[assembly: NeutralResourcesLanguage("en-US")]
+[assembly: StringResourceLocation("Infragistics.Controls.Menus.Strings")]
+[assembly: XmlnsPrefix("http://schemas.infragistics.com/xaml", "ig")]
+[assembly: XmlnsDefinition("http://schemas.infragistics.com/xaml", "Infragistics.Controls.Menus")]
+[assembly: XmlnsPrefix("http://schemas.infragistics.com/xaml/primitives", "igPrim")]
+[assembly: XmlnsDefinition("http://schemas.infragistics.com/xaml/primitives", "Infragistics.Controls.Menus.Primitives")]
+[assembly: ThemeInfo(ResourceDictionaryLocation.None, ResourceDictionaryLocation.SourceAssembly)]
+[assembly: TargetFramework(".NETFramework,Version=v4.0,Profile=Client", FrameworkDisplayName = ".NET Framework 4 Client Profile")]
+[assembly: AssemblyVersion("21.2.20212.9")]
+internal static class SR
+{
+	private static List<ResourceManager> _resourceManagers;
+
+	private static int _customResourcesVersion;
+
+	internal static int CustomResourcesVersion => _customResourcesVersion;
+
+	static SR()
+	{
+		Assembly assembly = typeof(SR).Assembly;
+		object[] customAttributes = assembly.GetCustomAttributes(typeof(StringResourceLocationAttribute), inherit: true);
+		if (customAttributes == null || customAttributes.Length == 0)
+		{
+			throw new InvalidOperationException("Assembly is missing the StringResourceLocation attribute.");
+		}
+		string[] array = ((customAttributes[0] as StringResourceLocationAttribute) ?? throw new InvalidOperationException("Error retrieving the StringResourceLocation attribute.")).Location.Split(';');
+		int num = 0;
+		string[] array2 = array;
+		foreach (string text in array2)
+		{
+			if (text != null && text.Length > 0)
+			{
+				num++;
+			}
+		}
+		_resourceManagers = new List<ResourceManager>();
+		array2 = array;
+		foreach (string text2 in array2)
+		{
+			if (text2 != null && text2.Length > 0)
+			{
+				_resourceManagers.Add(new ResourceManager(text2, assembly));
+			}
+		}
+	}
+
+	internal static string GetString(string resourceName)
+	{
+		foreach (ResourceManager resourceManager in _resourceManagers)
+		{
+			string text = resourceManager.GetString(resourceName, CultureInfo.CurrentUICulture);
+			if (text != null)
+			{
+				return text;
+			}
+		}
+		return null;
+	}
+
+	internal static void AddResource(string name, Assembly assembly)
+	{
+		ResourceManager resourceManager = new ResourceManager(name, assembly);
+		resourceManager.GetString("DummyValue");
+		_resourceManagers.Insert(0, resourceManager);
+		ResourceStringBase.InvalidateCachedResources();
+		_customResourcesVersion++;
+	}
+
+	internal static void RemoveResource(string name)
+	{
+		ResourceManager resourceManager = null;
+		int num = 0;
+		foreach (ResourceManager resourceManager2 in _resourceManagers)
+		{
+			if (resourceManager2.BaseName == name)
+			{
+				resourceManager = resourceManager2;
+				break;
+			}
+			num++;
+		}
+		if (resourceManager != null)
+		{
+			_resourceManagers.Remove(resourceManager);
+			ResourceStringBase.InvalidateCachedResources();
+			_customResourcesVersion++;
+		}
+	}
+
+	internal static string GetString(string resourceName, params object[] args)
+	{
+		string text = GetString(resourceName);
+		if (text != null && args != null && args.Length != 0 && text.Length > 2)
+		{
+			try
+			{
+				text = string.Format(null, text, args);
+			}
+			catch
+			{
+			}
+		}
+		return text;
+	}
+}
+internal class AssemblyRef
+{
+	internal const string AssemblyName = "InfragisticsWPF.Controls.Menus.XamMenu";
+
+	internal const string AssemblyProduct = "Infragistics Ultimate";
+
+	internal const string AssemblyDescriptionBase = "Menu Component for WPF";
+}
+namespace Infragistics
+{
+	internal interface IHeaderedItemContainerGenerator
+	{
+		Panel ItemsHost { get; }
+
+		ScrollViewer ScrollHost { get; }
+
+		void OnApplyTemplate();
+
+		void PrepareContainerForItemOverride(DependencyObject element, object item, Style parentItemContainerStyle);
+
+		void ScrollIntoView(FrameworkElement element);
+
+		void UpdateItemContainerStyle(Style itemContainerStyle);
+
+		void ClearContainerForItemOverride(DependencyObject element, object item);
+	}
+	internal sealed class HeaderedItemContainerGenerator : IHeaderedItemContainerGenerator
+	{
+		private Panel _itemsHost;
+
+		private ScrollViewer _scrollHost;
+
+		private ItemsControl _itemsControl { get; set; }
+
+		public Panel ItemsHost
+		{
+			get
+			{
+				if (_itemsHost == null)
+				{
+					if (_itemsControl.Items.Count <= 0)
+					{
+						return null;
+					}
+					DependencyObject dependencyObject = _itemsControl.ItemContainerGenerator.ContainerFromIndex(0);
+					if (dependencyObject == null)
+					{
+						return null;
+					}
+					_itemsHost = VisualTreeHelper.GetParent(dependencyObject) as Panel;
+				}
+				return _itemsHost;
+			}
+		}
+
+		public ScrollViewer ScrollHost
+		{
+			get
+			{
+				if (_scrollHost == null)
+				{
+					Panel itemsHost = ItemsHost;
+					if (itemsHost != null)
+					{
+						DependencyObject dependencyObject = itemsHost;
+						while (dependencyObject != _itemsControl && dependencyObject != null)
+						{
+							if (dependencyObject is ScrollViewer scrollHost)
+							{
+								_scrollHost = scrollHost;
+								break;
+							}
+							dependencyObject = VisualTreeHelper.GetParent(dependencyObject);
+						}
+					}
+				}
+				return _scrollHost;
+			}
+		}
+
+		internal HeaderedItemContainerGenerator(ItemsControl control)
+		{
+			_itemsControl = control;
+		}
+
+		public void OnApplyTemplate()
+		{
+			_itemsHost = null;
+			_scrollHost = null;
+		}
+
+		public void PrepareContainerForItemOverride(DependencyObject element, object item, Style parentItemContainerStyle)
+		{
+			Control control = element as Control;
+			if (parentItemContainerStyle != null && control != null && control.Style == null)
+			{
+				control.SetValue(FrameworkElement.StyleProperty, parentItemContainerStyle);
+			}
+			if (!(element is XamHeaderedItemsControl xamHeaderedItemsControl))
+			{
+				return;
+			}
+			Infragistics.Controls.HierarchicalDataTemplate hierarchicalTemplate = null;
+			if (_itemsControl is XamHeaderedItemsControl xamHeaderedItemsControl2)
+			{
+				hierarchicalTemplate = xamHeaderedItemsControl2.HierarchicalItemTemplate;
+				if (xamHeaderedItemsControl.DefaultItemsContainer == null && xamHeaderedItemsControl2.DefaultItemsContainer != null)
+				{
+					xamHeaderedItemsControl.SetValue(XamHeaderedItemsControl.DefaultItemsContainerProperty, xamHeaderedItemsControl.DefaultItemsContainer);
+				}
+			}
+			PrepareHeaderedItemsControlContainer(xamHeaderedItemsControl, item, _itemsControl, parentItemContainerStyle, hierarchicalTemplate);
+		}
+
+		private static bool HasDefaultValue(Control control, DependencyProperty property)
+		{
+			return control.ReadLocalValue(property) == DependencyProperty.UnsetValue;
+		}
+
+		private static void PrepareHeaderedItemsControlContainer(XamHeaderedItemsControl control, object item, ItemsControl parentItemsControl, Style parentItemContainerStyle, Infragistics.Controls.HierarchicalDataTemplate hierarchicalTemplate)
+		{
+			if (control == item)
+			{
+				return;
+			}
+			DataTemplate itemTemplate = parentItemsControl.ItemTemplate;
+			if (itemTemplate != null)
+			{
+				control.SetValue(ItemsControl.ItemTemplateProperty, itemTemplate);
+			}
+			if (parentItemContainerStyle != null && HasDefaultValue(control, ItemsControl.ItemContainerStyleProperty))
+			{
+				control.SetValue(ItemsControl.ItemContainerStyleProperty, parentItemContainerStyle);
+			}
+			if (control.HeaderIsItem || HasDefaultValue(control, XamHeaderedItemsControl.HeaderProperty))
+			{
+				if (!string.IsNullOrEmpty(control.DisplayMemberPath))
+				{
+					Binding binding = new Binding(control.DisplayMemberPath);
+					binding.Source = item;
+					binding.Mode = BindingMode.OneWay;
+					control.SetBinding(XamHeaderedItemsControl.HeaderProperty, binding);
+				}
+				else if (!string.IsNullOrEmpty(parentItemsControl.DisplayMemberPath))
+				{
+					Binding binding2 = new Binding(parentItemsControl.DisplayMemberPath);
+					binding2.Source = item;
+					binding2.Mode = BindingMode.OneWay;
+					control.SetBinding(XamHeaderedItemsControl.HeaderProperty, binding2);
+				}
+				else
+				{
+					control.Header = item;
+				}
+				control.HeaderIsItem = true;
+			}
+			if (itemTemplate != null)
+			{
+				control.SetValue(XamHeaderedItemsControl.HeaderTemplateProperty, itemTemplate);
+			}
+			if (parentItemContainerStyle != null && control.Style == null)
+			{
+				control.SetValue(FrameworkElement.StyleProperty, parentItemContainerStyle);
+			}
+			if (hierarchicalTemplate == null)
+			{
+				return;
+			}
+			if (hierarchicalTemplate.ItemsSource != null && HasDefaultValue(control, ItemsControl.ItemsSourceProperty))
+			{
+				control.SetBinding(ItemsControl.ItemsSourceProperty, new Binding
+				{
+					Converter = hierarchicalTemplate.ItemsSource.Converter,
+					ConverterCulture = hierarchicalTemplate.ItemsSource.ConverterCulture,
+					ConverterParameter = hierarchicalTemplate.ItemsSource.ConverterParameter,
+					Mode = hierarchicalTemplate.ItemsSource.Mode,
+					NotifyOnValidationError = hierarchicalTemplate.ItemsSource.NotifyOnValidationError,
+					Path = hierarchicalTemplate.ItemsSource.Path,
+					Source = control.Header,
+					ValidatesOnExceptions = hierarchicalTemplate.ItemsSource.ValidatesOnExceptions
+				});
+			}
+			if (hierarchicalTemplate.HierarchicalItemTemplate != null)
+			{
+				control.SetValue(XamHeaderedItemsControl.HierarchicalItemTemplateProperty, hierarchicalTemplate.HierarchicalItemTemplate);
+			}
+			else
+			{
+				control.SetValue(XamHeaderedItemsControl.HierarchicalItemTemplateProperty, hierarchicalTemplate);
+			}
+			if (hierarchicalTemplate.ItemTemplate != null && control.ItemTemplate == itemTemplate)
+			{
+				control.ClearValue(ItemsControl.ItemTemplateProperty);
+				if (hierarchicalTemplate.ItemTemplate != null)
+				{
+					control.ItemTemplate = hierarchicalTemplate.ItemTemplate;
+				}
+			}
+			if (hierarchicalTemplate.ItemContainerStyle != null && control.ItemContainerStyle == parentItemContainerStyle)
+			{
+				control.ClearValue(ItemsControl.ItemContainerStyleProperty);
+				if (hierarchicalTemplate.ItemContainerStyle != null)
+				{
+					control.ItemContainerStyle = hierarchicalTemplate.ItemContainerStyle;
+				}
+			}
+			if (control.DefaultItemsContainer == null && hierarchicalTemplate.DefaultItemsContainer != null)
+			{
+				control.SetValue(XamHeaderedItemsControl.DefaultItemsContainerProperty, hierarchicalTemplate.DefaultItemsContainer);
+			}
+		}
+
+		public void ClearContainerForItemOverride(DependencyObject element, object item)
+		{
+		}
+
+		public void UpdateItemContainerStyle(Style itemContainerStyle)
+		{
+			if (itemContainerStyle == null)
+			{
+				return;
+			}
+			Panel itemsHost = ItemsHost;
+			if (itemsHost == null || itemsHost.Children == null)
+			{
+				return;
+			}
+			foreach (UIElement child in itemsHost.Children)
+			{
+				(child as FrameworkElement).Style = itemContainerStyle;
+			}
+		}
+
+		public void ScrollIntoView(FrameworkElement element)
+		{
+			ScrollViewer scrollHost = ScrollHost;
+			if (scrollHost != null)
+			{
+				GeneralTransform generalTransform = null;
+				try
+				{
+					generalTransform = element.TransformToVisual(scrollHost);
+				}
+				catch (InvalidOperationException)
+				{
+					return;
+				}
+				Rect rect = new Rect(generalTransform.Transform(default(Point)), generalTransform.Transform(new Point(element.ActualWidth, element.ActualHeight)));
+				double num = scrollHost.VerticalOffset;
+				double num2 = 0.0;
+				double viewportHeight = scrollHost.ViewportHeight;
+				double bottom = rect.Bottom;
+				if (viewportHeight < bottom)
+				{
+					num2 = bottom - viewportHeight;
+					num += num2;
+				}
+				double top = rect.Top;
+				if (top - num2 < 0.0)
+				{
+					num -= num2 - top;
+				}
+				scrollHost.ScrollToVerticalOffset(num);
+				double num3 = scrollHost.HorizontalOffset;
+				double num4 = 0.0;
+				double viewportWidth = scrollHost.ViewportWidth;
+				double right = rect.Right;
+				if (viewportWidth < right)
+				{
+					num4 = right - viewportWidth;
+					num3 += num4;
+				}
+				double left = rect.Left;
+				if (left - num4 < 0.0)
+				{
+					num3 -= num4 - left;
+				}
+				scrollHost.ScrollToHorizontalOffset(num3);
+			}
+		}
+	}
+	internal interface INavigation
+	{
+		Uri NavigationUri { get; set; }
+
+		string NavigationParameter { get; set; }
+
+		FrameworkElement NavigationElement { get; set; }
+
+		void NavigateTo();
+	}
+	internal class MenuNavigation : INavigation
+	{
+		public Uri NavigationUri { get; set; }
+
+		public string NavigationParameter { get; set; }
+
+		public FrameworkElement NavigationElement { get; set; }
+
+		public void NavigateTo()
+		{
+			if (NavigationUri == null)
+			{
+				throw new InvalidOperationException(Resources.GetString("Navigation_UriIsNotSet"));
+			}
+			Uri uri = null;
+			uri = ((!string.IsNullOrEmpty(NavigationParameter)) ? BuildNavigationString(ParseParameters(NavigationParameter), NavigationUri.OriginalString) : NavigationUri);
+			if (NavigationElement is Frame)
+			{
+				(NavigationElement as Frame).Navigate(uri);
+				return;
+			}
+			if (NavigationElement is Page)
+			{
+				((NavigationElement as Page).NavigationService ?? throw new InvalidOperationException(Resources.GetString("Navigation_PageIsNotSet"))).Navigate(uri);
+				return;
+			}
+			throw new InvalidOperationException(Resources.GetString("Navigation_ElementIsNotSet"));
+		}
+
+		private static Uri BuildNavigationString(List<string> parameters, string sourceUri)
+		{
+			int num = 0;
+			int num2 = 0;
+			int num3 = 0;
+			int num4 = 0;
+			string text = "";
+			while (true)
+			{
+				num2 = sourceUri.IndexOf("{", num3, StringComparison.Ordinal);
+				num = sourceUri.IndexOf("}", num3, StringComparison.Ordinal);
+				if (num == -1 && num2 == -1)
+				{
+					break;
+				}
+				if (num == -1 || num2 == -1)
+				{
+					throw new InvalidOperationException(Resources.GetString("Navigation_WrongFormat"));
+				}
+				text += sourceUri.Substring(num3, num2 - num3);
+				text += parameters[num4];
+				num4++;
+				num3 = num + 1;
+			}
+			if (num3 >= 0 && num3 < sourceUri.Length)
+			{
+				text += sourceUri.Substring(num3);
+			}
+			return new Uri(text, UriKind.RelativeOrAbsolute);
+		}
+
+		private static List<string> ParseParameters(string parameterString)
+		{
+			int num = 0;
+			int num2 = 0;
+			List<string> list = new List<string>();
+			if (parameterString[0] != '/')
+			{
+				list.Add(parameterString);
+				return list;
+			}
+			num = parameterString.IndexOf('/');
+			while (num != -1)
+			{
+				num2 = num + 1;
+				if (num2 >= parameterString.Length)
+				{
+					list.Add("");
+					break;
+				}
+				num = parameterString.IndexOf('/', num2);
+				if (num == -1)
+				{
+					list.Add(parameterString.Substring(num2, parameterString.Length - num2));
+					break;
+				}
+				list.Add(parameterString.Substring(num2, num - num2));
+			}
+			return list;
+		}
+	}
+	internal static class Resources
+	{
+		public static string GetString(string resourceName)
+		{
+			return SR.GetString(resourceName);
+		}
+	}
+}
+namespace Infragistics.Controls.Menus
+{
+	public class ContextMenuManager : DependencyObject
+	{
+		private const OpenMode OpenModeDefaultValue = OpenMode.RightClick;
+
+		private const ModifierKeys ModifierKeysDefaultValue = ModifierKeys.None;
+
+		private WeakReference _targetElement;
+
+		public static readonly DependencyProperty ContextMenuProperty = DependencyProperty.Register("ContextMenu", typeof(XamContextMenu), typeof(ContextMenuManager), new PropertyMetadata(null, OnContextMenuChanged));
+
+		public static readonly DependencyProperty ModifierKeysProperty = DependencyProperty.Register("ModifierKeys", typeof(ModifierKeys), typeof(ContextMenuManager), new PropertyMetadata(ModifierKeys.None));
+
+		public static readonly DependencyProperty OpenModeProperty = DependencyProperty.Register("OpenMode", typeof(OpenMode), typeof(ContextMenuManager), new PropertyMetadata(OpenMode.RightClick, OnOpenModeChanged));
+
+		public XamContextMenu ContextMenu
+		{
+			get
+			{
+				return (XamContextMenu)GetValue(ContextMenuProperty);
+			}
+			set
+			{
+				SetValue(ContextMenuProperty, value);
+			}
+		}
+
+		public ModifierKeys ModifierKeys
+		{
+			get
+			{
+				return (ModifierKeys)GetValue(ModifierKeysProperty);
+			}
+			set
+			{
+				SetValue(ModifierKeysProperty, value);
+			}
+		}
+
+		public OpenMode OpenMode
+		{
+			get
+			{
+				return (OpenMode)GetValue(OpenModeProperty);
+			}
+			set
+			{
+				SetValue(OpenModeProperty, value);
+			}
+		}
+
+		internal UIElement ParentElement
+		{
+			get
+			{
+				if (_targetElement != null && _targetElement.IsAlive)
+				{
+					return _targetElement.Target as UIElement;
+				}
+				return null;
+			}
+			set
+			{
+				OnParentElementChanging(ParentElement, value);
+				_targetElement = new WeakReference(value);
+			}
+		}
+
+		private static void OnContextMenuChanged(DependencyObject target, DependencyPropertyChangedEventArgs e)
+		{
+			if (target is ContextMenuManager contextMenuManager)
+			{
+				contextMenuManager.PrepareContextMenu(contextMenuManager.ParentElement, e.OldValue as XamContextMenu, e.NewValue as XamContextMenu);
+			}
+		}
+
+		private static void OnOpenModeChanged(DependencyObject target, DependencyPropertyChangedEventArgs e)
+		{
+			if (target is ContextMenuManager contextMenuManager)
+			{
+				contextMenuManager.PrepareOpenMode(contextMenuManager.ParentElement, (OpenMode)e.OldValue, (OpenMode)e.NewValue);
+			}
+		}
+
+		private void OnParentElementChanging(UIElement oldElement, UIElement newElement)
+		{
+			if (newElement == null)
+			{
+				PrepareOpenMode(oldElement, OpenMode, OpenMode.None);
+			}
+			if (oldElement is FrameworkElement frameworkElement)
+			{
+				frameworkElement.Unloaded -= OnParentElementUnloaded;
+			}
+			if (newElement is FrameworkElement frameworkElement2)
+			{
+				frameworkElement2.Unloaded += OnParentElementUnloaded;
+			}
+			if (ContextMenu != null)
+			{
+				ContextMenu.CloseCurrentOpen();
+				ContextMenu.ParentElement = newElement;
+			}
+			PrepareOpenMode(newElement, OpenMode.None, OpenMode);
+		}
+
+		private static bool OpenContextMenu(object sender, Point p)
+		{
+			DependencyObject dependencyObject = sender as DependencyObject;
+			XamContextMenu xamContextMenu = null;
+			if (dependencyObject != null)
+			{
+				ContextMenuManager manager = ContextMenuService.GetManager(dependencyObject);
+				if (manager != null)
+				{
+					xamContextMenu = manager.ContextMenu;
+					if (xamContextMenu != null && xamContextMenu.Visibility == Visibility.Visible)
+					{
+						ContextMenuService.PositionContextMenu(xamContextMenu, p, sender as UIElement);
+					}
+				}
+			}
+			if (xamContextMenu != null)
+			{
+				if (!xamContextMenu.IsOpen)
+				{
+					return xamContextMenu.IsCancelled;
+				}
+				return true;
+			}
+			return false;
+		}
+
+		private void PrepareOpenMode(UIElement element, OpenMode oldOpenMode, OpenMode newOpenMode)
+		{
+			if (element != null)
+			{
+				switch (oldOpenMode)
+				{
+				case OpenMode.RightClick:
+					RemoveRightMouseButtonUpHandler(element);
+					break;
+				case OpenMode.LeftClick:
+					RemoveLeftMouseButtonUpHandler(element);
+					break;
+				}
+				switch (newOpenMode)
+				{
+				case OpenMode.RightClick:
+					AddRightMouseButtonUpHandler(element);
+					break;
+				case OpenMode.LeftClick:
+					AddLeftMouseButtonUpHandler(element);
+					break;
+				}
+			}
+		}
+
+		private void PrepareContextMenu(UIElement element, XamContextMenu oldContextMenu, XamContextMenu newContextMenu)
+		{
+			if (element != null)
+			{
+				if (oldContextMenu != null)
+				{
+					PrepareOpenMode(oldContextMenu.ParentElement, OpenMode, OpenMode.None);
+				}
+				if (newContextMenu != null)
+				{
+					PrepareOpenMode(element, OpenMode.None, OpenMode);
+				}
+				if (newContextMenu != null)
+				{
+					newContextMenu.ParentElement = element;
+				}
+			}
+			CommandSourceManager.NotifyCanExecuteChanged(typeof(OpenCommand));
+			CommandSourceManager.NotifyCanExecuteChanged(typeof(CloseCommand));
+		}
+
+		private void AddRightMouseButtonUpHandler(UIElement element)
+		{
+			element.MouseRightButtonDown += Element_MouseRightButtonDown;
+			element.MouseRightButtonUp += Element_MouseRightButtonUp;
+		}
+
+		private void AddLeftMouseButtonUpHandler(UIElement element)
+		{
+			element.AddHandler(UIElement.MouseLeftButtonUpEvent, new MouseButtonEventHandler(Element_MouseLeftButtonUp), handledEventsToo: true);
+		}
+
+		private void RemoveRightMouseButtonUpHandler(UIElement element)
+		{
+			element.MouseRightButtonDown -= Element_MouseRightButtonDown;
+			element.MouseRightButtonUp -= Element_MouseRightButtonUp;
+		}
+
+		private void RemoveLeftMouseButtonUpHandler(UIElement element)
+		{
+			element.RemoveHandler(UIElement.MouseLeftButtonUpEvent, new MouseButtonEventHandler(Element_MouseLeftButtonUp));
+		}
+
+		private bool CheckModifierKeys()
+		{
+			ModifierKeys currentModifierKeys = PresentationUtilities.GetCurrentModifierKeys();
+			if (ModifierKeys != ModifierKeys.None)
+			{
+				return (currentModifierKeys & ModifierKeys) == ModifierKeys;
+			}
+			return true;
+		}
+
+		private void Element_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+		{
+			if (CheckModifierKeys())
+			{
+				bool flag = false;
+				DependencyObject dependencyObject = e.OriginalSource as DependencyObject;
+				if (dependencyObject != null)
+				{
+					flag = ContextMenuService.GetManager(dependencyObject) != null;
+				}
+				if (sender == e.OriginalSource || !e.Handled || !flag)
+				{
+					e.Handled = OpenContextMenu(sender, e.GetPosition(PlatformProxy.GetRootVisual(dependencyObject)));
+				}
+			}
+		}
+
+		private void Element_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
+		{
+			e.Handled = Element_MouseRightButtonUpImpl(sender, e.GetPosition);
+		}
+
+		private bool Element_MouseRightButtonUpImpl(object sender, Func<UIElement, Point> getPosition)
+		{
+			if (!CheckModifierKeys())
+			{
+				return false;
+			}
+			bool flag = false;
+			if (ContextMenuService.CloseActiveContextMenu())
+			{
+				flag = ContextMenu.ShouldRightClickBeHandled;
+				if (sender is TextBox textBox && !string.IsNullOrEmpty(textBox.Text))
+				{
+					Point point = getPosition(textBox);
+					int num = textBox.GetCharacterIndexFromPoint(point, snapToText: true);
+					if (num < textBox.Text.Length)
+					{
+						Rect rectFromCharacterIndex = textBox.GetRectFromCharacterIndex(num, trailingEdge: false);
+						Rect rectFromCharacterIndex2 = textBox.GetRectFromCharacterIndex(num, trailingEdge: true);
+						Rect rect = Rect.Union(rectFromCharacterIndex, rectFromCharacterIndex2);
+						bool flag2 = point.X >= rect.X + rect.Width / 2.0;
+						if (textBox.FlowDirection == FlowDirection.RightToLeft)
+						{
+							flag2 = !flag2;
+						}
+						if (flag2)
+						{
+							num++;
+						}
+					}
+					if (textBox.SelectionLength == 0 || num < textBox.SelectionStart || num >= textBox.SelectionStart + textBox.SelectionLength)
+					{
+						textBox.Select(num, 0);
+					}
+				}
+				OpenContextMenu(sender, getPosition(PlatformProxy.GetRootVisual(sender as DependencyObject)));
+			}
+			else
+			{
+				flag = true;
+			}
+			return flag;
+		}
+
+		private void Element_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
+		{
+			bool handled = false;
+			if (ContextMenu != null)
+			{
+				handled = ContextMenu.ShouldRightClickBeHandled;
+			}
+			e.Handled = handled;
+		}
+
+		private void OnParentElementUnloaded(object sender, RoutedEventArgs e)
+		{
+			if (ContextMenu != null)
+			{
+				ContextMenu.CloseCurrentOpen();
+			}
+		}
+	}
+	public static class ContextMenuService
+	{
+		private static bool _handlerAdded;
+
+		[ThreadStatic]
+		private static XamContextMenu _activeContextMenu;
+
+		public static readonly DependencyProperty ManagerProperty = DependencyProperty.RegisterAttached("Manager", typeof(ContextMenuManager), typeof(ContextMenuService), new PropertyMetadata(null, OnManagerChanged));
+
+		private static void OnManagerChanged(DependencyObject target, DependencyPropertyChangedEventArgs e)
+		{
+			ContextMenuManager contextMenuManager = e.OldValue as ContextMenuManager;
+			ContextMenuManager contextMenuManager2 = e.NewValue as ContextMenuManager;
+			if (contextMenuManager != null)
+			{
+				contextMenuManager.ParentElement = null;
+			}
+			if (contextMenuManager2 != null)
+			{
+				contextMenuManager2.ParentElement = target as UIElement;
+				contextMenuManager2.ParentElement.AddHandler(UIElement.KeyDownEvent, new KeyEventHandler(XamContextMenu_KeyDown), handledEventsToo: true);
+			}
+			CommandSourceManager.NotifyCanExecuteChanged(typeof(OpenCommand));
+			CommandSourceManager.NotifyCanExecuteChanged(typeof(CloseCommand));
+		}
+
+		public static ContextMenuManager GetManager(DependencyObject element)
+		{
+			return (ContextMenuManager)element.GetValue(ManagerProperty);
+		}
+
+		public static void SetManager(DependencyObject element, ContextMenuManager value)
+		{
+			element.SetValue(ManagerProperty, value);
+		}
+
+		public static bool IsMenuOpenForElement(DependencyObject obj)
+		{
+			if (obj == null)
+			{
+				return false;
+			}
+			if (_activeContextMenu == null || !_activeContextMenu.IsOpen || _activeContextMenu.PlacementTargetResolvedInternal == null)
+			{
+				return false;
+			}
+			for (DependencyObject dependencyObject = _activeContextMenu.PlacementTargetResolvedInternal; dependencyObject != null; dependencyObject = PlatformProxy.GetParent(dependencyObject))
+			{
+				if (obj == dependencyObject)
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
+		internal static void OnContextMenuClosed(XamContextMenu contextMenu)
+		{
+			if (contextMenu == _activeContextMenu)
+			{
+				_activeContextMenu = null;
+			}
+		}
+
+		internal static void OnContextMenuOpened(XamContextMenu xamContextMenu)
+		{
+			CloseActiveContextMenu();
+			_activeContextMenu = xamContextMenu;
+		}
+
+		internal static Rect GetBounds(UIElement element)
+		{
+			FrameworkElement frameworkElement = element as FrameworkElement;
+			bool flag = true;
+			double x = 0.0;
+			double y = 0.0;
+			Rect rect = ((frameworkElement != null) ? new Rect(x, y, frameworkElement.ActualWidth, frameworkElement.ActualHeight) : new Rect(0.0, 0.0, element.RenderSize.Width, element.RenderSize.Height));
+			try
+			{
+				UIElement rootVisual = PlatformProxy.GetRootVisual(element);
+				if (rootVisual != null)
+				{
+					rect = element.TransformToVisual(rootVisual).TransformBounds(rect);
+					flag = false;
+				}
+			}
+			catch (ArgumentException)
+			{
+			}
+			catch (InvalidOperationException)
+			{
+			}
+			if (flag)
+			{
+				FrameworkElement frameworkElement2 = PlatformProxy.GetRootVisual(element) as FrameworkElement;
+				if (frameworkElement2 == null)
+				{
+					frameworkElement2 = PlatformProxy.GetRootParent(element) as FrameworkElement;
+				}
+				if (frameworkElement2 != null)
+				{
+					if (frameworkElement2 is Popup popup)
+					{
+						frameworkElement2 = popup.Child as FrameworkElement;
+					}
+					if (frameworkElement2 != null && !(frameworkElement2 is Popup))
+					{
+						Point point = new Point(0.0, 0.0);
+						Point point2 = element.PointToScreen(point);
+						point = frameworkElement2.PointToScreen(point);
+						point2.X -= point.X;
+						point2.Y -= point.Y;
+						rect.X = point2.X;
+						rect.Y = point2.Y;
+					}
+				}
+			}
+			return rect;
+		}
+
+		public static bool CloseActiveContextMenu()
+		{
+			if (_activeContextMenu != null)
+			{
+				_activeContextMenu.IsOpen = false;
+			}
+			if (_activeContextMenu != null)
+			{
+				return !_activeContextMenu.IsOpen;
+			}
+			return true;
+		}
+
+		internal static void PositionContextMenu(XamContextMenu contextMenu, Point p, UIElement parentElement)
+		{
+			if ((contextMenu == _activeContextMenu || CloseActiveContextMenu()) && parentElement != null)
+			{
+				ContextMenuManager manager = GetManager(parentElement);
+				if (manager != null && manager.ContextMenu == contextMenu && contextMenu != null)
+				{
+					contextMenu.MouseClickLocation = p;
+					contextMenu.ParentElement = parentElement;
+					contextMenu.IsOpen = true;
+				}
+			}
+		}
+
+		internal static void XamContextMenu_KeyDown(object sender, KeyEventArgs e)
+		{
+			if (!e.Handled && e.Key == Key.Apps && sender is DependencyObject element)
+			{
+				ContextMenuManager manager = GetManager(element);
+				if (manager != null && !manager.ContextMenu.IsOpen)
+				{
+					manager.ContextMenu.OpenInternal();
+					e.Handled = true;
+				}
+			}
+		}
+	}
+	public enum MenuItemRole
+	{
+		TopLevelItem,
+		TopLevelHeader,
+		SubmenuItem,
+		SubmenuHeader
+	}
+	public enum MenuItemPosition
+	{
+		Auto,
+		Top,
+		Bottom,
+		Left,
+		Right
+	}
+	public enum PlacementMode
+	{
+		MouseClick,
+		AlignedAbove,
+		AlignedBelow,
+		AlignedToTheLeft,
+		AlignedToTheRight,
+		Center,
+		Manual,
+		AlignedTop,
+		AlignedBottom,
+		AlignedLeft,
+		AlignedRight
+	}
+	public enum OpenMode
+	{
+		None,
+		LeftClick,
+		RightClick
+	}
+	public enum XamContextMenuCommand
+	{
+		Open,
+		Close
+	}
+	public class ItemClickedEventArgs : EventArgs
+	{
+		public XamMenuItem Item { get; internal set; }
+	}
+	public class OpenedEventArgs : EventArgs
+	{
+		private readonly XamContextMenu _contextMenu;
+
+		public Point MouseClickLocation { get; internal set; }
+
+		public Point ContextMenuLocation { get; internal set; }
+
+		internal OpenedEventArgs(XamContextMenu contextMenu, Point mouseLocation, Point menuLocation)
+		{
+			MouseClickLocation = mouseLocation;
+			ContextMenuLocation = menuLocation;
+			_contextMenu = contextMenu;
+		}
+
+		public List<T> GetClickedElements<T>() where T : UIElement
+		{
+			return _contextMenu.GetClickedElements<T>();
+		}
+	}
+	public class OpeningEventArgs : CancellableEventArgs
+	{
+		private readonly XamContextMenu _contextMenu;
+
+		public Point MouseClickLocation { get; internal set; }
+
+		internal OpeningEventArgs(XamContextMenu contextMenu, Point mouseLocation)
+		{
+			MouseClickLocation = mouseLocation;
+			_contextMenu = contextMenu;
+		}
+
+		public List<T> GetClickedElements<T>() where T : UIElement
+		{
+			return _contextMenu.GetClickedElements<T>();
+		}
+	}
+	[LicenseProvider(typeof(UltraLicenseProvider))]
+	[UltraLicense("XamContextMenu", UltraLicenseAttribute.WpfProductType.DV | UltraLicenseAttribute.WpfProductType.LOB)]
+	public class XamContextMenu : XamMenuBase, ICommandTarget
+	{
+		private const PlacementMode PlacementModeDefaultValue = PlacementMode.MouseClick;
+
+		private Popup _contextMenuPopup;
+
+		private Point _contextMenuLocation;
+
+		private Point _mouseClickLocation;
+
+		private bool _skipIsOpenChange;
+
+		private WeakReference _targetElement;
+
+		private bool _mustSetPosition;
+
+		private Control _focusedControl;
+
+		private ScaleTransform _zoomTransform;
+
+		private bool _preventPlacementChangeEvent;
+
+		private bool _skipPopupEvents;
+
+		private bool _popupInitiatedClose;
+
+		public static readonly DependencyProperty IsOpenProperty;
+
+		public static readonly DependencyProperty PlacementProperty;
+
+		public static readonly DependencyProperty PlacementTargetProperty;
+
+		private static readonly DependencyPropertyKey PlacementTargetResolvedPropertyKey;
+
+		public static readonly DependencyProperty PlacementTargetResolvedProperty;
+
+		public static readonly DependencyProperty PlacementRectangleProperty;
+
+		public static readonly DependencyProperty HorizontalOffsetProperty;
+
+		public static readonly DependencyProperty VerticalOffsetProperty;
+
+		public static readonly DependencyProperty ShouldRightClickBeHandledProperty;
+
+		public static readonly DependencyProperty PopupParentProperty;
+
+		public static readonly DependencyProperty AllowsTransparencyProperty;
+
+		private static DependencyProperty BindingHelperProperty;
+
+		protected override List<string> PropertiesToIgnore
+		{
+			get
+			{
+				List<string> propertiesToIgnore = base.PropertiesToIgnore;
+				propertiesToIgnore.Add("PlacementTarget");
+				return propertiesToIgnore;
+			}
+		}
+
+		public bool IsOpen
+		{
+			get
+			{
+				return (bool)GetValue(IsOpenProperty);
+			}
+			set
+			{
+				SetValue(IsOpenProperty, value);
+			}
+		}
+
+		public PlacementMode Placement
+		{
+			get
+			{
+				return (PlacementMode)GetValue(PlacementProperty);
+			}
+			set
+			{
+				SetValue(PlacementProperty, value);
+			}
+		}
+
+		public UIElement PlacementTarget
+		{
+			get
+			{
+				return (UIElement)GetValue(PlacementTargetProperty);
+			}
+			set
+			{
+				SetValue(PlacementTargetProperty, value);
+			}
+		}
+
+		public UIElement PlacementTargetResolved => (UIElement)GetValue(PlacementTargetResolvedProperty);
+
+		internal UIElement PlacementTargetResolvedInternal
+		{
+			get
+			{
+				object obj = PlacementTarget ?? (GetBindingValue(PlacementTargetProperty) as UIElement);
+				if (obj == null)
+				{
+					obj = ParentElement;
+				}
+				return (UIElement)obj;
+			}
+		}
+
+		public Rect PlacementRectangle
+		{
+			get
+			{
+				return (Rect)GetValue(PlacementRectangleProperty);
+			}
+			set
+			{
+				SetValue(PlacementRectangleProperty, value);
+			}
+		}
+
+		public double HorizontalOffset
+		{
+			get
+			{
+				return (double)GetValue(HorizontalOffsetProperty);
+			}
+			set
+			{
+				SetValue(HorizontalOffsetProperty, value);
+			}
+		}
+
+		public double VerticalOffset
+		{
+			get
+			{
+				return (double)GetValue(VerticalOffsetProperty);
+			}
+			set
+			{
+				SetValue(VerticalOffsetProperty, value);
+			}
+		}
+
+		public Point MouseClickLocation
+		{
+			get
+			{
+				return _mouseClickLocation;
+			}
+			internal set
+			{
+				_mouseClickLocation = value;
+			}
+		}
+
+		public Point ContextMenuLocation
+		{
+			get
+			{
+				if (IsOpen && ParentElement != null && _contextMenuPopup.IsOpen)
+				{
+					FrameworkElement frameworkElement = PlatformProxy.GetRootVisual(ParentElement) as FrameworkElement;
+					if (frameworkElement == null)
+					{
+						frameworkElement = PlatformProxy.GetRootParent(ParentElement) as FrameworkElement;
+					}
+					if (frameworkElement != null)
+					{
+						if (frameworkElement is Popup popup)
+						{
+							frameworkElement = popup.Child as FrameworkElement;
+						}
+						if (frameworkElement != null && !(frameworkElement is Popup))
+						{
+							Point point = new Point(0.0, 0.0);
+							Point result = PointToScreen(point);
+							point = frameworkElement.PointToScreen(point);
+							result.X -= point.X;
+							result.Y -= point.Y;
+							return result;
+						}
+					}
+				}
+				return _contextMenuLocation;
+			}
+			internal set
+			{
+				_contextMenuLocation = value;
+				_contextMenuPopup.HorizontalOffset = value.X;
+				_contextMenuPopup.VerticalOffset = value.Y;
+			}
+		}
+
+		public bool ShouldRightClickBeHandled
+		{
+			get
+			{
+				return (bool)GetValue(ShouldRightClickBeHandledProperty);
+			}
+			set
+			{
+				SetValue(ShouldRightClickBeHandledProperty, value);
+			}
+		}
+
+		public Panel PopupParent
+		{
+			get
+			{
+				return (Panel)GetValue(PopupParentProperty);
+			}
+			set
+			{
+				SetValue(PopupParentProperty, value);
+			}
+		}
+
+		public bool AllowsTransparency
+		{
+			get
+			{
+				return (bool)GetValue(AllowsTransparencyProperty);
+			}
+			set
+			{
+				SetValue(AllowsTransparencyProperty, value);
+			}
+		}
+
+		internal UIElement ParentElement
+		{
+			get
+			{
+				if (_targetElement != null && _targetElement.IsAlive)
+				{
+					return _targetElement.Target as UIElement;
+				}
+				return null;
+			}
+			set
+			{
+				_targetElement = new WeakReference(value);
+			}
+		}
+
+		internal bool IsCancelled { get; set; }
+
+		public event EventHandler<OpeningEventArgs> Opening;
+
+		public event EventHandler<OpenedEventArgs> Opened;
+
+		public event EventHandler<CancellableEventArgs> Closing;
+
+		public event EventHandler<EventArgs> Closed;
+
+		static XamContextMenu()
+		{
+			IsOpenProperty = DependencyProperty.Register("IsOpen", typeof(bool), typeof(XamContextMenu), new PropertyMetadata(false, OnIsOpenChanged));
+			PlacementProperty = DependencyProperty.Register("Placement", typeof(PlacementMode), typeof(XamContextMenu), new PropertyMetadata(PlacementMode.MouseClick, OnPlacementChanged));
+			PlacementTargetProperty = DependencyProperty.Register("PlacementTarget", typeof(UIElement), typeof(XamContextMenu), new PropertyMetadata(null, OnPlacementTargetChanged));
+			PlacementTargetResolvedPropertyKey = DependencyProperty.RegisterReadOnly("PlacementTargetResolved", typeof(UIElement), typeof(XamContextMenu), new PropertyMetadata(null, null, (DependencyObject d, object o) => ((XamContextMenu)d).PlacementTargetResolvedInternal));
+			PlacementTargetResolvedProperty = PlacementTargetResolvedPropertyKey.DependencyProperty;
+			PlacementRectangleProperty = DependencyProperty.Register("PlacementRectangle", typeof(Rect), typeof(XamContextMenu), new PropertyMetadata(Rect.Empty, OnPlacementRectangleChanged));
+			HorizontalOffsetProperty = DependencyProperty.Register("HorizontalOffset", typeof(double), typeof(XamContextMenu), new PropertyMetadata(0.0, OnHorizontalOffsetChanged));
+			VerticalOffsetProperty = DependencyProperty.Register("VerticalOffset", typeof(double), typeof(XamContextMenu), new PropertyMetadata(0.0, OnVerticalOffsetChanged));
+			ShouldRightClickBeHandledProperty = DependencyProperty.Register("ShouldRightClickBeHandled", typeof(bool), typeof(XamContextMenu), new PropertyMetadata(true, ShouldRightClickBeHandledChanged));
+			PopupParentProperty = DependencyProperty.Register("PopupParent", typeof(Panel), typeof(XamContextMenu), new PropertyMetadata(null, OnPopupParentChanged));
+			AllowsTransparencyProperty = DependencyProperty.Register("AllowsTransparency", typeof(bool), typeof(XamContextMenu), new PropertyMetadata(Popup.AllowsTransparencyProperty.DefaultMetadata.DefaultValue, OnAllowsTransparencyChanged));
+			BindingHelperProperty = DependencyProperty.RegisterAttached("BindingHelper", typeof(object), typeof(XamContextMenu), new PropertyMetadata(null));
+			Style style = new Style();
+			style.Seal();
+			FrameworkElement.FocusVisualStyleProperty.OverrideMetadata(typeof(XamContextMenu), new FrameworkPropertyMetadata(style));
+			ThemeManager.RegisterControl(typeof(XamContextMenu));
+		}
+
+		public XamContextMenu()
+		{
+			base.DefaultStyleKey = typeof(XamContextMenu);
+			_zoomTransform = new ScaleTransform
+			{
+				ScaleX = 1.0,
+				ScaleY = 1.0,
+				CenterX = 0.0,
+				CenterY = 0.0
+			};
+			_contextMenuPopup = new Popup
+			{
+				RenderTransform = _zoomTransform
+			};
+			_contextMenuPopup.AllowsTransparency = true;
+			_contextMenuPopup.StaysOpen = false;
+			_contextMenuPopup.Opened += Popup_Opened;
+			_contextMenuPopup.Closed += Popup_Closed;
+			_contextMenuPopup.LostMouseCapture += Popup_LostMouseCapture;
+			base.SizeChanged += XamContextMenu_SizeChanged;
+			CommandSourceManager.RegisterCommandTarget(this);
+			CommandSourceManager.NotifyCanExecuteChanged(typeof(OpenCommand));
+			CommandSourceManager.NotifyCanExecuteChanged(typeof(CloseCommand));
+			Utilities.ValidateLicense(typeof(XamContextMenu), this);
+		}
+
+		protected override AutomationPeer OnCreateAutomationPeer()
+		{
+			return new XamContextMenuAutomationPeer(this);
+		}
+
+		protected override void OnItemClicked(ItemClickedEventArgs e)
+		{
+			if (!e.Item.IsSubmenuOpen && !e.Item.StaysOpenOnClick)
+			{
+				IsOpen = false;
+			}
+			base.OnItemClicked(e);
+		}
+
+		protected override void OnLostFocus(RoutedEventArgs e)
+		{
+			base.OnLostFocus(e);
+			if (IsOpen)
+			{
+				FrameworkElement element = PlatformProxy.GetFocusedElement(this) as FrameworkElement;
+				if (!IsChild(element))
+				{
+					IsOpen = false;
+				}
+			}
+		}
+
+		internal override void CloseCurrentOpen()
+		{
+			base.CloseCurrentOpen();
+			IsOpen = false;
+			if (IsOpen)
+			{
+				_focusedControl = _previouslyFocusedControl;
+				_previouslyFocusedControl = null;
+			}
+		}
+
+		protected override void OnBeforeUnload()
+		{
+			foreach (object item in (IEnumerable)base.Items)
+			{
+				if (base.ItemContainerGenerator.ContainerFromItem(item) is XamMenuItem xamMenuItem)
+				{
+					xamMenuItem.UnloadSubmenu();
+				}
+			}
+		}
+
+		protected override void OnKeyDown(KeyEventArgs e)
+		{
+			if (e.Key == Key.Escape)
+			{
+				CloseCurrentOpen();
+				ClearPreviouslyFocusedControl();
+			}
+			base.OnKeyDown(e);
+		}
+
+		private static void OnIsOpenChanged(DependencyObject target, DependencyPropertyChangedEventArgs e)
+		{
+			if (target is XamContextMenu xamContextMenu)
+			{
+				xamContextMenu.RefreshPlacementTargetResolved();
+				if (!xamContextMenu.ResolveIsOpenChange(e))
+				{
+					return;
+				}
+				if ((bool)e.NewValue)
+				{
+					xamContextMenu.OnContextMenuOpened();
+				}
+				else
+				{
+					xamContextMenu.OnContextMenuClosed();
+				}
+			}
+			CommandSourceManager.NotifyCanExecuteChanged(typeof(OpenCommand));
+			CommandSourceManager.NotifyCanExecuteChanged(typeof(CloseCommand));
+		}
+
+		private static void OnPlacementChanged(DependencyObject target, DependencyPropertyChangedEventArgs e)
+		{
+			XamContextMenu xamContextMenu = target as XamContextMenu;
+			if (!xamContextMenu._preventPlacementChangeEvent && xamContextMenu != null && xamContextMenu.IsOpen)
+			{
+				xamContextMenu.SetPosition();
+			}
+		}
+
+		private static void OnPlacementTargetChanged(DependencyObject target, DependencyPropertyChangedEventArgs e)
+		{
+			if (target is XamContextMenu { IsOpen: not false } xamContextMenu)
+			{
+				xamContextMenu.SetPosition();
+			}
+		}
+
+		[Conditional("WPF")]
+		internal void RefreshPlacementTargetResolved()
+		{
+			InvalidateProperty(PlacementTargetResolvedProperty);
+		}
+
+		private static void OnPlacementRectangleChanged(DependencyObject target, DependencyPropertyChangedEventArgs e)
+		{
+			if (target is XamContextMenu { IsOpen: not false } xamContextMenu)
+			{
+				xamContextMenu.SetPosition();
+			}
+		}
+
+		private static void OnHorizontalOffsetChanged(DependencyObject target, DependencyPropertyChangedEventArgs e)
+		{
+			if (target is XamContextMenu xamContextMenu)
+			{
+				xamContextMenu.SetPosition();
+			}
+		}
+
+		private static void OnVerticalOffsetChanged(DependencyObject target, DependencyPropertyChangedEventArgs e)
+		{
+			if (target is XamContextMenu xamContextMenu)
+			{
+				xamContextMenu.SetPosition();
+			}
+		}
+
+		private static void ShouldRightClickBeHandledChanged(DependencyObject obj, DependencyPropertyChangedEventArgs e)
+		{
+		}
+
+		private static void OnPopupParentChanged(DependencyObject target, DependencyPropertyChangedEventArgs e)
+		{
+			XamContextMenu xamContextMenu = target as XamContextMenu;
+			Panel panel = e.OldValue as Panel;
+			Panel panel2 = e.NewValue as Panel;
+			panel?.Children.Remove(xamContextMenu._contextMenuPopup);
+			panel2?.Children.Add(xamContextMenu._contextMenuPopup);
+		}
+
+		private static void OnAllowsTransparencyChanged(DependencyObject target, DependencyPropertyChangedEventArgs e)
+		{
+			if (target is XamContextMenu { _contextMenuPopup: not null } xamContextMenu)
+			{
+				xamContextMenu._contextMenuPopup.AllowsTransparency = (bool)e.NewValue;
+			}
+		}
+
+		protected virtual void OnOpening(OpeningEventArgs args)
+		{
+			if (this.Opening != null)
+			{
+				this.Opening(this, args);
+			}
+		}
+
+		protected virtual void OnClosing(CancellableEventArgs args)
+		{
+			if (this.Closing != null)
+			{
+				this.Closing(this, args);
+			}
+		}
+
+		protected virtual void OnClosed(EventArgs args)
+		{
+			if (this.Closed != null)
+			{
+				this.Closed(this, args);
+			}
+		}
+
+		protected virtual void OnOpened(OpenedEventArgs args)
+		{
+			if (this.Opened != null)
+			{
+				this.Opened(this, args);
+			}
+		}
+
+		internal List<T> GetClickedElements<T>() where T : UIElement
+		{
+			List<T> list = new List<T>();
+			T val = ParentElement as T;
+			IEnumerable<UIElement> elementsFromPoint = PlatformProxy.GetElementsFromPoint(PlatformProxy.GetRootVisual(ParentElement).TranslatePoint(MouseClickLocation, ParentElement), ParentElement);
+			if (elementsFromPoint == null)
+			{
+				return null;
+			}
+			if (elementsFromPoint.GetEnumerator().MoveNext())
+			{
+				foreach (UIElement item2 in elementsFromPoint)
+				{
+					if (item2 is T item)
+					{
+						list.Insert(0, item);
+					}
+				}
+			}
+			return list;
+		}
+
+		internal void OpenInternal()
+		{
+			if (IsClickPlacement(Placement))
+			{
+				bool num = IsClickPlacement(Placement);
+				_preventPlacementChangeEvent = true;
+				PlacementMode placement = Placement;
+				if (num)
+				{
+					Placement = PlacementMode.Center;
+				}
+				IsOpen = true;
+				if (num)
+				{
+					Placement = placement;
+				}
+				_preventPlacementChangeEvent = false;
+			}
+			else
+			{
+				IsOpen = true;
+			}
+		}
+
+		private bool ResolveIsOpenChange(DependencyPropertyChangedEventArgs e)
+		{
+			if (_skipIsOpenChange)
+			{
+				_skipIsOpenChange = false;
+				return false;
+			}
+			OpeningEventArgs e2 = new OpeningEventArgs(this, MouseClickLocation);
+			if (ParentElement != null)
+			{
+				if ((bool)e.NewValue)
+				{
+					OnOpening(e2);
+				}
+				else
+				{
+					OnClosing(e2);
+					if (_popupInitiatedClose)
+					{
+						e2.Cancel = false;
+					}
+				}
+			}
+			else
+			{
+				e2.Cancel = IsOpen;
+			}
+			IsCancelled = e2.Cancel;
+			if (e2.Cancel)
+			{
+				_skipIsOpenChange = true;
+				SetValue(IsOpenProperty, e.OldValue);
+				return false;
+			}
+			if (!object.Equals(GetValue(IsOpenProperty), e.NewValue))
+			{
+				_skipIsOpenChange = true;
+				SetValue(IsOpenProperty, e.NewValue);
+			}
+			return true;
+		}
+
+		private void OnContextMenuOpened()
+		{
+			_previouslyFocusedControl = PlatformProxy.GetFocusedElement(this) as Control;
+			base.IsEnabled = true;
+			if (!_contextMenuPopup.IsOpen)
+			{
+				AddContextMenuToPopup();
+				Measure(new Size(double.MaxValue, double.MaxValue));
+				SetPopupPosition();
+				_contextMenuPopup.IsOpen = true;
+				ContextMenuService.OnContextMenuOpened(this);
+			}
+			foreach (object item in (IEnumerable)base.Items)
+			{
+				if (base.ItemContainerGenerator.ContainerFromItem(item) is XamMenuItem xamMenuItem)
+				{
+					xamMenuItem.IsSelected = false;
+					xamMenuItem.IsMouseOver = false;
+					xamMenuItem.IsHighlighted = false;
+					xamMenuItem.ChangeVisualState(useTransitions: false);
+				}
+			}
+		}
+
+		private void HookAllOpenPopups()
+		{
+		}
+
+		private void UnHookAllOpenPopups()
+		{
+		}
+
+		private void AddContextMenuToPopup()
+		{
+			RemoveContextMenuFromPopup();
+			Grid grid = new Grid();
+			_contextMenuPopup.Child = grid;
+			grid.Children.Add(this);
+			grid.UpdateLayout();
+		}
+
+		private void RemoveContextMenuFromPopup()
+		{
+			if (_contextMenuPopup.Child is Grid grid)
+			{
+				grid.Children.Clear();
+				_contextMenuPopup.Child = null;
+			}
+		}
+
+		private void OnContextMenuClosed()
+		{
+			bool flag = false;
+			flag = _popupInitiatedClose;
+			if (_contextMenuPopup.IsOpen || flag)
+			{
+				if (IsChild(PlatformProxy.GetFocusedElement(this) as FrameworkElement))
+				{
+					if (_previouslyFocusedControl == null)
+					{
+						_previouslyFocusedControl = _focusedControl;
+						_focusedControl = null;
+					}
+					ReturnFocus();
+				}
+				_previouslyFocusedControl = null;
+				foreach (object item in (IEnumerable)base.Items)
+				{
+					if (base.ItemContainerGenerator.ContainerFromItem(item) is XamMenuItem { IsSubmenuOpen: not false } xamMenuItem)
+					{
+						xamMenuItem.CloseSubmenu(forceCloseImmediately: true);
+					}
+				}
+				_contextMenuPopup.IsOpen = false;
+				RemoveContextMenuFromPopup();
+				_contextMenuPopup.Child = null;
+				ContextMenuService.OnContextMenuClosed(this);
+			}
+			OnClosed(EventArgs.Empty);
+		}
+
+		private bool IsChild(FrameworkElement element)
+		{
+			return XamMenuBase.IsObjectFromMenu(this, element);
+		}
+
+		private bool IsChildOfParentElement(DependencyObject element)
+		{
+			while (element != null)
+			{
+				if (ParentElement == element)
+				{
+					return true;
+				}
+				element = XamMenuBase.GetParent(element);
+			}
+			return false;
+		}
+
+		private double GetActualWidth()
+		{
+			if (!(base.ActualWidth > 0.0))
+			{
+				return base.DesiredSize.Width;
+			}
+			return base.ActualWidth;
+		}
+
+		private double GetActualHeight()
+		{
+			if (!(base.ActualHeight > 0.0))
+			{
+				return base.DesiredSize.Height;
+			}
+			return base.ActualHeight;
+		}
+
+		private void SetPopupPosition()
+		{
+			double zoomFactor = PlatformProxy.GetZoomFactor();
+			Size size = PlatformProxy.ResolveContainerSize();
+			double width = size.Width;
+			double height = size.Height;
+			int num;
+			if (zoomFactor > 0.0)
+			{
+				num = ((!PlatformProxy.IsVersionSupported("4.0")) ? 1 : 0);
+				if (num != 0)
+				{
+					width /= zoomFactor;
+					height /= zoomFactor;
+					goto IL_0059;
+				}
+			}
+			else
+			{
+				num = 0;
+			}
+			if (zoomFactor != 1.0)
+			{
+				width /= zoomFactor;
+				height /= zoomFactor;
+			}
+			goto IL_0059;
+			IL_0059:
+			FrameworkElement frameworkElement = PlatformProxy.GetRootVisual(this) as FrameworkElement;
+			if (frameworkElement == null)
+			{
+				frameworkElement = PlatformProxy.GetRootVisual(ParentElement) as FrameworkElement;
+			}
+			Rect targetRect = GetTargetRect();
+			Point referencePoint = AlignToRect(targetRect, frameworkElement);
+			FrameworkElement frameworkElement2 = ParentElement as FrameworkElement;
+			if (frameworkElement2 != null && Placement == PlacementMode.MouseClick && FrameworkElement.GetFlowDirection(frameworkElement2) == FlowDirection.RightToLeft)
+			{
+				referencePoint.X = frameworkElement2.ActualWidth - referencePoint.X;
+			}
+			AdjustForScaling(frameworkElement2, Placement, ref referencePoint);
+			ContextMenuLocation = referencePoint;
+			_skipPopupEvents = _contextMenuPopup.IsOpen && !base.IsMouseCaptured;
+			if (_skipPopupEvents)
+			{
+				_contextMenuPopup.IsOpen = false;
+				_contextMenuPopup.IsOpen = true;
+				_skipPopupEvents = false;
+			}
+			_mustSetPosition = false;
+			if (num != 0)
+			{
+				ScaleTransform zoomTransform = _zoomTransform;
+				double scaleX = (_zoomTransform.ScaleY = zoomFactor);
+				zoomTransform.ScaleX = scaleX;
+			}
+		}
+
+		private void SetPosition()
+		{
+			if (IsOpen)
+			{
+				SetPopupPosition();
+			}
+		}
+
+		private Point AlignToRect(Rect rect, FrameworkElement root)
+		{
+			double num = HorizontalOffset;
+			double num2 = VerticalOffset;
+			double actualWidth = GetActualWidth();
+			double actualHeight = GetActualHeight();
+			if (!rect.IsEmpty)
+			{
+				bool flag = root != null && root.FlowDirection == FlowDirection.RightToLeft;
+				_ = base.FlowDirection;
+				switch (Placement)
+				{
+				case PlacementMode.AlignedBelow:
+					num = ((!flag) ? (num + rect.Left) : (num + (rect.Right - actualWidth)));
+					num2 += rect.Bottom;
+					break;
+				case PlacementMode.Center:
+					num += (rect.Left + rect.Right - actualWidth) / 2.0;
+					num2 += (rect.Top + rect.Bottom - actualHeight) / 2.0;
+					break;
+				case PlacementMode.AlignedToTheRight:
+					num = ((!flag) ? (num + rect.Right) : (num + (rect.Left - actualWidth)));
+					num2 += rect.Top;
+					break;
+				case PlacementMode.AlignedToTheLeft:
+					num = ((!flag) ? (num + (rect.Left - actualWidth)) : (num + rect.Right));
+					num2 += rect.Top;
+					break;
+				case PlacementMode.AlignedAbove:
+					num = ((!flag) ? (num + rect.Left) : (rect.Right - actualWidth));
+					num2 += rect.Top - actualHeight;
+					break;
+				case PlacementMode.AlignedTop:
+					num = ((!flag) ? (num + rect.Left) : (rect.Right - actualWidth));
+					num2 += rect.Top;
+					break;
+				case PlacementMode.AlignedBottom:
+					num = ((!flag) ? (num + rect.Left) : (rect.Right - actualWidth));
+					num2 += rect.Bottom - actualHeight;
+					break;
+				case PlacementMode.AlignedLeft:
+					num = ((!flag) ? (num + rect.Left) : (num + (rect.Right - actualWidth)));
+					num2 += rect.Top;
+					break;
+				case PlacementMode.AlignedRight:
+					num = ((!flag) ? (num + (rect.Right - actualWidth)) : (num + rect.Left));
+					num2 += rect.Top;
+					break;
+				default:
+					num += rect.Left;
+					num2 += rect.Top;
+					break;
+				}
+				if (SystemParameters.IsMenuDropRightAligned && Placement != PlacementMode.MouseClick)
+				{
+					num += actualWidth;
+				}
+			}
+			return new Point(num, num2);
+		}
+
+		private Point AlignToScreen(Rect menu, Rect screen, Rect target, FrameworkElement root)
+		{
+			if (base.FlowDirection == FlowDirection.LeftToRight)
+			{
+				if (menu.Width >= screen.Width)
+				{
+					menu.X = screen.X;
+				}
+				else
+				{
+					if (menu.Left < screen.Left)
+					{
+						menu.X = screen.X;
+					}
+					if (menu.Right > screen.Right)
+					{
+						if (IsClickPlacement(Placement))
+						{
+							menu.X -= menu.Width - target.Width;
+						}
+						else
+						{
+							menu.X -= menu.Right - screen.Right;
+						}
+					}
+					if (menu.X < screen.X)
+					{
+						menu.X = screen.X;
+					}
+					if (menu.Right > screen.Right)
+					{
+						menu.X -= menu.Right - screen.Right;
+					}
+				}
+			}
+			else if (menu.Width >= screen.Width)
+			{
+				menu.X = screen.Right;
+			}
+			else if (menu.Left < screen.Left)
+			{
+				menu.X = screen.Right;
+			}
+			else if (menu.Left < screen.Left)
+			{
+				if (IsClickPlacement(Placement))
+				{
+					menu.X -= menu.Width - target.Width;
+				}
+				else
+				{
+					menu.X -= screen.Left - menu.Left;
+				}
+			}
+			else if (menu.X - menu.Width < screen.Left)
+			{
+				menu.X += menu.Width - menu.X;
+			}
+			if (menu.Height >= screen.Height)
+			{
+				menu.Y = screen.Y;
+			}
+			else
+			{
+				if (menu.Top < screen.Top)
+				{
+					menu.Y = screen.Y;
+				}
+				if (menu.Bottom > screen.Bottom)
+				{
+					if (IsClickPlacement(Placement))
+					{
+						menu.Y -= menu.Height - target.Height;
+					}
+					else
+					{
+						menu.Y -= menu.Bottom - screen.Bottom;
+					}
+				}
+				if (menu.Top < screen.Top)
+				{
+					menu.Y = screen.Y;
+				}
+				if (menu.Bottom > screen.Bottom)
+				{
+					menu.Y -= menu.Bottom - screen.Bottom;
+				}
+			}
+			return new Point(menu.Left, menu.Top);
+		}
+
+		private bool IsClickPlacement(PlacementMode placementMode)
+		{
+			return Placement == PlacementMode.MouseClick;
+		}
+
+		private Rect GetTargetRect()
+		{
+			Rect result = Rect.Empty;
+			UIElement placementTargetResolvedInternal = PlacementTargetResolvedInternal;
+			if (placementTargetResolvedInternal != null)
+			{
+				result = ContextMenuService.GetBounds(placementTargetResolvedInternal);
+				if (!PlacementRectangle.IsEmpty)
+				{
+					result.X += PlacementRectangle.Left;
+					result.Y += PlacementRectangle.Top;
+					result.Width = PlacementRectangle.Width;
+					result.Height = PlacementRectangle.Height;
+				}
+			}
+			if (Placement == PlacementMode.MouseClick)
+			{
+				result.X = MouseClickLocation.X - result.X;
+				result.Y = MouseClickLocation.Y - result.Y;
+			}
+			else
+			{
+				result.X = 0.0;
+				result.Y = 0.0;
+			}
+			_contextMenuPopup.PlacementTarget = placementTargetResolvedInternal;
+			_contextMenuPopup.Placement = System.Windows.Controls.Primitives.PlacementMode.Relative;
+			_contextMenuPopup.PlacementRectangle = PlacementRectangle;
+			RefreshPlacementTargetResolved();
+			return result;
+		}
+
+		private object GetBindingValue(DependencyProperty property)
+		{
+			BindingExpression bindingExpression = GetBindingExpression(property);
+			FrameworkElement frameworkElement = ParentElement as FrameworkElement;
+			if (bindingExpression != null && frameworkElement != null)
+			{
+				Binding parentBinding = bindingExpression.ParentBinding;
+				frameworkElement.SetBinding(BindingHelperProperty, parentBinding);
+				return frameworkElement.GetValue(BindingHelperProperty);
+			}
+			return null;
+		}
+
+		private void HandlePopupInitiatedClose()
+		{
+			if (!_skipPopupEvents)
+			{
+				if (IsOpen)
+				{
+					_popupInitiatedClose = true;
+					CloseCurrentOpen();
+					_popupInitiatedClose = false;
+				}
+				_mustSetPosition = false;
+			}
+		}
+
+		private bool CaptureIsStillInContextMenu()
+		{
+			DependencyObject dependencyObject = Mouse.Captured as DependencyObject;
+			if (this == dependencyObject)
+			{
+				return true;
+			}
+			DependencyObject ancestorFromType = Utilities.GetAncestorFromType(dependencyObject, typeof(XamContextMenu), allowSubclassOfType: true);
+			return this == ancestorFromType;
+		}
+
+		private static ScaleTransform GetScaleTransform(FrameworkElement pt)
+		{
+			ScaleTransform scaleTransform = new ScaleTransform();
+			Transform renderTransform = pt.RenderTransform;
+			if (renderTransform == null)
+			{
+				return scaleTransform;
+			}
+			if (renderTransform is TransformGroup transformGroup)
+			{
+				{
+					foreach (ScaleTransform item in transformGroup.Children.OfType<ScaleTransform>())
+					{
+						scaleTransform.ScaleY *= item.ScaleY;
+						scaleTransform.ScaleX *= item.ScaleX;
+					}
+					return scaleTransform;
+				}
+			}
+			if (renderTransform is ScaleTransform scaleTransform2)
+			{
+				scaleTransform.ScaleX = scaleTransform2.ScaleX;
+				scaleTransform.ScaleY = scaleTransform2.ScaleY;
+				return scaleTransform;
+			}
+			return scaleTransform;
+		}
+
+		private static void AdjustForScaling(FrameworkElement parent, PlacementMode placement, ref Point referencePoint)
+		{
+			if (placement == PlacementMode.AlignedAbove || placement == PlacementMode.AlignedToTheRight)
+			{
+				ScaleTransform scaleTransform = GetScaleTransform(parent);
+				if (placement == PlacementMode.AlignedAbove)
+				{
+					referencePoint.Y /= scaleTransform.ScaleY;
+				}
+				else
+				{
+					referencePoint.X /= scaleTransform.ScaleX;
+				}
+			}
+		}
+
+		private void Popup_Closed(object sender, EventArgs e)
+		{
+			HandlePopupInitiatedClose();
+		}
+
+		private void Popup_LostMouseCapture(object sender, MouseEventArgs e)
+		{
+			if (!CaptureIsStillInContextMenu())
+			{
+				HandlePopupInitiatedClose();
+			}
+		}
+
+		private void Popup_Opened(object sender, EventArgs e)
+		{
+			if (_skipPopupEvents)
+			{
+				return;
+			}
+			if (GetActualHeight() < 1.0)
+			{
+				Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+				_mustSetPosition = true;
+			}
+			SetPopupPosition();
+			OnOpened(new OpenedEventArgs(this, MouseClickLocation, ContextMenuLocation));
+			if (base.Items.Count > 0 && base.ItemContainerGenerator.ContainerFromIndex(0) is XamMenuItem xamMenuItem)
+			{
+				if (xamMenuItem.IsEnabled)
+				{
+					xamMenuItem.Focus();
+				}
+				else
+				{
+					xamMenuItem.FindSiblingItem(isForward: true, recurse: false)?.Focus();
+				}
+			}
+		}
+
+		private void XamContextMenu_SizeChanged(object sender, SizeChangedEventArgs e)
+		{
+			if (_mustSetPosition && _contextMenuPopup.IsOpen)
+			{
+				SetPopupPosition();
+			}
+		}
+
+		protected virtual object GetParameter(CommandSource source)
+		{
+			if (source.Command is XamContextMenuCommandBase)
+			{
+				return this;
+			}
+			return null;
+		}
+
+		protected virtual bool SupportsCommand(ICommand command)
+		{
+			return command is XamContextMenuCommandBase;
+		}
+
+		bool ICommandTarget.SupportsCommand(ICommand command)
+		{
+			return SupportsCommand(command);
+		}
+
+		object ICommandTarget.GetParameter(CommandSource source)
+		{
+			return GetParameter(source);
+		}
+	}
+	public class XamContextMenuCommandSource : CommandSource
+	{
+		public XamContextMenuCommand CommandType { get; set; }
+
+		protected override ICommand ResolveCommand()
+		{
+			return CommandType switch
+			{
+				XamContextMenuCommand.Open => new OpenCommand(), 
+				XamContextMenuCommand.Close => new CloseCommand(), 
+				_ => null, 
+			};
+		}
+	}
+	[StyleTypedProperty(Property = "ItemContainerStyle", StyleTargetType = typeof(XamMenuItem))]
+	[LicenseProvider(typeof(UltraLicenseProvider))]
+	[UltraLicense("XamMenu", UltraLicenseAttribute.WpfProductType.DV | UltraLicenseAttribute.WpfProductType.LOB)]
+	public class XamMenu : XamMenuBase
+	{
+		private Window _window;
+
+		private bool _windowEventsHooked;
+
+		private DispatcherTimer _webBehaviorTimer;
+
+		private bool _isMenuOrientationNotSet;
+
+		public static readonly DependencyProperty MenuOrientationProperty;
+
+		public static readonly DependencyProperty ExpandOnHoverProperty;
+
+		public static readonly DependencyProperty NavigationElementProperty;
+
+		public Orientation MenuOrientation
+		{
+			get
+			{
+				return (Orientation)GetValue(MenuOrientationProperty);
+			}
+			set
+			{
+				SetValue(MenuOrientationProperty, value);
+			}
+		}
+
+		public bool ExpandOnHover
+		{
+			get
+			{
+				return (bool)GetValue(ExpandOnHoverProperty);
+			}
+			set
+			{
+				SetValue(ExpandOnHoverProperty, value);
+			}
+		}
+
+		public Control NavigationElement
+		{
+			get
+			{
+				return (Control)GetValue(NavigationElementProperty);
+			}
+			set
+			{
+				SetValue(NavigationElementProperty, value);
+			}
+		}
+
+		static XamMenu()
+		{
+			MenuOrientationProperty = DependencyProperty.Register("MenuOrientation", typeof(Orientation), typeof(XamMenu), new PropertyMetadata(Orientation.Horizontal, OnMenuOrientationPropertyChanged));
+			ExpandOnHoverProperty = DependencyProperty.Register("ExpandOnHover", typeof(bool), typeof(XamMenu), new PropertyMetadata(false));
+			NavigationElementProperty = DependencyProperty.Register("NavigationElement", typeof(Control), typeof(XamMenu), null);
+			Style style = new Style();
+			style.Seal();
+			FrameworkElement.FocusVisualStyleProperty.OverrideMetadata(typeof(XamMenu), new FrameworkPropertyMetadata(style));
+			ThemeManager.RegisterControl(typeof(XamMenu));
+		}
+
+		public XamMenu()
+		{
+			base.DefaultStyleKey = typeof(XamMenu);
+			_webBehaviorTimer = new DispatcherTimer();
+			_webBehaviorTimer.Tick += delegate
+			{
+				CloseCurrentOpen();
+				ReturnFocus();
+				ClearPreviouslyFocusedControl();
+			};
+			Utilities.ValidateLicense(typeof(XamMenu), this);
+			base.Focusable = false;
+			base.IsTabStop = false;
+		}
+
+		protected override Size ArrangeOverride(Size finalSize)
+		{
+			if (_isMenuOrientationNotSet && base.HeaderedItemContainerGenerator.ItemsHost is StackPanel stackPanel && stackPanel.Orientation != MenuOrientation)
+			{
+				stackPanel.Orientation = MenuOrientation;
+				_isMenuOrientationNotSet = false;
+			}
+			return base.ArrangeOverride(finalSize);
+		}
+
+		protected override void OnBeforeUnload()
+		{
+			if (base.CurrentOpen != null)
+			{
+				base.CurrentOpen.UnloadSubmenu();
+				base.CurrentOpen = null;
+			}
+		}
+
+		protected override AutomationPeer OnCreateAutomationPeer()
+		{
+			return new XamMenuAutomationPeer(this);
+		}
+
+		protected internal override void OnCurrentOpenItemChanged(XamMenuItem oldItem, XamMenuItem newItem)
+		{
+			if (oldItem == null && newItem != null)
+			{
+				if (XamMenuBase.GetRoot(newItem) is UIElement uIElement && uIElement != PlatformProxy.GetRootVisual(this))
+				{
+					uIElement.AddHandler(UIElement.MouseLeftButtonDownEvent, new MouseButtonEventHandler(base.RootVisual_MouseLeftButtonDown), handledEventsToo: true);
+				}
+				EnableCloseUpTriggerTrackers();
+			}
+		}
+
+		protected override void OnLostFocus(RoutedEventArgs e)
+		{
+			object focusedElement = PlatformProxy.GetFocusedElement(this);
+			if (XamMenuBase.IsObjectFromMenu(this, focusedElement))
+			{
+				if (focusedElement is XamMenuItem previouslyFocusedControl)
+				{
+					_previouslyFocusedControl = previouslyFocusedControl;
+				}
+			}
+			else
+			{
+				_previouslyFocusedControl = null;
+			}
+		}
+
+		public override void OnApplyTemplate()
+		{
+			base.OnApplyTemplate();
+			_isMenuOrientationNotSet = true;
+		}
+
+		private static void OnMenuOrientationPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			if (d is XamMenu xamMenu)
+			{
+				if (xamMenu.HeaderedItemContainerGenerator.ItemsHost is StackPanel stackPanel)
+				{
+					stackPanel.Orientation = xamMenu.MenuOrientation;
+				}
+				else
+				{
+					xamMenu._isMenuOrientationNotSet = true;
+				}
+			}
+		}
+
+		internal override void CloseCurrentOpen()
+		{
+			base.CloseCurrentOpen();
+			if (_webBehaviorTimer != null)
+			{
+				_webBehaviorTimer.Stop();
+			}
+			if (XamMenuBase.GetRoot(this) is UIElement uIElement && uIElement != PlatformProxy.GetRootVisual(this))
+			{
+				uIElement.RemoveHandler(UIElement.MouseLeftButtonDownEvent, new MouseButtonEventHandler(base.RootVisual_MouseLeftButtonDown));
+				DisableCloseUpTriggerTrackers();
+			}
+		}
+
+		internal void StartTimer()
+		{
+			_webBehaviorTimer.Interval = new TimeSpan(0, 0, 0, 0, 100);
+			_webBehaviorTimer.Start();
+		}
+
+		internal void StopTimer()
+		{
+			_webBehaviorTimer.Stop();
+		}
+
+		private void HandleAccessKeyPressed(object sender, AccessKeyPressedEventArgs e)
+		{
+			if (e.Scope == null && e.Target == null && !string.IsNullOrEmpty(e.Key))
+			{
+				e.Target = this;
+				e.Handled = true;
+			}
+		}
+
+		private void EnableCloseUpTriggerTrackers()
+		{
+			if (!_windowEventsHooked)
+			{
+				_window = Window.GetWindow(this);
+				if (_window != null)
+				{
+					_window.Deactivated += OnWindowStateChanged;
+					_windowEventsHooked = true;
+				}
+			}
+		}
+
+		private void OnWindowStateChanged(object sender, EventArgs e)
+		{
+			if (base.CurrentOpen != null)
+			{
+				CloseCurrentOpen();
+			}
+		}
+
+		private void DisableCloseUpTriggerTrackers()
+		{
+			if (_windowEventsHooked && _window != null && _window != null)
+			{
+				_window.Deactivated -= OnWindowStateChanged;
+				_windowEventsHooked = false;
+			}
+		}
+	}
+	public abstract class XamMenuBase : XamHeaderedItemsControl
+	{
+		private delegate void EventDelegate(ItemClickedEventArgs e);
+
+		internal Control _previouslyFocusedControl;
+
+		internal WeakReference _lastMouseArgs;
+
+		internal static readonly DependencyProperty CurrentOpenProperty;
+
+		internal static readonly DependencyProperty CurrentSelectedProperty;
+
+		internal XamMenuItem CurrentOpen
+		{
+			get
+			{
+				return (XamMenuItem)GetValue(CurrentOpenProperty);
+			}
+			set
+			{
+				SetValue(CurrentOpenProperty, value);
+			}
+		}
+
+		internal XamMenuItem CurrentSelected
+		{
+			get
+			{
+				return (XamMenuItem)GetValue(CurrentSelectedProperty);
+			}
+			set
+			{
+				SetValue(CurrentSelectedProperty, value);
+			}
+		}
+
+		public event EventHandler<ItemClickedEventArgs> ItemClicked;
+
+		static XamMenuBase()
+		{
+			CurrentOpenProperty = DependencyProperty.Register("CurrentOpen", typeof(XamMenuItem), typeof(XamMenuBase), new PropertyMetadata(null, CurrentOpenChanged));
+			CurrentSelectedProperty = DependencyProperty.Register("CurrentSelected", typeof(XamMenuItem), typeof(XamMenuBase), new PropertyMetadata(null, CurrentSelectedChanged));
+			FocusManager.IsFocusScopeProperty.OverrideMetadata(typeof(XamMenuBase), new FrameworkPropertyMetadata(KnownBoxes.TrueBox));
+		}
+
+		protected XamMenuBase()
+		{
+			AddHandler(Mouse.PreviewMouseDownOutsideCapturedElementEvent, new MouseButtonEventHandler(MouseDownOutside), handledEventsToo: true);
+			base.Unloaded += XamWebMenuBase_Unloaded;
+		}
+
+		protected override DependencyObject GetContainerForItemOverride()
+		{
+			XamMenuItem xamMenuItem = null;
+			if (base.DefaultItemsContainer != null)
+			{
+				xamMenuItem = base.DefaultItemsContainer.LoadContent() as XamMenuItem;
+			}
+			if (xamMenuItem == null)
+			{
+				return new XamMenuItem();
+			}
+			return xamMenuItem;
+		}
+
+		protected override bool IsItemItsOwnContainerOverride(object item)
+		{
+			if (!(item is XamMenuItem))
+			{
+				return item is XamMenuSeparator;
+			}
+			return true;
+		}
+
+		protected override void PrepareContainerForItemOverride(DependencyObject element, object item)
+		{
+			if (!(element is XamMenuSeparator))
+			{
+				if (element is XamMenuItem xamMenuItem)
+				{
+					xamMenuItem.ParentItemsControl = this;
+				}
+				base.PrepareContainerForItemOverride(element, item);
+			}
+		}
+
+		protected override void ClearContainerForItemOverride(DependencyObject element, object item)
+		{
+			if (element is XamMenuItem xamMenuItem)
+			{
+				xamMenuItem.ParentItemsControl = null;
+			}
+			base.ClearContainerForItemOverride(element, item);
+		}
+
+		protected override void OnMouseDown(MouseButtonEventArgs e)
+		{
+			base.OnMouseDown(e);
+			for (DependencyObject dependencyObject = e.OriginalSource as DependencyObject; dependencyObject != null; dependencyObject = GetParent(dependencyObject))
+			{
+				if (dependencyObject is XamMenuItem || dependencyObject == this)
+				{
+					return;
+				}
+			}
+			CloseCurrentOpen();
+		}
+
+		private static void CurrentOpenChanged(DependencyObject obj, DependencyPropertyChangedEventArgs e)
+		{
+			XamMenuBase xamMenuBase = obj as XamMenuBase;
+			XamMenuItem xamMenuItem = e.OldValue as XamMenuItem;
+			XamMenuItem xamMenuItem2 = e.NewValue as XamMenuItem;
+			if (xamMenuItem != null && xamMenuItem.IsSubmenuOpen)
+			{
+				xamMenuItem.ManipulateSubmenu(isOpen: false, isImmediately: false);
+				xamMenuItem.IsHighlighted = false;
+				xamMenuItem2?.ManipulateSubmenu(isOpen: true, isImmediately: false);
+			}
+			if (xamMenuItem == null && xamMenuItem2 != null)
+			{
+				Mouse.Capture(xamMenuBase, CaptureMode.SubTree);
+			}
+			else if (xamMenuItem != null && xamMenuItem2 == null)
+			{
+				Mouse.Capture(null);
+			}
+			xamMenuBase.OnCurrentOpenItemChanged(xamMenuItem, xamMenuItem2);
+		}
+
+		protected internal virtual void OnCurrentOpenItemChanged(XamMenuItem oldItem, XamMenuItem newItem)
+		{
+		}
+
+		private static void CurrentSelectedChanged(DependencyObject obj, DependencyPropertyChangedEventArgs e)
+		{
+			if (e.OldValue is XamMenuItem xamMenuItem)
+			{
+				xamMenuItem.IsSelected = false;
+			}
+		}
+
+		internal static DependencyObject GetRoot(DependencyObject element)
+		{
+			while (element != null)
+			{
+				DependencyObject parent = GetParent(element);
+				if (parent == null)
+				{
+					break;
+				}
+				element = parent;
+			}
+			return element;
+		}
+
+		internal void RaiseItemClickedEvent(XamMenuItem item)
+		{
+			ItemClickedEventArgs e = new ItemClickedEventArgs();
+			e.Item = item;
+			OnItemClicked(e);
+		}
+
+		internal static ItemContainerGenerator GetGenerator(ItemsControl control)
+		{
+			if (control is XamMenuItem xamMenuItem)
+			{
+				return xamMenuItem.ItemContainerGenerator;
+			}
+			if (control is XamMenuBase xamMenuBase)
+			{
+				return xamMenuBase.ItemContainerGenerator;
+			}
+			return null;
+		}
+
+		internal virtual void CloseCurrentOpen()
+		{
+			if (CurrentOpen != null)
+			{
+				CurrentOpen.ManipulateSubmenu(isOpen: false, isImmediately: true);
+				CurrentOpen = null;
+				if (CurrentSelected != null)
+				{
+					CurrentSelected.IsSelected = false;
+					CurrentSelected.ChangeVisualState(useTransitions: false);
+					CurrentSelected = null;
+				}
+			}
+		}
+
+		internal void ClearPreviouslyFocusedControl()
+		{
+			_previouslyFocusedControl = null;
+		}
+
+		internal void ReturnFocus()
+		{
+			if (_previouslyFocusedControl != null && _previouslyFocusedControl.IsEnabled && _previouslyFocusedControl.Visibility == Visibility.Visible)
+			{
+				_previouslyFocusedControl.Focus();
+				ClearPreviouslyFocusedControl();
+			}
+		}
+
+		internal void RootVisual_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+		{
+			object weakReferenceTargetSafe = CoreUtilities.GetWeakReferenceTargetSafe(_lastMouseArgs);
+			if (e == weakReferenceTargetSafe)
+			{
+				return;
+			}
+			if (e.OriginalSource is DependencyObject dependencyObject)
+			{
+				if (IsAncestorOf(dependencyObject))
+				{
+					return;
+				}
+				UIElement rootVisual = PlatformProxy.GetRootVisual(dependencyObject);
+				if (rootVisual != null && PlatformProxy.GetParent(rootVisual) is Popup descendant && IsAncestorOf(descendant))
+				{
+					return;
+				}
+			}
+			CloseCurrentOpen();
+			ClearPreviouslyFocusedControl();
+		}
+
+		protected virtual void OnItemClicked(ItemClickedEventArgs e)
+		{
+			if (this.ItemClicked != null)
+			{
+				this.ItemClicked(this, e);
+			}
+		}
+
+		protected virtual void OnBeforeUnload()
+		{
+		}
+
+		internal static bool IsObjectFromMenu(DependencyObject root, object originalSource)
+		{
+			for (DependencyObject dependencyObject = originalSource as DependencyObject; dependencyObject != null; dependencyObject = GetParent(dependencyObject))
+			{
+				if (dependencyObject == root)
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
+		internal static DependencyObject GetParent(DependencyObject element)
+		{
+			DependencyObject dependencyObject = null;
+			if (element is Visual || element is Visual3D)
+			{
+				dependencyObject = VisualTreeHelper.GetParent(element);
+			}
+			if (dependencyObject == null)
+			{
+				if (element is FrameworkElement frameworkElement)
+				{
+					dependencyObject = frameworkElement.Parent;
+				}
+				if (element is FrameworkContentElement frameworkContentElement)
+				{
+					dependencyObject = frameworkContentElement.Parent;
+				}
+			}
+			return dependencyObject;
+		}
+
+		private void MouseDownOutside(object sender, MouseButtonEventArgs e)
+		{
+			CloseCurrentOpen();
+			_previouslyFocusedControl = null;
+		}
+
+		public static void RegisterResources(string name, Assembly assembly)
+		{
+			SR.AddResource(name, assembly);
+		}
+
+		public static void UnregisterResources(string name)
+		{
+			SR.RemoveResource(name);
+		}
+
+		private void XamWebMenuBase_Unloaded(object sender, RoutedEventArgs e)
+		{
+			OnBeforeUnload();
+		}
+	}
+	[TemplatePart(Name = "Popup", Type = typeof(Popup))]
+	[TemplatePart(Name = "ScrollViewer", Type = typeof(ScrollViewer))]
+	[TemplateVisualState(GroupName = "CommonStates", Name = "Normal")]
+	[TemplateVisualState(GroupName = "CommonStates", Name = "MouseOver")]
+	[TemplateVisualState(GroupName = "CommonStates", Name = "Highlighted")]
+	[TemplateVisualState(GroupName = "CommonStates", Name = "Disabled")]
+	[TemplateVisualState(GroupName = "SubmenuState", Name = "SubmenuOpen")]
+	[TemplateVisualState(GroupName = "SubmenuState", Name = "SubmenuOpenImmediately")]
+	[TemplateVisualState(GroupName = "SubmenuState", Name = "SubmenuClose")]
+	[TemplateVisualState(GroupName = "SubmenuState", Name = "SubmenuCloseImmediately")]
+	[TemplateVisualState(GroupName = "MenuItemRole", Name = "SubmenuHeader")]
+	[TemplateVisualState(GroupName = "MenuItemRole", Name = "SubmenuItem")]
+	[TemplateVisualState(GroupName = "MenuItemRole", Name = "TopLevelHeader")]
+	[TemplateVisualState(GroupName = "MenuItemRole", Name = "TopLevelHeaderWithIcon")]
+	[TemplateVisualState(GroupName = "MenuItemRole", Name = "TopLevelItem")]
+	[TemplateVisualState(GroupName = "MenuItemRole", Name = "TopLevelItemWithIcon")]
+	public class XamMenuItem : XamHeaderedItemsControl, INotifyPropertyChanged, ICommandSource, IProvideParent
+	{
+		private const string CommonStatesGroupName = "CommonStates";
+
+		private const string MouseOver = "MouseOver";
+
+		private const string Normal = "Normal";
+
+		private const string Highlighted = "Highlighted";
+
+		private const string Disabled = "Disabled";
+
+		private const string SubmenuStateGroupName = "SubmenuState";
+
+		private const string SubmenuOpen = "SubmenuOpen";
+
+		private const string SubmenuOpenImmediately = "SubmenuOpenImmediately";
+
+		private const string SubmenuClose = "SubmenuClose";
+
+		private const string SubmenuCloseImmediately = "SubmenuCloseImmediately";
+
+		private const string MenuItemRoleGroupName = "MenuItemRole";
+
+		private const string TopLevelHeader = "TopLevelHeader";
+
+		private const string TopLevelHeaderWithIcon = "TopLevelHeaderWithIcon";
+
+		private const string SubmenuHeader = "SubmenuHeader";
+
+		private const string SubmenuItem = "SubmenuItem";
+
+		private const string TopLevelItem = "TopLevelItem";
+
+		private const string TopLevelItemWithIcon = "TopLevelItemWithIcon";
+
+		private const string Popup = "Popup";
+
+		private const string ScrollViewer = "ScrollViewer";
+
+		private ItemsControl _parentItemsControl;
+
+		private Popup _dropDownPopup;
+
+		private ScrollViewer _scrollViewer;
+
+		private bool _isImmediately = true;
+
+		private bool _isMenuOrientationNotSet;
+
+		private const double MAX_POPUPHEIGHT_FROM_ROOTHEIGHT = 0.97;
+
+		private bool _hasMouseCapture;
+
+		private ContentControl _headerIconPresenter;
+
+		private bool _closeStoreboardInProcess;
+
+		private bool _closeImmediatelyStoreboardInProcess;
+
+		private bool _isDesignMode;
+
+		private VisualState _subMenuClosedVisualState;
+
+		private VisualState _subMenuClosedImmediatelyVisualState;
+
+		private bool _skipCloseUnselected;
+
+		private bool? _canExecute = true;
+
+		private WeakEventHandler<XamMenuItem, ICommand, EventArgs> _weakCanExecuteChanged;
+
+		private EventHandler _menuCanExecuteHandler;
+
+		public static readonly DependencyProperty CommandProperty;
+
+		public static readonly DependencyProperty CommandParameterProperty;
+
+		public static readonly DependencyProperty CommandTargetProperty;
+
+		public static readonly DependencyProperty IsKeyboardNavigableProperty;
+
+		public static readonly DependencyProperty CheckBoxVisibilityResolvedProperty;
+
+		public static readonly DependencyProperty IconProperty;
+
+		public static readonly DependencyProperty IconVisibilityResolvedProperty;
+
+		public static readonly DependencyProperty InputGestureTextProperty;
+
+		public static readonly DependencyProperty IsCheckableProperty;
+
+		public static readonly DependencyProperty IsCheckedProperty;
+
+		public static readonly DependencyProperty IsHighlightedProperty;
+
+		public static readonly DependencyProperty IsSubmenuOpenProperty;
+
+		public static readonly DependencyProperty MenuOrientationProperty;
+
+		public static readonly DependencyProperty HasChildrenProperty;
+
+		public static readonly DependencyProperty SubmenuPreferredLocationProperty;
+
+		public static readonly DependencyProperty StaysOpenOnClickProperty;
+
+		protected static readonly DependencyProperty RoleProperty;
+
+		internal static readonly DependencyProperty IsSelectedProperty;
+
+		internal new static readonly DependencyProperty IsMouseOverProperty;
+
+		internal static readonly DependencyProperty IsMouseOverSublingProperty;
+
+		private INavigation _navigator;
+
+		public static readonly DependencyProperty NavigationElementProperty;
+
+		public static readonly DependencyProperty NavigationUriProperty;
+
+		public static readonly DependencyProperty NavigationParameterProperty;
+
+		public static readonly DependencyProperty NavigationOnClickProperty;
+
+		protected override bool IsEnabledCore
+		{
+			get
+			{
+				if (base.IsEnabledCore)
+				{
+					return _canExecute != false;
+				}
+				return false;
+			}
+		}
+
+		public ICommand Command
+		{
+			get
+			{
+				return (ICommand)GetValue(CommandProperty);
+			}
+			set
+			{
+				SetValue(CommandProperty, value);
+			}
+		}
+
+		public object CommandParameter
+		{
+			get
+			{
+				return GetValue(CommandParameterProperty);
+			}
+			set
+			{
+				SetValue(CommandParameterProperty, value);
+			}
+		}
+
+		public IInputElement CommandTarget
+		{
+			get
+			{
+				return (IInputElement)GetValue(CommandTargetProperty);
+			}
+			set
+			{
+				SetValue(CommandTargetProperty, value);
+			}
+		}
+
+		public bool IsKeyboardNavigable
+		{
+			get
+			{
+				return (bool)GetValue(IsKeyboardNavigableProperty);
+			}
+			set
+			{
+				SetValue(IsKeyboardNavigableProperty, value);
+			}
+		}
+
+		public Visibility CheckBoxVisibilityResolved => (Visibility)GetValue(CheckBoxVisibilityResolvedProperty);
+
+		public object Icon
+		{
+			get
+			{
+				return GetValue(IconProperty);
+			}
+			set
+			{
+				SetValue(IconProperty, value);
+			}
+		}
+
+		public Visibility IconVisibilityResolved => (Visibility)GetValue(IconVisibilityResolvedProperty);
+
+		public string InputGestureText
+		{
+			get
+			{
+				return (string)GetValue(InputGestureTextProperty);
+			}
+			set
+			{
+				SetValue(InputGestureTextProperty, value);
+			}
+		}
+
+		public bool IsCheckable
+		{
+			get
+			{
+				return (bool)GetValue(IsCheckableProperty);
+			}
+			set
+			{
+				SetValue(IsCheckableProperty, value);
+			}
+		}
+
+		public bool IsChecked
+		{
+			get
+			{
+				return (bool)GetValue(IsCheckedProperty);
+			}
+			set
+			{
+				SetValue(IsCheckedProperty, value);
+			}
+		}
+
+		public bool IsHighlighted
+		{
+			get
+			{
+				return (bool)GetValue(IsHighlightedProperty);
+			}
+			internal set
+			{
+				SetValue(IsHighlightedProperty, value);
+			}
+		}
+
+		public bool IsSubmenuOpen
+		{
+			get
+			{
+				return (bool)GetValue(IsSubmenuOpenProperty);
+			}
+			set
+			{
+				SetValue(IsSubmenuOpenProperty, value);
+			}
+		}
+
+		public Orientation MenuOrientation
+		{
+			get
+			{
+				return (Orientation)GetValue(MenuOrientationProperty);
+			}
+			set
+			{
+				SetValue(MenuOrientationProperty, value);
+			}
+		}
+
+		public bool HasChildren => (bool)GetValue(HasChildrenProperty);
+
+		public XamMenuItem ParentXamMenuItem => ParentItemsControl as XamMenuItem;
+
+		public MenuItemPosition SubmenuPreferredLocation
+		{
+			get
+			{
+				return (MenuItemPosition)GetValue(SubmenuPreferredLocationProperty);
+			}
+			set
+			{
+				SetValue(SubmenuPreferredLocationProperty, value);
+			}
+		}
+
+		public bool StaysOpenOnClick
+		{
+			get
+			{
+				return (bool)GetValue(StaysOpenOnClickProperty);
+			}
+			set
+			{
+				SetValue(StaysOpenOnClickProperty, value);
+			}
+		}
+
+		protected MenuItemRole Role
+		{
+			get
+			{
+				return (MenuItemRole)GetValue(RoleProperty);
+			}
+			private set
+			{
+				SetValue(RoleProperty, value);
+			}
+		}
+
+		internal bool? IsInContextMenu
+		{
+			get
+			{
+				if (ParentXamMenu is XamContextMenu)
+				{
+					return true;
+				}
+				if (ParentXamMenu is XamMenu)
+				{
+					return false;
+				}
+				return null;
+			}
+		}
+
+		internal bool IsSelected
+		{
+			get
+			{
+				return (bool)GetValue(IsSelectedProperty);
+			}
+			set
+			{
+				SetValue(IsSelectedProperty, value);
+			}
+		}
+
+		internal new bool IsMouseOver
+		{
+			get
+			{
+				return (bool)GetValue(IsMouseOverProperty);
+			}
+			set
+			{
+				SetValue(IsMouseOverProperty, value);
+			}
+		}
+
+		internal bool IsMouseOverSubling
+		{
+			get
+			{
+				return (bool)GetValue(IsMouseOverSublingProperty);
+			}
+			set
+			{
+				SetValue(IsMouseOverSublingProperty, value);
+			}
+		}
+
+		internal ItemsControl ParentItemsControl
+		{
+			get
+			{
+				return _parentItemsControl;
+			}
+			set
+			{
+				if (_parentItemsControl != value)
+				{
+					_parentItemsControl = value;
+					OnPropertyChanged("ParentItemsControl");
+					OnPropertyChanged("ParentXamMenu");
+					OnPropertyChanged("ParentXamMenuItem");
+				}
+			}
+		}
+
+		protected internal XamMenuBase ParentXamMenu
+		{
+			get
+			{
+				for (XamMenuItem xamMenuItem = this; xamMenuItem != null; xamMenuItem = xamMenuItem.ParentXamMenuItem)
+				{
+					if (xamMenuItem.ParentItemsControl is XamMenuBase result)
+					{
+						return result;
+					}
+				}
+				return null;
+			}
+		}
+
+		internal XamMenuItem SublingOpenItem
+		{
+			get
+			{
+				ItemsControl parentItemsControl = ParentItemsControl;
+				ItemContainerGenerator generator = XamMenuBase.GetGenerator(parentItemsControl);
+				if (parentItemsControl == null || generator == null)
+				{
+					return null;
+				}
+				for (int i = 0; i < parentItemsControl.Items.Count; i++)
+				{
+					if (generator.ContainerFromIndex(i) is XamMenuItem { IsSubmenuOpen: not false } xamMenuItem && xamMenuItem != this)
+					{
+						return xamMenuItem;
+					}
+				}
+				return null;
+			}
+		}
+
+		internal XamMenuItem ChildHighlightedItem
+		{
+			get
+			{
+				for (int i = 0; i < base.Items.Count; i++)
+				{
+					if (base.ItemContainerGenerator.ContainerFromIndex(i) is XamMenuItem { IsHighlighted: not false } xamMenuItem)
+					{
+						return xamMenuItem;
+					}
+				}
+				return null;
+			}
+		}
+
+		internal bool IgnoreMouseUp { get; set; }
+
+		private bool IgnorePropertyChange { get; set; }
+
+		public Control NavigationElement
+		{
+			get
+			{
+				return (Control)GetValue(NavigationElementProperty);
+			}
+			set
+			{
+				SetValue(NavigationElementProperty, value);
+			}
+		}
+
+		[TypeConverter(typeof(UriTypeConverter))]
+		public Uri NavigationUri
+		{
+			get
+			{
+				return (Uri)GetValue(NavigationUriProperty);
+			}
+			set
+			{
+				SetValue(NavigationUriProperty, value);
+			}
+		}
+
+		public string NavigationParameter
+		{
+			get
+			{
+				return (string)GetValue(NavigationParameterProperty);
+			}
+			set
+			{
+				SetValue(NavigationParameterProperty, value);
+			}
+		}
+
+		public bool NavigationOnClick
+		{
+			get
+			{
+				return (bool)GetValue(NavigationOnClickProperty);
+			}
+			set
+			{
+				SetValue(NavigationOnClickProperty, value);
+			}
+		}
+
+		ICommand ICommandSource.Command => Command;
+
+		object ICommandSource.CommandParameter => CommandParameter;
+
+		IInputElement ICommandSource.CommandTarget => CommandTarget;
+
+		DependencyObject IProvideParent.Parent => _parentItemsControl;
+
+		public event EventHandler Click;
+
+		public event EventHandler Checked;
+
+		public event EventHandler Unchecked;
+
+		public event EventHandler SubmenuClosed;
+
+		public event EventHandler SubmenuOpened;
+
+		public event PropertyChangedEventHandler PropertyChanged;
+
+		static XamMenuItem()
+		{
+			CommandProperty = DependencyPropertyUtilities.Register("Command", typeof(ICommand), typeof(XamMenuItem), DependencyPropertyUtilities.CreateMetadata(null, OnCommandChanged));
+			CommandParameterProperty = DependencyPropertyUtilities.Register("CommandParameter", typeof(object), typeof(XamMenuItem), DependencyPropertyUtilities.CreateMetadata(null, OnCommandParameterChanged));
+			CommandTargetProperty = DependencyPropertyUtilities.Register("CommandTarget", typeof(IInputElement), typeof(XamMenuItem), DependencyPropertyUtilities.CreateMetadata(null, OnCommandTargetChanged));
+			IsKeyboardNavigableProperty = DependencyProperty.Register("IsKeyboardNavigable", typeof(bool), typeof(XamMenuItem), new PropertyMetadata(true));
+			CheckBoxVisibilityResolvedProperty = DependencyProperty.Register("CheckBoxVisibilityResolved", typeof(Visibility), typeof(XamMenuItem), new PropertyMetadata(Visibility.Collapsed));
+			IconProperty = DependencyProperty.Register("Icon", typeof(object), typeof(XamMenuItem), new PropertyMetadata(null, IconChanged));
+			IconVisibilityResolvedProperty = DependencyProperty.Register("IconVisibilityResolved", typeof(Visibility), typeof(XamMenuItem), new PropertyMetadata(Visibility.Collapsed));
+			InputGestureTextProperty = DependencyProperty.Register("InputGestureText", typeof(string), typeof(XamMenuItem), new FrameworkPropertyMetadata(null, null, CoerceInputGestureText));
+			IsCheckableProperty = DependencyProperty.Register("IsCheckable", typeof(bool), typeof(XamMenuItem), new PropertyMetadata(false, IsCheckableChanged));
+			IsCheckedProperty = DependencyProperty.Register("IsChecked", typeof(bool), typeof(XamMenuItem), new PropertyMetadata(false, IsCheckedChanged));
+			IsHighlightedProperty = DependencyProperty.Register("IsHighlighted", typeof(bool), typeof(XamMenuItem), new PropertyMetadata(false, IsHighlightedChanged));
+			IsSubmenuOpenProperty = DependencyProperty.Register("IsSubmenuOpen", typeof(bool), typeof(XamMenuItem), new PropertyMetadata(false, IsSubmenuOpenChanged));
+			MenuOrientationProperty = DependencyProperty.Register("MenuOrientation", typeof(Orientation), typeof(XamMenuItem), new PropertyMetadata(Orientation.Vertical, MenuOrientationChanged));
+			HasChildrenProperty = DependencyProperty.Register("HasChildren", typeof(bool), typeof(XamMenuItem), new PropertyMetadata(false));
+			SubmenuPreferredLocationProperty = DependencyProperty.Register("SubmenuPreferredLocation", typeof(MenuItemPosition), typeof(XamMenuItem), new PropertyMetadata(MenuItemPosition.Auto, SubmenuPreferredLocationChanged));
+			StaysOpenOnClickProperty = DependencyProperty.Register("StaysOpenOnClick", typeof(bool), typeof(XamMenuItem), new PropertyMetadata(false));
+			RoleProperty = DependencyProperty.Register("Role", typeof(MenuItemRole), typeof(XamMenuItem), new PropertyMetadata(MenuItemRole.SubmenuItem, RoleChanged));
+			IsSelectedProperty = DependencyProperty.Register("IsSelected", typeof(bool), typeof(XamMenuItem), new PropertyMetadata(false, IsSelectedChanged));
+			IsMouseOverProperty = DependencyProperty.Register("IsMouseOver", typeof(bool), typeof(XamMenuItem), new PropertyMetadata(false, IsMouseOverChanged));
+			IsMouseOverSublingProperty = DependencyProperty.Register("IsMouseOverSubling", typeof(bool), typeof(XamMenuItem), new PropertyMetadata(false, IsMouseOverSublingChanged));
+			NavigationElementProperty = DependencyProperty.Register("NavigationElement", typeof(Control), typeof(XamMenuItem), new PropertyMetadata(NavigationElementChanged));
+			NavigationUriProperty = DependencyProperty.Register("NavigationUri", typeof(Uri), typeof(XamMenuItem), new PropertyMetadata(NavigationUriChanged));
+			NavigationParameterProperty = DependencyProperty.Register("NavigationParameter", typeof(string), typeof(XamMenuItem), new PropertyMetadata(NavigationParameterChanged));
+			NavigationOnClickProperty = DependencyProperty.Register("NavigationOnClick", typeof(bool), typeof(XamMenuItem), new PropertyMetadata(false));
+			Style style = new Style();
+			style.Seal();
+			FrameworkElement.FocusVisualStyleProperty.OverrideMetadata(typeof(XamMenuItem), new FrameworkPropertyMetadata(style));
+			XamHeaderedItemsControl.HeaderProperty.OverrideMetadata(typeof(XamMenuItem), new FrameworkPropertyMetadata(null, CoerceHeader));
+		}
+
+		public XamMenuItem()
+		{
+			Utilities.ValidateLicense(typeof(XamMenuItem), this);
+			_isDesignMode = DesignerProperties.GetIsInDesignMode(this);
+			base.DefaultStyleKey = typeof(XamMenuItem);
+			base.IsEnabledChanged += ControlIsEnabledChanged;
+			_navigator = new MenuNavigation();
+			base.Unloaded += XamMenuItem_Unloaded;
+		}
+
+		protected override Size ArrangeOverride(Size finalSize)
+		{
+			if (_isMenuOrientationNotSet && base.HeaderedItemContainerGenerator.ItemsHost is StackPanel stackPanel && stackPanel.Orientation != MenuOrientation)
+			{
+				stackPanel.Orientation = MenuOrientation;
+				_isMenuOrientationNotSet = false;
+			}
+			Size result = base.ArrangeOverride(finalSize);
+			EnsureSubmenuPosition();
+			SetDropdownPopupPlacement();
+			return result;
+		}
+
+		protected override Size MeasureOverride(Size constraint)
+		{
+			if (!_canExecute.HasValue)
+			{
+				VerifyCanExecute();
+			}
+			return base.MeasureOverride(constraint);
+		}
+
+		public override void OnApplyTemplate()
+		{
+			AccessKeyManager.RemoveAccessKeyPressedHandler(this, HandleAccessKeyPressed);
+			_scrollViewer = GetTemplateChild("ScrollViewer") as ScrollViewer;
+			if (_dropDownPopup != null && _dropDownPopup.Child != null)
+			{
+				_dropDownPopup.Child.MouseEnter -= Items_MouseEnter;
+				_dropDownPopup.Child.MouseLeave -= Items_MouseLeave;
+				(_dropDownPopup.Child as FrameworkElement).SizeChanged -= Popup_SizeChanged;
+			}
+			base.OnApplyTemplate();
+			if (_headerIconPresenter != null)
+			{
+				_headerIconPresenter.Content = null;
+			}
+			_headerIconPresenter = GetTemplateChild("HeaderIconPresenter") as ContentControl;
+			if (_headerIconPresenter != null)
+			{
+				_headerIconPresenter.Content = Icon;
+			}
+			_subMenuClosedVisualState = GetTemplateChild("SubmenuClose") as VisualState;
+			_subMenuClosedImmediatelyVisualState = GetTemplateChild("SubmenuCloseImmediately") as VisualState;
+			_dropDownPopup = GetTemplateChild("Popup") as Popup;
+			if (_dropDownPopup != null && _dropDownPopup.Child != null)
+			{
+				_dropDownPopup.PlacementTarget = this;
+				_dropDownPopup.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+				SetDropdownPopupPlacement();
+				_dropDownPopup.AllowsTransparency = true;
+			}
+			EnsureMenuItemRole();
+			ChangeVisualState(useTransitions: false);
+			VisualStateManager.GoToState(this, "SubmenuCloseImmediately", useTransitions: false);
+			AccessKeyManager.AddAccessKeyPressedHandler(this, HandleAccessKeyPressed);
+		}
+
+		protected override AutomationPeer OnCreateAutomationPeer()
+		{
+			return new XamMenuItemAutomationPeer(this);
+		}
+
+		protected override DependencyObject GetContainerForItemOverride()
+		{
+			XamMenuItem xamMenuItem = null;
+			if (base.DefaultItemsContainer != null)
+			{
+				xamMenuItem = base.DefaultItemsContainer.LoadContent() as XamMenuItem;
+			}
+			if (xamMenuItem == null)
+			{
+				return new XamMenuItem();
+			}
+			return xamMenuItem;
+		}
+
+		protected override bool IsItemItsOwnContainerOverride(object item)
+		{
+			if (!(item is XamMenuItem))
+			{
+				return item is XamMenuSeparator;
+			}
+			return true;
+		}
+
+		protected override void PrepareContainerForItemOverride(DependencyObject element, object item)
+		{
+			if (!(element is XamMenuSeparator))
+			{
+				if (element is XamMenuItem xamMenuItem)
+				{
+					xamMenuItem.ParentItemsControl = this;
+				}
+				base.PrepareContainerForItemOverride(element, item);
+			}
+		}
+
+		protected override void ClearContainerForItemOverride(DependencyObject element, object item)
+		{
+			if (!(element is XamMenuSeparator))
+			{
+				if (element is XamMenuItem xamMenuItem)
+				{
+					xamMenuItem.ParentItemsControl = null;
+				}
+				base.ClearContainerForItemOverride(element, item);
+			}
+		}
+
+		protected override void OnItemsChanged(NotifyCollectionChangedEventArgs e)
+		{
+			base.OnItemsChanged(e);
+			if (e.Action == NotifyCollectionChangedAction.Add || e.Action == NotifyCollectionChangedAction.Remove || e.Action == NotifyCollectionChangedAction.Reset)
+			{
+				EnsureMenuItemRole();
+			}
+			SetValue(HasChildrenProperty, (base.Items.Count != 0) ? true : false);
+		}
+
+		protected override void OnMouseEnter(MouseEventArgs e)
+		{
+			OnMouseEnterImpl();
+			base.OnMouseEnter(e);
+		}
+
+		private void OnMouseEnterImpl()
+		{
+			if (ParentXamMenu == null)
+			{
+				return;
+			}
+			if (IsInContextMenu == false)
+			{
+				XamMenu xamMenu = ParentXamMenu as XamMenu;
+				if (xamMenu.ExpandOnHover && Role == MenuItemRole.TopLevelHeader)
+				{
+					xamMenu.StopTimer();
+				}
+			}
+			if (!IsHighlighted)
+			{
+				IgnorePropertyChange = true;
+				IsHighlighted = true;
+			}
+			IsMouseOver = true;
+		}
+
+		protected override void OnMouseLeave(MouseEventArgs e)
+		{
+			OnMouseLeaveImpl();
+			base.OnMouseLeave(e);
+		}
+
+		private void OnMouseLeaveImpl()
+		{
+			if (ParentXamMenu == null)
+			{
+				return;
+			}
+			if (ParentXamMenuItem != null && ParentXamMenuItem.IgnoreMouseUp)
+			{
+				ParentXamMenuItem.IgnoreMouseUp = false;
+			}
+			if (IsInContextMenu == false)
+			{
+				XamMenu xamMenu = ParentXamMenu as XamMenu;
+				if (xamMenu.ExpandOnHover && Role == MenuItemRole.TopLevelHeader)
+				{
+					xamMenu.StartTimer();
+				}
+			}
+			if (IsHighlighted)
+			{
+				IgnorePropertyChange = true;
+				IsHighlighted = false;
+			}
+			IsMouseOver = false;
+		}
+
+		protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
+		{
+			base.OnMouseLeftButtonDown(e);
+			OnMouseLeftButtonDownImpl(e);
+		}
+
+		private void OnMouseLeftButtonDownImpl(MouseButtonEventArgs e)
+		{
+			XamMenuBase parentXamMenu = ParentXamMenu;
+			if (parentXamMenu == null)
+			{
+				return;
+			}
+			parentXamMenu._lastMouseArgs = null;
+			if (IsMouseOverSubling)
+			{
+				return;
+			}
+			if (_scrollViewer != null && (_scrollViewer.ComputedVerticalScrollBarVisibility == Visibility.Visible || _scrollViewer.ComputedHorizontalScrollBarVisibility == Visibility.Visible))
+			{
+				Rect rect = new Rect(e.GetPosition(this), new Size(0.0, 0.0));
+				if (!new Rect(base.RenderSize).IntersectsWith(rect))
+				{
+					return;
+				}
+			}
+			if (!e.Handled && base.IsEnabled)
+			{
+				if (Role == MenuItemRole.TopLevelItem)
+				{
+					if (!IsSelected)
+					{
+						IsSelected = true;
+					}
+				}
+				else
+				{
+					FocusOrSelect();
+				}
+				parentXamMenu._lastMouseArgs = new WeakReference(e);
+			}
+			if (Role == MenuItemRole.TopLevelHeader)
+			{
+				if (IsSubmenuOpen && !((XamMenu)parentXamMenu).ExpandOnHover)
+				{
+					ManipulateSubmenu(isOpen: false, isImmediately: false);
+					parentXamMenu.CloseCurrentOpen();
+					parentXamMenu.ReturnFocus();
+				}
+				else
+				{
+					ManipulateSubmenu(isOpen: true, isImmediately: false);
+				}
+			}
+			else if (Role == MenuItemRole.SubmenuHeader)
+			{
+				XamMenuItem sublingOpenItem = SublingOpenItem;
+				if (sublingOpenItem != null)
+				{
+					sublingOpenItem.ManipulateSubmenu(isOpen: false, isImmediately: true);
+					sublingOpenItem = null;
+				}
+				ManipulateSubmenu(isOpen: true, isImmediately: true);
+			}
+		}
+
+		protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
+		{
+			base.OnMouseLeftButtonUp(e);
+			OnMouseLeftButtonUpImpl(e);
+		}
+
+		private void OnMouseLeftButtonUpImpl(MouseButtonEventArgs e)
+		{
+			DependencyObject dependencyObject = e.OriginalSource as DependencyObject;
+			while (dependencyObject != null && dependencyObject != this)
+			{
+				if (dependencyObject is Popup)
+				{
+					return;
+				}
+				dependencyObject = XamMenuBase.GetParent(dependencyObject);
+			}
+			HandleItemSelection();
+		}
+
+		protected override void OnLostMouseCapture(MouseEventArgs e)
+		{
+			OnLostMouseCaptureImpl(e);
+			base.OnLostMouseCapture(e);
+		}
+
+		private void OnLostMouseCaptureImpl(MouseEventArgs e)
+		{
+			if (_hasMouseCapture)
+			{
+				ReleaseMouseCapture();
+				_hasMouseCapture = false;
+			}
+			if (!base.IsEnabled || base.Visibility == Visibility.Collapsed)
+			{
+				if (IsHighlighted)
+				{
+					IgnorePropertyChange = true;
+					IsHighlighted = false;
+				}
+				IsMouseOver = false;
+			}
+		}
+
+		protected override void OnAccessKey(AccessKeyEventArgs e)
+		{
+			base.OnAccessKey(e);
+			if (HasChildren)
+			{
+				OpenSubmenu();
+				IsSelected = true;
+				IsHighlighted = true;
+				XamMenuItem menuItem = FindSiblingItem(isForward: true, recurse: true);
+				MoveToItem(menuItem);
+			}
+			else
+			{
+				IsSelected = true;
+				IsHighlighted = true;
+				HandleItemSelection();
+			}
+		}
+
+		protected override void OnKeyDown(KeyEventArgs e)
+		{
+			if (e.Key == Key.System && Keyboard.Modifiers == ModifierKeys.Alt && _dropDownPopup != null)
+			{
+				_dropDownPopup.IsOpen = false;
+			}
+			base.OnKeyDown(e);
+			if (ParentXamMenu == null)
+			{
+				return;
+			}
+			Orientation orientation = Orientation.Vertical;
+			if (IsInContextMenu == false)
+			{
+				orientation = (ParentXamMenu as XamMenu).MenuOrientation;
+			}
+			if (PlatformProxy.GetFocusedElement(this) as DependencyObject != this || !base.IsEnabled || e.Handled)
+			{
+				return;
+			}
+			e.Handled = true;
+			Key key = e.Key;
+			if (ParentXamMenu.FlowDirection == FlowDirection.RightToLeft)
+			{
+				if (e.Key == Key.Left)
+				{
+					key = Key.Right;
+				}
+				else if (e.Key == Key.Right)
+				{
+					key = Key.Left;
+				}
+			}
+			switch (key)
+			{
+			case Key.Left:
+				if ((Role == MenuItemRole.TopLevelHeader && orientation == Orientation.Vertical) || (ParentXamMenuItem != null && ParentXamMenuItem.MenuOrientation == Orientation.Horizontal))
+				{
+					HandleUpDownKey(isDown: false);
+				}
+				else
+				{
+					HandleLeftKey();
+				}
+				break;
+			case Key.Right:
+				if ((Role == MenuItemRole.TopLevelHeader && orientation == Orientation.Vertical) || (ParentXamMenuItem != null && ParentXamMenuItem.MenuOrientation == Orientation.Horizontal))
+				{
+					HandleUpDownKey(isDown: true);
+				}
+				else
+				{
+					HandleRightKey();
+				}
+				break;
+			case Key.Up:
+				if ((Role == MenuItemRole.TopLevelHeader && orientation == Orientation.Vertical) || (ParentXamMenuItem != null && ParentXamMenuItem.MenuOrientation == Orientation.Horizontal))
+				{
+					HandleLeftKey();
+				}
+				else
+				{
+					HandleUpDownKey(isDown: false);
+				}
+				break;
+			case Key.Down:
+				if ((Role == MenuItemRole.TopLevelHeader && orientation == Orientation.Vertical) || (ParentXamMenuItem != null && ParentXamMenuItem.MenuOrientation == Orientation.Horizontal))
+				{
+					HandleRightKey();
+				}
+				else
+				{
+					HandleUpDownKey(isDown: true);
+				}
+				break;
+			case Key.Escape:
+			{
+				XamMenuBase parentXamMenu = ParentXamMenu;
+				if (ParentXamMenuItem == parentXamMenu.CurrentOpen)
+				{
+					parentXamMenu.CloseCurrentOpen();
+					parentXamMenu.ReturnFocus();
+				}
+				else
+				{
+					HandleLeftKey();
+				}
+				break;
+			}
+			case Key.Space:
+				if (!IsCheckable)
+				{
+					break;
+				}
+				IsChecked = !IsChecked;
+				if (!StaysOpenOnClick && Role != MenuItemRole.SubmenuHeader)
+				{
+					XamMenuBase parentXamMenu2 = ParentXamMenu;
+					RaiseClickEvent();
+					if (parentXamMenu2 != null)
+					{
+						parentXamMenu2.CloseCurrentOpen();
+						parentXamMenu2.ReturnFocus();
+					}
+				}
+				break;
+			case Key.Return:
+				RaiseClickEvent();
+				if (Role == MenuItemRole.TopLevelHeader || Role == MenuItemRole.SubmenuHeader)
+				{
+					if (IsSubmenuOpen)
+					{
+						ParentXamMenu.CloseCurrentOpen();
+						ParentXamMenu.ReturnFocus();
+						break;
+					}
+					ManipulateSubmenu(isOpen: true, isImmediately: true);
+					XamMenuItem xamMenuItem = FindSiblingItem(isForward: true, recurse: true);
+					if (xamMenuItem != null)
+					{
+						IsHighlighted = true;
+						MoveToItem(xamMenuItem);
+					}
+				}
+				else if (!StaysOpenOnClick && Role != MenuItemRole.SubmenuHeader && ParentXamMenu != null)
+				{
+					ParentXamMenu.CloseCurrentOpen();
+					ParentXamMenu.ReturnFocus();
+				}
+				break;
+			default:
+				e.Handled = false;
+				break;
+			}
+		}
+
+		protected override void OnLostFocus(RoutedEventArgs e)
+		{
+			if (ParentXamMenu != null)
+			{
+				object focusedElement = PlatformProxy.GetFocusedElement(ParentXamMenu);
+				if (!XamMenuBase.IsObjectFromMenu(this, focusedElement))
+				{
+					IsSelected = false;
+					IsHighlighted = false;
+				}
+				if (!XamMenuBase.IsObjectFromMenu(ParentXamMenu, focusedElement))
+				{
+					ParentXamMenu._previouslyFocusedControl = null;
+					IsSelected = false;
+				}
+			}
+		}
+
+		protected override void OnGotFocus(RoutedEventArgs e)
+		{
+			if (IsInContextMenu != true)
+			{
+				bool isSelected = (IsHighlighted = ParentXamMenu == null || ParentXamMenu._previouslyFocusedControl != this);
+				IsSelected = isSelected;
+			}
+			base.OnGotFocus(e);
+		}
+
+		private static void OnCommandChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			((XamMenuItem)d).OnCommandChanged(e.OldValue as ICommand, e.NewValue as ICommand);
+		}
+
+		private void OnCommandChanged(ICommand oldCommand, ICommand newCommand)
+		{
+			if (_weakCanExecuteChanged != null)
+			{
+				_weakCanExecuteChanged.Detach();
+				_menuCanExecuteHandler = null;
+				_weakCanExecuteChanged = null;
+			}
+			if (newCommand != null)
+			{
+				_weakCanExecuteChanged = new WeakEventHandler<XamMenuItem, ICommand, EventArgs>(this, newCommand, delegate(XamMenuItem m, object o, EventArgs e)
+				{
+					m.DirtyCanExecute();
+				}, delegate(WeakEventHandler<XamMenuItem, ICommand, EventArgs> w, ICommand c)
+				{
+					c.CanExecuteChanged -= w.OnEvent;
+					if (w.Instance != null)
+					{
+						w.Instance._menuCanExecuteHandler = null;
+					}
+				});
+				_menuCanExecuteHandler = _weakCanExecuteChanged.OnEvent;
+				newCommand.CanExecuteChanged += _menuCanExecuteHandler;
+			}
+			DirtyCanExecute();
+			CoerceValue(XamHeaderedItemsControl.HeaderProperty);
+			CoerceValue(InputGestureTextProperty);
+		}
+
+		private static void OnCommandParameterChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			XamMenuItem xamMenuItem = (XamMenuItem)d;
+			if (xamMenuItem.Command != null)
+			{
+				xamMenuItem.DirtyCanExecute();
+			}
+		}
+
+		private static void OnCommandTargetChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			XamMenuItem xamMenuItem = (XamMenuItem)d;
+			if (xamMenuItem.Command != null)
+			{
+				xamMenuItem.DirtyCanExecute();
+			}
+		}
+
+		private static void IconChanged(DependencyObject obj, DependencyPropertyChangedEventArgs e)
+		{
+			XamMenuItem xamMenuItem = obj as XamMenuItem;
+			if (e.NewValue != null && !xamMenuItem.IsCheckable)
+			{
+				xamMenuItem.SetValue(IconVisibilityResolvedProperty, Visibility.Visible);
+				xamMenuItem.SetValue(CheckBoxVisibilityResolvedProperty, Visibility.Collapsed);
+			}
+			if (xamMenuItem._headerIconPresenter != null)
+			{
+				xamMenuItem._headerIconPresenter.Content = xamMenuItem.Icon;
+			}
+		}
+
+		private static void IsCheckableChanged(DependencyObject obj, DependencyPropertyChangedEventArgs e)
+		{
+			XamMenuItem xamMenuItem = obj as XamMenuItem;
+			if ((bool)e.NewValue)
+			{
+				xamMenuItem.SetValue(CheckBoxVisibilityResolvedProperty, Visibility.Visible);
+				xamMenuItem.SetValue(IconVisibilityResolvedProperty, Visibility.Collapsed);
+				return;
+			}
+			xamMenuItem.SetValue(CheckBoxVisibilityResolvedProperty, Visibility.Collapsed);
+			if (xamMenuItem.Icon != null)
+			{
+				xamMenuItem.SetValue(IconVisibilityResolvedProperty, Visibility.Visible);
+			}
+		}
+
+		private static void IsCheckedChanged(DependencyObject obj, DependencyPropertyChangedEventArgs e)
+		{
+			XamMenuItem xamMenuItem = obj as XamMenuItem;
+			if ((bool)e.NewValue)
+			{
+				xamMenuItem.RaiseCheckedEvent();
+			}
+			else
+			{
+				xamMenuItem.RaiseUncheckedEvent();
+			}
+		}
+
+		private static void IsHighlightedChanged(DependencyObject obj, DependencyPropertyChangedEventArgs e)
+		{
+			XamMenuItem xamMenuItem = (XamMenuItem)obj;
+			if (xamMenuItem.IgnorePropertyChange)
+			{
+				xamMenuItem.IgnorePropertyChange = false;
+				return;
+			}
+			if ((bool)e.NewValue && xamMenuItem.SublingOpenItem != null)
+			{
+				xamMenuItem.SublingOpenItem.ManipulateSubmenu(isOpen: false, isImmediately: false);
+			}
+			xamMenuItem.ChangeVisualState(useTransitions: false);
+		}
+
+		private static void IsSubmenuOpenChanged(DependencyObject obj, DependencyPropertyChangedEventArgs e)
+		{
+			XamMenuItem xamMenuItem = (XamMenuItem)obj;
+			if (xamMenuItem.IgnorePropertyChange)
+			{
+				xamMenuItem.IgnorePropertyChange = false;
+				return;
+			}
+			bool flag = (bool)e.NewValue;
+			bool isSubmenuOpen = (bool)e.OldValue;
+			if (xamMenuItem.Role == MenuItemRole.TopLevelItem || xamMenuItem.Role == MenuItemRole.SubmenuItem)
+			{
+				xamMenuItem.IgnorePropertyChange = true;
+				xamMenuItem.IsSubmenuOpen = isSubmenuOpen;
+				return;
+			}
+			if (flag)
+			{
+				xamMenuItem.OpenSubmenu();
+				xamMenuItem.IsHighlighted = true;
+				xamMenuItem.RaiseSubmenuOpenedEvent();
+				return;
+			}
+			xamMenuItem.CloseSubmenu();
+			if (xamMenuItem._dropDownPopup != null)
+			{
+				xamMenuItem._dropDownPopup.IsOpen = false;
+			}
+			xamMenuItem.RaiseSubmenuClosedEvent();
+			xamMenuItem.ParentXamMenu.ReturnFocus();
+			if (xamMenuItem.Role == MenuItemRole.TopLevelHeader)
+			{
+				xamMenuItem.ParentXamMenu.CloseCurrentOpen();
+				xamMenuItem.ParentXamMenu.ClearPreviouslyFocusedControl();
+			}
+		}
+
+		private static void MenuOrientationChanged(DependencyObject obj, DependencyPropertyChangedEventArgs e)
+		{
+			if (obj is XamMenuItem xamMenuItem)
+			{
+				if (xamMenuItem.HeaderedItemContainerGenerator.ItemsHost is StackPanel stackPanel)
+				{
+					stackPanel.Orientation = xamMenuItem.MenuOrientation;
+				}
+				else
+				{
+					xamMenuItem._isMenuOrientationNotSet = true;
+				}
+				xamMenuItem.SetDropdownPopupPlacement();
+			}
+		}
+
+		private static void SubmenuPreferredLocationChanged(DependencyObject obj, DependencyPropertyChangedEventArgs e)
+		{
+			((XamMenuItem)obj)?.SetDropdownPopupPlacement();
+		}
+
+		private static void RoleChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
+		{
+			((XamMenuItem)obj)?.SetDropdownPopupPlacement();
+		}
+
+		private static void IsSelectedChanged(DependencyObject obj, DependencyPropertyChangedEventArgs e)
+		{
+			XamMenuItem xamMenuItem = (XamMenuItem)obj;
+			if (xamMenuItem.ParentXamMenu != null)
+			{
+				if ((bool)e.NewValue)
+				{
+					xamMenuItem.ParentXamMenu.CurrentSelected = xamMenuItem;
+					xamMenuItem.IsHighlighted = false;
+					xamMenuItem.ChildHighlightedItem?.ManipulateSubmenu(isOpen: false, isImmediately: false);
+				}
+				else
+				{
+					xamMenuItem.ChangeVisualState(useTransitions: false);
+				}
+			}
+		}
+
+		private static void IsMouseOverChanged(DependencyObject obj, DependencyPropertyChangedEventArgs e)
+		{
+			XamMenuItem xamMenuItem = (XamMenuItem)obj;
+			if (xamMenuItem.ParentXamMenu == null)
+			{
+				return;
+			}
+			bool flag = (bool)e.NewValue;
+			bool flag2 = false;
+			if (xamMenuItem.IsInContextMenu == true)
+			{
+				if (flag)
+				{
+					if (xamMenuItem.IsInContextMenu == true)
+					{
+						if (xamMenuItem.SublingOpenItem != null)
+						{
+							xamMenuItem.SublingOpenItem.ManipulateSubmenu(isOpen: false, isImmediately: true);
+						}
+						if (xamMenuItem.Role == MenuItemRole.SubmenuHeader)
+						{
+							xamMenuItem.IsHighlighted = false;
+							xamMenuItem.ManipulateSubmenu(isOpen: true, isImmediately: true);
+						}
+					}
+					xamMenuItem.FocusOrSelect();
+				}
+				else
+				{
+					xamMenuItem.IsSelected = false;
+					if (xamMenuItem.Role == MenuItemRole.SubmenuHeader && !xamMenuItem._skipCloseUnselected)
+					{
+						xamMenuItem.ManipulateSubmenu(isOpen: false, isImmediately: true);
+					}
+				}
+			}
+			else
+			{
+				flag2 = ((XamMenu)xamMenuItem.ParentXamMenu).ExpandOnHover;
+				if (flag)
+				{
+					if (xamMenuItem.ParentXamMenu.CurrentOpen != null || flag2)
+					{
+						xamMenuItem.FocusOrSelect();
+					}
+				}
+				else
+				{
+					xamMenuItem.IsSelected = false;
+				}
+				switch (xamMenuItem.Role)
+				{
+				case MenuItemRole.TopLevelHeader:
+					ManupulateMousOverTopLavelHeader(flag, xamMenuItem, flag2);
+					break;
+				case MenuItemRole.TopLevelItem:
+					if (xamMenuItem.ParentXamMenu.CurrentOpen != null && flag)
+					{
+						xamMenuItem.ParentXamMenu.CurrentOpen = null;
+					}
+					break;
+				case MenuItemRole.SubmenuHeader:
+					if (flag)
+					{
+						xamMenuItem.IsHighlighted = false;
+						xamMenuItem.ManipulateSubmenu(isOpen: true, isImmediately: false);
+					}
+					else
+					{
+						xamMenuItem.ManipulateSubmenu(isOpen: false, isImmediately: false);
+					}
+					break;
+				}
+			}
+			xamMenuItem.ChangeVisualState(useTransitions: false);
+		}
+
+		private static void IsMouseOverSublingChanged(DependencyObject obj, DependencyPropertyChangedEventArgs e)
+		{
+			XamMenuItem xamMenuItem = (XamMenuItem)obj;
+			if ((bool)e.NewValue)
+			{
+				xamMenuItem.IsHighlighted = true;
+				xamMenuItem.ManipulateSubmenu(isOpen: true, isImmediately: false);
+			}
+		}
+
+		internal void AutomationMenuItemClick()
+		{
+			OnClick(EventArgs.Empty);
+		}
+
+		internal void UnloadSubmenu()
+		{
+			if (Role == MenuItemRole.SubmenuHeader || Role == MenuItemRole.TopLevelHeader)
+			{
+				ChildHighlightedItem?.UnloadSubmenu();
+			}
+			if (_dropDownPopup != null)
+			{
+				_dropDownPopup.IsOpen = false;
+			}
+		}
+
+		internal void CloseSubmenu(bool forceCloseImmediately = false)
+		{
+			if (Role == MenuItemRole.SubmenuHeader || Role == MenuItemRole.TopLevelHeader)
+			{
+				XamMenuItem childHighlightedItem = ChildHighlightedItem;
+				if (childHighlightedItem != null)
+				{
+					if (forceCloseImmediately)
+					{
+						childHighlightedItem.CloseSubmenu(forceCloseImmediately);
+					}
+					else
+					{
+						childHighlightedItem.ManipulateSubmenu(isOpen: false, _isImmediately);
+					}
+				}
+			}
+			IsHighlighted = false;
+			IsMouseOverSubling = false;
+			if (forceCloseImmediately)
+			{
+				IsSubmenuOpen = false;
+			}
+			else if (Role == MenuItemRole.TopLevelHeader || _isImmediately)
+			{
+				GoToSubMenuClosedImmediatelyState();
+			}
+			else if (Role == MenuItemRole.SubmenuHeader)
+			{
+				GoToSubMenuClosedState();
+			}
+		}
+
+		internal void ManipulateSubmenu(bool isOpen, bool isImmediately)
+		{
+			_isImmediately = isImmediately;
+			if (isOpen)
+			{
+				OpenSubmenu();
+			}
+			else
+			{
+				CloseSubmenu();
+			}
+			_isImmediately = true;
+		}
+
+		internal void OpenSubmenu()
+		{
+			if (_dropDownPopup == null)
+			{
+				return;
+			}
+			if (_dropDownPopup.Child != null)
+			{
+				_dropDownPopup.Child.MouseEnter -= Items_MouseEnter;
+				_dropDownPopup.Child.MouseLeave -= Items_MouseLeave;
+				(_dropDownPopup.Child as FrameworkElement).SizeChanged -= Popup_SizeChanged;
+				_dropDownPopup.Child.MouseEnter += Items_MouseEnter;
+				_dropDownPopup.Child.MouseLeave += Items_MouseLeave;
+				(_dropDownPopup.Child as FrameworkElement).SizeChanged += Popup_SizeChanged;
+			}
+			if (Role == MenuItemRole.SubmenuHeader && ParentXamMenuItem != null && !ParentXamMenuItem.IsSubmenuOpen)
+			{
+				return;
+			}
+			if (_dropDownPopup.Child is FrameworkElement frameworkElement)
+			{
+				frameworkElement.MaxHeight = double.PositiveInfinity;
+				frameworkElement.MinHeight = 0.0;
+			}
+			_dropDownPopup.IsOpen = true;
+			if (Role == MenuItemRole.TopLevelHeader || _isImmediately)
+			{
+				VisualStateManager.GoToState(this, "SubmenuOpenImmediately", useTransitions: false);
+			}
+			else if (Role == MenuItemRole.SubmenuHeader)
+			{
+				VisualStateManager.GoToState(this, "SubmenuOpen", useTransitions: false);
+			}
+			if (Role == MenuItemRole.TopLevelHeader && ParentXamMenu != null)
+			{
+				ParentXamMenu.CurrentOpen = this;
+			}
+			if (!IsSubmenuOpen)
+			{
+				if (_isMenuOrientationNotSet && base.HeaderedItemContainerGenerator.ItemsHost is StackPanel stackPanel)
+				{
+					stackPanel.Orientation = MenuOrientation;
+					_isMenuOrientationNotSet = false;
+				}
+				IgnorePropertyChange = true;
+				IsSubmenuOpen = true;
+				RaiseSubmenuOpenedEvent();
+			}
+			_dropDownPopup.UpdateLayout();
+		}
+
+		internal XamMenuItem FindSiblingItem(bool isForward, bool recurse)
+		{
+			if (recurse)
+			{
+				int index = 0;
+				if (!isForward)
+				{
+					index = base.Items.Count - 1;
+				}
+				if (base.ItemContainerGenerator.ContainerFromIndex(index) is XamMenuItem xamMenuItem)
+				{
+					if (!xamMenuItem.IsEnabled)
+					{
+						return xamMenuItem.FindSiblingItem(isForward, recurse: false);
+					}
+					return xamMenuItem;
+				}
+			}
+			ItemsControl parentItemsControl = ParentItemsControl;
+			ItemContainerGenerator generator = XamMenuBase.GetGenerator(parentItemsControl);
+			if (parentItemsControl == null && generator == null)
+			{
+				return null;
+			}
+			XamMenuItem xamMenuItem2 = null;
+			int num = generator.IndexFromContainer(this);
+			int count = parentItemsControl.Items.Count;
+			bool flag = false;
+			if (isForward)
+			{
+				if (num == count - 1)
+				{
+					num = -1;
+					flag = true;
+				}
+				while (num++ < count)
+				{
+					if (generator.ContainerFromIndex(num) is XamMenuItem { IsEnabled: not false, IsKeyboardNavigable: not false, Visibility: Visibility.Visible } xamMenuItem3)
+					{
+						return xamMenuItem3;
+					}
+					if (!flag && num == count - 1)
+					{
+						num = -1;
+						flag = true;
+					}
+				}
+			}
+			else
+			{
+				if (num == 0)
+				{
+					flag = true;
+					num = count;
+				}
+				while (num-- > 0)
+				{
+					if (generator.ContainerFromIndex(num) is XamMenuItem { IsEnabled: not false, IsKeyboardNavigable: not false } xamMenuItem4)
+					{
+						return xamMenuItem4;
+					}
+					if (!flag && num == 0)
+					{
+						num = count;
+						flag = true;
+					}
+				}
+			}
+			return null;
+		}
+
+		protected virtual void OnChecked(EventArgs e)
+		{
+			if (this.Checked != null)
+			{
+				this.Checked(this, e);
+			}
+		}
+
+		private void RaiseCheckedEvent()
+		{
+			EventArgs e = new EventArgs();
+			OnChecked(e);
+		}
+
+		protected virtual void OnUnchecked(EventArgs e)
+		{
+			if (this.Unchecked != null)
+			{
+				this.Unchecked(this, e);
+			}
+		}
+
+		private void RaiseUncheckedEvent()
+		{
+			EventArgs e = new EventArgs();
+			OnUnchecked(e);
+		}
+
+		protected virtual void OnClick(EventArgs e)
+		{
+			if (this.Click != null)
+			{
+				this.Click(this, e);
+			}
+		}
+
+		private void RaiseClickEvent()
+		{
+			XamMenuBase parentXamMenu = ParentXamMenu;
+			ExecuteCommand();
+			if (parentXamMenu != null && !StaysOpenOnClick && (Role == MenuItemRole.SubmenuItem || Role == MenuItemRole.TopLevelItem))
+			{
+				parentXamMenu.CloseCurrentOpen();
+				parentXamMenu.ReturnFocus();
+			}
+			OnClick(EventArgs.Empty);
+			parentXamMenu?.RaiseItemClickedEvent(this);
+			bool? isInContextMenu = IsInContextMenu;
+			bool flag = false;
+			if (isInContextMenu == true == flag && isInContextMenu.HasValue && NavigationOnClick)
+			{
+				if (NavigationElement == null && ParentXamMenu != null)
+				{
+					_navigator.NavigationElement = (ParentXamMenu as XamMenu).NavigationElement;
+				}
+				_navigator.NavigateTo();
+			}
+		}
+
+		protected virtual void OnSubmenuClosed(EventArgs e)
+		{
+			if (this.SubmenuClosed != null)
+			{
+				this.SubmenuClosed(this, e);
+			}
+		}
+
+		private void RaiseSubmenuClosedEvent()
+		{
+			EventArgs e = new EventArgs();
+			OnSubmenuClosed(e);
+		}
+
+		protected virtual void OnSubmenuOpened(EventArgs e)
+		{
+			if (this.SubmenuOpened != null)
+			{
+				this.SubmenuOpened(this, e);
+			}
+		}
+
+		private void RaiseSubmenuOpenedEvent()
+		{
+			EventArgs e = new EventArgs();
+			OnSubmenuOpened(e);
+		}
+
+		private void CloseAncestorMenuItems()
+		{
+			Queue<XamMenuItem> queue = new Queue<XamMenuItem>();
+			for (XamMenuItem parentXamMenuItem = ParentXamMenuItem; parentXamMenuItem != null; parentXamMenuItem = parentXamMenuItem.ParentXamMenuItem)
+			{
+				queue.Enqueue(parentXamMenuItem);
+			}
+			foreach (XamMenuItem item in queue)
+			{
+				item.IsSubmenuOpen = false;
+			}
+		}
+
+		private static object CoerceHeader(DependencyObject d, object newValue)
+		{
+			XamMenuItem xamMenuItem = (XamMenuItem)d;
+			if (newValue == null)
+			{
+				if (xamMenuItem.Command is RoutedUICommand routedUICommand)
+				{
+					return routedUICommand.Text;
+				}
+			}
+			else if (newValue is RoutedUICommand)
+			{
+				RoutedUICommand routedUICommand2 = newValue as RoutedUICommand;
+				ItemsControl itemsControl = ItemsControl.ItemsControlFromItemContainer(xamMenuItem);
+				if (itemsControl != null && itemsControl.ItemContainerGenerator.ItemFromContainer(xamMenuItem) == newValue)
+				{
+					return routedUICommand2.Text;
+				}
+			}
+			return newValue;
+		}
+
+		private static object CoerceInputGestureText(DependencyObject d, object newValue)
+		{
+			if (string.IsNullOrEmpty((string)newValue) && (d as XamMenuItem).Command is RoutedCommand { InputGestures: { Count: >0 } inputGestures })
+			{
+				int i = 0;
+				for (int count = inputGestures.Count; i < count; i++)
+				{
+					if (inputGestures[i] is KeyGesture keyGesture)
+					{
+						return keyGesture.GetDisplayStringForCulture(CultureInfo.CurrentCulture);
+					}
+				}
+			}
+			return newValue;
+		}
+
+		private void DirtyCanExecute()
+		{
+			_canExecute = null;
+			if (base.IsVisible)
+			{
+				InvalidateMeasure();
+			}
+			else
+			{
+				VerifyCanExecute();
+			}
+		}
+
+		private void ExecuteCommand()
+		{
+			ICommand command = Command;
+			if (command == null)
+			{
+				return;
+			}
+			object commandParameter = CommandParameter;
+			if (command is RoutedCommand routedCommand)
+			{
+				IInputElement target = CommandTarget ?? this;
+				if (routedCommand.CanExecute(commandParameter, target))
+				{
+					routedCommand.Execute(commandParameter, target);
+				}
+			}
+			else if (command.CanExecute(commandParameter))
+			{
+				command.Execute(commandParameter);
+			}
+		}
+
+		private void GoToSubMenuClosedState()
+		{
+			if (_subMenuClosedVisualState != null && _subMenuClosedVisualState.Storyboard != null)
+			{
+				_closeStoreboardInProcess = true;
+				_subMenuClosedVisualState.Storyboard.Completed += Storyboard_Completed;
+				if (!VisualStateManager.GoToState(this, "SubmenuClose", useTransitions: false))
+				{
+					_subMenuClosedVisualState.Storyboard.Completed -= Storyboard_Completed;
+				}
+			}
+			else
+			{
+				DetachPopupHandlers();
+			}
+		}
+
+		private void GoToSubMenuClosedImmediatelyState()
+		{
+			if (_subMenuClosedImmediatelyVisualState != null && _subMenuClosedImmediatelyVisualState.Storyboard != null)
+			{
+				_closeImmediatelyStoreboardInProcess = true;
+				_subMenuClosedImmediatelyVisualState.Storyboard.Completed += Storyboard_Completed;
+				if (!VisualStateManager.GoToState(this, "SubmenuCloseImmediately", useTransitions: false))
+				{
+					_subMenuClosedImmediatelyVisualState.Storyboard.Completed -= Storyboard_Completed;
+				}
+			}
+			else
+			{
+				DetachPopupHandlers();
+			}
+		}
+
+		private static void ManupulateMousOverTopLavelHeader(bool isMouseOver, XamMenuItem item, bool expanOnHover)
+		{
+			if (isMouseOver)
+			{
+				if ((item.ParentXamMenu.CurrentOpen == null && expanOnHover) || item.ParentXamMenu._previouslyFocusedControl != null)
+				{
+					item.ManipulateSubmenu(isOpen: true, isImmediately: true);
+					item.ParentXamMenu.CurrentOpen = item;
+				}
+				else if (item.ParentXamMenu.CurrentOpen != null)
+				{
+					item.ManipulateSubmenu(isOpen: true, isImmediately: true);
+					item.ParentXamMenu.CurrentOpen = item;
+				}
+				item.IsHighlighted = false;
+			}
+		}
+
+		private void DetachPopupHandlers()
+		{
+			if (_dropDownPopup != null && _dropDownPopup.Child != null)
+			{
+				_dropDownPopup.Child.MouseEnter -= Items_MouseEnter;
+				_dropDownPopup.Child.MouseLeave -= Items_MouseLeave;
+				(_dropDownPopup.Child as FrameworkElement).SizeChanged -= Popup_SizeChanged;
+			}
+		}
+
+		private void Storyboard_Completed(object sender, EventArgs e)
+		{
+			DetachPopupHandlers();
+			if (IsSubmenuOpen)
+			{
+				_dropDownPopup.IsOpen = false;
+				IgnorePropertyChange = true;
+				IsSubmenuOpen = false;
+				IsHighlighted = false;
+				ChangeVisualState(useTransitions: false);
+				RaiseSubmenuClosedEvent();
+			}
+			if (_subMenuClosedImmediatelyVisualState != null && _subMenuClosedImmediatelyVisualState.Storyboard != null)
+			{
+				_subMenuClosedImmediatelyVisualState.Storyboard.Completed -= Storyboard_Completed;
+			}
+			if (_subMenuClosedVisualState != null && _subMenuClosedVisualState.Storyboard != null)
+			{
+				_subMenuClosedVisualState.Storyboard.Completed -= Storyboard_Completed;
+			}
+		}
+
+		private void Popup_SizeChanged(object sender, SizeChangedEventArgs e)
+		{
+			EnsureSubmenuPosition();
+		}
+
+		private void ControlIsEnabledChanged(object sender, DependencyPropertyChangedEventArgs e)
+		{
+			ChangeVisualState(useTransitions: false);
+		}
+
+		private void FocusOrSelect()
+		{
+			if (ParentXamMenu._previouslyFocusedControl == null)
+			{
+				Control control = PlatformProxy.GetFocusedElement(this) as Control;
+				if (!(control is XamMenuItem))
+				{
+					ParentXamMenu._previouslyFocusedControl = control;
+				}
+			}
+			base.Dispatcher.BeginInvoke((Action)delegate
+			{
+				Focus();
+			});
+			if (!IsSelected)
+			{
+				IsSelected = true;
+			}
+		}
+
+		private void Items_MouseEnter(object sender, MouseEventArgs e)
+		{
+			if (ParentXamMenu == null)
+			{
+				return;
+			}
+			if (IsInContextMenu == false)
+			{
+				XamMenu xamMenu = ParentXamMenu as XamMenu;
+				if (xamMenu.ExpandOnHover)
+				{
+					xamMenu.StopTimer();
+				}
+			}
+			XamMenuItem childHighlightedItem = ChildHighlightedItem;
+			if (childHighlightedItem != null && !PresentationUtilities.IsAncestorOf(childHighlightedItem, e.OriginalSource as DependencyObject))
+			{
+				childHighlightedItem.ManipulateSubmenu(isOpen: false, isImmediately: true);
+			}
+			if (_closeStoreboardInProcess)
+			{
+				_closeStoreboardInProcess = false;
+				_subMenuClosedVisualState.Storyboard.Completed -= Storyboard_Completed;
+			}
+			if (_closeImmediatelyStoreboardInProcess)
+			{
+				_closeImmediatelyStoreboardInProcess = false;
+				_subMenuClosedImmediatelyVisualState.Storyboard.Completed -= Storyboard_Completed;
+			}
+			IsMouseOverSubling = true;
+		}
+
+		private void Items_MouseLeave(object sender, MouseEventArgs e)
+		{
+			if (ParentXamMenu == null)
+			{
+				return;
+			}
+			if (IsInContextMenu == false)
+			{
+				XamMenu xamMenu = ParentXamMenu as XamMenu;
+				if (xamMenu != Mouse.Captured && xamMenu.ExpandOnHover)
+				{
+					xamMenu.StartTimer();
+				}
+			}
+			IsMouseOverSubling = false;
+		}
+
+		private void EnsureMenuItemRole()
+		{
+			SetValue(value: (base.Items.Count != 0) ? ((ParentXamMenuItem == null && IsInContextMenu == false) ? MenuItemRole.TopLevelHeader : MenuItemRole.SubmenuHeader) : ((ParentXamMenuItem != null || IsInContextMenu != false) ? MenuItemRole.SubmenuItem : MenuItemRole.TopLevelItem), dp: RoleProperty);
+			UpdateRoleState();
+		}
+
+		protected virtual void UpdateRoleState()
+		{
+			if (_isDesignMode)
+			{
+				return;
+			}
+			switch (Role)
+			{
+			case MenuItemRole.TopLevelHeader:
+				if (CheckBoxVisibilityResolved == Visibility.Visible || IconVisibilityResolved == Visibility.Visible)
+				{
+					VisualStateManager.GoToState(this, "TopLevelHeaderWithIcon", useTransitions: false);
+				}
+				else
+				{
+					VisualStateManager.GoToState(this, "TopLevelHeader", useTransitions: false);
+				}
+				break;
+			case MenuItemRole.TopLevelItem:
+				if (CheckBoxVisibilityResolved == Visibility.Visible || IconVisibilityResolved == Visibility.Visible)
+				{
+					VisualStateManager.GoToState(this, "TopLevelItemWithIcon", useTransitions: false);
+				}
+				else
+				{
+					VisualStateManager.GoToState(this, "TopLevelItem", useTransitions: false);
+				}
+				break;
+			case MenuItemRole.SubmenuHeader:
+				VisualStateManager.GoToState(this, "SubmenuHeader", useTransitions: false);
+				break;
+			case MenuItemRole.SubmenuItem:
+				VisualStateManager.GoToState(this, "SubmenuItem", useTransitions: false);
+				break;
+			}
+		}
+
+		protected internal virtual void ChangeVisualState(bool useTransitions)
+		{
+			if (!base.IsEnabled)
+			{
+				VisualStateManager.GoToState(this, "Disabled", useTransitions);
+			}
+			else if (IsSelected)
+			{
+				VisualStateManager.GoToState(this, "MouseOver", useTransitions);
+			}
+			else if (IsHighlighted)
+			{
+				VisualStateManager.GoToState(this, "Highlighted", useTransitions);
+			}
+			else if (IsMouseOver)
+			{
+				VisualStateManager.GoToState(this, "MouseOver", useTransitions);
+			}
+			else
+			{
+				VisualStateManager.GoToState(this, "Normal", useTransitions);
+			}
+		}
+
+		private void EnsureSubmenuPosition()
+		{
+			if (_dropDownPopup != null && _dropDownPopup.Child is FrameworkElement)
+			{
+				Size size = new Size(32767.0, 32767.0);
+				_dropDownPopup.HorizontalOffset = 0.0;
+				_dropDownPopup.VerticalOffset = 0.0;
+			}
+		}
+
+		private static void PlaceSubmenuOnPrefferedPosition(out double popupX, out double popupY, out bool below, double rootOffsetX, double rootOffsetY, double rootWidth, double rootHeight, double popupContentWidth, double popupContentHeight, double myControlWidth, double myControlHeight, MenuItemPosition prefPosition)
+		{
+			below = true;
+			popupX = 0.0;
+			popupY = 0.0;
+			switch (prefPosition)
+			{
+			case MenuItemPosition.Bottom:
+				popupX = DefineHorizontalOffset(rootOffsetX, rootWidth, popupContentWidth);
+				popupY = rootOffsetY + myControlHeight;
+				popupY = DefineTopOrBottom(popupY, ref below, rootOffsetY, rootHeight, popupContentHeight, myControlHeight);
+				break;
+			case MenuItemPosition.Top:
+				popupX = DefineHorizontalOffset(rootOffsetX, rootWidth, popupContentWidth);
+				popupY = rootHeight + 1.0;
+				popupY = DefineTopOrBottom(popupY, ref below, rootOffsetY, rootHeight, popupContentHeight, myControlHeight);
+				break;
+			case MenuItemPosition.Left:
+				popupX = rootOffsetX - popupContentWidth;
+				if (popupX < 0.0)
+				{
+					popupX = 0.0;
+					popupY = rootOffsetY + myControlHeight;
+					popupY = DefineTopOrBottom(popupY, ref below, rootOffsetY, rootHeight, popupContentHeight, myControlHeight);
+				}
+				else
+				{
+					popupY = DefineVerticalOffset(rootOffsetY, rootHeight, popupContentHeight);
+				}
+				break;
+			case MenuItemPosition.Right:
+			{
+				popupX = rootOffsetX + myControlWidth;
+				double num = DefineHorizontalOffset(popupX, rootWidth, popupContentWidth);
+				if (popupX != num)
+				{
+					popupX = num;
+					popupY = rootOffsetY + myControlHeight;
+					popupY = DefineTopOrBottom(popupY, ref below, rootOffsetY, rootHeight, popupContentHeight, myControlHeight);
+				}
+				else
+				{
+					popupY = DefineVerticalOffset(rootOffsetY, rootHeight, popupContentHeight);
+				}
+				break;
+			}
+			}
+		}
+
+		private static double DefineTopOrBottom(double popupY, ref bool below, double rootOffsetY, double rootHeight, double popupContentHeight, double myControlHeight)
+		{
+			double num = popupY;
+			if (rootHeight < num + popupContentHeight)
+			{
+				below = false;
+				num = rootOffsetY - popupContentHeight;
+				if (num <= 0.0)
+				{
+					if (rootOffsetY < (rootHeight - myControlHeight) / 2.0)
+					{
+						below = true;
+						num = rootOffsetY + myControlHeight;
+					}
+					else
+					{
+						below = false;
+						num = rootOffsetY - popupContentHeight;
+					}
+				}
+			}
+			return num;
+		}
+
+		private static double DefineVerticalOffset(double rootOffsetY, double rootHeight, double popupContentHeight)
+		{
+			double num = rootOffsetY;
+			if (rootHeight < num + popupContentHeight)
+			{
+				num = rootHeight - popupContentHeight;
+				num = Math.Max(0.0, num);
+			}
+			return num;
+		}
+
+		private static double DefineVerticalAlignment(ref bool below, double rootOffsetY, double rootHeight, double popupContentHeight, double myControlHeight)
+		{
+			double num = rootOffsetY;
+			if (rootHeight < num + popupContentHeight)
+			{
+				below = false;
+				num = rootOffsetY + myControlHeight - popupContentHeight;
+				if (num < 0.0)
+				{
+					if (rootOffsetY < (rootHeight - myControlHeight) / 2.0)
+					{
+						below = true;
+						num = rootOffsetY + myControlHeight;
+					}
+					else
+					{
+						below = false;
+						num = rootOffsetY - popupContentHeight;
+					}
+				}
+			}
+			return num;
+		}
+
+		private static double DefineHorizontalOffset(double refferPoint, double rootWidth, double popupContentWidth)
+		{
+			double zoomFactor = PlatformProxy.GetZoomFactor();
+			double num = rootWidth / zoomFactor;
+			double num2 = refferPoint;
+			if (num < num2 + popupContentWidth)
+			{
+				num2 = num - popupContentWidth;
+				num2 = Math.Max(0.0, num2);
+			}
+			return num2;
+		}
+
+		private static double DefineLeftOrRight(double popupX, double rootOffsetX, double rootWidth, double popupContentWidth)
+		{
+			bool isOverlay;
+			return DefineLeftOrRight(popupX, rootOffsetX, rootWidth, popupContentWidth, out isOverlay);
+		}
+
+		private static double DefineLeftOrRight(double popupX, double rootOffsetX, double rootWidth, double popupContentWidth, out bool isOverlay)
+		{
+			isOverlay = false;
+			double num = popupX;
+			if (rootWidth < num + popupContentWidth)
+			{
+				num = rootOffsetX - popupContentWidth;
+				if (num < 0.0)
+				{
+					isOverlay = true;
+					num = 0.0;
+				}
+			}
+			return num;
+		}
+
+		private void SetDropdownPopupPlacement()
+		{
+			if (_dropDownPopup != null)
+			{
+				MenuItemPosition menuItemPosition = SubmenuPreferredLocation;
+				if (menuItemPosition == MenuItemPosition.Auto)
+				{
+					menuItemPosition = ((!(ParentXamMenu is XamMenu xamMenu)) ? MenuItemPosition.Right : ((xamMenu.MenuOrientation != Orientation.Vertical) ? ((Role == MenuItemRole.TopLevelHeader) ? MenuItemPosition.Bottom : MenuItemPosition.Right) : MenuItemPosition.Right));
+				}
+				_dropDownPopup.Placement = menuItemPosition switch
+				{
+					MenuItemPosition.Top => System.Windows.Controls.Primitives.PlacementMode.Top, 
+					MenuItemPosition.Bottom => System.Windows.Controls.Primitives.PlacementMode.Bottom, 
+					MenuItemPosition.Left => System.Windows.Controls.Primitives.PlacementMode.Left, 
+					MenuItemPosition.Right => System.Windows.Controls.Primitives.PlacementMode.Right, 
+					_ => System.Windows.Controls.Primitives.PlacementMode.Bottom, 
+				};
+			}
+		}
+
+		private void HandleUpDownKey(bool isDown)
+		{
+			if (!IsSelected && isDown)
+			{
+				IsSelected = true;
+				ChangeVisualState(useTransitions: false);
+				if (!IsSubmenuOpen)
+				{
+					return;
+				}
+			}
+			XamMenuItem menuItem;
+			if (Role == MenuItemRole.TopLevelHeader)
+			{
+				if (!IsSubmenuOpen)
+				{
+					ManipulateSubmenu(isOpen: true, isImmediately: true);
+				}
+				menuItem = FindSiblingItem(isDown, recurse: true);
+				IsHighlighted = true;
+			}
+			else
+			{
+				menuItem = FindSiblingItem(isDown, recurse: false);
+			}
+			MoveToItem(menuItem);
+		}
+
+		private void HandleLeftKey()
+		{
+			XamMenuItem xamMenuItem = null;
+			switch (Role)
+			{
+			case MenuItemRole.SubmenuItem:
+			case MenuItemRole.SubmenuHeader:
+				xamMenuItem = ParentXamMenuItem;
+				if (xamMenuItem == null)
+				{
+					return;
+				}
+				xamMenuItem.ManipulateSubmenu(isOpen: false, isImmediately: true);
+				if (xamMenuItem.Role != MenuItemRole.TopLevelHeader)
+				{
+					break;
+				}
+				xamMenuItem = ParentXamMenuItem.FindSiblingItem(isForward: false, recurse: false);
+				if (xamMenuItem != null)
+				{
+					if (xamMenuItem.Role == MenuItemRole.TopLevelHeader)
+					{
+						xamMenuItem.ManipulateSubmenu(isOpen: true, isImmediately: true);
+					}
+					ParentXamMenuItem.IsHighlighted = false;
+					ParentXamMenuItem.ChangeVisualState(useTransitions: false);
+				}
+				break;
+			case MenuItemRole.TopLevelItem:
+			case MenuItemRole.TopLevelHeader:
+				xamMenuItem = FindSiblingItem(isForward: false, recurse: false);
+				if (xamMenuItem != null)
+				{
+					if (xamMenuItem.Role == MenuItemRole.TopLevelHeader)
+					{
+						xamMenuItem.ManipulateSubmenu(isOpen: true, isImmediately: true);
+					}
+					else
+					{
+						ManipulateSubmenu(isOpen: false, isImmediately: true);
+					}
+				}
+				break;
+			}
+			MoveToItem(xamMenuItem);
+		}
+
+		private void HandleRightKey()
+		{
+			XamMenuItem xamMenuItem = null;
+			switch (Role)
+			{
+			case MenuItemRole.SubmenuHeader:
+				ManipulateSubmenu(isOpen: true, isImmediately: true);
+				xamMenuItem = FindSiblingItem(isForward: true, recurse: true);
+				if (xamMenuItem != null)
+				{
+					IsHighlighted = true;
+				}
+				break;
+			case MenuItemRole.TopLevelItem:
+			case MenuItemRole.TopLevelHeader:
+				xamMenuItem = FindSiblingItem(isForward: true, recurse: false);
+				if (xamMenuItem != null)
+				{
+					if (xamMenuItem.Role == MenuItemRole.TopLevelHeader)
+					{
+						xamMenuItem.ManipulateSubmenu(isOpen: true, isImmediately: true);
+					}
+					else
+					{
+						ManipulateSubmenu(isOpen: false, isImmediately: true);
+					}
+				}
+				break;
+			case MenuItemRole.SubmenuItem:
+				if (ParentXamMenu.CurrentOpen == null)
+				{
+					return;
+				}
+				xamMenuItem = ParentXamMenu.CurrentOpen.FindSiblingItem(isForward: true, recurse: false);
+				if (xamMenuItem != null)
+				{
+					if (xamMenuItem.Role == MenuItemRole.TopLevelHeader)
+					{
+						xamMenuItem.ManipulateSubmenu(isOpen: true, isImmediately: true);
+					}
+					else if (xamMenuItem.Role == MenuItemRole.TopLevelItem)
+					{
+						ParentXamMenu.CloseCurrentOpen();
+					}
+				}
+				break;
+			}
+			MoveToItem(xamMenuItem);
+		}
+
+		private void MoveToItem(XamMenuItem menuItem)
+		{
+			if (menuItem != null)
+			{
+				menuItem.FocusOrSelect();
+				menuItem.ChangeVisualState(useTransitions: false);
+				ChangeVisualState(useTransitions: false);
+				if (ParentXamMenuItem != null)
+				{
+					ParentXamMenuItem.HeaderedItemContainerGenerator.ScrollIntoView(menuItem);
+				}
+			}
+		}
+
+		private void HandleItemSelection()
+		{
+			if (ParentXamMenuItem != null)
+			{
+				ParentXamMenuItem.IgnoreMouseUp = true;
+			}
+			if (IgnoreMouseUp)
+			{
+				IgnoreMouseUp = false;
+			}
+			else
+			{
+				if (ParentXamMenu == null)
+				{
+					return;
+				}
+				if (IsCheckable)
+				{
+					IsChecked = !IsChecked;
+				}
+				RaiseClickEvent();
+				if (Role == MenuItemRole.SubmenuItem)
+				{
+					if (ParentXamMenu != null && !StaysOpenOnClick)
+					{
+						ParentXamMenu.ReturnFocus();
+						IsMouseOver = false;
+					}
+					else
+					{
+						Focus();
+						if (!StaysOpenOnClick)
+						{
+							IsMouseOver = false;
+						}
+					}
+				}
+				if (Role == MenuItemRole.TopLevelItem && ParentXamMenu != null)
+				{
+					ParentXamMenu.ReturnFocus();
+				}
+				if (_hasMouseCapture && !StaysOpenOnClick)
+				{
+					ReleaseMouseCapture();
+					_hasMouseCapture = false;
+				}
+			}
+		}
+
+		private void HandleAccessKeyPressed(object sender, AccessKeyPressedEventArgs e)
+		{
+			if (e.Scope == null && e.Target == null && !string.IsNullOrEmpty(e.Key))
+			{
+				e.Target = this;
+				e.Handled = true;
+			}
+		}
+
+		private void VerifyCanExecute()
+		{
+			ICommand command = Command;
+			if (command == null)
+			{
+				_canExecute = true;
+			}
+			else if (command is RoutedCommand)
+			{
+				RoutedCommand routedCommand = command as RoutedCommand;
+				_canExecute = routedCommand.CanExecute(CommandParameter, CommandTarget ?? this);
+			}
+			else
+			{
+				_canExecute = command.CanExecute(CommandParameter);
+			}
+			CoerceValue(UIElement.IsEnabledProperty);
+		}
+
+		private static void NavigationElementChanged(DependencyObject obj, DependencyPropertyChangedEventArgs e)
+		{
+			(obj as XamMenuItem)._navigator.NavigationElement = e.NewValue as Control;
+		}
+
+		private static void NavigationUriChanged(DependencyObject obj, DependencyPropertyChangedEventArgs e)
+		{
+			(obj as XamMenuItem)._navigator.NavigationUri = e.NewValue as Uri;
+		}
+
+		private static void NavigationParameterChanged(DependencyObject obj, DependencyPropertyChangedEventArgs e)
+		{
+			(obj as XamMenuItem)._navigator.NavigationParameter = ((e.NewValue != null) ? e.NewValue.ToString() : "");
+		}
+
+		private void XamMenuItem_Unloaded(object sender, RoutedEventArgs e)
+		{
+			Storyboard_Completed(this, EventArgs.Empty);
+		}
+
+		protected virtual void OnPropertyChanged(string name)
+		{
+			if (this.PropertyChanged != null)
+			{
+				this.PropertyChanged(this, new PropertyChangedEventArgs(name));
+			}
+		}
+
+		protected override void OnPreviewMouseLeftButtonUp(MouseButtonEventArgs e)
+		{
+			base.OnPreviewMouseLeftButtonUp(e);
+			if (e.OriginalSource is Thumb descendant && PresentationUtilities.IsAncestorOf(_scrollViewer, descendant))
+			{
+				Mouse.Capture(ParentXamMenu, CaptureMode.SubTree);
+			}
+		}
+	}
+	[TemplateVisualState(GroupName = "OrientationState", Name = "Vertical")]
+	[TemplateVisualState(GroupName = "OrientationState", Name = "Horizontal")]
+	public class XamMenuSeparator : Control
+	{
+		private const string OrientationStateGroupName = "OrientationState";
+
+		private const string OrientationVertical = "Vertical";
+
+		private const string OrientationHorizontal = "Horizontal";
+
+		public static readonly DependencyProperty SeparatorOrientationProperty = DependencyProperty.Register("SeparatorOrientation", typeof(Orientation), typeof(XamMenuSeparator), new PropertyMetadata(Orientation.Horizontal, SeparatorOrientationChanged));
+
+		public Orientation SeparatorOrientation
+		{
+			get
+			{
+				return (Orientation)GetValue(SeparatorOrientationProperty);
+			}
+			set
+			{
+				SetValue(SeparatorOrientationProperty, value);
+			}
+		}
+
+		public XamMenuSeparator()
+		{
+			Utilities.ValidateLicense(typeof(XamMenuSeparator), this);
+			base.DefaultStyleKey = typeof(XamMenuSeparator);
+			base.IsTabStop = false;
+		}
+
+		public override void OnApplyTemplate()
+		{
+			base.OnApplyTemplate();
+			if (SeparatorOrientation == Orientation.Horizontal)
+			{
+				VisualStateManager.GoToState(this, "Horizontal", useTransitions: false);
+			}
+			else
+			{
+				VisualStateManager.GoToState(this, "Vertical", useTransitions: false);
+			}
+		}
+
+		private static void SeparatorOrientationChanged(DependencyObject obj, DependencyPropertyChangedEventArgs e)
+		{
+			XamMenuSeparator control = obj as XamMenuSeparator;
+			if ((Orientation)e.NewValue == Orientation.Horizontal)
+			{
+				VisualStateManager.GoToState(control, "Horizontal", useTransitions: false);
+			}
+			else
+			{
+				VisualStateManager.GoToState(control, "Vertical", useTransitions: false);
+			}
+		}
+	}
+}
+namespace Infragistics.Controls.Menus.Properties
+{
+	[GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
+	[DebuggerNonUserCode]
+	[CompilerGenerated]
+	internal class Resources
+	{
+		private static ResourceManager resourceMan;
+
+		private static CultureInfo resourceCulture;
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		internal static ResourceManager ResourceManager
+		{
+			get
+			{
+				if (resourceMan == null)
+				{
+					resourceMan = new ResourceManager("Infragistics.Controls.Menus.Properties.Resources", typeof(Resources).Assembly);
+				}
+				return resourceMan;
+			}
+		}
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		internal static CultureInfo Culture
+		{
+			get
+			{
+				return resourceCulture;
+			}
+			set
+			{
+				resourceCulture = value;
+			}
+		}
+
+		internal Resources()
+		{
+		}
+	}
+	[CompilerGenerated]
+	[GeneratedCode("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "10.0.0.0")]
+	internal sealed class Settings : ApplicationSettingsBase
+	{
+		private static Settings defaultInstance = (Settings)SettingsBase.Synchronized(new Settings());
+
+		public static Settings Default => defaultInstance;
+	}
+}
+namespace Infragistics.Controls.Menus.Primitives
+{
+	public class IconContentControl : ContentControl
+	{
+		public IconContentControl()
+		{
+			base.DefaultStyleKey = typeof(IconContentControl);
+		}
+	}
+	public abstract class XamContextMenuCommandBase : CommandBase
+	{
+		public override bool CanExecute(object parameter)
+		{
+			if (parameter is XamContextMenu contextMenu)
+			{
+				return CanExecuteCommand(contextMenu);
+			}
+			return base.CanExecute(parameter);
+		}
+
+		public override void Execute(object parameter)
+		{
+			if (parameter is XamContextMenu contextMenu)
+			{
+				ExecuteCommand(contextMenu);
+				if (base.CommandSource != null)
+				{
+					base.CommandSource.Handled = true;
+				}
+			}
+			base.Execute(parameter);
+		}
+
+		protected abstract void ExecuteCommand(XamContextMenu contextMenu);
+
+		protected abstract bool CanExecuteCommand(XamContextMenu contextMenu);
+	}
+	public class OpenCommand : XamContextMenuCommandBase
+	{
+		protected override void ExecuteCommand(XamContextMenu contextMenu)
+		{
+			ContextMenuService.PositionContextMenu(contextMenu, new Point(0.0, 0.0), contextMenu.ParentElement);
+		}
+
+		protected override bool CanExecuteCommand(XamContextMenu contextMenu)
+		{
+			if (contextMenu != null)
+			{
+				return !contextMenu.IsOpen;
+			}
+			return false;
+		}
+	}
+	public class CloseCommand : XamContextMenuCommandBase
+	{
+		protected override void ExecuteCommand(XamContextMenu contextMenu)
+		{
+			contextMenu.IsOpen = false;
+		}
+
+		protected override bool CanExecuteCommand(XamContextMenu contextMenu)
+		{
+			return contextMenu?.IsOpen ?? false;
+		}
+	}
+	[StyleTypedProperty(Property = "ItemContainerStyle", StyleTargetType = typeof(ContentPresenter))]
+	public class XamHeaderedItemsControl : ItemsControl, IProvidePropertyPersistenceSettings
+	{
+		public static readonly DependencyProperty HierarchicalItemTemplateProperty = DependencyProperty.Register("HierarchicalItemTemplate", typeof(HierarchicalDataTemplate), typeof(XamHeaderedItemsControl), new PropertyMetadata(null, OnHierarchicalItemTemplateChanged));
+
+		public static readonly DependencyProperty DefaultItemsContainerProperty = DependencyProperty.Register("DefaultItemsContainer", typeof(DataTemplate), typeof(XamHeaderedItemsControl), null);
+
+		public static readonly DependencyProperty HeaderProperty = DependencyProperty.Register("Header", typeof(object), typeof(XamHeaderedItemsControl), new PropertyMetadata(null, OnHeaderPropertyChanged));
+
+		public static readonly DependencyProperty HeaderTemplateProperty = DependencyProperty.Register("HeaderTemplate", typeof(DataTemplate), typeof(XamHeaderedItemsControl), new PropertyMetadata(null, OnHeaderTemplatePropertyChanged));
+
+		public HierarchicalDataTemplate HierarchicalItemTemplate
+		{
+			get
+			{
+				return (HierarchicalDataTemplate)GetValue(HierarchicalItemTemplateProperty);
+			}
+			set
+			{
+				SetValue(HierarchicalItemTemplateProperty, value);
+			}
+		}
+
+		public DataTemplate DefaultItemsContainer
+		{
+			get
+			{
+				return (DataTemplate)GetValue(DefaultItemsContainerProperty);
+			}
+			set
+			{
+				SetValue(DefaultItemsContainerProperty, value);
+			}
+		}
+
+		public object Header
+		{
+			get
+			{
+				return GetValue(HeaderProperty);
+			}
+			set
+			{
+				SetValue(HeaderProperty, value);
+			}
+		}
+
+		public DataTemplate HeaderTemplate
+		{
+			get
+			{
+				return GetValue(HeaderTemplateProperty) as DataTemplate;
+			}
+			set
+			{
+				SetValue(HeaderTemplateProperty, value);
+			}
+		}
+
+		internal bool HeaderIsItem { get; set; }
+
+		internal IHeaderedItemContainerGenerator HeaderedItemContainerGenerator { get; private set; }
+
+		protected virtual List<string> PropertiesToIgnore
+		{
+			get
+			{
+				List<string> list = new List<string>();
+				if (base.ItemsSource != null)
+				{
+					list.AddRange(new string[2] { "ItemsSource", "Items" });
+				}
+				return list;
+			}
+		}
+
+		List<string> IProvidePropertyPersistenceSettings.PropertiesToIgnore => PropertiesToIgnore;
+
+		protected virtual List<string> PriorityProperties => null;
+
+		List<string> IProvidePropertyPersistenceSettings.PriorityProperties => PriorityProperties;
+
+		public XamHeaderedItemsControl()
+		{
+			base.DefaultStyleKey = typeof(XamHeaderedItemsControl);
+			HeaderedItemContainerGenerator = new HeaderedItemContainerGenerator(this);
+		}
+
+		private static void OnHierarchicalItemTemplateChanged(DependencyObject obj, DependencyPropertyChangedEventArgs e)
+		{
+			XamHeaderedItemsControl xamHeaderedItemsControl = obj as XamHeaderedItemsControl;
+			if (e.NewValue is HierarchicalDataTemplate { Template: not null } hierarchicalDataTemplate)
+			{
+				xamHeaderedItemsControl.SetValue(ItemsControl.ItemTemplateProperty, hierarchicalDataTemplate.Template);
+			}
+		}
+
+		private static void OnHeaderPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			(d as XamHeaderedItemsControl).OnHeaderChanged(e.OldValue, e.NewValue);
+		}
+
+		private static void OnHeaderTemplatePropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			XamHeaderedItemsControl obj = d as XamHeaderedItemsControl;
+			DataTemplate oldHeaderTemplate = e.OldValue as DataTemplate;
+			DataTemplate newHeaderTemplate = e.NewValue as DataTemplate;
+			obj.OnHeaderTemplateChanged(oldHeaderTemplate, newHeaderTemplate);
+		}
+
+		public override void OnApplyTemplate()
+		{
+			HeaderedItemContainerGenerator.OnApplyTemplate();
+			base.OnApplyTemplate();
+		}
+
+		protected override void PrepareContainerForItemOverride(DependencyObject element, object item)
+		{
+			base.PrepareContainerForItemOverride(element, item);
+			HeaderedItemContainerGenerator.PrepareContainerForItemOverride(element, item, base.ItemContainerStyle);
+		}
+
+		protected override void ClearContainerForItemOverride(DependencyObject element, object item)
+		{
+			HeaderedItemContainerGenerator.ClearContainerForItemOverride(element, item);
+			base.ClearContainerForItemOverride(element, item);
+		}
+
+		protected override void OnItemContainerStyleChanged(Style oldItemContainerStyle, Style newItemContainerStyle)
+		{
+			HeaderedItemContainerGenerator.UpdateItemContainerStyle(newItemContainerStyle);
+		}
+
+		protected virtual void OnHeaderChanged(object oldHeader, object newHeader)
+		{
+		}
+
+		protected virtual void OnHeaderTemplateChanged(DataTemplate oldHeaderTemplate, DataTemplate newHeaderTemplate)
+		{
+		}
+
+		protected virtual void FinishedLoadingPersistence()
+		{
+		}
+
+		void IProvidePropertyPersistenceSettings.FinishedLoadingPersistence()
+		{
+			FinishedLoadingPersistence();
+		}
+	}
+}
+namespace Infragistics.AutomationPeers
+{
+	public class XamContextMenuAutomationPeer : ItemsControlAutomationPeer
+	{
+		private XamContextMenu OwningContextMenu => (XamContextMenu)base.Owner;
+
+		public XamContextMenuAutomationPeer(XamContextMenu owner)
+			: base(owner)
+		{
+			if (owner == null)
+			{
+				throw new ArgumentNullException("owner");
+			}
+		}
+
+		protected override AutomationControlType GetAutomationControlTypeCore()
+		{
+			return AutomationControlType.Menu;
+		}
+
+		protected override List<AutomationPeer> GetChildrenCore()
+		{
+			ItemCollection items = OwningContextMenu.Items;
+			if (items.Count <= 0)
+			{
+				return null;
+			}
+			List<AutomationPeer> list = new List<AutomationPeer>(items.Count);
+			for (int i = 0; i < items.Count; i++)
+			{
+				if (OwningContextMenu.ItemContainerGenerator.ContainerFromIndex(i) is UIElement element)
+				{
+					AutomationPeer automationPeer = UIElementAutomationPeer.FromElement(element) ?? UIElementAutomationPeer.CreatePeerForElement(element);
+					if (automationPeer != null)
+					{
+						list.Add(automationPeer);
+					}
+				}
+			}
+			return list;
+		}
+
+		protected override string GetClassNameCore()
+		{
+			return "XamContextMenu";
+		}
+
+		protected override string GetNameCore()
+		{
+			string text = base.GetNameCore();
+			if (string.IsNullOrEmpty(text) && OwningContextMenu.Header is string)
+			{
+				text = (string)OwningContextMenu.Header;
+			}
+			return text;
+		}
+
+		protected override ItemAutomationPeer CreateItemAutomationPeer(object item)
+		{
+			ItemAutomationPeer result = null;
+			if (item is UIElement)
+			{
+				result = UIElementAutomationPeer.CreatePeerForElement((UIElement)item) as ItemAutomationPeer;
+			}
+			return result;
+		}
+	}
+	public class XamMenuAutomationPeer : ItemsControlAutomationPeer
+	{
+		private XamMenu OwningMenu => (XamMenu)base.Owner;
+
+		public XamMenuAutomationPeer(XamMenu owner)
+			: base(owner)
+		{
+			if (owner == null)
+			{
+				throw new ArgumentNullException("owner");
+			}
+		}
+
+		protected override AutomationControlType GetAutomationControlTypeCore()
+		{
+			return AutomationControlType.Menu;
+		}
+
+		protected override List<AutomationPeer> GetChildrenCore()
+		{
+			ItemCollection items = OwningMenu.Items;
+			if (items.Count <= 0)
+			{
+				return null;
+			}
+			List<AutomationPeer> list = new List<AutomationPeer>(items.Count);
+			for (int i = 0; i < items.Count; i++)
+			{
+				if (OwningMenu.ItemContainerGenerator.ContainerFromIndex(i) is UIElement element)
+				{
+					AutomationPeer automationPeer = UIElementAutomationPeer.FromElement(element) ?? UIElementAutomationPeer.CreatePeerForElement(element);
+					if (automationPeer != null)
+					{
+						list.Add(automationPeer);
+					}
+				}
+			}
+			return list;
+		}
+
+		protected override string GetClassNameCore()
+		{
+			return "XamMenu";
+		}
+
+		protected override string GetNameCore()
+		{
+			string text = base.GetNameCore();
+			if (string.IsNullOrEmpty(text) && OwningMenu.Header is string)
+			{
+				text = (string)OwningMenu.Header;
+			}
+			return text;
+		}
+
+		protected override ItemAutomationPeer CreateItemAutomationPeer(object item)
+		{
+			ItemAutomationPeer result = null;
+			if (item is UIElement)
+			{
+				result = UIElementAutomationPeer.CreatePeerForElement((UIElement)item) as ItemAutomationPeer;
+			}
+			return result;
+		}
+	}
+	public class XamMenuItemAutomationPeer : ItemsControlAutomationPeer, IExpandCollapseProvider, IToggleProvider, IInvokeProvider
+	{
+		private XamMenuItem OwningMenuItem => (XamMenuItem)base.Owner;
+
+		public ExpandCollapseState ExpandCollapseState
+		{
+			get
+			{
+				if (!OwningMenuItem.HasChildren)
+				{
+					return ExpandCollapseState.LeafNode;
+				}
+				if (!OwningMenuItem.IsSubmenuOpen)
+				{
+					return ExpandCollapseState.Collapsed;
+				}
+				return ExpandCollapseState.Expanded;
+			}
+		}
+
+		public ToggleState ToggleState
+		{
+			get
+			{
+				if (!OwningMenuItem.IsChecked)
+				{
+					return ToggleState.Off;
+				}
+				return ToggleState.On;
+			}
+		}
+
+		public XamMenuItemAutomationPeer(XamMenuItem owner)
+			: base(owner)
+		{
+			if (owner == null)
+			{
+				throw new ArgumentNullException("owner");
+			}
+			OwningMenuItem.Checked += OwningMenuItem_Checked;
+			OwningMenuItem.SubmenuClosed += OwningMenuItem_SubmenuClosed;
+			OwningMenuItem.SubmenuOpened += OwningMenuItem_SubmenuOpened;
+			OwningMenuItem.Unchecked += OwningMenuItem_Unchecked;
+		}
+
+		protected override AutomationControlType GetAutomationControlTypeCore()
+		{
+			return AutomationControlType.MenuItem;
+		}
+
+		protected override List<AutomationPeer> GetChildrenCore()
+		{
+			ItemCollection items = OwningMenuItem.Items;
+			if (items.Count <= 0)
+			{
+				return null;
+			}
+			List<AutomationPeer> list = new List<AutomationPeer>(items.Count);
+			for (int i = 0; i < items.Count; i++)
+			{
+				if (OwningMenuItem.ItemContainerGenerator.ContainerFromIndex(i) is UIElement element)
+				{
+					AutomationPeer automationPeer = UIElementAutomationPeer.FromElement(element) ?? UIElementAutomationPeer.CreatePeerForElement(element);
+					if (automationPeer != null)
+					{
+						list.Add(automationPeer);
+					}
+				}
+			}
+			return list;
+		}
+
+		protected override string GetClassNameCore()
+		{
+			return "XamMenuItem";
+		}
+
+		protected override string GetNameCore()
+		{
+			string text = base.GetNameCore();
+			if (string.IsNullOrEmpty(text) && OwningMenuItem.Header is string)
+			{
+				text = (string)OwningMenuItem.Header;
+			}
+			return text;
+		}
+
+		public override object GetPattern(PatternInterface patternInterface)
+		{
+			if (patternInterface == PatternInterface.Invoke && !OwningMenuItem.HasChildren)
+			{
+				return this;
+			}
+			if (patternInterface == PatternInterface.ExpandCollapse && OwningMenuItem.HasChildren)
+			{
+				return this;
+			}
+			if (patternInterface == PatternInterface.Toggle && OwningMenuItem.IsCheckable)
+			{
+				return this;
+			}
+			return null;
+		}
+
+		protected override ItemAutomationPeer CreateItemAutomationPeer(object item)
+		{
+			ItemAutomationPeer result = null;
+			if (item is UIElement)
+			{
+				result = UIElementAutomationPeer.CreatePeerForElement((UIElement)item) as ItemAutomationPeer;
+			}
+			return result;
+		}
+
+		internal void RaiseExpandCollapseStatePropertyChangedEvent(ExpandCollapseState oldValue, ExpandCollapseState newValue)
+		{
+			if (oldValue != newValue && AutomationPeer.ListenerExists(AutomationEvents.PropertyChanged))
+			{
+				RaisePropertyChangedEvent(ExpandCollapsePatternIdentifiers.ExpandCollapseStateProperty, oldValue, newValue);
+			}
+		}
+
+		internal void RaiseToggleStatePropertyChangedEvent(ToggleState oldValue, ToggleState newValue)
+		{
+			if (oldValue != newValue && AutomationPeer.ListenerExists(AutomationEvents.PropertyChanged))
+			{
+				RaisePropertyChangedEvent(TogglePatternIdentifiers.ToggleStateProperty, oldValue, newValue);
+			}
+		}
+
+		private void OwningMenuItem_Checked(object sender, EventArgs e)
+		{
+			RaiseToggleStatePropertyChangedEvent(ToggleState.On, ToggleState.Off);
+		}
+
+		private void OwningMenuItem_SubmenuClosed(object sender, EventArgs e)
+		{
+			RaiseExpandCollapseStatePropertyChangedEvent(ExpandCollapseState.Expanded, ExpandCollapseState.Collapsed);
+		}
+
+		private void OwningMenuItem_SubmenuOpened(object sender, EventArgs e)
+		{
+			RaiseExpandCollapseStatePropertyChangedEvent(ExpandCollapseState.Collapsed, ExpandCollapseState.Expanded);
+		}
+
+		private void OwningMenuItem_Unchecked(object sender, EventArgs e)
+		{
+			RaiseToggleStatePropertyChangedEvent(ToggleState.Off, ToggleState.On);
+		}
+
+		public void Collapse()
+		{
+			if (!OwningMenuItem.HasChildren)
+			{
+				throw new InvalidOperationException();
+			}
+			OwningMenuItem.CloseSubmenu();
+		}
+
+		public void Expand()
+		{
+			if (!OwningMenuItem.HasChildren)
+			{
+				throw new InvalidOperationException();
+			}
+			OwningMenuItem.OpenSubmenu();
+		}
+
+		public void Invoke()
+		{
+			OwningMenuItem.AutomationMenuItemClick();
+		}
+
+		public void Toggle()
+		{
+			if (!OwningMenuItem.IsCheckable)
+			{
+				throw new InvalidOperationException();
+			}
+			OwningMenuItem.IsChecked = !OwningMenuItem.IsChecked;
+			OwningMenuItem.ChangeVisualState(useTransitions: false);
+		}
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

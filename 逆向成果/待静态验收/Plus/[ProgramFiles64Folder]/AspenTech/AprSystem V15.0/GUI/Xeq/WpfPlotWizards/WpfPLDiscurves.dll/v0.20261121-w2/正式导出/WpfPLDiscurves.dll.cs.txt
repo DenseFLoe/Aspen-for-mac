@@ -1,0 +1,6060 @@
+using System;
+using System.CodeDom.Compiler;
+using System.Collections;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Resources;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Text;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Markup;
+using AspenTech.Adb.AdsAccessor;
+using AspenTech.Adb.Interfaces;
+using AspenTech.AspenCxs;
+using AspenTech.AspenPlus.Happ;
+using AspenTech.AspenPlus.Infrastructure;
+using AspenTech.AspenPlus.Localization.WpfPlotWizards;
+using AspenTech.AspenPlus.MMControls;
+using AspenTech.WpfControls.Engineering;
+using WpfPLControls;
+using WpfPlotWizardsHelper;
+using WpfPlotwizard;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyFileVersion("41.0.0.614")]
+[assembly: AssemblyTitle("WpfPLDiscurves")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("Aspen Technology, Inc.")]
+[assembly: AssemblyProduct("WpfPLDiscurves")]
+[assembly: AssemblyCopyright("Copyright © Aspen Technology 2011 - 2024")]
+[assembly: AssemblyTrademark("")]
+[assembly: ComVisible(false)]
+[assembly: NeutralResourcesLanguage("en-US", UltimateResourceFallbackLocation.Satellite)]
+[assembly: ThemeInfo(ResourceDictionaryLocation.None, ResourceDictionaryLocation.SourceAssembly)]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.614")]
+namespace WpfPLDiscurves
+{
+	[ProgId("WpfPLDiscurves.RibbonPlotWizardMgr")]
+	public class RibbonPlotWizardMgr : IRibbonPlotWizardMgr
+	{
+		private static string[] supportedTypes = new string[7] { "Dist Curve", "Gravity", "Molecular Wt", "Petro Properties", "Chain Size Distr.", "Calculated PSD", "PSD" };
+
+		private IHNode _hnode;
+
+		private IHWizardPlot _wizardPlot;
+
+		private static List<PWRPlotType> _lspwrTypes = new List<PWRPlotType>();
+
+		private PWRParser _pwrParser = new PWRParser();
+
+		private Assembly _asm;
+
+		private Dictionary<string, IRibbonPlotWizardType> _dicTagIdToPlotType;
+
+		private IHWizardPlot _tempWizard = (CHWizardPlot)Activator.CreateInstance(Marshal.GetTypeFromCLSID(new Guid("9E14C11F-6706-4067-8112-35CE9468F3A5")));
+
+		private List<string> distCurveNames = new List<string>
+		{
+			"TBPCRV", "D86CRV", "D1160CRV", "VACCRV", "D86CRVCK", "TBPCRVWT", "D86CRVWT", "D1160CWT", "VACCRVWT", "D86WTCKC",
+			"D2887CRV"
+		};
+
+		private List<string> gravitCurveNames = new List<string> { "GRVCRV", "APICRV", "GRVCRVWT", "APICRVWT" };
+
+		private List<string> mwtCurveNames = new List<string> { "MWCRV", "MWCRVWT" };
+
+		private List<string> petropropCurveNames = new List<string>
+		{
+			"ANILCRV", "KNOCKCRV", "AROMCRV", "BAS-NCRV", "CARBCRV", "FLASHCRV", "FREEZCRV", "HYDROCRV", "IRONCRV", "KVISCCRV",
+			"LUM-NCRV", "MERCCRV", "METALCRV", "MOCNCRV", "NAPHCRV", "NICKCRV", "OLEFCRV", "OXYGCRV", "PARACRV", "POURCRV",
+			"REFICRV", "RVPCRV", "ROCNCRV", "SMOKCRV", "SULFCRV", "TOT-NCRV", "TOT-NCRV", "VANACRV", "VLOCKCRV", "VISCCRV",
+			"WARMICRV", "VISCCRV", "WARMICRV", "UOPKCRV"
+		};
+
+		private List<string> polcurvesCurveNames = new List<string> { "POLCSDY", "POLCSDX" };
+
+		private List<string> lsVarname = new List<string>();
+
+		public RibbonPlotWizardMgr()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			_asm = Assembly.GetExecutingAssembly();
+			StreamReader streamReader = new StreamReader(Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLDiscurves.Text.Discurvespwr.txt"));
+			_lspwrTypes.Clear();
+			_pwrParser.ParsePwrFile(streamReader, ref _lspwrTypes);
+			_dicTagIdToPlotType = new Dictionary<string, IRibbonPlotWizardType>();
+		}
+
+		long IRibbonPlotWizardMgr.SupportedPlotTypes(ref List<string> lsTagIds)
+		{
+			lsTagIds.Clear();
+			for (int i = 0; i < _lspwrTypes.Count; i++)
+			{
+				PWRPlotType val = _lspwrTypes[i];
+				IRibbonPlotWizardType iplotType = null;
+				_tempWizard.Clear();
+				if (DoesPlotTypeHaveData(val.TagId, ref iplotType, ref _tempWizard) && !lsTagIds.Contains(val.TagId))
+				{
+					lsTagIds.Add(val.TagId);
+				}
+			}
+			return _lspwrTypes.Count;
+		}
+
+		long IRibbonPlotWizardMgr.GetPlotType(string sTagId, ref IRibbonPlotWizardType plwType)
+		{
+			GetRibbonPlotWizardType(sTagId, ref plwType);
+			if (plwType == null)
+			{
+				return 0L;
+			}
+			PWRPlotType val = null;
+			_pwrParser.FindPlotType(sTagId, ref _lspwrTypes, ref val);
+			_pwrParser.FillDefaultPlotVal(val, ref _hnode, ref _wizardPlot);
+			return 0L;
+		}
+
+		void IRibbonPlotWizardMgr.SetContext(object oNode, ref object oWizard)
+		{
+			_hnode = oNode as IHNode;
+			_wizardPlot = oWizard as IHWizardPlot;
+		}
+
+		void IRibbonPlotWizardMgr.ShowInputDialog(string sPlotName)
+		{
+		}
+
+		private void InitializeWizardPlot()
+		{
+		}
+
+		private void GetRibbonPlotWizardType(string sTagId, ref IRibbonPlotWizardType plwType)
+		{
+			if (_dicTagIdToPlotType.ContainsKey(sTagId))
+			{
+				plwType = _dicTagIdToPlotType[sTagId];
+			}
+			if (sTagId == supportedTypes[0])
+			{
+				Distillation distillation = new Distillation();
+				plwType = (IRibbonPlotWizardType)(object)distillation;
+				_dicTagIdToPlotType.Add(sTagId, plwType);
+			}
+			else if (sTagId == supportedTypes[1])
+			{
+				Gravity gravity = new Gravity();
+				plwType = (IRibbonPlotWizardType)(object)gravity;
+				_dicTagIdToPlotType.Add(sTagId, plwType);
+			}
+			else if (sTagId == supportedTypes[2])
+			{
+				MolecularWt molecularWt = new MolecularWt();
+				plwType = (IRibbonPlotWizardType)(object)molecularWt;
+				_dicTagIdToPlotType.Add(sTagId, plwType);
+			}
+			else if (sTagId == supportedTypes[3])
+			{
+				IRibbonPlotWizardType value = (IRibbonPlotWizardType)(object)new PetrProp();
+				_dicTagIdToPlotType.Add(sTagId, value);
+			}
+			else if (sTagId == supportedTypes[4])
+			{
+				StreamPolCurves streamPolCurves = new StreamPolCurves();
+				plwType = (IRibbonPlotWizardType)(object)streamPolCurves;
+				_dicTagIdToPlotType.Add(sTagId, plwType);
+			}
+			else if (sTagId == supportedTypes[5])
+			{
+				PSD pSD = new PSD();
+				plwType = (IRibbonPlotWizardType)(object)pSD;
+				_dicTagIdToPlotType.Add(sTagId, plwType);
+			}
+			else if (sTagId == supportedTypes[6])
+			{
+				WtFraction wtFraction = new WtFraction();
+				plwType = (IRibbonPlotWizardType)(object)wtFraction;
+				_dicTagIdToPlotType.Add(sTagId, plwType);
+			}
+		}
+
+		private void Initialize()
+		{
+			_dicTagIdToPlotType = new Dictionary<string, IRibbonPlotWizardType>();
+			string[] array = supportedTypes;
+			foreach (string text in array)
+			{
+				if (text == supportedTypes[0])
+				{
+					IRibbonPlotWizardType value = (IRibbonPlotWizardType)(object)new Distillation();
+					_dicTagIdToPlotType.Add(text, value);
+				}
+				else if (text == supportedTypes[1])
+				{
+					IRibbonPlotWizardType value2 = (IRibbonPlotWizardType)(object)new Gravity();
+					_dicTagIdToPlotType.Add(text, value2);
+				}
+				else if (text == supportedTypes[2])
+				{
+					IRibbonPlotWizardType value3 = (IRibbonPlotWizardType)(object)new MolecularWt();
+					_dicTagIdToPlotType.Add(text, value3);
+				}
+				else if (text == supportedTypes[3])
+				{
+					IRibbonPlotWizardType value4 = (IRibbonPlotWizardType)(object)new PetrProp();
+					_dicTagIdToPlotType.Add(text, value4);
+				}
+				else if (text == supportedTypes[4])
+				{
+					IRibbonPlotWizardType value5 = (IRibbonPlotWizardType)(object)new StreamPolCurves();
+					_dicTagIdToPlotType.Add(text, value5);
+				}
+				else if (text == supportedTypes[5])
+				{
+					IRibbonPlotWizardType value6 = (IRibbonPlotWizardType)(object)new PSD();
+					_dicTagIdToPlotType.Add(text, value6);
+				}
+				else if (text == supportedTypes[6])
+				{
+					IRibbonPlotWizardType value7 = (IRibbonPlotWizardType)(object)new WtFraction();
+					_dicTagIdToPlotType.Add(text, value7);
+				}
+			}
+		}
+
+		private static string GetAdsPathForStream(string streamName)
+		{
+			if (!string.IsNullOrEmpty(streamName))
+			{
+				List<string> list = (from x in streamName.Split('.')
+					where !string.IsNullOrWhiteSpace(x)
+					select x).ToList();
+				if (list.Count > 1)
+				{
+					StringBuilder stringBuilder = new StringBuilder("Flowsheet.");
+					for (int num = 0; num < list.Count - 1; num++)
+					{
+						stringBuilder.Append("Blocks.").Append(list[num]).Append(".SubFlowsheets.Simulation.");
+					}
+					stringBuilder.Append("Streams.").Append(list[list.Count - 1]);
+					return stringBuilder.ToString();
+				}
+			}
+			return $"Flowsheet.Streams.{streamName}";
+		}
+
+		public bool checkblockiostreams(string sFullyQualifiedBlockId, IAccessor topAccessor)
+		{
+			string text = "Flowsheet.Blocks";
+			List<string> list = (from x in sFullyQualifiedBlockId.Split('.')
+				where !string.IsNullOrWhiteSpace(x)
+				select x).ToList();
+			if (list.Count > 1)
+			{
+				StringBuilder stringBuilder = new StringBuilder("Flowsheet.");
+				for (int num = 0; num < list.Count - 1; num++)
+				{
+					stringBuilder.Append("Blocks.").Append(list[num]).Append(".SubFlowsheets.Simulation.");
+				}
+				stringBuilder.Append("Blocks.").Append(list[list.Count - 1]);
+				text = stringBuilder.ToString();
+			}
+			else
+			{
+				text = text + "." + list[list.Count - 1];
+			}
+			string[] array = new string[2] { ".Inlets", ".Outlets" };
+			for (int num2 = 0; num2 < array.Length; num2++)
+			{
+				_ = array[num2];
+				string text2 = text + ".Inlets";
+				AccessorElement val = topAccessor.ObjectAtPath((AccessorElement)null, text2);
+				if (!val.success || val.value == null)
+				{
+					continue;
+				}
+				int num3 = topAccessor.NumberOfChildren(val);
+				if (num3 <= 0)
+				{
+					continue;
+				}
+				for (int num4 = 0; num4 < num3; num4++)
+				{
+					AccessorElement val2 = topAccessor.ObjectAtPath(val, ".#" + num4 + ".Stream");
+					if (val2.success && val2.value != null && CheckforPetroProp(null, val2, topAccessor))
+					{
+						return true;
+					}
+				}
+			}
+			return false;
+		}
+
+		public bool CheckSingleStream(string sFullyQualStreamId, IAccessor topAccessor)
+		{
+			string adsPathForStream = GetAdsPathForStream(sFullyQualStreamId);
+			return CheckforPetroProp(adsPathForStream, null, topAccessor);
+		}
+
+		public bool CheckHierachystreams(string sHierarchyPath, IAccessor topAccessor)
+		{
+			string text = "Flowsheet.Streams";
+			if (!string.IsNullOrEmpty(sHierarchyPath))
+			{
+				List<string> list = (from x in sHierarchyPath.Split('.')
+					where !string.IsNullOrWhiteSpace(x)
+					select x).ToList();
+				if (list.Count > 0)
+				{
+					StringBuilder stringBuilder = new StringBuilder("Flowsheet.");
+					for (int num = 0; num < list.Count; num++)
+					{
+						stringBuilder.Append("Blocks.").Append(list[num]).Append(".SubFlowsheets.Simulation.");
+					}
+					text = stringBuilder.ToString() + "Streams";
+				}
+			}
+			AccessorElement val = topAccessor.ObjectAtPath((AccessorElement)null, text);
+			if (val.success && val.value != null)
+			{
+				int num2 = topAccessor.NumberOfChildren(val);
+				if (num2 > 0)
+				{
+					for (int num3 = 0; num3 < num2; num3++)
+					{
+						AccessorElement val2 = topAccessor.ObjectAtPath(val, "#" + num3);
+						if (val2.success && val2.value != null && CheckforPetroProp(null, val2, topAccessor))
+						{
+							return true;
+						}
+					}
+				}
+			}
+			return false;
+		}
+
+		public bool CheckforPetroProp(string sADSPath, AccessorElement rtElemStrm, IAccessor topAccessor)
+		{
+			AccessorElement val = null;
+			val = ((rtElemStrm == null) ? topAccessor.ObjectAtPath((AccessorElement)null, sADSPath + ".ExtraProperties.PropertyArray") : topAccessor.ObjectAtPath(rtElemStrm, "ExtraProperties.PropertyArray"));
+			if (val.success && val.value != null)
+			{
+				int num = topAccessor.NumberOfChildren(val);
+				if (num > 0)
+				{
+					for (int i = 0; i < num; i++)
+					{
+						AccessorElement val2 = topAccessor.ObjectAtPath(val, "#" + i);
+						if (!val2.success || val2.value == null)
+						{
+							continue;
+						}
+						string attribute = val2.attribute;
+						foreach (string item in lsVarname)
+						{
+							if (attribute.Contains(item + ","))
+							{
+								return true;
+							}
+						}
+					}
+				}
+			}
+			return false;
+		}
+
+		private bool DoesPlotTypeHaveData(string sTagId, ref IRibbonPlotWizardType iplotType, ref IHWizardPlot iWizardPlot)
+		{
+			//IL_04f3: Unknown result type (might be due to invalid IL or missing references)
+			//IL_04fa: Expected O, but got Unknown
+			int num = 0;
+			if (_hnode == null)
+			{
+				num = 1;
+				return false;
+			}
+			IHNode hnode = _hnode;
+			string text = hnode.get_AttributeValue((short)6, Type.Missing) as string;
+			if (string.Compare(sTagId, "Calculated PSD") == 0)
+			{
+				string text2 = "Stream-Sum/Dist-Curve/Output/SUBS-ATTR";
+				string text3 = "Data/Results Summary/";
+				string text4 = hnode.get_AttributeValue((short)74, Type.Missing) as string;
+				if (!string.IsNullOrEmpty(text4))
+				{
+					text4 = text4.Remove(text4.LastIndexOf("Data"));
+					text4 = text4.Replace("!", "/");
+				}
+				text3 = text4 + text3;
+				_ = (string)(dynamic)hnode.get_AttributeValue((short)6, Type.Missing);
+				IHNode iHNode;
+				if (text == "MATERIAL")
+				{
+					iHNode = hnode.Application.Tree;
+					text2 = text3 + text2;
+				}
+				else
+				{
+					iHNode = hnode;
+				}
+				IHNode iHNode2 = iHNode.FindNode(text2);
+				if (iHNode2 == null || iHNode2.Elements.Count <= 0)
+				{
+					if (iHNode.FindNode("Stream Results/Display") == null)
+					{
+						num = 1;
+						return false;
+					}
+					iHNode2 = iHNode.FindNode(text2);
+					if (iHNode2 == null || iHNode2.Elements.Count <= 0)
+					{
+						num = 1;
+						return false;
+					}
+				}
+				return true;
+			}
+			if (string.Compare(sTagId, "PSD") == 0)
+			{
+				if (_dicTagIdToPlotType.ContainsKey(sTagId))
+				{
+					iplotType = _dicTagIdToPlotType[sTagId];
+				}
+				else
+				{
+					WtFraction wtFraction = new WtFraction();
+					iplotType = (IRibbonPlotWizardType)(object)wtFraction;
+					_dicTagIdToPlotType.Add(sTagId, iplotType);
+				}
+				iplotType.CheckDataOnly = true;
+				object obj = iWizardPlot;
+				iplotType.Context((object)_hnode, ref obj, ref num);
+				iplotType.CheckDataOnly = false;
+				if (num == 0)
+				{
+					return true;
+				}
+			}
+			else
+			{
+				if (string.Compare(sTagId, "Chain Size Distr.") == 0)
+				{
+					string text5 = "Stream-Sum/Dist-Curve/Output/POLCSDY";
+					string text6 = "Data/Results Summary/";
+					string text7 = hnode.get_AttributeValue((short)74, Type.Missing) as string;
+					if (!string.IsNullOrEmpty(text7))
+					{
+						text7 = text7.Remove(text7.LastIndexOf("Data"));
+						text7 = text7.Replace("!", "/");
+					}
+					text6 = text7 + text6;
+					_ = (string)(dynamic)hnode.get_AttributeValue((short)6, Type.Missing);
+					IHNode iHNode;
+					if (text == "MATERIAL")
+					{
+						iHNode = hnode.Application.Tree;
+						text5 = text6 + text5;
+					}
+					else
+					{
+						iHNode = hnode;
+					}
+					IHNode iHNode3 = iHNode.FindNode(text5);
+					if (iHNode3 == null || iHNode3.Elements.Count == 0)
+					{
+						num = 1;
+						return false;
+					}
+					List<string> list = new List<string>();
+					int count = iHNode3.Elements.Count;
+					for (int i = 0; i < count; i++)
+					{
+						if ((dynamic)iHNode3.Elements[i, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing) != null)
+						{
+							string item = iHNode3.Elements.get_Label(0, i, Type.Missing);
+							if (!list.Contains(item))
+							{
+								list.Add(item);
+							}
+						}
+					}
+					if (list.Count == 0)
+					{
+						num = 1;
+						return false;
+					}
+					return true;
+				}
+				if (string.Compare(sTagId, "Dist Curve") == 0)
+				{
+					lsVarname = distCurveNames;
+				}
+				else if (string.Compare(sTagId, "Gravity") == 0)
+				{
+					lsVarname = gravitCurveNames;
+				}
+				else if (string.Compare(sTagId, "Molecular Wt") == 0)
+				{
+					lsVarname = mwtCurveNames;
+				}
+				else if (string.Compare(sTagId, "Petro Properties") == 0)
+				{
+					lsVarname = petropropCurveNames;
+				}
+			}
+			string text8 = hnode.get_AttributeValue((short)74, Type.Missing) as string;
+			string text9 = hnode.get_AttributeValue((short)65, Type.Missing) as string;
+			string text10 = hnode.get_AttributeValue((short)76, Type.Missing) as string;
+			_ = hnode.get_AttributeValue((short)63, Type.Missing) as string == "1";
+			IAdbTop activeDocAdbTop = SystemEnvironment.GetActiveDocAdbTop();
+			if (activeDocAdbTop != null)
+			{
+				IAccessor val = (IAccessor)new Accessor();
+				val.Attach(activeDocAdbTop);
+				if (string.IsNullOrEmpty(text8))
+				{
+					if (!CheckHierachystreams(text9, val))
+					{
+						num = 1;
+					}
+				}
+				else if (text8.Contains("Streams"))
+				{
+					if (!CheckSingleStream(text9, val))
+					{
+						num = 1;
+					}
+				}
+				else if (text9 != text10 && text8.Contains("Blocks"))
+				{
+					if (!checkblockiostreams(text9, val))
+					{
+						num = 1;
+					}
+				}
+				else if (text9 == text10 && text8.Contains("Blocks") && !CheckHierachystreams(text9, val))
+				{
+					num = 1;
+				}
+			}
+			_ = 1;
+			return false;
+		}
+	}
+	[ProgId("WpfPLDiscurves.Distillation")]
+	public class Distillation : UserControl, IRibbonPlotWizardType, INotifyPropertyChanged, IPlotWizardTemplate, IComponentConnector
+	{
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private PlotwizardHelper _help = new PlotwizardHelper();
+
+		private IHNode Context;
+
+		private string _uniqueId = "Discurves_Distillation";
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgIcon;
+
+		private bool _bHasInputDialog;
+
+		private readonly string _tempUnitFieldId = WpfPLDiscurvesResources.TemperatureUnitLabel;
+
+		private string _currentTemperature = string.Empty;
+
+		private string[,] XVarNames;
+
+		private string[,] YVarNames;
+
+		private string[] CurveName;
+
+		private ObservableCollection<string> m_BasisList = new ObservableCollection<string>();
+
+		private string m_SelectedBasis = string.Empty;
+
+		private ObservableCollection<string> m_CurveTypeList0 = new ObservableCollection<string>();
+
+		private ObservableCollection<string> m_CurveTypeList1 = new ObservableCollection<string>();
+
+		private string m_SelectedCurveType0 = string.Empty;
+
+		private string m_SelectedCurveType1 = string.Empty;
+
+		private string _currentConfigValue = string.Empty;
+
+		private List<string> vol_Curves = new List<string>();
+
+		private List<string> wt_Curves = new List<string>();
+
+		private bool _bCheckDataOnly;
+
+		public static string[] varNames = new string[11]
+		{
+			"TBPCRV", "D86CRV", "D1160CRV", "VACCRV", "D86CRVCK", "TBPCRVWT", "D86CRVWT", "D1160CWT", "VACCRVWT", "D86WTCKC",
+			"D2887CRV"
+		};
+
+		internal AesComboEdit cboType0;
+
+		internal AesComboEdit cboType1;
+
+		internal CurvesSelectFormControl CurveList;
+
+		private bool _contentLoaded;
+
+		public ObservableCollection<string> BasisList
+		{
+			get
+			{
+				return m_BasisList;
+			}
+			set
+			{
+				m_BasisList = value;
+				FirePropertyChangedEvent("BasisList");
+			}
+		}
+
+		public string SelectedBasis
+		{
+			get
+			{
+				return m_SelectedBasis;
+			}
+			set
+			{
+				if (m_SelectedBasis != value)
+				{
+					m_SelectedBasis = value;
+					ChangeCurveTypes();
+					FirePropertyChangedEvent("SelectedBasis");
+				}
+			}
+		}
+
+		public ObservableCollection<string> CurveTypeList0
+		{
+			get
+			{
+				return m_CurveTypeList0;
+			}
+			set
+			{
+				if (m_CurveTypeList0 != value)
+				{
+					m_CurveTypeList0 = value;
+					FirePropertyChangedEvent("CurveTypeList0");
+				}
+			}
+		}
+
+		public ObservableCollection<string> CurveTypeList1
+		{
+			get
+			{
+				return m_CurveTypeList1;
+			}
+			set
+			{
+				if (m_CurveTypeList1 != value)
+				{
+					m_CurveTypeList1 = value;
+					FirePropertyChangedEvent("CurveTypeList1");
+				}
+			}
+		}
+
+		public string SelectedCurveType0
+		{
+			get
+			{
+				return m_SelectedCurveType0;
+			}
+			set
+			{
+				m_SelectedCurveType0 = value;
+				FirePropertyChangedEvent("SelectedCurveType0");
+			}
+		}
+
+		public string SelectedCurveType1
+		{
+			get
+			{
+				return m_SelectedCurveType1;
+			}
+			set
+			{
+				m_SelectedCurveType1 = value;
+				FirePropertyChangedEvent("SelectedCurveType1");
+			}
+		}
+
+		public string TooltipContentForRibbonItem => WpfPLDiscurvesResources.TooltipContentForRibbonItem_DistCurve;
+
+		public string TooltipHeaderForRibbonItem => WpfPLDiscurvesResources.TooltipHeaderForRibbonItem_DistCurve;
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => _help.GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => _help.GetHelpID();
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgIcon;
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string> { _tempUnitFieldId };
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string>();
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		public event PropertyChangedEventHandler PropertyChanged;
+
+		public Distillation()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			InitializeComponent();
+			_bHasInputDialog = true;
+			if (_imgIcon == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLDiscurves.Images.distcurve.ico");
+				_imgIcon = System.Drawing.Image.FromStream(manifestResourceStream);
+			}
+			CurveList.Header = WpfPLDiscurvesResources.CurveList_Header;
+			base.DataContext = this;
+		}
+
+		private static string GetAdsPathForStream(string streamName)
+		{
+			if (!string.IsNullOrEmpty(streamName))
+			{
+				List<string> list = (from x in streamName.Split('.')
+					where !string.IsNullOrWhiteSpace(x)
+					select x).ToList();
+				if (list.Count > 1)
+				{
+					StringBuilder stringBuilder = new StringBuilder("Flowsheet.");
+					for (int num = 0; num < list.Count - 1; num++)
+					{
+						stringBuilder.Append("Blocks.").Append(list[num]).Append(".SubFlowsheets.Simulation.");
+					}
+					stringBuilder.Append("Streams.").Append(list[list.Count - 1]);
+					return stringBuilder.ToString();
+				}
+			}
+			return $"Flowsheet.Streams.{streamName}";
+		}
+
+		public bool checkblockiostreams(string sFullyQualifiedBlockId, IAccessor topAccessor)
+		{
+			string text = "Flowsheet.Blocks";
+			List<string> list = (from x in sFullyQualifiedBlockId.Split('.')
+				where !string.IsNullOrWhiteSpace(x)
+				select x).ToList();
+			if (list.Count > 1)
+			{
+				StringBuilder stringBuilder = new StringBuilder("Flowsheet.");
+				for (int num = 0; num < list.Count - 1; num++)
+				{
+					stringBuilder.Append("Blocks.").Append(list[num]).Append(".SubFlowsheets.Simulation.");
+				}
+				stringBuilder.Append("Blocks.").Append(list[list.Count - 1]);
+				text = stringBuilder.ToString();
+			}
+			else
+			{
+				text = text + "." + list[list.Count - 1];
+			}
+			string[] array = new string[2] { ".Inlets", ".Outlets" };
+			for (int num2 = 0; num2 < array.Length; num2++)
+			{
+				_ = array[num2];
+				string text2 = text + ".Inlets";
+				AccessorElement val = topAccessor.ObjectAtPath((AccessorElement)null, text2);
+				if (!val.success || val.value == null)
+				{
+					continue;
+				}
+				int num3 = topAccessor.NumberOfChildren(val);
+				if (num3 <= 0)
+				{
+					continue;
+				}
+				for (int num4 = 0; num4 < num3; num4++)
+				{
+					AccessorElement val2 = topAccessor.ObjectAtPath(val, ".#" + num4 + ".Stream");
+					if (val2.success && val2.value != null && CheckforPetroProp(null, val2, topAccessor))
+					{
+						return true;
+					}
+				}
+			}
+			return false;
+		}
+
+		public bool CheckSingleStream(string sFullyQualStreamId, IAccessor topAccessor)
+		{
+			string adsPathForStream = GetAdsPathForStream(sFullyQualStreamId);
+			return CheckforPetroProp(adsPathForStream, null, topAccessor);
+		}
+
+		public bool CheckHierachystreams(string sHierarchyPath, IAccessor topAccessor)
+		{
+			string text = "Flowsheet.Streams";
+			if (!string.IsNullOrEmpty(sHierarchyPath))
+			{
+				List<string> list = (from x in sHierarchyPath.Split('.')
+					where !string.IsNullOrWhiteSpace(x)
+					select x).ToList();
+				if (list.Count > 0)
+				{
+					StringBuilder stringBuilder = new StringBuilder("Flowsheet.");
+					for (int num = 0; num < list.Count; num++)
+					{
+						stringBuilder.Append("Blocks.").Append(list[num]).Append(".SubFlowsheets.Simulation.");
+					}
+					text = stringBuilder.ToString() + "Streams";
+				}
+			}
+			AccessorElement val = topAccessor.ObjectAtPath((AccessorElement)null, text);
+			if (val.success && val.value != null)
+			{
+				int num2 = topAccessor.NumberOfChildren(val);
+				if (num2 > 0)
+				{
+					for (int num3 = 0; num3 < num2; num3++)
+					{
+						AccessorElement val2 = topAccessor.ObjectAtPath(val, "#" + num3);
+						if (val2.success && val2.value != null && CheckforPetroProp(null, val2, topAccessor))
+						{
+							return true;
+						}
+					}
+				}
+			}
+			return false;
+		}
+
+		public bool CheckforPetroProp(string sADSPath, AccessorElement rtElemStrm, IAccessor topAccessor)
+		{
+			AccessorElement val = null;
+			val = ((rtElemStrm == null) ? topAccessor.ObjectAtPath((AccessorElement)null, sADSPath + ".ExtraProperties.PropertyArray") : topAccessor.ObjectAtPath(rtElemStrm, "ExtraProperties.PropertyArray"));
+			if (val.success && val.value != null)
+			{
+				int num = topAccessor.NumberOfChildren(val);
+				if (num > 0)
+				{
+					for (int i = 0; i < num; i++)
+					{
+						AccessorElement val2 = topAccessor.ObjectAtPath(val, "#" + i);
+						if (!val2.success || val2.value == null)
+						{
+							continue;
+						}
+						string attribute = val2.attribute;
+						string[] array = varNames;
+						foreach (string text in array)
+						{
+							if (attribute.Contains(text + ","))
+							{
+								return true;
+							}
+						}
+					}
+				}
+			}
+			return false;
+		}
+
+		void IRibbonPlotWizardType.Context(object oNode, ref object oPlotWizardComponent, ref int ierror)
+		{
+			//IL_012e: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0135: Expected O, but got Unknown
+			if (oPlotWizardComponent == null || oNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			bool flag = false;
+			_context = oNode as IHNode;
+			_wizardPlot = oPlotWizardComponent as IHWizardPlot;
+			SetVariables();
+			_wizardPlot.RemoveAllDependentVariable();
+			string text = string.Empty;
+			string text2 = _context.get_AttributeValue((short)6, Type.Missing) as string;
+			Context = ((text2 == "MATERIAL") ? _context.Application.Tree : _context);
+			ObservableCollection<string> observableCollection = new ObservableCollection<string>();
+			ObservableCollection<string> observableCollection2 = new ObservableCollection<string>();
+			ObservableCollection<string> observableCollection3 = new ObservableCollection<string>();
+			string selectedCurveType = string.Empty;
+			string selectedCurveType2 = string.Empty;
+			string text3 = "Data/Results Summary/";
+			string text4 = _context.get_AttributeValue((short)74, Type.Missing) as string;
+			string text5 = _context.get_AttributeValue((short)65, Type.Missing) as string;
+			string text6 = _context.get_AttributeValue((short)76, Type.Missing) as string;
+			_ = _context.get_AttributeValue((short)63, Type.Missing) as string == "1";
+			IAdbTop activeDocAdbTop = SystemEnvironment.GetActiveDocAdbTop();
+			if (activeDocAdbTop != null && _bCheckDataOnly)
+			{
+				IAccessor val = (IAccessor)new Accessor();
+				val.Attach(activeDocAdbTop);
+				if (string.IsNullOrEmpty(text4))
+				{
+					if (!CheckHierachystreams(text5, val))
+					{
+						ierror = 1;
+					}
+					return;
+				}
+				if (text4.Contains("Streams"))
+				{
+					if (!CheckSingleStream(text5, val))
+					{
+						ierror = 1;
+					}
+					return;
+				}
+				if (text5 != text6 && text4.Contains("Blocks"))
+				{
+					if (!checkblockiostreams(text5, val))
+					{
+						ierror = 1;
+					}
+					return;
+				}
+				if (text5 == text6 && text4.Contains("Blocks"))
+				{
+					if (!CheckHierachystreams(text5, val))
+					{
+						ierror = 1;
+					}
+					return;
+				}
+			}
+			if (!string.IsNullOrEmpty(text4))
+			{
+				text4 = text4.Remove(text4.LastIndexOf("Data"));
+				text4 = text4.Replace("!", "/");
+				text3 = text4 + text3;
+			}
+			for (int i = 0; i < YVarNames.GetLength(1) - 1; i++)
+			{
+				if (text2 == "MATERIAL")
+				{
+					YVarNames[0, i] = text3 + YVarNames[0, i];
+					XVarNames[0, i] = text3 + XVarNames[0, i];
+				}
+				IHNode iHNode = Context.FindNode(YVarNames[0, i]);
+				int num = iHNode?.Elements.Count ?? 0;
+				if (num <= 0)
+				{
+					continue;
+				}
+				flag = true;
+				if (string.IsNullOrEmpty(text))
+				{
+					text = WpfPLDiscurvesResources.BasisValue_Vol;
+					if (!observableCollection.Contains(WpfPLDiscurvesResources.BasisValue_Vol))
+					{
+						observableCollection.Add(WpfPLDiscurvesResources.BasisValue_Vol);
+					}
+				}
+				observableCollection2.Add(CurveName[i]);
+				if (observableCollection2.Count == 1)
+				{
+					selectedCurveType = CurveName[i];
+					vol_Curves.Clear();
+					for (int j = 0; j < num; j++)
+					{
+						vol_Curves.Add(iHNode.Elements.get_Label(0, j, Type.Missing));
+					}
+					_wizardPlot.SetIndependentVariable(Context, XVarNames[0, i]);
+					_wizardPlot.AddDependentVariable(Context, YVarNames[0, i]);
+				}
+			}
+			for (int k = 0; k < YVarNames.GetLength(1); k++)
+			{
+				if (text2 == "MATERIAL")
+				{
+					YVarNames[1, k] = text3 + YVarNames[1, k];
+					XVarNames[1, k] = text3 + XVarNames[1, k];
+				}
+				IHNode iHNode2 = Context.FindNode(YVarNames[1, k]);
+				int num2 = iHNode2?.Elements.Count ?? 0;
+				if (num2 <= 0)
+				{
+					continue;
+				}
+				flag = true;
+				if ((string.IsNullOrEmpty(text) || text == WpfPLDiscurvesResources.BasisValue_Vol) && !observableCollection.Contains(WpfPLDiscurvesResources.BasisValue_Wt))
+				{
+					observableCollection.Add(WpfPLDiscurvesResources.BasisValue_Wt);
+				}
+				if (string.IsNullOrEmpty(text))
+				{
+					text = WpfPLDiscurvesResources.BasisValue_Wt;
+				}
+				observableCollection3.Add(CurveName[k]);
+				if (observableCollection3.Count == 1)
+				{
+					selectedCurveType2 = CurveName[k];
+					wt_Curves.Clear();
+					for (int l = 0; l < num2; l++)
+					{
+						wt_Curves.Add(iHNode2.Elements.get_Label(0, l, Type.Missing));
+					}
+					_wizardPlot.SetIndependentVariable(Context, XVarNames[1, k]);
+					_wizardPlot.AddDependentVariable(Context, YVarNames[1, k]);
+				}
+			}
+			if (!flag)
+			{
+				ierror = 1;
+				return;
+			}
+			BasisList = observableCollection;
+			CurveTypeList0 = observableCollection2;
+			CurveTypeList1 = observableCollection3;
+			string text7 = _context.get_AttributeValue((short)65, Type.Missing) as string;
+			if (text7 != "")
+			{
+				List<string> list = new List<string>();
+				list.Add(text7);
+				CurveList.SetSelectedCurves(list.ToArray());
+			}
+			if (string.IsNullOrEmpty(_currentConfigValue))
+			{
+				SelectedBasis = text;
+				SelectedCurveType0 = selectedCurveType;
+				SelectedCurveType1 = selectedCurveType2;
+				ChangeCurveTypes();
+			}
+			else
+			{
+				RestoreConfigValue(_currentConfigValue);
+			}
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(_tempUnitFieldId) == 0)
+			{
+				List<string> list = new List<string>();
+				_help.LoadUnitsList(_context.Application.Tree, _wizardPlot, list);
+				return list;
+			}
+			return null;
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sFieldName)
+		{
+			if (sFieldName.CompareTo(_tempUnitFieldId) != 0)
+			{
+				return (RibbonControlType)0;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(_tempUnitFieldId) == 0)
+			{
+				sCurrentVal = _help.GetUnitString(_context.Application.Tree, _wizardPlot);
+			}
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+			sConfigValue = _currentConfigValue;
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(_tempUnitFieldId) == 0)
+			{
+				_currentTemperature = sValue;
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+			_currentConfigValue = sValue;
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		public void UpdateWizardData()
+		{
+			_wizardPlot.RemoveAllDependentVariable();
+			List<string> list = new List<string>(CurveList.GetSelectedCurves());
+			if (list.Count <= 0)
+			{
+				return;
+			}
+			if (SelectedBasis == WpfPLDiscurvesResources.BasisValue_Vol)
+			{
+				for (int i = 0; i <= 4; i++)
+				{
+					if (!(SelectedCurveType0 == CurveName[i]))
+					{
+						continue;
+					}
+					_wizardPlot.SetIndependentVariable(Context, XVarNames[0, i]);
+					IHNode iHNode = Context.FindNode(YVarNames[0, i]);
+					int count = iHNode.Elements.Count;
+					for (int j = 0; j < list.Count; j++)
+					{
+						for (int k = 0; k < count; k++)
+						{
+							string text = iHNode.Elements[k, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Name(Type.Missing);
+							if (list[j] == text)
+							{
+								string text2 = YVarNames[0, i] + "/" + text;
+								if (i == 2)
+								{
+									text2 += "/#0/#0";
+								}
+								_wizardPlot.AddDependentVariable(Context, text2);
+								((IHPlotVal)_wizardPlot.PlotVal).set_Label(j, text);
+								_wizardPlot.PlotVal.Title = CurveName[i];
+								_wizardPlot.PlotVal.XAxisTitle = WpfPLDiscurvesResources.XAxisTitle_Vol;
+							}
+						}
+					}
+				}
+			}
+			if (SelectedBasis == WpfPLDiscurvesResources.BasisValue_Wt)
+			{
+				for (int l = 0; l <= 5; l++)
+				{
+					if (!(SelectedCurveType1 == CurveName[l]))
+					{
+						continue;
+					}
+					_wizardPlot.SetIndependentVariable(Context, XVarNames[1, l]);
+					IHNode iHNode2 = Context.FindNode(YVarNames[1, l]);
+					int count2 = iHNode2.Elements.Count;
+					for (int m = 0; m < list.Count; m++)
+					{
+						for (int n = 0; n < count2; n++)
+						{
+							string text3 = iHNode2.Elements[n, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Name(Type.Missing);
+							if (list[m] == text3)
+							{
+								string text4 = YVarNames[1, l] + "/" + text3;
+								if (l == 2)
+								{
+									text4 += "/#0/#0";
+								}
+								_wizardPlot.AddDependentVariable(Context, text4);
+								((IHPlotVal)_wizardPlot.PlotVal).set_Label(m, text3);
+								_wizardPlot.PlotVal.Title = CurveName[l];
+								_wizardPlot.PlotVal.XAxisTitle = WpfPLDiscurvesResources.XAxisTitle_Wt;
+							}
+						}
+					}
+				}
+			}
+			_help.SaveUnitsComboText(_context.Application.Tree, _wizardPlot, _currentTemperature);
+			_currentConfigValue = SaveConfigValue();
+		}
+
+		private void FirePropertyChangedEvent(string propName)
+		{
+			if (this.PropertyChanged != null)
+			{
+				this.PropertyChanged(this, new PropertyChangedEventArgs(propName));
+			}
+		}
+
+		private void CurveList_OKButtonClick(object sender, EventArgs e)
+		{
+			UpdateWizardData();
+			_help.CloseForm((UserControl)this, (bool?)true);
+		}
+
+		private void CurveList_CancelButtonClick(object sender, EventArgs e)
+		{
+			_help.CloseForm((UserControl)this, (bool?)false);
+		}
+
+		private void SetVariables()
+		{
+			XVarNames = new string[2, 6]
+			{
+				{ "Stream-Sum/Dist-Curve/Output/TBPT", "Stream-Sum/Dist-Curve/Output/D86TBPT", "Stream-Sum/Dist-Curve/Output/D1160TBP", "Stream-Sum/Dist-Curve/Output/VACTBPT", "Stream-Sum/Dist-Curve/Output/D86CRKX", "" },
+				{ "Stream-Sum/Dist-Curve/Output/TBPWTX", "Stream-Sum/Dist-Curve/Output/D86WTX", "Stream-Sum/Dist-Curve/Output/D1160WTX", "Stream-Sum/Dist-Curve/Output/VACWTX", "Stream-Sum/Dist-Curve/Output/D86WTCKX", "Stream-Sum/Dist-Curve/Output/D2887TBP" }
+			};
+			YVarNames = new string[2, 6]
+			{
+				{ "Stream-Sum/Dist-Curve/Output/TBPCRV", "Stream-Sum/Dist-Curve/Output/D86CRV", "Stream-Sum/Dist-Curve/Output/D1160CRV", "Stream-Sum/Dist-Curve/Output/VACCRV", "Stream-Sum/Dist-Curve/Output/D86CRVCK", "" },
+				{ "Stream-Sum/Dist-Curve/Output/TBPCRVWT", "Stream-Sum/Dist-Curve/Output/D86CRVWT", "Stream-Sum/Dist-Curve/Output/D1160CWT", "Stream-Sum/Dist-Curve/Output/VACCRVWT", "Stream-Sum/Dist-Curve/Output/D86WTCKC", "Stream-Sum/Dist-Curve/Output/D2887CRV" }
+			};
+			CurveName = new string[6]
+			{
+				WpfPLDiscurvesResources.CurveName_0,
+				WpfPLDiscurvesResources.CurveName_1,
+				WpfPLDiscurvesResources.CurveName_2,
+				WpfPLDiscurvesResources.CurveName_3,
+				WpfPLDiscurvesResources.CurveName_4,
+				WpfPLDiscurvesResources.CurveName_5
+			};
+		}
+
+		private void ChangeCurveTypes()
+		{
+			if (SelectedBasis == WpfPLDiscurvesResources.BasisValue_Vol)
+			{
+				((UIElement)(object)cboType0).Visibility = Visibility.Visible;
+				((UIElement)(object)cboType1).Visibility = Visibility.Hidden;
+				CurveList.SetCurves(vol_Curves.ToArray());
+			}
+			else
+			{
+				((UIElement)(object)cboType1).Visibility = Visibility.Visible;
+				((UIElement)(object)cboType0).Visibility = Visibility.Hidden;
+				CurveList.SetCurves(wt_Curves.ToArray());
+			}
+		}
+
+		private string SaveConfigValue()
+		{
+			_ = string.Empty;
+			string empty = string.Empty;
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.Append("BasisSelection=");
+			stringBuilder.Append(SelectedBasis);
+			stringBuilder.Append(";");
+			stringBuilder.Append("VolTypeVisibility=");
+			if (((UIElement)(object)cboType0).Visibility == Visibility.Visible)
+			{
+				stringBuilder.Append(0);
+				empty = SelectedCurveType0;
+			}
+			else
+			{
+				stringBuilder.Append(1);
+				empty = SelectedCurveType1;
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("TypeSelection=");
+			stringBuilder.Append(empty);
+			stringBuilder.Append(";");
+			stringBuilder.Append("CurveSelection=");
+			List<string> list = new List<string>(CurveList.GetSelectedCurves());
+			int count = list.Count;
+			for (int i = 0; i < count; i++)
+			{
+				if (i > 0)
+				{
+					stringBuilder.Append(",");
+				}
+				stringBuilder.Append(list[i]);
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("CheckAll=");
+			stringBuilder.Append(CurveList.IsCheckAll);
+			stringBuilder.Append(";");
+			return stringBuilder.ToString();
+		}
+
+		private void RestoreConfigValue(string ConfigString)
+		{
+			string[] array = ConfigString.Split(';');
+			int num = 0;
+			string selectedBasis = array[num].Substring(array[num].IndexOf('=') + 1);
+			SelectedBasis = selectedBasis;
+			int num2 = ((!(SelectedBasis == "Vol%")) ? 1 : 0);
+			num++;
+			selectedBasis = array[num].Substring(array[num].IndexOf('=') + 1);
+			if (Convert.ToInt16(selectedBasis) == 0)
+			{
+				((UIElement)(object)cboType0).Visibility = Visibility.Visible;
+				((UIElement)(object)cboType1).Visibility = Visibility.Hidden;
+			}
+			else
+			{
+				((UIElement)(object)cboType0).Visibility = Visibility.Hidden;
+				((UIElement)(object)cboType1).Visibility = Visibility.Visible;
+			}
+			num++;
+			selectedBasis = array[num].Substring(array[num].IndexOf('=') + 1);
+			if (((UIElement)(object)cboType0).Visibility == Visibility.Visible)
+			{
+				SelectedCurveType0 = selectedBasis;
+			}
+			else
+			{
+				SelectedCurveType1 = selectedBasis;
+			}
+			List<string> list = new List<string>();
+			for (int i = 0; i < YVarNames.GetLength(1); i++)
+			{
+				IHNode iHNode = Context.FindNode(YVarNames[num2, i]);
+				int num3 = iHNode?.Elements.Count ?? 0;
+				if (num3 > 0)
+				{
+					for (int j = 0; j < num3; j++)
+					{
+						list.Add(iHNode.Elements.get_Label(0, j, Type.Missing));
+					}
+					break;
+				}
+			}
+			CurveList.SetCurves(list.ToArray());
+			num++;
+			selectedBasis = array[num].Substring(array[num].IndexOf('=') + 1);
+			string[] array2 = selectedBasis.Split(',');
+			List<string> list2 = new List<string>();
+			string[] array3 = array2;
+			foreach (string item in array3)
+			{
+				list2.Add(item);
+			}
+			CurveList.SetSelectedCurves(list2.ToArray());
+			num++;
+			selectedBasis = array[num].Substring(array[num].IndexOf('=') + 1);
+			CurveList.IsCheckAll = Convert.ToBoolean(selectedBasis);
+		}
+
+		public void SetCaption(ref string caption)
+		{
+			caption = WpfPLDiscurvesResources.Distillation_WindowTitle;
+		}
+
+		public void SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 440.0;
+		}
+
+		public void SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 300.0;
+		}
+
+		public void SetMinHeight(ref double minHeight)
+		{
+			minHeight = 440.0;
+		}
+
+		public void SetMinWidth(ref double minWidth)
+		{
+			minWidth = 300.0;
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLDiscurves;component/distillation.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			//IL_0018: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0022: Expected O, but got Unknown
+			//IL_0025: Unknown result type (might be due to invalid IL or missing references)
+			//IL_002f: Expected O, but got Unknown
+			switch (connectionId)
+			{
+			case 1:
+				cboType0 = (AesComboEdit)target;
+				break;
+			case 2:
+				cboType1 = (AesComboEdit)target;
+				break;
+			case 3:
+				CurveList = (CurvesSelectFormControl)target;
+				CurveList.OKButtonClick += CurveList_OKButtonClick;
+				CurveList.CancelButtonClick += CurveList_CancelButtonClick;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+	[ProgId("WpfPLDiscurves.Gravity")]
+	public class Gravity : UserControl, IRibbonPlotWizardType, INotifyPropertyChanged, IPlotWizardTemplate, IComponentConnector
+	{
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private PlotwizardHelper _help = new PlotwizardHelper();
+
+		private IHNode Context;
+
+		private string _uniqueId = "Discurves_Gravity";
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgIcon;
+
+		private bool _bHasInputDialog;
+
+		private readonly string _tempUnitFieldId = WpfPLDiscurvesResources.TemperatureUnitLabel;
+
+		private string[,] XVarNames;
+
+		private string[,] YVarNames;
+
+		private string[] CurveName;
+
+		private ObservableCollection<string> m_BasisList = new ObservableCollection<string>();
+
+		private string m_SelectedBasis = string.Empty;
+
+		private ObservableCollection<string> m_CurveTypeList0 = new ObservableCollection<string>();
+
+		private ObservableCollection<string> m_CurveTypeList1 = new ObservableCollection<string>();
+
+		private string m_SelectedCurveType0 = string.Empty;
+
+		private string m_SelectedCurveType1 = string.Empty;
+
+		private string _currentConfigValue = string.Empty;
+
+		private bool _bCheckDataOnly;
+
+		internal AesComboEdit cboType0;
+
+		internal AesComboEdit cboType1;
+
+		internal CurvesSelectFormControl CurveList;
+
+		private bool _contentLoaded;
+
+		public ObservableCollection<string> BasisList
+		{
+			get
+			{
+				return m_BasisList;
+			}
+			set
+			{
+				m_BasisList = value;
+				FirePropertyChangedEvent("BasisList");
+			}
+		}
+
+		public string SelectedBasis
+		{
+			get
+			{
+				return m_SelectedBasis;
+			}
+			set
+			{
+				m_SelectedBasis = value;
+				ChangeCurveTypes();
+				FirePropertyChangedEvent("SelectedBasis");
+			}
+		}
+
+		public ObservableCollection<string> CurveTypeList0
+		{
+			get
+			{
+				return m_CurveTypeList0;
+			}
+			set
+			{
+				m_CurveTypeList0 = value;
+				FirePropertyChangedEvent("CurveTypeList0");
+			}
+		}
+
+		public ObservableCollection<string> CurveTypeList1
+		{
+			get
+			{
+				return m_CurveTypeList1;
+			}
+			set
+			{
+				m_CurveTypeList1 = value;
+				FirePropertyChangedEvent("CurveTypeList1");
+			}
+		}
+
+		public string SelectedCurveType0
+		{
+			get
+			{
+				return m_SelectedCurveType0;
+			}
+			set
+			{
+				m_SelectedCurveType0 = value;
+				FirePropertyChangedEvent("SelectedCurveType0");
+			}
+		}
+
+		public string SelectedCurveType1
+		{
+			get
+			{
+				return m_SelectedCurveType1;
+			}
+			set
+			{
+				m_SelectedCurveType1 = value;
+				FirePropertyChangedEvent("SelectedCurveType1");
+			}
+		}
+
+		public string TooltipContentForRibbonItem => WpfPLDiscurvesResources.TooltipContentForRibbonItem_Gravity;
+
+		public string TooltipHeaderForRibbonItem => WpfPLDiscurvesResources.TooltipHeaderForRibbonItem_Gravity;
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => _help.GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => _help.GetHelpID();
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgIcon;
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string>();
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string>();
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		public event PropertyChangedEventHandler PropertyChanged;
+
+		public Gravity()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			InitializeComponent();
+			_bHasInputDialog = true;
+			if (_imgIcon == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLDiscurves.Images.BinaryTX.ico");
+				_imgIcon = System.Drawing.Image.FromStream(manifestResourceStream);
+			}
+			CurveList.Header = WpfPLDiscurvesResources.CurveList_Header;
+			base.DataContext = this;
+		}
+
+		void IRibbonPlotWizardType.Context(object oNode, ref object oPlotWizardComponent, ref int ierror)
+		{
+			if (oPlotWizardComponent == null || oNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			bool flag = false;
+			_context = oNode as IHNode;
+			_wizardPlot = oPlotWizardComponent as IHWizardPlot;
+			SetVariables();
+			_wizardPlot.RemoveAllDependentVariable();
+			string text = string.Empty;
+			string text2 = _context.get_AttributeValue((short)6, Type.Missing) as string;
+			Context = ((text2 == "MATERIAL") ? _context.Application.Tree : _context);
+			ObservableCollection<string> observableCollection = new ObservableCollection<string>();
+			ObservableCollection<string> observableCollection2 = new ObservableCollection<string>();
+			ObservableCollection<string> observableCollection3 = new ObservableCollection<string>();
+			string selectedCurveType = string.Empty;
+			string selectedCurveType2 = string.Empty;
+			List<string> list = new List<string>();
+			string text3 = "Data/Results Summary/";
+			string text4 = _context.get_AttributeValue((short)74, Type.Missing) as string;
+			if (!string.IsNullOrEmpty(text4))
+			{
+				text4 = text4.Remove(text4.LastIndexOf("Data"));
+				text4 = text4.Replace("!", "/");
+				text3 = text4 + text3;
+			}
+			for (int i = 0; i < YVarNames.GetLength(0); i++)
+			{
+				if (text2 == "MATERIAL")
+				{
+					YVarNames[0, i] = text3 + YVarNames[0, i];
+					XVarNames[0, i] = text3 + XVarNames[0, i];
+				}
+				IHNode iHNode = Context.FindNode(YVarNames[0, i]);
+				int num = iHNode?.Elements.Count ?? 0;
+				if (num <= 0)
+				{
+					continue;
+				}
+				flag = true;
+				if (text == "")
+				{
+					text = WpfPLDiscurvesResources.BasisValue_Vol;
+					if (!observableCollection.Contains(WpfPLDiscurvesResources.BasisValue_Vol))
+					{
+						observableCollection.Add(WpfPLDiscurvesResources.BasisValue_Vol);
+					}
+				}
+				observableCollection2.Add(CurveName[i]);
+				if (observableCollection2.Count == 1)
+				{
+					selectedCurveType = CurveName[i];
+					list.Clear();
+					for (int j = 0; j < num; j++)
+					{
+						list.Add(iHNode.Elements.get_Label(0, j, Type.Missing));
+					}
+					_wizardPlot.SetIndependentVariable(Context, XVarNames[0, i]);
+					_wizardPlot.AddDependentVariable(Context, YVarNames[0, i]);
+				}
+			}
+			for (int k = 0; k < YVarNames.GetLength(1); k++)
+			{
+				if (text2 == "MATERIAL")
+				{
+					YVarNames[1, k] = text3 + YVarNames[1, k];
+					XVarNames[1, k] = text3 + XVarNames[1, k];
+				}
+				IHNode iHNode2 = Context.FindNode(YVarNames[1, k]);
+				int num2 = iHNode2?.Elements.Count ?? 0;
+				if (num2 <= 0)
+				{
+					continue;
+				}
+				flag = true;
+				if ((text == WpfPLDiscurvesResources.BasisValue_Vol || text == "") && !observableCollection.Contains(WpfPLDiscurvesResources.BasisValue_Wt))
+				{
+					observableCollection.Add(WpfPLDiscurvesResources.BasisValue_Wt);
+				}
+				if (text == "")
+				{
+					text = WpfPLDiscurvesResources.BasisValue_Wt;
+				}
+				observableCollection3.Add(CurveName[k]);
+				if (observableCollection3.Count == 1)
+				{
+					selectedCurveType2 = CurveName[k];
+					list.Clear();
+					for (int l = 0; l < num2; l++)
+					{
+						list.Add(iHNode2.Elements.get_Label(0, l, Type.Missing));
+					}
+					_wizardPlot.SetIndependentVariable(Context, XVarNames[1, k]);
+					_wizardPlot.AddDependentVariable(Context, YVarNames[1, k]);
+				}
+			}
+			if (!flag)
+			{
+				ierror = 1;
+				return;
+			}
+			BasisList = observableCollection;
+			CurveTypeList0 = observableCollection2;
+			CurveTypeList1 = observableCollection3;
+			if (string.IsNullOrEmpty(_currentConfigValue))
+			{
+				SelectedBasis = text;
+				SelectedCurveType0 = selectedCurveType;
+				SelectedCurveType1 = selectedCurveType2;
+				CurveList.SetCurves(list.ToArray());
+				ChangeCurveTypes();
+				string text5 = _context.get_AttributeValue((short)65, Type.Missing) as string;
+				if (text5 != "")
+				{
+					List<string> list2 = new List<string>();
+					list2.Add(text5);
+					CurveList.SetSelectedCurves(list2.ToArray());
+				}
+			}
+			else
+			{
+				RestoreConfigValue(_currentConfigValue);
+			}
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			return null;
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sFieldName)
+		{
+			return (RibbonControlType)0;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+			sConfigValue = _currentConfigValue;
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+			_currentConfigValue = sValue;
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		public void UpdateWizardData()
+		{
+			_wizardPlot.RemoveAllDependentVariable();
+			List<string> list = new List<string>(CurveList.GetSelectedCurves());
+			if (list.Count > 0 && SelectedBasis == WpfPLDiscurvesResources.BasisValue_Vol)
+			{
+				for (int i = 0; i < 2; i++)
+				{
+					if (!(SelectedCurveType0 == CurveName[i]))
+					{
+						continue;
+					}
+					_wizardPlot.SetIndependentVariable(Context, XVarNames[0, i]);
+					IHNode iHNode = Context.FindNode(YVarNames[0, i]);
+					int count = iHNode.Elements.Count;
+					for (int j = 0; j < list.Count; j++)
+					{
+						for (int k = 0; k < count; k++)
+						{
+							string text = iHNode.Elements[k, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Name(Type.Missing);
+							if (list[j] == text)
+							{
+								string depvar = YVarNames[0, i] + "/" + text;
+								_wizardPlot.AddDependentVariable(Context, depvar);
+								((IHPlotVal)_wizardPlot.PlotVal).set_Label(j, text);
+								_wizardPlot.PlotVal.Title = CurveName[i];
+							}
+						}
+					}
+				}
+				_wizardPlot.PlotVal.XAxisTitle = WpfPLDiscurvesResources.XAxisTitle_Vol;
+			}
+			if (list.Count > 0 && SelectedBasis == WpfPLDiscurvesResources.BasisValue_Wt)
+			{
+				for (int l = 0; l < 2; l++)
+				{
+					if (!(SelectedCurveType1 == CurveName[l]))
+					{
+						continue;
+					}
+					_wizardPlot.SetIndependentVariable(Context, XVarNames[1, l]);
+					IHNode iHNode2 = Context.FindNode(YVarNames[1, l]);
+					int count2 = iHNode2.Elements.Count;
+					for (int m = 0; m < list.Count; m++)
+					{
+						for (int n = 0; n < count2; n++)
+						{
+							string text2 = iHNode2.Elements[n, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Name(Type.Missing);
+							if (list[m] == text2)
+							{
+								string depvar2 = YVarNames[1, l] + "/" + text2;
+								_wizardPlot.AddDependentVariable(Context, depvar2);
+								((IHPlotVal)_wizardPlot.PlotVal).set_Label(m, text2);
+								_wizardPlot.PlotVal.Title = CurveName[l];
+							}
+						}
+					}
+				}
+				_wizardPlot.PlotVal.XAxisTitle = WpfPLDiscurvesResources.XAxisTitle_Wt;
+			}
+			_currentConfigValue = SaveConfigValue();
+		}
+
+		private void FirePropertyChangedEvent(string propName)
+		{
+			if (this.PropertyChanged != null)
+			{
+				this.PropertyChanged(this, new PropertyChangedEventArgs(propName));
+			}
+		}
+
+		public void SetCaption(ref string caption)
+		{
+			caption = WpfPLDiscurvesResources.Gravity_WindowTitle;
+		}
+
+		public void SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 450.0;
+		}
+
+		public void SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 300.0;
+		}
+
+		public void SetMinHeight(ref double minHeight)
+		{
+			minHeight = 440.0;
+		}
+
+		public void SetMinWidth(ref double minWidth)
+		{
+			minWidth = 300.0;
+		}
+
+		private void CurveList_OKButtonClick(object sender, EventArgs e)
+		{
+			UpdateWizardData();
+			_help.CloseForm((UserControl)this, (bool?)true);
+		}
+
+		private void CurveList_CancelButtonClick(object sender, EventArgs e)
+		{
+			_help.CloseForm((UserControl)this, (bool?)false);
+		}
+
+		private void SetVariables()
+		{
+			XVarNames = new string[2, 2]
+			{
+				{ "Stream-Sum/Dist-Curve/Output/GRVTBPT", "Stream-Sum/Dist-Curve/Output/APITBPT" },
+				{ "Stream-Sum/Dist-Curve/Output/GRVWTTBP", "Stream-Sum/Dist-Curve/Output/APIWTX" }
+			};
+			YVarNames = new string[2, 2]
+			{
+				{ "Stream-Sum/Dist-Curve/Output/GRVCRV", "Stream-Sum/Dist-Curve/Output/APICRV" },
+				{ "Stream-Sum/Dist-Curve/Output/GRVCRVWT", "Stream-Sum/Dist-Curve/Output/APICRVWT" }
+			};
+			CurveName = new string[2]
+			{
+				WpfPLDiscurvesResources.SpecificGravityCurve,
+				WpfPLDiscurvesResources.APICurve
+			};
+		}
+
+		private void ChangeCurveTypes()
+		{
+			if (SelectedBasis == WpfPLDiscurvesResources.BasisValue_Vol)
+			{
+				((UIElement)(object)cboType0).Visibility = Visibility.Visible;
+				((UIElement)(object)cboType1).Visibility = Visibility.Hidden;
+			}
+			else
+			{
+				((UIElement)(object)cboType1).Visibility = Visibility.Visible;
+				((UIElement)(object)cboType0).Visibility = Visibility.Hidden;
+			}
+		}
+
+		private string SaveConfigValue()
+		{
+			_ = string.Empty;
+			string empty = string.Empty;
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.Append("BasisSelection=");
+			stringBuilder.Append(SelectedBasis);
+			stringBuilder.Append(";");
+			stringBuilder.Append("VolTypeVisibility=");
+			if (((UIElement)(object)cboType0).Visibility == Visibility.Visible)
+			{
+				stringBuilder.Append(0);
+				empty = SelectedCurveType0;
+			}
+			else
+			{
+				stringBuilder.Append(1);
+				empty = SelectedCurveType1;
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("TypeSelection=");
+			stringBuilder.Append(empty);
+			stringBuilder.Append(";");
+			stringBuilder.Append("CurveSelection=");
+			List<string> list = new List<string>(CurveList.GetSelectedCurves());
+			int count = list.Count;
+			for (int i = 0; i < count; i++)
+			{
+				if (i > 0)
+				{
+					stringBuilder.Append(",");
+				}
+				stringBuilder.Append(list[i]);
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("CheckAll=");
+			stringBuilder.Append(CurveList.IsCheckAll);
+			stringBuilder.Append(";");
+			return stringBuilder.ToString();
+		}
+
+		private void RestoreConfigValue(string ConfigString)
+		{
+			string[] array = ConfigString.Split(';');
+			int num = 0;
+			string selectedBasis = array[num].Substring(array[num].IndexOf('=') + 1);
+			SelectedBasis = selectedBasis;
+			int num2 = ((!(SelectedBasis == WpfPLDiscurvesResources.BasisValue_Vol)) ? 1 : 0);
+			num++;
+			selectedBasis = array[num].Substring(array[num].IndexOf('=') + 1);
+			if (Convert.ToInt16(selectedBasis) == 0)
+			{
+				((UIElement)(object)cboType0).Visibility = Visibility.Visible;
+				((UIElement)(object)cboType1).Visibility = Visibility.Hidden;
+			}
+			else
+			{
+				((UIElement)(object)cboType0).Visibility = Visibility.Hidden;
+				((UIElement)(object)cboType1).Visibility = Visibility.Visible;
+			}
+			num++;
+			selectedBasis = array[num].Substring(array[num].IndexOf('=') + 1);
+			if (((UIElement)(object)cboType0).Visibility == Visibility.Visible)
+			{
+				SelectedCurveType0 = selectedBasis;
+			}
+			else
+			{
+				SelectedCurveType1 = selectedBasis;
+			}
+			List<string> list = new List<string>();
+			for (int i = 0; i < YVarNames.GetLength(1); i++)
+			{
+				IHNode iHNode = Context.FindNode(YVarNames[num2, i]);
+				int num3 = iHNode?.Elements.Count ?? 0;
+				if (num3 > 0)
+				{
+					for (int j = 0; j < num3; j++)
+					{
+						list.Add(iHNode.Elements.get_Label(0, j, Type.Missing));
+					}
+					break;
+				}
+			}
+			CurveList.SetCurves(list.ToArray());
+			num++;
+			selectedBasis = array[num].Substring(array[num].IndexOf('=') + 1);
+			string[] array2 = selectedBasis.Split(',');
+			List<string> list2 = new List<string>();
+			string[] array3 = array2;
+			foreach (string item in array3)
+			{
+				list2.Add(item);
+			}
+			CurveList.SetSelectedCurves(list2.ToArray());
+			num++;
+			selectedBasis = array[num].Substring(array[num].IndexOf('=') + 1);
+			CurveList.IsCheckAll = Convert.ToBoolean(selectedBasis);
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLDiscurves;component/gravity.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			//IL_0018: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0022: Expected O, but got Unknown
+			//IL_0025: Unknown result type (might be due to invalid IL or missing references)
+			//IL_002f: Expected O, but got Unknown
+			switch (connectionId)
+			{
+			case 1:
+				cboType0 = (AesComboEdit)target;
+				break;
+			case 2:
+				cboType1 = (AesComboEdit)target;
+				break;
+			case 3:
+				CurveList = (CurvesSelectFormControl)target;
+				CurveList.OKButtonClick += CurveList_OKButtonClick;
+				CurveList.CancelButtonClick += CurveList_CancelButtonClick;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+	[ProgId("WpfPLDiscurves.MolecularWt")]
+	public class MolecularWt : UserControl, IRibbonPlotWizardType, INotifyPropertyChanged, IPlotWizardTemplate, IComponentConnector
+	{
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private PlotwizardHelper _help = new PlotwizardHelper();
+
+		private IHNode Context;
+
+		private string _uniqueId = "Discurves_MolecularWt";
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgIcon;
+
+		private bool _bHasInputDialog;
+
+		private string[] XVarNames;
+
+		private string[] YVarNames;
+
+		private ObservableCollection<string> m_BasisList = new ObservableCollection<string>();
+
+		private string m_SelectedBasis = string.Empty;
+
+		private string _currentConfigValue = string.Empty;
+
+		private bool _bCheckDataOnly;
+
+		internal CurvesSelectFormControl CurveList;
+
+		private bool _contentLoaded;
+
+		public ObservableCollection<string> BasisList
+		{
+			get
+			{
+				return m_BasisList;
+			}
+			set
+			{
+				m_BasisList = value;
+				FirePropertyChangedEvent("BasisList");
+			}
+		}
+
+		public string SelectedBasis
+		{
+			get
+			{
+				return m_SelectedBasis;
+			}
+			set
+			{
+				m_SelectedBasis = value;
+				FirePropertyChangedEvent("SelectedBasis");
+			}
+		}
+
+		public string TooltipContentForRibbonItem => WpfPLDiscurvesResources.TooltipContentForRibbonItem_MolecularWt;
+
+		public string TooltipHeaderForRibbonItem => WpfPLDiscurvesResources.TooltipHeaderForRibbonItem_MolecularWt;
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => _help.GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => _help.GetHelpID();
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgIcon;
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string>();
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string>();
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		public event PropertyChangedEventHandler PropertyChanged;
+
+		public MolecularWt()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			InitializeComponent();
+			_bHasInputDialog = true;
+			if (_imgIcon == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLDiscurves.Images.mw.ico");
+				_imgIcon = System.Drawing.Image.FromStream(manifestResourceStream);
+			}
+			CurveList.Header = WpfPLDiscurvesResources.CurveList_Header;
+			base.DataContext = this;
+		}
+
+		void IRibbonPlotWizardType.Context(object oNode, ref object oPlotWizardComponent, ref int ierror)
+		{
+			if (oPlotWizardComponent == null || oNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			bool flag = false;
+			_context = oNode as IHNode;
+			_wizardPlot = oPlotWizardComponent as IHWizardPlot;
+			SetVariables();
+			_wizardPlot.RemoveAllDependentVariable();
+			string text = string.Empty;
+			string text2 = _context.get_AttributeValue((short)6, Type.Missing) as string;
+			Context = ((text2 == "MATERIAL") ? _context.Application.Tree : _context);
+			ObservableCollection<string> observableCollection = new ObservableCollection<string>();
+			List<string> list = new List<string>();
+			string text3 = "Data/Results Summary/";
+			string text4 = _context.get_AttributeValue((short)74, Type.Missing) as string;
+			if (!string.IsNullOrEmpty(text4))
+			{
+				text4 = text4.Remove(text4.LastIndexOf("Data"));
+				text4 = text4.Replace("!", "/");
+				text3 = text4 + text3;
+			}
+			if (text2 == "MATERIAL")
+			{
+				YVarNames[0] = text3 + YVarNames[0];
+				XVarNames[0] = text3 + XVarNames[0];
+			}
+			IHNode iHNode = Context.FindNode(YVarNames[0]);
+			int num = iHNode?.Elements.Count ?? 0;
+			if (num > 0)
+			{
+				flag = true;
+				if (text == "")
+				{
+					text = WpfPLDiscurvesResources.BasisValue_Vol;
+					if (!observableCollection.Contains(WpfPLDiscurvesResources.BasisValue_Vol))
+					{
+						observableCollection.Add(WpfPLDiscurvesResources.BasisValue_Vol);
+					}
+				}
+				list.Clear();
+				for (int i = 0; i < num; i++)
+				{
+					list.Add(iHNode.Elements.get_Label(0, i, Type.Missing));
+				}
+			}
+			if (text2 == "MATERIAL")
+			{
+				YVarNames[1] = text3 + YVarNames[1];
+				XVarNames[1] = text3 + XVarNames[1];
+			}
+			iHNode = Context.FindNode(YVarNames[1]);
+			int num2 = iHNode?.Elements.Count ?? 0;
+			if (num2 > 0)
+			{
+				flag = true;
+				if ((text == WpfPLDiscurvesResources.BasisValue_Vol || text == "") && !observableCollection.Contains(WpfPLDiscurvesResources.BasisValue_Wt))
+				{
+					observableCollection.Add(WpfPLDiscurvesResources.BasisValue_Wt);
+				}
+				if (text == "")
+				{
+					text = WpfPLDiscurvesResources.BasisValue_Wt;
+				}
+				list.Clear();
+				for (int j = 0; j < num2; j++)
+				{
+					list.Add(iHNode.Elements.get_Label(0, j, Type.Missing));
+				}
+			}
+			if (!flag)
+			{
+				ierror = 1;
+				return;
+			}
+			BasisList = observableCollection;
+			if (string.IsNullOrEmpty(_currentConfigValue))
+			{
+				SelectedBasis = text;
+				CurveList.SetCurves(list.ToArray());
+				string text5 = _context.get_AttributeValue((short)65, Type.Missing) as string;
+				if (text5 != "")
+				{
+					List<string> list2 = new List<string>();
+					list2.Add(text5);
+					CurveList.SetSelectedCurves(list2.ToArray());
+				}
+			}
+			else
+			{
+				RestoreConfigValue(_currentConfigValue);
+			}
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			return null;
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sFieldName)
+		{
+			return (RibbonControlType)0;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+			sConfigValue = _currentConfigValue;
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+			_currentConfigValue = sValue;
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		public void UpdateWizardData()
+		{
+			_wizardPlot.RemoveAllDependentVariable();
+			List<string> list = new List<string>(CurveList.GetSelectedCurves());
+			if (list.Count > 0 && SelectedBasis == WpfPLDiscurvesResources.BasisValue_Vol)
+			{
+				_wizardPlot.SetIndependentVariable(Context, XVarNames[0]);
+				IHNode iHNode = Context.FindNode(YVarNames[0]);
+				int count = iHNode.Elements.Count;
+				for (int i = 0; i < list.Count; i++)
+				{
+					for (int j = 0; j < count; j++)
+					{
+						string text = iHNode.Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Name(Type.Missing);
+						if (list[i] == text)
+						{
+							string depvar = YVarNames[0] + "/" + text;
+							_wizardPlot.AddDependentVariable(Context, depvar);
+							((IHPlotVal)_wizardPlot.PlotVal).set_Label(i, text);
+						}
+					}
+				}
+				_wizardPlot.PlotVal.Title = WpfPLDiscurvesResources.TooltipHeaderForRibbonItem_MolecularWt;
+				_wizardPlot.PlotVal.XAxisTitle = WpfPLDiscurvesResources.XAxisTitle_Vol;
+			}
+			if (list.Count > 0 && SelectedBasis == WpfPLDiscurvesResources.BasisValue_Wt)
+			{
+				_wizardPlot.SetIndependentVariable(Context, XVarNames[1]);
+				IHNode iHNode2 = Context.FindNode(YVarNames[1]);
+				int count2 = iHNode2.Elements.Count;
+				for (int k = 0; k < list.Count; k++)
+				{
+					for (int l = 0; l < count2; l++)
+					{
+						string text2 = iHNode2.Elements[l, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Name(Type.Missing);
+						if (list[k] == text2)
+						{
+							string depvar2 = YVarNames[1] + "/" + text2;
+							_wizardPlot.AddDependentVariable(Context, depvar2);
+							((IHPlotVal)_wizardPlot.PlotVal).set_Label(k, text2);
+						}
+					}
+				}
+				_wizardPlot.PlotVal.Title = WpfPLDiscurvesResources.TooltipHeaderForRibbonItem_MolecularWt;
+				_wizardPlot.PlotVal.XAxisTitle = WpfPLDiscurvesResources.XAxisTitle_Wt;
+			}
+			_currentConfigValue = SaveConfigValue();
+		}
+
+		private void FirePropertyChangedEvent(string propName)
+		{
+			if (this.PropertyChanged != null)
+			{
+				this.PropertyChanged(this, new PropertyChangedEventArgs(propName));
+			}
+		}
+
+		public void SetCaption(ref string caption)
+		{
+			caption = WpfPLDiscurvesResources.MolecularWt_WindowTitle;
+		}
+
+		public void SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 450.0;
+		}
+
+		public void SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 300.0;
+		}
+
+		public void SetMinHeight(ref double minHeight)
+		{
+			minHeight = 440.0;
+		}
+
+		public void SetMinWidth(ref double minWidth)
+		{
+			minWidth = 300.0;
+		}
+
+		private void CurveList_OKButtonClick(object sender, EventArgs e)
+		{
+			UpdateWizardData();
+			_help.CloseForm((UserControl)this, (bool?)true);
+		}
+
+		private void CurveList_CancelButtonClick(object sender, EventArgs e)
+		{
+			_help.CloseForm((UserControl)this, (bool?)false);
+		}
+
+		private void SetVariables()
+		{
+			XVarNames = new string[2] { "Stream-Sum/Dist-Curve/Output/MWTBPT", "Stream-Sum/Dist-Curve/Output/MWWTTBPT" };
+			YVarNames = new string[2] { "Stream-Sum/Dist-Curve/Output/MWCRV", "Stream-Sum/Dist-Curve/Output/MWCRVWT" };
+		}
+
+		private string SaveConfigValue()
+		{
+			_ = string.Empty;
+			_ = string.Empty;
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.Append("BasisSelection=");
+			stringBuilder.Append(SelectedBasis);
+			stringBuilder.Append(";");
+			stringBuilder.Append("CurveSelection=");
+			List<string> list = new List<string>(CurveList.GetSelectedCurves());
+			int count = list.Count;
+			for (int i = 0; i < count; i++)
+			{
+				if (i > 0)
+				{
+					stringBuilder.Append(",");
+				}
+				stringBuilder.Append(list[i]);
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("CheckAll=");
+			stringBuilder.Append(CurveList.IsCheckAll);
+			stringBuilder.Append(";");
+			return stringBuilder.ToString();
+		}
+
+		private void RestoreConfigValue(string ConfigString)
+		{
+			IHNode iHNode = null;
+			string[] array = ConfigString.Split(';');
+			int num = 0;
+			string selectedBasis = array[num].Substring(array[num].IndexOf('=') + 1);
+			SelectedBasis = selectedBasis;
+			iHNode = ((!(SelectedBasis == WpfPLDiscurvesResources.BasisValue_Vol)) ? Context.FindNode(YVarNames[1]) : Context.FindNode(YVarNames[0]));
+			List<string> list = new List<string>();
+			for (int i = 0; i < iHNode.Elements.Count; i++)
+			{
+				list.Add(iHNode.Elements.get_Label(0, i, Type.Missing));
+			}
+			CurveList.SetCurves(list.ToArray());
+			num++;
+			selectedBasis = array[num].Substring(array[num].IndexOf('=') + 1);
+			string[] array2 = selectedBasis.Split(',');
+			List<string> list2 = new List<string>();
+			string[] array3 = array2;
+			foreach (string item in array3)
+			{
+				list2.Add(item);
+			}
+			CurveList.SetSelectedCurves(list2.ToArray());
+			num++;
+			selectedBasis = array[num].Substring(array[num].IndexOf('=') + 1);
+			CurveList.IsCheckAll = Convert.ToBoolean(selectedBasis);
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLDiscurves;component/molecularwt.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			if (connectionId == 1)
+			{
+				CurveList = (CurvesSelectFormControl)target;
+				CurveList.OKButtonClick += CurveList_OKButtonClick;
+				CurveList.CancelButtonClick += CurveList_CancelButtonClick;
+			}
+			else
+			{
+				_contentLoaded = true;
+			}
+		}
+	}
+	[ProgId("WpfPLDiscurves.PetrProp")]
+	public class PetrProp : UserControl, IRibbonPlotWizardType, INotifyPropertyChanged, IPlotWizardTemplate, IComponentConnector
+	{
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private PlotwizardHelper _help = new PlotwizardHelper();
+
+		private IHNode Context;
+
+		private string _uniqueId = "Discurves_PetrProp";
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgIcon;
+
+		private bool _bHasInputDialog;
+
+		private readonly string _tempUnitFieldId = WpfPLDiscurvesResources.TemperatureUnitLabel;
+
+		private readonly string _lengthUnitFieldId = WpfPLDiscurvesResources.LengthUnitLabel;
+
+		private string _currentUnit = string.Empty;
+
+		private string _currentLength = string.Empty;
+
+		private string[] XVarNames;
+
+		private string[] YVarNames;
+
+		private string[] CurveName;
+
+		private ObservableCollection<string> m_TypeList = new ObservableCollection<string>();
+
+		private string m_SelectedType = string.Empty;
+
+		private string _currentConfigValue = string.Empty;
+
+		private bool _bCheckDataOnly;
+
+		public static string[] varNames = new string[31]
+		{
+			"ANILCRV", "KNOCKCRV", "AROMCRV", "BAS-NCRV", "CARBCRV", "FLASHCRV", "FREEZCRV", "HYDROCRV", "IRONCRV", "KVISCCRV",
+			"LUM-NCRV", "MERCCRV", "METALCRV", "MOCNCRV", "NAPHCRV", "NICKCRV", "OLEFCRV", "OXYGCRV", "PARACRV", "POURCRV",
+			"REFICRV", "RVPCRV", "ROCNCRV", "SMOKCRV", "SULFCRV", "TOT-NCRV", "VANACRV", "VLOCKCRV", "VISCCRV", "WARMICRV",
+			"UOPKCRV"
+		};
+
+		internal CurvesSelectFormControl CurveList;
+
+		private bool _contentLoaded;
+
+		public ObservableCollection<string> TypeList
+		{
+			get
+			{
+				return m_TypeList;
+			}
+			set
+			{
+				m_TypeList = value;
+				FirePropertyChangedEvent("TypeList");
+			}
+		}
+
+		public string SelectedType
+		{
+			get
+			{
+				return m_SelectedType;
+			}
+			set
+			{
+				m_SelectedType = value;
+				FirePropertyChangedEvent("SelectedType");
+			}
+		}
+
+		public string TooltipContentForRibbonItem => WpfPLDiscurvesResources.TooltipContentForRibbonItem_PetroProperties;
+
+		public string TooltipHeaderForRibbonItem => WpfPLDiscurvesResources.TooltipHeaderForRibbonItem_PetroProperties;
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => _help.GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => _help.GetHelpID();
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgIcon;
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields
+		{
+			get
+			{
+				List<string> list = new List<string>();
+				if (SelectedType.Equals(WpfPLDiscurvesResources.PetrProp_CurveName_23))
+				{
+					list.Add(_lengthUnitFieldId);
+				}
+				else
+				{
+					list.Add(_tempUnitFieldId);
+				}
+				return list;
+			}
+		}
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string>();
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		public event PropertyChangedEventHandler PropertyChanged;
+
+		public PetrProp()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			InitializeComponent();
+			_bHasInputDialog = true;
+			if (_imgIcon == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLDiscurves.Images.petroprop.ico");
+				_imgIcon = System.Drawing.Image.FromStream(manifestResourceStream);
+			}
+			CurveList.Header = WpfPLDiscurvesResources.CurveList_Header;
+			base.DataContext = this;
+		}
+
+		private static string GetAdsPathForStream(string streamName)
+		{
+			if (!string.IsNullOrEmpty(streamName))
+			{
+				List<string> list = (from x in streamName.Split('.')
+					where !string.IsNullOrWhiteSpace(x)
+					select x).ToList();
+				if (list.Count > 1)
+				{
+					StringBuilder stringBuilder = new StringBuilder("Flowsheet.");
+					for (int num = 0; num < list.Count - 1; num++)
+					{
+						stringBuilder.Append("Blocks.").Append(list[num]).Append(".SubFlowsheets.Simulation.");
+					}
+					stringBuilder.Append("Streams.").Append(list[list.Count - 1]);
+					return stringBuilder.ToString();
+				}
+			}
+			return $"Flowsheet.Streams.{streamName}";
+		}
+
+		public bool checkblockiostreams(string sFullyQualifiedBlockId, IAccessor topAccessor)
+		{
+			string text = "Flowsheet.Blocks";
+			List<string> list = (from x in sFullyQualifiedBlockId.Split('.')
+				where !string.IsNullOrWhiteSpace(x)
+				select x).ToList();
+			if (list.Count > 1)
+			{
+				StringBuilder stringBuilder = new StringBuilder("Flowsheet.");
+				for (int num = 0; num < list.Count - 1; num++)
+				{
+					stringBuilder.Append("Blocks.").Append(list[num]).Append(".SubFlowsheets.Simulation.");
+				}
+				stringBuilder.Append("Blocks.").Append(list[list.Count - 1]);
+				text = stringBuilder.ToString();
+			}
+			else
+			{
+				text = text + "." + list[list.Count - 1];
+			}
+			string[] array = new string[2] { ".Inlets", ".Outlets" };
+			for (int num2 = 0; num2 < array.Length; num2++)
+			{
+				_ = array[num2];
+				string text2 = text + ".Inlets";
+				AccessorElement val = topAccessor.ObjectAtPath((AccessorElement)null, text2);
+				if (!val.success || val.value == null)
+				{
+					continue;
+				}
+				int num3 = topAccessor.NumberOfChildren(val);
+				if (num3 <= 0)
+				{
+					continue;
+				}
+				for (int num4 = 0; num4 < num3; num4++)
+				{
+					AccessorElement val2 = topAccessor.ObjectAtPath(val, ".#" + num4 + ".Stream");
+					if (val2.success && val2.value != null && CheckforPetroProp(null, val2, topAccessor))
+					{
+						return true;
+					}
+				}
+			}
+			return false;
+		}
+
+		public bool CheckSingleStream(string sFullyQualStreamId, IAccessor topAccessor)
+		{
+			string adsPathForStream = GetAdsPathForStream(sFullyQualStreamId);
+			return CheckforPetroProp(adsPathForStream, null, topAccessor);
+		}
+
+		public bool CheckHierachystreams(string sHierarchyPath, IAccessor topAccessor)
+		{
+			string text = "Flowsheet.Streams";
+			if (!string.IsNullOrEmpty(sHierarchyPath))
+			{
+				List<string> list = (from x in sHierarchyPath.Split('.')
+					where !string.IsNullOrWhiteSpace(x)
+					select x).ToList();
+				if (list.Count > 0)
+				{
+					StringBuilder stringBuilder = new StringBuilder("Flowsheet.");
+					for (int num = 0; num < list.Count; num++)
+					{
+						stringBuilder.Append("Blocks.").Append(list[num]).Append(".SubFlowsheets.Simulation.");
+					}
+					text = stringBuilder.ToString() + "Streams";
+				}
+			}
+			AccessorElement val = topAccessor.ObjectAtPath((AccessorElement)null, text);
+			if (val.success && val.value != null)
+			{
+				int num2 = topAccessor.NumberOfChildren(val);
+				if (num2 > 0)
+				{
+					for (int num3 = 0; num3 < num2; num3++)
+					{
+						AccessorElement val2 = topAccessor.ObjectAtPath(val, "#" + num3);
+						if (val2.success && val2.value != null && CheckforPetroProp(null, val2, topAccessor))
+						{
+							return true;
+						}
+					}
+				}
+			}
+			return false;
+		}
+
+		public bool CheckforPetroProp(string sADSPath, AccessorElement rtElemStrm, IAccessor topAccessor)
+		{
+			AccessorElement val = null;
+			val = ((rtElemStrm == null) ? topAccessor.ObjectAtPath((AccessorElement)null, sADSPath + ".ExtraProperties.PropertyArray") : topAccessor.ObjectAtPath(rtElemStrm, "ExtraProperties.PropertyArray"));
+			if (val.success && val.value != null)
+			{
+				int num = topAccessor.NumberOfChildren(val);
+				if (num > 0)
+				{
+					for (int i = 0; i < num; i++)
+					{
+						AccessorElement val2 = topAccessor.ObjectAtPath(val, "#" + i);
+						if (!val2.success || val2.value == null)
+						{
+							continue;
+						}
+						string attribute = val2.attribute;
+						string[] array = varNames;
+						foreach (string text in array)
+						{
+							if (attribute.Contains(text + ","))
+							{
+								return true;
+							}
+						}
+					}
+				}
+			}
+			return false;
+		}
+
+		void IRibbonPlotWizardType.Context(object oNode, ref object oPlotWizardComponent, ref int ierror)
+		{
+			//IL_010b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0112: Expected O, but got Unknown
+			if (oPlotWizardComponent == null || oNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			bool flag = false;
+			_context = oNode as IHNode;
+			_wizardPlot = oPlotWizardComponent as IHWizardPlot;
+			SetVariables();
+			_wizardPlot.RemoveAllDependentVariable();
+			string selectedType = string.Empty;
+			string text = _context.get_AttributeValue((short)6, Type.Missing) as string;
+			Context = ((text == "MATERIAL") ? _context.Application.Tree : _context);
+			string text2 = "Data/Results Summary/";
+			string text3 = _context.get_AttributeValue((short)74, Type.Missing) as string;
+			string text4 = _context.get_AttributeValue((short)65, Type.Missing) as string;
+			string text5 = _context.get_AttributeValue((short)76, Type.Missing) as string;
+			_ = _context.get_AttributeValue((short)63, Type.Missing) as string == "1";
+			IAdbTop activeDocAdbTop = SystemEnvironment.GetActiveDocAdbTop();
+			if (activeDocAdbTop != null && _bCheckDataOnly)
+			{
+				IAccessor val = (IAccessor)new Accessor();
+				val.Attach(activeDocAdbTop);
+				if (string.IsNullOrEmpty(text3))
+				{
+					if (!CheckHierachystreams(text4, val))
+					{
+						ierror = 1;
+					}
+					return;
+				}
+				if (text3.Contains("Streams"))
+				{
+					if (!CheckSingleStream(text4, val))
+					{
+						ierror = 1;
+					}
+					return;
+				}
+				if (text4 != text5 && text3.Contains("Blocks"))
+				{
+					if (!checkblockiostreams(text4, val))
+					{
+						ierror = 1;
+					}
+					return;
+				}
+				if (text4 == text5 && text3.Contains("Blocks"))
+				{
+					if (!CheckHierachystreams(text4, val))
+					{
+						ierror = 1;
+					}
+					return;
+				}
+			}
+			ObservableCollection<string> observableCollection = new ObservableCollection<string>();
+			List<string> list = new List<string>();
+			if (!string.IsNullOrEmpty(text3))
+			{
+				text3 = text3.Remove(text3.LastIndexOf("Data"));
+				text3 = text3.Replace("!", "/");
+				text2 = text3 + text2;
+			}
+			Context.FindNode("Stream-Sum/Dist-Curve");
+			for (int i = 0; i < YVarNames.Count(); i++)
+			{
+				if (text == "MATERIAL")
+				{
+					YVarNames[i] = text2 + YVarNames[i];
+					XVarNames[i] = text2 + XVarNames[i];
+				}
+				IHNode iHNode = Context.FindNode(YVarNames[i]);
+				int num = iHNode?.Elements.Count ?? 0;
+				if (num <= 0)
+				{
+					continue;
+				}
+				flag = true;
+				observableCollection.Add(CurveName[i]);
+				if (observableCollection.Count == 1)
+				{
+					selectedType = CurveName[i];
+					for (int j = 0; j < num; j++)
+					{
+						list.Add(iHNode.Elements.get_Label(0, j, Type.Missing));
+					}
+					_wizardPlot.SetIndependentVariable(Context, XVarNames[i]);
+					_wizardPlot.AddDependentVariable(Context, YVarNames[i]);
+				}
+			}
+			if (!flag)
+			{
+				ierror = 1;
+				return;
+			}
+			TypeList = observableCollection;
+			CurveList.SetCurves(list.ToArray());
+			string text6 = _context.get_AttributeValue((short)65, Type.Missing) as string;
+			if (text6 != "")
+			{
+				List<string> list2 = new List<string>();
+				list2.Add(text6);
+				CurveList.SetSelectedCurves(list2.ToArray());
+			}
+			if (string.IsNullOrEmpty(_currentConfigValue))
+			{
+				SelectedType = selectedType;
+			}
+			else
+			{
+				RestoreConfigValue(_currentConfigValue);
+			}
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(_tempUnitFieldId) == 0)
+			{
+				List<string> list = new List<string>();
+				_help.LoadUnitsList(_context.Application.Tree, _wizardPlot, list);
+				return list;
+			}
+			if (sFieldName.CompareTo(_lengthUnitFieldId) == 0)
+			{
+				List<string> list2 = new List<string>();
+				_help.LoadUnitsList(_context.Application.Tree, _wizardPlot, list2);
+				return list2;
+			}
+			return null;
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sFieldName)
+		{
+			if (sFieldName.CompareTo(_tempUnitFieldId) != 0)
+			{
+				if (sFieldName.CompareTo(_lengthUnitFieldId) != 0)
+				{
+					return (RibbonControlType)0;
+				}
+				return (RibbonControlType)1;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(_tempUnitFieldId) == 0)
+			{
+				sCurrentVal = _help.GetUnitString(_context.Application.Tree, _wizardPlot);
+			}
+			else if (sFieldName.CompareTo(_lengthUnitFieldId) == 0)
+			{
+				sCurrentVal = _help.GetUnitString(_context.Application.Tree, _wizardPlot);
+			}
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+			sConfigValue = _currentConfigValue;
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+			bool flag = false;
+			if (sFieldName.CompareTo(_tempUnitFieldId) == 0)
+			{
+				flag = true;
+				_currentUnit = sValue;
+			}
+			else if (sFieldName.CompareTo(_lengthUnitFieldId) == 0)
+			{
+				flag = true;
+				_currentUnit = sValue;
+			}
+			if (flag)
+			{
+				UpdateWizardData();
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+			_currentConfigValue = sValue;
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		public void UpdateWizardData()
+		{
+			_wizardPlot.RemoveAllDependentVariable();
+			List<string> list = new List<string>(CurveList.GetSelectedCurves());
+			if (list.Count > 0)
+			{
+				for (int i = 0; i < 31; i++)
+				{
+					if (!(SelectedType == CurveName[i]))
+					{
+						continue;
+					}
+					_wizardPlot.SetIndependentVariable(Context, XVarNames[i]);
+					IHNode iHNode = Context.FindNode(YVarNames[i]);
+					int count = iHNode.Elements.Count;
+					for (int j = 0; j < list.Count; j++)
+					{
+						for (int k = 0; k < count; k++)
+						{
+							string text = iHNode.Elements[k, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Name(Type.Missing);
+							if (list[j] == text)
+							{
+								string depvar = YVarNames[i] + "/" + text;
+								_wizardPlot.AddDependentVariable(Context, depvar);
+								((IHPlotVal)_wizardPlot.PlotVal).set_Label(j, text);
+								_wizardPlot.PlotVal.Title = SelectedType;
+								break;
+							}
+						}
+					}
+					break;
+				}
+			}
+			_help.SaveUnitsComboText(_context.Application.Tree, _wizardPlot, _currentUnit);
+			_currentConfigValue = SaveConfigValue();
+		}
+
+		private void FirePropertyChangedEvent(string propName)
+		{
+			if (this.PropertyChanged != null)
+			{
+				this.PropertyChanged(this, new PropertyChangedEventArgs(propName));
+			}
+		}
+
+		private void CurveList_OKButtonClick(object sender, EventArgs e)
+		{
+			UpdateWizardData();
+			_help.CloseForm((UserControl)this, (bool?)true);
+		}
+
+		private void CurveList_CancelButtonClick(object sender, EventArgs e)
+		{
+			_help.CloseForm((UserControl)this, (bool?)false);
+		}
+
+		private void SetVariables()
+		{
+			XVarNames = new string[31]
+			{
+				"Stream-Sum/Dist-Curve/Output/ANILTBPT", "Stream-Sum/Dist-Curve/Output/KNOCKTBP", "Stream-Sum/Dist-Curve/Output/AROMTBPT", "Stream-Sum/Dist-Curve/Output/BA-NTBPT", "Stream-Sum/Dist-Curve/Output/CARBTBPT", "Stream-Sum/Dist-Curve/Output/FLASHTBP", "Stream-Sum/Dist-Curve/Output/FREEZTBP", "Stream-Sum/Dist-Curve/Output/HYDROTBP", "Stream-Sum/Dist-Curve/Output/IRONTBPT", "Stream-Sum/Dist-Curve/Output/KVISTBPT",
+				"Stream-Sum/Dist-Curve/Output/LUMITBPT", "Stream-Sum/Dist-Curve/Output/MERCTBPT", "Stream-Sum/Dist-Curve/Output/METALTBP", "Stream-Sum/Dist-Curve/Output/MOCNTBPT", "Stream-Sum/Dist-Curve/Output/NAPHTBPT", "Stream-Sum/Dist-Curve/Output/NICKTBPT", "Stream-Sum/Dist-Curve/Output/OLEFTBPT", "Stream-Sum/Dist-Curve/Output/OXYGTBPT", "Stream-Sum/Dist-Curve/Output/PARATBPT", "Stream-Sum/Dist-Curve/Output/POURTBPT",
+				"Stream-Sum/Dist-Curve/Output/REFITBPT", "Stream-Sum/Dist-Curve/Output/RVPTBPT", "Stream-Sum/Dist-Curve/Output/ROCNCRV", "Stream-Sum/Dist-Curve/Output/SMOKTBPT", "Stream-Sum/Dist-Curve/Output/SULFTBPT", "Stream-Sum/Dist-Curve/Output/TOT-NTBP", "Stream-Sum/Dist-Curve/Output/VANATBPT", "Stream-Sum/Dist-Curve/Output/VLOCKTBP", "Stream-Sum/Dist-Curve/Output/VISCTBPT", "Stream-Sum/Dist-Curve/Output/WARMTBPT",
+				"Stream-Sum/Dist-Curve/Output/UOPKTBPT"
+			};
+			YVarNames = new string[31]
+			{
+				"Stream-Sum/Dist-Curve/Output/ANILCRV", "Stream-Sum/Dist-Curve/Output/KNOCKCRV", "Stream-Sum/Dist-Curve/Output/AROMCRV", "Stream-Sum/Dist-Curve/Output/BAS-NCRV", "Stream-Sum/Dist-Curve/Output/CARBCRV", "Stream-Sum/Dist-Curve/Output/FLASHCRV", "Stream-Sum/Dist-Curve/Output/FREEZCRV", "Stream-Sum/Dist-Curve/Output/HYDROCRV", "Stream-Sum/Dist-Curve/Output/IRONCRV", "Stream-Sum/Dist-Curve/Output/KVISCCRV",
+				"Stream-Sum/Dist-Curve/Output/LUM-NCRV", "Stream-Sum/Dist-Curve/Output/MERCCRV", "Stream-Sum/Dist-Curve/Output/METALCRV", "Stream-Sum/Dist-Curve/Output/MOCNCRV", "Stream-Sum/Dist-Curve/Output/NAPHCRV", "Stream-Sum/Dist-Curve/Output/NICKCRV", "Stream-Sum/Dist-Curve/Output/OLEFCRV", "Stream-Sum/Dist-Curve/Output/OXYGCRV", "Stream-Sum/Dist-Curve/Output/PARACRV", "Stream-Sum/Dist-Curve/Output/POURCRV",
+				"Stream-Sum/Dist-Curve/Output/REFICRV", "Stream-Sum/Dist-Curve/Output/RVPCRV", "Stream-Sum/Dist-Curve/Output/ROCNCRV", "Stream-Sum/Dist-Curve/Output/SMOKCRV", "Stream-Sum/Dist-Curve/Output/SULFCRV", "Stream-Sum/Dist-Curve/Output/TOT-NCRV", "Stream-Sum/Dist-Curve/Output/VANACRV", "Stream-Sum/Dist-Curve/Output/VLOCKCRV", "Stream-Sum/Dist-Curve/Output/VISCCRV", "Stream-Sum/Dist-Curve/Output/WARMICRV",
+				"Stream-Sum/Dist-Curve/Output/UOPKCRV"
+			};
+			CurveName = new string[31]
+			{
+				WpfPLDiscurvesResources.PetrProp_CurveName_00,
+				WpfPLDiscurvesResources.PetrProp_CurveName_01,
+				WpfPLDiscurvesResources.PetrProp_CurveName_02,
+				WpfPLDiscurvesResources.PetrProp_CurveName_03,
+				WpfPLDiscurvesResources.PetrProp_CurveName_04,
+				WpfPLDiscurvesResources.PetrProp_CurveName_05,
+				WpfPLDiscurvesResources.PetrProp_CurveName_06,
+				WpfPLDiscurvesResources.PetrProp_CurveName_07,
+				WpfPLDiscurvesResources.PetrProp_CurveName_08,
+				WpfPLDiscurvesResources.PetrProp_CurveName_09,
+				WpfPLDiscurvesResources.PetrProp_CurveName_10,
+				WpfPLDiscurvesResources.PetrProp_CurveName_11,
+				WpfPLDiscurvesResources.PetrProp_CurveName_12,
+				WpfPLDiscurvesResources.PetrProp_CurveName_13,
+				WpfPLDiscurvesResources.PetrProp_CurveName_14,
+				WpfPLDiscurvesResources.PetrProp_CurveName_15,
+				WpfPLDiscurvesResources.PetrProp_CurveName_16,
+				WpfPLDiscurvesResources.PetrProp_CurveName_17,
+				WpfPLDiscurvesResources.PetrProp_CurveName_18,
+				WpfPLDiscurvesResources.PetrProp_CurveName_19,
+				WpfPLDiscurvesResources.PetrProp_CurveName_20,
+				WpfPLDiscurvesResources.PetrProp_CurveName_21,
+				WpfPLDiscurvesResources.PetrProp_CurveName_22,
+				WpfPLDiscurvesResources.PetrProp_CurveName_23,
+				WpfPLDiscurvesResources.PetrProp_CurveName_24,
+				WpfPLDiscurvesResources.PetrProp_CurveName_25,
+				WpfPLDiscurvesResources.PetrProp_CurveName_26,
+				WpfPLDiscurvesResources.PetrProp_CurveName_27,
+				WpfPLDiscurvesResources.PetrProp_CurveName_28,
+				WpfPLDiscurvesResources.PetrProp_CurveName_29,
+				WpfPLDiscurvesResources.PetrProp_CurveName_30
+			};
+		}
+
+		private string SaveConfigValue()
+		{
+			_ = string.Empty;
+			_ = string.Empty;
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.Append("TypeSelection=");
+			stringBuilder.Append(SelectedType);
+			stringBuilder.Append(";");
+			stringBuilder.Append("CurveSelection=");
+			List<string> list = new List<string>(CurveList.GetSelectedCurves());
+			int count = list.Count;
+			for (int i = 0; i < count; i++)
+			{
+				if (i > 0)
+				{
+					stringBuilder.Append(",");
+				}
+				stringBuilder.Append(list[i]);
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("CheckAll=");
+			stringBuilder.Append(CurveList.IsCheckAll);
+			stringBuilder.Append(";");
+			return stringBuilder.ToString();
+		}
+
+		private void RestoreConfigValue(string ConfigString)
+		{
+			string[] array = ConfigString.Split(';');
+			int num = 0;
+			string selectedType = array[num].Substring(array[num].IndexOf('=') + 1);
+			SelectedType = selectedType;
+			num++;
+			selectedType = array[num].Substring(array[num].IndexOf('=') + 1);
+			string[] array2 = selectedType.Split(',');
+			List<string> list = new List<string>();
+			string[] array3 = array2;
+			foreach (string item in array3)
+			{
+				list.Add(item);
+			}
+			CurveList.SetSelectedCurves(list.ToArray());
+			num++;
+			selectedType = array[num].Substring(array[num].IndexOf('=') + 1);
+			CurveList.IsCheckAll = Convert.ToBoolean(selectedType);
+		}
+
+		public void SetCaption(ref string caption)
+		{
+			caption = WpfPLDiscurvesResources.PetrProp_WindowTitle;
+		}
+
+		public void SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 380.0;
+		}
+
+		public void SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 300.0;
+		}
+
+		public void SetMinHeight(ref double minHeight)
+		{
+			minHeight = 380.0;
+		}
+
+		public void SetMinWidth(ref double minWidth)
+		{
+			minWidth = 300.0;
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLDiscurves;component/petrprop.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			if (connectionId == 1)
+			{
+				CurveList = (CurvesSelectFormControl)target;
+				CurveList.OKButtonClick += CurveList_OKButtonClick;
+				CurveList.CancelButtonClick += CurveList_CancelButtonClick;
+			}
+			else
+			{
+				_contentLoaded = true;
+			}
+		}
+	}
+	[RibbonPlotWizardMgr("WpfPLDISCURVES.RibbonPlotWizardMgr", typeof(RibbonPlotWizardMgr))]
+	public class DiscurvesPlotWizardModule : PlotModuleBase
+	{
+	}
+	[ProgId("WpfPLDiscurves.PSD")]
+	public class PSD : UserControl, IRibbonPlotWizardType, IPlotWizardTemplate, IComponentConnector
+	{
+		private IHNode _context;
+
+		private IHNode Context;
+
+		private IHWizardPlot2 _wizardPlot;
+
+		private PlotwizardHelper _help = new PlotwizardHelper();
+
+		private string _uniqueId = "PSD";
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgBitmap;
+
+		private bool _bHasInputDialog;
+
+		private readonly string _plotType = WpfPLDiscurvesResources.PSDPlotType;
+
+		private readonly string _massFrac = WpfPLDiscurvesResources.PSDPlotType_Mass_Fraction;
+
+		private readonly string _cumMassFrac = WpfPLDiscurvesResources.PSDPlotType_Cumulative_Mass_Fraction;
+
+		private readonly string _massDensityDist = WpfPLDiscurvesResources.PSDPlotType_Mass_Density_Distribution;
+
+		private readonly string _rrsb = "RRSB";
+
+		private string _currentPlotType = string.Empty;
+
+		private string _navPath;
+
+		private string _currentConfigValue = string.Empty;
+
+		private string[] _varNames;
+
+		private string[] type;
+
+		private int _globalXScale;
+
+		public static RoutedCommand OKCommand = new RoutedCommand();
+
+		public static RoutedCommand CancelCommand = new RoutedCommand();
+
+		private bool _bCheckDataOnly;
+
+		internal CurvesSelectorControl SubStreamList;
+
+		internal CurvesSelectorControl StreamList;
+
+		private bool _contentLoaded;
+
+		public string TooltipContentForRibbonItem => WpfPLDiscurvesResources.PSDTooltip;
+
+		public string TooltipHeaderForRibbonItem => WpfPLDiscurvesResources.PSDTooltip;
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot2;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgBitmap;
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => _help.GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => _help.GetHelpID();
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string> { _plotType };
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string>();
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		public PSD()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			InitializeComponent();
+			_bHasInputDialog = true;
+			type = new string[4]
+			{
+				WpfPLDiscurvesResources.PSDPlotType_Mass_Fraction,
+				WpfPLDiscurvesResources.PSDPlotType_Cumulative_Mass_Fraction,
+				WpfPLDiscurvesResources.PSDPlotType_Mass_Density_Distribution,
+				"RRSB"
+			};
+			if (_imgBitmap == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLDiscurves.Images.PSD.ico");
+				_imgBitmap = new Bitmap(manifestResourceStream);
+			}
+			CommandBinding commandBinding = new CommandBinding(OKCommand, ExecuteOKCommand, CanExecuteOKCommand);
+			CommandBinding commandBinding2 = new CommandBinding(CancelCommand, ExecuteCancelCommand);
+			base.CommandBindings.Add(commandBinding);
+			base.CommandBindings.Add(commandBinding2);
+			SubStreamList.CheckBoxSelectionChanged += SubStreamList_SelectionChanged;
+		}
+
+		public void SetCaption(ref string caption)
+		{
+			caption = "PSD";
+		}
+
+		public void SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 350.0;
+		}
+
+		public void SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 300.0;
+		}
+
+		public void SetMinHeight(ref double minHeight)
+		{
+			minHeight = 350.0;
+		}
+
+		public void SetMinWidth(ref double minWidth)
+		{
+			minWidth = 300.0;
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(_plotType) == 0)
+			{
+				return new List<string> { _massFrac, _cumMassFrac, _massDensityDist, _rrsb };
+			}
+			return null;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(_plotType) == 0)
+			{
+				sCurrentVal = _currentPlotType;
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(_plotType) == 0)
+			{
+				_currentPlotType = sValue;
+			}
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sField)
+		{
+			if (sField.CompareTo(_plotType) != 0)
+			{
+				return (RibbonControlType)0;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+			sConfigValue = _currentConfigValue;
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+			_currentConfigValue = sValue;
+		}
+
+		void IRibbonPlotWizardType.Context(object HNode, ref object HWizardPlot, ref int ierror)
+		{
+			if (HWizardPlot == null || HNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			_context = HNode as IHNode;
+			_wizardPlot = HWizardPlot as IHWizardPlot2;
+			IHNode iHNode = null;
+			if (_currentPlotType == string.Empty)
+			{
+				_currentPlotType = type[1];
+				iHNode = _context.Application.Tree.FindNode("Settings/psdplottype");
+				if (iHNode != null)
+				{
+					_currentPlotType = type[(int)(dynamic)iHNode.get_Value(Type.Missing)];
+				}
+			}
+			iHNode = _context.Application.Tree.FindNode("Settings/psdxscale");
+			if (iHNode != null)
+			{
+				_globalXScale = (dynamic)iHNode.get_Value(Type.Missing);
+			}
+			_varNames = new string[2] { "Stream-Sum/Dist-Curve/Output/SUBS-ATTR", "Stream-Sum/Dist-Curve/Output/MAXIMUM" };
+			string text = "Data/Results Summary/";
+			_navPath = _context.get_AttributeValue((short)74, Type.Missing) as string;
+			if (!string.IsNullOrEmpty(_navPath))
+			{
+				_navPath = _navPath.Remove(_navPath.LastIndexOf("Data"));
+				_navPath = _navPath.Replace("!", "/");
+			}
+			text = _navPath + text;
+			if ((dynamic)_context.get_AttributeValue((short)6, Type.Missing) == "MATERIAL")
+			{
+				Context = _context.Application.Tree;
+				_varNames[0] = text + _varNames[0];
+				_varNames[1] = text + _varNames[1];
+			}
+			else
+			{
+				Context = _context;
+			}
+			IHNode iHNode2 = Context.FindNode(_varNames[0]);
+			if (iHNode2 == null || iHNode2.Elements.Count <= 0)
+			{
+				if (Context.FindNode("Stream Results/Display") == null)
+				{
+					ierror = 1;
+					return;
+				}
+				iHNode2 = Context.FindNode(_varNames[0]);
+				if (iHNode2 == null || iHNode2.Elements.Count <= 0)
+				{
+					ierror = 1;
+					return;
+				}
+			}
+			if (_bCheckDataOnly)
+			{
+				return;
+			}
+			if (!string.IsNullOrEmpty(_currentConfigValue))
+			{
+				List<string> list = new List<string>();
+				for (int i = 0; i < iHNode2.Elements.Count; i++)
+				{
+					string item = iHNode2.Elements.get_Label(0, i, Type.Missing);
+					list.Add(item);
+				}
+				SubStreamList.SetCurves(list.ToArray());
+				SubStreamList.Header = WpfPLDiscurvesResources.PSDSubstream;
+				SubStreamList.IsCheckAll = false;
+				IHNode iHNode3 = iHNode2.Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing];
+				List<string> list2 = new List<string>();
+				for (int j = 0; j < iHNode3.Elements.Count; j++)
+				{
+					string item2 = iHNode3.Elements.get_Label(0, j, Type.Missing);
+					if (!list2.Contains(item2))
+					{
+						list2.Add(item2);
+					}
+				}
+				StreamList.SetCurves(list2.ToArray());
+				StreamList.Header = WpfPLDiscurvesResources.PSDStream;
+				StreamList.IsCheckAll = false;
+				RestoreConfigValue(_currentConfigValue);
+				return;
+			}
+			List<string> list3 = new List<string>();
+			for (int k = 0; k < iHNode2.Elements.Count; k++)
+			{
+				string item3 = iHNode2.Elements.get_Label(0, k, Type.Missing);
+				list3.Add(item3);
+			}
+			SubStreamList.SetCurves(list3.ToArray());
+			SubStreamList.Header = WpfPLDiscurvesResources.PSDSubstream;
+			List<string> list4 = new List<string>();
+			list4.Add(list3[0].ToString());
+			SubStreamList.SetSelectedCurves(list4.ToArray());
+			if (list3.Count == 1)
+			{
+				SubStreamList.IsCheckAll = true;
+			}
+			IHNode iHNode4 = iHNode2.Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing];
+			if (iHNode4 == null || iHNode4.Elements.Count <= 0)
+			{
+				ierror = 1;
+				return;
+			}
+			string strB = _context.get_AttributeValue((short)65, Type.Missing) as string;
+			List<string> list5 = new List<string>();
+			List<string> list6 = new List<string>();
+			for (int l = 0; l < iHNode4.Elements.Count; l++)
+			{
+				string text2 = iHNode4.Elements.get_Label(0, l, Type.Missing);
+				if (!list5.Contains(text2))
+				{
+					list5.Add(text2);
+				}
+				if (text2.CompareTo(strB) == 0)
+				{
+					list6.Add(text2);
+					_bHasInputDialog = false;
+				}
+			}
+			StreamList.SetCurves(list5.ToArray());
+			StreamList.Header = WpfPLDiscurvesResources.PSDStream;
+			StreamList.SetSelectedCurves(list6.ToArray());
+		}
+
+		public void UpdateWizardData()
+		{
+			_wizardPlot.RemoveAllDependentVariable();
+			List<string> list = new List<string>(StreamList.GetSelectedCurves());
+			List<string> list2 = new List<string>(SubStreamList.GetSelectedCurves());
+			if (list.Count <= 0 || list2.Count <= 0)
+			{
+				return;
+			}
+			IHNode iHNode = Context.FindNode(_varNames[0]);
+			IHNode iHNode2 = Context.FindNode(_varNames[1]);
+			if (iHNode != null && iHNode.Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode.Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null)
+			{
+				_wizardPlot.RemoveAllIndependentVariable();
+				_ = iHNode2.Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements.Count;
+				_wizardPlot.PlotVal.NVariables = 0;
+				_wizardPlot.PlotVal.NXVariables = 0;
+				_help.SetXData(Context, _wizardPlot, list2, _varNames[1], _currentPlotType);
+				_help.SetYData(Context, _wizardPlot, _currentPlotType, list, list2, _varNames);
+				((IHPlotVal)_wizardPlot.PlotVal).set_AxisScale(0, _globalXScale);
+				if (_currentPlotType == _rrsb)
+				{
+					((IHPlotVal)_wizardPlot.PlotVal).set_AxisScale(0, 1);
+					((IHPlotVal)_wizardPlot.PlotVal).set_AxisScale(1, 4);
+				}
+				_currentConfigValue = SaveConfigValue();
+				_bHasInputDialog = true;
+			}
+		}
+
+		private void ExecuteOKCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			UpdateWizardData();
+			_help.CloseForm((UserControl)this, (bool?)true);
+		}
+
+		private void CanExecuteOKCommand(object sender, CanExecuteRoutedEventArgs e)
+		{
+			int num = StreamList.GetSelectedCurves().Count();
+			int num2 = SubStreamList.GetSelectedCurves().Count();
+			e.CanExecute = ((num != 0 && num2 != 0) ? true : false);
+		}
+
+		private void ExecuteCancelCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			_help.CloseForm((UserControl)this, (bool?)false);
+		}
+
+		private void SubStreamList_SelectionChanged(object sender, EventArgs e)
+		{
+			SetCurveList();
+		}
+
+		private void SetCurveList()
+		{
+			List<string> list = new List<string>();
+			List<string> list2 = new List<string>(StreamList.GetSelectedCurves());
+			List<string> list3 = new List<string>(SubStreamList.GetSelectedCurves());
+			if (list3.Count <= 0)
+			{
+				StreamList.IsEnabled = false;
+				return;
+			}
+			for (int i = 0; i < list3.Count; i++)
+			{
+				string loc_or_name = list3[i];
+				IHNode iHNode = Context.FindNode(_varNames[0]);
+				_ = iHNode.Elements[loc_or_name, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements.Count;
+				IHNode iHNode2 = iHNode.Elements[loc_or_name, Type.Missing, Type.Missing, Type.Missing, Type.Missing];
+				if (iHNode2 == null || iHNode2.Elements.Count <= 0)
+				{
+					break;
+				}
+				for (int j = 0; j < iHNode2.Elements.Count; j++)
+				{
+					string text = iHNode2.Elements.get_Label(0, j, Type.Missing);
+					if (!list.Contains(text))
+					{
+						list.Add(text);
+					}
+					for (int k = 0; k < list2.Count; k++)
+					{
+						if (text.CompareTo(list2[k]) == 0)
+						{
+							list2.Add(text);
+							break;
+						}
+					}
+				}
+				StreamList.IsEnabled = true;
+				StreamList.SetCurves(list.ToArray());
+				StreamList.Header = WpfPLDiscurvesResources.PSDStream;
+				StreamList.SetSelectedCurves(list2.ToArray());
+			}
+		}
+
+		private string SaveConfigValue()
+		{
+			_ = string.Empty;
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.Append("SubStreamSelection=");
+			List<string> list = new List<string>(SubStreamList.GetSelectedCurves());
+			int count = list.Count;
+			for (int i = 0; i < count; i++)
+			{
+				if (i > 0)
+				{
+					stringBuilder.Append(",");
+				}
+				stringBuilder.Append(list[i]);
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("CheckAll=");
+			stringBuilder.Append(SubStreamList.IsCheckAll);
+			stringBuilder.Append(";");
+			stringBuilder.Append("StreamSelection=");
+			List<string> list2 = new List<string>(StreamList.GetSelectedCurves());
+			count = list2.Count;
+			for (int j = 0; j < count; j++)
+			{
+				if (j > 0)
+				{
+					stringBuilder.Append(",");
+				}
+				stringBuilder.Append(list2[j]);
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("CheckAll=");
+			stringBuilder.Append(StreamList.IsCheckAll);
+			stringBuilder.Append(";");
+			return stringBuilder.ToString();
+		}
+
+		private void RestoreConfigValue(string ConfigString)
+		{
+			string[] array = ConfigString.Split(';');
+			int num = 0;
+			string text = array[num].Substring(array[num].IndexOf('=') + 1);
+			string[] array2 = text.Split(',');
+			List<string> list = new List<string>();
+			string[] array3 = array2;
+			foreach (string item in array3)
+			{
+				list.Add(item);
+			}
+			SubStreamList.SetSelectedCurves(list.ToArray());
+			num++;
+			text = array[num].Substring(array[num].IndexOf('=') + 1);
+			SubStreamList.IsCheckAll = Convert.ToBoolean(text);
+			num++;
+			text = array[num].Substring(array[num].IndexOf('=') + 1);
+			string[] array4 = text.Split(',');
+			List<string> list2 = new List<string>();
+			array3 = array4;
+			foreach (string item2 in array3)
+			{
+				list2.Add(item2);
+			}
+			StreamList.SetSelectedCurves(list2.ToArray());
+			num++;
+			text = array[num].Substring(array[num].IndexOf('=') + 1);
+			StreamList.IsCheckAll = Convert.ToBoolean(text);
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLDiscurves;component/psd.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			switch (connectionId)
+			{
+			case 1:
+				SubStreamList = (CurvesSelectorControl)target;
+				break;
+			case 2:
+				StreamList = (CurvesSelectorControl)target;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+	[ProgId("WpfPLDiscurves.StreamPolCurves")]
+	public class StreamPolCurves : UserControl, IRibbonPlotWizardType, INotifyPropertyChanged, IPlotWizardTemplate, IComponentConnector
+	{
+		private IHNode _context;
+
+		private IHNode Context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private PlotwizardHelper _help = new PlotwizardHelper("PolyHelp.hlp", 16L);
+
+		private string _currentConfigValue = string.Empty;
+
+		private string _uniqueId = WpfPLDiscurvesResources.StreamPolCurves_ID;
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgIcon;
+
+		private bool _bHasInputDialog;
+
+		private bool _isNorm;
+
+		private bool _isStreamsSelected;
+
+		private string _normStream = string.Empty;
+
+		private List<string> _normStreamList = new List<string>();
+
+		private string _navPath;
+
+		private string _hierName;
+
+		private string _plotStyle = WpfPLDiscurvesResources.BPC_PlotStyle_Title_CLD;
+
+		private string[] _varNames;
+
+		public static RoutedCommand OKCommand = new RoutedCommand();
+
+		public static RoutedCommand CancelCommand = new RoutedCommand();
+
+		private bool _bCheckDataOnly;
+
+		internal CurvesSelectorControl StreamsSelector;
+
+		internal MMCmdButton OKButton;
+
+		private bool _contentLoaded;
+
+		public bool IsNorm
+		{
+			get
+			{
+				return _isNorm;
+			}
+			set
+			{
+				if (_isNorm != value)
+				{
+					_isNorm = value;
+					if (_isNorm && NormStream == string.Empty && NormStreamList.Count > 0)
+					{
+						NormStream = NormStreamList[0];
+					}
+					FirePropertyChangedEvent("IsNorm");
+				}
+			}
+		}
+
+		public bool IsStreamsSelected
+		{
+			get
+			{
+				return _isStreamsSelected;
+			}
+			set
+			{
+				if (_isStreamsSelected != value)
+				{
+					_isStreamsSelected = value;
+					FirePropertyChangedEvent("IsStreamsSelected");
+				}
+			}
+		}
+
+		public string NormStream
+		{
+			get
+			{
+				return _normStream;
+			}
+			set
+			{
+				if (_normStream != value)
+				{
+					_normStream = value;
+					FirePropertyChangedEvent("NormStream");
+				}
+			}
+		}
+
+		public List<string> NormStreamList
+		{
+			get
+			{
+				return _normStreamList;
+			}
+			set
+			{
+				_normStreamList = value;
+				FirePropertyChangedEvent("NormStreamList");
+			}
+		}
+
+		public string TooltipContentForRibbonItem => WpfPLDiscurvesResources.TooltipContentForRibbonItem_ChainSizeDistr;
+
+		public string TooltipHeaderForRibbonItem => WpfPLDiscurvesResources.TooltipHeaderForRibbonItem_ChainSizeDistr;
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgIcon;
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => _help.GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => _help.GetHelpID();
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string> { WpfPLDiscurvesResources.BPC_PlotStyle_Title };
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string>();
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		public event PropertyChangedEventHandler PropertyChanged;
+
+		public StreamPolCurves()
+		{
+			//IL_0009: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0013: Expected O, but got Unknown
+			_bHasInputDialog = true;
+			_navPath = "";
+			if (_imgIcon == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLDiscurves.Images.chainsizdis.ico");
+				_imgIcon = System.Drawing.Image.FromStream(manifestResourceStream);
+			}
+			CommandBinding commandBinding = new CommandBinding(OKCommand, ExecuteOKCommand, CanExecuteOKCommand);
+			CommandBinding commandBinding2 = new CommandBinding(CancelCommand, ExecuteCancelCommand);
+			base.CommandBindings.Add(commandBinding);
+			base.CommandBindings.Add(commandBinding2);
+			InitializeComponent();
+			base.DataContext = this;
+			StreamsSelector.Header = WpfPLDiscurvesResources.CurveList_Header;
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(WpfPLDiscurvesResources.BPC_PlotStyle_Title) == 0)
+			{
+				return new List<string>
+				{
+					WpfPLDiscurvesResources.BPC_PlotStyle_Title_CLD,
+					WpfPLDiscurvesResources.BPC_PlotStyle_Title_MWD
+				};
+			}
+			return null;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(WpfPLDiscurvesResources.BPC_PlotStyle_Title) == 0)
+			{
+				sCurrentVal = _plotStyle;
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+			bool flag = false;
+			if (sFieldName.CompareTo(WpfPLDiscurvesResources.BPC_PlotStyle_Title) == 0)
+			{
+				_plotStyle = sValue;
+				flag = true;
+			}
+			if (flag)
+			{
+				UpdateWizardData();
+			}
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sField)
+		{
+			sField.CompareTo(WpfPLDiscurvesResources.BPC_PlotStyle_Title);
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+			sConfigValue = _currentConfigValue;
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+			_currentConfigValue = sValue;
+		}
+
+		void IRibbonPlotWizardType.Context(object HNode, ref object HWizardPlot, ref int ierror)
+		{
+			if (HWizardPlot == null || HNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			_context = HNode as IHNode;
+			_wizardPlot = HWizardPlot as IHWizardPlot;
+			_varNames = new string[2] { "Stream-Sum/Dist-Curve/Output/POLCSDY", "Stream-Sum/Dist-Curve/Output/POLCSDX" };
+			string text = "Data/Results Summary/";
+			_navPath = _context.get_AttributeValue((short)74, Type.Missing) as string;
+			_hierName = _context.get_AttributeValue((short)76, Type.Missing) as string;
+			if (!string.IsNullOrEmpty(_navPath))
+			{
+				_navPath = _navPath.Remove(_navPath.LastIndexOf("Data"));
+				_navPath = _navPath.Replace("!", "/");
+			}
+			else if (!string.IsNullOrEmpty(_hierName))
+			{
+				_navPath = "Data/Blocks/" + _hierName + "/";
+				_navPath = _navPath.Replace(".", "/Data/Blocks/");
+			}
+			text = _navPath + text;
+			string text2 = (dynamic)_context.get_AttributeValue((short)6, Type.Missing);
+			if (text2 == "MATERIAL" || !string.IsNullOrEmpty(_hierName))
+			{
+				Context = _context.Application.Tree;
+				_varNames[0] = text + _varNames[0];
+				_varNames[1] = text + _varNames[1];
+			}
+			else
+			{
+				Context = _context;
+			}
+			IHNode iHNode = Context.FindNode(_varNames[0]);
+			if (iHNode == null || iHNode.Elements.Count == 0)
+			{
+				ierror = 1;
+				return;
+			}
+			List<string> list = new List<string>();
+			int count = iHNode.Elements.Count;
+			for (int i = 0; i < count; i++)
+			{
+				if ((dynamic)iHNode.Elements[i, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing) != null)
+				{
+					string item = iHNode.Elements.get_Label(0, i, Type.Missing);
+					if (!list.Contains(item))
+					{
+						list.Add(item);
+					}
+				}
+			}
+			if (list.Count == 0)
+			{
+				ierror = 1;
+			}
+			else
+			{
+				if (_bCheckDataOnly)
+				{
+					return;
+				}
+				StreamsSelector.SetCurves(list.ToArray());
+				string text3 = _context.get_AttributeValue((short)65, Type.Missing) as string;
+				if (text3 != "")
+				{
+					List<string> list2 = new List<string>();
+					list2.Add(text3);
+					StreamsSelector.SetSelectedCurves(list2.ToArray());
+				}
+				NormStreamList = new List<string>(list.ToArray());
+				if (text2 == "MATERIAL")
+				{
+					StreamsSelector.SetSelectedCurves(new string[1] { _context.get_Name(Type.Missing) });
+					if (NormStreamList.Contains(_context.get_Name(Type.Missing)))
+					{
+						NormStreamList.Remove(_context.get_Name(Type.Missing));
+					}
+				}
+				if (!string.IsNullOrEmpty(_currentConfigValue))
+				{
+					RestoreConfigValue(_currentConfigValue);
+				}
+			}
+		}
+
+		public void UpdateWizardData()
+		{
+			_wizardPlot.RemoveAllDependentVariable();
+			_wizardPlot.PlotVal.RemoveAnnotationText();
+			_ = (string)(dynamic)_context.get_AttributeValue((short)6, Type.Missing);
+			IHNode iHNode = Context.FindNode(_varNames[0]);
+			IHNode iHNode2 = Context.FindNode(_varNames[1]);
+			if (iHNode == null || iHNode.Elements.Count <= 0)
+			{
+				return;
+			}
+			string text = string.Empty;
+			IHNode iHNode3 = _context.Application.Tree.Elements["Data", Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements["Components", Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements["Polymers", Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements["Input", Type.Missing, Type.Missing, Type.Missing, Type.Missing];
+			if (iHNode3 != null && iHNode3.Elements["FUNCLOG", Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode3.Elements["FUNCLOG", Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements != null)
+			{
+				string loc_or_name = iHNode3.Elements["FUNCLOG", Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements.get_Label(0, 0, Type.Missing);
+				text = (dynamic)iHNode3.Elements["FUNCLOG", Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[loc_or_name, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+			}
+			_wizardPlot.PlotVal.NPoints = iHNode.Elements.Count;
+			_wizardPlot.SetIndependentVariable(Context, _varNames[1]);
+			((IHPlotVal)_wizardPlot.PlotVal).set_AxisScale(0, 1);
+			List<string> list = new List<string>(StreamsSelector.GetSelectedCurves());
+			int count = iHNode.Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements.Count;
+			int count2 = list.Count;
+			_wizardPlot.PlotVal.NVariables = count2;
+			string text2 = "";
+			for (int i = 0; i < count2; i++)
+			{
+				text2 = list[i];
+				((IHPlotVal)_wizardPlot.PlotVal).set_Label(i, text2);
+				if (count2 == 1)
+				{
+					string text3 = _navPath + "Data/Streams/" + text2 + "/Output/STR_CATT/COMP-ATTR/MIXED";
+					if (_context.Application.Tree.FindNode(text3) == null)
+					{
+						continue;
+					}
+					string path = "Data/Components/Polymers/Input/DISTTYPE";
+					if (_context.Application.Tree.FindNode(path) == null)
+					{
+						continue;
+					}
+					double num = double.NaN;
+					double num2 = double.NaN;
+					double num3 = double.NaN;
+					double num4 = double.NaN;
+					double num5 = double.NaN;
+					string text4 = _context.Application.Tree.FindNode(path).Elements.get_Label(0, 0, Type.Missing);
+					string text5 = text3 + "/" + text4 + "/";
+					IHNode iHNode4 = _context.Application.Tree.FindNode(text5 + "DPN");
+					if (iHNode4 != null)
+					{
+						num = (double)(dynamic)iHNode4.Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+					}
+					IHNode iHNode5 = _context.Application.Tree.FindNode(text5 + "DPW");
+					if (iHNode5 != null)
+					{
+						num2 = (double)(dynamic)iHNode5.Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+					}
+					IHNode iHNode6 = _context.Application.Tree.FindNode(text5 + "MWN");
+					if (iHNode6 != null)
+					{
+						num3 = (double)(dynamic)iHNode6.Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+					}
+					IHNode iHNode7 = _context.Application.Tree.FindNode(text5 + "MWW");
+					if (iHNode7 != null)
+					{
+						num4 = (double)(dynamic)iHNode7.Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+					}
+					IHNode iHNode8 = _context.Application.Tree.FindNode(text5 + "PDI");
+					if (iHNode8 != null)
+					{
+						num5 = (double)(dynamic)iHNode8.Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+					}
+					double num6 = double.NaN;
+					if (num != 0.0)
+					{
+						num6 = num3 / num;
+					}
+					double num7 = 0.0;
+					double num8 = 0.0;
+					double num9 = 0.0;
+					for (int j = 0; j < count - 1; j++)
+					{
+						try
+						{
+							if (iHNode2.Elements[j + 1, Type.Missing, Type.Missing, Type.Missing, Type.Missing] == null || iHNode2.Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing] == null)
+							{
+								continue;
+							}
+							double num10 = (dynamic)iHNode2.Elements[j + 1, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing) - (dynamic)iHNode2.Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+							double num11 = 0.0;
+							if (text == "YES")
+							{
+								if (iHNode.Elements[text2, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode.Elements[text2, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j + 1, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode2.Elements[j + 1, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode2.Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null)
+								{
+									num11 = ((dynamic)iHNode.Elements[text2, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j + 1, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing) / (dynamic)iHNode2.Elements[j + 1, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing) + (dynamic)iHNode.Elements[text2, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing) / (dynamic)iHNode2.Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing)) / 2;
+								}
+							}
+							else if (iHNode.Elements[text2, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode.Elements[text2, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j + 1, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode.Elements[text2, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null)
+							{
+								num11 = ((dynamic)iHNode.Elements[text2, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j + 1, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing) + (dynamic)iHNode.Elements[text2, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing)) / 2;
+							}
+							double num12 = num10 * num11;
+							num7 += num12;
+							if (iHNode2.Elements[j + 1, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode2.Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null)
+							{
+								num8 += num12 / (((dynamic)iHNode2.Elements[j + 1, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing) + (dynamic)iHNode2.Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing)) * 0.5);
+								num9 += num12 * (((dynamic)iHNode2.Elements[j + 1, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing) + (dynamic)iHNode2.Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing)) * 0.5);
+							}
+						}
+						catch
+						{
+						}
+					}
+					double num13 = double.NaN;
+					if (num8 != 0.0)
+					{
+						num8 = 1.0 / num8;
+						num13 = num9 / num8;
+					}
+					double num14 = num8 * num6;
+					double num15 = num9 * num6;
+					string text6 = "";
+					string text7 = "";
+					string text8 = "";
+					string text9 = "";
+					string text10 = "";
+					string text11 = "";
+					if (_plotStyle == WpfPLDiscurvesResources.BPC_PlotStyle_Title_CLD)
+					{
+						num.ToString();
+						num8.ToString();
+						text9 = $"{num:#0.00}";
+						text10 = $"{num8:#0.00}";
+						text11 = "DPN ";
+						num2.ToString();
+						num9.ToString();
+						text6 = $"{num2:#0.00}";
+						text7 = $"{num9:#0.00}";
+						text8 = "DPW ";
+					}
+					else if (_plotStyle == WpfPLDiscurvesResources.BPC_PlotStyle_Title_MWD)
+					{
+						num3.ToString();
+						num14.ToString();
+						text9 = $"{num3:#0.00}";
+						text10 = $"{num14:#0.00}";
+						text11 = "MWN ";
+						num4.ToString();
+						num15.ToString();
+						text6 = $"{num4:#0.00}";
+						text7 = $"{num15:#0.00}";
+						text8 = "MWW ";
+					}
+					string text12 = $"{num7:#0.0000}";
+					string text13 = $"{num5:#0.0000}";
+					string text14 = $"{num13:#0.0000}";
+					int num16 = text7.Length + 1;
+					if (num16 < 14)
+					{
+						num16 = 14;
+					}
+					string text15 = " =  ";
+					string text16 = _help.GetSpaces(8) + PlotPWRResource.Distribution + _help.GetSpaces(num16 - 12) + PlotPWRResource.Moments;
+					string text17 = text11 + text15 + text10 + _help.GetSpaces(num16 - text10.Length) + text9;
+					string text18 = text8 + text15 + text7 + _help.GetSpaces(num16 - text7.Length) + text6;
+					string text19 = "PDI " + text15 + text14 + _help.GetSpaces(num16 - text14.Length) + text13;
+					string text20 = "Area" + text15 + text12;
+					PLOTTEXT pLOTTEXT = new PLOTTEXT
+					{
+						x = 0.05,
+						y = 0.3,
+						text = text16 + "\n" + text17 + "\n" + text18 + "\n" + text19 + "\n" + text20,
+						fontname = "Segoe UI",
+						size = 9
+					};
+					CHPlotVal plotVal = _wizardPlot.PlotVal;
+					PLOTTEXT text21 = pLOTTEXT;
+					plotVal.AddAnnotationText(ref text21);
+				}
+				double num17 = 0.0;
+				double num18 = 1.0;
+				if (IsNorm)
+				{
+					string path2 = "Data/Components/Polymers/Input/DISTTYPE";
+					if (_context.Application.Tree.FindNode(path2) == null)
+					{
+						continue;
+					}
+					string loc_or_name2 = _context.Application.Tree.FindNode(path2).Elements.get_Label(0, 0, Type.Missing);
+					string text22 = _navPath + "Data/Streams/" + text2 + "/Output/";
+					string text23 = "None";
+					if (_context.Application.Tree.FindNode(text22 + "MOLEFLOW") != null && (dynamic)_context.Application.Tree.FindNode(text22 + "MOLEFLOW").get_Value(Type.Missing) == 1)
+					{
+						text23 = "MOLEFLOW";
+					}
+					else if (_context.Application.Tree.FindNode(text22 + "MASSFLOW") != null && (dynamic)_context.Application.Tree.FindNode(text22 + "MASSFLOW").get_Value(Type.Missing) == 1)
+					{
+						text23 = "MASSFLOW";
+					}
+					text22 = _navPath + "Data/Streams/" + text2 + "/Output/" + text23 + "/MIXED";
+					IHNode iHNode9 = _context.Application.Tree.FindNode(text22);
+					if (iHNode9 != null)
+					{
+						if (iHNode9.Elements[loc_or_name2, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null)
+						{
+							num17 = (dynamic)iHNode9.Elements[loc_or_name2, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+						}
+						text22 = _navPath + "Data/Streams/" + NormStream + "/Output/" + text23 + "/MIXED";
+						iHNode9 = _context.Application.Tree.FindNode(text22);
+						if (iHNode9 != null)
+						{
+							num18 = (dynamic)iHNode9.Elements[loc_or_name2, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+							if (text23 == "None")
+							{
+								num18 = 1.0;
+								num17 = 1.0;
+							}
+							if (num18 <= 0.0)
+							{
+								num18 = 1.0;
+							}
+						}
+					}
+				}
+				for (int k = 0; k < count; k++)
+				{
+					try
+					{
+						if (iHNode.Elements[text2, Type.Missing, Type.Missing, Type.Missing, Type.Missing] == null || iHNode.Elements[text2, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[k, Type.Missing, Type.Missing, Type.Missing, Type.Missing] == null)
+						{
+							continue;
+						}
+						if (IsNorm)
+						{
+							double? num19 = (double?)(dynamic)iHNode.Elements[text2, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[k, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing) * (num17 / num18);
+							if (num19.HasValue)
+							{
+								((IHPlotVal)_wizardPlot.PlotVal).set_YData(i, k, (short)0, (object)num19);
+							}
+						}
+						else if (((double?)(dynamic)iHNode.Elements[text2, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[k, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing)).HasValue)
+						{
+							((IHPlotVal)_wizardPlot.PlotVal).set_YData(i, k, (short)1, (object)iHNode.Elements[text2, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[k, Type.Missing, Type.Missing, Type.Missing, Type.Missing]);
+						}
+					}
+					catch
+					{
+					}
+				}
+			}
+			if (_plotStyle == WpfPLDiscurvesResources.BPC_PlotStyle_Title_MWD)
+			{
+				string path3 = _navPath + "Data/Streams/" + text2 + "/Output/STR_CATT/COMP-ATTR/MIXED";
+				IHNode iHNode10 = _context.Application.Tree.FindNode(path3);
+				if (iHNode10 != null)
+				{
+					string path4 = "Data/Components/Polymers/Input/DISTTYPE";
+					if (_context.Application.Tree.FindNode(path4) != null)
+					{
+						string loc_or_name3 = _context.Application.Tree.FindNode(path4).Elements.get_Label(0, 0, Type.Missing);
+						object obj3 = iHNode10.Elements[loc_or_name3, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements["DPN", Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+						object obj4 = iHNode10.Elements[loc_or_name3, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements["MWN", Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+						double num20 = (dynamic)((obj3 is double) ? obj3 : ((object)double.NaN));
+						double num21 = (double)(dynamic)((obj4 is double) ? obj4 : ((object)double.NaN)) / num20;
+						iHNode = Context.FindNode(_varNames[1]);
+						for (int l = 0; l < iHNode.Elements.Count; l++)
+						{
+							try
+							{
+								double num22 = (dynamic)iHNode.Elements[l, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing) * num21;
+								((IHPlotVal)_wizardPlot.PlotVal).set_XData(0, l, (short)0, (object)num22);
+							}
+							catch
+							{
+							}
+						}
+					}
+				}
+			}
+			if (_plotStyle == WpfPLDiscurvesResources.BPC_PlotStyle_Title_CLD)
+			{
+				_wizardPlot.PlotVal.Title = WpfPLDiscurvesResources.StreamPolCurves_CLD_Title;
+				_wizardPlot.PlotVal.XAxisTitle = WpfPLDiscurvesResources.StreamPolCurves_CLD_XA_Title;
+			}
+			else if (_plotStyle == WpfPLDiscurvesResources.BPC_PlotStyle_Title_MWD)
+			{
+				_wizardPlot.PlotVal.Title = WpfPLDiscurvesResources.StreamPolCurves_MWD_Title;
+				_wizardPlot.PlotVal.XAxisTitle = WpfPLDiscurvesResources.StreamPolCurves_MWD_XA_Title;
+			}
+			if (IsNorm)
+			{
+				((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle(Type.Missing, WpfPLDiscurvesResources.StreamPolCurves_YA_Norm_STR1 + " (" + WpfPLDiscurvesResources.StreamPolCurves_YA_Norm_STR2 + " " + NormStream + ")");
+			}
+			else
+			{
+				((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle(Type.Missing, WpfPLDiscurvesResources.StreamPolCurves_YA_Title);
+			}
+			_currentConfigValue = SaveConfigValue();
+		}
+
+		private void ExecuteOKCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			UpdateWizardData();
+			_help.CloseForm((UserControl)this, (bool?)true);
+		}
+
+		private void CanExecuteOKCommand(object sender, CanExecuteRoutedEventArgs e)
+		{
+			int num = StreamsSelector.GetSelectedCurves().Length;
+			if (num == StreamsSelector.Curves.Count)
+			{
+				StreamsSelector.IsCheckAll = true;
+			}
+			else
+			{
+				string[] selectedCurves = StreamsSelector.GetSelectedCurves();
+				StreamsSelector.IsCheckAll = false;
+				StreamsSelector.SetSelectedCurves(selectedCurves);
+			}
+			IsStreamsSelected = num != 0;
+			e.CanExecute = ((num != 0 && (!IsNorm || !(_normStream == string.Empty))) ? true : false);
+		}
+
+		private void ExecuteCancelCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			_help.CloseForm((UserControl)this, (bool?)false);
+		}
+
+		private string SaveConfigValue()
+		{
+			_ = string.Empty;
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.Append("StreamSelection=");
+			List<string> list = new List<string>(StreamsSelector.GetSelectedCurves());
+			int count = list.Count;
+			for (int i = 0; i < count; i++)
+			{
+				if (i > 0)
+				{
+					stringBuilder.Append(",");
+				}
+				stringBuilder.Append(list[i]);
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("CheckAll=");
+			stringBuilder.Append(StreamsSelector.IsCheckAll);
+			stringBuilder.Append(";");
+			stringBuilder.Append("NormCheck=");
+			stringBuilder.Append(IsNorm);
+			stringBuilder.Append(";");
+			if (IsNorm)
+			{
+				stringBuilder.Append("NormComBox=");
+				stringBuilder.Append(NormStream);
+				stringBuilder.Append(";");
+			}
+			return stringBuilder.ToString();
+		}
+
+		private void RestoreConfigValue(string ConfigString)
+		{
+			string[] array = ConfigString.Split(';');
+			int num = 0;
+			string text = array[num].Substring(array[num].IndexOf('=') + 1);
+			string[] array2 = text.Split(',');
+			List<string> list = new List<string>();
+			string[] array3 = array2;
+			foreach (string item in array3)
+			{
+				list.Add(item);
+			}
+			StreamsSelector.SetSelectedCurves(list.ToArray());
+			num++;
+			text = array[num].Substring(array[num].IndexOf('=') + 1);
+			StreamsSelector.IsCheckAll = Convert.ToBoolean(text);
+			num++;
+			text = array[num].Substring(array[num].IndexOf('=') + 1);
+			IsNorm = Convert.ToBoolean(text);
+			if (IsNorm)
+			{
+				num++;
+				text = array[num].Substring(array[num].IndexOf('=') + 1);
+				NormStream = text;
+			}
+		}
+
+		private void FirePropertyChangedEvent(string propName)
+		{
+			if (this.PropertyChanged != null)
+			{
+				this.PropertyChanged(this, new PropertyChangedEventArgs(propName));
+			}
+		}
+
+		public void SetCaption(ref string caption)
+		{
+			caption = WpfPLDiscurvesResources.StreamPolCurves_Title;
+		}
+
+		public void SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 380.0;
+		}
+
+		public void SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 300.0;
+		}
+
+		public void SetMinHeight(ref double minHeight)
+		{
+			minHeight = 380.0;
+		}
+
+		public void SetMinWidth(ref double minWidth)
+		{
+			minWidth = 300.0;
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLDiscurves;component/streampolcurves.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			//IL_0019: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0023: Expected O, but got Unknown
+			switch (connectionId)
+			{
+			case 1:
+				StreamsSelector = (CurvesSelectorControl)target;
+				break;
+			case 2:
+				OKButton = (MMCmdButton)target;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+	[ProgId("WpfPLDiscurves.WtFraction")]
+	public class WtFraction : UserControl, IRibbonPlotWizardType, IPlotWizardTemplate, IComponentConnector
+	{
+		private IHNode _context;
+
+		private IHNode Context;
+
+		private IHWizardPlot2 _wizardPlot;
+
+		private PlotwizardHelper _help = new PlotwizardHelper();
+
+		private string _uniqueId = WpfPLDiscurvesResources.SepEff;
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgBitmap;
+
+		private bool _bHasInputDialog;
+
+		private string[] _varNames;
+
+		private string _subStreamName = string.Empty;
+
+		private readonly string _plotType = WpfPLDiscurvesResources.PSDPlotType;
+
+		private readonly string _cumMassFrac = WpfPLDiscurvesResources.PSDPlotType_Cumulative_Mass_Fraction;
+
+		private readonly string _massDensityDist = WpfPLDiscurvesResources.PSDPlotType_Mass_Density_Distribution;
+
+		private string _currentPlotType = string.Empty;
+
+		public static RoutedCommand OKCommand = new RoutedCommand();
+
+		public static RoutedCommand CancelCommand = new RoutedCommand();
+
+		private bool _bCheckDataOnly;
+
+		internal CurvesSelectorControl SubStreamList;
+
+		private bool _contentLoaded;
+
+		public string TooltipContentForRibbonItem => "Weight fraction";
+
+		public string TooltipHeaderForRibbonItem => "Weight fraction";
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot2;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgBitmap;
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => _help.GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => _help.GetHelpID();
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string> { _plotType };
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string>();
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		public WtFraction()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			InitializeComponent();
+			_bHasInputDialog = true;
+			_currentPlotType = _cumMassFrac;
+			if (_imgBitmap == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLDiscurves.Images.PSD.ico");
+				_imgBitmap = new Bitmap(manifestResourceStream);
+			}
+			CommandBinding commandBinding = new CommandBinding(OKCommand, ExecuteOKCommand, CanExecuteOKCommand);
+			CommandBinding commandBinding2 = new CommandBinding(CancelCommand, ExecuteCancelCommand);
+			base.CommandBindings.Add(commandBinding);
+			base.CommandBindings.Add(commandBinding2);
+		}
+
+		public void SetCaption(ref string caption)
+		{
+			caption = "Weight Fraction";
+		}
+
+		public void SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 350.0;
+		}
+
+		public void SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 300.0;
+		}
+
+		public void SetMinHeight(ref double minHeight)
+		{
+			minHeight = 350.0;
+		}
+
+		public void SetMinWidth(ref double minWidth)
+		{
+			minWidth = 300.0;
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(_plotType) == 0)
+			{
+				return new List<string> { _cumMassFrac, _massDensityDist };
+			}
+			return null;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(_plotType) == 0)
+			{
+				sCurrentVal = _currentPlotType;
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(_plotType) == 0)
+			{
+				_currentPlotType = sValue;
+			}
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sField)
+		{
+			if (sField.CompareTo(_plotType) != 0)
+			{
+				return (RibbonControlType)0;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.Context(object HNode, ref object HWizardPlot, ref int ierror)
+		{
+			if (HWizardPlot == null || HNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			_context = HNode as IHNode;
+			_wizardPlot = HWizardPlot as IHWizardPlot2;
+			_varNames = new string[5] { "Input/LOWER/", "Input/UPPER/", "Input/SUBSATT/", "Input/CUM_SUBSATT/", "Input/LIMUNITS/" };
+			Context = _context;
+			object nodeCxs = _nodeCxs;
+			CxsNode val = (CxsNode)((nodeCxs is CxsNode) ? nodeCxs : null);
+			string text;
+			if (val != null)
+			{
+				string path = val.Path;
+				if (path == null || !path.Contains("Input.SUBSATT"))
+				{
+					return;
+				}
+				_subStreamName = val.Name;
+				_bHasInputDialog = false;
+				text = path.Replace("Top.appModelV8", "Data");
+				text = text.Replace(".", "/");
+				Context = _context.Application.Tree.FindNode(text);
+			}
+			if (Context == null || Context.Elements.Count <= 0)
+			{
+				ierror = 1;
+				return;
+			}
+			for (int i = 0; i < Context.Elements.Count; i++)
+			{
+				ierror = 1;
+				if (Context.Elements[i, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null)
+				{
+					if ((dynamic)Context.Elements[i, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing) != null)
+					{
+						ierror = 0;
+						break;
+					}
+					continue;
+				}
+				return;
+			}
+			text = val.Path.Remove(val.Path.LastIndexOf("Input"));
+			text = text.Replace("Top.appModelV8", "Data");
+			text = text.Replace(".", "/");
+			Context = _context.Application.Tree.FindNode(text);
+			IHNode iHNode = Context.FindNode(_varNames[2]);
+			if (iHNode == null || iHNode.Elements.Count <= 0 || iHNode.Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements.Count <= 0)
+			{
+				ierror = 1;
+			}
+			else if (ierror != 1 && !_bCheckDataOnly)
+			{
+				List<string> list = new List<string>();
+				for (int j = 0; j < iHNode.Elements.Count; j++)
+				{
+					string item = iHNode.Elements.get_Label(0, j, Type.Missing);
+					list.Add(item);
+				}
+				SubStreamList.SetCurves(list.ToArray());
+				SubStreamList.Header = WpfPLDiscurvesResources.PSDSubstream;
+				if (!string.IsNullOrEmpty(_subStreamName))
+				{
+					List<string> list2 = new List<string>();
+					list2.Add(_subStreamName);
+					SubStreamList.SetSelectedCurves(list2.ToArray());
+				}
+				else if (list.Count == 1)
+				{
+					SubStreamList.IsCheckAll = true;
+					_bHasInputDialog = false;
+				}
+			}
+		}
+
+		public void UpdateWizardData()
+		{
+			_wizardPlot.RemoveAllDependentVariable();
+			List<string> list = new List<string>(SubStreamList.GetSelectedCurves());
+			if (list.Count <= 0)
+			{
+				return;
+			}
+			IHNode iHNode = Context.FindNode(_varNames[2]);
+			if (iHNode == null || iHNode.Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing] == null || iHNode.Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing] == null)
+			{
+				return;
+			}
+			_wizardPlot.RemoveAllIndependentVariable();
+			int num = 0;
+			int num2 = 0;
+			_wizardPlot.PlotVal.NXVariables = 0;
+			_wizardPlot.PlotVal.NVariables = 0;
+			for (int i = 0; i < list.Count; i++)
+			{
+				string text = list[i];
+				string path = _varNames[0] + text;
+				string path2 = _varNames[1] + text;
+				IHNode iHNode2 = Context.FindNode(path);
+				IHNode iHNode3 = Context.FindNode(path2);
+				if (iHNode2 == null || iHNode3 == null)
+				{
+					break;
+				}
+				int count = iHNode2.Elements.Count;
+				_wizardPlot.PlotVal.NXVariables = _wizardPlot.PlotVal.NXVariables + 1;
+				_wizardPlot.PlotVal.NPoints = count;
+				_wizardPlot.PlotVal.XAxisTitle = WpfPLDiscurvesResources.PSDXAxisTitle;
+				if (count > 1)
+				{
+					IHNode iHNode4 = Context.FindNode(_varNames[4]);
+					string text2 = (dynamic)iHNode4.Elements[text, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+					CHPlotVal plotVal = _wizardPlot.PlotVal;
+					plotVal.XAxisTitle = plotVal.XAxisTitle + " " + text2;
+				}
+				for (int j = 0; j < count; j++)
+				{
+					try
+					{
+						double num3 = (dynamic)iHNode2.Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+						double num4 = (dynamic)iHNode3.Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+						double num5 = (num3 + num4) / 2.0;
+						if (_currentPlotType == _cumMassFrac)
+						{
+							((IHPlotVal)_wizardPlot.PlotVal).set_XData(num, j, (short)0, (object)num4);
+						}
+						else
+						{
+							((IHPlotVal)_wizardPlot.PlotVal).set_XData(num, j, (short)0, (object)num5);
+						}
+					}
+					catch
+					{
+					}
+				}
+				num++;
+				_wizardPlot.PlotVal.NVariables = _wizardPlot.PlotVal.NVariables + 1;
+				string path3 = _varNames[2] + text;
+				if (_currentPlotType == _cumMassFrac)
+				{
+					path3 = _varNames[3] + text;
+				}
+				iHNode = Context.FindNode(path3);
+				for (int k = 0; k < count; k++)
+				{
+					if ((dynamic)iHNode.Elements[k, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing) == null)
+					{
+						continue;
+					}
+					try
+					{
+						if (_currentPlotType == _cumMassFrac)
+						{
+							double num6 = (dynamic)iHNode.Elements[k, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+							((IHPlotVal)_wizardPlot.PlotVal).set_YData(num2, k, (short)0, (object)num6);
+							continue;
+						}
+						double num7 = (dynamic)iHNode.Elements[k, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+						double num8 = (dynamic)iHNode2.Elements[k, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+						double num9 = (dynamic)iHNode3.Elements[k, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+						if (num9 - num8 > 0.0)
+						{
+							double num10 = num7 / (num9 - num8);
+							((IHPlotVal)_wizardPlot.PlotVal).set_YData(num2, k, (short)0, (object)num10);
+						}
+					}
+					catch
+					{
+					}
+				}
+				((IHPlotVal)_wizardPlot.PlotVal).set_CurveStyle(num2, 1);
+				((IHPlotVal)_wizardPlot.PlotVal).set_Label(num2, WpfPLDiscurvesResources.WtFraction_CalValue_Legend);
+				num2++;
+				try
+				{
+					if (string.IsNullOrEmpty(_subStreamName))
+					{
+						_bHasInputDialog = true;
+					}
+					else
+					{
+						List<double> meshData = new List<double>();
+						List<double> lstMDY = new List<double>();
+						List<double> lstCMY = new List<double>();
+						GetPlotData(text, ref meshData, ref lstMDY, ref lstCMY);
+						int num11 = 0;
+						double num12 = 0.0;
+						double num13 = 0.0;
+						IHNode iHNode5 = Context.FindNode("Input/INTERVAL/" + text);
+						if (iHNode5 != null)
+						{
+							IHNode iHNode6 = Context.FindNode("Input/LOWER/" + text);
+							if (iHNode6 != null)
+							{
+								num12 = (dynamic)iHNode6.Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+							}
+							num11 = iHNode5.Elements.Count;
+							IHNode iHNode7 = Context.FindNode("Input/UPPER/" + text);
+							if (iHNode7 != null)
+							{
+								num13 = (dynamic)iHNode7.Elements[num11 - 1, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+							}
+						}
+						if (num12 < meshData[0])
+						{
+							meshData.Insert(0, num12);
+							lstCMY.Insert(0, 0.0);
+							lstCMY.Insert(0, 0.0);
+							lstMDY.Insert(0, 0.0);
+							lstMDY.Insert(0, 0.0);
+						}
+						if (meshData[meshData.Count() - 1] < num13)
+						{
+							meshData.Add(num13);
+							lstCMY.Add(1.0);
+							lstMDY.Add(0.0);
+							lstCMY.Add(1.0);
+							lstMDY.Add(0.0);
+						}
+						count = meshData.Count;
+						_wizardPlot.PlotVal.NXVariables = _wizardPlot.PlotVal.NXVariables + 1;
+						_wizardPlot.PlotVal.NVariables = _wizardPlot.PlotVal.NVariables + 1;
+						_wizardPlot.PlotVal.NPoints = count;
+						for (int l = 0; l < count; l++)
+						{
+							if (_currentPlotType == _cumMassFrac)
+							{
+								((IHPlotVal)_wizardPlot.PlotVal).set_XData(num, l, (short)0, (object)meshData[l]);
+							}
+							else if (l < count - 1)
+							{
+								((IHPlotVal)_wizardPlot.PlotVal).set_XData(num, l, (short)0, (object)((meshData[l] + meshData[l + 1]) / 2.0));
+							}
+						}
+						for (int m = 0; m < count; m++)
+						{
+							if (_currentPlotType == _cumMassFrac)
+							{
+								if (m < lstCMY.Count())
+								{
+									((IHPlotVal)_wizardPlot.PlotVal).set_YData(num2, m, (short)0, (object)lstCMY[m]);
+								}
+							}
+							else if (m < lstMDY.Count())
+							{
+								((IHPlotVal)_wizardPlot.PlotVal).set_YData(num2, m, (short)0, (object)lstMDY[m]);
+							}
+						}
+						((IHPlotVal)_wizardPlot.PlotVal).set_CurveStyle(num2, 240);
+						(_wizardPlot.PlotVal as IHPlotVal2).set_LineType((short)num2, (short)2);
+						((IHPlotVal)_wizardPlot.PlotVal).set_Label(num2, WpfPLDiscurvesResources.WtFraction_Ref_Legend);
+					}
+					((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle((object)null, _currentPlotType);
+				}
+				catch
+				{
+				}
+			}
+		}
+
+		private void ExecuteOKCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			UpdateWizardData();
+			_help.CloseForm((UserControl)this, (bool?)true);
+		}
+
+		private void CanExecuteOKCommand(object sender, CanExecuteRoutedEventArgs e)
+		{
+			int num = SubStreamList.GetSelectedCurves().Count();
+			e.CanExecute = num != 0;
+		}
+
+		private void ExecuteCancelCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			_help.CloseForm((UserControl)this, (bool?)false);
+		}
+
+		private void GetPlotData(string substream, ref List<double> meshData, ref List<double> lstMDY, ref List<double> lstCMY)
+		{
+			int num = 0;
+			double dblDMaxUser = 0.0;
+			double dblDMinUser = 0.0;
+			IHNode iHNode = Context.FindNode("Input/INTERVAL/" + substream);
+			if (iHNode != null)
+			{
+				num = iHNode.Elements.Count;
+				IHNode iHNode2 = Context.FindNode("Input/UPPER/" + substream);
+				if (iHNode2 != null)
+				{
+					dblDMaxUser = (dynamic)iHNode2.Elements[num - 1, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+				}
+				IHNode iHNode3 = Context.FindNode("Input/LOWER/" + substream);
+				if (iHNode2 != null)
+				{
+					dblDMinUser = (dynamic)iHNode3.Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+				}
+			}
+			int num2 = 0;
+			IHNode iHNode4 = Context.FindNode("Input/LIMUNITS/" + substream);
+			if (iHNode4 != null)
+			{
+				num2 = GetUnitCol((dynamic)iHNode4.get_Value(Type.Missing));
+			}
+			IHNode iHNode5 = null;
+			double dblPositionParameter = 0.0;
+			double dblShapeParameter = 0.0;
+			int iFunctionType = 2;
+			string obj = (dynamic)Context.FindNode("Input/TYPE/" + substream).get_Value(Type.Missing);
+			if (obj == "GGS")
+			{
+				iFunctionType = 0;
+				iHNode5 = Context.FindNode("Input/DIAM/" + substream);
+				if (iHNode5 != null)
+				{
+					dblPositionParameter = (dynamic)iHNode5.get_ValueForUnit((short)17, (short)num2);
+				}
+				iHNode5 = Context.FindNode("Input/GGS_N/" + substream);
+				if (iHNode5 != null)
+				{
+					dblShapeParameter = (dynamic)iHNode5.get_Value(Type.Missing);
+				}
+			}
+			if (obj == "RRSB")
+			{
+				iFunctionType = 1;
+				iHNode5 = Context.FindNode("Input/D63/" + substream);
+				if (iHNode5 != null)
+				{
+					dblPositionParameter = (dynamic)iHNode5.get_ValueForUnit((short)17, (short)num2);
+				}
+				iHNode5 = Context.FindNode("Input/RRSB_N/" + substream);
+				if (iHNode5 != null)
+				{
+					dblShapeParameter = (dynamic)iHNode5.get_Value(Type.Missing);
+				}
+			}
+			if (obj == "NORMAL")
+			{
+				iFunctionType = 2;
+				iHNode5 = Context.FindNode("Input/D50/" + substream);
+				if (iHNode5 != null)
+				{
+					dblPositionParameter = (dynamic)iHNode5.get_ValueForUnit((short)17, (short)num2);
+				}
+				iHNode5 = Context.FindNode("Input/STDDEV/" + substream);
+				if (iHNode5 != null)
+				{
+					dblShapeParameter = (dynamic)iHNode5.get_ValueForUnit((short)17, (short)num2);
+				}
+			}
+			if (obj == "LOG-NORMAL")
+			{
+				iFunctionType = 3;
+				iHNode5 = Context.FindNode("Input/D50/" + substream);
+				if (iHNode5 != null)
+				{
+					dblPositionParameter = (dynamic)iHNode5.get_ValueForUnit((short)17, (short)num2);
+				}
+				iHNode5 = Context.FindNode("Input/GMDEV/" + substream);
+				if (iHNode5 != null)
+				{
+					dblShapeParameter = (dynamic)iHNode5.get_Value(Type.Missing);
+				}
+			}
+			CreateTheoreticalMesh(iFunctionType, dblPositionParameter, dblShapeParameter, dblDMinUser, dblDMaxUser, ref meshData);
+			if (meshData.Count() > 0)
+			{
+				CreateFraction(iFunctionType, dblPositionParameter, dblShapeParameter, meshData, ref lstMDY, ref lstCMY);
+			}
+		}
+
+		private void CreateTheoreticalMesh(int iFunctionType, double dblPositionParameter, double dblShapeParameter, double dblDMinUser, double dblDMaxUser, ref List<double> meshData)
+		{
+			double num;
+			double num2;
+			switch (iFunctionType)
+			{
+			case 0:
+				num = dblPositionParameter;
+				num2 = ((dblShapeParameter == 0.0) ? 0.0 : (Math.Pow(1E-05, 1.0 / dblShapeParameter) * dblPositionParameter));
+				break;
+			case 1:
+				num = ((!(dblShapeParameter >= 0.01)) ? (5.0 * dblDMaxUser) : (Math.Pow(-1.0 * Math.Log(9.99999999995449E-06), 1.0 / dblShapeParameter) * dblPositionParameter));
+				num2 = Math.Pow(-1.0 * Math.Log(0.99999), 1.0 / dblShapeParameter) * dblPositionParameter;
+				break;
+			case 2:
+				num = dblPositionParameter + 4.1 * dblShapeParameter;
+				num2 = Math.Max(dblPositionParameter - 4.1 * dblShapeParameter, 0.0);
+				break;
+			case 3:
+				num = Math.Exp(Math.Log(dblPositionParameter) + 4.0 * dblShapeParameter);
+				num2 = Math.Max(Math.Exp(Math.Log(dblPositionParameter) - 4.0 * dblShapeParameter), 0.0);
+				break;
+			default:
+				return;
+			}
+			if (num > 10.0 * dblDMaxUser)
+			{
+				num = 5.0 * dblDMaxUser;
+			}
+			List<double> list = new List<double>();
+			double num3 = (num - num2) / 199.0;
+			for (int i = 0; i < 200; i++)
+			{
+				list.Add(num3 * (double)i + num2);
+			}
+			if (iFunctionType == 0)
+			{
+				list.Add(num + 1E-06);
+			}
+			if (num < dblDMaxUser - num3)
+			{
+				list.Add(dblDMaxUser - num3);
+				list.Add(dblDMaxUser);
+			}
+			else if (num < dblDMaxUser)
+			{
+				list.Add(dblDMaxUser - num3);
+			}
+			if (num2 > dblDMinUser + num3)
+			{
+				list.Insert(0, dblDMinUser + num3);
+				list.Insert(0, dblDMinUser);
+			}
+			else if (num2 > dblDMinUser)
+			{
+				list.Insert(0, dblDMinUser);
+			}
+			meshData = list;
+		}
+
+		public void CreateFraction(int iFunctionType, double dblPositionParameter, double dblShapeParameter, List<double> meshData, ref List<double> lstMDY, ref List<double> lstCMY)
+		{
+			lstCMY.Clear();
+			lstMDY.Clear();
+			double num = 0.0;
+			double num2 = 0.0;
+			double num3 = 0.0;
+			switch (iFunctionType)
+			{
+			case 0:
+			{
+				num3 = ((!(meshData[0] >= 0.0) || !(meshData[0] <= dblPositionParameter)) ? 1.0 : Math.Pow(meshData[0] / dblPositionParameter, dblShapeParameter));
+				lstCMY.Add(num3);
+				for (int k = 1; k < meshData.Count(); k++)
+				{
+					num2 = ((!(meshData[k] >= 0.0) || !(meshData[k] <= dblPositionParameter)) ? 1.0 : Math.Pow(meshData[k] / dblPositionParameter, dblShapeParameter));
+					num = num2 - num3;
+					num3 = num2;
+					if (meshData[k] - meshData[k - 1] > 0.0)
+					{
+						double item3 = num / (meshData[k] - meshData[k - 1]);
+						lstMDY.Add(item3);
+					}
+					else
+					{
+						lstMDY.Add(0.0);
+					}
+					lstCMY.Add(num2);
+				}
+				break;
+			}
+			case 1:
+			{
+				if (dblPositionParameter <= 0.0)
+				{
+					break;
+				}
+				num3 = 1.0 - Math.Exp(-1.0 * Math.Pow(meshData[0] / dblPositionParameter, dblShapeParameter));
+				lstCMY.Add(num3);
+				for (int j = 1; j < meshData.Count(); j++)
+				{
+					num2 = 1.0 - Math.Exp(-1.0 * Math.Pow(meshData[j] / dblPositionParameter, dblShapeParameter));
+					num = num2 - num3;
+					num3 = num2;
+					if (meshData[j] - meshData[j - 1] > 0.0)
+					{
+						double item2 = num / (meshData[j] - meshData[j - 1]);
+						lstMDY.Add(item2);
+					}
+					else
+					{
+						lstMDY.Add(0.0);
+					}
+					lstCMY.Add(num2);
+				}
+				break;
+			}
+			case 2:
+			{
+				if (dblShapeParameter == 0.0)
+				{
+					break;
+				}
+				double dblX2 = (meshData[0] - dblPositionParameter) / (Math.Sqrt(2.0) * dblShapeParameter);
+				num3 = 0.5 * (1.0 + Errf(dblX2));
+				lstCMY.Add(num3);
+				for (int l = 1; l < meshData.Count(); l++)
+				{
+					dblX2 = (meshData[l] - dblPositionParameter) / (Math.Sqrt(2.0) * dblShapeParameter);
+					num2 = 0.5 * (1.0 + Errf(dblX2));
+					num = num2 - num3;
+					num3 = num2;
+					if (meshData[l] - meshData[l - 1] > 0.0)
+					{
+						double item4 = num / (meshData[l] - meshData[l - 1]);
+						lstMDY.Add(item4);
+					}
+					else
+					{
+						lstMDY.Add(0.0);
+					}
+					lstCMY.Add(num2);
+				}
+				break;
+			}
+			case 3:
+			{
+				if (dblShapeParameter == 0.0)
+				{
+					break;
+				}
+				double dblX = (Math.Log(meshData[0]) - Math.Log(dblPositionParameter)) / (Math.Sqrt(2.0) * dblShapeParameter);
+				num3 = 0.5 * (1.0 + Errf(dblX));
+				lstCMY.Add(num3);
+				for (int i = 1; i < meshData.Count(); i++)
+				{
+					dblX = (Math.Log(meshData[i]) - Math.Log(dblPositionParameter)) / (Math.Sqrt(2.0) * dblShapeParameter);
+					num2 = 0.5 * (1.0 + Errf(dblX));
+					num = num2 - num3;
+					num3 = num2;
+					if (meshData[i] - meshData[i - 1] > 0.0)
+					{
+						double item = num / (meshData[i] - meshData[i - 1]);
+						lstMDY.Add(item);
+					}
+					else
+					{
+						lstMDY.Add(0.0);
+					}
+					lstCMY.Add(num2);
+				}
+				break;
+			}
+			}
+		}
+
+		private int GetUnitCol(string strUnit)
+		{
+			int result = 0;
+			IHNode iHNode = _context.Application.Tree.FindNode("Unit Table");
+			try
+			{
+				IHNode iHNode2 = iHNode.FindNode("LENGTH");
+				if (iHNode2 != null)
+				{
+					int count = iHNode2.Elements.Count;
+					for (int i = 0; i < count; i++)
+					{
+						if (iHNode2.Elements.get_Label(0, i, (object)null).ToLower() == strUnit.ToLower())
+						{
+							result = i + 1;
+							break;
+						}
+					}
+				}
+			}
+			catch
+			{
+			}
+			return result;
+		}
+
+		private double Errf(double dblX)
+		{
+			double num = 0.254829592;
+			double num2 = -0.284496736;
+			double num3 = 1.421413741;
+			double num4 = -1.453152027;
+			double num5 = 1.061405429;
+			double num6 = 0.3275911;
+			int num7 = 1;
+			if (dblX < 0.0)
+			{
+				num7 = -1;
+			}
+			dblX = Math.Abs(dblX);
+			double num8 = 1.0 / (1.0 + num6 * dblX);
+			double num9 = 1.0 - ((((num5 * num8 + num4) * num8 + num3) * num8 + num2) * num8 + num) * num8 * Math.Exp((0.0 - dblX) * dblX);
+			return (double)num7 * num9;
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLDiscurves;component/wtfraction.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			if (connectionId == 1)
+			{
+				SubStreamList = (CurvesSelectorControl)target;
+			}
+			else
+			{
+				_contentLoaded = true;
+			}
+		}
+	}
+}
+namespace AspenTech.AspenPlus.Happ
+{
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("11677780-B72B-11D0-A943-0000C0A118DB")]
+	[CoClass(typeof(object))]
+	[TypeIdentifier]
+	public interface CHPlotVal : IHPlotVal
+	{
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("8008C730-1A3E-11D1-8A4D-0000C0237DF9")]
+	[CoClass(typeof(object))]
+	[TypeIdentifier]
+	public interface CHWizardPlot : IHWizardPlot
+	{
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("8E567522-F9BA-11CF-90B2-0000C0A810C4")]
+	[TypeIdentifier]
+	public interface IHNode
+	{
+		[DispId(1610743808)]
+		IHapp Application
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743808)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+
+		void _VtblGap1_1();
+
+		[DispId(1610743810)]
+		string Name
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743810)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743810)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.BStr)]
+			set;
+		}
+
+		void _VtblGap2_2();
+
+		[DispId(1610743814)]
+		object Value
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743814)]
+			[return: MarshalAs(UnmanagedType.Struct)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743814)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.Struct)]
+			set;
+		}
+
+		void _VtblGap3_4();
+
+		[DispId(1610743820)]
+		object AttributeValue
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743820)]
+			[return: MarshalAs(UnmanagedType.Struct)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743820)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.Struct)]
+			set;
+		}
+
+		void _VtblGap4_4();
+
+		[DispId(1610743826)]
+		IHNodeCol Elements
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743826)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+
+		void _VtblGap5_8();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743835)]
+		[return: MarshalAs(UnmanagedType.Interface)]
+		IHNode FindNode([In][MarshalAs(UnmanagedType.BStr)] string path);
+
+		void _VtblGap6_18();
+
+		[DispId(1610743854)]
+		object ValueForUnit
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743854)]
+			[return: MarshalAs(UnmanagedType.Struct)]
+			get;
+		}
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("89E81F60-019A-11D0-9BE7-0000C05375D5")]
+	[TypeIdentifier]
+	public interface IHNodeCol : IEnumerable
+	{
+		void _VtblGap1_2();
+
+		[DispId(1610743810)]
+		int Count
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743810)]
+			get;
+		}
+
+		void _VtblGap2_3();
+
+		[DispId(0)]
+		IHNode this[[In][MarshalAs(UnmanagedType.Struct)] object loc_or_name, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name2, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name3, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name4, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name5]
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(0)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+
+		void _VtblGap3_2();
+
+		[DispId(1610743817)]
+		string Label
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743817)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743817)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.BStr)]
+			set;
+		}
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("11677780-B72B-11D0-A943-0000C0A118DB")]
+	[TypeIdentifier]
+	public interface IHPlotVal
+	{
+		void _VtblGap1_2();
+
+		[DispId(1610743810)]
+		string Title
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743810)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743810)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.BStr)]
+			set;
+		}
+
+		void _VtblGap2_1();
+
+		[DispId(1610743813)]
+		string XAxisTitle
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743813)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743813)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.BStr)]
+			set;
+		}
+
+		void _VtblGap3_1();
+
+		[DispId(1610743816)]
+		string YAxisTitle
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743816)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743816)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.BStr)]
+			set;
+		}
+
+		void _VtblGap4_1();
+
+		[DispId(1610743819)]
+		string Label
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743819)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743819)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.BStr)]
+			set;
+		}
+
+		void _VtblGap5_1();
+
+		[DispId(1610743822)]
+		int NPoints
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743822)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743822)]
+			[param: In]
+			set;
+		}
+
+		[DispId(1610743824)]
+		int NVariables
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743824)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743824)]
+			[param: In]
+			set;
+		}
+
+		[DispId(1610743826)]
+		int NXVariables
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743826)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743826)]
+			[param: In]
+			set;
+		}
+
+		void _VtblGap6_1();
+
+		[DispId(1610743829)]
+		object XData
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743829)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.Struct)]
+			set;
+		}
+
+		void _VtblGap7_1();
+
+		[DispId(1610743831)]
+		object YData
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743831)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.Struct)]
+			set;
+		}
+
+		void _VtblGap8_20();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743852)]
+		void AddAnnotationText([In] ref PLOTTEXT text);
+
+		void _VtblGap9_15();
+
+		[DispId(1610743868)]
+		int CurveStyle
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743868)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743868)]
+			[param: In]
+			set;
+		}
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743870)]
+		void RemoveAnnotationText();
+
+		void _VtblGap10_4();
+
+		[DispId(1610743875)]
+		int AxisScale
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743875)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743875)]
+			[param: In]
+			set;
+		}
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("EE89DDB7-133D-4657-A64A-4A36E3564C89")]
+	[TypeIdentifier]
+	public interface IHPlotVal2 : IHPlotVal
+	{
+		void _VtblGap1_73();
+
+		[DispId(1610809348)]
+		short LineType
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610809348)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610809348)]
+			[param: In]
+			set;
+		}
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("8008C730-1A3E-11D1-8A4D-0000C0237DF9")]
+	[TypeIdentifier]
+	public interface IHWizardPlot
+	{
+		[DispId(1610743808)]
+		CHPlotVal PlotVal
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743808)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+
+		void _VtblGap1_6();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743815)]
+		void SetIndependentVariable([In][MarshalAs(UnmanagedType.Interface)] IHNode pContext, [In][MarshalAs(UnmanagedType.BStr)] string indepvar);
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743816)]
+		void AddDependentVariable([In][MarshalAs(UnmanagedType.Interface)] IHNode pContext, [In][MarshalAs(UnmanagedType.BStr)] string depvar);
+
+		void _VtblGap2_1();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743818)]
+		void RemoveAllDependentVariable();
+
+		void _VtblGap3_4();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743823)]
+		void Clear();
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("5DA88FB5-5B29-4EAE-ACDF-E45DE2319D99")]
+	[TypeIdentifier]
+	public interface IHWizardPlot2 : IHWizardPlot
+	{
+		[DispId(1610743808)]
+		new CHPlotVal PlotVal
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743808)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+
+		void _VtblGap1_9();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743818)]
+		new void RemoveAllDependentVariable();
+
+		void _VtblGap2_19();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610809346)]
+		void RemoveAllIndependentVariable();
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[DefaultMember("Name")]
+	[Guid("8E567521-F9BA-11CF-90B2-0000C0A810C4")]
+	[TypeIdentifier]
+	public interface IHapp
+	{
+		void _VtblGap1_3();
+
+		[DispId(0)]
+		string Name
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(0)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+		}
+
+		void _VtblGap2_7();
+
+		[DispId(1610743819)]
+		IHNode Tree
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743819)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+	}
+	[StructLayout(LayoutKind.Sequential, Pack = 8)]
+	[CompilerGenerated]
+	[Guid("24B82EB0-4A1F-11D1-8A70-0000C0237DF9")]
+	[TypeIdentifier("8E567520-F9BA-11CF-90B2-0000C0A810C4", "AspenTech.AspenPlus.Happ.PLOTTEXT")]
+	public struct PLOTTEXT
+	{
+		public double x;
+
+		public double y;
+
+		[MarshalAs(UnmanagedType.BStr)]
+		public string text;
+
+		public int color;
+
+		[MarshalAs(UnmanagedType.BStr)]
+		public string fontname;
+
+		public short alignment;
+
+		public short size;
+
+		public short style;
+
+		public short pad;
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')
