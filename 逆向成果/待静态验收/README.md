@@ -1,6 +1,6 @@
 # 待静态验收
 
-共 930 件。已有代码，等待逐件核对。
+共 929 件。已有代码，等待逐件核对。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -455,7 +455,6 @@
 | [Icondef.exe](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/Icondef.exe/) | Plus | `76b84e1652de` |
 | [icondefdll.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/icondefdll.dll/) | Plus | `3c3476eb72a3` |
 | [iconed.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/iconed.dll/) | Plus | `f9f88ad24db7` |
-| [IconEditorAx.ocx](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/IconEditorAx.ocx/) | Plus | `082e89138ce9` |
 | [IconEditorAxLib.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/IconEditorAxLib.dll/) | Plus | `aa665a96c0e1` |
 | [iconeditorCME.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/iconeditorCME.dll/) | Plus | `842049c07f64` |
 | [ICSharpCode.SharpZipLib.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/ICSharpCode.SharpZipLib.dll/) | Plus | `cf8cae61961b` |
