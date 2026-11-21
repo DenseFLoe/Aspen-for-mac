@@ -1,6 +1,6 @@
 # 未成功
 
-共 85 件。每件均有尝试记录，当前交付只有报告。
+共 81 件。每件均有尝试记录，当前交付只有报告。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -61,7 +61,6 @@
 | [nl2sol.lib](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Lib/nl2sol.lib/) | Plus | `7738ce952d97` |
 | [OC25.DLL](Plus/%5BSystemFolder%5D/OC25.DLL/) | Plus | `b30884117342` |
 | [oomfcorelib.lib](Plus/%5BProgramFiles64Folder%5D/AspenTech/OOMF%20V15.0/lib/oomfcorelib.lib/) | Plus | `2e293c417b26` |
-| [oomfhostlib.lib](Plus/%5BProgramFiles64Folder%5D/AspenTech/OOMF%20V15.0/lib/oomfhostlib.lib/) | Plus | `d48d67029ff1` |
 | [oomfutilslib.lib](Plus/%5BProgramFiles64Folder%5D/AspenTech/OOMF%20V15.0/lib/oomfutilslib.lib/) | Plus | `5b4fdd8b8728` |
 | [Polymer library.acml](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Lib/Polymer%20library.acml/) | Plus | `28b3d58354ba` |
 | [RCSTR3.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/RCSTR3.dll/) | Plus | `de4e7d927e78` |
@@ -74,11 +73,8 @@
 | [tensorflow.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/tensorflow.dll/) | Plus | `ccf42b98cb7f` |
 | [tensorflow.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/OOMF%20V15.0/xeq/tensorflow.dll/) | Plus | `3a34e585ee7f` |
 | [thgceos.dll](Plus/%5BCommonFiles64Folder%5D/Hyprotech/COMThermo/thgceos.dll/) | Plus | `6221c6c2effc` |
-| [urcny6.obj](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Examples/Polymers/Polyamide/nylon6.apwz%21/urcny6.obj/) | Plus | `72133372b496` |
 | [usr002.obj](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Examples/Polymers/Polyamide/nylon6.apwz%21/usr002.obj/) | Plus | `8479f7dfd18e` |
 | [USRAFT.obj](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Examples/Polymers/RAFT%20polymerization.apwz%21/USRAFT.obj/) | Plus | `c6f4bd93d68d` |
-| [usrgel.obj](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Examples/Polymers/SuspensionEPS.apwz%21/usrgel.obj/) | Plus | `e3c4115ceb2c` |
-| [usrny6.obj](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Examples/Polymers/Polyamide/nylon6.apwz%21/usrny6.obj/) | Plus | `92efb7c09dff` |
 | [Valve.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/Valve.dll/) | Plus | `e0ca6f0784be` |
 | [vba_caller.xlsm](Properties/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Properties%20V15.0/GUI/Examples/Excel%20Properties%20Calculator/vba_caller.xlsm/) | Properties | `10b51a5d9521` |
 | [vbaProject.bin](Properties/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Properties%20V15.0/GUI/Examples/Excel%20Properties%20Calculator/vba_caller.xlsm%21/xl/vbaProject.bin/) | Properties | `4e0bf2a2925b` |
