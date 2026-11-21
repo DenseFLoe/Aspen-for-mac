@@ -1,6 +1,6 @@
 # 待静态验收
 
-共 951 件。已有代码，等待逐件核对。
+共 950 件。已有代码，等待逐件核对。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -767,7 +767,6 @@
 | [thbraunk10.dll](Plus/%5BCommonFiles64Folder%5D/Hyprotech/COMThermo/thbraunk10.dll/) | Plus | `4ec0c77e7687` |
 | [thchaoseader.dll](Plus/%5BCommonFiles64Folder%5D/Hyprotech/COMThermo/thchaoseader.dll/) | Plus | `be6a1e64b2c3` |
 | [thchiennull.dll](Plus/%5BCommonFiles64Folder%5D/Hyprotech/COMThermo/thchiennull.dll/) | Plus | `50bf9de8ab85` |
-| [thesso.dll](Plus/%5BCommonFiles64Folder%5D/Hyprotech/COMThermo/thesso.dll/) | Plus | `02c1138db51e` |
 | [thextpkg.dll](Plus/%5BCommonFiles64Folder%5D/Hyprotech/COMThermo/thextpkg.dll/) | Plus | `a3fd764e0224` |
 | [thextwilson.dll](Plus/%5BCommonFiles64Folder%5D/Hyprotech/COMThermo/thextwilson.dll/) | Plus | `02dd92ee7a4b` |
 | [thflashmanager.dll](Plus/%5BCommonFiles64Folder%5D/Hyprotech/COMThermo/thflashmanager.dll/) | Plus | `385c17c63db5` |
