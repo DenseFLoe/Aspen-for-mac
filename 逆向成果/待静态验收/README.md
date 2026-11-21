@@ -1,6 +1,6 @@
 # 待静态验收
 
-共 943 件。已有代码，等待逐件核对。
+共 942 件。已有代码，等待逐件核对。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -905,7 +905,6 @@
 | [zeftsem.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/zeftsem.dll/) | Plus | `b0fbf75c01df` |
 | [zegelchrom.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/zegelchrom.dll/) | Plus | `16bdadd59b61` |
 | [zegranulator.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/zegranulator.dll/) | Plus | `c1cf99e66348` |
-| [zeheatxu.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/zeheatxu.dll/) | Plus | `0548fadb13c5` |
 | [zehxflux.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/zehxflux.dll/) | Plus | `12e6a273a0c6` |
 | [zehybmodel.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/zehybmodel.dll/) | Plus | `87a241ee9164` |
 | [zehybsensor.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/zehybsensor.dll/) | Plus | `530fbd3cb48c` |
