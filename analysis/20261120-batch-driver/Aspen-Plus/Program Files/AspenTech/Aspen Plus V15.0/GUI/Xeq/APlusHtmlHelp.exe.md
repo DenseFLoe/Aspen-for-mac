@@ -1,40 +1,20 @@
-# APlusHtmlHelp.exe 缺口报告（Aspen-Plus / 未产出 IL 与反编译）
-
-样本别名：`APlusHtmlHelp.exe`（清单 out/B2/manifest-b2.csv，原件只读、未上传）
-来源：分支 codex/waiting-for-tietoumao｜自算 sha256 b8addb04924b609b44c81836ae612d17345288afa3da1ac407eec297a5ed76b6｜台账 B2-B wave1b
-落点：`02-incomplete/Aspen-Plus/Program Files/AspenTech/Aspen Plus V15.0/GUI/Xeq/`（相对 `out/R1`）｜定位规则：`local-rel`
-
-标签约定：〔实测〕= 本轮独立实测（有命令与原始输出）；〔待验证〕= 尚未取得证据。
+# APlusHtmlHelp.exe
 
 ## 0. 摘要
+- status=unsupported_non_pe
+- kind=nonPE / ext=exe
+- reason=非 PE 文件（扩展名 exe），不适用 PE 工具链
+- sha256=b8addb04924b609b44c81836ae612d17345288afa3da1ac407eec297a5ed76b6
+- size=133
+- 已试工具: dnfile.dnPE / pefile.PE
+- 原始报错: PEFormatError: DOS Header magic not found.
+- 偏离仓库 AGENTS：本件仅记录缺口，无逆向正文。
 
-| 项目 | 结果 | 依据 |
-| --- | --- | --- |
-| 状态 | `status=unsupported_non_pe` | 〔实测〕 |
-| 实际样本 | 133 字节，SHA-256 `b8addb04924b609b44c81836ae612d17345288afa3da1ac407eec297a5ed76b6` | 〔实测〕自算 |
-| 结论 | 本件未产出 IL 清单与 C# 反编译（不伪造产物） | 〔实测〕 |
+## 1. 缺口与待验证
+- 若需处理，须先解包/重定位（本轮未做）〔待验证〕
 
-本件按 `status=unsupported_non_pe` 记缺口，**不伪造** IL 清单 / C# 反编译产物。
+## dumps
 
-已试工具（逐条为实际执行，含原始报错）：
+dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-| 工具 | 结果 |
-| --- | --- |
-| `dnfile.dnPE` | `PEFormatError: 'DOS Header magic not found.'` |
-| `pefile.PE` | `PEFormatError: 'DOS Header magic not found.'` |
-
-原始报错：PEFormatError: 'DOS Header magic not found.'
-
-〔待验证〕本件是否需换用其它解析器（如 COFF/静态库解析）才能判定格式；缺该工具的实测才能判。
-
-含完整逆向正文，依据：用户 2026-11-20 指令，偏离仓库 AGENTS 该条
-
-## 1. 样本与哈希
-
-| 项 | 值 | 标签 |
-| --- | --- | --- |
-| 文件名 | `APlusHtmlHelp.exe` | 〔实测〕 |
-| 字节数 | 133 | 〔实测〕 |
-| SHA-256（本轮自算） | `b8addb04924b609b44c81836ae612d17345288afa3da1ac407eec297a5ed76b6` | 〔实测〕 |
-| 清单声明 SHA-256 | `b8addb04924b609b44c81836ae612d17345288afa3da1ac407eec297a5ed76b6` | 〔实测〕一致 |
-
+- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
