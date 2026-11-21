@@ -88,3 +88,7 @@
 - 仅 Ghidra 有、IDA 未单列：`DllRegisterServer`, `DllCanUnloadNow`, `FUN_5c881410`, `FUN_5c881438`, `entry`, `FUN_5c881672`, `FUN_5c881908`, `FUN_5c88191f`
 - 仅 IDA 有：`_DllRegisterServer@0`, `_DllCanUnloadNow@0`, `pre_c_init`, `__CRT_INIT@12`, `__DllMainCRTStartup@12`, `__DllMainCRTStartup`, `__initterm_e`, `@__security_check_cookie@4`
 - 命名口径：上两行按函数名对比。IDA 应用了 FLIRT 库签名（如 `__CRT_INIT@12`、`@__security_check_cookie@4`），同一地址在 Ghidra 侧仍是 `FUN_<addr>`，因此名单差异主要是命名差异；函数个数按上表比对。
+
+## dumps
+
+dumps: repo:逆向成果/待静态验收/Plus/Windows/SysWOW64/comcat.dll.md/分支交付/

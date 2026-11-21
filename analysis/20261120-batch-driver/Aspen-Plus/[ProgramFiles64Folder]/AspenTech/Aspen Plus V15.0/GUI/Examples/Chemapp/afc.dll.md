@@ -88,3 +88,7 @@
 - 仅 Ghidra 有、IDA 未单列：`FUN_180001058`, `FUN_1800010a8`, `FUN_1800011bc`, `dllmain_dispatch`, `dllmain_raw`, `entry`, `FUN_1800014a4`, `FUN_1800014b4`
 - 仅 IDA 有：`?dllmain_crt_dispatch@@YAHQEAUHINSTANCE__@@KQEAX@Z`, `?dllmain_crt_process_attach@@YAHQEAUHINSTANCE__@@QEAX@Z`, `?dllmain_crt_process_detach@@YAH_N@Z`, `sub_180001248`, `?dllmain_raw@@YAHQEAUHINSTANCE__@@KQEAX@Z`, `DllEntryPoint`, `__xi_z`, `sub_1800014B4`
 - 命名口径：上两行按函数名对比。IDA 应用了 FLIRT 库签名（如 `__CRT_INIT@12`、`@__security_check_cookie@4`），同一地址在 Ghidra 侧仍是 `FUN_<addr>`，因此名单差异主要是命名差异；函数个数按上表比对。
+
+## dumps
+
+dumps: repo:逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Chemapp/afc.dll.md/分支交付/

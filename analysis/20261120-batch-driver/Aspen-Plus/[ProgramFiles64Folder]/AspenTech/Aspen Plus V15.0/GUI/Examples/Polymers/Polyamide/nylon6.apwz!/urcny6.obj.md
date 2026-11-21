@@ -51,3 +51,9 @@
 ## 3. 结论
 
 - 本件记 `status=unsupported_non_pe`，未产出 IL/反编译产物，报错原文见 §0〔实测〕。
+
+## dumps
+
+dumps: 无（unsupported_non_pe，无 PE 头）
+
+- tool=pefile 2024.8.26

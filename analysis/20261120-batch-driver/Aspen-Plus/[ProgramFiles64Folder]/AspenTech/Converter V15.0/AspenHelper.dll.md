@@ -185,3 +185,9 @@ PE 导入目录为空或不可读〔实测〕。
 - 反编译（ILSpy 9.1.0.7988）产出 252 行 C#，与 IL 清单可逐条对齐〔实测〕。
 - P/Invoke 声明 0 条、PE 导入 DLL 0 个，均已列出〔实测〕。
 - 未验证项集中在签名/运行期/上游对照（§7），不影响本轮静态定位结论〔待验证〕。
+
+## dumps
+
+dumps: repo:逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/Converter V15.0/AspenHelper.dll.md/分支交付/
+
+- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0

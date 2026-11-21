@@ -88,3 +88,7 @@
 - 仅 Ghidra 有、IDA 未单列：`EnumDeviceDrivers`, `EnumProcessModules`, `EnumProcesses`, `GetDeviceDriverBaseNameW`, `GetModuleBaseNameW`, `GetModuleFileNameExW`, `GetModuleInformation`, `GetPerformanceInfo`
 - 仅 IDA 有：`_EnumDeviceDriversStub@12`, `_EnumProcessModulesStub@16`, `_EnumProcessesStub@12`, `_GetDeviceDriverBaseNameWStub@12`, `_GetModuleBaseNameWStub@16`, `_GetModuleFileNameExWStub@16`, `_GetModuleInformationStub@16`, `_GetPerformanceInfoStub@8`
 - 命名口径：上两行按函数名对比。IDA 应用了 FLIRT 库签名（如 `__CRT_INIT@12`、`@__security_check_cookie@4`），同一地址在 Ghidra 侧仍是 `FUN_<addr>`，因此名单差异主要是命名差异；函数个数按上表比对。
+
+## dumps
+
+dumps: repo:逆向成果/待静态验收/Plus/Windows/SysWOW64/psapi.dll.md/分支交付/
