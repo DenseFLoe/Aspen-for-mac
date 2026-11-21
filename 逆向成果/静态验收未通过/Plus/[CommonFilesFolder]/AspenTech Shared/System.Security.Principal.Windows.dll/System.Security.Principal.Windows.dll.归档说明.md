@@ -1,5 +1,9 @@
 # System.Security.Principal.Windows.dll
 
+当前状态为**静态验收未通过**。见[第四组第 4 轮验收](System.Security.Principal.Windows.dll.%E9%9D%99%E6%80%81%E9%AA%8C%E6%94%B6.md)。
+
+## 原归档记录
+
 状态为**待静态验收**。已交代码，尚待逐件静态验收。
 
 原路径为 `Plus/[CommonFilesFolder]/AspenTech Shared/System.Security.Principal.Windows.dll`。

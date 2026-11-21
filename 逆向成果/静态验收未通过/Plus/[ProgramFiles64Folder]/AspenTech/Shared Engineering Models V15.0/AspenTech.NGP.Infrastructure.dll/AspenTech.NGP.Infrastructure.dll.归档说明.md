@@ -1,5 +1,9 @@
 # AspenTech.NGP.Infrastructure.dll
 
+当前状态为**静态验收未通过**。见[第四组第 4 轮验收](AspenTech.NGP.Infrastructure.dll.%E9%9D%99%E6%80%81%E9%AA%8C%E6%94%B6.md)。
+
+## 原归档记录
+
 状态为**待静态验收**。已定位并核对发布包中的导出文件，等待逐件静态验收。
 
 原路径为 `Plus/[ProgramFiles64Folder]/AspenTech/Shared Engineering Models V15.0/AspenTech.NGP.Infrastructure.dll`。

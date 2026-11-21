@@ -1,6 +1,6 @@
 # 静态验收未通过
 
-共 309 件。已有代码或局部成果，逐件记录有明确缺口。
+共 312 件。已有代码或局部成果，逐件记录有明确缺口。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -44,6 +44,7 @@
 | [AspenTech.FeatureToggle.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.FeatureToggle.dll/) | Plus | `103fb93bb98c` |
 | [AspenTech.HtmlHelp.HelpIntegration.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.HtmlHelp.HelpIntegration.dll/) | Plus | `061d5a3a8409` |
 | [AspenTech.HtmlHelp.StrongNameInvoke.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.HtmlHelp.StrongNameInvoke.dll/) | Plus | `02826aae6dfd` |
+| [AspenTech.NGP.Infrastructure.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Shared%20Engineering%20Models%20V15.0/AspenTech.NGP.Infrastructure.dll/) | Plus | `56162f7698cd` |
 | [AssistEd.exe](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/AssistEd.exe/) | Plus | `f948cf2ce74f` |
 | [ASW_pw8.2394B958_0137_40A8_A8CA_BB6DB1AE36C0.exe](Properties/Icon/ASW_pw8.2394B958_0137_40A8_A8CA_BB6DB1AE36C0.exe/) | Properties | `b17a58755b3a` |
 | [atdms.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/atdms.dll/) | Plus | `0c61338f85a6` |
@@ -105,6 +106,7 @@
 | [mfc40.dll](Plus-Properties/Windows/SysWOW64/mfc40.dll/) | Plus-Properties | `c8aacb7314fe` |
 | [mfc42.dll](Plus/Windows/SysWOW64/mfc42.dll/) | Plus | `93ba144338cd` |
 | [Microsoft.Bcl.HashCode.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/Microsoft.Bcl.HashCode.dll/) | Plus | `76b1260ce747` |
+| [Microsoft.Extensions.Primitives.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/Microsoft.Extensions.Primitives.dll/) | Plus | `3c6ea5559443` |
 | [MMCFormsShim.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/MMCFormsShim.dll/) | Plus | `9b9050c67265` |
 | [mmg.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/mmg.dll/) | Plus-Properties | `5236861792e4` |
 | [mmstruct.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/mmstruct.dll/) | Plus-Properties | `bb9a2422bffe` |
@@ -216,6 +218,7 @@
 | [System.Net.Http.Formatting.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/System.Net.Http.Formatting.dll/) | Plus | `00664130b963` |
 | [System.Runtime.CompilerServices.Unsafe.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Runtime.CompilerServices.Unsafe.dll/) | Plus | `37768488e8ef` |
 | [System.Security.Permissions.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Security.Permissions.dll/) | Plus | `006d4d13c4c4` |
+| [System.Security.Principal.Windows.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Security.Principal.Windows.dll/) | Plus | `b4d8e15adc23` |
 | [SystemLibrary400_1.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/SystemLibrary400_1.dll/) | Plus | `ad9bc4fae634` |
 | [SystemLibrary410_1.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/SystemLibrary410_1.dll/) | Plus | `56a4322d1a84` |
 | [tabctl32.ocx](Plus/%5BSystemFolder%5D/tabctl32.ocx/) | Plus | `d10a197fd53e` |
