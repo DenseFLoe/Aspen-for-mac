@@ -1,0 +1,20 @@
+# Interop.Happ.dll
+
+## 0. 摘要
+- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- kind=CLR
+- sha256=c21b432f0d04501fa2cb9fc6f53b13a929516b7df94ee63b39ed9eddb1b66bf3
+- size=111656
+- types=108 / methods=1425 / pinvoke=0 / fields=328
+- cs_lines=9041
+- 产物: il/Interop.Happ.dll.il.txt, decompiled/Interop.Happ.dll.cs.txt
+- 偏离仓库 AGENTS：含完整逆向正文，依据用户 2026-11-21 指令。
+
+## 1. 缺口与待验证
+- 语义层（类型用途/调用约定）未人工复核〔未验证〕
+
+## dumps
+
+dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
+
+- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
