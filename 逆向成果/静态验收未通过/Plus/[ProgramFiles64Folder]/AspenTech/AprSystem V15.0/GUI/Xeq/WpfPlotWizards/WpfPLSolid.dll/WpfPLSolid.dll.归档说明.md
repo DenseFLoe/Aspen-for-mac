@@ -1,6 +1,6 @@
 # WpfPLSolid.dll
 
-状态为**待静态验收**。已定位并核对发布包中的导出文件，等待逐件静态验收。
+状态为**静态验收未通过**。已核对原件与发布包的 IL 指令。布局和资源缺项见[二组第 6 轮验收记录](%E9%9D%99%E6%80%81%E9%AA%8C%E6%94%B6-audit-2-20261121-06.md)。
 
 原路径为 `Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/WpfPlotWizards/WpfPLSolid.dll`。
 

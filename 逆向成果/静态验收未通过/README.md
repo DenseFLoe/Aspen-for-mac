@@ -1,6 +1,6 @@
 # 静态验收未通过
 
-共 308 件。已有代码或局部成果，逐件记录有明确缺口。
+共 309 件。已有代码或局部成果，逐件记录有明确缺口。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -235,6 +235,7 @@
 | [webcheck.dll](Plus/Windows/SysWOW64/webcheck.dll/) | Plus | `45fc4530d44f` |
 | [webcheck.dll](Plus/%5BSystemFolder%5D/webcheck.dll/) | Plus | `980cd8d64e24` |
 | [WpfPLAnalysis.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WpfPlotWizards/WpfPLAnalysis.dll/) | Plus | `02d2245cc40a` |
+| [WpfPLSolid.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WpfPlotWizards/WpfPLSolid.dll/) | Plus | `071fbfbce7fb` |
 | [WrapSaveMergeNNFiles.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/WrapSaveMergeNNFiles.dll/) | Plus-Properties | `869c4b23598e` |
 | [XPOPT32.DLL](Plus/%5BSystemFolder%5D/XPOPT32.DLL/) | Plus | `18d4a63c272d` |
 | [xprl.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Open%20Solvers%20V15.0/Bin/xprl.dll/) | Plus | `86fa79e5f0f8` |
