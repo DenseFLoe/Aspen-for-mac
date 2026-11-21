@@ -1,6 +1,6 @@
 # T9 自检（R1–R6 逐条，机检预审）
 
-生成时间：2026-11-21 23:1x ｜ 台账：out/review9/ledger-1000.csv ｜ 结论：pass 978 / fail 15 / partial 7 / blocked 0
+生成时间：2026-11-21 23:1x ｜ 台账：out/review9/ledger-1000.csv ｜ 结论：pass **530** / fail **470** / partial 0 / blocked 0（2026-11-22 因 tool_nag_tail 重算）
 
 | id | 判据 | 实测结果 | 证据 |
 | --- | --- | --- | --- |
