@@ -1,6 +1,6 @@
 # 待静态验收
 
-共 933 件。已有代码，等待逐件核对。
+共 931 件。已有代码，等待逐件核对。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -160,7 +160,6 @@
 | [AspenTech.AspenPlus.AddInContracts.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.AspenPlus.AddInContracts.dll/) | Plus | `360ee897fdbe` |
 | [AspenTech.AspenPlus.ColumnAnalysisIntegration.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/Modules/AspenTech.AspenPlus.ColumnAnalysisIntegration.dll/) | Plus | `851be7f138d2` |
 | [AspenTech.AspenPlus.CustomModels.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/AspenTech.AspenPlus.CustomModels.dll/) | Plus | `ba9803817359` |
-| [AspenTech.AspenPlus.EOVariableList.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.AspenPlus.EOVariableList.dll/) | Plus | `1028d3dd171c` |
 | [AspenTech.AspenPlus.ExcelVarDefWizard.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/x86/AspenTech.AspenPlus.ExcelVarDefWizard.dll/) | Plus | `8857aa7ddddb` |
 | [AspenTech.AspenPlus.ExcelVarDefWizard64.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/AspenTech.AspenPlus.ExcelVarDefWizard64.dll/) | Plus | `d132352c86a8` |
 | [AspenTech.AspenPlus.HybridModelUtilities.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/AspenTech.AspenPlus.HybridModelUtilities.dll/) | Plus | `5ceedafa6847` |
@@ -569,7 +568,6 @@
 | [mmtbsdll.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/mmtbsdll.dll/) | Plus | `3c53f9a7b93c` |
 | [MMutil.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/MMutil.dll/) | Plus | `e372f30231fa` |
 | [MMVersion.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/MMVersion.dll/) | Plus | `dc3ef6e4604b` |
-| [ModelEquations.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/ModelEquations.dll/) | Plus | `0a48d0cf1b6f` |
 | [Modeler.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/Modeler.dll/) | Plus | `6a40448d41ea` |
 | [MSCAL.OCX](Plus/%5BSystemFolder%5D/MSCAL.OCX/) | Plus | `6c61f77d1598` |
 | [MSDatGrd.ocx](Plus/%5BSystemFolder%5D/MSDatGrd.ocx/) | Plus | `9949d8361854` |
