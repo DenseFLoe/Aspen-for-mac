@@ -1,6 +1,6 @@
 # 待静态验收
 
-共 936 件。已有代码，等待逐件核对。
+共 933 件。已有代码，等待逐件核对。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -263,7 +263,6 @@
 | [AspenTech.NGP.DatabaseManagement.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/AspenTech.NGP.DatabaseManagement.dll/) | Plus | `ad76d0a05d63` |
 | [AspenTech.NGP.DataManagement.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/AspenTech.NGP.DataManagement.dll/) | Plus | `0b4ce01ac040` |
 | [AspenTech.NGP.Document.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/AspenTech.NGP.Document.dll/) | Plus | `23474fed3c99` |
-| [AspenTech.NGP.Infrastructure.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Shared%20Engineering%20Models%20V15.0/AspenTech.NGP.Infrastructure.dll/) | Plus | `56162f7698cd` |
 | [AspenTech.NGP.PhysicalProperties.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/AspenTech.NGP.PhysicalProperties.dll/) | Plus | `afe464d6c729` |
 | [AspenTech.NGP.UnmanagedBridge.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/AspenTech.NGP.UnmanagedBridge.dll/) | Plus | `1d14188623ef` |
 | [AspenTech.NGP.Utilities.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/AspenTech.NGP.Utilities.dll/) | Plus | `6e02f17e1ea4` |
@@ -552,7 +551,6 @@
 | [Microsoft.Extensions.Logging.Abstractions.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/Microsoft.Extensions.Logging.Abstractions.dll/) | Plus | `5907c5857976` |
 | [Microsoft.Extensions.Logging.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/Microsoft.Extensions.Logging.dll/) | Plus | `c7756fe1d264` |
 | [Microsoft.Extensions.Options.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/Microsoft.Extensions.Options.dll/) | Plus | `854f50bfd463` |
-| [Microsoft.Extensions.Primitives.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/Microsoft.Extensions.Primitives.dll/) | Plus | `3c6ea5559443` |
 | [Microsoft.Practices.Composite.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/PSV%20Legacy%20Recall%20Server/V15.0/Microsoft.Practices.Composite.dll/) | Plus | `8fb80c50fbc6` |
 | [Microsoft.Practices.Composite.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/Microsoft.Practices.Composite.dll/) | Plus | `b21a45c372fc` |
 | [Microsoft.Practices.Composite.Presentation.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/PSV%20Legacy%20Recall%20Server/V15.0/Microsoft.Practices.Composite.Presentation.dll/) | Plus | `57fad9ec5183` |
@@ -739,7 +737,6 @@
 | [System.Memory.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Memory.dll/) | Plus | `bf3fb84664f4` |
 | [System.Numerics.Vectors.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Numerics.Vectors.dll/) | Plus | `1d3ef8698281` |
 | [System.Security.AccessControl.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Security.AccessControl.dll/) | Plus | `ff14c5f628b9` |
-| [System.Security.Principal.Windows.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Security.Principal.Windows.dll/) | Plus | `b4d8e15adc23` |
 | [System.Text.Encoding.CodePages.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/System.Text.Encoding.CodePages.dll/) | Plus | `b77ee852824a` |
 | [System.Text.Encodings.Web.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Text.Encodings.Web.dll/) | Plus | `e9c4f5eed186` |
 | [System.Text.Json.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Text.Json.dll/) | Plus | `86c3f263ae9b` |
