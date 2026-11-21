@@ -1,6 +1,6 @@
 # 静态验收未通过
 
-共 316 件。已有代码或局部成果，逐件记录有明确缺口。
+共 319 件。已有代码或局部成果，逐件记录有明确缺口。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -110,6 +110,7 @@
 | [mfc42.dll](Plus/Windows/SysWOW64/mfc42.dll/) | Plus | `93ba144338cd` |
 | [Microsoft.Bcl.HashCode.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/Microsoft.Bcl.HashCode.dll/) | Plus | `76b1260ce747` |
 | [Microsoft.Extensions.Primitives.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/Microsoft.Extensions.Primitives.dll/) | Plus | `3c6ea5559443` |
+| [Microsoft.Practices.Composite.Presentation.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/PSV%20Legacy%20Recall%20Server/V15.0/Microsoft.Practices.Composite.Presentation.dll/) | Plus | `57fad9ec5183` |
 | [MMCFormsShim.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/MMCFormsShim.dll/) | Plus | `9b9050c67265` |
 | [mmg.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/mmg.dll/) | Plus-Properties | `5236861792e4` |
 | [mmstruct.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/mmstruct.dll/) | Plus-Properties | `bb9a2422bffe` |
@@ -219,6 +220,8 @@
 | [ssa3d30.ocx](Plus/%5BSystemFolder%5D/ssa3d30.ocx/) | Plus | `8698a7224323` |
 | [Stingray.GridControl71.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/Stingray.GridControl71.dll/) | Plus | `03765dc28940` |
 | [Stingray.GridUtils71.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/Stingray.GridUtils71.dll/) | Plus | `04ef7136488b` |
+| [System.Data.SqlClient.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseConfiguration/System.Data.SqlClient.dll/) | Properties | `eb4c01207fb5` |
+| [System.Data.SQLite.Linq.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/System.Data.SQLite.Linq.dll/) | Plus | `a409e2bf0b5c` |
 | [System.Net.Http.Formatting.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/System.Net.Http.Formatting.dll/) | Plus | `00664130b963` |
 | [System.Runtime.CompilerServices.Unsafe.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Runtime.CompilerServices.Unsafe.dll/) | Plus | `37768488e8ef` |
 | [System.Security.Permissions.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Security.Permissions.dll/) | Plus | `006d4d13c4c4` |

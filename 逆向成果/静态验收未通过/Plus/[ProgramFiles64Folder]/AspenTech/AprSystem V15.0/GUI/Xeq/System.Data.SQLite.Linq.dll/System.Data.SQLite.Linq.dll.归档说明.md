@@ -1,6 +1,6 @@
 # System.Data.SQLite.Linq.dll
 
-状态为**待静态验收**。已定位并核对发布包中的导出文件，等待逐件静态验收。
+状态为**静态验收未通过**。缺字符串资源、四份 EF 架构或映射资源及 PE 版本资源重建输入。见[第 5 轮验收证据](System.Data.SQLite.Linq.dll.%E9%9D%99%E6%80%81%E9%AA%8C%E6%94%B6.md)。
 
 原路径为 `Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/System.Data.SQLite.Linq.dll`。
 

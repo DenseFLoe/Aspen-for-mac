@@ -1,6 +1,6 @@
 # System.Data.SqlClient.dll
 
-状态为**待静态验收**。已定位并核对发布包中的导出文件，等待逐件静态验收。
+状态为**静态验收未通过**。缺字符串资源、SQL 元数据 XML 和 PE 版本资源重建输入。见[第 5 轮验收证据](System.Data.SqlClient.dll.%E9%9D%99%E6%80%81%E9%AA%8C%E6%94%B6.md)。
 
 原路径为 `Properties/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/PropertiesDatabase/DatabaseConfiguration/System.Data.SqlClient.dll`。
 

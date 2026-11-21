@@ -1,6 +1,6 @@
 # 待静态验收
 
-共 929 件。已有代码，等待逐件核对。
+共 926 件。已有代码，等待逐件核对。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -550,7 +550,6 @@
 | [Microsoft.Extensions.Options.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/Microsoft.Extensions.Options.dll/) | Plus | `854f50bfd463` |
 | [Microsoft.Practices.Composite.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/PSV%20Legacy%20Recall%20Server/V15.0/Microsoft.Practices.Composite.dll/) | Plus | `8fb80c50fbc6` |
 | [Microsoft.Practices.Composite.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/Microsoft.Practices.Composite.dll/) | Plus | `b21a45c372fc` |
-| [Microsoft.Practices.Composite.Presentation.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/PSV%20Legacy%20Recall%20Server/V15.0/Microsoft.Practices.Composite.Presentation.dll/) | Plus | `57fad9ec5183` |
 | [Microsoft.Practices.Composite.Presentation.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/Microsoft.Practices.Composite.Presentation.dll/) | Plus | `3d6947dd06ae` |
 | [Microsoft.Practices.Composite.UnityExtensions.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/Microsoft.Practices.Composite.UnityExtensions.dll/) | Plus | `521985e1ce68` |
 | [Microsoft.Practices.ServiceLocation.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/PSV%20Legacy%20Recall%20Server/V15.0/Microsoft.Practices.ServiceLocation.dll/) | Plus | `78ac70411c71` |
@@ -723,12 +722,10 @@
 | [strlibmn.exe](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/strlibmn.exe/) | Plus | `749bb79f6cb4` |
 | [System.Buffers.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Buffers.dll/) | Plus | `accccfbe45d9` |
 | [System.Data.SqlClient.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Data.SqlClient.dll/) | Plus | `51b1d254c2e7` |
-| [System.Data.SqlClient.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseConfiguration/System.Data.SqlClient.dll/) | Properties | `eb4c01207fb5` |
 | [System.Data.SqlClient.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseConfiguration/runtimes/win/lib/netcoreapp2.1/System.Data.SqlClient.dll/) | Properties | `d3d8a8e35cb6` |
 | [System.Data.SQLite.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/System.Data.SQLite.dll/) | Plus | `9b0581b00316` |
 | [System.Data.SQLite.EF6.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/System.Data.SQLite.EF6.dll/) | Plus | `996ac5f7d5f7` |
 | [System.Data.SQLite.EF6.Migrations.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/System.Data.SQLite.EF6.Migrations.dll/) | Plus | `41b9859260ae` |
-| [System.Data.SQLite.Linq.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/System.Data.SQLite.Linq.dll/) | Plus | `a409e2bf0b5c` |
 | [System.Diagnostics.DiagnosticSource.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Diagnostics.DiagnosticSource.dll/) | Plus | `1887592615fc` |
 | [System.Memory.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Memory.dll/) | Plus | `bf3fb84664f4` |
 | [System.Numerics.Vectors.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Numerics.Vectors.dll/) | Plus | `1d3ef8698281` |
