@@ -1,6 +1,6 @@
 # 静态验收未通过
 
-共 307 件。已有代码或局部成果，逐件记录有明确缺口。
+共 308 件。已有代码或局部成果，逐件记录有明确缺口。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -257,6 +257,7 @@
 | [zecvblock.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/zecvblock.dll/) | Plus | `73a95f0a6fda` |
 | [zecyclone.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/zecyclone.dll/) | Plus | `49ac1fd4e4ff` |
 | [zedistu.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/zedistu.dll/) | Plus | `61f95510350a` |
+| [zedstwu.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/zedstwu.dll/) | Plus | `09b4491feeb7` |
 | [zeeconomic.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/zeeconomic.dll/) | Plus | `1a6cdcd72a51` |
 | [zeelectrolyzer.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/zeelectrolyzer.dll/) | Plus | `37407f378889` |
 | [zeextract.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/zeextract.dll/) | Plus | `e40b4a1821e0` |

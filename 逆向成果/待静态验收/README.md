@@ -1,6 +1,6 @@
 # 待静态验收
 
-共 938 件。已有代码，等待逐件核对。
+共 937 件。已有代码，等待逐件核对。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -889,7 +889,6 @@
 | [zedmo.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Open%20Solvers%20V15.0/Bin/zedmo.dll/) | Plus | `cb1d4d45be59` |
 | [zedmo_proxy.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Open%20Solvers%20V15.0/Bin/zedmo_proxy.dll/) | Plus | `b2cd0952b68f` |
 | [zedryer.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/zedryer.dll/) | Plus | `ef0eae49797c` |
-| [zedstwu.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/zedstwu.dll/) | Plus | `09b4491feeb7` |
 | [zedupl.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/zedupl.dll/) | Plus | `918831490edc` |
 | [zeeoconv.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/zeeoconv.dll/) | Plus | `14811c5620b2` |
 | [zeesp.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/zeesp.dll/) | Plus | `2bf48e1d444e` |
