@@ -1,6 +1,6 @@
 # 待静态验收
 
-共 944 件。已有代码，等待逐件核对。
+共 943 件。已有代码，等待逐件核对。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -342,7 +342,6 @@
 | [comcat.dll](Plus/Windows/SysWOW64/comcat.dll/) | Plus | `42abffb7bfa1` |
 | [comcat.dll](Plus/%5BSystemFolder%5D/comcat.dll/) | Plus | `96d04cdfaf4f` |
 | [comctl32.ocx](Plus/%5BSystemFolder%5D/comctl32.ocx/) | Plus | `bf4147f8a12b` |
-| [ComDlg32.OCX](Plus/%5BSystemFolder%5D/ComDlg32.OCX/) | Plus | `00b5af20504f` |
 | [Common.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Converter%20V15.0/Common.dll/) | Plus | `1cfdbbe9c1bd` |
 | [CompareAds.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/Aspen%20Data%20Share%20V15.0/CompareAds.dll/) | Plus | `9940a873291e` |
 | [CompositionSolver.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Hydraulics%20V15.0/CompositionSolver.dll/) | Plus | `c878f3a416ab` |

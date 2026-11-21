@@ -1,6 +1,6 @@
 # 静态验收未通过
 
-共 301 件。已有代码或局部成果，逐件记录有明确缺口。
+共 302 件。已有代码或局部成果，逐件记录有明确缺口。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -59,6 +59,7 @@
 | [ComCt232.ocx](Plus/%5BSystemFolder%5D/ComCt232.ocx/) | Plus | `5163be5869cb` |
 | [comct332.ocx](Plus/%5BSystemFolder%5D/comct332.ocx/) | Plus | `332e6a1cb4bf` |
 | [ComDlg02.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/ComDlg02.dll/) | Plus | `6f9755fd2914` |
+| [ComDlg32.OCX](Plus/%5BSystemFolder%5D/ComDlg32.OCX/) | Plus | `00b5af20504f` |
 | [ComSelSvr.dll](Plus/%5BCommonFiles64Folder%5D/Hyprotech/COMThermo/ComSelSvr.dll/) | Plus | `a35aab96dd0e` |
 | [ComSpyro6.exe](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/ComSpyro6/ComSpyro6.exe/) | Plus | `5b175f8f9b5f` |
 | [ComSpyro6PS.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/ComSpyro6/ComSpyro6PS.dll/) | Plus | `344a9760f16e` |
