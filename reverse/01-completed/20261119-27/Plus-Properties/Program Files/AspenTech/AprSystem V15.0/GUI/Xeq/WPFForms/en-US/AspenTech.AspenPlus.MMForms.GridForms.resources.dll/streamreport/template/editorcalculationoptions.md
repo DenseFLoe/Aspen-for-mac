@@ -1,0 +1,5 @@
+# editorcalculationoptions.xaml
+
+Aspen Plus 与 Aspen Properties V15 共用这份布局。原始卫星程序集为 `Program Files/AspenTech/AprSystem V15.0/GUI/Xeq/WPFForms/en-US/AspenTech.AspenPlus.MMForms.GridForms.resources.dll`，版本 41.0.0.614，SHA-256 为 `6a832f97f15c50bb706280d128104dbf1d348f2d5ffc2b220d8e5539289fd2e7`。原始逻辑成员为 `AspenTech.AspenPlus.MMForms.GridForms.g.en-US.resources` 内的 `streamreport/template/editorcalculationoptions.baml`，共 7,696 字节，SHA-256 为 `ce554a3cab687fc5be238f40ac9db5e68afa904316a63e68a267d48c5f993869`。[来源核对](../../../../../../../../../../evidence/satellite-identity.json)
+
+`AspenTech.AspenPlus.MMForms.GridForms.StreamReport.Template.EditorCalculationOptions` 的 `InitializeComponent`（0x060005DC）加载此页。已恢复整页可编辑 XAML，文件为 10,954 字节，SHA-256 为 `83fb16a3c87c30b8811289a296c0916b1aa04089a324ba7d652e5da9bfbe10f1`。本页通过静态验收。已比较 70 个对象、13 个连接号、13 个命名字段和 10 次事件订阅。WPF 标记编译器生成的布局逐对象读回，结构、成员值和连接均与原件相符。Windows 阶段再对照实际显示和操作。[逐页核对](../../../../../../../../../../evidence/ui-pages.csv) · [连接核对](../../../../../../../../../../evidence/ui-connections.csv) · [绑定位置](../../../../../../../../../../evidence/ui-bindings.csv)
