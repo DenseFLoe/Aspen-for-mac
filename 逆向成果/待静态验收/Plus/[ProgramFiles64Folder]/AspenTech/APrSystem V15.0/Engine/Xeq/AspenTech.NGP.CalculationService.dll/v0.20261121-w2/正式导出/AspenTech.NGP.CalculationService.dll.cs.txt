@@ -12,7 +12,6 @@ using AspenTech.NGP.DatabaseManagement;
 using AspenTech.NGP.Document;
 using AspenTech.NGP.Infrastructure;
 using AspenTech.NGP.PhysicalProperties;
-using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -29,61 +28,9 @@ using Microsoft.Extensions.Logging.Abstractions;
 [assembly: AssemblyCompany("AspenTech Corporation")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: TargetFramework(".NETCoreApp,Version=v8.0", FrameworkDisplayName = ".NET 8.0")]
 [assembly: AssemblyVersion("41.0.0.0")]
-[module: System.Runtime.CompilerServices.RefSafetyRules(11)]
-namespace Microsoft.CodeAnalysis
-{
-	[CompilerGenerated]
-	[Microsoft.CodeAnalysis.Embedded]
-	internal sealed class EmbeddedAttribute : Attribute
-	{
-	}
-}
-namespace System.Runtime.CompilerServices
-{
-	[CompilerGenerated]
-	[Microsoft.CodeAnalysis.Embedded]
-	[AttributeUsage(AttributeTargets.Class | AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Event | AttributeTargets.Parameter | AttributeTargets.ReturnValue | AttributeTargets.GenericParameter, AllowMultiple = false, Inherited = false)]
-	internal sealed class NullableAttribute : Attribute
-	{
-		public readonly byte[] NullableFlags;
-
-		public NullableAttribute(byte P_0)
-		{
-			NullableFlags = new byte[1] { P_0 };
-		}
-
-		public NullableAttribute(byte[] P_0)
-		{
-			NullableFlags = P_0;
-		}
-	}
-	[CompilerGenerated]
-	[Microsoft.CodeAnalysis.Embedded]
-	[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Method | AttributeTargets.Interface | AttributeTargets.Delegate, AllowMultiple = false, Inherited = false)]
-	internal sealed class NullableContextAttribute : Attribute
-	{
-		public readonly byte Flag;
-
-		public NullableContextAttribute(byte P_0)
-		{
-			Flag = P_0;
-		}
-	}
-	[CompilerGenerated]
-	[Microsoft.CodeAnalysis.Embedded]
-	[AttributeUsage(AttributeTargets.Module, AllowMultiple = false, Inherited = false)]
-	internal sealed class RefSafetyRulesAttribute : Attribute
-	{
-		public readonly int Version;
-
-		public RefSafetyRulesAttribute(int P_0)
-		{
-			Version = P_0;
-		}
-	}
-}
+[module: RefSafetyRules(11)]
 namespace AspenTech.NGP
 {
 	public class AssemblyInfo
@@ -151,7 +98,7 @@ namespace AspenTech.NGP.CalculationService
 
 		public int FileNumber { get; private set; }
 
-		public IFileReporter FileReporter => (IFileReporter)(object)_FileReporter;
+		public IFileReporter FileReporter => _FileReporter;
 
 		public IFlashRetentionSize FlashRetenSize { get; private set; }
 
@@ -179,8 +126,7 @@ namespace AspenTech.NGP.CalculationService
 			}
 			set
 			{
-				//IL_0001: Unknown result type (might be due to invalid IL or missing references)
-				if ((int)Status == 0)
+				if (Status == BeadStatus.Uninitialized)
 				{
 					try
 					{
@@ -213,8 +159,7 @@ namespace AspenTech.NGP.CalculationService
 			}
 			set
 			{
-				//IL_0001: Unknown result type (might be due to invalid IL or missing references)
-				if ((int)Status == 0)
+				if (Status == BeadStatus.Uninitialized)
 				{
 					if (value.Length <= 255)
 					{
@@ -229,7 +174,7 @@ namespace AspenTech.NGP.CalculationService
 
 		public ILegacyAspenSettings AspenPlusEngineSettings { get; private set; }
 
-		public BeadStatus Status => ((IGenerateBeads)PlexDocument).Status;
+		public BeadStatus Status => PlexDocument.Status;
 
 		private bool AlreadyDisposed { get; set; }
 
@@ -299,7 +244,7 @@ namespace AspenTech.NGP.CalculationService
 			{
 				M2UnmBridgeAPI_Init(text4, text4, text4);
 			}
-			AspenPlusEngineSettings = (ILegacyAspenSettings)(object)new LegacyAspenSettings();
+			AspenPlusEngineSettings = new LegacyAspenSettings();
 			PlexDocument = DocumentFactory.Instance.GetDocument(FileNumber, dbConfiguration);
 			_FileReporter = new FileReporter(fileNumber);
 		}
@@ -313,9 +258,9 @@ namespace AspenTech.NGP.CalculationService
 			}
 			else
 			{
-				NGPLogger = (ILogger)(object)NullLogger.Instance;
+				NGPLogger = NullLogger.Instance;
 			}
-			LoggerExtensions.LogInformation(NGPLogger, "Start Base CalculationService Constructor for file number {fileNumber}", new object[1] { fileNumber.ToString() });
+			NGPLogger.LogInformation("Start Base CalculationService Constructor for file number {fileNumber}", fileNumber.ToString());
 			FileNumber = fileNumber;
 			string text = string.Empty;
 			string text2 = string.Empty;
@@ -325,14 +270,14 @@ namespace AspenTech.NGP.CalculationService
 			if (flag)
 			{
 				text3 = Helper.IFortDirectoryPath();
-				LoggerExtensions.LogInformation(NGPLogger, "IFORT Path set to: \n      { ifortPath }", new object[1] { text3 });
+				NGPLogger.LogInformation("IFORT Path set to: \n      { ifortPath }", text3);
 				text = Helper.AprSysDirectoryPath(GlobalSpecs.MM);
-				LoggerExtensions.LogInformation(NGPLogger, "APRSYS Path set to: \n       { aprsysPath }", new object[1] { text });
+				NGPLogger.LogInformation("APRSYS Path set to: \n       { aprsysPath }", text);
 				text2 = Helper.OomfDirectoryPath(GlobalSpecs.MM);
-				LoggerExtensions.LogInformation(NGPLogger, "OOMF Path set to: \n      { oomfPath }", new object[1] { text2 });
+				NGPLogger.LogInformation("OOMF Path set to: \n      { oomfPath }", text2);
 				if (!Directory.Exists(text))
 				{
-					LoggerExtensions.LogCritical(NGPLogger, "Required directory not found: \n       " + text, Array.Empty<object>());
+					NGPLogger.LogCritical("Required directory not found: \n       " + text);
 					throw new DirectoryNotFoundException("Required directory not found: " + text);
 				}
 				if (!Directory.Exists(text2))
@@ -341,7 +286,7 @@ namespace AspenTech.NGP.CalculationService
 				}
 				if (!Directory.Exists(text3))
 				{
-					LoggerExtensions.LogCritical(NGPLogger, "Required directory not found: \n       " + text3, Array.Empty<object>());
+					NGPLogger.LogCritical("Required directory not found: \n       " + text3);
 					throw new DirectoryNotFoundException("Required directory not found: " + text3);
 				}
 			}
@@ -354,7 +299,7 @@ namespace AspenTech.NGP.CalculationService
 				if (Directory.Exists(text) && Directory.Exists(text3) && Directory.Exists(text2))
 				{
 					int num = M2UnmBridgeAPI_Init(text, text2, text3);
-					LoggerExtensions.LogInformation(NGPLogger, "Load ManagedToUnManagedBridge with status: " + num, Array.Empty<object>());
+					NGPLogger.LogInformation("Load ManagedToUnManagedBridge with status: " + num);
 					Console.WriteLine("The last Win32 Error was: " + Marshal.GetLastWin32Error());
 				}
 			}
@@ -362,13 +307,13 @@ namespace AspenTech.NGP.CalculationService
 			{
 				M2UnmBridgeAPI_Init(text4, text4, text4);
 			}
-			LoggerExtensions.LogInformation(NGPLogger, "Load Settings", Array.Empty<object>());
-			AspenPlusEngineSettings = (ILegacyAspenSettings)(object)new LegacyAspenSettings();
-			LoggerExtensions.LogInformation(NGPLogger, "Load Document", Array.Empty<object>());
+			NGPLogger.LogInformation("Load Settings");
+			AspenPlusEngineSettings = new LegacyAspenSettings();
+			NGPLogger.LogInformation("Load Document");
 			PlexDocument = DocumentFactory.Instance.GetDocument(FileNumber);
-			LoggerExtensions.LogInformation(NGPLogger, "Load FileReporter", Array.Empty<object>());
+			NGPLogger.LogInformation("Load FileReporter");
 			_FileReporter = new FileReporter(fileNumber);
-			LoggerExtensions.LogInformation(NGPLogger, "End Base CalculationService Constructor", Array.Empty<object>());
+			NGPLogger.LogInformation("End Base CalculationService Constructor");
 		}
 
 		~CalculationService()
@@ -378,7 +323,7 @@ namespace AspenTech.NGP.CalculationService
 
 		public string InitializeAPEDDatabases()
 		{
-			_APEDErrors = Helper.FindDatabaseErrors();
+			_APEDErrors = Helper.FindDatabaseErrors((ILogger)null, (ILogger)null, (IDBConfiguration)null);
 			return _APEDErrors;
 		}
 
@@ -386,19 +331,19 @@ namespace AspenTech.NGP.CalculationService
 		{
 			if (generateDefaultForSimpleApp)
 			{
-				IDBConfiguration val = Helper.DefaultDBConfigurationForSimpleApp(forceDefaultForSimpleApp: true);
-				_APEDErrors = Helper.FindDatabaseErrors(null, null, val);
+				IDBConfiguration iDBConfiguration = Helper.DefaultDBConfigurationForSimpleApp(true);
+				_APEDErrors = Helper.FindDatabaseErrors((ILogger)null, (ILogger)null, iDBConfiguration);
 			}
 			else
 			{
-				_APEDErrors = Helper.FindDatabaseErrors();
+				_APEDErrors = Helper.FindDatabaseErrors((ILogger)null, (ILogger)null, (IDBConfiguration)null);
 			}
 			return _APEDErrors;
 		}
 
 		public string InitializeAPEDDatabases(ILogger logger = null, IDBConfiguration dBConfiguration = null)
 		{
-			_APEDErrors = Helper.FindDatabaseErrors(logger, null, dBConfiguration);
+			_APEDErrors = Helper.FindDatabaseErrors(logger, (ILogger)null, dBConfiguration);
 			return _APEDErrors;
 		}
 
@@ -416,7 +361,7 @@ namespace AspenTech.NGP.CalculationService
 		{
 			if (_AllComponents != null && _AllComponents.Count > 0)
 			{
-				_PropertyMethods = (from _ in ApedHelperFns.GetPropertyMethods()
+				_PropertyMethods = (from _ in ApedHelperFns.GetPropertyMethods("", "", "")
 					select _.OptionSetName).ToList();
 				return _PropertyMethods;
 			}
@@ -439,7 +384,7 @@ namespace AspenTech.NGP.CalculationService
 			{
 				return null;
 			}
-			Helper.GetAllComponents(databaseName, databankName, out _ComponentsFromDatabank);
+			Helper.GetAllComponents(databaseName, databankName, ref _ComponentsFromDatabank, (ILogger)null, (IDBConfiguration)null);
 			return _ComponentsFromDatabank;
 		}
 
@@ -451,32 +396,25 @@ namespace AspenTech.NGP.CalculationService
 
 		public void Initialize()
 		{
-			//IL_001e: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0023: Invalid comparison between I4 and Unknown
-			//IL_002b: Unknown result type (might be due to invalid IL or missing references)
-			//IL_004b: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0051: Invalid comparison between Unknown and I4
-			//IL_0033: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0039: Invalid comparison between Unknown and I4
 			long num = M2UnmBridgeAPI_GetNCC();
 			Console.WriteLine("M2UnmBridgeAPI_GetNCC:" + num);
-			if ((2 == (int)Status || num > 0) && (int)Status != 0 && (int)Status != 1)
+			if ((BeadStatus.Modified == Status || num > 0) && Status != BeadStatus.Uninitialized && Status != BeadStatus.Ready)
 			{
 				Console.WriteLine("old engine release from Initialize");
 				M2UnmBridgeAPI_ClosePDF();
 			}
-			if ((int)Status != 1)
+			if (Status != BeadStatus.Ready)
 			{
 				_FileReporter.Initialize(RunId, OutputDirectory);
-				PrintComponentsTable((PrintToFile)3);
+				PrintComponentsTable(PrintToFile.ReportAndHistory);
 				Console.WriteLine("before Generate Beads");
-				((IGenerateBeads)PlexDocument).GenerateBeads();
+				PlexDocument.GenerateBeads();
 				Console.WriteLine("After Generate Beads");
 				M2UnmBridgeAPI_SetNCC(ComponentManager.Count);
 				Console.WriteLine("After 2UnmBridgeAPI_SetNCC");
 				M2UnmBridgeAPI_GetRetentionSizes(out var NRETN, out var NIRETN, out var MRL, out var MRS, out var MRD);
 				Console.WriteLine("GetRetentionSizes" + NRETN + NIRETN + MRL + MRS);
-				FlashRetenSize = (IFlashRetentionSize)(object)new FlashRetentionSize(NRETN, NIRETN, MRL, MRS, MRD);
+				FlashRetenSize = new FlashRetentionSize(NRETN, NIRETN, MRL, MRS, MRD);
 				Console.WriteLine("Before M2UnmBridgeAPI_Initialize");
 				M2UnmBridgeAPI_Initialize(RunId, FileReporter.HistoryFile, FileReporter.ReportFile, -_FileReporter.HistoryChannel, -_FileReporter.ReportChannel);
 				Console.WriteLine("After M2UnmBridgeAPI_Initialize");
@@ -490,15 +428,9 @@ namespace AspenTech.NGP.CalculationService
 
 		internal void CheckStatus()
 		{
-			//IL_0002: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0007: Invalid comparison between I4 and Unknown
-			//IL_000b: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0014: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0019: Invalid comparison between I4 and Unknown
-			//IL_0028: Unknown result type (might be due to invalid IL or missing references)
-			if (1 != (int)Status)
+			if (BeadStatus.Ready != Status)
 			{
-				if ((int)Status != 0 && 2 != (int)Status)
+				if (Status != BeadStatus.Uninitialized && BeadStatus.Modified != Status)
 				{
 					throw new NotImplementedException($"Unknown managed PLEX status {Status}.");
 				}
@@ -526,7 +458,7 @@ namespace AspenTech.NGP.CalculationService
 			{
 				if (composition[i].Count != componentIDX.Count)
 				{
-					LoggerExtensions.LogWarning(NGPLogger, "Composition and IDX must have equal dimensions.", Array.Empty<object>());
+					NGPLogger.LogWarning("Composition and IDX must have equal dimensions.");
 				}
 			}
 		}
@@ -535,7 +467,7 @@ namespace AspenTech.NGP.CalculationService
 		{
 			if (ComponentManager.Count < componentIDX.Count)
 			{
-				LoggerExtensions.LogWarning(NGPLogger, "IDX size cannot be larger than the number of components.", Array.Empty<object>());
+				NGPLogger.LogWarning("IDX size cannot be larger than the number of components.");
 			}
 		}
 
@@ -557,7 +489,7 @@ namespace AspenTech.NGP.CalculationService
 			{
 				return KeySinglePhase.Vapor;
 			}
-			throw new ArgumentException(string.Format("Unknown value for {0}: {1}?", "ValidPhases", (long)validPhases));
+			throw new ArgumentException($"Unknown value for {"ValidPhases"}: {validPhases}?");
 		}
 
 		private int PhaseNumber(ValidPhases validPhases)
@@ -582,20 +514,16 @@ namespace AspenTech.NGP.CalculationService
 			{
 				return 22;
 			}
-			throw new ArgumentException("PhaseNumber", $"Unknown valid phase definition = {(long)validPhases}");
+			throw new ArgumentException("PhaseNumber", $"Unknown valid phase definition = {validPhases}");
 		}
 
 		private void PrintComponentsTable(PrintToFile printTo)
 		{
-			//IL_0037: Unknown result type (might be due to invalid IL or missing references)
-			//IL_007e: Unknown result type (might be due to invalid IL or missing references)
-			//IL_00ac: Unknown result type (might be due to invalid IL or missing references)
-			//IL_00d7: Unknown result type (might be due to invalid IL or missing references)
 			string text = string.Format("{0,-11}{1,-15}{2,-15}{3,-35}", "ID", "Type", "Alias", "Name");
 			FileReporter.WriteLine(printTo, Environment.NewLine + " " + text);
-			foreach (IComponent item in (IEnumerable<IComponent>)ComponentManager.Components)
+			foreach (IComponent component in ComponentManager.Components)
 			{
-				text = $"{item.EngineId,-11}{item.ComponentType,-15}{item.Descriptor,-15}{item.Ids.Name,-35}";
+				text = $"{component.EngineId,-11}{component.ComponentType,-15}{component.Descriptor,-15}{component.Ids.Name,-35}";
 				FileReporter.WriteLine(printTo, " " + text);
 			}
 			FileReporter.WriteLine(printTo, new string('_', FileReporter.PageWidth));
@@ -605,7 +533,7 @@ namespace AspenTech.NGP.CalculationService
 		{
 			M2UnmBridgeAPI_ReleasePropertiesFromMemory();
 			M2UnmBridgeAPI_ClosePDF();
-			((IDisposable)PlexDocument).Dispose();
+			PlexDocument.Dispose();
 			CalculationServiceFactory.Remove(FileNumber);
 		}
 
@@ -631,7 +559,7 @@ namespace AspenTech.NGP.CalculationService
 			}
 			if (list.Count > 0)
 			{
-				ParameterManager.DataSources.AddRange((IEnumerable<IDataSource>)list);
+				ParameterManager.DataSources.AddRange(list);
 			}
 		}
 
@@ -642,34 +570,34 @@ namespace AspenTech.NGP.CalculationService
 			{
 				string[] array = component.Trim().ToUpper().Split(' ');
 				string text = array[0];
-				string apedAliasName = ((array.Length == 2) ? array[1] : text);
-				list.Add(Factories.CreateComponentByAlias(apedAliasName, text));
+				string text2 = ((array.Length == 2) ? array[1] : text);
+				list.Add(Factories.CreateComponentByAlias(text2, text));
 			}
 			if (list.Count > 0)
 			{
-				ComponentManager.Components.AddRange((IEnumerable<IComponent>)list);
+				ComponentManager.Components.AddRange(list);
 			}
 		}
 
 		public void SetHenryComponents(string Henryid, List<string> henrycomponents)
 		{
-			string text = Henryid.Trim().ToUpper();
+			string henryid = Henryid.Trim().ToUpper();
 			List<string> list = new List<string>();
 			foreach (string henrycomponent in henrycomponents)
 			{
-				string text2 = henrycomponent.Trim().ToUpper();
-				foreach (IComponent item in (IEnumerable<IComponent>)ComponentManager.Components)
+				string text = henrycomponent.Trim().ToUpper();
+				foreach (IComponent component in ComponentManager.Components)
 				{
-					if (text2 == item.UserSuppliedName)
+					if (text == component.UserSuppliedName)
 					{
-						list.Add(item.UserSuppliedName);
+						list.Add(component.UserSuppliedName);
 						break;
 					}
 				}
 			}
 			if (list.Count > 0)
 			{
-				ComponentManager.CreateHenryList(text, list);
+				ComponentManager.CreateHenryList(henryid, list);
 			}
 		}
 
@@ -689,11 +617,11 @@ namespace AspenTech.NGP.CalculationService
 
 		public void SetGlobalOptionSets(string Propid, string Henryid, string Chemid, int truecomp, string Freewater, int soluwater)
 		{
-			string text = Propid.Trim().ToUpper();
-			string text2 = Henryid.Trim().ToUpper();
-			string text3 = Chemid.Trim().ToUpper();
-			string text4 = Freewater.Trim().ToUpper();
-			OptionSetManager.SetGlobalOpSets(text, text2, text3, truecomp, text4, soluwater);
+			string propMethod = Propid.Trim().ToUpper();
+			string henryId = Henryid.Trim().ToUpper();
+			string chemistry = Chemid.Trim().ToUpper();
+			string freeWaterPropMethod = Freewater.Trim().ToUpper();
+			OptionSetManager.SetGlobalOpSets(propMethod, henryId, chemistry, truecomp, freeWaterPropMethod, soluwater);
 		}
 
 		public IList<int> GetGlobalOptionSets()
@@ -709,11 +637,11 @@ namespace AspenTech.NGP.CalculationService
 
 		public void SetCurrentOptionSets(string Propid, string Henryid, string Chemid, int truecomp, string Freewater, int soluwater)
 		{
-			string text = Propid.Trim().ToUpper();
-			string text2 = Henryid.Trim().ToUpper();
-			string text3 = Chemid.Trim().ToUpper();
-			string text4 = Freewater.Trim().ToUpper();
-			OptionSetManager.SetCurrentOpSets(text, text2, text3, truecomp, text4, soluwater);
+			string propMethod = Propid.Trim().ToUpper();
+			string henryId = Henryid.Trim().ToUpper();
+			string chemistry = Chemid.Trim().ToUpper();
+			string freeWaterPropMethod = Freewater.Trim().ToUpper();
+			OptionSetManager.SetCurrentOpSets(propMethod, henryId, chemistry, truecomp, freeWaterPropMethod, soluwater);
 		}
 
 		public IList<int> GetCurrentOptionSets()
@@ -729,11 +657,11 @@ namespace AspenTech.NGP.CalculationService
 
 		public IList<int> MakeOptionSets(string Propid, string Henryid, string Chemid, int truecomp, string Freewater, int soluwater)
 		{
-			string text = Propid.Trim().ToUpper();
-			string text2 = Henryid.Trim().ToUpper();
-			string text3 = Chemid.Trim().ToUpper();
-			string text4 = Freewater.Trim().ToUpper();
-			return OptionSetManager.MakeOpSets(text, text2, text3, truecomp, text4, soluwater);
+			string propMethod = Propid.Trim().ToUpper();
+			string henryId = Henryid.Trim().ToUpper();
+			string chemistry = Chemid.Trim().ToUpper();
+			string freeWaterPropMethod = Freewater.Trim().ToUpper();
+			return OptionSetManager.MakeOpSets(propMethod, henryId, chemistry, truecomp, freeWaterPropMethod, soluwater);
 		}
 
 		public IList<int> GetComponentIDXsbyCompID(List<string> compIDs)
@@ -742,11 +670,11 @@ namespace AspenTech.NGP.CalculationService
 			foreach (string compID in compIDs)
 			{
 				string text = compID.Trim().ToUpper();
-				foreach (IComponent item in (IEnumerable<IComponent>)ComponentManager.Components)
+				foreach (IComponent component in ComponentManager.Components)
 				{
-					if (text == item.UserSuppliedName)
+					if (text == component.UserSuppliedName)
 					{
-						list.Add(item.Index);
+						list.Add(component.Index);
 						break;
 					}
 				}
@@ -773,7 +701,6 @@ namespace AspenTech.NGP.CalculationService
 
 		public void Enthalpy(IFlashResult flashResult, out double propertyValue)
 		{
-			//IL_0073: Unknown result type (might be due to invalid IL or missing references)
 			List<double> compositionS = new List<double>(new double[flashResult.X.Count]);
 			Enthalpy(flashResult.Temperature, flashResult.Pressure, flashResult.VaporFraction, 1.0 - flashResult.VaporFraction, flashResult.Beta, 0.0, flashResult.Y, flashResult.X, compositionS, flashResult.X1, flashResult.X2, flashResult.ComponentIDX, flashResult.NBPOST, AspenPlusEngineSettings.CalculationDiagnosticsLevel, FunctionBase.Elemental, out propertyValue);
 		}
@@ -788,8 +715,6 @@ namespace AspenTech.NGP.CalculationService
 
 		internal void Enthalpy(double temperature, double pressure, double vaporFraction, double liquidFraction, double betaFraction, double solidFraction, IList<double> compositionY, IList<double> compositionX, IList<double> compositionS, IList<double> compositionX1, IList<double> compositionX2, IList<int> IDX, IList<int> NBOPST, DiagnosticsLevel diagnosticsLevel, FunctionBase functionBase, out double propertyValue)
 		{
-			//IL_00bd: Unknown result type (might be due to invalid IL or missing references)
-			//IL_00c8: Expected I4, but got Unknown
 			propertyValue = 0.0;
 			try
 			{
@@ -804,32 +729,26 @@ namespace AspenTech.NGP.CalculationService
 
 		public void EnthalpyLiquid(IFlashResult flashResult, out double propertyValue)
 		{
-			//IL_0025: Unknown result type (might be due to invalid IL or missing references)
 			EnthalpyLiquid(flashResult.Temperature, flashResult.Pressure, flashResult.X, flashResult.ComponentIDX, flashResult.NBPOST, AspenPlusEngineSettings.CalculationDiagnosticsLevel, FunctionBase.Elemental, Calculate.PropertyValue, out propertyValue, out var _);
 		}
 
 		public void EnthalpyLiquid(IFlashResult flashResult, out double propertyValue, out double temperatureDerivative)
 		{
-			//IL_0025: Unknown result type (might be due to invalid IL or missing references)
 			EnthalpyLiquid(flashResult.Temperature, flashResult.Pressure, flashResult.X, flashResult.ComponentIDX, flashResult.NBPOST, AspenPlusEngineSettings.CalculationDiagnosticsLevel, FunctionBase.Elemental, Calculate.ValueAndDerivative, out propertyValue, out temperatureDerivative);
 		}
 
 		public void EnthalpyLiquid1(IFlashResult flashResult, out double propertyValue, out double temperatureDerivative)
 		{
-			//IL_0025: Unknown result type (might be due to invalid IL or missing references)
 			EnthalpyLiquid(flashResult.Temperature, flashResult.Pressure, flashResult.X1, flashResult.ComponentIDX, flashResult.NBPOST, AspenPlusEngineSettings.CalculationDiagnosticsLevel, FunctionBase.Elemental, Calculate.ValueAndDerivative, out propertyValue, out temperatureDerivative);
 		}
 
 		public void EnthalpyLiquid2(IFlashResult flashResult, out double propertyValue, out double temperatureDerivative)
 		{
-			//IL_0025: Unknown result type (might be due to invalid IL or missing references)
 			EnthalpyLiquid(flashResult.Temperature, flashResult.Pressure, flashResult.X2, flashResult.ComponentIDX, flashResult.NBPOST, AspenPlusEngineSettings.CalculationDiagnosticsLevel, FunctionBase.Elemental, Calculate.ValueAndDerivative, out propertyValue, out temperatureDerivative);
 		}
 
 		internal void EnthalpyLiquid(double temperature, double pressure, IList<double> compositionX, IList<int> IDX, IList<int> NBOPST, DiagnosticsLevel diagnosticsLevel, FunctionBase functionBase, Calculate calculate, out double propertyValue, out double temperatureDerivative)
 		{
-			//IL_0095: Unknown result type (might be due to invalid IL or missing references)
-			//IL_00a4: Expected I4, but got Unknown
 			propertyValue = 0.0;
 			temperatureDerivative = 0.0;
 			try
@@ -845,8 +764,6 @@ namespace AspenTech.NGP.CalculationService
 
 		internal void EnthalpySolid(double temperature, double pressure, IList<double> compositionS, IList<int> IDX, IList<int> NBOPST, DiagnosticsLevel diagnosticsLevel, FunctionBase functionBase, Calculate calculate, out double propertyValue, out double temperatureDerivative)
 		{
-			//IL_0095: Unknown result type (might be due to invalid IL or missing references)
-			//IL_00a4: Expected I4, but got Unknown
 			propertyValue = 0.0;
 			temperatureDerivative = 0.0;
 			try
@@ -862,20 +779,16 @@ namespace AspenTech.NGP.CalculationService
 
 		public void EnthalpyVapor(IFlashResult flashResult, out double propertyValue)
 		{
-			//IL_0025: Unknown result type (might be due to invalid IL or missing references)
 			EnthalpyVapor(flashResult.Temperature, flashResult.Pressure, flashResult.Y, flashResult.ComponentIDX, flashResult.NBPOST, AspenPlusEngineSettings.CalculationDiagnosticsLevel, FunctionBase.Elemental, Calculate.PropertyValue, out propertyValue, out var _);
 		}
 
 		public void EnthalpyVapor(IFlashResult flashResult, out double propertyValue, out double temperatureDerivative)
 		{
-			//IL_0025: Unknown result type (might be due to invalid IL or missing references)
 			EnthalpyVapor(flashResult.Temperature, flashResult.Pressure, flashResult.Y, flashResult.ComponentIDX, flashResult.NBPOST, AspenPlusEngineSettings.CalculationDiagnosticsLevel, FunctionBase.Elemental, Calculate.ValueAndDerivative, out propertyValue, out temperatureDerivative);
 		}
 
 		internal void EnthalpyVapor(double temperature, double pressure, IList<double> compositionY, IList<int> IDX, IList<int> NBOPST, DiagnosticsLevel diagnosticsLevel, FunctionBase functionBase, Calculate calculate, out double propertyValue, out double temperatureDerivative)
 		{
-			//IL_0095: Unknown result type (might be due to invalid IL or missing references)
-			//IL_00a4: Expected I4, but got Unknown
 			propertyValue = 0.0;
 			temperatureDerivative = 0.0;
 			try
@@ -900,16 +813,12 @@ namespace AspenTech.NGP.CalculationService
 
 		private void Flash(FlashSpec spec, double spec1, double spec2, IList<double> composition, IList<int> IDX, IList<int> NBOPST, ValidPhases validPhases, out IFlashResult results)
 		{
-			//IL_001d: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0024: Expected I4, but got Unknown
-			//IL_002a: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0031: Expected I4, but got Unknown
 			results = null;
 			FlashResult flashResult = new FlashResult();
 			int kPHASE = 1;
 			int nPKODE = PhaseNumber(validPhases);
-			int lODIAG = (int)AspenPlusEngineSettings.CalculationDiagnosticsLevel;
-			int lPMSG = (int)AspenPlusEngineSettings.PropertiesDiagnosticsLevel;
+			int calculationDiagnosticsLevel = (int)AspenPlusEngineSettings.CalculationDiagnosticsLevel;
+			int propertiesDiagnosticsLevel = (int)AspenPlusEngineSettings.PropertiesDiagnosticsLevel;
 			int kBASE = 1;
 			int maxFlashIterations = AspenPlusEngineSettings.MaxFlashIterations;
 			int kRSTRT = 0;
@@ -942,8 +851,8 @@ namespace AspenTech.NGP.CalculationService
 			{
 				CheckStatus();
 				CheckDimension(IDX, composition);
-				M2UnmBridgeAPI_PFlash((int)spec, spec1, spec2, lstF, IDX.Count, array9, nPKODE, kPHASE, maxFlashIterations, flashTolerance, array10, lODIAG, lPMSG, kBASE, out var TEMP, out var PRES, out var HTOTAL, out var VFRAC, out var BETA, array, ref nlstX2, array2, ref nstX, array3, ref nlstX, array4, ref nlstY, array5, ref nXKVL, array6, ref nlstXKVL, kRSTRT, array7, ref nlstRETEN, array8, ref nlstIRETEN);
-				results = (IFlashResult)(object)new FlashResult();
+				M2UnmBridgeAPI_PFlash((int)spec, spec1, spec2, lstF, IDX.Count, array9, nPKODE, kPHASE, maxFlashIterations, flashTolerance, array10, calculationDiagnosticsLevel, propertiesDiagnosticsLevel, kBASE, out var TEMP, out var PRES, out var HTOTAL, out var VFRAC, out var BETA, array, ref nlstX2, array2, ref nstX, array3, ref nlstX, array4, ref nlstY, array5, ref nXKVL, array6, ref nlstXKVL, kRSTRT, array7, ref nlstRETEN, array8, ref nlstIRETEN);
+				results = new FlashResult();
 				flashResult.NBPOST = array10.Select((long num) => (int)num).ToList();
 				flashResult.ComponentIDX = array9.Select((long num) => (int)num).ToList();
 				flashResult.Temperature = TEMP;
@@ -959,7 +868,7 @@ namespace AspenTech.NGP.CalculationService
 				flashResult.KVL2 = array6;
 				flashResult.Reten = array7.Take(nlstRETEN).ToList();
 				flashResult.IReten = array8.Select((long num) => (int)num).ToList();
-				results = (IFlashResult)(object)flashResult;
+				results = flashResult;
 			}
 			catch (Exception)
 			{
@@ -970,7 +879,7 @@ namespace AspenTech.NGP.CalculationService
 		{
 			Flash(spec, spec1, spec2, composition, IDXs, NBOPST, validPhases, out IFlashResult results2);
 			M2UnmBridgeAPI_PFlashProps(out var SFRAC, out var LFRAC, out var HV, out var HL, out var HL2, out var HL3, out var SV, out var SL, out var SL2, out var SL3, out var VV, out var VL, out var VL2, out var VL3, out var XMWV, out var XMWL, out var XMWL2, out var XMWL3);
-			results = (IFlashResultPhaseProps)(object)new FlashResultPhaseProps
+			results = new FlashResultPhaseProps
 			{
 				NBPOST = NBOPST,
 				ComponentIDX = IDXs,
@@ -1033,7 +942,7 @@ namespace AspenTech.NGP.CalculationService
 			{
 				results.RhoL = 1.0 / results.VMXL;
 			}
-			if (((IFlashResult)results).Beta < 1.0)
+			if (results.Beta < 1.0)
 			{
 				if (results.VMXL1 > 0.0 && results.VMXL1 != RMISS)
 				{
@@ -1060,7 +969,7 @@ namespace AspenTech.NGP.CalculationService
 			{
 				results.MassRhoL = results.MWMXL / results.VMXL;
 			}
-			if (((IFlashResult)results).Beta < 1.0)
+			if (results.Beta < 1.0)
 			{
 				if (results.VMXL1 > 0.0 && results.VMXL1 != RMISS)
 				{
@@ -1075,40 +984,40 @@ namespace AspenTech.NGP.CalculationService
 
 		private void Add_SpecificHeat(ref IFlashResultPhaseProps results)
 		{
-			EnthalpyVapor((IFlashResult)(object)results, out var propertyValue, out var temperatureDerivative);
+			EnthalpyVapor(results, out var propertyValue, out var temperatureDerivative);
 			results.CpV = temperatureDerivative;
-			EnthalpyLiquid((IFlashResult)(object)results, out propertyValue, out temperatureDerivative);
+			EnthalpyLiquid(results, out propertyValue, out temperatureDerivative);
 			results.CpL = temperatureDerivative;
-			if (((IFlashResult)results).Beta < 1.0)
+			if (results.Beta < 1.0)
 			{
-				EnthalpyLiquid1((IFlashResult)(object)results, out propertyValue, out temperatureDerivative);
+				EnthalpyLiquid1(results, out propertyValue, out temperatureDerivative);
 				results.CpL1 = temperatureDerivative;
-				EnthalpyLiquid2((IFlashResult)(object)results, out propertyValue, out temperatureDerivative);
+				EnthalpyLiquid2(results, out propertyValue, out temperatureDerivative);
 				results.CpL2 = temperatureDerivative;
 			}
 		}
 
 		private void Add_Viscosity(ref IFlashResultPhaseProps results)
 		{
-			ViscosityVapor((IFlashResult)(object)results, out var propertyValue);
+			ViscosityVapor(results, out var propertyValue);
 			results.MUV = propertyValue;
-			ViscosityLiquid((IFlashResult)(object)results, out propertyValue);
+			ViscosityLiquid(results, out propertyValue);
 			results.MUL = propertyValue;
 		}
 
 		private void Add_Conductivity(ref IFlashResultPhaseProps results)
 		{
-			ThermalConductivityVapor((IFlashResult)(object)results, out var propertyValue);
+			ThermalConductivityVapor(results, out var propertyValue);
 			results.KV = propertyValue;
-			ThermalConductivityLiquid((IFlashResult)(object)results, out propertyValue);
+			ThermalConductivityLiquid(results, out propertyValue);
 			results.KL = propertyValue;
 		}
 
 		private void Add_SurfaceTension(ref IFlashResultPhaseProps results)
 		{
-			SurfaceTensionVapor((IFlashResult)(object)results, out var propertyValue);
+			SurfaceTensionVapor(results, out var propertyValue);
 			results.SIGMAV = propertyValue;
-			SurfaceTensionLiquid((IFlashResult)(object)results, out propertyValue);
+			SurfaceTensionLiquid(results, out propertyValue);
 			results.SIGMAL = propertyValue;
 		}
 
@@ -1335,14 +1244,11 @@ namespace AspenTech.NGP.CalculationService
 
 		public void ThermalConductivityLiquid(IFlashResult flashResult, out double propertyValue)
 		{
-			//IL_002f: Unknown result type (might be due to invalid IL or missing references)
 			ThermalConductivityLiquid(flashResult.Temperature, flashResult.Pressure, flashResult.X, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), AspenPlusEngineSettings.CalculationDiagnosticsLevel, out propertyValue);
 		}
 
 		internal void ThermalConductivityLiquid(double temperature, double pressure, IList<double> compositionX, IList<int> IDX, IList<int> NBOPST, DiagnosticsLevel diagnosticsLevel, out double propertyValue)
 		{
-			//IL_0071: Unknown result type (might be due to invalid IL or missing references)
-			//IL_007a: Expected I4, but got Unknown
 			propertyValue = 0.0;
 			try
 			{
@@ -1355,8 +1261,6 @@ namespace AspenTech.NGP.CalculationService
 
 		internal void ThermalConductivitySolid(double temperature, double pressure, IList<double> compositionS, IList<int> IDX, IList<int> NBOPST, DiagnosticsLevel diagnosticsLevel, out double propertyValue)
 		{
-			//IL_0071: Unknown result type (might be due to invalid IL or missing references)
-			//IL_007a: Expected I4, but got Unknown
 			propertyValue = 0.0;
 			try
 			{
@@ -1369,14 +1273,11 @@ namespace AspenTech.NGP.CalculationService
 
 		public void ThermalConductivityVapor(IFlashResult flashResult, out double propertyValue)
 		{
-			//IL_002f: Unknown result type (might be due to invalid IL or missing references)
 			ThermalConductivityVapor(flashResult.Temperature, flashResult.Pressure, flashResult.Y, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), AspenPlusEngineSettings.CalculationDiagnosticsLevel, out propertyValue);
 		}
 
 		internal void ThermalConductivityVapor(double temperature, double pressure, IList<double> compositionY, IList<int> IDX, IList<int> NBOPST, DiagnosticsLevel diagnosticsLevel, out double propertyValue)
 		{
-			//IL_0071: Unknown result type (might be due to invalid IL or missing references)
-			//IL_007a: Expected I4, but got Unknown
 			propertyValue = 0.0;
 			try
 			{
@@ -1389,22 +1290,18 @@ namespace AspenTech.NGP.CalculationService
 
 		public void SurfaceTensionLiquid(IFlashResult flashResult, out double propertyValue)
 		{
-			//IL_0046: Unknown result type (might be due to invalid IL or missing references)
 			IList<double> compositionY = new List<double>(new double[flashResult.X.Count]);
 			SurfaceTension(flashResult.Temperature, flashResult.Pressure, flashResult.X, compositionY, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), AspenPlusEngineSettings.CalculationDiagnosticsLevel, out propertyValue);
 		}
 
 		public void SurfaceTensionVapor(IFlashResult flashResult, out double propertyValue)
 		{
-			//IL_0046: Unknown result type (might be due to invalid IL or missing references)
 			IList<double> compositionY = new List<double>(new double[flashResult.Y.Count]);
 			SurfaceTension(flashResult.Temperature, flashResult.Pressure, flashResult.Y, compositionY, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), AspenPlusEngineSettings.CalculationDiagnosticsLevel, out propertyValue);
 		}
 
 		internal void SurfaceTension(double temperature, double pressure, IList<double> compositionX, IList<double> compositionY, IList<int> IDX, IList<int> NBOPST, DiagnosticsLevel diagnosticsLevel, out double propertyValue)
 		{
-			//IL_0095: Unknown result type (might be due to invalid IL or missing references)
-			//IL_009e: Expected I4, but got Unknown
 			propertyValue = 0.0;
 			try
 			{
@@ -1419,14 +1316,11 @@ namespace AspenTech.NGP.CalculationService
 
 		public void ViscosityLiquid(IFlashResult flashResult, out double propertyValue)
 		{
-			//IL_002f: Unknown result type (might be due to invalid IL or missing references)
 			ViscosityLiquid(flashResult.Temperature, flashResult.Pressure, flashResult.X, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), AspenPlusEngineSettings.CalculationDiagnosticsLevel, out propertyValue);
 		}
 
 		internal void ViscosityLiquid(double temperature, double pressure, IList<double> compositionX, IList<int> IDX, IList<int> NBOPST, DiagnosticsLevel diagnosticsLevel, out double propertyValue)
 		{
-			//IL_0089: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0092: Expected I4, but got Unknown
 			propertyValue = 0.0;
 			try
 			{
@@ -1441,15 +1335,12 @@ namespace AspenTech.NGP.CalculationService
 
 		public void ViscosityPure(double temperature, double pressure, IComponent component, out double propertyValue)
 		{
-			//IL_0025: Unknown result type (might be due to invalid IL or missing references)
 			ViscosityPure(temperature, pressure, new List<int> { component.Index }, OptionSetManager.GetNBOPST(), AspenPlusEngineSettings.CalculationDiagnosticsLevel, out var propertyValues);
 			propertyValue = propertyValues[0];
 		}
 
 		internal void ViscosityPure(double temperature, double pressure, IList<int> IDX, IList<int> NBOPST, DiagnosticsLevel diagnosticsLevel, out IList<double> propertyValues)
 		{
-			//IL_0079: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0084: Expected I4, but got Unknown
 			propertyValues = null;
 			double[] lstMUL = new double[200];
 			try
@@ -1466,14 +1357,11 @@ namespace AspenTech.NGP.CalculationService
 
 		public void ViscosityVapor(IFlashResult flashResult, out double propertyValue)
 		{
-			//IL_002f: Unknown result type (might be due to invalid IL or missing references)
 			ViscosityVapor(flashResult.Temperature, flashResult.Pressure, flashResult.Y, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), AspenPlusEngineSettings.CalculationDiagnosticsLevel, out propertyValue);
 		}
 
 		internal void ViscosityVapor(double temperature, double pressure, IList<double> compositionY, IList<int> IDX, IList<int> NBOPST, DiagnosticsLevel diagnosticsLevel, out double propertyValue)
 		{
-			//IL_0089: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0092: Expected I4, but got Unknown
 			propertyValue = 0.0;
 			try
 			{
@@ -1500,15 +1388,12 @@ namespace AspenTech.NGP.CalculationService
 
 		public void Volume(IFlashResult flashResult, out double propertyValue)
 		{
-			//IL_0073: Unknown result type (might be due to invalid IL or missing references)
 			List<double> compositionS = new List<double>(new double[flashResult.X.Count]);
 			Volume(flashResult.Temperature, flashResult.Pressure, flashResult.VaporFraction, 1.0 - flashResult.VaporFraction, flashResult.Beta, 0.0, flashResult.Y, flashResult.X, compositionS, flashResult.X1, flashResult.X2, flashResult.ComponentIDX, flashResult.NBPOST, AspenPlusEngineSettings.CalculationDiagnosticsLevel, out propertyValue);
 		}
 
 		internal void Volume(double temperature, double pressure, double vaporFraction, double liquidFraction, double betaFraction, double solidFraction, IList<double> compositionY, IList<double> compositionX, IList<double> compositionS, IList<double> compositionX1, IList<double> compositionX2, IList<int> IDX, IList<int> NBOPST, DiagnosticsLevel diagnosticsLevel, out double propertyValue)
 		{
-			//IL_00bd: Unknown result type (might be due to invalid IL or missing references)
-			//IL_00c6: Expected I4, but got Unknown
 			propertyValue = 0.0;
 			try
 			{
@@ -1523,32 +1408,26 @@ namespace AspenTech.NGP.CalculationService
 
 		public void VolumeLiquid(IFlashResult flashResult, out double propertyValue)
 		{
-			//IL_002a: Unknown result type (might be due to invalid IL or missing references)
 			VolumeLiquid(flashResult.Temperature, flashResult.Pressure, flashResult.X, flashResult.ComponentIDX, OptionSetManager.GetNBOPST(), AspenPlusEngineSettings.CalculationDiagnosticsLevel, Calculate.PropertyValue, out propertyValue, out var _);
 		}
 
 		public void VolumeLiquid(IFlashResult flashResult, out double propertyValue, out double temperatureDerivative)
 		{
-			//IL_002a: Unknown result type (might be due to invalid IL or missing references)
 			VolumeLiquid(flashResult.Temperature, flashResult.Pressure, flashResult.X, flashResult.ComponentIDX, OptionSetManager.GetNBOPST(), AspenPlusEngineSettings.CalculationDiagnosticsLevel, Calculate.ValueAndDerivative, out propertyValue, out temperatureDerivative);
 		}
 
 		public void VolumeLiquid(double temperature, double pressure, IList<double> composition, out double propertyValue)
 		{
-			//IL_0020: Unknown result type (might be due to invalid IL or missing references)
 			VolumeLiquid(temperature, pressure, composition, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), AspenPlusEngineSettings.CalculationDiagnosticsLevel, Calculate.PropertyValue, out propertyValue, out var _);
 		}
 
 		public void VolumeLiquid(double temperature, double pressure, IList<double> composition, out double propertyValue, out double temperatureDerivative)
 		{
-			//IL_0020: Unknown result type (might be due to invalid IL or missing references)
 			VolumeLiquid(temperature, pressure, composition, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), AspenPlusEngineSettings.CalculationDiagnosticsLevel, Calculate.ValueAndDerivative, out propertyValue, out temperatureDerivative);
 		}
 
 		internal void VolumeLiquid(double temperature, double pressure, IList<double> compositionX, IList<int> IDX, IList<int> NBOPST, DiagnosticsLevel diagnosticsLevel, Calculate calculate, out double propertyValue, out double temperatureDerivative)
 		{
-			//IL_007d: Unknown result type (might be due to invalid IL or missing references)
-			//IL_008a: Expected I4, but got Unknown
 			propertyValue = 0.0;
 			temperatureDerivative = 0.0;
 			try
@@ -1562,8 +1441,6 @@ namespace AspenTech.NGP.CalculationService
 
 		internal void VolumeSolid(double temperature, double pressure, IList<double> compositionS, IList<int> IDX, IList<int> NBOPST, DiagnosticsLevel diagnosticsLevel, Calculate calculate, out double propertyValue, out double temperatureDerivative)
 		{
-			//IL_007d: Unknown result type (might be due to invalid IL or missing references)
-			//IL_008a: Expected I4, but got Unknown
 			propertyValue = 0.0;
 			temperatureDerivative = 0.0;
 			try
@@ -1577,20 +1454,16 @@ namespace AspenTech.NGP.CalculationService
 
 		public void VolumeVapor(IFlashResult flashResult, out double propertyValue)
 		{
-			//IL_0025: Unknown result type (might be due to invalid IL or missing references)
 			VolumeVapor(flashResult.Temperature, flashResult.Pressure, flashResult.Y, flashResult.ComponentIDX, flashResult.NBPOST, AspenPlusEngineSettings.CalculationDiagnosticsLevel, Calculate.PropertyValue, out propertyValue, out var _);
 		}
 
 		public void VolumeVapor(IFlashResult flashResult, out double propertyValue, out double temperatureDerivative)
 		{
-			//IL_0025: Unknown result type (might be due to invalid IL or missing references)
 			VolumeVapor(flashResult.Temperature, flashResult.Pressure, flashResult.Y, flashResult.ComponentIDX, flashResult.NBPOST, AspenPlusEngineSettings.CalculationDiagnosticsLevel, Calculate.ValueAndDerivative, out propertyValue, out temperatureDerivative);
 		}
 
 		internal void VolumeVapor(double temperature, double pressure, IList<double> compositionY, IList<int> IDX, IList<int> NBOPST, DiagnosticsLevel diagnosticsLevel, Calculate calculate, out double propertyValue, out double temperatureDerivative)
 		{
-			//IL_007d: Unknown result type (might be due to invalid IL or missing references)
-			//IL_008a: Expected I4, but got Unknown
 			propertyValue = 0.0;
 			temperatureDerivative = 0.0;
 			try
@@ -1604,88 +1477,62 @@ namespace AspenTech.NGP.CalculationService
 
 		public void VolumeVapor(double temperature, double pressure, IList<double> compositionY, out double propertyValue, out double temperatureDerivative)
 		{
-			//IL_0020: Unknown result type (might be due to invalid IL or missing references)
 			VolumeVapor(temperature, pressure, compositionY, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), AspenPlusEngineSettings.CalculationDiagnosticsLevel, Calculate.ValueAndDerivative, out propertyValue, out temperatureDerivative);
 		}
 
 		private long[] RetrieveIntBead(IBeadData bead, int off, int len)
 		{
-			//IL_0011: Unknown result type (might be due to invalid IL or missing references)
 			long[] array = new long[len];
 			for (int i = off; i < off + len; i++)
 			{
-				array[i - off] = RawInteger.op_Implicit(bead[i]);
+				array[i - off] = bead[i];
 			}
 			return array;
 		}
 
 		public void UOSFlash2(IBeadData blockBead)
 		{
-			//IL_0012: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0017: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0023: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0031: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0049: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0058: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0078: Unknown result type (might be due to invalid IL or missing references)
-			//IL_00b1: Unknown result type (might be due to invalid IL or missing references)
-			//IL_00c1: Unknown result type (might be due to invalid IL or missing references)
-			//IL_00de: Unknown result type (might be due to invalid IL or missing references)
-			//IL_00ee: Unknown result type (might be due to invalid IL or missing references)
-			//IL_010b: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0119: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0120: Expected O, but got Unknown
-			//IL_014b: Unknown result type (might be due to invalid IL or missing references)
-			//IL_015b: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0178: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0188: Unknown result type (might be due to invalid IL or missing references)
-			//IL_01a5: Unknown result type (might be due to invalid IL or missing references)
-			//IL_01b5: Unknown result type (might be due to invalid IL or missing references)
-			//IL_01c5: Unknown result type (might be due to invalid IL or missing references)
-			//IL_01d5: Unknown result type (might be due to invalid IL or missing references)
-			//IL_01f2: Unknown result type (might be due to invalid IL or missing references)
 			CheckStatus();
 			IList<int> nBOPST = OptionSetManager.GetNBOPST();
-			BeadId id = blockBead.Id;
-			int rawNumber = ((BeadId)(ref id)).RawNumber;
-			int num = (int)RawInteger.op_Implicit(blockBead[4]);
-			int off = (int)RawInteger.op_Implicit(blockBead[5]);
+			int rawNumber = blockBead.Id.RawNumber;
+			int num = (int)(long)blockBead[4];
+			int off = (int)(long)blockBead[5];
 			long[] lstISCP = RetrieveIntBead(blockBead, off, num);
-			int num2 = (int)RawInteger.op_Implicit(blockBead[6]);
-			int off2 = (int)RawInteger.op_Implicit(blockBead[7]);
+			int num2 = (int)(long)blockBead[6];
+			int off2 = (int)(long)blockBead[7];
 			long[] lstIDS = RetrieveIntBead(blockBead, off2, num2);
 			int nPO = 6;
-			RawInteger.op_Implicit(blockBead[9]);
+			_ = (long)blockBead[9];
 			long[] lstNBOPST = nBOPST.Select((int value) => Convert.ToInt64(value)).ToArray();
-			int num3 = (int)RawInteger.op_Implicit(blockBead[10]);
-			int off3 = (int)RawInteger.op_Implicit(blockBead[11]);
+			int num3 = (int)(long)blockBead[10];
+			int off3 = (int)(long)blockBead[11];
 			long[] lstIWDIR = RetrieveIntBead(blockBead, off3, num3);
-			int num4 = (int)RawInteger.op_Implicit(blockBead[12]);
-			int off4 = (int)RawInteger.op_Implicit(blockBead[13]);
+			int num4 = (int)(long)blockBead[12];
+			int off4 = (int)(long)blockBead[13];
 			long[] lstINT = RetrieveIntBead(blockBead, off4, num4);
-			int num5 = (int)RawInteger.op_Implicit(blockBead[14]);
-			IBeadRealData val = (IBeadRealData)blockBead;
+			int num5 = (int)(long)blockBead[14];
+			IBeadRealData beadRealData = (IBeadRealData)blockBead;
 			double[] array = new double[num5];
 			for (int num6 = 0; num6 < num5; num6++)
 			{
-				array[num6] = val[num6];
+				array[num6] = beadRealData[num6];
 			}
-			int num7 = (int)RawInteger.op_Implicit(blockBead[16]);
-			int off5 = (int)RawInteger.op_Implicit(blockBead[17]);
+			int num7 = (int)(long)blockBead[16];
+			int off5 = (int)(long)blockBead[17];
 			long[] nBSIN = RetrieveIntBead(blockBead, off5, num7);
-			int num8 = (int)RawInteger.op_Implicit(blockBead[18]);
-			int off6 = (int)RawInteger.op_Implicit(blockBead[19]);
+			int num8 = (int)(long)blockBead[18];
+			int off6 = (int)(long)blockBead[19];
 			long[] nBSOUT = RetrieveIntBead(blockBead, off6, num8);
-			int nINFI = (int)RawInteger.op_Implicit(blockBead[21]);
-			int nINFO = (int)RawInteger.op_Implicit(blockBead[22]);
-			int num9 = (int)RawInteger.op_Implicit(blockBead[23]);
-			int off7 = (int)RawInteger.op_Implicit(blockBead[24]);
+			int nINFI = (int)(long)blockBead[21];
+			int nINFO = (int)(long)blockBead[22];
+			int num9 = (int)(long)blockBead[23];
+			int off7 = (int)(long)blockBead[24];
 			long[] iREP = RetrieveIntBead(blockBead, off7, num9);
-			int num10 = (int)RawInteger.op_Implicit(blockBead[25]);
+			int num10 = (int)(long)blockBead[25];
 			double[] array2 = new double[num10];
 			for (int num11 = num5; num11 < num5 + num10; num11++)
 			{
-				array2[num11 - num5] = val[num11];
+				array2[num11 - num5] = beadRealData[num11];
 			}
 			try
 			{
@@ -1697,21 +1544,23 @@ namespace AspenTech.NGP.CalculationService
 			}
 		}
 
-		public void SetPropertyPackage(List<DatasourcesDto> dataSources, List<string> compAliases, List<string> propertyMethods)
+		public void SetPropertyPackage(List<ICalculationService.DatasourcesDto> dataSources, List<string> compAliases, List<string> propertyMethods)
 		{
-			PlexDocument obj = PlexDocument as PlexDocument;
-			obj.PostDS(dataSources);
-			obj.PostCL(compAliases);
-			obj.PostOpsets(propertyMethods);
+			IPlexDocument plexDocument = PlexDocument;
+			IPlexDocument obj = ((plexDocument is PlexDocument) ? plexDocument : null);
+			((PlexDocument)obj).PostDS(dataSources);
+			((PlexDocument)obj).PostCL(compAliases);
+			((PlexDocument)obj).PostOpsets(propertyMethods);
 			Initialize();
 		}
 
-		public void SetPropertyPackage(PropertyPackageDto dtoPP)
+		public void SetPropertyPackage(ICalculationService.PropertyPackageDto dtoPP)
 		{
-			PlexDocument obj = PlexDocument as PlexDocument;
-			obj.PostDS(dtoPP.datasources.ToList());
-			obj.PostCL(dtoPP.compaliases.ToList());
-			obj.PostOpsets(dtoPP.propertymethods.ToList());
+			IPlexDocument plexDocument = PlexDocument;
+			IPlexDocument obj = ((plexDocument is PlexDocument) ? plexDocument : null);
+			((PlexDocument)obj).PostDS(dtoPP.datasources.ToList());
+			((PlexDocument)obj).PostCL(dtoPP.compaliases.ToList());
+			((PlexDocument)obj).PostOpsets(dtoPP.propertymethods.ToList());
 			Initialize();
 		}
 
@@ -1733,7 +1582,7 @@ namespace AspenTech.NGP.CalculationService
 
 		public IList<string> propertymethods { get; set; }
 
-		public IList<DatasourcesDto> datasources { get; set; }
+		public IList<ICalculationService.DatasourcesDto> datasources { get; set; }
 
 		public double pressure { get; set; }
 
@@ -1751,7 +1600,7 @@ namespace AspenTech.NGP.CalculationService
 
 		public IList<string> propertymethods { get; set; }
 
-		public IList<DatasourcesDto> datasources { get; set; }
+		public IList<ICalculationService.DatasourcesDto> datasources { get; set; }
 
 		public double pressure { get; set; }
 
@@ -1769,7 +1618,7 @@ namespace AspenTech.NGP.CalculationService
 
 		public IList<string> propertymethods { get; set; }
 
-		public IList<DatasourcesDto> datasources { get; set; }
+		public IList<ICalculationService.DatasourcesDto> datasources { get; set; }
 
 		public double temperature { get; set; }
 
@@ -1787,7 +1636,7 @@ namespace AspenTech.NGP.CalculationService
 
 		public IList<string> propertymethods { get; set; }
 
-		public IList<DatasourcesDto> datasources { get; set; }
+		public IList<ICalculationService.DatasourcesDto> datasources { get; set; }
 
 		public double pressure { get; set; }
 
@@ -1805,7 +1654,7 @@ namespace AspenTech.NGP.CalculationService
 
 		public IList<string> propertymethods { get; set; }
 
-		public IList<DatasourcesDto> datasources { get; set; }
+		public IList<ICalculationService.DatasourcesDto> datasources { get; set; }
 
 		public double temperature { get; set; }
 
@@ -1839,7 +1688,7 @@ namespace AspenTech.NGP.CalculationService
 
 		public IList<string> propertymethods { get; set; }
 
-		public IList<DatasourcesDto> datasources { get; set; }
+		public IList<ICalculationService.DatasourcesDto> datasources { get; set; }
 
 		public double pressure { get; set; }
 
@@ -1859,7 +1708,7 @@ namespace AspenTech.NGP.CalculationService
 
 		public IList<string> propertymethods { get; set; }
 
-		public IList<DatasourcesDto> datasources { get; set; }
+		public IList<ICalculationService.DatasourcesDto> datasources { get; set; }
 
 		public RangeValIncr pressure { get; set; }
 
@@ -1879,7 +1728,7 @@ namespace AspenTech.NGP.CalculationService
 
 		public IList<string> propertymethods { get; set; }
 
-		public IList<DatasourcesDto> datasources { get; set; }
+		public IList<ICalculationService.DatasourcesDto> datasources { get; set; }
 
 		public RangeValIncr pressure { get; set; }
 
@@ -1899,7 +1748,7 @@ namespace AspenTech.NGP.CalculationService
 
 		public IList<string> propertymethods { get; set; }
 
-		public IList<DatasourcesDto> datasources { get; set; }
+		public IList<ICalculationService.DatasourcesDto> datasources { get; set; }
 
 		public RangeValIncr temperature { get; set; }
 
@@ -1919,7 +1768,7 @@ namespace AspenTech.NGP.CalculationService
 
 		public IList<string> propertymethods { get; set; }
 
-		public IList<DatasourcesDto> datasources { get; set; }
+		public IList<ICalculationService.DatasourcesDto> datasources { get; set; }
 
 		public RangeValIncr pressure { get; set; }
 
@@ -1939,7 +1788,7 @@ namespace AspenTech.NGP.CalculationService
 
 		public IList<string> propertymethods { get; set; }
 
-		public IList<DatasourcesDto> datasources { get; set; }
+		public IList<ICalculationService.DatasourcesDto> datasources { get; set; }
 
 		public RangeValIncr temperature { get; set; }
 
@@ -1959,7 +1808,7 @@ namespace AspenTech.NGP.CalculationService
 
 		public IList<string> propertymethods { get; set; }
 
-		public IList<DatasourcesDto> datasources { get; set; }
+		public IList<ICalculationService.DatasourcesDto> datasources { get; set; }
 
 		public RangeValIncr pressure { get; set; }
 
@@ -2014,7 +1863,7 @@ namespace AspenTech.NGP.CalculationService
 				{
 					return value;
 				}
-				CalcServiceById.Add(fileNumber, (ICalculationService)(object)Instantiater(fileNumber, dbConfiguration));
+				CalcServiceById.Add(fileNumber, Instantiater(fileNumber, dbConfiguration));
 				return CalcServiceById[fileNumber];
 			}
 		}
@@ -2025,10 +1874,10 @@ namespace AspenTech.NGP.CalculationService
 			{
 				if (CalcServiceById.TryGetValue(fileNumber, out var _))
 				{
-					CalcServiceById[fileNumber] = (ICalculationService)(object)Instantiater(fileNumber, dbConfiguration);
+					CalcServiceById[fileNumber] = Instantiater(fileNumber, dbConfiguration);
 					return CalcServiceById[fileNumber];
 				}
-				CalcServiceById.Add(fileNumber, (ICalculationService)(object)Instantiater(fileNumber, dbConfiguration));
+				CalcServiceById.Add(fileNumber, Instantiater(fileNumber, dbConfiguration));
 				return CalcServiceById[fileNumber];
 			}
 		}
@@ -2041,7 +1890,7 @@ namespace AspenTech.NGP.CalculationService
 				{
 					return value;
 				}
-				CalcServiceById.Add(fileNumber, (ICalculationService)(object)Instantiater(fileNumber, ngpLogger, dbConfiguration));
+				CalcServiceById.Add(fileNumber, Instantiater(fileNumber, ngpLogger, dbConfiguration));
 				return CalcServiceById[fileNumber];
 			}
 		}
@@ -2179,23 +2028,20 @@ namespace AspenTech.NGP.CalculationService
 
 		public void WriteLine(PrintToFile printTo, string message)
 		{
-			//IL_0012: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0028: Expected I4, but got Unknown
-			//IL_0095: Unknown result type (might be due to invalid IL or missing references)
 			CheckFiles();
 			List<int> list = new List<int>();
 			List<string> list2 = new List<string>();
-			switch ((int)printTo)
+			switch (printTo)
 			{
-			case 1:
+			case PrintToFile.HistoryOnly:
 				list.Add(HistoryChannel);
 				list2.Add(HistoryFile);
 				break;
-			case 2:
+			case PrintToFile.ReportOnly:
 				list.Add(ReportChannel);
 				list2.Add(ReportFile);
 				break;
-			case 3:
+			case PrintToFile.ReportAndHistory:
 				list.Add(ReportChannel);
 				list.Add(HistoryChannel);
 				list2.Add(ReportFile);
@@ -2203,7 +2049,7 @@ namespace AspenTech.NGP.CalculationService
 				break;
 			default:
 				throw new NotImplementedException($"Unhandled print-to-file option {printTo}.");
-			case 0:
+			case PrintToFile.None:
 				break;
 			}
 			for (int i = 0; i < list.Count; i++)
@@ -2251,7 +2097,7 @@ namespace AspenTech.NGP.CalculationService
 				throw;
 			}
 			Initialized = true;
-			PrintFileHeader((PrintToFile)3);
+			PrintFileHeader(PrintToFile.ReportAndHistory);
 		}
 
 		private void CheckFiles()
@@ -2264,11 +2110,6 @@ namespace AspenTech.NGP.CalculationService
 
 		private void PrintFileHeader(PrintToFile printTo)
 		{
-			//IL_009b: Unknown result type (might be due to invalid IL or missing references)
-			//IL_00a3: Unknown result type (might be due to invalid IL or missing references)
-			//IL_00ac: Unknown result type (might be due to invalid IL or missing references)
-			//IL_00b5: Unknown result type (might be due to invalid IL or missing references)
-			//IL_00be: Unknown result type (might be due to invalid IL or missing references)
 			string text = "Aspen Properties Component Service (PCS)";
 			int num = (int)Math.Round((double)(80 - text.Length) * 0.5, MidpointRounding.AwayFromZero);
 			int count = 80 - num - text.Length - 2;
@@ -2433,9 +2274,9 @@ namespace AspenTech.NGP.CalculationService
 
 		private double _flashTolerance = 0.0001;
 
-		private DiagnosticsLevel _propertiesDiagnosticsLevel = (DiagnosticsLevel)4;
+		private DiagnosticsLevel _propertiesDiagnosticsLevel = DiagnosticsLevel.Default;
 
-		private DiagnosticsLevel _calculationDiagnosticsLevel = (DiagnosticsLevel)4;
+		private DiagnosticsLevel _calculationDiagnosticsLevel = DiagnosticsLevel.Default;
 
 		public int MaxFlashIterations
 		{
@@ -2475,18 +2316,11 @@ namespace AspenTech.NGP.CalculationService
 		{
 			get
 			{
-				//IL_0001: Unknown result type (might be due to invalid IL or missing references)
 				return _calculationDiagnosticsLevel;
 			}
 			set
 			{
-				//IL_0000: Unknown result type (might be due to invalid IL or missing references)
-				//IL_0002: Invalid comparison between Unknown and I4
-				//IL_0004: Unknown result type (might be due to invalid IL or missing references)
-				//IL_0007: Invalid comparison between Unknown and I4
-				//IL_000a: Unknown result type (might be due to invalid IL or missing references)
-				//IL_000b: Unknown result type (might be due to invalid IL or missing references)
-				if ((int)value >= 0 && (int)value <= 10)
+				if (value >= DiagnosticsLevel.Minimum && value <= DiagnosticsLevel.Maximum)
 				{
 					_calculationDiagnosticsLevel = value;
 					return;
@@ -2499,18 +2333,11 @@ namespace AspenTech.NGP.CalculationService
 		{
 			get
 			{
-				//IL_0001: Unknown result type (might be due to invalid IL or missing references)
 				return _propertiesDiagnosticsLevel;
 			}
 			set
 			{
-				//IL_0000: Unknown result type (might be due to invalid IL or missing references)
-				//IL_0002: Invalid comparison between Unknown and I4
-				//IL_0004: Unknown result type (might be due to invalid IL or missing references)
-				//IL_0007: Invalid comparison between Unknown and I4
-				//IL_000a: Unknown result type (might be due to invalid IL or missing references)
-				//IL_000b: Unknown result type (might be due to invalid IL or missing references)
-				if ((int)value >= 0 && (int)value <= 10)
+				if (value >= DiagnosticsLevel.Minimum && value <= DiagnosticsLevel.Maximum)
 				{
 					_propertiesDiagnosticsLevel = value;
 					return;
@@ -2520,5 +2347,3 @@ namespace AspenTech.NGP.CalculationService
 		}
 	}
 }
-You are not using the latest version of the tool, please update.
-Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

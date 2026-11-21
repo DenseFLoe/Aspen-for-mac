@@ -31,14 +31,12 @@ using AspenTech.Visualisation.CommonShell;
 using Aspentech.ExchangerDesign.Infrastructure;
 using Aspentech.ExchangerDesign.Infrastructure.Events;
 using Infragistics.Windows;
-using Infragistics.Windows.Editors;
 using Infragistics.Windows.OutlookBar;
 using Infragistics.Windows.Ribbon;
 using Microsoft.Practices.Composite.Events;
 using Microsoft.Practices.Composite.Logging;
 using Microsoft.Practices.Composite.Modularity;
 using Microsoft.Practices.Composite.Presentation.Commands;
-using Microsoft.Practices.Composite.Presentation.Events;
 using Microsoft.Practices.Unity;
 
 [assembly: CompilationRelaxations(8)]
@@ -102,7 +100,7 @@ namespace AspenTech.ExchangerDesign.UserInterface
 				//IL_005e: Expected O, but got Unknown
 				if (value != null)
 				{
-					IntPtr aTVInterface = UnityContainerExtensions.Resolve<IExchangerDesignProvider>(UnityContainer, Array.Empty<ResolverOverride>()).GetATVInterface((string)null, value);
+					IntPtr aTVInterface = UnityContainerExtensions.Resolve<IExchangerDesignProvider>(UnityContainer, Array.Empty<ResolverOverride>()).GetATVInterface(null, value);
 					_app = PtrToApp(aTVInterface);
 					if (_app != null)
 					{
@@ -124,9 +122,9 @@ namespace AspenTech.ExchangerDesign.UserInterface
 			{
 				if (_cancelCommand == null)
 				{
-					_cancelCommand = new DelegateCommand<object>((Action<object>)ExecuteCancelCommand, (Func<object, bool>)CanExecuteCancelCommand);
+					_cancelCommand = new DelegateCommand<object>(ExecuteCancelCommand, CanExecuteCancelCommand);
 				}
-				return (ICommand)_cancelCommand;
+				return _cancelCommand;
 			}
 		}
 
@@ -136,9 +134,9 @@ namespace AspenTech.ExchangerDesign.UserInterface
 			{
 				if (_sizeCommand == null)
 				{
-					_sizeCommand = new DelegateCommand<object>((Action<object>)ExecuteSizeCommand, (Func<object, bool>)CanExecuteSizeCommand);
+					_sizeCommand = new DelegateCommand<object>(ExecuteSizeCommand, CanExecuteSizeCommand);
 				}
-				return (ICommand)_sizeCommand;
+				return _sizeCommand;
 			}
 		}
 
@@ -148,9 +146,9 @@ namespace AspenTech.ExchangerDesign.UserInterface
 			{
 				if (_acceptDesignCommand == null)
 				{
-					_acceptDesignCommand = new DelegateCommand<object>((Action<object>)ExecuteAcceptDesignCommand, (Func<object, bool>)CanExecuteAcceptDesignCommand);
+					_acceptDesignCommand = new DelegateCommand<object>(ExecuteAcceptDesignCommand, CanExecuteAcceptDesignCommand);
 				}
-				return (ICommand)_acceptDesignCommand;
+				return _acceptDesignCommand;
 			}
 		}
 
@@ -160,9 +158,9 @@ namespace AspenTech.ExchangerDesign.UserInterface
 			{
 				if (_saveCommand == null)
 				{
-					_saveCommand = new DelegateCommand<object>((Action<object>)ExecuteSaveCommand, (Func<object, bool>)CanExecuteSaveCommand);
+					_saveCommand = new DelegateCommand<object>(ExecuteSaveCommand, CanExecuteSaveCommand);
 				}
-				return (ICommand)_saveCommand;
+				return _saveCommand;
 			}
 		}
 
@@ -170,7 +168,7 @@ namespace AspenTech.ExchangerDesign.UserInterface
 		{
 			UnityContainer = container;
 			InitializeComponent();
-			((CompositePresentationEvent<SizeCancelEventArgs>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<SizeCancelEvent>()).Subscribe((Action<SizeCancelEventArgs>)OnSizeCancel);
+			UnityContainerExtensions.Resolve<IEventAggregator>(UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<SizeCancelEvent>().Subscribe(OnSizeCancel);
 			ConsoleMode = false;
 		}
 
@@ -193,36 +191,26 @@ namespace AspenTech.ExchangerDesign.UserInterface
 			{
 				return;
 			}
-			TreeNavigatorView currentnavview = default(TreeNavigatorView);
-			ref TreeNavigatorView reference = ref currentnavview;
-			FrameworkElement navview = _navview;
-			reference = (TreeNavigatorView)(object)((navview is TreeNavigatorView) ? navview : null);
+			TreeNavigatorView currentnavview = _navview as TreeNavigatorView;
 			if (currentnavview != null)
 			{
 				Application.Current.Dispatcher.Invoke(DispatcherPriority.Normal, (Action)delegate
 				{
 					TreeNavigatorViewModel viewModel = currentnavview.ViewModel;
-					((object)viewModel)?.GetType().InvokeMember("NavigateToResultsForm", BindingFlags.Instance | BindingFlags.Public | BindingFlags.InvokeMethod, null, viewModel, new object[1] { _app.Name });
+					viewModel?.GetType().InvokeMember("NavigateToResultsForm", BindingFlags.Instance | BindingFlags.Public | BindingFlags.InvokeMethod, null, viewModel, new object[1] { _app.Name });
 				});
 			}
 		}
 
 		public void SetBrowserTree(FrameworkElement view)
 		{
-			//IL_0012: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0017: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0022: Expected O, but got Unknown
-			//IL_0022: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0029: Expected O, but got Unknown
-			//IL_0029: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0035: Expected O, but got Unknown
 			_navview = view;
-			OutlookBarGroupCollection groups = _navigation.Groups;
-			OutlookBarGroup val = new OutlookBarGroup();
-			((HeaderedContentControl)val).Header = AspenTech.ExchangerDesign.UserInterface.Properties.Resources.EDRNavigation;
-			((ContentControl)val).Content = view;
-			val.IsSelected = true;
-			((Collection<OutlookBarGroup>)(object)groups).Add(val);
+			_navigation.Groups.Add(new OutlookBarGroup
+			{
+				Header = AspenTech.ExchangerDesign.UserInterface.Properties.Resources.EDRNavigation,
+				Content = view,
+				IsSelected = true
+			});
 		}
 
 		public void SetBrowserContent(FrameworkElement content)
@@ -241,7 +229,7 @@ namespace AspenTech.ExchangerDesign.UserInterface
 
 		public void OnClosed()
 		{
-			((CompositePresentationEvent<SizeCancelEventArgs>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<SizeCancelEvent>()).Unsubscribe((Action<SizeCancelEventArgs>)OnSizeCancel);
+			UnityContainerExtensions.Resolve<IEventAggregator>(UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<SizeCancelEvent>().Unsubscribe(OnSizeCancel);
 			if (_currentContent != null)
 			{
 				_contentGrid.Children.Remove(_currentContent);
@@ -249,12 +237,11 @@ namespace AspenTech.ExchangerDesign.UserInterface
 			_currentContent = null;
 			if (_navview != null)
 			{
-				((Collection<OutlookBarGroup>)(object)_navigation.Groups).Clear();
-				FrameworkElement navview = _navview;
-				TreeNavigatorViewModel viewModel = ((TreeNavigatorView)((navview is TreeNavigatorView) ? navview : null)).ViewModel;
+				_navigation.Groups.Clear();
+				TreeNavigatorViewModel viewModel = (_navview as TreeNavigatorView).ViewModel;
 				if (viewModel != null)
 				{
-					Type type = ((object)viewModel).GetType();
+					Type type = viewModel.GetType();
 					try
 					{
 						MethodInfo method = type.GetMethod("UnSubscribeEvents", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -319,14 +306,9 @@ namespace AspenTech.ExchangerDesign.UserInterface
 
 		private void ExecuteCancelCommand(object arg)
 		{
-			//IL_002a: Unknown result type (might be due to invalid IL or missing references)
-			//IL_002f: Unknown result type (might be due to invalid IL or missing references)
-			//IL_003a: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0046: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0057: Expected O, but got Unknown
 			if (MessageBox.Show(AspenTech.ExchangerDesign.UserInterface.Properties.Resources.CancelNag, AspenTech.ExchangerDesign.UserInterface.Properties.Resources.Cancel, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
 			{
-				((CompositePresentationEvent<ConsoleEventArgs>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<ConsoleEvent>()).Publish(new ConsoleEventArgs
+				UnityContainerExtensions.Resolve<IEventAggregator>(UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<ConsoleEvent>().Publish(new ConsoleEventArgs
 				{
 					Event = "Cancel",
 					ObjectKey = Key,
@@ -342,14 +324,9 @@ namespace AspenTech.ExchangerDesign.UserInterface
 
 		private void ExecuteSizeCommand(object arg)
 		{
-			//IL_001d: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0022: Unknown result type (might be due to invalid IL or missing references)
-			//IL_002d: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0039: Unknown result type (might be due to invalid IL or missing references)
-			//IL_004a: Expected O, but got Unknown
 			if (_app != null)
 			{
-				((CompositePresentationEvent<ConsoleEventArgs>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<ConsoleEvent>()).Publish(new ConsoleEventArgs
+				UnityContainerExtensions.Resolve<IEventAggregator>(UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<ConsoleEvent>().Publish(new ConsoleEventArgs
 				{
 					Event = "Size",
 					ObjectKey = Key,
@@ -360,11 +337,6 @@ namespace AspenTech.ExchangerDesign.UserInterface
 
 		private void ExecuteAcceptDesignCommand(object arg)
 		{
-			//IL_0042: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0047: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0052: Unknown result type (might be due to invalid IL or missing references)
-			//IL_005e: Unknown result type (might be due to invalid IL or missing references)
-			//IL_006f: Expected O, but got Unknown
 			IATVService val = null;
 			if (_app != null)
 			{
@@ -376,7 +348,7 @@ namespace AspenTech.ExchangerDesign.UserInterface
 				object app = _app;
 				val.UpdateApp(ref app);
 			}
-			((CompositePresentationEvent<ConsoleEventArgs>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<ConsoleEvent>()).Publish(new ConsoleEventArgs
+			UnityContainerExtensions.Resolve<IEventAggregator>(UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<ConsoleEvent>().Publish(new ConsoleEventArgs
 			{
 				Event = "ClosedConsole",
 				ObjectKey = Key,
@@ -396,12 +368,7 @@ namespace AspenTech.ExchangerDesign.UserInterface
 
 		private void ExecuteSaveCommand(object arg)
 		{
-			//IL_0015: Unknown result type (might be due to invalid IL or missing references)
-			//IL_001a: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0025: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0031: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0042: Expected O, but got Unknown
-			((CompositePresentationEvent<ConsoleEventArgs>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<ConsoleEvent>()).Publish(new ConsoleEventArgs
+			UnityContainerExtensions.Resolve<IEventAggregator>(UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<ConsoleEvent>().Publish(new ConsoleEventArgs
 			{
 				Event = "Save",
 				ObjectKey = Key,
@@ -456,8 +423,6 @@ namespace AspenTech.ExchangerDesign.UserInterface
 		[EditorBrowsable(EditorBrowsableState.Never)]
 		void IComponentConnector.Connect(int connectionId, object target)
 		{
-			//IL_0032: Unknown result type (might be due to invalid IL or missing references)
-			//IL_003c: Expected O, but got Unknown
 			switch (connectionId)
 			{
 			case 1:
@@ -486,7 +451,7 @@ namespace AspenTech.ExchangerDesign.UserInterface
 			{
 				EDRBrowserScreen obj = activeDocumentScreen as EDRBrowserScreen;
 				obj.SetBrowserContent(screenSubject, screenState);
-				return (ScreenContentControl)(object)obj;
+				return obj;
 			}
 			try
 			{
@@ -495,12 +460,12 @@ namespace AspenTech.ExchangerDesign.UserInterface
 				EDRBrowserScreen eDRBrowserScreen = UnityContainerExtensions.Resolve<EDRBrowserScreen>(container, Array.Empty<ResolverOverride>());
 				AppDomain.CurrentDomain.AssemblyResolve -= edr_AssemblyResolve;
 				_container = null;
-				((ScreenContentControl)eDRBrowserScreen).InitializeScreen(container, screenSubject, screenState);
+				eDRBrowserScreen.InitializeScreen(container, screenSubject, screenState);
 				if (screenState != null && screenState.IsRestoreFromSavedLayout && eDRBrowserScreen.App == null)
 				{
 					return null;
 				}
-				return (ScreenContentControl)(object)eDRBrowserScreen;
+				return eDRBrowserScreen;
 			}
 			catch (Exception)
 			{
@@ -584,7 +549,7 @@ namespace AspenTech.ExchangerDesign.UserInterface
 
 		private bool? _connectionStatusIsChecked = true;
 
-		private string _connectionStatusCaption = Resources.btn_Connected;
+		private string _connectionStatusCaption = AspenTech.ExchangerDesign.UserInterface.Properties.Resources.btn_Connected;
 
 		private string _connectionStatusToolTip;
 
@@ -666,35 +631,30 @@ namespace AspenTech.ExchangerDesign.UserInterface
 			}
 		}
 
-		public ICommand ConnectionStatusCommand => (ICommand)new DelegateCommand<object>((Action<object>)ExecuteConnectionStatusCommand);
+		public ICommand ConnectionStatusCommand => new DelegateCommand<object>(ExecuteConnectionStatusCommand);
 
 		public event PropertyChangedEventHandler PropertyChanged;
 
 		public override void InitializeScreen(IUnityContainer container, ScreenSubject screenSubjectOpaque, ScreenState screenStateOpaque)
 		{
-			//IL_037e: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0383: Unknown result type (might be due to invalid IL or missing references)
-			//IL_038e: Unknown result type (might be due to invalid IL or missing references)
-			//IL_039f: Unknown result type (might be due to invalid IL or missing references)
-			//IL_03b5: Expected O, but got Unknown
 			//IL_0335: Unknown result type (might be due to invalid IL or missing references)
 			//IL_033f: Expected O, but got Unknown
 			//IL_034c: Unknown result type (might be due to invalid IL or missing references)
 			//IL_0356: Expected O, but got Unknown
-			((ScreenContentControl)this).InitializeScreen(container, screenSubjectOpaque, screenStateOpaque);
+			base.InitializeScreen(container, screenSubjectOpaque, screenStateOpaque);
 			_browserFormSubject = screenSubjectOpaque as EDRFormScreenSubject;
-			((ScreenContentControl)this).Header = _browserFormSubject.Header;
+			base.Header = _browserFormSubject.Header;
 			SubscribeToAggregateEvents();
 			_formContainer = container.CreateChildContainer();
 			SubscribeToFormEvents();
-			((FrameworkElement)this).Loaded += OnLoaded;
+			base.Loaded += OnLoaded;
 			try
 			{
 				if (_browserFormSubject.FormKey == "Progress")
 				{
 					_factory = UnityContainerExtensions.Resolve<IExchangerDesignFactory>(_formContainer, Array.Empty<ResolverOverride>());
-					FrameworkElement content = _factory.CreateUserControl(_browserFormSubject.FormKey, _browserFormSubject.ObjectType, _browserFormSubject.ObjectKey, true);
-					((ContentControl)this).Content = content;
+					FrameworkElement content = _factory.CreateUserControl(_browserFormSubject.FormKey, _browserFormSubject.ObjectType, _browserFormSubject.ObjectKey, runOnLoad: true);
+					base.Content = content;
 					return;
 				}
 				_browser = UnityContainerExtensions.Resolve<EDRBrowser>(container, Array.Empty<ResolverOverride>());
@@ -702,7 +662,7 @@ namespace AspenTech.ExchangerDesign.UserInterface
 				if (_browserFormSubject.ConsoleMode)
 				{
 					_browser.ConsoleMode = true;
-					((UIElement)(object)_browser._navigation).Visibility = Visibility.Collapsed;
+					_browser._navigation.Visibility = Visibility.Collapsed;
 					_browser._contentGrid.RowDefinitions[1].Height = GridLength.Auto;
 				}
 				_factory = UnityContainerExtensions.Resolve<IExchangerDesignFactory>(_formContainer, Array.Empty<ResolverOverride>());
@@ -731,7 +691,7 @@ namespace AspenTech.ExchangerDesign.UserInterface
 				FrameworkElement frameworkElement = null;
 				if (!string.IsNullOrEmpty(text))
 				{
-					frameworkElement = _factory.CreateUserControl(text, _browserFormSubject.ObjectType, _browserFormSubject.ObjectKey, false);
+					frameworkElement = _factory.CreateUserControl(text, _browserFormSubject.ObjectType, _browserFormSubject.ObjectKey, runOnLoad: false);
 				}
 				if (frameworkElement != null)
 				{
@@ -764,9 +724,9 @@ namespace AspenTech.ExchangerDesign.UserInterface
 					_atvApp.SignalSimulatorInputChanged += new SignalSimulatorInputChangedEventHandler(_atvApp_SimulatorInputChanged);
 					_atvApp.SignalSubCleanUpStarted += new SignalSubCleanUpStartedEventHandler(_atvApp_SubCleanUpStarted);
 				}
-				((ContentControl)this).Content = _browser;
+				base.Content = _browser;
 				InitContextRibbon(container);
-				((CompositePresentationEvent<ConsoleEventArgs>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(((ScreenContentControl)this).UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<ConsoleEvent>()).Publish(new ConsoleEventArgs
+				UnityContainerExtensions.Resolve<IEventAggregator>(base.UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<ConsoleEvent>().Publish(new ConsoleEventArgs
 				{
 					Event = "EDRBrowserOpened",
 					ObjectKey = _browserFormSubject.ObjectKey,
@@ -810,7 +770,7 @@ namespace AspenTech.ExchangerDesign.UserInterface
 				(_factory as ObjectFactory).RefreshAppAndEDRDocument(_browserFormSubject.ObjectType, _browserFormSubject.ObjectKey);
 				if (contextRibbon == null)
 				{
-					InitContextRibbon(((ScreenContentControl)this).UnityContainer);
+					InitContextRibbon(base.UnityContainer);
 				}
 			}
 		}
@@ -819,11 +779,11 @@ namespace AspenTech.ExchangerDesign.UserInterface
 		{
 			if (contextRibbon != null)
 			{
-				((XamComboEditor)contextRibbon.EDRcomboBoxUnits).SelectedItemChanged -= comboUnitSets_SelectedItemChanged;
+				contextRibbon.EDRcomboBoxUnits.SelectedItemChanged -= comboUnitSets_SelectedItemChanged;
 				contextRibbon.UnsubscribePreviewEvents();
-				((FrameworkElement)(object)contextRibbon).DataContext = null;
+				contextRibbon.DataContext = null;
 				contextRibbon = null;
-				((ScreenContentControl)this).ContextualRibbons.Clear();
+				base.ContextualRibbons.Clear();
 			}
 		}
 
@@ -833,14 +793,14 @@ namespace AspenTech.ExchangerDesign.UserInterface
 			{
 				_UOMs = new ObservableCollection<string> { "US", "SI", "Metric", "Set1", "Set2", "Set3", "Hysys Field", "Hysys SI", "Hysys EuroSI" };
 				contextRibbon = UnityContainerExtensions.Resolve<ExchangerDesignRibbon>(container, Array.Empty<ResolverOverride>());
-				((FrameworkElement)(object)contextRibbon.EDRcomboBoxUnits).DataContext = this;
-				((FrameworkElement)(object)contextRibbon.ConnectionStatusButton).DataContext = this;
+				contextRibbon.EDRcomboBoxUnits.DataContext = this;
+				contextRibbon.ConnectionStatusButton.DataContext = this;
 				if (_factory != null)
 				{
-					((FrameworkElement)(object)contextRibbon).DataContext = _factory.EDRDocument;
+					contextRibbon.DataContext = _factory.EDRDocument;
 				}
-				((ScreenContentControl)this).ContextualRibbons.Add((XamRibbon)(object)contextRibbon);
-				((XamComboEditor)contextRibbon.EDRcomboBoxUnits).SelectedItemChanged += comboUnitSets_SelectedItemChanged;
+				base.ContextualRibbons.Add(contextRibbon);
+				contextRibbon.EDRcomboBoxUnits.SelectedItemChanged += comboUnitSets_SelectedItemChanged;
 				Binding binding = new Binding("ConnectionStatus_IsChecked")
 				{
 					Source = this,
@@ -850,13 +810,13 @@ namespace AspenTech.ExchangerDesign.UserInterface
 				};
 				if (_browserFormSubject.ObjectType != "PlateFin")
 				{
-					BindingOperations.SetBinding((DependencyObject)(object)contextRibbon.ribbonGroup_Run, UIElement.IsEnabledProperty, binding);
-					BindingOperations.SetBinding((DependencyObject)(object)contextRibbon.ribbonGroup_RunMode, UIElement.IsEnabledProperty, binding);
+					BindingOperations.SetBinding(contextRibbon.ribbonGroup_Run, UIElement.IsEnabledProperty, binding);
+					BindingOperations.SetBinding(contextRibbon.ribbonGroup_RunMode, UIElement.IsEnabledProperty, binding);
 				}
 				InitContextualRibbon();
 				contextRibbon.SubscribePreviewEvents();
-				IShellMainWindow activeWindow = UnityContainerExtensions.Resolve<IShellApplication>(((ScreenContentControl)this).UnityContainer, Array.Empty<ResolverOverride>()).ActiveWindow;
-				CommonShellWindow val = (CommonShellWindow)(object)((activeWindow is CommonShellWindow) ? activeWindow : null);
+				IShellMainWindow activeWindow = UnityContainerExtensions.Resolve<IShellApplication>(base.UnityContainer, Array.Empty<ResolverOverride>()).ActiveWindow;
+				CommonShellWindow val = (CommonShellWindow)((activeWindow is CommonShellWindow) ? activeWindow : null);
 				if (val != null && !(val.ActiveScreen is EDRBrowserScreen))
 				{
 					BrowserDeactived();
@@ -866,8 +826,8 @@ namespace AspenTech.ExchangerDesign.UserInterface
 
 		private void OnLoaded(object sender, RoutedEventArgs e)
 		{
-			((FrameworkElement)this).Loaded -= OnLoaded;
-			if (Utilities.GetAncestorFromType((DependencyObject)(object)this, typeof(Window), true) is Window window && _browserFormSubject.FormKey == "Progress")
+			base.Loaded -= OnLoaded;
+			if (Utilities.GetAncestorFromType(this, typeof(Window), allowSubclassOfType: true) is Window window && _browserFormSubject.FormKey == "Progress")
 			{
 				window.Topmost = true;
 			}
@@ -875,18 +835,13 @@ namespace AspenTech.ExchangerDesign.UserInterface
 
 		private void _atvApp_SimulatorInputChanged()
 		{
-			//IL_0033: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0038: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0043: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0054: Unknown result type (might be due to invalid IL or missing references)
-			//IL_006a: Expected O, but got Unknown
 			if (!(ConnectionStatus_IsChecked ?? false))
 			{
 				return;
 			}
-			if (((DispatcherObject)this).Dispatcher == Dispatcher.CurrentDispatcher)
+			if (base.Dispatcher == Dispatcher.CurrentDispatcher)
 			{
-				((CompositePresentationEvent<ConsoleEventArgs>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(((ScreenContentControl)this).UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<ConsoleEvent>()).Publish(new ConsoleEventArgs
+				UnityContainerExtensions.Resolve<IEventAggregator>(base.UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<ConsoleEvent>().Publish(new ConsoleEventArgs
 				{
 					Event = "InputChange",
 					ObjectKey = _browserFormSubject.ObjectKey,
@@ -894,16 +849,11 @@ namespace AspenTech.ExchangerDesign.UserInterface
 				});
 				return;
 			}
-			((DispatcherObject)this).Dispatcher.BeginInvoke((Action)delegate
+			base.Dispatcher.BeginInvoke((Action)delegate
 			{
-				//IL_001d: Unknown result type (might be due to invalid IL or missing references)
-				//IL_0022: Unknown result type (might be due to invalid IL or missing references)
-				//IL_002d: Unknown result type (might be due to invalid IL or missing references)
-				//IL_003e: Unknown result type (might be due to invalid IL or missing references)
-				//IL_0054: Expected O, but got Unknown
-				if (((FrameworkElement)this).IsLoaded)
+				if (base.IsLoaded)
 				{
-					((CompositePresentationEvent<ConsoleEventArgs>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(((ScreenContentControl)this).UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<ConsoleEvent>()).Publish(new ConsoleEventArgs
+					UnityContainerExtensions.Resolve<IEventAggregator>(base.UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<ConsoleEvent>().Publish(new ConsoleEventArgs
 					{
 						Event = "InputChange",
 						ObjectKey = _browserFormSubject.ObjectKey,
@@ -915,12 +865,12 @@ namespace AspenTech.ExchangerDesign.UserInterface
 
 		private void _atvApp_SubCleanUpStarted()
 		{
-			IShellMainWindow activeWindow = UnityContainerExtensions.Resolve<IShellApplication>(((ScreenContentControl)this).UnityContainer, Array.Empty<ResolverOverride>()).ActiveWindow;
-			CommonShellWindow val = (CommonShellWindow)(object)((activeWindow is CommonShellWindow) ? activeWindow : null);
+			IShellMainWindow activeWindow = UnityContainerExtensions.Resolve<IShellApplication>(base.UnityContainer, Array.Empty<ResolverOverride>()).ActiveWindow;
+			CommonShellWindow val = (CommonShellWindow)((activeWindow is CommonShellWindow) ? activeWindow : null);
 			if (val != null)
 			{
 				isDeleted = true;
-				val.CloseScreen((ScreenContentControl)(object)this);
+				val.CloseScreen((ScreenContentControl)this);
 			}
 		}
 
@@ -928,11 +878,11 @@ namespace AspenTech.ExchangerDesign.UserInterface
 		{
 			if (args.ScreenFactoryKey == EDRScreenFactoryKeys.EDRFormContentFactoryKey)
 			{
-				EDRFormContentFactory.CreateScreen(((ScreenContentControl)this).UnityContainer, args.ScreenSubject, args.ScreenState);
+				EDRFormContentFactory.CreateScreen(base.UnityContainer, args.ScreenSubject, args.ScreenState);
 			}
 			else if (args.ScreenFactoryKey == EDRScreenFactoryKeys.SimulatorRunStatusScreenFactory)
 			{
-				FrameworkElement frameworkElement = _factory.CreateUserControl(args.ScreenFactoryKey, _browserFormSubject.ObjectType, _browserFormSubject.ObjectKey, false);
+				FrameworkElement frameworkElement = _factory.CreateUserControl(args.ScreenFactoryKey, _browserFormSubject.ObjectType, _browserFormSubject.ObjectKey, runOnLoad: false);
 				if (frameworkElement != null)
 				{
 					_browser.SetBrowserContent(frameworkElement);
@@ -940,13 +890,13 @@ namespace AspenTech.ExchangerDesign.UserInterface
 			}
 			else
 			{
-				((CompositePresentationEvent<ShowScreenEventArgs>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(((ScreenContentControl)this).UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<ShowScreenEvent>()).Publish(args);
+				UnityContainerExtensions.Resolve<IEventAggregator>(base.UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<ShowScreenEvent>().Publish(args);
 			}
 		}
 
 		internal void SetBrowserContent(ScreenSubject screenSubjectOpaque, ScreenState screenStateOpaque)
 		{
-			FrameworkElement frameworkElement = _factory.CreateEDRFormControl((object)screenSubjectOpaque, _browserFormSubject.ObjectType, _browserFormSubject.ObjectKey);
+			FrameworkElement frameworkElement = _factory.CreateEDRFormControl(screenSubjectOpaque, _browserFormSubject.ObjectType, _browserFormSubject.ObjectKey);
 			if (frameworkElement != null)
 			{
 				_browser.SetBrowserContent(frameworkElement);
@@ -983,32 +933,32 @@ namespace AspenTech.ExchangerDesign.UserInterface
 
 		private void SubscribeToAggregateEvents()
 		{
-			deletedToken = ((CompositePresentationEvent<DeletedEventArgs>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(((ScreenContentControl)this).UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<DeletedEvent>()).Subscribe((Action<DeletedEventArgs>)OnObjectDeleted);
-			renamedToken = ((CompositePresentationEvent<RenameEventArgs>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(((ScreenContentControl)this).UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<RenameEvent>()).Subscribe((Action<RenameEventArgs>)OnObjectRenamed);
-			HysysCloseCaseEventToken = ((CompositePresentationEvent<HysysCloseCaseChangedArgs>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(((ScreenContentControl)this).UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<HysysCloseCaseChangedEvent>()).Subscribe((Action<HysysCloseCaseChangedArgs>)OnHysysCloseCaseChanged);
-			EngineUpdateToken = ((CompositePresentationEvent<EngineUpdateEventArgs>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(((ScreenContentControl)this).UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<EngineUpdateEvent>()).Subscribe((Action<EngineUpdateEventArgs>)OnEngineUpdate);
+			deletedToken = UnityContainerExtensions.Resolve<IEventAggregator>(base.UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<DeletedEvent>().Subscribe(OnObjectDeleted);
+			renamedToken = UnityContainerExtensions.Resolve<IEventAggregator>(base.UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<RenameEvent>().Subscribe(OnObjectRenamed);
+			HysysCloseCaseEventToken = UnityContainerExtensions.Resolve<IEventAggregator>(base.UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<HysysCloseCaseChangedEvent>().Subscribe(OnHysysCloseCaseChanged);
+			EngineUpdateToken = UnityContainerExtensions.Resolve<IEventAggregator>(base.UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<EngineUpdateEvent>().Subscribe(OnEngineUpdate);
 		}
 
 		private void UnsubscribeToAggregateEvents()
 		{
 			if (deletedToken != null)
 			{
-				((EventBase)UnityContainerExtensions.Resolve<IEventAggregator>(((ScreenContentControl)this).UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<DeletedEvent>()).Unsubscribe(deletedToken);
+				UnityContainerExtensions.Resolve<IEventAggregator>(base.UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<DeletedEvent>().Unsubscribe(deletedToken);
 				deletedToken = null;
 			}
 			if (renamedToken != null)
 			{
-				((EventBase)UnityContainerExtensions.Resolve<IEventAggregator>(((ScreenContentControl)this).UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<RenameEvent>()).Unsubscribe(renamedToken);
+				UnityContainerExtensions.Resolve<IEventAggregator>(base.UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<RenameEvent>().Unsubscribe(renamedToken);
 				renamedToken = null;
 			}
 			if (HysysCloseCaseEventToken != null)
 			{
-				((EventBase)UnityContainerExtensions.Resolve<IEventAggregator>(((ScreenContentControl)this).UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<HysysCloseCaseChangedEvent>()).Unsubscribe(HysysCloseCaseEventToken);
+				UnityContainerExtensions.Resolve<IEventAggregator>(base.UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<HysysCloseCaseChangedEvent>().Unsubscribe(HysysCloseCaseEventToken);
 				HysysCloseCaseEventToken = null;
 			}
 			if (EngineUpdateToken != null)
 			{
-				((EventBase)UnityContainerExtensions.Resolve<IEventAggregator>(((ScreenContentControl)this).UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<EngineUpdateEvent>()).Unsubscribe(EngineUpdateToken);
+				UnityContainerExtensions.Resolve<IEventAggregator>(base.UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<EngineUpdateEvent>().Unsubscribe(EngineUpdateToken);
 				EngineUpdateToken = null;
 			}
 		}
@@ -1018,40 +968,40 @@ namespace AspenTech.ExchangerDesign.UserInterface
 			//IL_0006: Unknown result type (might be due to invalid IL or missing references)
 			//IL_0015: Expected O, but got Unknown
 			UnityContainerExtensions.RegisterType<IEventAggregator, RoutingEventAggregator>(_formContainer, (LifetimeManager)new ContainerControlledLifetimeManager(), Array.Empty<InjectionMember>());
-			showChildScreenToken = ((CompositePresentationEvent<ShowScreenEventArgs>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(_formContainer, Array.Empty<ResolverOverride>()).GetEvent<ShowScreenEvent>()).Subscribe((Action<ShowScreenEventArgs>)OnShowChildScreen);
+			showChildScreenToken = UnityContainerExtensions.Resolve<IEventAggregator>(_formContainer, Array.Empty<ResolverOverride>()).GetEvent<ShowScreenEvent>().Subscribe(OnShowChildScreen);
 		}
 
 		private void UnsubscribeToFormEvents()
 		{
 			if (showChildScreenToken != null)
 			{
-				((EventBase)UnityContainerExtensions.Resolve<IEventAggregator>(_formContainer, Array.Empty<ResolverOverride>()).GetEvent<ShowScreenEvent>()).Unsubscribe(showChildScreenToken);
+				UnityContainerExtensions.Resolve<IEventAggregator>(_formContainer, Array.Empty<ResolverOverride>()).GetEvent<ShowScreenEvent>().Unsubscribe(showChildScreenToken);
 				showChildScreenToken = null;
 			}
 		}
 
 		private void OnObjectDeleted(DeletedEventArgs args)
 		{
-			if (((ScreenContentControl)this).ScreenSubject is EDRFormScreenSubject eDRFormScreenSubject && eDRFormScreenSubject.ObjectKey == args.ObjectKey.Replace("/UNSETMONIKER", ""))
+			if (base.ScreenSubject is EDRFormScreenSubject eDRFormScreenSubject && eDRFormScreenSubject.ObjectKey == args.ObjectKey.Replace("/UNSETMONIKER", ""))
 			{
-				IShellMainWindow activeWindow = UnityContainerExtensions.Resolve<IShellApplication>(((ScreenContentControl)this).UnityContainer, Array.Empty<ResolverOverride>()).ActiveWindow;
-				CommonShellWindow val = (CommonShellWindow)(object)((activeWindow is CommonShellWindow) ? activeWindow : null);
+				IShellMainWindow activeWindow = UnityContainerExtensions.Resolve<IShellApplication>(base.UnityContainer, Array.Empty<ResolverOverride>()).ActiveWindow;
+				CommonShellWindow val = (CommonShellWindow)((activeWindow is CommonShellWindow) ? activeWindow : null);
 				if (val != null)
 				{
 					isDeleted = true;
-					val.CloseScreen((ScreenContentControl)(object)this);
+					val.CloseScreen((ScreenContentControl)this);
 				}
 			}
 		}
 
 		private void OnObjectRenamed(RenameEventArgs args)
 		{
-			if (((ScreenContentControl)this).ScreenSubject is EDRFormScreenSubject eDRFormScreenSubject && eDRFormScreenSubject.ObjectKey == args.OldKey)
+			if (base.ScreenSubject is EDRFormScreenSubject eDRFormScreenSubject && eDRFormScreenSubject.ObjectKey == args.OldKey)
 			{
 				eDRFormScreenSubject.ObjectKey = args.NewKey;
 				eDRFormScreenSubject.ObjectName = args.NewName;
 				eDRFormScreenSubject.Header = eDRFormScreenSubject.Header.Replace(args.OldName, args.NewName);
-				((ScreenContentControl)this).Header = eDRFormScreenSubject.Header;
+				base.Header = eDRFormScreenSubject.Header;
 			}
 		}
 
@@ -1064,7 +1014,7 @@ namespace AspenTech.ExchangerDesign.UserInterface
 		{
 			if (_browserFormSubject.FormKey == "Progress")
 			{
-				if (((ContentControl)this).Content is SizingProgress { IsRunning: not false } sizingProgress)
+				if (base.Content is SizingProgress { IsRunning: not false } sizingProgress)
 				{
 					sizingProgress.App.Engine.Stop(0);
 				}
@@ -1077,7 +1027,7 @@ namespace AspenTech.ExchangerDesign.UserInterface
 					args.Cancel = true;
 				}
 			}
-			((ScreenContentControl)this).OnClosing(args);
+			base.OnClosing(args);
 		}
 
 		protected override void OnClosed(EventArgs args)
@@ -1086,16 +1036,6 @@ namespace AspenTech.ExchangerDesign.UserInterface
 			//IL_002c: Expected O, but got Unknown
 			//IL_0039: Unknown result type (might be due to invalid IL or missing references)
 			//IL_0043: Expected O, but got Unknown
-			//IL_015c: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0161: Unknown result type (might be due to invalid IL or missing references)
-			//IL_016c: Unknown result type (might be due to invalid IL or missing references)
-			//IL_017d: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0193: Expected O, but got Unknown
-			//IL_0110: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0115: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0120: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0131: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0147: Expected O, but got Unknown
 			if (_atvApp != null && !_atvApp.IsDestroyed)
 			{
 				_atvApp.SignalSimulatorInputChanged -= new SignalSimulatorInputChangedEventHandler(_atvApp_SimulatorInputChanged);
@@ -1114,26 +1054,26 @@ namespace AspenTech.ExchangerDesign.UserInterface
 			}
 			if (contextRibbon != null)
 			{
-				((FrameworkElement)(object)contextRibbon.EDRcomboBoxUnits).DataContext = null;
-				((XamComboEditor)contextRibbon.EDRcomboBoxUnits).SelectedItemChanged += comboUnitSets_SelectedItemChanged;
-				((FrameworkElement)(object)contextRibbon).DataContext = null;
+				contextRibbon.EDRcomboBoxUnits.DataContext = null;
+				contextRibbon.EDRcomboBoxUnits.SelectedItemChanged += comboUnitSets_SelectedItemChanged;
+				contextRibbon.DataContext = null;
 			}
 			if (_factory != null)
 			{
 				_factory.Dispose();
 				_factory = null;
 			}
-			((ScreenContentControl)this).OnClosed(args);
+			base.OnClosed(args);
 			if (_connectionStatusIsChecked == false)
 			{
-				((CompositePresentationEvent<ConsoleEventArgs>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(((ScreenContentControl)this).UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<ConsoleEvent>()).Publish(new ConsoleEventArgs
+				UnityContainerExtensions.Resolve<IEventAggregator>(base.UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<ConsoleEvent>().Publish(new ConsoleEventArgs
 				{
 					Event = "Connect",
 					ObjectKey = _browserFormSubject.ObjectKey,
 					InConsoleMode = _browserFormSubject.ConsoleMode
 				});
 			}
-			((CompositePresentationEvent<ConsoleEventArgs>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(((ScreenContentControl)this).UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<ConsoleEvent>()).Publish(new ConsoleEventArgs
+			UnityContainerExtensions.Resolve<IEventAggregator>(base.UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<ConsoleEvent>().Publish(new ConsoleEventArgs
 			{
 				Event = "ClosedBrowser",
 				ObjectKey = _browserFormSubject.ObjectKey,
@@ -1229,17 +1169,17 @@ namespace AspenTech.ExchangerDesign.UserInterface
 			}
 			if (_connectionStatusIsChecked == true)
 			{
-				ConnectionStatus_Caption = Resources.btn_Connected;
-				ConnectionStatus_ToolTip = string.Format(Resources.tltp_Connected, text);
+				ConnectionStatus_Caption = AspenTech.ExchangerDesign.UserInterface.Properties.Resources.btn_Connected;
+				ConnectionStatus_ToolTip = string.Format(AspenTech.ExchangerDesign.UserInterface.Properties.Resources.tltp_Connected, text);
 				if (contextRibbon != null)
 				{
 					if (text == "Aspen Plus")
 					{
-						contextRibbon.ConnectionStatusButton.LargeImage = GetImageSource(Resources.ConnectedStatus_APLUS_32);
+						contextRibbon.ConnectionStatusButton.LargeImage = GetImageSource(AspenTech.ExchangerDesign.UserInterface.Properties.Resources.ConnectedStatus_APLUS_32);
 					}
 					else if (text == "Hysys")
 					{
-						contextRibbon.ConnectionStatusButton.LargeImage = GetImageSource(Resources.ConnectedStatus_HYSYS_32);
+						contextRibbon.ConnectionStatusButton.LargeImage = GetImageSource(AspenTech.ExchangerDesign.UserInterface.Properties.Resources.ConnectedStatus_HYSYS_32);
 					}
 				}
 				if (_atvApp == null || !(text == "Aspen Plus") || string.IsNullOrEmpty(text2))
@@ -1280,17 +1220,17 @@ namespace AspenTech.ExchangerDesign.UserInterface
 			{
 				return;
 			}
-			ConnectionStatus_Caption = Resources.btn_Disconnected;
-			ConnectionStatus_ToolTip = string.Format(Resources.tltp_Disconnected, text);
+			ConnectionStatus_Caption = AspenTech.ExchangerDesign.UserInterface.Properties.Resources.btn_Disconnected;
+			ConnectionStatus_ToolTip = string.Format(AspenTech.ExchangerDesign.UserInterface.Properties.Resources.tltp_Disconnected, text);
 			if (contextRibbon != null)
 			{
 				if (text == "Aspen Plus")
 				{
-					contextRibbon.ConnectionStatusButton.LargeImage = GetImageSource(Resources.OfflineStatus_APLUS_32);
+					contextRibbon.ConnectionStatusButton.LargeImage = GetImageSource(AspenTech.ExchangerDesign.UserInterface.Properties.Resources.OfflineStatus_APLUS_32);
 				}
 				else if (text == "Hysys")
 				{
-					contextRibbon.ConnectionStatusButton.LargeImage = GetImageSource(Resources.OfflineStatus_HYSYS_32);
+					contextRibbon.ConnectionStatusButton.LargeImage = GetImageSource(AspenTech.ExchangerDesign.UserInterface.Properties.Resources.OfflineStatus_HYSYS_32);
 				}
 			}
 			if (_atvApp == null || !(text == "Aspen Plus") || string.IsNullOrEmpty(text2))
@@ -1322,11 +1262,6 @@ namespace AspenTech.ExchangerDesign.UserInterface
 
 		private void ExecuteConnectionStatusCommand(object arg)
 		{
-			//IL_005c: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0061: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0083: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0094: Unknown result type (might be due to invalid IL or missing references)
-			//IL_00aa: Expected O, but got Unknown
 			if (_atvApp != null)
 			{
 				if (_connectionStatusIsChecked.HasValue)
@@ -1339,7 +1274,7 @@ namespace AspenTech.ExchangerDesign.UserInterface
 				}
 			}
 			ShouldUpdateGeomFromDesign(_connectionStatusIsChecked, showDialog: false);
-			((CompositePresentationEvent<ConsoleEventArgs>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(((ScreenContentControl)this).UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<ConsoleEvent>()).Publish(new ConsoleEventArgs
+			UnityContainerExtensions.Resolve<IEventAggregator>(base.UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<ConsoleEvent>().Publish(new ConsoleEventArgs
 			{
 				Event = (ConnectionStatus_IsChecked.Value ? "Connect" : "Disconnect"),
 				ObjectKey = _browserFormSubject.ObjectKey,
@@ -1362,14 +1297,14 @@ namespace AspenTech.ExchangerDesign.UserInterface
 			{
 				if (e.Delta > 0)
 				{
-					((ScreenContentControl)this).Zoom = ((ScreenContentControl)this).Zoom * 1.25;
+					base.Zoom *= 1.25;
 				}
 				else
 				{
-					((ScreenContentControl)this).Zoom = ((ScreenContentControl)this).Zoom * 0.8;
+					base.Zoom *= 0.8;
 				}
 			}
-			((UIElement)this).OnPreviewMouseWheel(e);
+			base.OnPreviewMouseWheel(e);
 		}
 
 		protected override void OnZoomChanged(double oldValue, double newValue)
@@ -1389,7 +1324,7 @@ namespace AspenTech.ExchangerDesign.UserInterface
 				{
 				}
 			}
-			((ScreenContentControl)this).OnZoomChanged(oldValue, newValue);
+			base.OnZoomChanged(oldValue, newValue);
 		}
 
 		protected void OnPropertyChanged(string changed)
@@ -1424,7 +1359,7 @@ namespace AspenTech.ExchangerDesign.UserInterface
 				}
 				return false;
 			}
-			return ((ScreenSubject)this).SatisfiesScreenRequirements(screenSubject);
+			return base.SatisfiesScreenRequirements(screenSubject);
 		}
 	}
 	[Module(ModuleName = "AspenTech.ExchangerDesign.UserInterface.Module")]
@@ -1456,19 +1391,15 @@ namespace AspenTech.ExchangerDesign.UserInterface
 
 		public void Initialize()
 		{
-			//IL_0028: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0032: Expected O, but got Unknown
-			//IL_0049: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0053: Expected O, but got Unknown
 			UnityContainerExtensions.RegisterType<IExchangerDesignFactory, ObjectFactory>(_unityContainer, Array.Empty<InjectionMember>());
-			_screenFactoryCatalog.RegisterScreenFactory((IScreenFactory)new DelegateScreenFactory(EDRScreenFactoryKeys.EDRFormContentFactoryKey, (Func<IUnityContainer, ScreenSubject, ScreenState, ScreenContentControl>)EDRFormContentFactory.CreateScreen));
-			_screenFactoryCatalog.RegisterScreenFactory((IScreenFactory)new DelegateScreenFactory(EDRScreenFactoryKeys.EDRBrowserFactoryKey, (Func<IUnityContainer, ScreenSubject, ScreenState, ScreenContentControl>)EDRFormContentFactory.CreateScreen));
+			_screenFactoryCatalog.RegisterScreenFactory(new DelegateScreenFactory(EDRScreenFactoryKeys.EDRFormContentFactoryKey, EDRFormContentFactory.CreateScreen));
+			_screenFactoryCatalog.RegisterScreenFactory(new DelegateScreenFactory(EDRScreenFactoryKeys.EDRBrowserFactoryKey, EDRFormContentFactory.CreateScreen));
 		}
 
 		private Assembly ExchangeDesignModule_ReflectionOnlyAssemblyResolve(object sender, ResolveEventArgs args)
 		{
-			IEDRActivationParams val = UnityContainerExtensions.Resolve<IEDRActivationParams>(_unityContainer, Array.Empty<ResolverOverride>());
-			if (string.IsNullOrEmpty(val.BJacTop()))
+			IEDRActivationParams iEDRActivationParams = UnityContainerExtensions.Resolve<IEDRActivationParams>(_unityContainer, Array.Empty<ResolverOverride>());
+			if (string.IsNullOrEmpty(iEDRActivationParams.BJacTop()))
 			{
 				return null;
 			}
@@ -1484,7 +1415,7 @@ namespace AspenTech.ExchangerDesign.UserInterface
 			}
 			if (!string.IsNullOrEmpty(text))
 			{
-				string text2 = Path.Combine(val.BJacTop(), text + ".dll");
+				string text2 = Path.Combine(iEDRActivationParams.BJacTop(), text + ".dll");
 				if (File.Exists(text2))
 				{
 					try
@@ -1501,8 +1432,8 @@ namespace AspenTech.ExchangerDesign.UserInterface
 
 		private Assembly ExchangeDesignModule_AssemblyResolve(object sender, ResolveEventArgs args)
 		{
-			IEDRActivationParams val = UnityContainerExtensions.Resolve<IEDRActivationParams>(_unityContainer, Array.Empty<ResolverOverride>());
-			if (string.IsNullOrEmpty(val.BJacTop()))
+			IEDRActivationParams iEDRActivationParams = UnityContainerExtensions.Resolve<IEDRActivationParams>(_unityContainer, Array.Empty<ResolverOverride>());
+			if (string.IsNullOrEmpty(iEDRActivationParams.BJacTop()))
 			{
 				return null;
 			}
@@ -1518,7 +1449,7 @@ namespace AspenTech.ExchangerDesign.UserInterface
 			}
 			if (!string.IsNullOrEmpty(text))
 			{
-				string text2 = Path.Combine(val.BJacTop(), text + ".dll");
+				string text2 = Path.Combine(iEDRActivationParams.BJacTop(), text + ".dll");
 				if (File.Exists(text2))
 				{
 					try
@@ -1568,46 +1499,46 @@ namespace AspenTech.ExchangerDesign.UserInterface
 		public ExchangerDesignRibbon()
 		{
 			InitializeComponent();
-			((FrameworkElement)this).DataContextChanged += ExchangerDesignRibbon_DataContextChanged;
+			base.DataContextChanged += ExchangerDesignRibbon_DataContextChanged;
 		}
 
 		public void SubscribePreviewEvents()
 		{
-			((UIElement)(object)RunModeButtonGroup).PreviewMouseDown += RunModeButtonGroup_PreviewMouseDown;
-			((UIElement)(object)UnitsGroup).PreviewMouseDown += UnitsGoup_PreviewMouseDown;
-			((UIElement)(object)NextToolGroup).PreviewMouseDown += NextToolGroup_PreviewMouseDown;
-			((UIElement)(object)ConnectionStatusGroup).PreviewMouseDown += ConnectionStatusGroup_PreviewMouseDown;
-			((UIElement)(object)ResultsButtonGroup).PreviewMouseDown += ResultsButtonGroup_PreviewMouseDown;
-			((UIElement)(object)ModelSetupButtonGroup).PreviewMouseDown += ModelSetupButtonGroup_PreviewMouseDown;
-			((UIElement)(object)RunModeButtonGroup).PreviewMouseUp += RunModeButtonGroup_PreviewMouseUp;
-			((UIElement)(object)UnitsGroup).PreviewMouseUp += UnitsGroup_PreviewMouseUp;
-			((UIElement)(object)NextToolGroup).PreviewMouseUp += NextToolGroup_PreviewMouseUp;
-			((UIElement)(object)ConnectionStatusGroup).PreviewMouseUp += ConnectionStatusGroup_PreviewMouseUp;
-			((UIElement)(object)ResultsButtonGroup).PreviewMouseUp += ResultsButtonGroup_PreviewMouseUp;
-			((UIElement)(object)ModelSetupButtonGroup).PreviewMouseUp += ModelSetupButtonGroup_PreviewMouseUp;
-			((UIElement)(object)ribbonGroup_Print).PreviewMouseUp += ribbonGroup_Print_PreviewMouseUp;
+			RunModeButtonGroup.PreviewMouseDown += RunModeButtonGroup_PreviewMouseDown;
+			UnitsGroup.PreviewMouseDown += UnitsGoup_PreviewMouseDown;
+			NextToolGroup.PreviewMouseDown += NextToolGroup_PreviewMouseDown;
+			ConnectionStatusGroup.PreviewMouseDown += ConnectionStatusGroup_PreviewMouseDown;
+			ResultsButtonGroup.PreviewMouseDown += ResultsButtonGroup_PreviewMouseDown;
+			ModelSetupButtonGroup.PreviewMouseDown += ModelSetupButtonGroup_PreviewMouseDown;
+			RunModeButtonGroup.PreviewMouseUp += RunModeButtonGroup_PreviewMouseUp;
+			UnitsGroup.PreviewMouseUp += UnitsGroup_PreviewMouseUp;
+			NextToolGroup.PreviewMouseUp += NextToolGroup_PreviewMouseUp;
+			ConnectionStatusGroup.PreviewMouseUp += ConnectionStatusGroup_PreviewMouseUp;
+			ResultsButtonGroup.PreviewMouseUp += ResultsButtonGroup_PreviewMouseUp;
+			ModelSetupButtonGroup.PreviewMouseUp += ModelSetupButtonGroup_PreviewMouseUp;
+			ribbonGroup_Print.PreviewMouseUp += ribbonGroup_Print_PreviewMouseUp;
 		}
 
 		public void UnsubscribePreviewEvents()
 		{
-			((UIElement)(object)RunModeButtonGroup).PreviewMouseDown -= RunModeButtonGroup_PreviewMouseDown;
-			((UIElement)(object)UnitsGroup).PreviewMouseDown -= UnitsGoup_PreviewMouseDown;
-			((UIElement)(object)NextToolGroup).PreviewMouseDown -= NextToolGroup_PreviewMouseDown;
-			((UIElement)(object)ConnectionStatusGroup).PreviewMouseDown -= ConnectionStatusGroup_PreviewMouseDown;
-			((UIElement)(object)ResultsButtonGroup).PreviewMouseDown -= ResultsButtonGroup_PreviewMouseDown;
-			((UIElement)(object)ModelSetupButtonGroup).PreviewMouseDown -= ModelSetupButtonGroup_PreviewMouseDown;
-			((UIElement)(object)RunModeButtonGroup).PreviewMouseUp -= RunModeButtonGroup_PreviewMouseUp;
-			((UIElement)(object)UnitsGroup).PreviewMouseUp -= UnitsGroup_PreviewMouseUp;
-			((UIElement)(object)NextToolGroup).PreviewMouseUp -= NextToolGroup_PreviewMouseUp;
-			((UIElement)(object)ConnectionStatusGroup).PreviewMouseUp -= ConnectionStatusGroup_PreviewMouseUp;
-			((UIElement)(object)ResultsButtonGroup).PreviewMouseUp -= ResultsButtonGroup_PreviewMouseUp;
-			((UIElement)(object)ModelSetupButtonGroup).PreviewMouseUp -= ModelSetupButtonGroup_PreviewMouseUp;
-			((UIElement)(object)ribbonGroup_Print).PreviewMouseUp -= ribbonGroup_Print_PreviewMouseUp;
+			RunModeButtonGroup.PreviewMouseDown -= RunModeButtonGroup_PreviewMouseDown;
+			UnitsGroup.PreviewMouseDown -= UnitsGoup_PreviewMouseDown;
+			NextToolGroup.PreviewMouseDown -= NextToolGroup_PreviewMouseDown;
+			ConnectionStatusGroup.PreviewMouseDown -= ConnectionStatusGroup_PreviewMouseDown;
+			ResultsButtonGroup.PreviewMouseDown -= ResultsButtonGroup_PreviewMouseDown;
+			ModelSetupButtonGroup.PreviewMouseDown -= ModelSetupButtonGroup_PreviewMouseDown;
+			RunModeButtonGroup.PreviewMouseUp -= RunModeButtonGroup_PreviewMouseUp;
+			UnitsGroup.PreviewMouseUp -= UnitsGroup_PreviewMouseUp;
+			NextToolGroup.PreviewMouseUp -= NextToolGroup_PreviewMouseUp;
+			ConnectionStatusGroup.PreviewMouseUp -= ConnectionStatusGroup_PreviewMouseUp;
+			ResultsButtonGroup.PreviewMouseUp -= ResultsButtonGroup_PreviewMouseUp;
+			ModelSetupButtonGroup.PreviewMouseUp -= ModelSetupButtonGroup_PreviewMouseUp;
+			ribbonGroup_Print.PreviewMouseUp -= ribbonGroup_Print_PreviewMouseUp;
 		}
 
 		private void HandlePreviewMouseDownEvent(object sender, MouseButtonEventArgs e)
 		{
-			bool? flag = ((FrameworkElement)this).DataContext.GetType().InvokeMember("IsEDRRunning", BindingFlags.GetProperty, null, ((FrameworkElement)this).DataContext, null) as bool?;
+			bool? flag = base.DataContext.GetType().InvokeMember("IsEDRRunning", BindingFlags.GetProperty, null, base.DataContext, null) as bool?;
 			if (flag.HasValue && flag == true)
 			{
 				e.Handled = true;
@@ -1686,7 +1617,7 @@ namespace AspenTech.ExchangerDesign.UserInterface
 
 		private void ExchangerDesignRibbon_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
 		{
-			if (((FrameworkElement)this).DataContext != null)
+			if (base.DataContext != null)
 			{
 				UpdateRunModeButtons();
 				UpdateModelSetupButtons();
@@ -1698,10 +1629,10 @@ namespace AspenTech.ExchangerDesign.UserInterface
 		{
 			Application.Current.Dispatcher.Invoke(delegate
 			{
-				object obj = ((FrameworkElement)this).DataContext.GetType().InvokeMember("RunModeButtons", BindingFlags.GetProperty, null, ((FrameworkElement)this).DataContext, null);
+				object obj = base.DataContext.GetType().InvokeMember("RunModeButtons", BindingFlags.GetProperty, null, base.DataContext, null);
 				if (obj != null)
 				{
-					((Panel)(object)RunModeButtonGroup).Children.Clear();
+					RunModeButtonGroup.Children.Clear();
 					if (!(bool)obj.GetType().InvokeMember("Initialized", BindingFlags.GetProperty, null, obj, null))
 					{
 						obj.GetType().InvokeMember("Initialize", BindingFlags.InvokeMethod, null, obj, null);
@@ -1710,7 +1641,7 @@ namespace AspenTech.ExchangerDesign.UserInterface
 					RadioButtonTool[] array = (RadioButtonTool[])obj.GetType().InvokeMember("Items", BindingFlags.GetProperty, null, obj, null);
 					for (int i = 0; i < num; i++)
 					{
-						((Panel)(object)RunModeButtonGroup).Children.Add((UIElement)(object)array[i]);
+						RunModeButtonGroup.Children.Add(array[i]);
 					}
 				}
 			});
@@ -1720,18 +1651,18 @@ namespace AspenTech.ExchangerDesign.UserInterface
 		{
 			Application.Current.Dispatcher.Invoke(delegate
 			{
-				object obj = ((FrameworkElement)this).DataContext.GetType().InvokeMember("ModelSetupContent", BindingFlags.GetProperty, null, ((FrameworkElement)this).DataContext, null);
+				object obj = base.DataContext.GetType().InvokeMember("ModelSetupContent", BindingFlags.GetProperty, null, base.DataContext, null);
 				if (obj != null)
 				{
-					((ItemsControl)(object)ModelSetupButtonGroup).Items.Clear();
+					ModelSetupButtonGroup.Items.Clear();
 					if (obj is List<ButtonTool> list)
 					{
 						foreach (ButtonTool item in list)
 						{
-							((ItemsControl)(object)ModelSetupButtonGroup).Items.Add(item);
+							ModelSetupButtonGroup.Items.Add(item);
 						}
 					}
-					((UIElement)(object)ModelSetupButtonGroup).Visibility = Visibility.Visible;
+					ModelSetupButtonGroup.Visibility = Visibility.Visible;
 				}
 			});
 		}
@@ -1740,21 +1671,21 @@ namespace AspenTech.ExchangerDesign.UserInterface
 		{
 			Application.Current.Dispatcher.Invoke(delegate
 			{
-				Type type = ((FrameworkElement)this).DataContext.GetType();
-				object obj = type.InvokeMember("ResultsContent", BindingFlags.GetProperty, null, ((FrameworkElement)this).DataContext, null);
+				Type type = base.DataContext.GetType();
+				object obj = type.InvokeMember("ResultsContent", BindingFlags.GetProperty, null, base.DataContext, null);
 				if (obj != null)
 				{
-					((ItemsControl)(object)ResultsButtonGroup).Items.Clear();
+					ResultsButtonGroup.Items.Clear();
 					if (obj is List<ButtonTool> list)
 					{
 						foreach (ButtonTool item in list)
 						{
-							((ItemsControl)(object)ResultsButtonGroup).Items.Add(item);
+							ResultsButtonGroup.Items.Add(item);
 						}
 					}
-					((UIElement)(object)ResultsButtonGroup).Visibility = Visibility.Visible;
+					ResultsButtonGroup.Visibility = Visibility.Visible;
 				}
-				type.InvokeMember("RaiseCanExecute", BindingFlags.InvokeMethod, null, ((FrameworkElement)this).DataContext, new object[1]);
+				type.InvokeMember("RaiseCanExecute", BindingFlags.InvokeMethod, null, base.DataContext, new object[1]);
 			});
 		}
 
@@ -1775,32 +1706,6 @@ namespace AspenTech.ExchangerDesign.UserInterface
 		[EditorBrowsable(EditorBrowsableState.Never)]
 		void IComponentConnector.Connect(int connectionId, object target)
 		{
-			//IL_0054: Unknown result type (might be due to invalid IL or missing references)
-			//IL_005e: Expected O, but got Unknown
-			//IL_0061: Unknown result type (might be due to invalid IL or missing references)
-			//IL_006b: Expected O, but got Unknown
-			//IL_006e: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0078: Expected O, but got Unknown
-			//IL_007b: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0085: Expected O, but got Unknown
-			//IL_0088: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0092: Expected O, but got Unknown
-			//IL_0095: Unknown result type (might be due to invalid IL or missing references)
-			//IL_009f: Expected O, but got Unknown
-			//IL_00a2: Unknown result type (might be due to invalid IL or missing references)
-			//IL_00ac: Expected O, but got Unknown
-			//IL_00af: Unknown result type (might be due to invalid IL or missing references)
-			//IL_00b9: Expected O, but got Unknown
-			//IL_00bc: Unknown result type (might be due to invalid IL or missing references)
-			//IL_00c6: Expected O, but got Unknown
-			//IL_00c9: Unknown result type (might be due to invalid IL or missing references)
-			//IL_00d3: Expected O, but got Unknown
-			//IL_00d6: Unknown result type (might be due to invalid IL or missing references)
-			//IL_00e0: Expected O, but got Unknown
-			//IL_00e3: Unknown result type (might be due to invalid IL or missing references)
-			//IL_00ed: Expected O, but got Unknown
-			//IL_00f0: Unknown result type (might be due to invalid IL or missing references)
-			//IL_00fa: Expected O, but got Unknown
 			switch (connectionId)
 			{
 			case 1:
@@ -1912,7 +1817,7 @@ namespace AspenTech.ExchangerDesign.UserInterface
 
 		public ScreenSubject CreateScreenSubject(string header, string formKey, string objectType, string objectName, string objectKey, bool consoleMode)
 		{
-			return (ScreenSubject)(object)new EDRFormScreenSubject
+			return new EDRFormScreenSubject
 			{
 				Header = header,
 				FormKey = formKey,
@@ -1926,7 +1831,7 @@ namespace AspenTech.ExchangerDesign.UserInterface
 
 		public ScreenSubject CreateScreenSubject(string header, string formKey, string objectType, string objectName, string objectKey, bool consoleMode, string program_mode)
 		{
-			return (ScreenSubject)(object)new EDRFormScreenSubject
+			return new EDRFormScreenSubject
 			{
 				Header = header,
 				FormKey = formKey,
@@ -1994,7 +1899,7 @@ namespace AspenTech.ExchangerDesign.UserInterface
 				}
 				catch (Exception ex)
 				{
-					UnityContainerExtensions.Resolve<ILoggerFacade>(_container, Array.Empty<ResolverOverride>()).Log(ex.Message, (Category)1, (Priority)1);
+					UnityContainerExtensions.Resolve<ILoggerFacade>(_container, Array.Empty<ResolverOverride>()).Log(ex.Message, Category.Exception, Priority.High);
 					throw;
 				}
 			}
@@ -2006,18 +1911,16 @@ namespace AspenTech.ExchangerDesign.UserInterface
 			eDRDocument = ((IEDRFormFactory)((factory2 is IEDRFormFactory) ? factory2 : null)).EDRDocument;
 			if (controlKey == "Console")
 			{
-				IUnityContainer container = _container;
-				EDRFormScreenSubject obj = new EDRFormScreenSubject
+				FrameworkElement frameworkElement = EDRFormContentFactory.CreateScreen(_container, new EDRFormScreenSubject
 				{
 					ConsoleMode = true,
 					FormKey = "Browser",
-					Header = ""
-				};
-				((ScreenSubject)obj).NavigationGroupKey = "";
-				obj.ObjectKey = objectKey;
-				obj.ObjectName = "";
-				obj.ObjectType = objectType;
-				FrameworkElement frameworkElement = (FrameworkElement)(object)EDRFormContentFactory.CreateScreen(container, (ScreenSubject)(object)obj, null);
+					Header = "",
+					NavigationGroupKey = "",
+					ObjectKey = objectKey,
+					ObjectName = "",
+					ObjectType = objectType
+				}, null);
 				if (runOnStartup && frameworkElement != null)
 				{
 					frameworkElement.Loaded += consoleCtrl_RunOnStartup;
@@ -2115,7 +2018,7 @@ namespace AspenTech.ExchangerDesign.UserInterface
 				}
 				catch (Exception ex)
 				{
-					UnityContainerExtensions.Resolve<ILoggerFacade>(_container, Array.Empty<ResolverOverride>()).Log(ex.Message, (Category)1, (Priority)1);
+					UnityContainerExtensions.Resolve<ILoggerFacade>(_container, Array.Empty<ResolverOverride>()).Log(ex.Message, Category.Exception, Priority.High);
 					throw;
 				}
 			}
@@ -2194,8 +2097,6 @@ namespace AspenTech.ExchangerDesign.UserInterface
 
 		private void SizingProgress_Unloaded(object sender, RoutedEventArgs e)
 		{
-			//IL_0044: Unknown result type (might be due to invalid IL or missing references)
-			//IL_004e: Expected O, but got Unknown
 			//IL_005b: Unknown result type (might be due to invalid IL or missing references)
 			//IL_0065: Expected O, but got Unknown
 			//IL_0072: Unknown result type (might be due to invalid IL or missing references)
@@ -2213,7 +2114,7 @@ namespace AspenTech.ExchangerDesign.UserInterface
 			{
 				if (_isRunning ?? true)
 				{
-					((CompositePresentationEvent<SizeCancelEventArgs>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<SizeCancelEvent>()).Publish(new SizeCancelEventArgs());
+					UnityContainerExtensions.Resolve<IEventAggregator>(UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<SizeCancelEvent>().Publish(new SizeCancelEventArgs());
 					App.RunStarted -= new RunStartedEventHandler(App_RunStarted);
 					App.RunFinished -= new RunFinishedEventHandler(App_RunFinished);
 					App.NewRunMessage -= new NewRunMessageEventHandler(App_NewRunMessage);
@@ -2277,7 +2178,7 @@ namespace AspenTech.ExchangerDesign.UserInterface
 					base.Dispatcher.BeginInvoke((Action)delegate
 					{
 						progress.IsIndeterminate = false;
-						if (Utilities.GetAncestorFromType((DependencyObject)this, typeof(Window), true) is Window window)
+						if (Utilities.GetAncestorFromType(this, typeof(Window), allowSubclassOfType: true) is Window window)
 						{
 							window.Close();
 						}
@@ -2424,7 +2325,7 @@ namespace AspenTech.ExchangerDesign.UserInterface
 					}
 				}
 				progress.IsIndeterminate = false;
-				if (Utilities.GetAncestorFromType((DependencyObject)this, typeof(Window), true) is Window window)
+				if (Utilities.GetAncestorFromType(this, typeof(Window), allowSubclassOfType: true) is Window window)
 				{
 					UserCancelledProgress = false;
 					window.Close();
@@ -2646,5 +2547,3 @@ namespace AspenTech.ExchangerDesign.UserInterface.Properties
 		}
 	}
 }
-You are not using the latest version of the tool, please update.
-Latest version is '11.2.0.10050' (yours is '9.1.0.7988')
