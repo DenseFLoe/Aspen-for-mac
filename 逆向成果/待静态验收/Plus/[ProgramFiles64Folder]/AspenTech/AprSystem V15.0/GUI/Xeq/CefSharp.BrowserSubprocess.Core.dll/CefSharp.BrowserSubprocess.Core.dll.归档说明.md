@@ -11,3 +11,4 @@
 - [正式导出 · cs · d1a2465c373a](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/CefSharp.BrowserSubprocess.Core.dll.cs.txt)（2,299,019 字节）
 - [正式导出 · il · cad241ba7e84](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/CefSharp.BrowserSubprocess.Core.dll.il.txt.%E5%88%86%E7%89%87)（153,564,437 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/CefSharp.BrowserSubprocess.Core.dll.md)

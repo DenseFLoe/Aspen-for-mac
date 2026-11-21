@@ -15,3 +15,4 @@
 - [阶段导出 · c · 7e03e16d9b2b](v0.20261121-w2/%E9%98%B6%E6%AE%B5%E5%AF%BC%E5%87%BA/ppupp.dll~7e03e16d9b2b.c.txt)（2,584,081 字节）
 - [正式导出 · c · 87d1b8d6d63e](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/ppupp.dll~87d1b8d6d63e.c.txt)（2,583,705 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/ppupp.dll.md)

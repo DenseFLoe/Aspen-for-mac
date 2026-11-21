@@ -11,3 +11,4 @@
 - [正式导出 · cs · a75bfbf7dcde](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/SSNetworkSolver.dll.cs.txt)（236,732 字节）
 - [正式导出 · il · cbce14a85a3d](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/SSNetworkSolver.dll.il.txt)（1,222,801 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/SSNetworkSolver.dll.md)

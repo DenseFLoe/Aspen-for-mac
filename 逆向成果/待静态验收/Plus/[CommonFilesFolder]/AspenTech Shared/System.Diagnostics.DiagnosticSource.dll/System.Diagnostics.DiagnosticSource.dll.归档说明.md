@@ -11,3 +11,4 @@
 - [正式导出 · cs · d31661352f83](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/System.Diagnostics.DiagnosticSource.dll.cs.txt)（305,153 字节）
 - [正式导出 · il · 2f8fedd3430c](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/System.Diagnostics.DiagnosticSource.dll.il.txt)（1,246,730 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/System.Diagnostics.DiagnosticSource.dll.md)

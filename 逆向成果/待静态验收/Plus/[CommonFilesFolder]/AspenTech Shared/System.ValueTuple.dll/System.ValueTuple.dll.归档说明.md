@@ -11,3 +11,4 @@
 - [正式导出 · cs · c70023d39f3f](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/System.ValueTuple.dll.cs.txt)（4,257 字节）
 - [正式导出 · il · 1c99b86b7f3d](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/System.ValueTuple.dll.il.txt)（7,832 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/System.ValueTuple.dll.md)

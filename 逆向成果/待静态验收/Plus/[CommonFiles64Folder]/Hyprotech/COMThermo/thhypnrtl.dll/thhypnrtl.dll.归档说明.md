@@ -11,3 +11,4 @@
 - [正式导出 · asm · 264e9be0fd6c](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/thhypnrtl.dll.asm.txt)（5,204,917 字节）
 - [正式导出 · c · 8e4c34fc4761](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/thhypnrtl.dll.c.txt)（3,228,902 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/thhypnrtl.dll.md)

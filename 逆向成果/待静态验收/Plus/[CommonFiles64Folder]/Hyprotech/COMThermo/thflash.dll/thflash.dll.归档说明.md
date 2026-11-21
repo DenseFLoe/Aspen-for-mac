@@ -13,3 +13,4 @@
 - [正式导出 · c · 44415b51f459](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/thflash.dll~44415b51f459.c.txt)（6,639,270 字节）
 - [阶段导出 · c · 5ccdd92e1fcb](v0.20261121-w2/%E9%98%B6%E6%AE%B5%E5%AF%BC%E5%87%BA/thflash.dll~5ccdd92e1fcb.c.txt)（6,639,279 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/thflash.dll.md)

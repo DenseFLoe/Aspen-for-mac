@@ -1,0 +1,20 @@
+# WpfPLDryerBatch.dll
+
+## 0. 摘要
+- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- kind=CLR
+- sha256=c411d238b36f5fb3be7e51d485332b9bd17f41d57997cc309511a361e6bbb3f9
+- size=142376
+- types=32 / methods=358 / pinvoke=0 / fields=294
+- cs_lines=3479
+- 产物: il/WpfPLDryerBatch.dll.il.txt, decompiled/WpfPLDryerBatch.dll.cs.txt
+- 偏离仓库 AGENTS：含完整逆向正文，依据用户 2026-11-21 指令。
+
+## 1. 缺口与待验证
+- 语义层（类型用途/调用约定）未人工复核〔未验证〕
+
+## dumps
+
+dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
+
+- （本件无 dump 产物：failed_analyze / unsupported_non_pe）

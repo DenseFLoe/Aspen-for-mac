@@ -11,3 +11,4 @@
 - [正式导出 · cs · 49d00e2305b1](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/InfragisticsWPF.DataManager.dll.cs.txt)（249,644 字节）
 - [正式导出 · il · cf26a33e4d77](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/InfragisticsWPF.DataManager.dll.il.txt)（1,074,446 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/InfragisticsWPF.DataManager.dll.md)

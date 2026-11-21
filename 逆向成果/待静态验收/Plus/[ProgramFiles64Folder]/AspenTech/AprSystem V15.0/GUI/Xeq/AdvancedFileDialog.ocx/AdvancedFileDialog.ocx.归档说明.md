@@ -11,3 +11,4 @@
 - [正式导出 · cs · dc0303367fe1](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/AdvancedFileDialog.ocx.cs.txt)（558,712 字节）
 - [正式导出 · il · 65a69338bdb5](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/AdvancedFileDialog.ocx.il.txt.%E5%88%86%E7%89%87)（64,712,194 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/AdvancedFileDialog.ocx.md)

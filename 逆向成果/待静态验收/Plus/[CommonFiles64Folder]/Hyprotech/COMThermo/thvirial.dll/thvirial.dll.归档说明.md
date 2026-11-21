@@ -11,3 +11,4 @@
 - [正式导出 · asm · 1ff9dcfa373a](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/thvirial.dll.asm.txt)（5,407,961 字节）
 - [正式导出 · c · 8fbc15f9c01b](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/thvirial.dll.c.txt)（3,316,027 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/thvirial.dll.md)

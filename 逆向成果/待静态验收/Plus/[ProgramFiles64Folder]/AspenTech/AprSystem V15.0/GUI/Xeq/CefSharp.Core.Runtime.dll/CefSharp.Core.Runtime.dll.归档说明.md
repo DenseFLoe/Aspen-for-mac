@@ -11,3 +11,4 @@
 - [正式导出 · cs · 97ec94cb4115](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/CefSharp.Core.Runtime.dll.cs.txt)（3,942,525 字节）
 - [正式导出 · il · f153d8972582](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/CefSharp.Core.Runtime.dll.il.txt.%E5%88%86%E7%89%87)（285,146,131 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/CefSharp.Core.Runtime.dll.md)

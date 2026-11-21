@@ -13,3 +13,4 @@
 - [正式导出 · asm · 92cfb75c6a54](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/zeheatx.dll.asm.txt)（6,872,681 字节）
 - [正式导出 · c · a2a10207eb06](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/zeheatx.dll.c.txt)（2,567,259 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/zeheatx.dll.md)

@@ -11,3 +11,4 @@
 - [正式导出 · cs · 50dc548a800c](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/AspenTech.AspenPlus.WpfAzeoAnalysisGUI.dll.cs.txt)（379,082 字节）
 - [正式导出 · il · 646795a2e52f](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/AspenTech.AspenPlus.WpfAzeoAnalysisGUI.dll.il.txt)（2,145,986 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/AspenTech.AspenPlus.WpfAzeoAnalysisGUI.dll.md)

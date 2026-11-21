@@ -13,3 +13,4 @@
 - [正式导出 · asm · a5f50c5b9263](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/zeeconomic.dll.asm.txt)（2,695,125 字节）
 - [正式导出 · c · d17ceec07ff3](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/zeeconomic.dll.c.txt)（1,547,796 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/zeeconomic.dll.md)

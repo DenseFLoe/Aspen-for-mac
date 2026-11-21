@@ -11,3 +11,4 @@
 - [正式导出 · asm · bd8993b4deca](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/amodel.dll.asm.txt)（114,201 字节）
 - [正式导出 · c · 3fbd6107bf52](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/amodel.dll.c.txt)（77,482 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/amodel.dll.md)

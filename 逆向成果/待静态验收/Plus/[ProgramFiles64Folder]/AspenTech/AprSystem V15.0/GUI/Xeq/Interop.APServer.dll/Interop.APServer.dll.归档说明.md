@@ -13,3 +13,4 @@ C# 导出里有 4 处解码错误注释，涉及局部变量等细节，逐件�
 - [正式导出 · cs · 65e6570e482a](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/Interop.APServer.dll.cs.txt)（166,943 字节）
 - [正式导出 · il · 1212d9fd77ec](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/Interop.APServer.dll.il.txt)（113,610 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/Interop.APServer.dll.md)

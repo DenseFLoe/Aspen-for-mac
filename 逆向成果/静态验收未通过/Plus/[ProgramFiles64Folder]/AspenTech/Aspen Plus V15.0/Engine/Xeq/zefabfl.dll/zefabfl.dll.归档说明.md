@@ -13,3 +13,4 @@
 - [正式导出 · asm · 3cc186f511f4](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/zefabfl.dll.asm.txt)（1,160,019 字节）
 - [正式导出 · c · 05eedd70af68](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/zefabfl.dll.c.txt)（753,466 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/zefabfl.dll.md)

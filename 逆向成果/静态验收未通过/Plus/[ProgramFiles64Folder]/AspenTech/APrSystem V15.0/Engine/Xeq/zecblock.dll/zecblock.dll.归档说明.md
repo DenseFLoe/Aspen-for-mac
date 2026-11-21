@@ -13,3 +13,4 @@
 - [正式导出 · asm · 971788823afc](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/zecblock.dll.asm.txt)（5,343,046 字节）
 - [正式导出 · c · 588a93685248](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/zecblock.dll.c.txt)（2,800,281 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/zecblock.dll.md)

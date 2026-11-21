@@ -11,3 +11,4 @@
 - [正式导出 · cs · b9ad5b0b75df](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/ConvBspfToBkp.exe.cs.txt)（592,719 字节）
 - [正式导出 · il · bc27c7a6d92c](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/ConvBspfToBkp.exe.il.txt)（3,050,347 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/ConvBspfToBkp.exe.md)

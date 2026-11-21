@@ -13,3 +13,4 @@
 - [正式导出 · asm · c09510003e34](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/zeflash2.dll.asm.txt)（1,612,334 字节）
 - [正式导出 · c · bd648d0a282c](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/zeflash2.dll.c.txt)（868,095 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/zeflash2.dll.md)

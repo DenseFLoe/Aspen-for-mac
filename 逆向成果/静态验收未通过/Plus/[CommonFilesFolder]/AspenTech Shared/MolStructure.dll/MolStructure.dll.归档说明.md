@@ -14,3 +14,4 @@
 - [阶段导出 · asm · 7ec1fa044992](v0.20261121-w2/%E9%98%B6%E6%AE%B5%E5%AF%BC%E5%87%BA/MolStructure.dll~7ec1fa044992.asm.txt)（826,504 字节）
 - [正式导出 · c · 292e7c4085eb](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/MolStructure.dll.c.txt)（484,371 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/MolStructure.dll.md)

@@ -11,3 +11,4 @@
 - [正式导出 · cs · 8370f0cbd033](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/InfragisticsWPF.Controls.Charts.XamDataChart.dll.cs.txt)（4,417,633 字节）
 - [正式导出 · il · bf2b01a2a00b](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/InfragisticsWPF.Controls.Charts.XamDataChart.dll.il.txt)（22,985,982 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/InfragisticsWPF.Controls.Charts.XamDataChart.dll.md)

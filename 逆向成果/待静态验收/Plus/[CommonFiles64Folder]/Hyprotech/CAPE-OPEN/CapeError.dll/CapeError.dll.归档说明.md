@@ -11,3 +11,4 @@
 - [正式导出 · cs · 1a293b234305](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/CapeError.dll.cs.txt)（109,872 字节）
 - [正式导出 · il · dc1ee2eb6630](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/CapeError.dll.il.txt)（323,351 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/CapeError.dll.md)

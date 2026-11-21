@@ -11,3 +11,4 @@
 - [正式导出 · asm · 3a834a5b8a00](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/XLPProvider.dll.asm.txt)（198,677 字节）
 - [正式导出 · c · 03f0a85951be](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/XLPProvider.dll.c.txt)（134,869 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/XLPProvider.dll.md)

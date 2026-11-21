@@ -13,3 +13,4 @@
 - [正式导出 · asm · cf2565161f88](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/BPCompressor.dll.asm.txt)（85,536 字节）
 - [正式导出 · c · 5d2fefe60713](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/BPCompressor.dll.c.txt)（53,489 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/BPCompressor.dll.md)

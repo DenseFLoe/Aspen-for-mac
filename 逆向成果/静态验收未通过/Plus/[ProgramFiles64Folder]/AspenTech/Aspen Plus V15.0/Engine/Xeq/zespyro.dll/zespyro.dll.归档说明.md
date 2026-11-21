@@ -13,3 +13,4 @@
 - [正式导出 · asm · 9611b3eae6ea](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/zespyro.dll.asm.txt)（2,436,345 字节）
 - [正式导出 · c · 306b91133af4](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/zespyro.dll.c.txt)（937,525 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/zespyro.dll.md)

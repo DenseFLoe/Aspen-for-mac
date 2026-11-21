@@ -11,3 +11,4 @@
 - [正式导出 · cs · e2d205ddf7b5](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/AspenTech.HtmlHelp.HelpLauncher.dll.cs.txt)（18,188 字节）
 - [正式导出 · il · 2721e871d2b8](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/AspenTech.HtmlHelp.HelpLauncher.dll.il.txt)（84,783 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/AspenTech.HtmlHelp.HelpLauncher.dll.md)

@@ -11,3 +11,4 @@
 - [正式导出 · cs · 1397dc6be917](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/WpfPLRCSTR.dll.cs.txt)（33,767 字节）
 - [正式导出 · il · 92c2cbf61bbb](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/WpfPLRCSTR.dll.il.txt)（171,315 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/WpfPLRCSTR.dll.md)

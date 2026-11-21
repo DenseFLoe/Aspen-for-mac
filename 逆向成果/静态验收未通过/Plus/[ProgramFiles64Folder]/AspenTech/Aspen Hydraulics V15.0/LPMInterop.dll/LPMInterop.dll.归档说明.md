@@ -13,3 +13,4 @@
 - [正式导出 · asm · 9c5f67149119](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/LPMInterop.dll.asm.txt)（4,145,686 字节）
 - [正式导出 · c · 8913849ba605](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/LPMInterop.dll.c.txt)（2,679,598 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/LPMInterop.dll.md)

@@ -11,3 +11,4 @@
 - [正式导出 · asm · 9e2bb2d05d52](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/hxnetintqaplus.dll.asm.txt)（3,610,175 字节）
 - [正式导出 · c · 98ae9e013c4c](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/hxnetintqaplus.dll.c.txt)（2,523,870 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/hxnetintqaplus.dll.md)

@@ -15,3 +15,4 @@
 - [正式导出 · c · aebbba8c0550](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/dualacmexp.dll~aebbba8c0550.c.txt)（2,286,641 字节）
 - [阶段导出 · c · f73923a479f3](v0.20261121-w2/%E9%98%B6%E6%AE%B5%E5%AF%BC%E5%87%BA/dualacmexp.dll~f73923a479f3.c.txt)（2,286,611 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/dualacmexp.dll.md)

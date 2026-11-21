@@ -11,3 +11,4 @@
 - [正式导出 · cs · 56f273d57b97](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/DevExpress.Xpo.v23.2.dll.cs.txt)（4,672,067 字节）
 - [正式导出 · il · 06b4ffd4abcb](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/DevExpress.Xpo.v23.2.dll.il.txt)（19,664,728 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/DevExpress.Xpo.v23.2.dll.md)

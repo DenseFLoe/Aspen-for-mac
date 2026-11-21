@@ -11,3 +11,4 @@
 - [正式导出 · cs · 8a12f5be5fca](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/WpfPLScreen.dll.cs.txt)（39,859 字节）
 - [正式导出 · il · 5b0206d3e8da](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/WpfPLScreen.dll.il.txt)（148,762 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/WpfPLScreen.dll.md)

@@ -28,3 +28,14 @@
 | [codex/20261121-stall-goals](https://github.com/DenseFLoe/Aspen-for-mac/tree/68dca1a8076a330e1876d824011deca5be503cba) | `68dca1a8076a` | 已由主分支历史包含 |
 | [codex/20261121-start-ack](https://github.com/DenseFLoe/Aspen-for-mac/tree/2a2978571990b84bf3a7ea80925d13ab8a575df1) | `2a2978571990` | 已由主分支历史包含 |
 | [main](https://github.com/DenseFLoe/Aspen-for-mac/tree/0f79d396c6fba71c20b45e25a2b6c7f0400299ee) | `0f79d396c6fb` | 本次起点 |
+
+## 整理期间新增的报告
+
+对方又合并了六个报告分支。固定快照是 [`abedefe3a68b`](https://github.com/DenseFLoe/Aspen-for-mac/tree/abedefe3a68bd3dc8d8824459eacf024e0f7a884)。共 1,257 份 W2 报告，其中 1,254 份逐件归档，3 份在[随附报告](../原件清单/随附报告/)中。旧批次原报告保留在各原件的“分支交付”目录。
+
+- [codex/20261121-batch2-w2p1](https://github.com/DenseFLoe/Aspen-for-mac/tree/ab256ee3f68425844336adcdb7984143ac754c7b)
+- [codex/20261121-batch2-w2p2](https://github.com/DenseFLoe/Aspen-for-mac/tree/ac9d82fb80d0da8f13c24c39db9d4473e644d380)
+- [codex/20261121-batch2-w2p3](https://github.com/DenseFLoe/Aspen-for-mac/tree/c36d2eddb848047510606fa4ce0d9705ad4bbc1c)
+- [codex/20261121-batch2-w2p4](https://github.com/DenseFLoe/Aspen-for-mac/tree/d227b812135a7941c5c8ac80999b2ab4d90548d7)
+- [codex/20261121-batch2-w2p5](https://github.com/DenseFLoe/Aspen-for-mac/tree/8068b4cc9e9b0beba954766af23dd46e6890a78c)
+- [codex/20261121-batch2-w2p6](https://github.com/DenseFLoe/Aspen-for-mac/tree/9665b5ee218dc456139c9437676cd335a14d79d3)

@@ -13,3 +13,4 @@
 - [正式导出 · asm · 39af7a174925](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/ATODCombo.ocx.asm.txt)（498,436 字节）
 - [正式导出 · c · 8ff405a5a7fd](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/ATODCombo.ocx.c.txt)（226,599 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/ATODCombo.ocx.md)

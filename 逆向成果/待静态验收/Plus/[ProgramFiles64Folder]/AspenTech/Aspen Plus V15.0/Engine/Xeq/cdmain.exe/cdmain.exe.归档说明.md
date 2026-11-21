@@ -11,3 +11,4 @@
 - [正式导出 · asm · a2a11b55da3b](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/cdmain.exe.asm.txt)（227,959 字节）
 - [正式导出 · c · 919746489dcb](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/cdmain.exe.c.txt)（170,984 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/cdmain.exe.md)

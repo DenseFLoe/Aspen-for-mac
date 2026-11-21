@@ -13,3 +13,4 @@
 - [正式导出 · cs · bab9097c2da5](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/Interop.SECSERVEROBJECTLib.dll.cs.txt)（81,002 字节）
 - [正式导出 · il · 481e5b4f8407](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/Interop.SECSERVEROBJECTLib.dll.il.txt)（45,584 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/Interop.SECSERVEROBJECTLib.dll.md)

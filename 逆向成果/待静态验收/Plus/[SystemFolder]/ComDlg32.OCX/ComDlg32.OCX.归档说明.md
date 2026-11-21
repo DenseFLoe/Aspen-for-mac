@@ -11,3 +11,4 @@
 - [正式导出 · asm · 9a1f3a7d7fce](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/ComDlg32.OCX.asm.txt)（662,745 字节）
 - [正式导出 · c · 6f1483d813ae](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/ComDlg32.OCX.c.txt)（345,242 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/ComDlg32.OCX.md)

@@ -1,38 +1,20 @@
-# NewBinary1.8E5F092F_8CAB_4691_A00A_8E95E7763A59 静态复核报告（Aspen-Plus / 全程序集 IL + C# 反编译）
-
-样本别名：`NewBinary1.8E5F092F_8CAB_4691_A00A_8E95E7763A59`（清单 out/B2/manifest-b2.csv，原件只读、未上传）
-来源：分支 codex/waiting-for-tietoumao｜自算 sha256 a42727aa56d23e83b0bc5903af33c7bcec635bd4e12fb835d7d172fbc9b918bd｜台账 B2-B wave1b
-落点：`01-completed/Aspen-Plus/Binary/`（相对 `out/R1`）｜定位规则：`local-rel`
-
-标签约定：〔实测〕= 本轮独立实测（有命令与原始输出）；〔待验证〕= 尚未取得证据。
+# NewBinary1.8E5F092F_8CAB_4691_A00A_8E95E7763A59
 
 ## 0. 摘要
+- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- kind=CLR
+- sha256=a42727aa56d23e83b0bc5903af33c7bcec635bd4e12fb835d7d172fbc9b918bd
+- size=28096
+- types=3 / methods=10 / pinvoke=0 / fields=2
+- cs_lines=249
+- 产物: il/NewBinary1.8E5F092F_8CAB_4691_A00A_8E95E7763A59.il.txt, decompiled/NewBinary1.8E5F092F_8CAB_4691_A00A_8E95E7763A59.cs.txt
+- 偏离仓库 AGENTS：含完整逆向正文，依据用户 2026-11-21 指令。
 
-| 项目 | 结果 | 依据 |
-| --- | --- | --- |
-| 实际样本 | 28,096 字节，SHA-256 `a42727aa56d23e83b0bc5903af33c7bcec635bd4e12fb835d7d172fbc9b918bd` | 〔实测〕自算 |
-| IL 清单 | `il/NewBinary1.8E5F092F_8CAB_4691_A00A_8E95E7763A59.il.txt`，390 行（il_dump.py 全量 stdout） | 〔实测〕 |
-| 反编译 | `decompiled/NewBinary1.8E5F092F_8CAB_4691_A00A_8E95E7763A59.cs.txt`，249 行（ILSpy ilspycmd 全量 stdout） | 〔实测〕 |
-| 状态 | `status=processed` | 〔实测〕 |
+## 1. 缺口与待验证
+- 语义层（类型用途/调用约定）未人工复核〔未验证〕
 
-含完整逆向正文，依据：用户 2026-11-20 指令，偏离仓库 AGENTS 该条
+## dumps
 
-## 1. 样本与哈希
+dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-| 项 | 值 | 标签 |
-| --- | --- | --- |
-| 文件名 | `NewBinary1.8E5F092F_8CAB_4691_A00A_8E95E7763A59` | 〔实测〕 |
-| 字节数 | 28,096 | 〔实测〕 |
-| SHA-256（本轮自算） | `a42727aa56d23e83b0bc5903af33c7bcec635bd4e12fb835d7d172fbc9b918bd` | 〔实测〕 |
-| 清单声明 SHA-256 | `a42727aa56d23e83b0bc5903af33c7bcec635bd4e12fb835d7d172fbc9b918bd` | 〔实测〕一致 |
-| 产品映射 | `Plus` → `Aspen-Plus` | 〔实测〕 |
-
-## 2. 产物
-
-- `il/NewBinary1.8E5F092F_8CAB_4691_A00A_8E95E7763A59.il.txt`（390 行）
-- `decompiled/NewBinary1.8E5F092F_8CAB_4691_A00A_8E95E7763A59.cs.txt`（249 行）
-
-## 3. 缺口
-
-- 运行期行为、强名/签名有效性未验证〔待验证〕；本轮仅静态 IL 与 C# 反编译。
-
+- （本件无 dump 产物：failed_analyze / unsupported_non_pe）

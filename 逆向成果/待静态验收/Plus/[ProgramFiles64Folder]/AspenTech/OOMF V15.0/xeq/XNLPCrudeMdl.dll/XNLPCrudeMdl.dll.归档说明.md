@@ -13,3 +13,4 @@
 - [正式导出 · c · bcdc389e0ee0](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/XNLPCrudeMdl.dll~bcdc389e0ee0.c.txt)（2,699,118 字节）
 - [阶段导出 · c · fde7e354780c](v0.20261121-w2/%E9%98%B6%E6%AE%B5%E5%AF%BC%E5%87%BA/XNLPCrudeMdl.dll~fde7e354780c.c.txt)（2,700,706 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/XNLPCrudeMdl.dll.md)

@@ -11,3 +11,4 @@
 - [正式导出 · cs · b74c04e4db7d](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/WpfPLBatchSep.dll.cs.txt)（451,266 字节）
 - [正式导出 · il · 855c3ed1551c](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/WpfPLBatchSep.dll.il.txt)（2,419,960 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/WpfPLBatchSep.dll.md)

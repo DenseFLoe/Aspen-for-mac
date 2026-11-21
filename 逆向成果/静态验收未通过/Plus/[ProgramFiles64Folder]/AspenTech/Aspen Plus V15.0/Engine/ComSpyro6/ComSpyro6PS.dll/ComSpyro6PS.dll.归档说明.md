@@ -13,3 +13,4 @@
 - [正式导出 · asm · e5c62e56f936](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/ComSpyro6PS.dll.asm.txt)（43,922 字节）
 - [正式导出 · c · 11d70fc4beb9](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/ComSpyro6PS.dll.c.txt)（26,093 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/ComSpyro6PS.dll.md)

@@ -13,3 +13,4 @@
 - [正式导出 · asm · ecb2e8aa949b](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/zesem1.dll.asm.txt)（1,438,073 字节）
 - [正式导出 · c · 7fc610f76ed4](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/zesem1.dll.c.txt)（982,931 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/zesem1.dll.md)

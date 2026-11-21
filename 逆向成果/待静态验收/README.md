@@ -1,6 +1,6 @@
 # 待静态验收
 
-已有交付，完整性和原版行为仍待核对。本次整理共 962 个原件。按产品和原安装路径找到同名文件夹。
+共 961 件。已有代码，等待逐件核对。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -489,7 +489,6 @@
 | [Infragistics4.Win.UltraWinGrid.ExcelExport.v15.1.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/Infragistics4.Win.UltraWinGrid.ExcelExport.v15.1.dll/) | Plus | `cbce9bbf1fd4` |
 | [Infragistics4.Win.UltraWinGrid.v15.1.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/Infragistics4.Win.UltraWinGrid.v15.1.dll/) | Plus | `b4c0a16a790c` |
 | [Infragistics4.Win.UltraWinGrid.v21.1.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/Infragistics4.Win.UltraWinGrid.v21.1.dll/) | Plus | `bff0346d0576` |
-| [Infragistics4.Win.UltraWinListView.v15.1.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/Infragistics4.Win.UltraWinListView.v15.1.dll/) | Plus | `e1baedbb779e` |
 | [Infragistics4.Win.UltraWinStatusBar.v21.1.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/Infragistics4.Win.UltraWinStatusBar.v21.1.dll/) | Plus | `bed45f840be3` |
 | [Infragistics4.Win.UltraWinTabbedMdi.v21.1.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/Infragistics4.Win.UltraWinTabbedMdi.v21.1.dll/) | Plus | `97c91906728e` |
 | [Infragistics4.Win.UltraWinTabControl.v15.1.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/Infragistics4.Win.UltraWinTabControl.v15.1.dll/) | Plus | `dbd81a245c1b` |

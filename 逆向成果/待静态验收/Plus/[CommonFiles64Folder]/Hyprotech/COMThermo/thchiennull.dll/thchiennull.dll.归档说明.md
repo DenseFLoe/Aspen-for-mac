@@ -11,3 +11,4 @@
 - [正式导出 · asm · 6a9f09f15ca3](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/thchiennull.dll.asm.txt)（5,349,817 字节）
 - [正式导出 · c · 51cf1f6abe8c](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/thchiennull.dll.c.txt)（3,316,197 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/thchiennull.dll.md)

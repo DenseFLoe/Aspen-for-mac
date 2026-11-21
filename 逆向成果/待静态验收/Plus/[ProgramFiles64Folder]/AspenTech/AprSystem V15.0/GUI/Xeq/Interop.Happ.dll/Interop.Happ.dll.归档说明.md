@@ -13,3 +13,4 @@ C# 导出里有 16 处解码错误注释，涉及局部变量等细节，逐件�
 - [正式导出 · cs · f592d67ca897](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/Interop.Happ.dll.cs.txt)（315,214 字节）
 - [正式导出 · il · a674caaf2675](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/Interop.Happ.dll.il.txt)（300,704 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/Interop.Happ.dll.md)

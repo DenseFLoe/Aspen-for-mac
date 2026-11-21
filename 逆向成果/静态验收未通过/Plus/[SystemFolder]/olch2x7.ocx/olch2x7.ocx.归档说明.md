@@ -15,3 +15,4 @@
 - [正式导出 · c · e2cdb7c62518](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/olch2x7.ocx~e2cdb7c62518.c.txt)（5,310,460 字节）
 - [阶段导出 · c · f775a7cb2607](v0.20261121-w2/%E9%98%B6%E6%AE%B5%E5%AF%BC%E5%87%BA/olch2x7.ocx~f775a7cb2607.c.txt)（5,310,454 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/olch2x7.ocx.md)

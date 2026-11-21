@@ -11,3 +11,4 @@
 - [正式导出 · cs · 22350437709c](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/AspenTech.AspenCxs.ExportToExcel.dll.cs.txt)（189,895 字节）
 - [正式导出 · il · e21c0d7a6879](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/AspenTech.AspenCxs.ExportToExcel.dll.il.txt)（836,271 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/AspenTech.AspenCxs.ExportToExcel.dll.md)

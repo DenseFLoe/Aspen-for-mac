@@ -11,3 +11,4 @@
 - [正式导出 · asm · e21f4ca05de2](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/thuniquac.dll.asm.txt)（5,276,637 字节）
 - [正式导出 · c · cce868060299](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/thuniquac.dll.c.txt)（3,260,945 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/thuniquac.dll.md)

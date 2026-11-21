@@ -11,3 +11,4 @@
 - [正式导出 · cs · 3ca7db8b35b4](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/Infragistics4.Documents.Reports.v21.1.dll.cs.txt)（2,631,308 字节）
 - [正式导出 · il · 35d3e211e1da](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/Infragistics4.Documents.Reports.v21.1.dll.il.txt)（13,270,532 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/Infragistics4.Documents.Reports.v21.1.dll.md)

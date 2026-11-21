@@ -11,3 +11,4 @@
 - [正式导出 · asm · 9cecd285e37c](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/ppgammai.dll.asm.txt)（227,693 字节）
 - [正式导出 · c · eb9ecab9cc57](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/ppgammai.dll.c.txt)（139,289 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/ppgammai.dll.md)

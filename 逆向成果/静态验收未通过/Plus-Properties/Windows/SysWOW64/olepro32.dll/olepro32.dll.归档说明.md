@@ -15,3 +15,4 @@
 - [正式导出 · asm · b2e774d715a9](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/olepro32.dll.asm.txt)（671,099 字节）
 - [正式导出 · c · 984a417c16cf](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/olepro32.dll.c.txt)（368,584 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/olepro32.dll.md)

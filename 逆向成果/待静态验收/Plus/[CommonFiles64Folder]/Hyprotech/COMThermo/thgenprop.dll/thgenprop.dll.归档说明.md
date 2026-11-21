@@ -11,3 +11,4 @@
 - [正式导出 · asm · 1f64b733652b](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/thgenprop.dll.asm.txt)（4,878,834 字节）
 - [正式导出 · c · 38db61fd9913](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/thgenprop.dll.c.txt)（3,034,033 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/thgenprop.dll.md)

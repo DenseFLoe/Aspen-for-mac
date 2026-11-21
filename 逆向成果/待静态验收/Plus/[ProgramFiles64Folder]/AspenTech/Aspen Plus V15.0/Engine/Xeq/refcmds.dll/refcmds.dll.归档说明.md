@@ -12,3 +12,4 @@
 - [阶段导出 · c · 2b0ee43e09d4](v0.20261121-w2/%E9%98%B6%E6%AE%B5%E5%AF%BC%E5%87%BA/refcmds.dll~2b0ee43e09d4.c.txt)（600,106 字节）
 - [正式导出 · c · f2dbcbc7eef0](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/refcmds.dll~f2dbcbc7eef0.c.txt)（600,108 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/refcmds.dll.md)

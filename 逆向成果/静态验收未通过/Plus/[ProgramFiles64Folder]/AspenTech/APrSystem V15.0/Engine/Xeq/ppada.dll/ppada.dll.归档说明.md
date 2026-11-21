@@ -13,3 +13,4 @@
 - [正式导出 · asm · 7c7587aa090c](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/ppada.dll.asm.txt)（4,947,671 字节）
 - [正式导出 · c · e493a1d346b7](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/ppada.dll.c.txt)（2,099,130 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/ppada.dll.md)

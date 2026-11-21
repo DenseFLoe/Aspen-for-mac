@@ -11,3 +11,4 @@
 - [正式导出 · asm · bf6fd68eb423](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/ppedl.dll.asm.txt)（865,864 字节）
 - [正式导出 · c · 63f24d517263](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/ppedl.dll.c.txt)（613,687 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/ppedl.dll.md)

@@ -11,3 +11,4 @@
 - [正式导出 · cs · a797d6c66584](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/AspenTech.InContextGuidance.ExchangeIntegration.dll.cs.txt)（21,040 字节）
 - [正式导出 · il · 7f75f4d3ec3c](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/AspenTech.InContextGuidance.ExchangeIntegration.dll.il.txt)（94,219 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/AspenTech.InContextGuidance.ExchangeIntegration.dll.md)

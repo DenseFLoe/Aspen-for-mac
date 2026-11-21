@@ -11,3 +11,4 @@
 - [正式导出 · asm · 0af70d68a711](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/zemakeup.dll.asm.txt)（422,909 字节）
 - [正式导出 · c · 0437633bd0e9](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/zemakeup.dll.c.txt)（315,085 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/zemakeup.dll.md)

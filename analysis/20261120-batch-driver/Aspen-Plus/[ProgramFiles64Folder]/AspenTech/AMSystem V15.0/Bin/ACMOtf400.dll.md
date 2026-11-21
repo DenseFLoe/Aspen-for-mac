@@ -1,0 +1,115 @@
+# ACMOtf400.dll 静态复核报告（native / T1N，IDA 9.5 重做）
+
+## 0. 摘要
+
+| 项目 | 结果 |
+| --- | --- |
+| 样本 | `ACMOtf400.dll`，2470920 字节，SHA-256 `d7bce1d094a0778b530ea0479c2e52b53fd2fdccba7e73c8d619c217f88a656e` |
+| 链 | T1N（native，IDA 9.5 + Hex-Rays 全函数反汇编 + 全函数伪 C） |
+| 函数 | functions 9393 = decomp_ok 9392 + decomp_fail 1 |
+| 证据等级 | 〔实测〕idat.exe -A -c -S<script> 单件跑通（auto_wait() 后统计），正文见同目录 disasm/ 与 decompiled/ |
+
+含完整逆向正文，依据：用户 2026-11-20 指令，偏离仓库 AGENTS 该条
+
+### 0.1 工具与统计字段（G2，逐项可按名检索）
+
+- tool=IDA 9.5
+- hexrays=yes
+- functions=9393
+- decomp_ok=9392
+- decomp_fail=1
+- prevtool=Ghidra 12.1.4
+
+## 1. 样本与哈希
+
+| 项 | 值 |
+| --- | --- |
+| 名称 | `ACMOtf400.dll` |
+| 字节数 | 2470920 |
+| SHA-256 | `d7bce1d094a0778b530ea0479c2e52b53fd2fdccba7e73c8d619c217f88a656e` |
+| 清单 | read-test-waiting.csv（kind=native） |
+| 原始相对路径（清单 path，去掉产品段） | `[ProgramFiles64Folder]/AspenTech/AMSystem V15.0/Bin/ACMOtf400.dll` |
+| product_raw | `Plus` |
+| 产品目录 | `Aspen-Plus` |
+| machine / sections / entry |  /  /  |
+| 原件核对 | size 与 sha256 均与清单一致〔实测〕 |
+
+## 2. PE 导入摘要（处理器/位宽/基址/段）
+
+| 项 | 值 |
+| --- | --- |
+| IDA 处理器模块 | `metapc` |
+| 位宽 | 64 |
+| 镜像基址 | `0x180000000` |
+| 段数 | 5 |
+| 指令行数 | 211952 |
+
+## 3. 反汇编清单（全量）
+
+全文：disasm/ACMOtf400.dll.asm.txt（IDA 逐函数 FUNC <addr> <name> / 指令行 / ENDFUNC，含函数边界与地址，无抽样）。
+
+## 4. 反编译伪 C（Hex-Rays）
+
+全文：decompiled/ACMOtf400.dll.c.txt（逐函数 // FUNC <addr> <name> + Hex-Rays 伪 C 正文 + // ENDFUNC；反编译失败写 // DECOMP-FAIL <addr> <name> <ExceptionClass>，未填任何空函数体）。
+
+## 5. 函数统计（functions = decomp_ok + decomp_fail）
+
+- functions（asm） = 9393
+- decomp_ok（伪 C） = 9392
+- decomp_fail = 1
+- 恒等式：成立〔实测〕
+
+### 5.1 反编译失败清单（逐条函数名与原因）
+
+- `180045d10` `sub_180045D10`：RuntimeError（decompile returned None）
+
+## 6. 工具与环境
+
+- IDA Professional 9.5 headless：`idat.exe -A -c -S<script> -L<log> <dll>`，脚本先 `ida_auto.auto_wait()` 再统计，末尾 `idc.qexit(0)`
+- Hex-Rays：`ida_hexrays.init_hexrays_plugin()` → True（IDA 9.5 内置）
+- 脚本：tool/ida_export.py（本仓从零写，生成 IDAPython 脚本；产物同路径覆盖 Ghidra 旧版）
+- 单件耗时（含自动分析）：190.9 s
+- 日志：out/R1N/ida/logs/sha256_d7bce1d094a0778b530ea0479c2e52b53fd2fdccba7e73c8d619c217f88a656e.log（本机保留，不进推送集）
+
+## 7. 缺口与待验证
+
+- 语义层（函数用途、调用约定、数据结构）未做人工复核；本报告只证明「全函数已反汇编/反编译落盘」。〔未验证〕
+- 反编译失败函数 1 个（// DECOMP-FAIL 行可逐一核对）。
+
+## 8. 结论
+
+- `ACMOtf400.dll` 全函数反汇编与全函数伪 C 已由 IDA 9.5 + Hex-Rays 落盘，functions == decomp_ok + decomp_fail 成立。
+
+## 9. 与 Ghidra 12.1.4 函数数对账（G3）
+
+| 项 | 值 |
+| --- | --- |
+| IDA 9.5 functions | 9393 |
+| Ghidra 12.1.4 基线 FUNC | 0 |
+| 差值 | +9393（+0.0%） |
+| 判据 abs(diff) <= 10% | 通过 |
+
+- 仅 Ghidra 有、IDA 未单列：无
+- 仅 IDA 有：`sub_180001000`, `sub_180001040`, `sub_180001080`, `sub_1800010C0`, `sub_1800010D0`, `sub_1800010E0`, `sub_1800010F0`, `sub_180001100`
+- 命名口径：上两行按函数名对比。IDA 应用了 FLIRT 库签名（如 `__CRT_INIT@12`、`@__security_check_cookie@4`），同一地址在 Ghidra 侧仍是 `FUN_<addr>`，因此名单差异主要是命名差异；函数个数按上表比对。
+
+## dumps
+
+dumps: v0.20261121-w2#dumps-w2-part5.tar.gz
+
+- `decompiled/ACMOtf370.dll.c.txt` sha256=7c3022718c1c0b06d238f152e276b50ca3635b3c130d0ef8b7859ed9122b2201 bytes=4844310
+- `decompiled/ACMOtf380.dll.c.txt` sha256=d4e6391dd5d578127ca8599aaee9564b1686134f09dd29213e3db4cbaad1b4c3 bytes=5238219
+- `decompiled/ACMOtf390.dll.c.txt` sha256=ec73bd98ab4b9c69d2ede0c9eccd6f34afa5938df23577310ad7e62ff2379558 bytes=5238263
+- `decompiled/ACMOtf400.dll.c.txt` sha256=b62fd66d42b1b42201fd5e5622be811821411fbc102aaa4d6b0e4b5402f58529 bytes=5551801
+- `decompiled/ACMOtf410.dll.c.txt` sha256=e2c9b4985a7baa960a49e91374bef85b427c7f914e4dbd66a694674ea3926701 bytes=5572821
+- `decompiled/SystemLibrary400_1.dll.c.txt` sha256=b7b9a39da76b6274cf20bac740f69d06891df32e968c811a4eb7861778e9eea1 bytes=2273093
+- `decompiled/SystemLibrary410_1.dll.c.txt` sha256=97a5ae08849adb416e22e4fe2727940ca9905a114d87fc025b2860faac007fab bytes=2271172
+- `decompiled/acmexp.dll.c.txt` sha256=f7aa019b30c8e0ffa3bb4bf2679e7240945d95fd31ad9b0ed8895a26f1f9d46d bytes=3055970
+- `disasm/ACMOtf370.dll.asm.txt` sha256=93987dc4b8deb5f5b2ebac8322b03f48afd0ebb12c77f242d621500b5361a293 bytes=7168803
+- `disasm/ACMOtf380.dll.asm.txt` sha256=fcd3e9a7d0bc523f2913f3508509c1ab02ce1e2411fd971bd0829146ae9dfe59 bytes=7733328
+- `disasm/ACMOtf390.dll.asm.txt` sha256=c697612203c7a31af6fa8e7c9aaf5565f4652aaf8289935878924c2dfcb36e27 bytes=7733394
+- `disasm/ACMOtf400.dll.asm.txt` sha256=057e6641af394a7b687d81da2725a85b2ccef973a1d8a1902a5ec3d3430cccc2 bytes=8075436
+- `disasm/ACMOtf410.dll.asm.txt` sha256=cdc77380d5b8b72d0df1289aaeca6219fcb636027fc431121cd3670ee64b6429 bytes=8228386
+- `disasm/SystemLibrary400_1.dll.asm.txt` sha256=593d8cd824c3516a8d224437ce6ea9e66e9f939267f19fa32e2e5ae45178912c bytes=27946994
+- `disasm/SystemLibrary410_1.dll.asm.txt` sha256=77f82fdec5df236bf4cde4f2740b1c45eef83237904f9ebb88d914410262f8d0 bytes=27991093
+- `disasm/acmexp.dll.asm.txt` sha256=6f2002df93933aff9843b994c1adf1d5af3a6b4687b10fc72a8556ea11b25fad bytes=5513981

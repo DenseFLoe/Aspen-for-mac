@@ -13,3 +13,4 @@
 - [阶段导出 · c · 1c966552b25b](v0.20261121-w2/%E9%98%B6%E6%AE%B5%E5%AF%BC%E5%87%BA/recdefdll.dll~1c966552b25b.c.txt)（1,252,902 字节）
 - [正式导出 · c · c422605445a6](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/recdefdll.dll~c422605445a6.c.txt)（1,252,539 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/recdefdll.dll.md)

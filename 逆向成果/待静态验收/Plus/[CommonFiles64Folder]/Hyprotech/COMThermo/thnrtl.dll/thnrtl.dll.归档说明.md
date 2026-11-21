@@ -11,3 +11,4 @@
 - [正式导出 · asm · 46f2482b8733](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/thnrtl.dll.asm.txt)（5,286,691 字节）
 - [正式导出 · c · 4a683736c867](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/thnrtl.dll.c.txt)（3,268,500 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/thnrtl.dll.md)

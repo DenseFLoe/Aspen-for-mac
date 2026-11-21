@@ -11,3 +11,4 @@
 - [正式导出 · cs · 82367b52f70d](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/Xceed.Compression.dll.cs.txt)（332,003 字节）
 - [正式导出 · il · ab2072dcee0b](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/Xceed.Compression.dll.il.txt)（1,584,704 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/Xceed.Compression.dll.md)

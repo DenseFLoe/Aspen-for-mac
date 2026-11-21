@@ -11,3 +11,4 @@
 - [正式导出 · cs · 84f6d36ad5d8](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/AdsAccessor.dll.cs.txt)（3,277,215 字节）
 - [正式导出 · il · 1686b305d14c](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/AdsAccessor.dll.il.txt)（14,230,906 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/AdsAccessor.dll.md)

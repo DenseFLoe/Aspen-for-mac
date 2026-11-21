@@ -11,3 +11,4 @@
 - [正式导出 · cs · 2fec1682c681](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/Microsoft.Extensions.Logging.dll.cs.txt)（54,341 字节）
 - [正式导出 · il · a3c20c87c53d](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/Microsoft.Extensions.Logging.dll.il.txt)（224,385 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/Microsoft.Extensions.Logging.dll.md)

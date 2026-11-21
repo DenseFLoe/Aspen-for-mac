@@ -11,3 +11,4 @@
 - [正式导出 · asm · 7622d429ed92](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/zeccd.dll.asm.txt)（813,867 字节）
 - [正式导出 · c · 154525b25d40](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/zeccd.dll.c.txt)（517,564 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/zeccd.dll.md)

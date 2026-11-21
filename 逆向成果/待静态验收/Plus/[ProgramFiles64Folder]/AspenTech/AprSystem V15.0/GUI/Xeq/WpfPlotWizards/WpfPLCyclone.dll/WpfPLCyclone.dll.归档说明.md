@@ -11,3 +11,4 @@
 - [正式导出 · cs · 730a6869f3c6](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/WpfPLCyclone.dll.cs.txt)（22,804 字节）
 - [正式导出 · il · 8179e2a5d0ac](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/WpfPLCyclone.dll.il.txt)（66,366 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/WpfPLCyclone.dll.md)

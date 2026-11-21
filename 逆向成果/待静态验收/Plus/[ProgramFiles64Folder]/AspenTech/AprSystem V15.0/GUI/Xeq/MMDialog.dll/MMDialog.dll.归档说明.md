@@ -13,3 +13,4 @@
 - [阶段导出 · c · adab67c9d01f](v0.20261121-w2/%E9%98%B6%E6%AE%B5%E5%AF%BC%E5%87%BA/MMDialog.dll~adab67c9d01f.c.txt)（358,347 字节）
 - [正式导出 · c · c8ccd19425a9](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/MMDialog.dll~c8ccd19425a9.c.txt)（357,099 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/MMDialog.dll.md)

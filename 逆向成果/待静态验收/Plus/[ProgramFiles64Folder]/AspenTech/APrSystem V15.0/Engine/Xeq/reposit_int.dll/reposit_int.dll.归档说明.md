@@ -11,3 +11,4 @@
 - [正式导出 · asm · 40314a613ff7](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/reposit_int.dll.asm.txt)（414,795 字节）
 - [正式导出 · c · 65848a0b9286](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/reposit_int.dll.c.txt)（203,615 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/reposit_int.dll.md)

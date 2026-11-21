@@ -13,3 +13,4 @@
 - [正式导出 · asm · c0a4d2955f77](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/zepump.dll.asm.txt)（1,379,295 字节）
 - [正式导出 · c · 7ac6f286d6b1](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/zepump.dll.c.txt)（653,449 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/zepump.dll.md)

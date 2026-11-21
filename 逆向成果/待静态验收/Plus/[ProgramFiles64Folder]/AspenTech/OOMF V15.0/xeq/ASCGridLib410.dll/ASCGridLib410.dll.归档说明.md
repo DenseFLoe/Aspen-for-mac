@@ -13,3 +13,4 @@ C# 导出里有 13 处解码错误注释，涉及局部变量等细节，逐件�
 - [正式导出 · cs · 44365165395e](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/ASCGridLib410.dll.cs.txt)（46,064 字节）
 - [正式导出 · il · 0ad3a8d5e88a](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/ASCGridLib410.dll.il.txt)（78,854 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/ASCGridLib410.dll.md)

@@ -11,3 +11,4 @@
 - [正式导出 · asm · 794e5e29ef86](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/pppuredippr.dll.asm.txt)（54,496 字节）
 - [正式导出 · c · 3cfb2dc97281](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/pppuredippr.dll.c.txt)（35,457 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/pppuredippr.dll.md)

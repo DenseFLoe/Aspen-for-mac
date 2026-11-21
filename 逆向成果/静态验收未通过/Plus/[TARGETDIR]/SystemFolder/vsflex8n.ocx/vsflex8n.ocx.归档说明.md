@@ -15,3 +15,4 @@
 - [正式导出 · c · 67c5aadca817](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/vsflex8n.ocx~67c5aadca817.c.txt)（2,213,373 字节）
 - [阶段导出 · c · 6d00b56fc4e6](v0.20261121-w2/%E9%98%B6%E6%AE%B5%E5%AF%BC%E5%87%BA/vsflex8n.ocx~6d00b56fc4e6.c.txt)（2,213,877 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/vsflex8n.ocx.md)

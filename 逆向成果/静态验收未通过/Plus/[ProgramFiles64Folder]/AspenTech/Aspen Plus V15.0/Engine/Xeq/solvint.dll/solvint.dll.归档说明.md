@@ -13,3 +13,4 @@
 - [正式导出 · asm · 6cde35b09c76](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/solvint.dll.asm.txt)（316,852 字节）
 - [正式导出 · c · 23e2d5678e34](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/solvint.dll.c.txt)（226,254 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/solvint.dll.md)

@@ -13,3 +13,4 @@
 - [正式导出 · asm · ab3d900da030](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/pppetromod.dll.asm.txt)（1,273,828 字节）
 - [正式导出 · c · d093bf87684a](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/pppetromod.dll.c.txt)（720,201 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/pppetromod.dll.md)

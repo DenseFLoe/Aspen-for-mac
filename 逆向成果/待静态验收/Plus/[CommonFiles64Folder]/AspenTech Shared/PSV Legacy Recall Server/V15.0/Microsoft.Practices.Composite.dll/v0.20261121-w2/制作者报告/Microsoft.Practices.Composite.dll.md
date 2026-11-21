@@ -1,0 +1,20 @@
+# Microsoft.Practices.Composite.dll
+
+## 0. 摘要
+- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- kind=CLR
+- sha256=8fb80c50fbc68dcb575af35d6702e8de68821e1d5d57d1862d78f3c8e34bf4f7
+- size=83392
+- types=92 / methods=489 / pinvoke=0 / fields=136
+- cs_lines=2713
+- 产物: il/Microsoft.Practices.Composite.dll.il.txt, decompiled/Microsoft.Practices.Composite.dll.cs.txt
+- 偏离仓库 AGENTS：含完整逆向正文，依据用户 2026-11-21 指令。
+
+## 1. 缺口与待验证
+- 语义层（类型用途/调用约定）未人工复核〔未验证〕
+
+## dumps
+
+dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
+
+- （本件无 dump 产物：failed_analyze / unsupported_non_pe）

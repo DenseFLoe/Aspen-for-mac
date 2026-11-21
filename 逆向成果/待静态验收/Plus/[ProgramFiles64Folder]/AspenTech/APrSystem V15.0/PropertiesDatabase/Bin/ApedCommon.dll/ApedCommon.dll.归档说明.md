@@ -11,3 +11,4 @@
 - [正式导出 · cs · 53710eb0dd79](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/ApedCommon.dll.cs.txt)（280,471 字节）
 - [正式导出 · il · 9bd285892f73](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/ApedCommon.dll.il.txt)（1,135,543 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/ApedCommon.dll.md)

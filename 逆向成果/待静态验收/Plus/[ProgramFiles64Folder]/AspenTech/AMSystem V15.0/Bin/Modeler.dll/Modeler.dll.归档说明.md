@@ -11,3 +11,4 @@
 - [正式导出 · asm · 31a225aad79f](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/Modeler.dll.asm.txt)（586,268 字节）
 - [正式导出 · c · 2e19be8f6600](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/Modeler.dll.c.txt)（358,110 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/Modeler.dll.md)

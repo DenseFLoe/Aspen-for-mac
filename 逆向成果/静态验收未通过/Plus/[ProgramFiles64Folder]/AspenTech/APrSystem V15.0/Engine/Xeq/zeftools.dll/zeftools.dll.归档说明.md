@@ -13,3 +13,4 @@
 - [正式导出 · asm · 8a6208bf6ef9](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/zeftools.dll.asm.txt)（3,961,865 字节）
 - [正式导出 · c · ab0909118a74](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/zeftools.dll.c.txt)（1,943,879 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/zeftools.dll.md)

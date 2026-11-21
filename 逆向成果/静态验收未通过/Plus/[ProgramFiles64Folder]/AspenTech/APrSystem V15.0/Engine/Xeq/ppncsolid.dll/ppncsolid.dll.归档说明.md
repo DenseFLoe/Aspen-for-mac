@@ -13,3 +13,4 @@
 - [正式导出 · asm · 5dc9cd9f1aa2](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/ppncsolid.dll.asm.txt)（343,804 字节）
 - [正式导出 · c · 431c9218e54e](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/ppncsolid.dll.c.txt)（162,947 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/ppncsolid.dll.md)

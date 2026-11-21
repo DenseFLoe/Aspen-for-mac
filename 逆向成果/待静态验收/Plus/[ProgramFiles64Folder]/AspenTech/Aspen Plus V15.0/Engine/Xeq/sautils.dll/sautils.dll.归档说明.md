@@ -11,3 +11,4 @@
 - [正式导出 · asm · 994519327e1e](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/sautils.dll.asm.txt)（6,545,544 字节）
 - [正式导出 · c · 1a90032e7b4f](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/sautils.dll.c.txt)（3,691,160 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/sautils.dll.md)

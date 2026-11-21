@@ -11,3 +11,4 @@
 - [正式导出 · cs · 9133eee00044](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/AspenTech.AspenPlus.MMForms.Blocks.Petrofrac.dll.cs.txt)（3,273,520 字节）
 - [正式导出 · il · d892b9792d0c](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/AspenTech.AspenPlus.MMForms.Blocks.Petrofrac.dll.il.txt)（7,467,386 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/AspenTech.AspenPlus.MMForms.Blocks.Petrofrac.dll.md)

@@ -11,3 +11,4 @@
 - [正式导出 · cs · d5f99d254d1c](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/BSPCycleManager.dll.cs.txt)（870,016 字节）
 - [正式导出 · il · dfbfa0f05fff](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/BSPCycleManager.dll.il.txt)（4,450,148 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/BSPCycleManager.dll.md)

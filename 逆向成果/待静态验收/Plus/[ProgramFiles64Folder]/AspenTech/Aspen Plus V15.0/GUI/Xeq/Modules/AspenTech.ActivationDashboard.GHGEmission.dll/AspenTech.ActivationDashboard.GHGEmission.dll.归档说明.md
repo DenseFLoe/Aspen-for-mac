@@ -11,3 +11,4 @@
 - [正式导出 · cs · 07655e08c860](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/AspenTech.ActivationDashboard.GHGEmission.dll.cs.txt)（12,002 字节）
 - [正式导出 · il · d28df2386b30](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/AspenTech.ActivationDashboard.GHGEmission.dll.il.txt)（46,046 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/AspenTech.ActivationDashboard.GHGEmission.dll.md)

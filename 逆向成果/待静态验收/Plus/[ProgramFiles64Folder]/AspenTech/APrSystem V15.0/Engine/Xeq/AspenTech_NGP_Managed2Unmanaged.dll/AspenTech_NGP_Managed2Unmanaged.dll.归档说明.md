@@ -11,3 +11,4 @@
 - [正式导出 · asm · d9fc2ac86611](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/AspenTech_NGP_Managed2Unmanaged.dll.asm.txt)（224,544 字节）
 - [正式导出 · c · c6b860fb808e](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/AspenTech_NGP_Managed2Unmanaged.dll.c.txt)（116,673 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/AspenTech_NGP_Managed2Unmanaged.dll.md)

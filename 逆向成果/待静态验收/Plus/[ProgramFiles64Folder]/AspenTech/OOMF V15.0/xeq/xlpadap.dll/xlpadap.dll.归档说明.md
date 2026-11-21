@@ -13,3 +13,4 @@
 - [阶段导出 · c · 7c3f3e754cda](v0.20261121-w2/%E9%98%B6%E6%AE%B5%E5%AF%BC%E5%87%BA/xlpadap.dll~7c3f3e754cda.c.txt)（227,196 字节）
 - [正式导出 · c · 8f6124c565dd](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/xlpadap.dll~8f6124c565dd.c.txt)（227,185 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/xlpadap.dll.md)

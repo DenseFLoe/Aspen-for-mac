@@ -11,3 +11,4 @@
 - [正式导出 · cs · 5e5e0ceb8686](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/AspenTech.AspenPlus.MMForms.Blocks.BatchOp.dll.cs.txt)（2,066,719 字节）
 - [正式导出 · il · 8bf202f206e0](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/AspenTech.AspenPlus.MMForms.Blocks.BatchOp.dll.il.txt)（5,319,716 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/AspenTech.AspenPlus.MMForms.Blocks.BatchOp.dll.md)

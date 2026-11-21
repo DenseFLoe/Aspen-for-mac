@@ -11,3 +11,4 @@
 - [正式导出 · cs · 2f03ed2da2ed](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/Infragistics4.Win.UltraChart.v15.1.Design.dll.cs.txt)（1,138,947 字节）
 - [正式导出 · il · 1c4e5033896e](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/Infragistics4.Win.UltraChart.v15.1.Design.dll.il.txt)（5,462,105 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/Infragistics4.Win.UltraChart.v15.1.Design.dll.md)

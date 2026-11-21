@@ -13,3 +13,4 @@
 - [阶段导出 · c · 8727ca2dc868](v0.20261121-w2/%E9%98%B6%E6%AE%B5%E5%AF%BC%E5%87%BA/aos_xpress.dll~8727ca2dc868.c.txt)（1,166,193 字节）
 - [正式导出 · c · 89ad43ac4fa3](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/aos_xpress.dll~89ad43ac4fa3.c.txt)（1,166,217 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/aos_xpress.dll.md)

@@ -13,3 +13,4 @@
 - [正式导出 · c · 8f23dd504445](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/apbatutl.exe~8f23dd504445.c.txt)（83,312 字节）
 - [阶段导出 · c · 9ca85a1c9a44](v0.20261121-w2/%E9%98%B6%E6%AE%B5%E5%AF%BC%E5%87%BA/apbatutl.exe~9ca85a1c9a44.c.txt)（83,306 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/apbatutl.exe.md)

@@ -11,3 +11,4 @@
 - [正式导出 · cs · a55af81a82ab](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/Microsoft.Extensions.DependencyInjection.dll.cs.txt)（135,550 字节）
 - [正式导出 · il · c894b016ac9d](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/Microsoft.Extensions.DependencyInjection.dll.il.txt)（559,032 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/Microsoft.Extensions.DependencyInjection.dll.md)

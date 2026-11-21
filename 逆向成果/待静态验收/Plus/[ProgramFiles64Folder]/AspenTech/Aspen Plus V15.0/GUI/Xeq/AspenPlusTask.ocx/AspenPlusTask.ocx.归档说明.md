@@ -12,3 +12,4 @@
 - [正式导出 · asm · a81d04d5acfe](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/AspenPlusTask.ocx~a81d04d5acfe.asm.txt)（408,027 字节）
 - [正式导出 · c · 48f61e37dd47](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/AspenPlusTask.ocx.c.txt)（334,973 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/AspenPlusTask.ocx.md)

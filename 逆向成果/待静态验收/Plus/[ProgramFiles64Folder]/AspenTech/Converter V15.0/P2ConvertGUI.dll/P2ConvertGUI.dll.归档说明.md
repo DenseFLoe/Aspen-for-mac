@@ -11,3 +11,4 @@
 - [正式导出 · cs · 9cb7adcb0111](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/P2ConvertGUI.dll.cs.txt)（26,623 字节）
 - [正式导出 · il · 2105da72883d](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/P2ConvertGUI.dll.il.txt)（97,256 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/P2ConvertGUI.dll.md)

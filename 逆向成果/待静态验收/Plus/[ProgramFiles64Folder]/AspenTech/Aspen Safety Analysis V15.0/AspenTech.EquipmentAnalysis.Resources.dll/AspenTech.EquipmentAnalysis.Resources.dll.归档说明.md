@@ -11,3 +11,4 @@
 - [正式导出 · cs · e088392ede4d](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/AspenTech.EquipmentAnalysis.Resources.dll.cs.txt)（206,426 字节）
 - [正式导出 · il · 2d15c638ccaf](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/AspenTech.EquipmentAnalysis.Resources.dll.il.txt)（1,046,018 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/AspenTech.EquipmentAnalysis.Resources.dll.md)

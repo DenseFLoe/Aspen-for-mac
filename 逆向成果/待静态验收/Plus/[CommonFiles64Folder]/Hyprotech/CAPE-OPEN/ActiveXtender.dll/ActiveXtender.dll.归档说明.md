@@ -11,3 +11,4 @@
 - [正式导出 · cs · e3e7e551882f](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/ActiveXtender.dll.cs.txt)（1,188,437 字节）
 - [正式导出 · il · 37f10f17c9fb](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/ActiveXtender.dll.il.txt)（3,386,324 字节）
 
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/ActiveXtender.dll.md)
