@@ -88,3 +88,7 @@
 - 仅 Ghidra 有、IDA 未单列：`FUN_180001d3c`, `FUN_180001d8c`, `FUN_180001ea0`, `dllmain_dispatch`, `dllmain_raw`, `entry`, `FUN_180002188`, `FUN_180002198`
 - 仅 IDA 有：`?dllmain_crt_dispatch@@YAHQEAUHINSTANCE__@@KQEAX@Z`, `?dllmain_crt_process_attach@@YAHQEAUHINSTANCE__@@QEAX@Z`, `?dllmain_crt_process_detach@@YAH_N@Z`, `sub_180001F2C`, `?dllmain_raw@@YAHQEAUHINSTANCE__@@KQEAX@Z`, `DllEntryPoint`, `__xi_z`, `sub_180002198`
 - 命名口径：上两行按函数名对比。IDA 应用了 FLIRT 库签名（如 `__CRT_INIT@12`、`@__security_check_cookie@4`），同一地址在 Ghidra 侧仍是 `FUN_<addr>`，因此名单差异主要是命名差异；函数个数按上表比对。
+
+## dumps
+
+dumps: repo:逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Getting Started/Custom/hfum.apwz!/HFUM.dll.md/分支交付/

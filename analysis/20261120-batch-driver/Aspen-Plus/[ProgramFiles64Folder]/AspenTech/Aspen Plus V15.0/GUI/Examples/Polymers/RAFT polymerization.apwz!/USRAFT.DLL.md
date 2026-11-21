@@ -88,3 +88,7 @@
 - 仅 Ghidra 有、IDA 未单列：`FUN_18000194c`, `FUN_18000199c`, `FUN_180001ab4`, `dllmain_dispatch`, `entry`, `FUN_180001d7c`, `FUN_180001d8c`, `FUN_180001d98`
 - 仅 IDA 有：`?dllmain_crt_dispatch@@YAHQEAUHINSTANCE__@@KQEAX@Z`, `?dllmain_crt_process_attach@@YAHQEAUHINSTANCE__@@QEAX@Z`, `?dllmain_crt_process_detach@@YAH_N@Z`, `?dllmain_dispatch@@YAHQEAUHINSTANCE__@@KQEAX@Z`, `DllEntryPoint`, `?__scrt_initialize_type_info@@YAXXZ`, `?__scrt_uninitialize_type_info@@YAXXZ`, `__local_stdio_printf_options`
 - 命名口径：上两行按函数名对比。IDA 应用了 FLIRT 库签名（如 `__CRT_INIT@12`、`@__security_check_cookie@4`），同一地址在 Ghidra 侧仍是 `FUN_<addr>`，因此名单差异主要是命名差异；函数个数按上表比对。
+
+## dumps
+
+dumps: repo:逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Polymers/RAFT polymerization.apwz!/USRAFT.DLL.md/分支交付/
