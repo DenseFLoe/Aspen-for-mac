@@ -95,7 +95,7 @@ using NpgsqlTypes;
 namespace Microsoft.CodeAnalysis
 {
 	[CompilerGenerated]
-	[Embedded]
+	[Microsoft.CodeAnalysis.Embedded]
 	internal sealed class EmbeddedAttribute : Attribute
 	{
 	}
@@ -103,22 +103,22 @@ namespace Microsoft.CodeAnalysis
 namespace System.Runtime.CompilerServices
 {
 	[CompilerGenerated]
-	[Embedded]
+	[Microsoft.CodeAnalysis.Embedded]
 	internal sealed class IsReadOnlyAttribute : Attribute
 	{
 	}
 	[CompilerGenerated]
-	[Embedded]
+	[Microsoft.CodeAnalysis.Embedded]
 	internal sealed class IsUnmanagedAttribute : Attribute
 	{
 	}
 	[CompilerGenerated]
-	[Embedded]
+	[Microsoft.CodeAnalysis.Embedded]
 	internal sealed class IsByRefLikeAttribute : Attribute
 	{
 	}
 	[CompilerGenerated]
-	[Embedded]
+	[Microsoft.CodeAnalysis.Embedded]
 	[AttributeUsage(AttributeTargets.Class | AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Event | AttributeTargets.Parameter | AttributeTargets.ReturnValue | AttributeTargets.GenericParameter, AllowMultiple = false, Inherited = false)]
 	internal sealed class NullableAttribute : Attribute
 	{
@@ -135,7 +135,7 @@ namespace System.Runtime.CompilerServices
 		}
 	}
 	[CompilerGenerated]
-	[Embedded]
+	[Microsoft.CodeAnalysis.Embedded]
 	[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Method | AttributeTargets.Interface | AttributeTargets.Delegate, AllowMultiple = false, Inherited = false)]
 	internal sealed class NullableContextAttribute : Attribute
 	{
@@ -147,13 +147,13 @@ namespace System.Runtime.CompilerServices
 		}
 	}
 	[CompilerGenerated]
-	[Embedded]
+	[Microsoft.CodeAnalysis.Embedded]
 	[AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
 	internal sealed class ScopedRefAttribute : Attribute
 	{
 	}
 	[CompilerGenerated]
-	[Embedded]
+	[Microsoft.CodeAnalysis.Embedded]
 	[AttributeUsage(AttributeTargets.Module, AllowMultiple = false, Inherited = false)]
 	internal sealed class RefSafetyRulesAttribute : Attribute
 	{
@@ -941,7 +941,7 @@ namespace NpgsqlTypes
 		{
 			if (s != null)
 			{
-				return Parse(s.AsSpan());
+				return Parse(MemoryExtensions.AsSpan(s));
 			}
 			throw new ArgumentNullException("s");
 		}
@@ -957,7 +957,7 @@ namespace NpgsqlTypes
 
 		public static bool TryParse(string s, out NpgsqlLogSequenceNumber result)
 		{
-			return TryParse(s.AsSpan(), out result);
+			return TryParse(MemoryExtensions.AsSpan(s), out result);
 		}
 
 		public static bool TryParse(ReadOnlySpan<char> s, out NpgsqlLogSequenceNumber result)
@@ -3693,7 +3693,7 @@ namespace Npgsql
 				connectionLogger.LogDebug("Unexpected output from klist, aborting Kerberos username detection");
 				return null;
 			}
-			ReadOnlySpan<char> span = line.AsSpan(1 + line.IndexOf(':')).Trim();
+			ReadOnlySpan<char> span = System.MemoryExtensions.AsSpan(line, 1 + line.IndexOf(':')).Trim();
 			int num3 = span.IndexOf('@');
 			int num4 = span.LastIndexOf('@');
 			if (num3 == -1 || num3 != num4)
@@ -15626,7 +15626,7 @@ namespace Npgsql
 				{
 					throw new NotSupportedException("Target Session Attributes other then Any is only supported with multiple hosts");
 				}
-				if (!IsUnixSocket(Host, Port, out string _) && TrySplitHostPort(Host.AsSpan(), out string host, out int port))
+				if (!IsUnixSocket(Host, Port, out string _) && TrySplitHostPort(System.MemoryExtensions.AsSpan(Host), out string host, out int port))
 				{
 					Host = host;
 					Port = port;
@@ -19642,7 +19642,7 @@ namespace Npgsql
 			for (int i = 0; i < array.Length; i++)
 			{
 				NpgsqlConnectionStringBuilder npgsqlConnectionStringBuilder = settings.Clone();
-				ReadOnlySpan<char> originalHost = array[i].AsSpan().Trim();
+				ReadOnlySpan<char> originalHost = System.MemoryExtensions.AsSpan(array[i]).Trim();
 				if (NpgsqlConnectionStringBuilder.TrySplitHostPort(originalHost, out string host, out int port))
 				{
 					npgsqlConnectionStringBuilder.Host = host;
@@ -22367,7 +22367,7 @@ namespace Npgsql
 			return WriteAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
 		}
 
-		public new void Write(ReadOnlySpan<byte> buffer)
+		public void Write(ReadOnlySpan<byte> buffer)
 		{
 			CheckDisposed();
 			if (!CanWrite)
@@ -22394,7 +22394,7 @@ namespace Npgsql
 			}
 		}
 
-		public new ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
+		public ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
 		{
 			CheckDisposed();
 			if (!CanWrite)
@@ -22459,7 +22459,7 @@ namespace Npgsql
 			return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
 		}
 
-		public new int Read(Span<byte> span)
+		public int Read(Span<byte> span)
 		{
 			CheckDisposed();
 			if (!CanRead)
@@ -22474,7 +22474,7 @@ namespace Npgsql
 			return result;
 		}
 
-		public new ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
+		public ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
 		{
 			CheckDisposed();
 			if (!CanRead)
@@ -24503,7 +24503,7 @@ namespace Npgsql
 			{
 				return true;
 			}
-			ReadOnlySpan<char> readOnlySpan = identifier.AsSpan(1);
+			ReadOnlySpan<char> readOnlySpan = System.MemoryExtensions.AsSpan(identifier, 1);
 			for (int i = 0; i < readOnlySpan.Length; i++)
 			{
 				char c2 = readOnlySpan[i];
@@ -26986,7 +26986,7 @@ namespace Npgsql
 			return _str[_position++];
 		}
 
-		public new int Read(Span<char> buffer)
+		public int Read(Span<char> buffer)
 		{
 			CheckDisposed();
 			int num = Math.Min(buffer.Length, _str.Length - _position);
@@ -26994,7 +26994,7 @@ namespace Npgsql
 			{
 				return 0;
 			}
-			_str.AsSpan(_position, num).CopyTo(buffer);
+			System.MemoryExtensions.AsSpan(_str, _position, num).CopyTo(buffer);
 			_position += num;
 			return num;
 		}
@@ -27013,7 +27013,7 @@ namespace Npgsql
 			{
 				throw new ArgumentException("Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.");
 			}
-			return Read(buffer.AsSpan(index, count));
+			return Read(System.MemoryExtensions.AsSpan(buffer, index, count));
 		}
 
 		public override Task<int> ReadAsync(char[] buffer, int index, int count)
@@ -27021,7 +27021,7 @@ namespace Npgsql
 			return Task.FromResult(Read(buffer, index, count));
 		}
 
-		public new ValueTask<int> ReadAsync(Memory<char> buffer, CancellationToken cancellationToken = default(CancellationToken))
+		public ValueTask<int> ReadAsync(Memory<char> buffer, CancellationToken cancellationToken = default(CancellationToken))
 		{
 			return new ValueTask<int>(Read(buffer.Span));
 		}
@@ -27449,8 +27449,8 @@ namespace Npgsql
 					IL_04d0:
 					int num5;
 					int num6;
-					ReadOnlySpan<char> value2 = commandText.AsSpan(num5 - 1, num6 - num5 + 2);
-					int num7 = commandText.AsSpan(num6 + 1).IndexOf(value2);
+					ReadOnlySpan<char> value2 = System.MemoryExtensions.AsSpan(commandText, num5 - 1, num6 - num5 + 2);
+					int num7 = System.MemoryExtensions.AsSpan(commandText, num6 + 1).IndexOf(value2);
 					if (num7 == -1)
 					{
 						i = length;
@@ -28601,7 +28601,7 @@ namespace Npgsql.Util
 			return num;
 		}
 
-		private new int Read(Span<byte> destination)
+		private int Read(Span<byte> destination)
 		{
 			_ = destination.Length;
 			int num = destination.Length;
@@ -28615,7 +28615,7 @@ namespace Npgsql.Util
 			{
 				num = (int)(_endInSuperStream - _positionInSuperStream);
 			}
-			int num2 = StreamExtensions.Read(_superStream, destination.Slice(0, num));
+			int num2 = _superStream.Read(destination.Slice(0, num));
 			_positionInSuperStream += num2;
 			return num2;
 		}
@@ -28636,7 +28636,7 @@ namespace Npgsql.Util
 			return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
 		}
 
-		private new ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
+		private ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
 		{
 			ThrowIfDisposed();
 			ThrowIfCantRead();
@@ -28651,7 +28651,7 @@ namespace Npgsql.Util
 			return Core(buffer, cancellationToken);
 			async ValueTask<int> Core(Memory<byte> buffer2, CancellationToken cancellationToken2)
 			{
-				int num = await StreamExtensions.ReadAsync(_superStream, buffer2, cancellationToken2).ConfigureAwait(continueOnCapturedContext: false);
+				int num = await _superStream.ReadAsync(buffer2, cancellationToken2).ConfigureAwait(continueOnCapturedContext: false);
 				_positionInSuperStream += num;
 				return num;
 			}
@@ -37506,7 +37506,7 @@ namespace Npgsql.Internal
 				return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
 			}
 
-			public new int Read(Span<byte> span)
+			public int Read(Span<byte> span)
 			{
 				CheckDisposed();
 				int num = Math.Min(span.Length, CurrentLength - _read);
@@ -37519,7 +37519,7 @@ namespace Npgsql.Internal
 				return num2;
 			}
 
-			public new ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
+			public ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
 			{
 				CheckDisposed();
 				int num = Math.Min(buffer.Length, CurrentLength - _read);
@@ -37652,7 +37652,7 @@ namespace Npgsql.Internal
 
 		internal long CumulativeReadPosition => _flushedBytes + (uint)ReadPosition;
 
-		internal ReadOnlySpan<byte> Span => Buffer.AsSpan(ReadPosition, ReadBytesLeft);
+		internal ReadOnlySpan<byte> Span => System.MemoryExtensions.AsSpan(Buffer, ReadPosition, ReadBytesLeft);
 
 		internal NpgsqlReadBuffer(NpgsqlConnector? connector, Stream stream, Socket? socket, int size, Encoding textEncoding, Encoding relaxedTextEncoding, bool usePool = false)
 		{
@@ -37694,7 +37694,7 @@ namespace Npgsql.Internal
 			{
 				try
 				{
-					int num = StreamExtensions.Read(Underlying, buffer);
+					int num = Underlying.Read(buffer);
 					_flushedBytes += num;
 					NpgsqlEventSource.Log.BytesRead(num);
 					return num;
@@ -37735,7 +37735,7 @@ namespace Npgsql.Internal
 			{
 				try
 				{
-					int num = await StreamExtensions.ReadAsync(Underlying, buffer, cancellationToken2).ConfigureAwait(continueOnCapturedContext: false);
+					int num = await Underlying.ReadAsync(buffer, cancellationToken2).ConfigureAwait(continueOnCapturedContext: false);
 					_flushedBytes += num;
 					Cts.Stop();
 					NpgsqlEventSource.Log.BytesRead(num);
@@ -37835,7 +37835,7 @@ namespace Npgsql.Internal
 					try
 					{
 						int num2 = buffer.Size - buffer.FilledBytes;
-						int num3 = ((!flag) ? buffer.Underlying.Read(buffer.Buffer, buffer.FilledBytes, num2) : (await StreamExtensions.ReadAsync(buffer.Underlying, buffer.Buffer.AsMemory(buffer.FilledBytes, num2), finalCt).ConfigureAwait(continueOnCapturedContext: false)));
+						int num3 = ((!flag) ? buffer.Underlying.Read(buffer.Buffer, buffer.FilledBytes, num2) : (await buffer.Underlying.ReadAsync(System.MemoryExtensions.AsMemory(buffer.Buffer, buffer.FilledBytes, num2), finalCt).ConfigureAwait(continueOnCapturedContext: false)));
 						int num4 = num3;
 						if (num4 == 0)
 						{
@@ -37950,7 +37950,7 @@ namespace Npgsql.Internal
 		public short ReadInt16()
 		{
 			CheckBounds(2);
-			short result = (BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<short>(in Buffer[ReadPosition])) : Unsafe.ReadUnaligned<short>(in Buffer[ReadPosition]));
+			short result = (BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<short>(ref Buffer[ReadPosition])) : Unsafe.ReadUnaligned<short>(ref Buffer[ReadPosition]));
 			ReadPosition += 2;
 			return result;
 		}
@@ -37959,7 +37959,7 @@ namespace Npgsql.Internal
 		public ushort ReadUInt16()
 		{
 			CheckBounds(2);
-			ushort result = (BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<ushort>(in Buffer[ReadPosition])) : Unsafe.ReadUnaligned<ushort>(in Buffer[ReadPosition]));
+			ushort result = (BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<ushort>(ref Buffer[ReadPosition])) : Unsafe.ReadUnaligned<ushort>(ref Buffer[ReadPosition]));
 			ReadPosition += 2;
 			return result;
 		}
@@ -37968,7 +37968,7 @@ namespace Npgsql.Internal
 		public int ReadInt32()
 		{
 			CheckBounds(4);
-			int result = (BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<int>(in Buffer[ReadPosition])) : Unsafe.ReadUnaligned<int>(in Buffer[ReadPosition]));
+			int result = (BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<int>(ref Buffer[ReadPosition])) : Unsafe.ReadUnaligned<int>(ref Buffer[ReadPosition]));
 			ReadPosition += 4;
 			return result;
 		}
@@ -37977,7 +37977,7 @@ namespace Npgsql.Internal
 		public uint ReadUInt32()
 		{
 			CheckBounds(4);
-			uint result = (BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<uint>(in Buffer[ReadPosition])) : Unsafe.ReadUnaligned<uint>(in Buffer[ReadPosition]));
+			uint result = (BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<uint>(ref Buffer[ReadPosition])) : Unsafe.ReadUnaligned<uint>(ref Buffer[ReadPosition]));
 			ReadPosition += 4;
 			return result;
 		}
@@ -37986,7 +37986,7 @@ namespace Npgsql.Internal
 		public long ReadInt64()
 		{
 			CheckBounds(8);
-			long result = (BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<long>(in Buffer[ReadPosition])) : Unsafe.ReadUnaligned<long>(in Buffer[ReadPosition]));
+			long result = (BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<long>(ref Buffer[ReadPosition])) : Unsafe.ReadUnaligned<long>(ref Buffer[ReadPosition]));
 			ReadPosition += 8;
 			return result;
 		}
@@ -37995,7 +37995,7 @@ namespace Npgsql.Internal
 		public ulong ReadUInt64()
 		{
 			CheckBounds(8);
-			ulong result = (BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<ulong>(in Buffer[ReadPosition])) : Unsafe.ReadUnaligned<ulong>(in Buffer[ReadPosition]));
+			ulong result = (BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<ulong>(ref Buffer[ReadPosition])) : Unsafe.ReadUnaligned<ulong>(ref Buffer[ReadPosition]));
 			ReadPosition += 8;
 			return result;
 		}
@@ -38007,12 +38007,12 @@ namespace Npgsql.Internal
 			float result;
 			if (BitConverter.IsLittleEndian)
 			{
-				int source = BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<int>(in Buffer[ReadPosition]));
+				int source = BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<int>(ref Buffer[ReadPosition]));
 				result = Unsafe.As<int, float>(ref source);
 			}
 			else
 			{
-				result = Unsafe.ReadUnaligned<float>(in Buffer[ReadPosition]);
+				result = Unsafe.ReadUnaligned<float>(ref Buffer[ReadPosition]);
 			}
 			ReadPosition += 4;
 			return result;
@@ -38022,7 +38022,7 @@ namespace Npgsql.Internal
 		public double ReadDouble()
 		{
 			CheckBounds(8);
-			double result = (BitConverter.IsLittleEndian ? BitConverter.Int64BitsToDouble(BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<long>(in Buffer[ReadPosition]))) : Unsafe.ReadUnaligned<double>(in Buffer[ReadPosition]));
+			double result = (BitConverter.IsLittleEndian ? BitConverter.Int64BitsToDouble(BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<long>(ref Buffer[ReadPosition]))) : Unsafe.ReadUnaligned<double>(ref Buffer[ReadPosition]));
 			ReadPosition += 8;
 			return result;
 		}
@@ -38073,7 +38073,7 @@ namespace Npgsql.Internal
 			int num = Math.Min(ReadBytesLeft, output.Length);
 			if (num > 0)
 			{
-				Buffer.AsSpan(ReadPosition, num).CopyTo(output);
+				System.MemoryExtensions.AsSpan(Buffer, ReadPosition, num).CopyTo(output);
 				ReadPosition += num;
 				return num;
 			}
@@ -38087,7 +38087,7 @@ namespace Npgsql.Internal
 			}
 			try
 			{
-				int num2 = StreamExtensions.Read(Underlying, output);
+				int num2 = Underlying.Read(output);
 				_flushedBytes += num2;
 				NpgsqlEventSource.Log.BytesRead(num2);
 				return num2;
@@ -38103,7 +38103,7 @@ namespace Npgsql.Internal
 			int num = Math.Min(ReadBytesLeft, output.Length);
 			if (num > 0)
 			{
-				Buffer.AsSpan(ReadPosition, num).CopyTo(output.Span);
+				System.MemoryExtensions.AsSpan(Buffer, ReadPosition, num).CopyTo(output.Span);
 				ReadPosition += num;
 				return new ValueTask<int>(num);
 			}
@@ -38120,7 +38120,7 @@ namespace Npgsql.Internal
 				}
 				try
 				{
-					int num2 = await StreamExtensions.ReadAsync(buffer.Underlying, buffer2, cancellationToken2).ConfigureAwait(continueOnCapturedContext: false);
+					int num2 = await buffer.Underlying.ReadAsync(buffer2, cancellationToken2).ConfigureAwait(continueOnCapturedContext: false);
 					buffer._flushedBytes += num2;
 					NpgsqlEventSource.Log.BytesRead(num2);
 					return num2;
@@ -38453,7 +38453,7 @@ namespace Npgsql.Internal
 			}
 			try
 			{
-				StreamExtensions.Write(Underlying, buffer);
+				Underlying.Write(buffer);
 			}
 			catch (Exception innerException)
 			{
@@ -38483,11 +38483,11 @@ namespace Npgsql.Internal
 			{
 				if (async)
 				{
-					await StreamExtensions.WriteAsync(Underlying, memory, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+					await Underlying.WriteAsync(memory, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 				}
 				else
 				{
-					StreamExtensions.Write(Underlying, memory.Span);
+					Underlying.Write(memory.Span);
 				}
 			}
 			catch (Exception innerException)
@@ -38607,7 +38607,7 @@ namespace Npgsql.Internal
 
 		public void WriteBytes(byte[] buf)
 		{
-			WriteBytes(buf.AsSpan());
+			WriteBytes(System.MemoryExtensions.AsSpan(buf));
 		}
 
 		public void WriteBytes(byte[] buf, int offset, int count)
@@ -39618,7 +39618,7 @@ namespace Npgsql.Internal
 				_preparedTextReader = new PreparedTextReader();
 			}
 			PreparedTextReader preparedTextReader2 = _preparedTextReader;
-			preparedTextReader2.Init(EncodingExtensions.GetString(encoding, (!async) ? ReadBytes(CurrentRemaining) : (await ReadBytesAsync(CurrentRemaining, cancellationToken).ConfigureAwait(continueOnCapturedContext: false))), GetColumnStream(canSeek: false, 0));
+			preparedTextReader2.Init(encoding.GetString((!async) ? ReadBytes(CurrentRemaining) : (await ReadBytesAsync(CurrentRemaining, cancellationToken).ConfigureAwait(continueOnCapturedContext: false))), GetColumnStream(canSeek: false, 0));
 			return _preparedTextReader;
 		}
 
@@ -39629,7 +39629,7 @@ namespace Npgsql.Internal
 			int readPosition = _buffer.ReadPosition;
 			if (_buffer.FilledBytes - readPosition >= length)
 			{
-				_buffer.Buffer.AsSpan(readPosition, length).CopyTo(buffer.Span);
+				System.MemoryExtensions.AsSpan(_buffer.Buffer, readPosition, length).CopyTo(buffer.Span);
 				_buffer.ReadPosition += length;
 				return default(ValueTask);
 			}
@@ -39637,10 +39637,10 @@ namespace Npgsql.Internal
 			async ValueTask Slow(int count, Memory<byte> buffer2, CancellationToken cancellationToken2)
 			{
 				NpgsqlReadBuffer.ColumnStream columnStream = _buffer.CreateStream(count, canSeek: false);
-				ConfiguredAsyncDisposable _ = columnStream.ConfigureAwait(continueOnCapturedContext: false);
+				ConfiguredAsyncDisposable _ = TaskAsyncEnumerableExtensions.ConfigureAwait(columnStream, continueOnCapturedContext: false);
 				try
 				{
-					await StreamExtensions.ReadExactlyAsync(columnStream, buffer2, cancellationToken2).ConfigureAwait(continueOnCapturedContext: false);
+					await columnStream.ReadExactlyAsync(buffer2, cancellationToken2).ConfigureAwait(continueOnCapturedContext: false);
 				}
 				finally
 				{
@@ -39660,7 +39660,7 @@ namespace Npgsql.Internal
 			int readPosition = _buffer.ReadPosition;
 			if (_buffer.FilledBytes - readPosition >= length)
 			{
-				_buffer.Buffer.AsSpan(readPosition, length).CopyTo(buffer);
+				System.MemoryExtensions.AsSpan(_buffer.Buffer, readPosition, length).CopyTo(buffer);
 				_buffer.ReadPosition += length;
 			}
 			else
@@ -39670,7 +39670,7 @@ namespace Npgsql.Internal
 			void Slow(int count, Span<byte> buffer2)
 			{
 				using NpgsqlReadBuffer.ColumnStream stream = _buffer.CreateStream(count, canSeek: false);
-				StreamExtensions.ReadExactly(stream, buffer2);
+				stream.ReadExactly(buffer2);
 			}
 		}
 
@@ -39713,7 +39713,7 @@ namespace Npgsql.Internal
 				return result;
 			}
 			byte[] array = RentArray(count);
-			ReadBytes(array.AsSpan(0, count));
+			ReadBytes(System.MemoryExtensions.AsSpan(array, 0, count));
 			return new ReadOnlySequence<byte>(array, 0, count);
 		}
 
@@ -39728,7 +39728,7 @@ namespace Npgsql.Internal
 				return result;
 			}
 			byte[] array = RentArray(count);
-			await ReadBytesAsync(array.AsMemory(0, count), cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+			await ReadBytesAsync(System.MemoryExtensions.AsMemory(array, 0, count), cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 			return new ReadOnlySequence<byte>(array, 0, count);
 		}
 
@@ -40427,7 +40427,7 @@ namespace Npgsql.Internal
 			if (PortableTypeIds && arrayTypeId.IsDataTypeName)
 			{
 				DataTypeName dataTypeName = arrayTypeId.DataTypeName;
-				if (dataTypeName.UnqualifiedNameSpan.StartsWith("_".AsSpan(), StringComparison.Ordinal))
+				if (dataTypeName.UnqualifiedNameSpan.StartsWith(System.MemoryExtensions.AsSpan("_"), StringComparison.Ordinal))
 				{
 					dataTypeName = arrayTypeId.DataTypeName;
 					string schema = dataTypeName.Schema;
@@ -41272,7 +41272,7 @@ namespace Npgsql.Internal
 				ThrowOutOfMemoryException();
 			}
 			_lastBufferSize = num;
-			return _buffer.Buffer.AsMemory(writePosition, num);
+			return System.MemoryExtensions.AsMemory(_buffer.Buffer, writePosition, num);
 		}
 
 		public Span<byte> GetSpan(int sizeHint = 0)
@@ -41284,7 +41284,7 @@ namespace Npgsql.Internal
 				ThrowOutOfMemoryException();
 			}
 			_lastBufferSize = num;
-			return _buffer.Buffer.AsSpan(writePosition, num);
+			return System.MemoryExtensions.AsSpan(_buffer.Buffer, writePosition, num);
 		}
 
 		private static void ThrowOutOfMemoryException()
@@ -41399,7 +41399,7 @@ namespace Npgsql.Internal
 					{
 						return Task.FromCanceled(cancellationToken);
 					}
-					return _writer.WriteBytesAsync(_allowMixedIO, buffer.AsMemory(offset, count), cancellationToken).AsTask();
+					return _writer.WriteBytesAsync(_allowMixedIO, System.MemoryExtensions.AsMemory(buffer, offset, count), cancellationToken).AsTask();
 				}
 				_writer.WriteBytes(_allowMixedIO, new Span<byte>(buffer, offset, count));
 				return Task.CompletedTask;
@@ -41454,7 +41454,7 @@ namespace Npgsql.Internal
 
 		internal FlushMode FlushMode { get; private set; }
 
-		private Span<byte> Span => _buffer.AsSpan(_pos, _length - _pos);
+		private Span<byte> Span => System.MemoryExtensions.AsSpan(_buffer, _pos, _length - _pos);
 
 		private int Remaining => _length - _pos;
 
@@ -41622,10 +41622,10 @@ namespace Npgsql.Internal
 		{
 			if (data.Length <= Remaining)
 			{
-				int byteCount = EncodingExtensions.GetByteCount(encoding, data);
+				int byteCount = encoding.GetByteCount(data);
 				if (!ShouldFlush(byteCount))
 				{
-					int bytes = EncodingExtensions.GetBytes(encoding, data, Span);
+					int bytes = encoding.GetBytes(data, Span);
 					Advance(bytes);
 					return;
 				}
@@ -41643,7 +41643,7 @@ namespace Npgsql.Internal
 						Flush();
 					}
 					Ensure(maxByteCount);
-					EncodingExtensions.Convert(encoder, chars, Span, chars.Length <= Span.Length, out var charsUsed, out var bytesUsed, out completed);
+					encoder.Convert(chars, Span, chars.Length <= Span.Length, out var charsUsed, out var bytesUsed, out completed);
 					chars = chars.Slice(charsUsed);
 					Advance(bytesUsed);
 				}
@@ -41656,10 +41656,10 @@ namespace Npgsql.Internal
 			ReadOnlySpan<char> span = data.Span;
 			if (data.Length <= Remaining)
 			{
-				int byteCount = EncodingExtensions.GetByteCount(encoding, span);
+				int byteCount = encoding.GetByteCount(span);
 				if (!ShouldFlush(byteCount))
 				{
-					int bytes = EncodingExtensions.GetBytes(encoding, span, Span);
+					int bytes = encoding.GetBytes(span, Span);
 					Advance(bytes);
 					return default(ValueTask);
 				}
@@ -41677,7 +41677,7 @@ namespace Npgsql.Internal
 						await FlushAsync(cancellationToken2).ConfigureAwait(continueOnCapturedContext: false);
 					}
 					Ensure(minBufferSize);
-					EncodingExtensions.Convert(encoder, readOnlyMemory.Span, Span, readOnlyMemory.Length <= Span.Length, out var charsUsed, out var bytesUsed, out completed);
+					encoder.Convert(readOnlyMemory.Span, Span, readOnlyMemory.Length <= Span.Length, out var charsUsed, out var bytesUsed, out completed);
 					readOnlyMemory = readOnlyMemory.Slice(charsUsed);
 					Advance(bytesUsed);
 				}
@@ -42282,12 +42282,12 @@ namespace Npgsql.Internal
 
 		public bool DataTypeNameEquals(string dataTypeName)
 		{
-			ReadOnlySpan<char> readOnlySpan = DataTypeName.AsSpan();
+			ReadOnlySpan<char> readOnlySpan = System.MemoryExtensions.AsSpan(DataTypeName);
 			if (!Npgsql.Internal.Postgres.DataTypeName.IsFullyQualified(readOnlySpan))
 			{
 				return System.MemoryExtensions.Equals(readOnlySpan, Npgsql.Internal.Postgres.DataTypeName.ValidatedName(dataTypeName).UnqualifiedNameSpan, StringComparison.Ordinal);
 			}
-			return System.MemoryExtensions.Equals(readOnlySpan, dataTypeName.AsSpan(), StringComparison.Ordinal);
+			return System.MemoryExtensions.Equals(readOnlySpan, System.MemoryExtensions.AsSpan(dataTypeName), StringComparison.Ordinal);
 		}
 	}
 	[Experimental("NPG9001")]
@@ -42397,7 +42397,7 @@ namespace Npgsql.Internal
 			return delegate(PgSerializerOptions options, TypeInfoMapping mapping, bool dataTypeNameMatch)
 			{
 				TypeInfoMapping mapping2 = innerMapping;
-				if (!DataTypeName.IsFullyQualified(innerMapping.DataTypeName.AsSpan()))
+				if (!DataTypeName.IsFullyQualified(System.MemoryExtensions.AsSpan(innerMapping.DataTypeName)))
 				{
 					TypeInfoMapping typeInfoMapping = innerMapping;
 					typeInfoMapping.DataTypeName = new DataTypeName(mapping.DataTypeName).Schema + "." + innerMapping.DataTypeName;
@@ -42421,7 +42421,7 @@ namespace Npgsql.Internal
 			return delegate(PgSerializerOptions options, TypeInfoMapping mapping, bool dataTypeNameMatch)
 			{
 				TypeInfoMapping mapping2 = innerMapping;
-				if (!DataTypeName.IsFullyQualified(innerMapping.DataTypeName.AsSpan()))
+				if (!DataTypeName.IsFullyQualified(System.MemoryExtensions.AsSpan(innerMapping.DataTypeName)))
 				{
 					TypeInfoMapping typeInfoMapping = innerMapping;
 					typeInfoMapping.DataTypeName = new DataTypeName(mapping.DataTypeName).Schema + "." + innerMapping.DataTypeName;
@@ -42980,7 +42980,7 @@ namespace Npgsql.Internal
 
 		private static string GetArrayDataTypeName(string dataTypeName)
 		{
-			if (!DataTypeName.IsFullyQualified(dataTypeName.AsSpan()))
+			if (!DataTypeName.IsFullyQualified(System.MemoryExtensions.AsSpan(dataTypeName)))
 			{
 				return "_" + DataTypeName.FromDisplayName(dataTypeName).UnqualifiedName;
 			}
@@ -43038,7 +43038,7 @@ namespace Npgsql.Internal
 	{
 		internal static bool TryResolveFullyQualifiedName(PgSerializerOptions options, string dataTypeName, out DataTypeName fqDataTypeName)
 		{
-			if (DataTypeName.IsFullyQualified(dataTypeName.AsSpan()))
+			if (DataTypeName.IsFullyQualified(System.MemoryExtensions.AsSpan(dataTypeName)))
 			{
 				fqDataTypeName = new DataTypeName(dataTypeName);
 				return true;
@@ -43894,7 +43894,7 @@ namespace Npgsql.Internal.ResolverFactories
 			if (dataTypeName.HasValue)
 			{
 				DataTypeName valueOrDefault = dataTypeName.GetValueOrDefault();
-				if (valueOrDefault.SchemaSpan.SequenceEqual("pg_catalog".AsSpan()))
+				if (valueOrDefault.SchemaSpan.SequenceEqual(System.MemoryExtensions.AsSpan("pg_catalog")))
 				{
 					switch (valueOrDefault.UnqualifiedNameSpan)
 					{
@@ -44010,7 +44010,7 @@ namespace Npgsql.Internal.ResolverFactories
 				if (dataTypeName.HasValue)
 				{
 					DataTypeName valueOrDefault = dataTypeName.GetValueOrDefault();
-					if (valueOrDefault.SchemaSpan.SequenceEqual("pg_catalog".AsSpan()))
+					if (valueOrDefault.SchemaSpan.SequenceEqual(System.MemoryExtensions.AsSpan("pg_catalog")))
 					{
 						switch (valueOrDefault.UnqualifiedNameSpan)
 						{
@@ -44527,10 +44527,10 @@ namespace Npgsql.Internal.ResolverFactories
 			if (dataTypeName.HasValue)
 			{
 				DataTypeName valueOrDefault = dataTypeName.GetValueOrDefault();
-				if (valueOrDefault.SchemaSpan.SequenceEqual("pg_catalog".AsSpan()))
+				if (valueOrDefault.SchemaSpan.SequenceEqual(System.MemoryExtensions.AsSpan("pg_catalog")))
 				{
 					ReadOnlySpan<char> unqualifiedNameSpan = valueOrDefault.UnqualifiedNameSpan;
-					if (unqualifiedNameSpan.SequenceEqual("record".AsSpan()) || unqualifiedNameSpan.SequenceEqual("_record".AsSpan()))
+					if (unqualifiedNameSpan.SequenceEqual(System.MemoryExtensions.AsSpan("record")) || unqualifiedNameSpan.SequenceEqual(System.MemoryExtensions.AsSpan("_record")))
 					{
 						flag = true;
 						goto IL_005b;
@@ -44896,11 +44896,11 @@ namespace Npgsql.Internal.Postgres
 
 		public string UnqualifiedDisplayName => ToDisplayName(UnqualifiedNameSpan);
 
-		internal ReadOnlySpan<char> SchemaSpan => Value.AsSpan(0, _value.IndexOf('.'));
+		internal ReadOnlySpan<char> SchemaSpan => System.MemoryExtensions.AsSpan(Value, 0, _value.IndexOf('.'));
 
 		public string Schema => Value.Substring(0, _value.IndexOf('.'));
 
-		internal ReadOnlySpan<char> UnqualifiedNameSpan => Value.AsSpan(_value.IndexOf('.') + 1);
+		internal ReadOnlySpan<char> UnqualifiedNameSpan => System.MemoryExtensions.AsSpan(Value, _value.IndexOf('.') + 1);
 
 		public string UnqualifiedName => Value.Substring(_value.IndexOf('.') + 1);
 
@@ -44918,7 +44918,7 @@ namespace Npgsql.Internal.Postgres
 
 		public static DataTypeName Unspecified => new DataTypeName("-.-", validated: true);
 
-		public bool IsArray => UnqualifiedNameSpan.StartsWith("_".AsSpan(), StringComparison.Ordinal);
+		public bool IsArray => UnqualifiedNameSpan.StartsWith(System.MemoryExtensions.AsSpan("_"), StringComparison.Ordinal);
 
 		private DataTypeName(string fullyQualifiedDataTypeName, bool validated)
 		{
@@ -44929,7 +44929,7 @@ namespace Npgsql.Internal.Postgres
 				{
 					throw new ArgumentException("Given value does not contain a schema.", "fullyQualifiedDataTypeName");
 				}
-				if (fullyQualifiedDataTypeName.AsSpan(num).EndsWith("[]".AsSpan()))
+				if (System.MemoryExtensions.AsSpan(fullyQualifiedDataTypeName, num).EndsWith(System.MemoryExtensions.AsSpan("[]")))
 				{
 					fullyQualifiedDataTypeName = NormalizeName(fullyQualifiedDataTypeName);
 				}
@@ -44974,7 +44974,7 @@ namespace Npgsql.Internal.Postgres
 		public DataTypeName ToArrayName()
 		{
 			ReadOnlySpan<char> unqualifiedNameSpan = UnqualifiedNameSpan;
-			if (unqualifiedNameSpan.StartsWith("_".AsSpan(), StringComparison.Ordinal))
+			if (unqualifiedNameSpan.StartsWith(System.MemoryExtensions.AsSpan("_"), StringComparison.Ordinal))
 			{
 				return this;
 			}
@@ -44989,7 +44989,7 @@ namespace Npgsql.Internal.Postgres
 		public DataTypeName ToDefaultMultirangeName()
 		{
 			ReadOnlySpan<char> unqualifiedNameSpan = UnqualifiedNameSpan;
-			if (UnqualifiedNameSpan.IndexOf("multirange".AsSpan(), StringComparison.Ordinal) != -1)
+			if (UnqualifiedNameSpan.IndexOf(System.MemoryExtensions.AsSpan("multirange"), StringComparison.Ordinal) != -1)
 			{
 				return this;
 			}
@@ -45005,9 +45005,9 @@ namespace Npgsql.Internal.Postgres
 
 		public static DataTypeName FromDisplayName(string displayName, string? schema = null)
 		{
-			ReadOnlySpan<char> span = displayName.AsSpan().Trim();
+			ReadOnlySpan<char> span = System.MemoryExtensions.AsSpan(displayName).Trim();
 			int num = span.IndexOf('.');
-			if (num != -1 && !span.Slice(num).StartsWith("_".AsSpan(), StringComparison.Ordinal) && !span.EndsWith("[]".AsSpan(), StringComparison.Ordinal))
+			if (num != -1 && !span.Slice(num).StartsWith(System.MemoryExtensions.AsSpan("_"), StringComparison.Ordinal) && !span.EndsWith(System.MemoryExtensions.AsSpan("[]"), StringComparison.Ordinal))
 			{
 				return new DataTypeName(displayName);
 			}
@@ -45017,12 +45017,12 @@ namespace Npgsql.Internal.Postgres
 				span = span.Slice(num + 1);
 			}
 			bool flag = false;
-			if (span.StartsWith("_".AsSpan()))
+			if (span.StartsWith(System.MemoryExtensions.AsSpan("_")))
 			{
 				flag = true;
 				span = span.Slice(1);
 			}
-			else if (span.EndsWith("[]".AsSpan()))
+			else if (span.EndsWith(System.MemoryExtensions.AsSpan("[]")))
 			{
 				flag = true;
 				span = span.Slice(0, span.Length - 2);
@@ -45093,13 +45093,13 @@ namespace Npgsql.Internal.Postgres
 
 		internal static bool IsFullyQualified(ReadOnlySpan<char> dataTypeName)
 		{
-			return dataTypeName.Contains(".".AsSpan(), StringComparison.Ordinal);
+			return dataTypeName.Contains(System.MemoryExtensions.AsSpan("."), StringComparison.Ordinal);
 		}
 
 		internal static string NormalizeName(string dataTypeName)
 		{
 			DataTypeName dataTypeName2 = FromDisplayName(dataTypeName);
-			if (!IsFullyQualified(dataTypeName.AsSpan()))
+			if (!IsFullyQualified(System.MemoryExtensions.AsSpan(dataTypeName)))
 			{
 				return dataTypeName2.UnqualifiedName;
 			}
@@ -45714,7 +45714,7 @@ namespace Npgsql.Internal.Converters
 			{
 				if (indices[num] < lengths[num] - 1)
 				{
-					Span<int> span = indices.AsSpan();
+					Span<int> span = System.MemoryExtensions.AsSpan(indices);
 					span = span.Slice(num + 1);
 					span.Clear();
 					indices[num]++;
@@ -46612,7 +46612,7 @@ namespace Npgsql.Internal.Converters
 
 		public override Size GetSize(SizeContext context, string value, ref object? writeState)
 		{
-			int num = value.AsSpan().IndexOfAnyExcept('0', '1');
+			int num = System.MemoryExtensions.AsSpan(value).IndexOfAnyExcept('0', '1');
 			if (num != -1)
 			{
 				throw new ArgumentException($"Invalid bitstring character '{value[num]}' at index: {num}", "value");
@@ -47101,7 +47101,7 @@ namespace Npgsql.Internal.Converters
 
 		protected override TEnum ReadCore(PgReader reader)
 		{
-			string text = EncodingExtensions.GetString(_encoding, reader.ReadBytes(reader.CurrentRemaining));
+			string text = _encoding.GetString(reader.ReadBytes(reader.CurrentRemaining));
 			if (!_labelToEnum.TryGetValue(text, out var value))
 			{
 				throw new InvalidCastException($"Received enum value '{text}' from database which wasn't found on enum {typeof(TEnum)}");
@@ -47320,11 +47320,11 @@ namespace Npgsql.Internal.Converters
 					writer.WriteByte(lexemeNode.IsPrefixSearch ? ((byte)1) : ((byte)0));
 					if (async)
 					{
-						await writer.WriteCharsAsync(lexemeNode.Text.AsMemory(), _encoding, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+						await writer.WriteCharsAsync(System.MemoryExtensions.AsMemory(lexemeNode.Text), _encoding, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 					}
 					else
 					{
-						writer.WriteChars(lexemeNode.Text.AsMemory().Span, _encoding);
+						writer.WriteChars(System.MemoryExtensions.AsMemory(lexemeNode.Text).Span, _encoding);
 					}
 					if (writer.ShouldFlush(1))
 					{
@@ -47461,11 +47461,11 @@ namespace Npgsql.Internal.Converters
 			{
 				if (async)
 				{
-					await writer.WriteCharsAsync(lexeme.Text.AsMemory(), _encoding, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+					await writer.WriteCharsAsync(System.MemoryExtensions.AsMemory(lexeme.Text), _encoding, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 				}
 				else
 				{
-					writer.WriteChars(lexeme.Text.AsMemory().Span, _encoding);
+					writer.WriteChars(System.MemoryExtensions.AsMemory(lexeme.Text).Span, _encoding);
 				}
 				if (writer.ShouldFlush(3))
 				{
@@ -47851,7 +47851,7 @@ namespace Npgsql.Internal.Converters
 				}
 				int count2 = reader.ReadInt32();
 				Encoding encoding = _encoding;
-				string key = EncodingExtensions.GetString(encoding, (!async) ? reader.ReadBytes(count2) : (await reader.ReadBytesAsync(count2, cancellationToken).ConfigureAwait(continueOnCapturedContext: false)));
+				string key = encoding.GetString((!async) ? reader.ReadBytes(count2) : (await reader.ReadBytesAsync(count2, cancellationToken).ConfigureAwait(continueOnCapturedContext: false)));
 				if (reader.ShouldBuffer(4))
 				{
 					await reader.Buffer(async, 4, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
@@ -47861,7 +47861,7 @@ namespace Npgsql.Internal.Converters
 				if (num != -1)
 				{
 					encoding = _encoding;
-					value = EncodingExtensions.GetString(encoding, (!async) ? reader.ReadBytes(num) : (await reader.ReadBytesAsync(num, cancellationToken).ConfigureAwait(continueOnCapturedContext: false)));
+					value = encoding.GetString((!async) ? reader.ReadBytes(num) : (await reader.ReadBytesAsync(num, cancellationToken).ConfigureAwait(continueOnCapturedContext: false)));
 				}
 				result.Add(new KeyValuePair<string, string>(key, value));
 			}
@@ -47906,11 +47906,11 @@ namespace Npgsql.Internal.Converters
 				writer.WriteInt32(value2);
 				if (async)
 				{
-					await writer.WriteCharsAsync(kv.Key.AsMemory(), _encoding, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+					await writer.WriteCharsAsync(System.MemoryExtensions.AsMemory(kv.Key), _encoding, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 				}
 				else
 				{
-					writer.WriteChars(kv.Key.AsSpan(), _encoding);
+					writer.WriteChars(System.MemoryExtensions.AsSpan(kv.Key), _encoding);
 				}
 				if (writer.ShouldFlush(4))
 				{
@@ -47927,11 +47927,11 @@ namespace Npgsql.Internal.Converters
 				{
 					if (async)
 					{
-						await writer.WriteCharsAsync(kv.Value.AsMemory(), _encoding, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+						await writer.WriteCharsAsync(System.MemoryExtensions.AsMemory(kv.Value), _encoding, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 					}
 					else
 					{
-						writer.WriteChars(kv.Value.AsSpan(), _encoding);
+						writer.WriteChars(System.MemoryExtensions.AsSpan(kv.Value), _encoding);
 					}
 				}
 				i += 2;
@@ -48152,7 +48152,7 @@ namespace Npgsql.Internal.Converters
 			ArraySegment<char> item = obj.Item1;
 			byte[] item2 = obj.Item2;
 			jsonTypeInfo = _jsonTypeInfo;
-			result = (T)((jsonTypeInfo is JsonTypeInfo<JsonDocument>) ? ((T)(object)JsonDocument.Parse(item.AsMemory())) : ((!(jsonTypeInfo is JsonTypeInfo<T> jsonTypeInfo3)) ? ((object)(T)(object)JsonSerializer.Deserialize(item.AsSpan(), (JsonTypeInfo<TBase>)_jsonTypeInfo)) : ((object)JsonSerializer.Deserialize(item.AsSpan(), jsonTypeInfo3))));
+			result = (T)((jsonTypeInfo is JsonTypeInfo<JsonDocument>) ? ((T)(object)JsonDocument.Parse(System.MemoryExtensions.AsMemory(item))) : ((!(jsonTypeInfo is JsonTypeInfo<T> jsonTypeInfo3)) ? ((object)(T)(object)JsonSerializer.Deserialize(System.MemoryExtensions.AsSpan(item), (JsonTypeInfo<TBase>)_jsonTypeInfo)) : ((object)JsonSerializer.Deserialize(System.MemoryExtensions.AsSpan(item), jsonTypeInfo3))));
 			T result2 = result;
 			ArrayPool<char>.Shared.Return(item.Array);
 			if (item2 != null)
@@ -48228,17 +48228,17 @@ namespace Npgsql.Internal.Converters
 				rentedBuffer = ArrayPool<byte>.Shared.Rent(byteCount);
 				if (async)
 				{
-					await reader.ReadBytesAsync(rentedBuffer.AsMemory(0, byteCount), cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+					await reader.ReadBytesAsync(System.MemoryExtensions.AsMemory(rentedBuffer, 0, byteCount), cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 				}
 				else
 				{
-					reader.ReadBytes(rentedBuffer.AsSpan(0, byteCount));
+					reader.ReadBytes(System.MemoryExtensions.AsSpan(rentedBuffer, 0, byteCount));
 				}
-				bytes = rentedBuffer.AsMemory(0, byteCount);
+				bytes = System.MemoryExtensions.AsMemory(rentedBuffer, 0, byteCount);
 			}
-			int charCount = EncodingExtensions.GetCharCount(encoding, bytes.Span);
+			int charCount = encoding.GetCharCount(bytes.Span);
 			char[] array = ArrayPool<char>.Shared.Rent(charCount);
-			EncodingExtensions.GetChars(encoding, bytes.Span, array);
+			encoding.GetChars(bytes.Span, array);
 			return (new ArraySegment<char>(array, 0, charCount), rentedBuffer);
 		}
 
@@ -48282,11 +48282,11 @@ namespace Npgsql.Internal.Converters
 			}
 			if (async)
 			{
-				await writer.WriteBytesAsync(buffer.AsMemory(), cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+				await writer.WriteBytesAsync(System.MemoryExtensions.AsMemory(buffer), cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 			}
 			else
 			{
-				writer.WriteBytes(buffer.AsSpan());
+				writer.WriteBytes(System.MemoryExtensions.AsSpan(buffer));
 			}
 		}
 	}
@@ -49050,11 +49050,11 @@ namespace Npgsql.Internal.Converters
 				{
 					throw new InvalidOperationException();
 				}
-				writer.WriteBytes(buffer.AsSpan());
+				writer.WriteBytes(System.MemoryExtensions.AsSpan(buffer));
 			}
 			else if (value is MemoryStream memoryStream && memoryStream.TryGetBuffer(out buffer2))
 			{
-				writer.WriteBytes(buffer2.AsSpan((int)value.Position));
+				writer.WriteBytes(System.MemoryExtensions.AsSpan(buffer2, (int)value.Position));
 			}
 			else
 			{
@@ -49070,11 +49070,11 @@ namespace Npgsql.Internal.Converters
 				{
 					throw new InvalidOperationException();
 				}
-				return writer.WriteBytesAsync(buffer.AsMemory(), cancellationToken);
+				return writer.WriteBytesAsync(System.MemoryExtensions.AsMemory(buffer), cancellationToken);
 			}
 			if (value is MemoryStream memoryStream && memoryStream.TryGetBuffer(out var buffer2))
 			{
-				return writer.WriteBytesAsync(buffer2.AsMemory((int)value.Position), cancellationToken);
+				return writer.WriteBytesAsync(System.MemoryExtensions.AsMemory(buffer2, (int)value.Position), cancellationToken);
 			}
 			return new ValueTask(value.CopyToAsync(writer.GetStream()));
 		}
@@ -49499,7 +49499,7 @@ namespace Npgsql.Internal.Converters
 		{
 			short num = reader.ReadInt16();
 			short[] array = null;
-			Span<short> digits = ((num > 128) ? (array = ArrayPool<short>.Shared.Rent(num)).AsSpan() : stackalloc short[128]).Slice(0, num);
+			Span<short> digits = ((num > 128) ? System.MemoryExtensions.AsSpan(array = ArrayPool<short>.Shared.Rent(num)) : stackalloc short[128]).Slice(0, num);
 			BigInteger result = ConvertTo(NumericConverter.Read(reader, digits));
 			if (array != null)
 			{
@@ -49968,7 +49968,7 @@ namespace Npgsql.Internal.Converters
 						obj = new uint[10] { 1u, 10u, 100u, 1000u, 10000u, 100000u, 1000000u, 10000000u, 100000000u, 1000000000u };
 						global::<PrivateImplementationDetails>.A516EECB41051151F0183A8B0B6F6693C43F7D9E1815F85CAAAB18E00A5269A2_A14 = (uint[])obj;
 					}
-					return new ReadOnlySpan<uint>((uint[]?)obj);
+					return new ReadOnlySpan<uint>((uint[])obj);
 				}
 			}
 
@@ -50050,7 +50050,7 @@ namespace Npgsql.Internal.Converters
 			public Builder(BigInteger value, Span<short> destination)
 			{
 				_digitsArray = null;
-				Span<byte> span = value.ToByteArray().AsSpan();
+				Span<byte> span = System.MemoryExtensions.AsSpan(value.ToByteArray());
 				if (value.Sign == 1 && span.Length > 2 && (span[span.Length - 2] & 0x80) != 0 && span[span.Length - 1] == 0)
 				{
 					span = span.Slice(0, span.Length - 1);
@@ -50366,7 +50366,7 @@ namespace Npgsql.Internal.Converters
 
 		public static int GetDigitCount(BigInteger value)
 		{
-			Span<byte> span = value.ToByteArray().AsSpan();
+			Span<byte> span = System.MemoryExtensions.AsSpan(value.ToByteArray());
 			if (value.Sign == 1 && span.Length > 2 && (span[span.Length - 2] & 0x80) != 0 && span[span.Length - 1] == 0)
 			{
 				span = span.Slice(0, span.Length - 1);
@@ -50499,12 +50499,12 @@ namespace Npgsql.Internal.Converters
 		{
 			if (!async)
 			{
-				return new ValueTask<T>(ConvertFrom(EncodingExtensions.GetString(encoding, reader.ReadBytes(reader.CurrentRemaining))));
+				return new ValueTask<T>(ConvertFrom(encoding.GetString(reader.ReadBytes(reader.CurrentRemaining))));
 			}
 			return ReadAsync(reader, encoding, cancellationToken);
 			async ValueTask<T> ReadAsync(PgReader pgReader, Encoding encoding2, CancellationToken cancellationToken2)
 			{
-				return ConvertFrom(EncodingExtensions.GetString(encoding2, await pgReader.ReadBytesAsync(pgReader.CurrentRemaining, cancellationToken2).ConfigureAwait(continueOnCapturedContext: false)));
+				return ConvertFrom(encoding2.GetString(await pgReader.ReadBytesAsync(pgReader.CurrentRemaining, cancellationToken2).ConfigureAwait(continueOnCapturedContext: false)));
 			}
 		}
 	}
@@ -50522,7 +50522,7 @@ namespace Npgsql.Internal.Converters
 
 		protected override ReadOnlyMemory<char> ConvertFrom(string value)
 		{
-			return value.AsMemory();
+			return System.MemoryExtensions.AsMemory(value);
 		}
 	}
 	internal sealed class StringTextConverter : StringBasedTextConverter<string>
@@ -50534,7 +50534,7 @@ namespace Npgsql.Internal.Converters
 
 		protected override ReadOnlyMemory<char> ConvertTo(string value)
 		{
-			return value.AsMemory();
+			return System.MemoryExtensions.AsMemory(value);
 		}
 
 		protected override string ConvertFrom(string value)
@@ -50569,7 +50569,7 @@ namespace Npgsql.Internal.Converters
 
 		public override void Write(PgWriter writer, T value)
 		{
-			writer.WriteChars(ConvertTo(value).AsSpan(), _encoding);
+			writer.WriteChars(System.MemoryExtensions.AsSpan(ConvertTo(value)), _encoding);
 		}
 
 		public override ValueTask WriteAsync(PgWriter writer, T value, CancellationToken cancellationToken = default(CancellationToken))
@@ -50675,20 +50675,20 @@ namespace Npgsql.Internal.Converters
 		protected override char ReadCore(PgReader reader)
 		{
 			ReadOnlySpan<byte> firstSpan = reader.ReadBytes(Math.Min(_oneCharMaxByteCount.Value, reader.CurrentRemaining)).GetFirstSpan();
-			int charCount = EncodingExtensions.GetCharCount(_encoding, firstSpan);
+			int charCount = _encoding.GetCharCount(firstSpan);
 			if (charCount < 1)
 			{
 				throw new NpgsqlException("Could not read char - string was empty");
 			}
 			Span<char> chars = stackalloc char[charCount];
-			EncodingExtensions.GetChars(_encoding, firstSpan, chars);
+			_encoding.GetChars(firstSpan, chars);
 			return chars[0];
 		}
 
 		public override Size GetSize(SizeContext context, char value, ref object? writeState)
 		{
 			Span<char> span = stackalloc char[1] { value };
-			return EncodingExtensions.GetByteCount(_encoding, span);
+			return _encoding.GetByteCount(span);
 		}
 
 		protected override void WriteCore(PgWriter writer, char value)
@@ -50835,7 +50835,7 @@ namespace Npgsql.Internal.Converters
 	{
 		public static Size GetSize(ref SizeContext context, ReadOnlyMemory<char> value, Encoding encoding)
 		{
-			return EncodingExtensions.GetByteCount(encoding, value.Span);
+			return encoding.GetByteCount(value.Span);
 		}
 
 		public static char[] GetChars(Encoding encoding, ReadOnlySequence<byte> bytes)
@@ -50845,9 +50845,9 @@ namespace Npgsql.Internal.Converters
 			{
 				first = bytes.First;
 				ReadOnlySpan<byte> span = first.Span;
-				char[] array = new char[EncodingExtensions.GetCharCount(encoding, span)];
+				char[] array = new char[encoding.GetCharCount(span)];
 				first = bytes.First;
-				EncodingExtensions.GetChars(encoding, first.Span, array);
+				encoding.GetChars(first.Span, array);
 				return array;
 			}
 			Decoder decoder = encoding.GetDecoder();
@@ -50861,9 +50861,9 @@ namespace Npgsql.Internal.Converters
 				ReadOnlySpan<byte> span2 = first.Span;
 				SequencePosition position = readOnlySequence.GetPosition(span2.Length);
 				isSingleSegment = readOnlySequence.IsSingleSegment;
-				int charCount = EncodingExtensions.GetCharCount(decoder, span2, isSingleSegment);
+				int charCount = decoder.GetCharCount(span2, isSingleSegment);
 				char[] array2 = ArrayPool<char>.Shared.Rent(charCount);
-				int chars = EncodingExtensions.GetChars(decoder, span2, array2, isSingleSegment);
+				int chars = decoder.GetChars(span2, array2, isSingleSegment);
 				list.Add((array2, chars));
 				num += chars;
 				if (num < 0)
@@ -50874,10 +50874,10 @@ namespace Npgsql.Internal.Converters
 			}
 			while (!isSingleSegment);
 			char[] array3 = new char[num];
-			Span<char> destination = array3.AsSpan();
+			Span<char> destination = System.MemoryExtensions.AsSpan(array3);
 			foreach (var (array4, num2) in list)
 			{
-				array4.AsSpan(0, num2).CopyTo(destination);
+				System.MemoryExtensions.AsSpan(array4, 0, num2).CopyTo(destination);
 				ArrayPool<char>.Shared.Return(array4);
 				destination = destination.Slice(num2);
 			}
@@ -52993,64 +52993,64 @@ namespace Npgsql.BackendMessages
 			switch (Convert.ToChar(span[0]))
 			{
 			case 'S':
-				if (span.StartsWith("SELECT "u8))
+				if (span.StartsWith((ReadOnlySpan<byte>)"SELECT "u8))
 				{
 					tuple = (StatementType.Select, "SELECT ".Length);
 					break;
 				}
 				goto default;
 			case 'I':
-				if (span.StartsWith("INSERT "u8))
+				if (span.StartsWith((ReadOnlySpan<byte>)"INSERT "u8))
 				{
 					tuple = (StatementType.Insert, "INSERT ".Length);
 					break;
 				}
 				goto default;
 			case 'U':
-				if (span.StartsWith("UPDATE "u8))
+				if (span.StartsWith((ReadOnlySpan<byte>)"UPDATE "u8))
 				{
 					tuple = (StatementType.Update, "UPDATE ".Length);
 					break;
 				}
 				goto default;
 			case 'D':
-				if (span.StartsWith("DELETE "u8))
+				if (span.StartsWith((ReadOnlySpan<byte>)"DELETE "u8))
 				{
 					tuple = (StatementType.Delete, "DELETE ".Length);
 					break;
 				}
 				goto default;
 			case 'M':
-				if (span.StartsWith("MERGE "u8))
+				if (span.StartsWith((ReadOnlySpan<byte>)"MERGE "u8))
 				{
 					tuple = (StatementType.Merge, "MERGE ".Length);
 					break;
 				}
-				if (span.StartsWith("MOVE "u8))
+				if (span.StartsWith((ReadOnlySpan<byte>)"MOVE "u8))
 				{
 					tuple = (StatementType.Move, "MOVE ".Length);
 					break;
 				}
 				goto default;
 			case 'C':
-				if (span.StartsWith("COPY "u8))
+				if (span.StartsWith((ReadOnlySpan<byte>)"COPY "u8))
 				{
 					tuple = (StatementType.Copy, "COPY ".Length);
 					break;
 				}
-				if (span.StartsWith("CALL"u8))
+				if (span.StartsWith((ReadOnlySpan<byte>)"CALL"u8))
 				{
 					tuple = (StatementType.Call, "CALL".Length);
 					break;
 				}
-				if (span.StartsWith("CREATE TABLE AS "u8))
+				if (span.StartsWith((ReadOnlySpan<byte>)"CREATE TABLE AS "u8))
 				{
 					tuple = (StatementType.CreateTableAs, "CREATE TABLE AS ".Length);
 					break;
 				}
 				goto default;
 			case 'F':
-				if (span.StartsWith("FETCH "u8))
+				if (span.StartsWith((ReadOnlySpan<byte>)"FETCH "u8))
 				{
 					tuple = (StatementType.Fetch, "FETCH ".Length);
 					break;
@@ -53592,7 +53592,7 @@ namespace Npgsql.BackendMessages
 				}
 				else
 				{
-					lastConverterInfoCache.CopyTo(values.AsSpan());
+					lastConverterInfoCache.CopyTo(System.MemoryExtensions.AsSpan(values));
 				}
 			}
 		}
@@ -53971,7 +53971,7 @@ namespace System.IO
 			int num;
 			for (int i = 0; i < buffer.Length; i += num)
 			{
-				num = Read(stream, buffer.Slice(i));
+				num = stream.Read(buffer.Slice(i));
 				if (num == 0)
 				{
 					throw new EndOfStreamException();
@@ -53984,7 +53984,7 @@ namespace System.IO
 			int num;
 			for (int totalRead = 0; totalRead < buffer.Length; totalRead += num)
 			{
-				num = await ReadAsync(stream, buffer.Slice(totalRead), cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+				num = await stream.ReadAsync(buffer.Slice(totalRead), cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 				if (num == 0)
 				{
 					throw new EndOfStreamException();
@@ -54174,7 +54174,7 @@ namespace System.Text
 			if (bytes.IsSingleSegment)
 			{
 				first = bytes.First;
-				return GetChars(encoding, first.Span, chars);
+				return encoding.GetChars(first.Span, chars);
 			}
 			ReadOnlySequence<byte> readOnlySequence = bytes;
 			int length = chars.Length;
@@ -54186,7 +54186,7 @@ namespace System.Text
 				ReadOnlySpan<byte> span = first.Span;
 				SequencePosition position = readOnlySequence.GetPosition(span.Length);
 				isSingleSegment = readOnlySequence.IsSingleSegment;
-				int chars2 = GetChars(decoder, span, chars, isSingleSegment);
+				int chars2 = decoder.GetChars(span, chars, isSingleSegment);
 				chars = chars.Slice(chars2);
 				readOnlySequence = readOnlySequence.Slice(position);
 			}
@@ -54237,9 +54237,9 @@ namespace System.Text
 				ReadOnlySpan<byte> span = first2.Span;
 				SequencePosition position = readOnlySequence.GetPosition(span.Length);
 				isSingleSegment = readOnlySequence.IsSingleSegment;
-				int charCount = GetCharCount(decoder, span, isSingleSegment);
+				int charCount = decoder.GetCharCount(span, isSingleSegment);
 				char[] array2 = ArrayPool<char>.Shared.Rent(charCount);
-				int chars = GetChars(decoder, span, array2, isSingleSegment);
+				int chars = decoder.GetChars(span, array2, isSingleSegment);
 				list.Add((array2, chars));
 				num += chars;
 				if (num < 0)
@@ -54251,10 +54251,10 @@ namespace System.Text
 			}
 			while (!isSingleSegment);
 			char[] array3 = ArrayPool<char>.Shared.Rent(num);
-			Span<char> destination = array3.AsSpan();
+			Span<char> destination = MemoryExtensions.AsSpan(array3);
 			foreach (var (array4, num2) in list)
 			{
-				array4.AsSpan(0, num2).CopyTo(destination);
+				MemoryExtensions.AsSpan(array4, 0, num2).CopyTo(destination);
 				ArrayPool<char>.Shared.Return(array4);
 				destination = destination.Slice(num2);
 			}
@@ -54829,5 +54829,3 @@ namespace System.Diagnostics.CodeAnalysis
 		}
 	}
 }
-You are not using the latest version of the tool, please update.
-Latest version is '11.2.0.10050' (yours is '9.1.0.7988')
