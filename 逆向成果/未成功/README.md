@@ -1,6 +1,6 @@
 # 未成功
 
-共 81 件。每件均有尝试记录，当前交付只有报告。
+共 77 件。每件均有尝试记录，当前交付只有报告。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -17,8 +17,6 @@
 | [AspenTech.NGP.UnitOperationBlock.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/AspenTech.NGP.UnitOperationBlock.dll/) | Plus | `ddd1a2de405c` |
 | [azeotropesearch.lib](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Lib/azeotropesearch.lib/) | Plus | `2d899bf19778` |
 | [BATCHSEP.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/BATCHSEP.dll/) | Plus | `259f7e2d588f` |
-| [BFDYLD.obj](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Examples/Biofuel%20and%20Biochemicals/Bioethanol%20from%20Corn%20Stover/Lignocellulosic%20biomass%20to%20ethanol.apwz%21/BFDYLD.obj/) | Plus | `3caaf37f068d` |
-| [BFDYLD.obj](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Examples/Biofuel%20and%20Biochemicals/Biomass%20characterization/Biofeed%20converter.apwz%21/BFDYLD.obj/) | Plus | `194e88b44801` |
 | [Calculation.xlsm](Properties/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Solubility%20Modeler%20V15.0/NRTL-SAC/Calculation.xlsm/) | Properties | `52674742bc3d` |
 | [corn_stover_to_ethanol.xlsm](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Examples/Biofuel%20and%20Biochemicals/Bioethanol%20from%20Corn%20Stover/corn_stover_to_ethanol.xlsm/) | Plus | `3dbc4ad06bbd` |
 | [d3dcompiler_47.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/d3dcompiler_47.dll/) | Plus | `e4bc3420a280` |
@@ -73,8 +71,6 @@
 | [tensorflow.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/tensorflow.dll/) | Plus | `ccf42b98cb7f` |
 | [tensorflow.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/OOMF%20V15.0/xeq/tensorflow.dll/) | Plus | `3a34e585ee7f` |
 | [thgceos.dll](Plus/%5BCommonFiles64Folder%5D/Hyprotech/COMThermo/thgceos.dll/) | Plus | `6221c6c2effc` |
-| [usr002.obj](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Examples/Polymers/Polyamide/nylon6.apwz%21/usr002.obj/) | Plus | `8479f7dfd18e` |
-| [USRAFT.obj](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Examples/Polymers/RAFT%20polymerization.apwz%21/USRAFT.obj/) | Plus | `c6f4bd93d68d` |
 | [Valve.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/Valve.dll/) | Plus | `e0ca6f0784be` |
 | [vba_caller.xlsm](Properties/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Properties%20V15.0/GUI/Examples/Excel%20Properties%20Calculator/vba_caller.xlsm/) | Properties | `10b51a5d9521` |
 | [vbaProject.bin](Properties/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Properties%20V15.0/GUI/Examples/Excel%20Properties%20Calculator/vba_caller.xlsm%21/xl/vbaProject.bin/) | Properties | `4e0bf2a2925b` |

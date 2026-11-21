@@ -1,6 +1,6 @@
 # 静态验收通过
 
-已有逐件静态验收记录。运行行为留待 Windows 对照。本次整理共 68 个原件。按产品和原安装路径找到同名文件夹。
+已有逐件静态验收记录。运行行为留待 Windows 对照。本次整理共 72 个原件。按产品和原安装路径找到同名文件夹。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -48,6 +48,8 @@
 | [AspenTech.Visualisation.Controls.Assistant.W1.dll](Plus-Properties/Program%20Files/Common%20Files/AspenTech%20Shared/AspenTech.Visualisation.Controls.Assistant.W1.dll/) | Plus-Properties | `8940700237f8` |
 | [AspenTech.Visualisation.Controls.StartPage.Wpf.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.Visualisation.Controls.StartPage.Wpf.dll/) | Plus-Properties | `73193ded5722` |
 | [AxPFSCtrlLib.dll](Plus/Program%20Files/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/AxPFSCtrlLib.dll/) | Plus | `de5a2f3a135b` |
+| [BFDYLD.obj](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Examples/Biofuel%20and%20Biochemicals/Bioethanol%20from%20Corn%20Stover/Lignocellulosic%20biomass%20to%20ethanol.apwz%21/BFDYLD.obj/) | Plus | `3caaf37f068d` |
+| [BFDYLD.obj](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Examples/Biofuel%20and%20Biochemicals/Biomass%20characterization/Biofeed%20converter.apwz%21/BFDYLD.obj/) | Plus | `194e88b44801` |
 | [DatabaseConfiguration.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseConfiguration/DatabaseConfiguration.dll/) | Properties | `07d23d19b439` |
 | [DatabaseConfiguration.exe](Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseConfiguration/DatabaseConfiguration.exe/) | Properties | `2addbcc2b201` |
 | [FluidFlowInterfaceAndEnum.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Hydraulics%20V15.0/FluidFlowInterfaceAndEnum.dll/) | Plus | `174cc8931a4b` |
@@ -70,5 +72,7 @@
 | [System.Configuration.ConfigurationManager.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseSetup/System.Configuration.ConfigurationManager.dll/) | Properties | `e814b79f175e` |
 | [System.Security.Cryptography.ProtectedData.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseSetup/System.Security.Cryptography.ProtectedData.dll/) | Properties | `80566f0839ec` |
 | [urcny6.obj](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Examples/Polymers/Polyamide/nylon6.apwz%21/urcny6.obj/) | Plus | `72133372b496` |
+| [usr002.obj](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Examples/Polymers/Polyamide/nylon6.apwz%21/usr002.obj/) | Plus | `8479f7dfd18e` |
+| [USRAFT.obj](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Examples/Polymers/RAFT%20polymerization.apwz%21/USRAFT.obj/) | Plus | `c6f4bd93d68d` |
 | [usrgel.obj](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Examples/Polymers/SuspensionEPS.apwz%21/usrgel.obj/) | Plus | `e3c4115ceb2c` |
 | [usrny6.obj](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Examples/Polymers/Polyamide/nylon6.apwz%21/usrny6.obj/) | Plus | `92efb7c09dff` |
