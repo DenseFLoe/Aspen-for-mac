@@ -317,6 +317,7 @@
 | [BFDYLD.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Examples/Biofuel%20and%20Biochemicals/Biomass%20characterization/Biofeed%20converter.apwz%21/BFDYLD.dll/) | Plus | `f80d424238af` |
 | [BSPCycleManager.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/BSPCycleManager.dll/) | Plus | `1d925033cb55` |
 | [CalcExcelAddInATL.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/CalcExcelAddInATL.dll/) | Plus | `d5fc1f9e2005` |
+| [CalcExcelAddInRes32.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/x86/CalcExcelAddInRes32.dll/) | Plus | `3bfe609cd8bc` |
 | [CapeError.dll](Plus/%5BCommonFiles64Folder%5D/Hyprotech/CAPE-OPEN/CapeError.dll/) | Plus | `2d17c636b3ca` |
 | [capeopenunit.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/capeopenunit.dll/) | Plus | `b30b21b0e045` |
 | [capeopenunit090.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/capeopenunit090.dll/) | Plus | `5ba1d3c8bdee` |
@@ -729,7 +730,6 @@
 | [SSUnitOp.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Hydraulics%20V15.0/SSUnitOp.dll/) | Plus | `48112926fd33` |
 | [ssutils.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/ssutils.dll/) | Plus | `64d8d95bef91` |
 | [statuscodeCME.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/statuscodeCME.dll/) | Plus | `588239aa1633` |
-| [Stingray.GridControl71.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/Stingray.GridControl71.dll/) | Plus | `03765dc28940` |
 | [Stingray.GridUtils71.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/Stingray.GridUtils71.dll/) | Plus | `04ef7136488b` |
 | [StoreRecall.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Hydraulics%20V15.0/StoreRecall.dll/) | Plus | `e165fa5f7b3f` |
 | [strings.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/strings.dll/) | Plus | `30e5a41d8639` |
