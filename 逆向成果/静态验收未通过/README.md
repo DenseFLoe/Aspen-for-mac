@@ -1,6 +1,6 @@
 # 静态验收未通过
 
-共 296 件。已有代码或局部成果，逐件记录有明确缺口。
+共 299 件。已有代码或局部成果，逐件记录有明确缺口。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -86,6 +86,7 @@
 | [HHActiveX.dll](Plus/%5BSystemFolder%5D/HHActiveX.dll/) | Plus | `74f3505710a7` |
 | [hxnetintpropcomp.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/hxnetintpropcomp.dll/) | Plus | `efbdab3e9f50` |
 | [IDKCustomDialogs.BA3F7B28_13D7_4630_902E_55D684AF3A97](Plus/Binary/IDKCustomDialogs.BA3F7B28_13D7_4630_902E_55D684AF3A97/) | Plus | `aad4b911f9d2` |
+| [ifmsmn.exe](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/ifmsmn.exe/) | Plus | `066c1c3bd87d` |
 | [Ikc2Bkp.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/Ikc2Bkp.dll/) | Plus-Properties | `bba17051eb10` |
 | [Infragistics4.Win.UltraWinListView.v15.1.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/Infragistics4.Win.UltraWinListView.v15.1.dll/) | Plus | `e1baedbb779e` |
 | [Interop.Happ.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Converter%20V15.0/Interop.Happ.dll/) | Plus | `07adeeecea88` |
@@ -206,6 +207,7 @@
 | [solvint.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/solvint.dll/) | Plus | `49d15aa8d37a` |
 | [ssa3d30.ocx](Plus/%5BSystemFolder%5D/ssa3d30.ocx/) | Plus | `8698a7224323` |
 | [Stingray.GridControl71.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/Stingray.GridControl71.dll/) | Plus | `03765dc28940` |
+| [Stingray.GridUtils71.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/Stingray.GridUtils71.dll/) | Plus | `04ef7136488b` |
 | [System.Net.Http.Formatting.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/System.Net.Http.Formatting.dll/) | Plus | `00664130b963` |
 | [SystemLibrary400_1.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/SystemLibrary400_1.dll/) | Plus | `ad9bc4fae634` |
 | [SystemLibrary410_1.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/SystemLibrary410_1.dll/) | Plus | `56a4322d1a84` |
@@ -225,6 +227,7 @@
 | [vsflex8u.ocx](Plus/%5BTARGETDIR%5D/SystemFolder/vsflex8u.ocx/) | Plus | `66bc92806d73` |
 | [webcheck.dll](Plus/Windows/SysWOW64/webcheck.dll/) | Plus | `45fc4530d44f` |
 | [webcheck.dll](Plus/%5BSystemFolder%5D/webcheck.dll/) | Plus | `980cd8d64e24` |
+| [WpfPLAnalysis.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WpfPlotWizards/WpfPLAnalysis.dll/) | Plus | `02d2245cc40a` |
 | [WrapSaveMergeNNFiles.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/WrapSaveMergeNNFiles.dll/) | Plus-Properties | `869c4b23598e` |
 | [XPOPT32.DLL](Plus/%5BSystemFolder%5D/XPOPT32.DLL/) | Plus | `18d4a63c272d` |
 | [xprl.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Open%20Solvers%20V15.0/Bin/xprl.dll/) | Plus | `86fa79e5f0f8` |

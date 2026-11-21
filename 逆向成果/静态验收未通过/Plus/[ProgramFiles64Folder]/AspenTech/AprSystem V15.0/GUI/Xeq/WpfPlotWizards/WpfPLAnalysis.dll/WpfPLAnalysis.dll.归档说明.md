@@ -1,6 +1,6 @@
 # WpfPLAnalysis.dll
 
-状态为**待静态验收**。已定位并核对发布包中的导出文件，等待逐件静态验收。
+状态为**静态验收未通过**。已转入修复清单，复验组为 4。见[第 2 轮验收记录](WpfPLAnalysis.dll.静态验收.md)。
 
 原路径为 `Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/WpfPlotWizards/WpfPLAnalysis.dll`。
 
