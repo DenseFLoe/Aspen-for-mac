@@ -93,11 +93,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part2.tar.gz
 
-- `decompiled/ComSelSvr.dll.c.txt` sha256=dabbe7f8353815bc8b97b59f0490348b6a9d69c5889cd8c39d07960fbffa2a31 bytes=1716152
-- `decompiled/HyprotechLoader.dll.c.txt` sha256=c5e67a5a91b42a5173a83281d0a3b52c4b8c0deaedff6745e879910900de6050 bytes=477334
-- `decompiled/ThUtilityManager.dll.c.txt` sha256=c95d154b38f8ac722711cdfa5a84d49f7201ad1b40fd44dc3cdb1c684a855aaa bytes=336420
-- `decompiled/hyploader.dll.c.txt` sha256=6883b158d70840ed8e46e5f258bd5b25cb34ba287e25e871126de4520a222b79 bytes=406422
-- `disasm/ComSelSvr.dll.asm.txt` sha256=a60002d05c88be1469de2154678ba582652e116f746e95821a0116ef6f3f4bf5 bytes=2762883
-- `disasm/HyprotechLoader.dll.asm.txt` sha256=01da428c56101e1bbbb273b90c5e9408ea4e8bf8b2d2d9ef753d370b55d14132 bytes=862215
-- `disasm/ThUtilityManager.dll.asm.txt` sha256=573d34b2ffab65acada1955cb156556274582aadf7e951f062588f64d042f7a1 bytes=606242
-- `disasm/hyploader.dll.asm.txt` sha256=bcb1d580be04fbba082852c610b83e82418c696658c5da083f9a54d8d83e6814 bytes=742814
+- `native3/01-completed/Aspen-Plus/[CommonFiles64Folder]/Hyprotech/COMThermo/decompiled/ThUtilityManager.dll.c.txt` sha256=c95d154b38f8ac722711cdfa5a84d49f7201ad1b40fd44dc3cdb1c684a855aaa bytes=336420
+- `native3/01-completed/Aspen-Plus/[CommonFiles64Folder]/Hyprotech/COMThermo/disasm/ThUtilityManager.dll.asm.txt` sha256=573d34b2ffab65acada1955cb156556274582aadf7e951f062588f64d042f7a1 bytes=606242

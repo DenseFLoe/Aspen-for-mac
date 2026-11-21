@@ -1,5 +1,12 @@
 # InfragisticsWPF.Controls.Editors.XamColorPicker.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=629）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/ba75f14da6c3-InfragisticsWPF.Controls.Editors.XamColorPicker.dll/InfragisticsWPF.Controls.Editors.XamColorPicker.dll.cs.txt` sha256=fb7162ac9d518b3b86337d4be64508a4809e1c861cab2c7f946caa12d28ee6ba bytes=150598
+- `clr/ba75f14da6c3-InfragisticsWPF.Controls.Editors.XamColorPicker.dll/InfragisticsWPF.Controls.Editors.XamColorPicker.dll.il.txt` sha256=188b6b4c510d5a94cd519e65d56ac8817417550697ea7c78ec67329960dbf5ab bytes=749325

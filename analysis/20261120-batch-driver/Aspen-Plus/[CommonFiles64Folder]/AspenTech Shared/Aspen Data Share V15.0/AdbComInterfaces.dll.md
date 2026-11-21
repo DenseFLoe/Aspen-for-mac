@@ -1,5 +1,13 @@
 # 005_AdbComInterfaces.dll 静态复核报告（Aspen-Plus / 全程序集 IL + C# 反编译）
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=0）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 样本别名：`005_AdbComInterfaces.dll`（清单 read-test-waiting.csv（schema B），原件目录只读、未上传）
 来源：分支 codex/waiting-for-tietoumao｜git_blob c05b87083f78｜自算 sha256 96d0f54b0b7507f31aa1ba218ade7961cc79443712fcb99a803e9f5dfd822efb｜台账 20261119-61 缺失〔待验证〕
 落点：`01-completed/Aspen-Plus/[CommonFiles64Folder]/AspenTech Shared/Aspen Data Share V15.0/`（相对 `out/R1`）｜定位规则：`local-rel`
@@ -128,6 +136,7 @@ PE 导入表：1 个 DLL。
 
 ## dumps
 
-dumps: repo:逆向成果/待静态验收/Plus/[CommonFiles64Folder]/AspenTech Shared/Aspen Data Share V15.0/AdbComInterfaces.dll.md/分支交付/
+dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- `clr/ac9f22c325f8-AdbComInterfaces.dll/AdbComInterfaces.dll.cs.txt` sha256=a60ea4e0567f93310fd26943bafc443c2bba0a4147ada8a9950f895096a96507 bytes=4821
+- `clr/ac9f22c325f8-AdbComInterfaces.dll/AdbComInterfaces.dll.il.txt` sha256=72dfb495580e09b0c3a4b27fd0984c3cde030df200f8b3b3626756931005a7f0 bytes=9250

@@ -1,5 +1,12 @@
 # AspenTech.NGP.Infrastructure.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=938）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/56162f7698cd-AspenTech.NGP.Infrastructure.dll/AspenTech.NGP.Infrastructure.dll.cs.txt` sha256=dea54218cb2a5e20844f68d075d969e7eaae14de10409ef628308254cd2c53f1 bytes=1511160
+- `clr/56162f7698cd-AspenTech.NGP.Infrastructure.dll/AspenTech.NGP.Infrastructure.dll.il.txt` sha256=72e65ef61be3587d6724f00e810f4606d38484ad60dcdd96e98e0e4d194fa78a bytes=7506940

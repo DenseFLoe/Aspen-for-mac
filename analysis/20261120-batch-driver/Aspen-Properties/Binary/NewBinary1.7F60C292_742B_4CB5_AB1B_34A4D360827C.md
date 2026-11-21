@@ -99,7 +99,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part3.tar.gz
 
-- `decompiled/NewBinary1.7F60C292_742B_4CB5_AB1B_34A4D360827C.c.txt` sha256=527a189eee4612f43e897881428c9aa9dd5d7edf5a635864afb46c5c56b2b979 bytes=3871097
-- `decompiled/NewBinary1.D033E28E_4DE5_4E65_BA40_440476AECD45.c.txt` sha256=165b552c59be0591959903e3819d30fb14ebed0401a3c299d236863a2864d323 bytes=3899142
-- `disasm/NewBinary1.7F60C292_742B_4CB5_AB1B_34A4D360827C.asm.txt` sha256=aaf8a4258346d472bc406dc1eed60b13f911b4d02660dd72ffe58dce33de93b7 bytes=7412506
-- `disasm/NewBinary1.D033E28E_4DE5_4E65_BA40_440476AECD45.asm.txt` sha256=0a7cd8487bb09ae6f7396f2919baffc709e103f522ced42b51cad77dedb58e40 bytes=7471424
+- `native4/01-completed/Aspen-Properties/Binary/decompiled/NewBinary1.7F60C292_742B_4CB5_AB1B_34A4D360827C.c.txt` sha256=527a189eee4612f43e897881428c9aa9dd5d7edf5a635864afb46c5c56b2b979 bytes=3871097
+- `native4/01-completed/Aspen-Properties/Binary/disasm/NewBinary1.7F60C292_742B_4CB5_AB1B_34A4D360827C.asm.txt` sha256=aaf8a4258346d472bc406dc1eed60b13f911b4d02660dd72ffe58dce33de93b7 bytes=7412506

@@ -1,5 +1,12 @@
 # AspenTech.AspenPlus.MMForms.Blocks.ACMModel.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=179）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/d70c1acd3045-AspenTech.AspenPlus.MMForms.Blocks.ACMModel.dll/AspenTech.AspenPlus.MMForms.Blocks.ACMModel.dll.cs.txt` sha256=6d8c9e9489a7019db75c5b3deaa85babfe83f675354f0cb2da80a9ce8227c1eb bytes=204361
+- `clr/d70c1acd3045-AspenTech.AspenPlus.MMForms.Blocks.ACMModel.dll/AspenTech.AspenPlus.MMForms.Blocks.ACMModel.dll.il.txt` sha256=1e20ec759c022a4ebf3117dde75f343b6798b5aa11d6da7cab2918d87eff51c1 bytes=391631

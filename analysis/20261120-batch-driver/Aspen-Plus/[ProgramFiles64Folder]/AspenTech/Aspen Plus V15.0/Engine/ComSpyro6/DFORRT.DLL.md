@@ -93,11 +93,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part3.tar.gz
 
-- `decompiled/ComSpyro6.exe.c.txt` sha256=c2b6b43984d4029cb3166210990f8fde69935fb2b26f132ee720de642431aaf5 bytes=169573
-- `decompiled/ComSpyro6PS.dll.c.txt` sha256=11d70fc4beb952e90241c316f702f5928629892248836f97d452a31c1beeb59e bytes=26093
-- `decompiled/DFORRT.DLL.c.txt` sha256=91ff52d5f9367b00cd75378cfbedf405044a450edaffb9379f72ce6624981f72 bytes=2017681
-- `decompiled/lsapiw32.dll.c.txt` sha256=febff73f0278d026472d9c9dcbafb9d1c39144e6adab3fc402feccbc331713ab bytes=1937569
-- `disasm/ComSpyro6.exe.asm.txt` sha256=e6992a9870f302cd48107e48a341afa27e8b35928787ae72b794a61d0776a201 bytes=324863
-- `disasm/ComSpyro6PS.dll.asm.txt` sha256=e5c62e56f9369bffbcb27e3be189040ca9c754e7bd6122d48eb89d023fb47ebf bytes=43922
-- `disasm/DFORRT.DLL.asm.txt` sha256=2f67c429fe3f286e6deacf2d4e4a79763349f4630f6230e32527561ca7d36318 bytes=3911712
-- `disasm/lsapiw32.dll.asm.txt` sha256=37f6fb980f97bd179c3f6ee435116f79f7325649c3a009f56e2ece19d234f767 bytes=4950408
+- `native4/01-completed/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/Engine/ComSpyro6/decompiled/DFORRT.DLL.c.txt` sha256=91ff52d5f9367b00cd75378cfbedf405044a450edaffb9379f72ce6624981f72 bytes=2017681
+- `native4/01-completed/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/Engine/ComSpyro6/disasm/DFORRT.DLL.asm.txt` sha256=2f67c429fe3f286e6deacf2d4e4a79763349f4630f6230e32527561ca7d36318 bytes=3911712

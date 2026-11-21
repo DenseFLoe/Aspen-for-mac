@@ -1,5 +1,12 @@
 # Microsoft.VisualStudio.Interop.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=16767）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/7626172b2ed5-Microsoft.VisualStudio.Interop.dll/Microsoft.VisualStudio.Interop.dll.cs.txt` sha256=62276252c6287367ecf790499aec8853aca3e312574e7d0fa6e3896798c55963 bytes=4179105
+- `clr/7626172b2ed5-Microsoft.VisualStudio.Interop.dll/Microsoft.VisualStudio.Interop.dll.il.txt` sha256=5ac2d6fd5f4fb6ec07ee55099720c29ec233934530cb9c7e8461512a38761a10 bytes=3224963

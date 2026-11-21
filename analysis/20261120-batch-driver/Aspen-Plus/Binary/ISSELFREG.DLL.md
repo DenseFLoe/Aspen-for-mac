@@ -93,11 +93,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part1.tar.gz
 
-- `decompiled/ISSELFREG.DLL.c.txt` sha256=757d68f3ba25ea7b81a78028f97106db53c7df006b813a0ff2b41d51c15a87ae bytes=225638
-- `decompiled/NewBinary1.31865E14_BBAC_40BB_9F23_5A602AD99EF1.c.txt` sha256=149e3ebdf994938cff5843492bb5c3822260dd03fe44f19ca9ca5cb5335be8c9 bytes=327776
-- `decompiled/NewBinary1.C25FA7FB_B884_414F_A1CE_91EAE0A5FE95.c.txt` sha256=1c6d2cd6ecbb71701f45377d39531d3c8d0edb5b35b9851f702ce3b8db9e7138 bytes=335130
-- `decompiled/NewBinary2.E6666298_EE0A_4DDA_A546_05448F2E1526.c.txt` sha256=8b9fb0d5fd7e8ce20afd00716975a0bdb57cc679ad953eb5d2a92e0d29a4508c bytes=304242
-- `disasm/ISSELFREG.DLL.asm.txt` sha256=2055abe6cc3a2544ba794d30d9ccf88bdf80afcda84c21f6c3802d3e5e54bbcb bytes=457956
-- `disasm/NewBinary1.31865E14_BBAC_40BB_9F23_5A602AD99EF1.asm.txt` sha256=d81259d671686b856ec4f4044382ec0eadbc7d2a99e1042a776e562f2a183524 bytes=652944
-- `disasm/NewBinary1.C25FA7FB_B884_414F_A1CE_91EAE0A5FE95.asm.txt` sha256=dc06ec1b9f1ddae7675bb91752dea8a92f196dfbacb6d1d965e59ca6ce07cf8a bytes=666712
-- `disasm/NewBinary2.E6666298_EE0A_4DDA_A546_05448F2E1526.asm.txt` sha256=467eb626af1b17c2e4544e15994ef6353019a9f9f3dea0b4ad21cf14d5f3cd25 bytes=630030
+- `native2/01-completed/Aspen-Plus/Binary/decompiled/ISSELFREG.DLL.c.txt` sha256=757d68f3ba25ea7b81a78028f97106db53c7df006b813a0ff2b41d51c15a87ae bytes=225638
+- `native2/01-completed/Aspen-Plus/Binary/disasm/ISSELFREG.DLL.asm.txt` sha256=2055abe6cc3a2544ba794d30d9ccf88bdf80afcda84c21f6c3802d3e5e54bbcb bytes=457956

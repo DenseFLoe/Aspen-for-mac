@@ -1,5 +1,12 @@
 # AspenTech.AspenPlus.MMForms.Blocks.Radfrac.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=5258）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/2f7067cdba3f-AspenTech.AspenPlus.MMForms.Blocks.Radfrac.dll/AspenTech.AspenPlus.MMForms.Blocks.Radfrac.dll.cs.txt` sha256=8b0a5f2da47776fa3d189cd0bd08863d49610e6a8a22a90176da8d4586d15867 bytes=3900192
+- `clr/2f7067cdba3f-AspenTech.AspenPlus.MMForms.Blocks.Radfrac.dll/AspenTech.AspenPlus.MMForms.Blocks.Radfrac.dll.il.txt` sha256=8773578b30b580eb82344f623ec64d7ed07d93d657bb31f1231b14a1622bee2e bytes=9029885

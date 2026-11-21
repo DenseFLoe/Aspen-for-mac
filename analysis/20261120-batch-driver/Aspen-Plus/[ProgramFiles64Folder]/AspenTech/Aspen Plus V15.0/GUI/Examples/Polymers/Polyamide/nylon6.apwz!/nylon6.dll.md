@@ -91,4 +91,7 @@
 
 ## dumps
 
-dumps: repo:逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Polymers/Polyamide/nylon6.apwz!/nylon6.dll.md/分支交付/
+dumps: repo:analysis/20261120-batch-driver/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Polymers/Polyamide/nylon6.apwz!/（仓内产物，不在 Release 包）
+
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Polymers/Polyamide/nylon6.apwz!/decompiled/nylon6.dll.c.txt` sha256=dc86b263989924d234888fda305475324f704d06334567af5f9404cf71a78fcd bytes=40966
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Polymers/Polyamide/nylon6.apwz!/disasm/nylon6.dll.asm.txt` sha256=450c9504b6c297bbcc8479037a70fa5987632c5a4fb43db535a593d7f92cda5f bytes=73444

@@ -93,3 +93,10 @@
 - 仅 Ghidra 有、IDA 未单列：无
 - 仅 IDA 有：`sub_10001000`, `sub_10002000`, `DllCanUnloadNow`, `DllGetClassObject`, `_DllMain@12`, `DllRegisterServer`, `DllUnregisterServer`, `IUnknown_QueryInterface_Proxy`
 - 命名口径：上两行按函数名对比。IDA 应用了 FLIRT 库签名（如 `__CRT_INIT@12`、`@__security_check_cookie@4`），同一地址在 Ghidra 侧仍是 `FUN_<addr>`，因此名单差异主要是命名差异；函数个数按上表比对。
+
+## dumps
+
+dumps: v0.20261121-w2#dumps-w2-part1.tar.gz
+
+- `native/01-completed/Aspen-Plus/[CommonFiles64Folder]/AspenTech Shared/decompiled/ComWrappersPS.dll.c.txt` sha256=c112319114d531448dbee1c5460aae4d19b9c8243b0b50694cf4e606fd3f7f0c bytes=27128
+- `native/01-completed/Aspen-Plus/[CommonFiles64Folder]/AspenTech Shared/disasm/ComWrappersPS.dll.asm.txt` sha256=241ef20fb4e4656ef4137d7fb014348543af50cf92988b25155c428581cbc69d bytes=47581

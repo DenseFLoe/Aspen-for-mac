@@ -1,5 +1,12 @@
 # AspenProperties.exe
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=54）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/befe2ad8be58-AspenProperties.exe/AspenProperties.exe.cs.txt` sha256=4b8fe84f220efe5ea392fddab3fd6f502850a2f749a3d23f3df82647f9edebf6 bytes=20550
+- `clr/befe2ad8be58-AspenProperties.exe/AspenProperties.exe.il.txt` sha256=f86796059e08265cb56e156a24477f44a30549fb7af901d78c36707f737fe46a bytes=70597

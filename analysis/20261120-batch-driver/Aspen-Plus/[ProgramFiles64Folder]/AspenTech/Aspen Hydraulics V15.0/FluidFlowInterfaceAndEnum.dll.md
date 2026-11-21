@@ -1,5 +1,12 @@
 # FluidFlowInterfaceAndEnum.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=72）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/174cc8931a4b-FluidFlowInterfaceAndEnum.dll/FluidFlowInterfaceAndEnum.dll.cs.txt` sha256=f22f9c7145fce4eda3d0d630004049e1d8bc1120ae2d6917b486c348285319b4 bytes=6799
+- `clr/174cc8931a4b-FluidFlowInterfaceAndEnum.dll/FluidFlowInterfaceAndEnum.dll.il.txt` sha256=fd9db22716a07586bde32dff3bc5f03155286b6ac868d3f5e372f9fd0e645cb3 bytes=15033

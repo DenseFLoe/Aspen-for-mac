@@ -1,5 +1,12 @@
 # AspenTech.AspenCxs.InfragisticsControls.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=895）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/ee7bf6f04281-AspenTech.AspenCxs.InfragisticsControls.dll/AspenTech.AspenCxs.InfragisticsControls.dll.cs.txt` sha256=523f43b9203cfc9ea97a60cc7cf1975ecb1dffc96946fdcb2d581f11a241abea bytes=283489
+- `clr/ee7bf6f04281-AspenTech.AspenCxs.InfragisticsControls.dll/AspenTech.AspenCxs.InfragisticsControls.dll.il.txt` sha256=737944c18a4f7f6de31fc63b28cbea9c2d5af41afdca4e139ded36ca538c121d bytes=1230948

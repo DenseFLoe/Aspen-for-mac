@@ -1,5 +1,13 @@
 # 054_AspenTech.HtmlHelp.StrongNameInvoke.dll 静态复核报告（Aspen-Plus / 全程序集 IL + C# 反编译）
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=18）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 样本别名：`054_AspenTech.HtmlHelp.StrongNameInvoke.dll`（清单 read-test-waiting.csv（schema B），原件目录只读、未上传）
 来源：分支 codex/waiting-for-tietoumao｜git_blob dfa87f0a0d48｜自算 sha256 d9e08466e285d33665d7b0118e866a4ad0011efe21b15e43f1de7ad8e04b7286｜台账 20261119-61 缺失〔待验证〕
 落点：`01-completed/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Converter V15.0/`（相对 `out/R1`）｜定位规则：`local-rel`
@@ -162,6 +170,7 @@ PE 导入表：1 个 DLL。
 
 ## dumps
 
-dumps: repo:逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/Converter V15.0/AspenTech.HtmlHelp.StrongNameInvoke.dll.md/分支交付/
+dumps: repo:analysis/20261120-batch-driver/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Converter V15.0/（仓内产物，不在 Release 包）
 
-- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Converter V15.0/decompiled/AspenTech.HtmlHelp.StrongNameInvoke.dll.cs.txt` sha256=4d124d1eedf07bfe92463b25f1d429f217f0d902c1ee0882f5658d854178c3ed bytes=8550
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Converter V15.0/il/AspenTech.HtmlHelp.StrongNameInvoke.dll.il.txt` sha256=4d775503c130e454bd7028d853b1b6054dde5b6f87a27ca3ccc558540f422f30 bytes=30978

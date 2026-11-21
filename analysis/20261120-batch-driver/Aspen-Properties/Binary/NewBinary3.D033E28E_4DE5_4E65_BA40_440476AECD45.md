@@ -98,5 +98,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part2.tar.gz
 
-- `decompiled/NewBinary3.D033E28E_4DE5_4E65_BA40_440476AECD45.c.txt` sha256=97583128341ef0c94dc03f27e8bd3b5c733e1f3ae7ffef3f9e46697f452d777c bytes=549732
-- `disasm/NewBinary3.D033E28E_4DE5_4E65_BA40_440476AECD45.asm.txt` sha256=ae6ca108b1fe5351c5b169437eac3a54469a5de571ec6958e1b743fe557a9746 bytes=1029212
+- `native3/01-completed/Aspen-Properties/Binary/decompiled/NewBinary3.D033E28E_4DE5_4E65_BA40_440476AECD45.c.txt` sha256=97583128341ef0c94dc03f27e8bd3b5c733e1f3ae7ffef3f9e46697f452d777c bytes=549732
+- `native3/01-completed/Aspen-Properties/Binary/disasm/NewBinary3.D033E28E_4DE5_4E65_BA40_440476AECD45.asm.txt` sha256=ae6ca108b1fe5351c5b169437eac3a54469a5de571ec6958e1b743fe557a9746 bytes=1029212

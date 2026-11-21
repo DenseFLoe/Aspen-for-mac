@@ -93,7 +93,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part2.tar.gz
 
-- `decompiled/LPMHandler.dll.c.txt` sha256=d9067e48f8940110439174d62a11f25ceb7a382d6010dbd6839dc661d65b8fb5 bytes=888254
-- `decompiled/LPMUtilities.dll.c.txt` sha256=ccc1b80224a8fec74fd48f8a9480eaa377f4c86a8e5d54e50372f9f7b28b8409 bytes=562382
-- `disasm/LPMHandler.dll.asm.txt` sha256=db0e646267084472d20fd73d9faff1217c515d243310e475daa45d22662e18ec bytes=1312814
-- `disasm/LPMUtilities.dll.asm.txt` sha256=88982cb5a7f9393f7cf24c1647b6a677e88670a5bca392622ec0e423786535f0 bytes=780681
+- `native3/01-completed/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Hydraulics V15.0/decompiled/LPMHandler.dll.c.txt` sha256=d9067e48f8940110439174d62a11f25ceb7a382d6010dbd6839dc661d65b8fb5 bytes=888254
+- `native3/01-completed/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Hydraulics V15.0/disasm/LPMHandler.dll.asm.txt` sha256=db0e646267084472d20fd73d9faff1217c515d243310e475daa45d22662e18ec bytes=1312814

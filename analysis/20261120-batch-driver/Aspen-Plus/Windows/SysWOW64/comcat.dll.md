@@ -91,4 +91,7 @@
 
 ## dumps
 
-dumps: repo:逆向成果/待静态验收/Plus/Windows/SysWOW64/comcat.dll.md/分支交付/
+dumps: v0.20261121-w2#dumps-w2-part1.tar.gz
+
+- `native/01-completed/Aspen-Plus/[SystemFolder]/decompiled/comcat.dll.c.txt` sha256=1ed18efb6629f6118baeb32e4160eb9cd7712a03211e70a206249b01103c8de9 bytes=49039
+- `native/01-completed/Aspen-Plus/[SystemFolder]/disasm/comcat.dll.asm.txt` sha256=76b67e4e20f56e401117cc045ad19292c5b066c97ebe7058e0b52cb5337b1175 bytes=120606

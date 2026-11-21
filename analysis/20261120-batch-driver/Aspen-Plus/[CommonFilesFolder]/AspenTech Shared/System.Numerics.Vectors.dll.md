@@ -1,5 +1,12 @@
 # System.Numerics.Vectors.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=188）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/1d3ef8698281-System.Numerics.Vectors.dll/System.Numerics.Vectors.dll.cs.txt` sha256=164a8707d2d1d9e2fcf55a4ec5a4933b03f55c0f8d29709277c92ad1db311056 bytes=225984
+- `clr/1d3ef8698281-System.Numerics.Vectors.dll/System.Numerics.Vectors.dll.il.txt` sha256=d484daceb9caeda39bc148f6ef133469b6f0eee764e96f79d35d63be4dc327db bytes=1396797

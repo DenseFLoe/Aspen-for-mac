@@ -1,5 +1,12 @@
 # AspenTech.Hydraulics.Framework.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=1154）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/9d7e4bf024df-AspenTech.Hydraulics.Framework.dll/AspenTech.Hydraulics.Framework.dll.cs.txt` sha256=68f7edd478cea77a6c56a59efd7444c57f3d9d3b953b7fbe8ade3f3e3489b5ee bytes=214025
+- `clr/9d7e4bf024df-AspenTech.Hydraulics.Framework.dll/AspenTech.Hydraulics.Framework.dll.il.txt` sha256=1bcee7c96da653a6fd85ae87c472f071361a29e90bf31550f1784c9d04e4c277 bytes=1061175

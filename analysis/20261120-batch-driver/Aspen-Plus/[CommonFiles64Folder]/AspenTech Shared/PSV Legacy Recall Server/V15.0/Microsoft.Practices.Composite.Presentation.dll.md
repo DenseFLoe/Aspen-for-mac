@@ -1,5 +1,12 @@
 # Microsoft.Practices.Composite.Presentation.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=368）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/57fad9ec5183-Microsoft.Practices.Composite.Presentation.dll/Microsoft.Practices.Composite.Presentation.dll.cs.txt` sha256=0e00c99a4a3bfe8f6f6725b2ab6377c4d8f96a37cea5f8217d90208beba39c26 bytes=76258
+- `clr/57fad9ec5183-Microsoft.Practices.Composite.Presentation.dll/Microsoft.Practices.Composite.Presentation.dll.il.txt` sha256=f0b21a28a748f0cff1afbdebb78c72f87087ec9cfcd6650af7564e80e9a8c408 bytes=358597

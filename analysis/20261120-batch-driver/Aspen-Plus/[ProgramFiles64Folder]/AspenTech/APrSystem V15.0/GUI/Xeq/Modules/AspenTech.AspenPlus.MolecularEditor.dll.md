@@ -1,5 +1,13 @@
 # 024_AspenTech.AspenPlus.MolecularEditor.dll 静态复核报告（Aspen-Plus / 全程序集 IL + C# 反编译）
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=21）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 样本别名：`024_AspenTech.AspenPlus.MolecularEditor.dll`（清单 read-test-waiting.csv（schema B），原件目录只读、未上传）
 来源：分支 codex/waiting-for-tietoumao｜git_blob 4c1ba0aed21c｜自算 sha256 66eb9fc6b3292291092ed19cff8c17d96f459a83f7c5fada75ede4e5f8cbfe4f｜台账 20261119-61 缺失〔待验证〕
 落点：`01-completed/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/Modules/`（相对 `out/R1`）｜定位规则：`local-rel`
@@ -169,6 +177,7 @@ PE 导入表：1 个 DLL。
 
 ## dumps
 
-dumps: repo:逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/GUI/Xeq/Modules/AspenTech.AspenPlus.MolecularEditor.dll.md/分支交付/
+dumps: repo:analysis/20261120-batch-driver/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/GUI/Xeq/Modules/（仓内产物，不在 Release 包）
 
-- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/GUI/Xeq/Modules/decompiled/AspenTech.AspenPlus.MolecularEditor.dll.cs.txt` sha256=84e2bf2927a1b756f83acab2bfae8248cec9a4601237330a6d517e4a8de129f4 bytes=6865
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/GUI/Xeq/Modules/il/AspenTech.AspenPlus.MolecularEditor.dll.il.txt` sha256=8c83d17ceca3c41be96d8b387666905cd873017bc7deeb0bc6edba7e228f331b bytes=14439

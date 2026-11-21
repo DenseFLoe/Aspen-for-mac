@@ -1,5 +1,13 @@
 # 012_System.Runtime.CompilerServices.Unsafe.dll 静态复核报告（Aspen-Plus / 全程序集 IL + C# 反编译）
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=47）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 样本别名：`012_System.Runtime.CompilerServices.Unsafe.dll`（清单 read-test-waiting.csv（schema B），原件目录只读、未上传）
 来源：分支 codex/waiting-for-tietoumao｜git_blob c5ba4e4047a1｜自算 sha256 37768488e8ef45729bc7d9a2677633c6450042975bb96516e186da6cb9cd0dcf｜台账 20261119-61 缺失〔待验证〕
 落点：`01-completed/Aspen-Plus/[CommonFilesFolder]/AspenTech Shared/`（相对 `out/R1`）｜定位规则：`local-rel`
@@ -134,6 +142,7 @@ PE 导入表：1 个 DLL。
 
 ## dumps
 
-dumps: repo:逆向成果/待静态验收/Plus/[CommonFilesFolder]/AspenTech Shared/System.Runtime.CompilerServices.Unsafe.dll.md/分支交付/
+dumps: repo:analysis/20261120-batch-driver/Aspen-Plus/[CommonFilesFolder]/AspenTech Shared/（仓内产物，不在 Release 包）
 
-- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- `Aspen-Plus/[CommonFilesFolder]/AspenTech Shared/decompiled/System.Runtime.CompilerServices.Unsafe.dll.cs.txt` sha256=f3acddda69bad8a8c94688c4a02822336857adf437ba359df9b9deaf151c9ff2 bytes=11919
+- `Aspen-Plus/[CommonFilesFolder]/AspenTech Shared/il/System.Runtime.CompilerServices.Unsafe.dll.il.txt` sha256=684e82133031cdbd79212785532411cd44632b685188ebd616159b40384822a2 bytes=16136

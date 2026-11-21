@@ -1,5 +1,12 @@
 # HyExtn3.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=70）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/0e63c25e4971-HyExtn3.dll/HyExtn3.dll.cs.txt` sha256=a8ef38b0303c62e44dd54f9e62fb77655c1a20ac9b23304ac7cee7303d787119 bytes=17257
+- `clr/0e63c25e4971-HyExtn3.dll/HyExtn3.dll.il.txt` sha256=8823787af4acd8c78a5f3adb380ec882e7cba9e61a8b2b53d5bea4aab42c1d93 bytes=19458

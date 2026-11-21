@@ -1,5 +1,12 @@
 # System.Memory.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=703）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/bf3fb84664f4-System.Memory.dll/System.Memory.dll.cs.txt` sha256=a5c4727c36a7d81541139ac2ba33d3a7d533665b9fcd12c48cb6d8b5525e30e1 bytes=385257
+- `clr/bf3fb84664f4-System.Memory.dll/System.Memory.dll.il.txt` sha256=dd80b75d6a1628ec2d16f5bd9425fecdd96d5ef88135cce7134f037fc3d7d70b bytes=1435636

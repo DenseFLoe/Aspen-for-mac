@@ -1,5 +1,12 @@
 # InfragisticsWPF.Controls.Editors.XamSlider.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=556）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/5903477b7508-InfragisticsWPF.Controls.Editors.XamSlider.dll/InfragisticsWPF.Controls.Editors.XamSlider.dll.cs.txt` sha256=238b0b55430a5891425a996a6b3192770fe9fbe419ff23ab81c5960dbb8e14d9 bytes=139789
+- `clr/5903477b7508-InfragisticsWPF.Controls.Editors.XamSlider.dll/InfragisticsWPF.Controls.Editors.XamSlider.dll.il.txt` sha256=d5a3d92b12b3485a63f563a7db38f149a30da7f8485855ed4d87459faa9ba6b9 bytes=640050

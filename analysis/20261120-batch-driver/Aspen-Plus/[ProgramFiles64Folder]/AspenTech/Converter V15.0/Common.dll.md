@@ -1,5 +1,12 @@
 # Common.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=786）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/1cfdbbe9c1bd-Common.dll/Common.dll.cs.txt` sha256=5624ec276c7ff9c38cece2413e2813f4726a520c771420b691489902c9d852dc bytes=158355
+- `clr/1cfdbbe9c1bd-Common.dll/Common.dll.il.txt` sha256=65a1fd0f66621478978631a346c5d9def887e711953bc9a78e5695f6097abc6e bytes=696354

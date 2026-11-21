@@ -1,5 +1,12 @@
 # AspenTech.AspenCxs.SummaryGrid.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=1085）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/0dc6f91ea586-AspenTech.AspenCxs.SummaryGrid.dll/AspenTech.AspenCxs.SummaryGrid.dll.cs.txt` sha256=ecba7e82f209031005ecb93f32bd2c84592c99dc0dfc93c89236681af432effc bytes=410333
+- `clr/0dc6f91ea586-AspenTech.AspenCxs.SummaryGrid.dll/AspenTech.AspenCxs.SummaryGrid.dll.il.txt` sha256=b86b1166f4541ec1c00cace1d8bff796cfdfa77701e8ca5ce2eaab75c410920d bytes=1969919

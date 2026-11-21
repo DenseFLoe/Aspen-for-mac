@@ -93,17 +93,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part3.tar.gz
 
-- `decompiled/COCOMTh.dll.c.txt` sha256=c7bd65315e8b8a73d30c75ee4a188ce82bdc1479c1e9cbaea130083e9386b83f bytes=2379887
-- `decompiled/COCOMTh11.dll.c.txt` sha256=14a6a16d6cfd750076f60a6be52f5726db7d45d35562dc1ce381a25347dd723c bytes=2452247
-- `decompiled/HYPCOThK11.dll.c.txt` sha256=55d1c943a4c90f3a5ad7eb92b3587bf369ca06ad66d3281f66ff6d3689c10786 bytes=2650977
-- `decompiled/HyCOGUI.dll.c.txt` sha256=da2cfa352ac9d64fabb3e5bbe3f7658d4bb7a4f91762f08d88dda455e5d9ecfd bytes=1333741
-- `decompiled/HyCOGUI11.dll.c.txt` sha256=89d8a99f78d0264197d1045d6c7f42e4c81a490d3bdb5d683bc9dd4447980ed8 bytes=1388408
-- `decompiled/HypCOTh.dll.c.txt` sha256=4cd77dccd6223affe73c0214082707a05609b6b3d9ec47b0cf9bc9c9995fd4c1 bytes=1964053
-- `decompiled/HypCOTh11.dll.c.txt` sha256=373d7cc23924f1a2b900b9f766e1803b0b97026aa4141413683d0f96b85aba7e bytes=2076357
-- `disasm/COCOMTh.dll.asm.txt` sha256=98e4826e595efe4bdc1299d7575d45048d59ed00cafbd70f119f7bb73bab6943 bytes=4514312
-- `disasm/COCOMTh11.dll.asm.txt` sha256=5afaea20f219a61d64e73ca6747f83923f237a679d804ef1bc44112215c1f8be bytes=4646498
-- `disasm/HYPCOThK11.dll.asm.txt` sha256=2ca5de01a733858721508b839ee15590049603668242b921b5de010754438003 bytes=4753877
-- `disasm/HyCOGUI.dll.asm.txt` sha256=aa53e0a7b406fb1fc7fe95e18f8a9f3cc996b69d924e374d17f547fdd49f03f1 bytes=2390853
-- `disasm/HyCOGUI11.dll.asm.txt` sha256=46f1c4f11801e3ce43ebb59ba1b74598e1b6ad8f06e08a130f21014961da762a bytes=2466686
-- `disasm/HypCOTh.dll.asm.txt` sha256=7e866f32d0cfae07fa4711a051b6a4ba3b7f45e12939d75db3d449a1489f6135 bytes=3665401
-- `disasm/HypCOTh11.dll.asm.txt` sha256=c1b33edb2bda2dd39874bedf1d493af6162a21f4dec73667d584f2ff93825b8c bytes=3865739
+- `native4/01-completed/Aspen-Plus/[CommonFiles64Folder]/Hyprotech/CAPE-OPEN/decompiled/HyCOGUI.dll.c.txt` sha256=da2cfa352ac9d64fabb3e5bbe3f7658d4bb7a4f91762f08d88dda455e5d9ecfd bytes=1333741
+- `native4/01-completed/Aspen-Plus/[CommonFiles64Folder]/Hyprotech/CAPE-OPEN/disasm/HyCOGUI.dll.asm.txt` sha256=aa53e0a7b406fb1fc7fe95e18f8a9f3cc996b69d924e374d17f547fdd49f03f1 bytes=2390853

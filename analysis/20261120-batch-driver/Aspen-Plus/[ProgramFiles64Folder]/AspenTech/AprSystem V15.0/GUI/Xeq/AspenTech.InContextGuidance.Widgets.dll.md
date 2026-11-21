@@ -1,5 +1,12 @@
 # AspenTech.InContextGuidance.Widgets.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=256）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/82fa7ad54654-AspenTech.InContextGuidance.Widgets.dll/AspenTech.InContextGuidance.Widgets.dll.cs.txt` sha256=29ae7309af2982b6834f8e41560f43a69642bf0683b649a239428c60370d7bce bytes=52198
+- `clr/82fa7ad54654-AspenTech.InContextGuidance.Widgets.dll/AspenTech.InContextGuidance.Widgets.dll.il.txt` sha256=0daf167930310bd427cde4112aa15170e2e4e2363b4b515e27d1e47d32cc1eae bytes=242532

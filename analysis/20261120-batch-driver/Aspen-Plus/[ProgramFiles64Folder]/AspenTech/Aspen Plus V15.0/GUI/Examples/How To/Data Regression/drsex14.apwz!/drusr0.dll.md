@@ -91,4 +91,7 @@
 
 ## dumps
 
-dumps: repo:逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/How To/Data Regression/drsex14.apwz!/drusr0.dll.md/分支交付/
+dumps: repo:analysis/20261120-batch-driver/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/How To/Data Regression/drsex14.apwz!/（仓内产物，不在 Release 包）
+
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/How To/Data Regression/drsex14.apwz!/decompiled/drusr0.dll.c.txt` sha256=f07119d4facadb8f651971090ad6ae78d0c9886a4405c4835f42d0aeaeef1cac bytes=20323
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/How To/Data Regression/drsex14.apwz!/disasm/drusr0.dll.asm.txt` sha256=f421846bfe5cdad5e8f0e11ea900f81734ccd00d20b80c9723436a2e6f335746 bytes=36850

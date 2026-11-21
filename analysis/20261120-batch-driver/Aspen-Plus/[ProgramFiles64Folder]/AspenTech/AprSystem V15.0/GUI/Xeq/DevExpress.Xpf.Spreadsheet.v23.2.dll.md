@@ -1,5 +1,12 @@
 # DevExpress.Xpf.Spreadsheet.v23.2.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=10652）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/d1ee338ea418-DevExpress.Xpf.Spreadsheet.v23.2.dll/DevExpress.Xpf.Spreadsheet.v23.2.dll.cs.txt` sha256=86f68103ee12b592ba50501d9a166115df7fc41d4e15fc8c5c6be4f471db3995 bytes=3199287
+- `clr/d1ee338ea418-DevExpress.Xpf.Spreadsheet.v23.2.dll/DevExpress.Xpf.Spreadsheet.v23.2.dll.il.txt` sha256=395e6c00fde9d4087c6e29d363d2d121854336d68fe93da13550346ba290f19e bytes=11342510

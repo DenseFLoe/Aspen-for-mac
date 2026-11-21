@@ -1,5 +1,12 @@
 # Microsoft.VisualStudio.Imaging.Interop.14.0.DesignTime.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=1）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/21e938896014-Microsoft.VisualStudio.Imaging.Interop.14.0.DesignTime.dll/Microsoft.VisualStudio.Imaging.Interop.14.0.DesignTime.dll.cs.txt` sha256=fa602f259b7c1f9bdfa50773604bb8005f85f48f8322fabfa6c60daf948ef3ce bytes=3141
+- 失败记录（不计为产物）：`clr/21e938896014-Microsoft.VisualStudio.Imaging.Interop.14.0.DesignTime.dll/Microsoft.VisualStudio.Imaging.Interop.14.0.DesignTime.dll.il.txt` bytes=666，内容为 ILSpy 版本告警原文，非反编译正文；本件 status=failed_analyze

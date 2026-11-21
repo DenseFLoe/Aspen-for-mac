@@ -1,5 +1,12 @@
 # AspenTech.APXL.Addin.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=750）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/91793f2cc62b-AspenTech.APXL.Addin.dll/AspenTech.APXL.Addin.dll.cs.txt` sha256=4523b71edcb3f65c61300d594d350bc38a683ff32eeaa243ebcebf065c66d8a9 bytes=237329
+- `clr/91793f2cc62b-AspenTech.APXL.Addin.dll/AspenTech.APXL.Addin.dll.il.txt` sha256=e064977a9d6b6380645ca4b24fdf12e23787470efd9ca3cb123f17749e308f4c bytes=864468

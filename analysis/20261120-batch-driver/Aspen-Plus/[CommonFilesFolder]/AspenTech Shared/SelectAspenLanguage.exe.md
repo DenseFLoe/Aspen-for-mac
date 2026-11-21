@@ -1,5 +1,12 @@
 # SelectAspenLanguage.exe
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=48）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/c78b57a0f08e-SelectAspenLanguage.exe/SelectAspenLanguage.exe.cs.txt` sha256=e823abac2dcd967c45c18ea65fdb143a7b2480d6d67a3e0012b6a4663a96d563 bytes=9113
+- `clr/c78b57a0f08e-SelectAspenLanguage.exe/SelectAspenLanguage.exe.il.txt` sha256=8c52cf1d9a5cc7f9a6eb7c1b12a9506b29c5ff989229e76d8c270e135e3bdff4 bytes=34464

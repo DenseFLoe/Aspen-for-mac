@@ -91,4 +91,7 @@
 
 ## dumps
 
-dumps: repo:逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Metals and Minerals/Bayer Process/bayer.apwz!/userfort.dll.md/分支交付/
+dumps: repo:analysis/20261120-batch-driver/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Metals and Minerals/Bayer Process/bayer.apwz!/（仓内产物，不在 Release 包）
+
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Metals and Minerals/Bayer Process/bayer.apwz!/decompiled/userfort.dll.c.txt` sha256=43a01b258fdcf530769f8f3ba74cf58f8863f82802b3819ac3177a4819be9449 bytes=29574
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Metals and Minerals/Bayer Process/bayer.apwz!/disasm/userfort.dll.asm.txt` sha256=40de24c9cf4f987a62e5b52247ea83c2cd6657192af8cc43c4e855ab6a0531c6 bytes=59911

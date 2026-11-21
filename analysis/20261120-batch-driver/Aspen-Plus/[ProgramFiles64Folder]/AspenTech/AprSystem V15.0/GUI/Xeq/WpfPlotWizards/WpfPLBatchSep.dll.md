@@ -1,5 +1,12 @@
 # WpfPLBatchSep.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=841）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/d6ba3b3848dc-WpfPLBatchSep.dll/WpfPLBatchSep.dll.cs.txt` sha256=b74c04e4db7d7c1d5e3ab9b89825e649731769d75a8410c920f547ffb0d17440 bytes=451266
+- `clr/d6ba3b3848dc-WpfPLBatchSep.dll/WpfPLBatchSep.dll.il.txt` sha256=855c3ed1551c492e204f034f0bdb64aec91ab107284af9393b7dc92fe8329360 bytes=2419960

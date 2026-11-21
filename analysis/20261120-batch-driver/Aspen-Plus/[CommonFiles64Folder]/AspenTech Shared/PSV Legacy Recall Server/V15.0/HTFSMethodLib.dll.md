@@ -1,5 +1,12 @@
 # HTFSMethodLib.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=158）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/d48bcc5949cb-HTFSMethodLib.dll/HTFSMethodLib.dll.cs.txt` sha256=bef8c9caa46c8b2a66ba1b6e51b0847f333daf3f006ca0f2877124cca95f44d4 bytes=125099
+- `clr/d48bcc5949cb-HTFSMethodLib.dll/HTFSMethodLib.dll.il.txt` sha256=0c6ca7f067de5ab3b4b711bbb916400ad003c6cd2e06d5161d08fd90fa508b6f bytes=582791

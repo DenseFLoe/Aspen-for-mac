@@ -1,5 +1,13 @@
 # BFDYLD.obj 缺口报告（Aspen-Plus / 未产出 IL 与反编译）
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- tool=pefile 2024.8.26
+- functions=N/A（native：未产出 native 函数统计，见 md 内 reason）
+- decomp_ok=N/A（native：无函数级反编译统计）
+- decomp_fail=N/A（native：无函数级反编译统计）
+
+
 样本别名：`BFDYLD.obj`（清单 read-test-waiting.csv（schema B），原件目录只读、未上传）
 来源：分支 codex/waiting-for-tietoumao｜git_blob 7c457648b688｜自算 sha256 3caaf37f068d6fa7c36ae8d1600055e236002a2538baa2a15f377769a1c1620a｜台账 20261119-61 缺失〔待验证〕
 落点：`02-incomplete\Aspen-Plus\[ProgramFiles64Folder]\AspenTech\Aspen Plus V15.0\GUI\Examples\Biofuel and Biochemicals\Bioethanol from Corn Stover\Lignocellulosic biomass to ethanol.apwz!/`（相对 `out/R1`）｜定位规则：`local-rel`
@@ -54,6 +62,4 @@
 
 ## dumps
 
-dumps: 无（unsupported_non_pe，无 PE 头）
-
-- tool=pefile 2024.8.26
+dumps: 无（非 PE（COFF 静态库/对象归档），本轮不产出 dump）

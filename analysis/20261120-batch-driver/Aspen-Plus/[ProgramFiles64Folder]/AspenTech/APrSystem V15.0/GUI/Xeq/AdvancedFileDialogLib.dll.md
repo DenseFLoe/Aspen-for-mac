@@ -1,5 +1,13 @@
 # 016_AdvancedFileDialogLib.dll 静态复核报告（Aspen-Plus / 全程序集 IL + C# 反编译）
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=5）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 样本别名：`016_AdvancedFileDialogLib.dll`（清单 read-test-waiting.csv（schema B），原件目录只读、未上传）
 来源：分支 codex/waiting-for-tietoumao｜git_blob 69e98ce6ee48｜自算 sha256 dc459f335bfda3a3053046a4b18eff669f624673188e1bb274b45fe655a7e8e5｜台账 20261119-61 缺失〔待验证〕
 落点：`01-completed/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/`（相对 `out/R1`）｜定位规则：`local-rel`
@@ -144,6 +152,7 @@ PE 导入表：1 个 DLL。
 
 ## dumps
 
-dumps: repo:逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/GUI/Xeq/AdvancedFileDialogLib.dll.md/分支交付/
+dumps: repo:analysis/20261120-batch-driver/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/GUI/Xeq/（仓内产物，不在 Release 包）
 
-- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/GUI/Xeq/decompiled/AdvancedFileDialogLib.dll.cs.txt` sha256=c945dc9fdf13fa65e4085f42d70e4820ac8d831bc7a51465c50015f7f81e7373 bytes=11179
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/GUI/Xeq/il/AdvancedFileDialogLib.dll.il.txt` sha256=ceb198d9fabebbcd4a097b35b1908cc1eca1da58c8e0b26c96acfc00ef430353 bytes=13743

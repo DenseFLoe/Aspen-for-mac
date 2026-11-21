@@ -1,5 +1,12 @@
 # AspenTech.ActivationDashboard.EdrActivation.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=947）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/164b3f4cb6e2-AspenTech.ActivationDashboard.EdrActivation.dll/AspenTech.ActivationDashboard.EdrActivation.dll.cs.txt` sha256=384691c90191e05c804e3706791a9a804fe5f191ce7f453ab4b66d3602892dde bytes=239400
+- `clr/164b3f4cb6e2-AspenTech.ActivationDashboard.EdrActivation.dll/AspenTech.ActivationDashboard.EdrActivation.dll.il.txt` sha256=8df1ad4a0f640270a1382362e8c7c1851ec49fdb1058764af8756f3920703458 bytes=1215031

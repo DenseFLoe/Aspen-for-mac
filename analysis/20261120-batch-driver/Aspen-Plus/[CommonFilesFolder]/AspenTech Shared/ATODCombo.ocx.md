@@ -108,15 +108,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part2.tar.gz
 
-- `decompiled/ATODCombo.ocx.c.txt` sha256=8ff405a5a7fd748991de29365dbdd04154fea0ceaaba817a40ce51881872412e bytes=226599
-- `decompiled/CxsInteropComV20.dll.c.txt` sha256=7247436655e00ca336f6503323e1e4a0cc295e57b2d5418b9cd73d39d598f48d bytes=430872
-- `decompiled/CxsInteropComV22.dll.c.txt` sha256=5e840cae097dac64f5a126aef3f05664d69a6f4f99dca15bf4e6092a2f851fd5 bytes=490345
-- `decompiled/MMCFormsShim.dll.c.txt` sha256=5f60f4fb887fe5b74738bded2ab5aa40b0e0fa2978ed58e27178f307163c3154 bytes=528918
-- `decompiled/MolStructure.dll.c.txt` sha256=292e7c4085eb57c2f105749cd6c373a9ffe97ac043fef16b5a0ae396ce6adca3 bytes=484371
-- `decompiled/MoleStruct.ocx.c.txt` sha256=33ebd4703c97942cc89d82d6b64428529177df3eb19b5785b07ea51029913e00 bytes=408119
-- `disasm/ATODCombo.ocx.asm.txt` sha256=39af7a17492500c089c1e62d2d524d6c64d647ad33bbb3433d1e6fe60e64b069 bytes=498436
-- `disasm/CxsInteropComV20.dll.asm.txt` sha256=5908421e25c01424fb72ae6c7fc5be562be8befb471671360c8f9298124f08a4 bytes=827714
-- `disasm/CxsInteropComV22.dll.asm.txt` sha256=5eb8c13c107f6b70dc520958795c815d8a3885ab646a683d9af8a2e9b1e65b2c bytes=944367
-- `disasm/MMCFormsShim.dll.asm.txt` sha256=8f29e15f3d0c8277cf20d056076d3b1e6305057a345b6a6707a0f9b8a6b5bf6c bytes=996450
-- `disasm/MolStructure.dll.asm.txt` sha256=0119be48bb41532d3223a2de27db15645c620905a4a2cf4b5b4c5de4b4f9beda bytes=826502
-- `disasm/MoleStruct.ocx.asm.txt` sha256=74f63aca44e90c55b015efef53370a5e841c7f0271c59effda559dc33b1c8545 bytes=560271
+- `native3/01-completed/Aspen-Plus/[CommonFilesFolder]/AspenTech Shared/decompiled/ATODCombo.ocx.c.txt` sha256=8ff405a5a7fd748991de29365dbdd04154fea0ceaaba817a40ce51881872412e bytes=226599
+- `native3/01-completed/Aspen-Plus/[CommonFilesFolder]/AspenTech Shared/disasm/ATODCombo.ocx.asm.txt` sha256=39af7a17492500c089c1e62d2d524d6c64d647ad33bbb3433d1e6fe60e64b069 bytes=498436

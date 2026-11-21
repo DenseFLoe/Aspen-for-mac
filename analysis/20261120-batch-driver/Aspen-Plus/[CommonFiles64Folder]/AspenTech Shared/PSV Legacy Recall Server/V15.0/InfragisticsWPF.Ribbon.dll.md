@@ -1,5 +1,12 @@
 # InfragisticsWPF.Ribbon.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=3744）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/1f9b18fd7fc9-InfragisticsWPF.Ribbon.dll/InfragisticsWPF.Ribbon.dll.cs.txt` sha256=2b9149cfb3338c2008c0b88ca12e1d826a961af3cb76453d2cb23bec31d23f1a bytes=1465603
+- `clr/1f9b18fd7fc9-InfragisticsWPF.Ribbon.dll/InfragisticsWPF.Ribbon.dll.il.txt` sha256=6196926a9ef39359473976258b568b9deea120a05cce5efe735f5f744467e461 bytes=5519679

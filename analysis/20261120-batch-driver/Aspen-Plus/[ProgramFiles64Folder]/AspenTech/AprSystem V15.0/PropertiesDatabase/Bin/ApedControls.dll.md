@@ -1,5 +1,13 @@
 # ApedControls.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- tool=dnfile.dnPE 0.18.0 / pefile 2024.8.26（均不支持该格式，见原始报错）
+- functions=N/A（nonPE：未产出 native 函数统计，见 md 内 reason）
+- decomp_ok=N/A（nonPE：无函数级反编译统计）
+- decomp_fail=N/A（nonPE：无函数级反编译统计）
+
+
 ## 0. 摘要
 - status=unsupported_non_pe
 - kind=nonPE / ext=dll
@@ -15,6 +23,4 @@
 
 ## dumps
 
-dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
-
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+dumps: 无（unsupported_non_pe：无 PE 头，不产出 dump）

@@ -1,5 +1,12 @@
 # Interop.Happ.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=1425）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/c21b432f0d04-Interop.Happ.dll/Interop.Happ.dll.cs.txt` sha256=f592d67ca8971ca0ed0501383710baabe54f100a41a0b195d658ae5a6bae3f9a bytes=315214
+- `clr/c21b432f0d04-Interop.Happ.dll/Interop.Happ.dll.il.txt` sha256=a674caaf267566b6c4c41dc4079a34d257bf341014bb47b3da6492ce07ddbe28 bytes=300704

@@ -1,5 +1,12 @@
 # AspenTech.AspenPlus.ColumnAnalysisIntegration.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=2238）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/851be7f138d2-AspenTech.AspenPlus.ColumnAnalysisIntegration.dll/AspenTech.AspenPlus.ColumnAnalysisIntegration.dll.cs.txt` sha256=e1a4de680e09764e21fb164455073c40af6c319f238da71c6438191eb3e38c07 bytes=2306034
+- `clr/851be7f138d2-AspenTech.AspenPlus.ColumnAnalysisIntegration.dll/AspenTech.AspenPlus.ColumnAnalysisIntegration.dll.il.txt` sha256=0e6aab2b1026335122c518eb36a8c0f38134f448e48672156940bcf2df8ae289 bytes=6562537

@@ -1,5 +1,12 @@
 # WpfPLScreen.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=148）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/465e11453dd8-WpfPLScreen.dll/WpfPLScreen.dll.cs.txt` sha256=8a12f5be5fca23f42049ac11667b5aa3628d37b15c2875339628ee9a5d77782b bytes=39859
+- `clr/465e11453dd8-WpfPLScreen.dll/WpfPLScreen.dll.il.txt` sha256=5b0206d3e8da8f7f36008dae6650a4174493eb053f1c1169ca119137ae9e5e8f bytes=148762

@@ -1,5 +1,13 @@
 # 015_AdbComInterfaces.dll 静态复核报告（Aspen-Plus / 全程序集 IL + C# 反编译）
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=0）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 样本别名：`015_AdbComInterfaces.dll`（清单 read-test-waiting.csv（schema B），原件目录只读、未上传）
 来源：分支 codex/waiting-for-tietoumao｜git_blob 14285f239cba｜自算 sha256 b1950b8a1a73c4cb58167ec59a6a3bb0a534d98f285992d1145c6415abfb62d1｜台账 20261119-61 缺失〔待验证〕
 落点：`01-completed/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/`（相对 `out/R1`）｜定位规则：`local-rel`
@@ -125,3 +133,10 @@ PE 导入表：1 个 DLL。
 - 反编译（ILSpy 9.1.0.7988）产出 194 行 C#，与 IL 清单可逐条对齐〔实测〕。
 - P/Invoke 声明 0 条、PE 导入 DLL 1 个，均已列出〔实测〕。
 - 未验证项集中在签名/运行期/上游对照（§7），不影响本轮静态定位结论〔待验证〕。
+
+## dumps
+
+dumps: repo:analysis/20261120-batch-driver/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/GUI/Xeq/（仓内产物，不在 Release 包）
+
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/GUI/Xeq/decompiled/AdbComInterfaces.dll~ac9f22c3.cs.txt` sha256=6a92eae9c5a21fdd04d051d27a4169bf32c5683ed524c7d640e7227a374a7b7b bytes=4627
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/GUI/Xeq/il/AdbComInterfaces.dll~ac9f22c3.il.txt` sha256=4c185d72d22bec74109e6ca69d89cecf564e0628e2d6f8415961aabf35786fd3 bytes=9175

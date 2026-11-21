@@ -1,5 +1,12 @@
 # PluginsSupport.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=48）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/60fd8dcad05b-PluginsSupport.dll/PluginsSupport.dll.cs.txt` sha256=7f7f48a42ce56e3a9ba6471293789027df0ed12a5c4b6e3f1aa09783151833da bytes=7319
+- `clr/60fd8dcad05b-PluginsSupport.dll/PluginsSupport.dll.il.txt` sha256=1cb82b7b467ff6a19397e5b18e03217b97ec2b27b48971f2cc4ac10e237310b5 bytes=27096

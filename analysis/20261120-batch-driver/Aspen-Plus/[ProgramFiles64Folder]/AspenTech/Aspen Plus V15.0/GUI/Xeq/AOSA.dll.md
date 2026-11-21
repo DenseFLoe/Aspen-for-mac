@@ -93,21 +93,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part2.tar.gz
 
-- `decompiled/ACMWrapper.dll.c.txt` sha256=febecfb6a59b991c9d34bd524582ef8e2e7dfe3644576fbe488f5be0c08cd9ad bytes=567796
-- `decompiled/AOSA.dll.c.txt` sha256=d5a0a81c76594f3617c8a7d52576bd3ce4002dd70b2c05388a0231eaf80aec4f bytes=333752
-- `decompiled/APConSvr.exe.c.txt` sha256=619c1d3fe397e648dd806306519ad049d09045e7f3bb94af084f9a20d29447e0 bytes=593752
-- `decompiled/AtlasUtilCME.dll.c.txt` sha256=406fc0940cd149ca83ac7fa730a46805741292be065c2bfb01bb96f2f6a4c411 bytes=494906
-- `decompiled/CalcExcelAddInATL.dll.c.txt` sha256=865fe09b62782ad59f1a8e83131b60642c5136690af5042231d26066db59052b bytes=1246316
-- `decompiled/SMMBlocks.dll.c.txt` sha256=33ca0c5928a676c61908d935bc49c941215b00dc68fd5979b46983b8fc4b6dca bytes=450738
-- `decompiled/fxviewCME.dll.c.txt` sha256=698185f37aa8f0dafa8ad71a09b7c756870ae64f85af49ec6131f80cc4fc38af bytes=665862
-- `decompiled/mmhost.dll.c.txt` sha256=b39818fc2da49c411d85a7ac7b698efb916af71074b8f29e3112a0ecf83db7d2 bytes=928279
-- `disasm/ACMWrapper.dll.asm.txt` sha256=137b07a43498f16817a2fb4da39557ba348cbc00955a24be47c4d0b4ebacb6d5 bytes=860905
-- `disasm/AOSA.dll.asm.txt` sha256=104f725a29c5ff68f5bf3b26e7cde071c31288683ae547723d27921df135c6ce bytes=634460
-- `disasm/APConSvr.exe.asm.txt` sha256=2ffff80c1a33869c7567d0d768bc694b21d216dfe9fc1fda00433b6c6b593423 bytes=1135414
-- `disasm/AtlasUtilCME.dll.asm.txt` sha256=3fef7befd20552ba03ae232ff701f7d9f72d5d461323add2a737a6d4a40d59f1 bytes=1025774
-- `disasm/CalcExcelAddInATL.dll.asm.txt` sha256=c957f5bcec9933db5c804c30e5a95e3b9e1161641652285cca0aa978cf17be7a bytes=1723645
-- `disasm/SMMBlocks.dll.asm.txt` sha256=d56180468584efe2520a26110b084b2fd9676f45dde44b1b3916156e14ff0607 bytes=879031
-- `disasm/fxviewCME.dll.asm.txt` sha256=bfac0eca40b20f970f24d7b5aeee8e67d5f7e8fc74584e61cb778615cbc1c0bb bytes=1069269
-- `disasm/mmhost.dll.asm.txt` sha256=c42b2d19913dd3801b19d0b0313f1f05e3d6f3db2b9c16aa9ddfc32fae07b8d9 bytes=1688672
-- `x86/decompiled/CalcExcelAddInATL32.dll.c.txt` sha256=e2601d257e83c9cd1b65785a2481a672319a726ae681a3a4a9cf50236ab9e7f7 bytes=902789
-- `x86/disasm/CalcExcelAddInATL32.dll.asm.txt` sha256=64b03cfd012bb24478ea52c38ed13b9f05ab6c6bd29b256f5c125ebe228bed9c bytes=1420784
+- `native3/01-completed/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Xeq/decompiled/AOSA.dll.c.txt` sha256=d5a0a81c76594f3617c8a7d52576bd3ce4002dd70b2c05388a0231eaf80aec4f bytes=333752
+- `native3/01-completed/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Xeq/disasm/AOSA.dll.asm.txt` sha256=104f725a29c5ff68f5bf3b26e7cde071c31288683ae547723d27921df135c6ce bytes=634460

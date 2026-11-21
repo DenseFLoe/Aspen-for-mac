@@ -1,5 +1,12 @@
 # DevExpress.Xpf.LayoutControl.v23.2.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=3336）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/e8e8dbeb3b63-DevExpress.Xpf.LayoutControl.v23.2.dll/DevExpress.Xpf.LayoutControl.v23.2.dll.cs.txt` sha256=9e78ca69f194b35aa89ca47f3c4a9f564f247a237d293ed5e333544d01bb5cda bytes=777932
+- `clr/e8e8dbeb3b63-DevExpress.Xpf.LayoutControl.v23.2.dll/DevExpress.Xpf.LayoutControl.v23.2.dll.il.txt` sha256=e5d9483dedb83b9612e818b98d1043c3ab176ae6a39678c9880858a0a7565179 bytes=3277970

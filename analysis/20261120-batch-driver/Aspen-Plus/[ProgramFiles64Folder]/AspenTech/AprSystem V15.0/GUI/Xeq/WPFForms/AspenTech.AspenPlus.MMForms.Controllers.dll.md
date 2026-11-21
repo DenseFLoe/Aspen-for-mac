@@ -1,5 +1,12 @@
 # AspenTech.AspenPlus.MMForms.Controllers.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=428）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/c3d1a7659c88-AspenTech.AspenPlus.MMForms.Controllers.dll/AspenTech.AspenPlus.MMForms.Controllers.dll.cs.txt` sha256=507d935db81b2e0b2c902e48731aa26e9601e430fe3ac07c7a5bf509213446eb bytes=283503
+- `clr/c3d1a7659c88-AspenTech.AspenPlus.MMForms.Controllers.dll/AspenTech.AspenPlus.MMForms.Controllers.dll.il.txt` sha256=4fe158deb20713bf73fa43dbd776212c42c65279116273189d383c14229875a1 bytes=781669

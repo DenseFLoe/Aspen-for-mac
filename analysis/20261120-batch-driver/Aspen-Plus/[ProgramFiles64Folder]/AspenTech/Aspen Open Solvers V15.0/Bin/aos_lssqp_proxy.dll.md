@@ -100,43 +100,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part3.tar.gz
 
-- `decompiled/ApSparseExePS.dll.c.txt` sha256=fe799ba1c394fcac208a847b7b154e5c56d596377aa7ef6984407cd25a93a0fc bytes=27099
-- `decompiled/aos_cbc.dll.c.txt` sha256=b164e298ceef06d6f99021a62fee4b3846afb7185d237e6bff444e325a5b8002 bytes=82997
-- `decompiled/aos_decomp_dmo.dll.c.txt` sha256=d36d6bb798510034e64340322a3a6e275e34467f0ae4135b755bebad27fef12d bytes=2200173
-- `decompiled/aos_decomp_lssqp.dll.c.txt` sha256=73d5988c34a25f48ca8d40e8d6cb896e0d45713499bac29d20e189cf13fa92b2 bytes=2200185
-- `decompiled/aos_decomp_sparse.dll.c.txt` sha256=79865bd6144338c21ace6d1a996912408a29ee17c88cf007f7be7f79d8ccaa02 bytes=2200176
-- `decompiled/aos_homotopy_nlap_dmo.dll.c.txt` sha256=f2dcebf861a69598ef5c7b2d091b1ddb4083e2494bdf55011673078a2605e609 bytes=137683
-- `decompiled/aos_homotopy_nlap_lssqp.dll.c.txt` sha256=78b718d7de1e1526edf8de4639faed72778778c66adbc5ba46bad9a9b7f58c94 bytes=137693
-- `decompiled/aos_homotopy_sparse.dll.c.txt` sha256=16100f9dfe677a21c660d787dfbfe3f513e35db63dee2220fddf0dea017bc8b8 bytes=137678
-- `decompiled/aos_lapack.dll.c.txt` sha256=d2a5ed1d5301b2d749739a82ffd1a47e27cc620f744e4c92dba13a91d0b51b78 bytes=2852486
-- `decompiled/aos_lssqp.dll.c.txt` sha256=b81c3cdca863d913c346af7c09a158a00e2ee01153feb59b3a30f6798c9f0479 bytes=2848607
-- `decompiled/aos_lssqp_proxy.dll.c.txt` sha256=b81c3cdca863d913c346af7c09a158a00e2ee01153feb59b3a30f6798c9f0479 bytes=2848607
-- `decompiled/aos_nelder_mead.dll.c.txt` sha256=9d0508b382e8f99da36849be36cb31b64b41bdf01a1317f9b42cbd8244de88d7 bytes=371183
-- `decompiled/aos_nlap_dmo.dll.c.txt` sha256=db15c1321a697f8e3c52c5b9f4ec994a68dda5ae8964851788f0b2c13721f98f bytes=121022
-- `decompiled/aos_nlap_lssqp.dll.c.txt` sha256=049b76112c4f6177c3b8519fbbdc2903a56753eacba214a4224fded3c9f832aa bytes=121030
-- `decompiled/aos_services.dll.c.txt` sha256=b29b1888b6b8cd4dba2f71bf9471794bf6938a309d710993f37b00872598b653 bytes=82709
-- `decompiled/aos_sparselm.dll.c.txt` sha256=12f12f4ed82521d549c01b2a1fabfe6a99942d7d262b989e986ea76f7fee13f1 bytes=4030835
-- `decompiled/aos_xslp.dll.c.txt` sha256=15a122015aa23dba34cf474ec2c40502fe8082906ad2552fed70e38ea94b78ed bytes=1380624
-- `decompiled/aosutils.dll.c.txt` sha256=f47051540419ee9d6da922bb4be848995276e889ad44c3d1463aa789b035f5c3 bytes=167547
-- `decompiled/dmoblas.dll.c.txt` sha256=ee30cb1dea7a1c0a63631724ea7e870a7dc3f5d89bd91c52e99111b87e1a65cb bytes=115546
-- `decompiled/xprl.dll.c.txt` sha256=0897605e39fe7c28943dc6247030d21962c51d60957265d1723723f7d6cc40a3 bytes=3198097
-- `disasm/ApSparseExePS.dll.asm.txt` sha256=1d3342a7c38a1634b7a9ea3b33e549e592058df612ec489d1d610eceb037fa86 bytes=41273
-- `disasm/aos_cbc.dll.asm.txt` sha256=f20cb01441e7b3886d84c4dfef789bf9aecf57d1ba7fb1d9f2320708f6cf31f4 bytes=141669
-- `disasm/aos_decomp_dmo.dll.asm.txt` sha256=8252638be728687da505d6c1349c04d77de7be5f94fbc23d3128a4f5d377b83e bytes=4299027
-- `disasm/aos_decomp_lssqp.dll.asm.txt` sha256=8e87ceea3a572e3c604f2b7b69c4aa455d9752a6e45dd27a73df2b96ecc6d786 bytes=4299044
-- `disasm/aos_decomp_sparse.dll.asm.txt` sha256=cae00584d61a352b96fe734ed4291ca2c9150f0dfc611f294075c63f17852791 bytes=4299028
-- `disasm/aos_homotopy_nlap_dmo.dll.asm.txt` sha256=0f0ccb2cc1274fe75fce1c6bf5faf50d0c13b125e60771c2585d253d440322ca bytes=267523
-- `disasm/aos_homotopy_nlap_lssqp.dll.asm.txt` sha256=a375372474b59529f459fdd4e1d40b588aa76d81a2aa5890902d134887689964 bytes=267537
-- `disasm/aos_homotopy_sparse.dll.asm.txt` sha256=c991cab264d98f0e92a0d1d6931f2eee36f0d2ec679d3f8c52b77b0f780ae97f bytes=267519
-- `disasm/aos_lapack.dll.asm.txt` sha256=f55c3e506bbeee478fb47cc5b7aac4eb21eb067b399f488ef207a06835d8cdfe bytes=4429943
-- `disasm/aos_lssqp.dll.asm.txt` sha256=4a32c2ec6c3fa5c1e72222c3b4b353304ad13ac98d897f1d3e943edb8d3a2bc6 bytes=4873047
-- `disasm/aos_lssqp_proxy.dll.asm.txt` sha256=f27bcfcd09f8bf6f821eed68ab59e0d4e87987a7f3344e8ec34ddfdaae1b2d05 bytes=4873041
-- `disasm/aos_nelder_mead.dll.asm.txt` sha256=0d8b870993e257dcfcd87414cad444593cccc8d5f44cbc9f0b0195ac8a34f298 bytes=437519
-- `disasm/aos_nlap_dmo.dll.asm.txt` sha256=f60a2175b4c9e87f4502b917962907314aa4aec1b99f7f69f8f301cf6551ba64 bytes=198474
-- `disasm/aos_nlap_lssqp.dll.asm.txt` sha256=d580bcd53b4ccb9bffe606489f659d803363d19580a9246ddf0438b77f02d642 bytes=198487
-- `disasm/aos_services.dll.asm.txt` sha256=9d897b379e81a310af139ebf442e80bf1e7628e60af795899cfeb55e7bf8bafb bytes=141507
-- `disasm/aos_sparselm.dll.asm.txt` sha256=f597e7a90bc62cea94ef4e85b9462e7e4fe37610b81b86a826f6f241fcd106d1 bytes=6062965
-- `disasm/aos_xslp.dll.asm.txt` sha256=d7a37e412ce65765a1ddd72b700fb9782a7beef55f17915d59d90c6f11676f19 bytes=3143799
-- `disasm/aosutils.dll.asm.txt` sha256=b97753eedd96c1a4e57336cda6a62c9637852c5289aeb1903411f6dc42424afc bytes=380583
-- `disasm/dmoblas.dll.asm.txt` sha256=c209c504289c415a16fd3dd0ddcd98be68c5fb0bf127a8364123495735099b65 bytes=296052
-- `disasm/xprl.dll.asm.txt` sha256=e644e3d1412dad77fda9f5cf3eaa149a99956d78b928845a4c945d205c0d9b35 bytes=5821109
+- `native4/01-completed/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Open Solvers V15.0/Bin/decompiled/aos_lssqp_proxy.dll.c.txt` sha256=b81c3cdca863d913c346af7c09a158a00e2ee01153feb59b3a30f6798c9f0479 bytes=2848607
+- `native4/01-completed/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Open Solvers V15.0/Bin/disasm/aos_lssqp_proxy.dll.asm.txt` sha256=f27bcfcd09f8bf6f821eed68ab59e0d4e87987a7f3344e8ec34ddfdaae1b2d05 bytes=4873041

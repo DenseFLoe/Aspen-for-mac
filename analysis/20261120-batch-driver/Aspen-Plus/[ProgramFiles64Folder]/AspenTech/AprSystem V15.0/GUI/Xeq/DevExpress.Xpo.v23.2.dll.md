@@ -1,5 +1,12 @@
 # DevExpress.Xpo.v23.2.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=12939）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/63bb0718eb01-DevExpress.Xpo.v23.2.dll/DevExpress.Xpo.v23.2.dll.cs.txt` sha256=56f273d57b9738393ebdaf7aba9e3d03ff65377cda2558481b7381c8eb622b4f bytes=4672067
+- `clr/63bb0718eb01-DevExpress.Xpo.v23.2.dll/DevExpress.Xpo.v23.2.dll.il.txt` sha256=06b4ffd4abcb82826a4342f156b085ba2d54161cc301b72cdb5d7139099bd525 bytes=19664728

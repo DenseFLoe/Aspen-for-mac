@@ -93,5 +93,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part1.tar.gz
 
-- `decompiled/userdigest.dll.c.txt` sha256=9dc58c61e3a85b95735476a842ea1c1a92fc168fd49fb6304b56ff889c171e8a bytes=43369
-- `disasm/userdigest.dll.asm.txt` sha256=b9774a856addb78e23dcf8d01e3649f94ba2c207cd56389f907b23a1bb1b7a00 bytes=78019
+- `native/01-completed/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Biofuel and Biochemicals/Bioethanol from Corn Stover/corn_stover_to_ethanol.apwz!/decompiled/userdigest.dll.c.txt` sha256=9dc58c61e3a85b95735476a842ea1c1a92fc168fd49fb6304b56ff889c171e8a bytes=43369
+- `native/01-completed/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Biofuel and Biochemicals/Bioethanol from Corn Stover/corn_stover_to_ethanol.apwz!/disasm/userdigest.dll.asm.txt` sha256=b9774a856addb78e23dcf8d01e3649f94ba2c207cd56389f907b23a1bb1b7a00 bytes=78019

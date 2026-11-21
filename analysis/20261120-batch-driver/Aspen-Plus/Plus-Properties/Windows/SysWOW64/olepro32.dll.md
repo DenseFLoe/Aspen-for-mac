@@ -93,3 +93,10 @@
 - 仅 Ghidra 有、IDA 未单列：无
 - 仅 IDA 有：``dynamic initializer for 'g_sys''`, ``dynamic initializer for 'g_hHeap''`, `?SuspendImpersonate@@YGJPAPAX@Z`, `?IsUserHiveOK@@YGJPAXPAH@Z`, `?CalculateHklmOnlyClassicCOMCatalogGlobalOptionStatus@@YGJXZ`, `_OpenClassesRootKeyExW@12`, `?LoadOleAut@@YGJXZ`, `__OleTranslateColor@12`
 - 命名口径：上两行按函数名对比。IDA 应用了 FLIRT 库签名（如 `__CRT_INIT@12`、`@__security_check_cookie@4`），同一地址在 Ghidra 侧仍是 `FUN_<addr>`，因此名单差异主要是命名差异；函数个数按上表比对。
+
+## dumps
+
+dumps: v0.20261121-w2#dumps-w2-part1.tar.gz
+
+- `native2/01-completed/Plus-Properties/Windows/SysWOW64/decompiled/olepro32.dll.c.txt` sha256=984a417c16cf2885d5ab641c4b287e21632b9bbe34530dcd28e64dd81c22359f bytes=368584
+- `native2/01-completed/Plus-Properties/Windows/SysWOW64/disasm/olepro32.dll.asm.txt` sha256=b2e774d715a962a2bd8643972dfee55e2fe69a88e034299fa9659d8a1d4937f7 bytes=671099

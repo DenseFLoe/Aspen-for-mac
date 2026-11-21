@@ -1,5 +1,12 @@
 # AspenCustomModelManager.exe
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=39）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/7566a80383a6-AspenCustomModelManager.exe/AspenCustomModelManager.exe.cs.txt` sha256=97006c5d9fc4b4a3caccca0cade993a43b9d68be0ebdfe6e2a06deef2466c6d6 bytes=13966
+- `clr/7566a80383a6-AspenCustomModelManager.exe/AspenCustomModelManager.exe.il.txt` sha256=f9f55f9c1dcb204ab76c061a2cf1a8edfe81353f394b9e249c1a4dd0c71563c2 bytes=62161

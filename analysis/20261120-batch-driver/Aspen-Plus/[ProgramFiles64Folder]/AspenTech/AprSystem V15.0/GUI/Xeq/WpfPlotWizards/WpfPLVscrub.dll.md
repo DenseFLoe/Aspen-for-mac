@@ -1,5 +1,12 @@
 # WpfPLVscrub.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=118）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/fa20efed0f92-WpfPLVscrub.dll/WpfPLVscrub.dll.cs.txt` sha256=f395f0938d2cf5d85d0d4f834f2408169cb735b8751f618122b2f8cd108d65ba bytes=26412
+- `clr/fa20efed0f92-WpfPLVscrub.dll/WpfPLVscrub.dll.il.txt` sha256=ee0819d953bbee582468420c292b4217f3d16f6b239619b40d95309f5143df05 bytes=83590

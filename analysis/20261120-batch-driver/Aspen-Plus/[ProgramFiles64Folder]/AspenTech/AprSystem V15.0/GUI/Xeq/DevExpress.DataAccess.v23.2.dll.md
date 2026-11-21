@@ -1,5 +1,12 @@
 # DevExpress.DataAccess.v23.2.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=15996）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/47fc9aff8513-DevExpress.DataAccess.v23.2.dll/DevExpress.DataAccess.v23.2.dll.cs.txt` sha256=8197a57852689c71327c76403bb7033607e913dc307b844b44d2c684c3f94d51 bytes=3888366
+- `clr/47fc9aff8513-DevExpress.DataAccess.v23.2.dll/DevExpress.DataAccess.v23.2.dll.il.txt` sha256=d9f767471aa971c0e8a5be5ee62e7f7f0a7dd986a48d1816fcbc84110f62a6f3 bytes=17056881

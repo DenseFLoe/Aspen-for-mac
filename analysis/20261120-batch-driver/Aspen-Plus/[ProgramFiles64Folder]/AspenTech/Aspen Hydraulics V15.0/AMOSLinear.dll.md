@@ -1,5 +1,12 @@
 # AMOSLinear.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=128）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/36881f37f831-AMOSLinear.dll/AMOSLinear.dll.cs.txt` sha256=835ba56f94201c4a13ab39c0697070477d1ee407738e41f51fbb98b759e152d7 bytes=135609
+- `clr/36881f37f831-AMOSLinear.dll/AMOSLinear.dll.il.txt` sha256=3989e1d9449e8ec3620b7931d3980e8edb19a79cda7c441b040f62c351dfb5a8 bytes=1977073

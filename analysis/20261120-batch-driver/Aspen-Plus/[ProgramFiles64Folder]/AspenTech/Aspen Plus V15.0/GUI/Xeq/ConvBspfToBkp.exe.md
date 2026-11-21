@@ -1,5 +1,12 @@
 # ConvBspfToBkp.exe
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=97）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/f8d88837c689-ConvBspfToBkp.exe/ConvBspfToBkp.exe.cs.txt` sha256=b9ad5b0b75dfe2b1a46acbf38ecd64617d04a394dd890b652ac9bf20470e2b31 bytes=592719
+- `clr/f8d88837c689-ConvBspfToBkp.exe/ConvBspfToBkp.exe.il.txt` sha256=bc27c7a6d92cf0a8c9fd6ca5f78ad1e4ce70951294c96a74e07d1d065d5f4a00 bytes=3050347

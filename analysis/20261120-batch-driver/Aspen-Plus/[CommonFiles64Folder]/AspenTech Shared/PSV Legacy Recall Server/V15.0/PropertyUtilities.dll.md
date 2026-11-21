@@ -1,5 +1,12 @@
 # PropertyUtilities.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=1436）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/41c39ee49133-PropertyUtilities.dll/PropertyUtilities.dll.cs.txt` sha256=0ea94f18c8eca73b37293bd39505ba240586933cb214959d632ef48d9b4face2 bytes=569381
+- `clr/41c39ee49133-PropertyUtilities.dll/PropertyUtilities.dll.il.txt` sha256=098fa34a89ec8fd85ed69404168bef20c204f928adc009520364bdc7a2cf229b bytes=2515684

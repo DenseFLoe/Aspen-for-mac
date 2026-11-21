@@ -1,5 +1,12 @@
 # ApedDataManager.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=936）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/b61b0e683a40-ApedDataManager.dll/ApedDataManager.dll.cs.txt` sha256=ecd1382b2c25fc295186fe7b93d09485416dff5d9c7fa2fdcfd1b62910e748c6 bytes=478057
+- `clr/b61b0e683a40-ApedDataManager.dll/ApedDataManager.dll.il.txt` sha256=84767ade48c14a406f2e497c1d6edd1baa7aab58770a29814f3decdc1530093e bytes=1749701

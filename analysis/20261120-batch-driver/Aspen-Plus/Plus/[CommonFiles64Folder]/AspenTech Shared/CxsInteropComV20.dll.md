@@ -88,3 +88,10 @@
 - 仅 Ghidra 有、IDA 未单列：无
 - 仅 IDA 有：`sub_180001000`, `sub_180001060`, `sub_180001110`, `sub_180001130`, `sub_180001140`, `?raw_length@charNode@@UEBAHXZ`, `sub_180001160`, `sub_1800011A0`
 - 命名口径：上两行按函数名对比。IDA 应用了 FLIRT 库签名（如 `__CRT_INIT@12`、`@__security_check_cookie@4`），同一地址在 Ghidra 侧仍是 `FUN_<addr>`，因此名单差异主要是命名差异；函数个数按上表比对。
+
+## dumps
+
+dumps: v0.20261121-w2#dumps-w2-part2.tar.gz
+
+- `native3/01-completed/Aspen-Plus/[CommonFiles64Folder]/AspenTech Shared/decompiled/CxsInteropComV20.dll.c.txt` sha256=492e3c4abd7ae452272b12ddd2115f308c67915bb01cb19c524c2a30f090303a bytes=452842
+- `native3/01-completed/Aspen-Plus/[CommonFiles64Folder]/AspenTech Shared/disasm/CxsInteropComV20.dll.asm.txt` sha256=dc25bf67b324284fe6ec90e39eb8500026044e49bdb3747f2fd9eba60b2c832e bytes=798904

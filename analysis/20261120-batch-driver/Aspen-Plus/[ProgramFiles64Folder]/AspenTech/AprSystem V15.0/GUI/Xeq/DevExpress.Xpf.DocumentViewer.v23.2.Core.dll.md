@@ -1,5 +1,12 @@
 # DevExpress.Xpf.DocumentViewer.v23.2.Core.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=1720）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/1172cd56ba8d-DevExpress.Xpf.DocumentViewer.v23.2.Core.dll/DevExpress.Xpf.DocumentViewer.v23.2.Core.dll.cs.txt` sha256=94eabbd9d11b136a51485931170d4330c10a691c52e1cd521dfa5a6f8da90dda bytes=269973
+- `clr/1172cd56ba8d-DevExpress.Xpf.DocumentViewer.v23.2.Core.dll/DevExpress.Xpf.DocumentViewer.v23.2.Core.dll.il.txt` sha256=52d6369f2945b124706821f54830bd339298f6591195f34685573459f7c4f6a5 bytes=1458660

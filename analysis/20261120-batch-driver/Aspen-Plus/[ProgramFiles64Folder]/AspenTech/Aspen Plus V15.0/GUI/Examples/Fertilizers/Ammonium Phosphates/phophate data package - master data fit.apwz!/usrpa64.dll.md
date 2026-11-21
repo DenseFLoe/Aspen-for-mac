@@ -91,4 +91,7 @@
 
 ## dumps
 
-dumps: repo:逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Fertilizers/Ammonium Phosphates/phophate data package - master data fit.apwz!/usrpa64.dll.md/分支交付/
+dumps: repo:analysis/20261120-batch-driver/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Fertilizers/Ammonium Phosphates/phophate data package - master data fit.apwz!/（仓内产物，不在 Release 包）
+
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Fertilizers/Ammonium Phosphates/phophate data package - master data fit.apwz!/decompiled/usrpa64.dll.c.txt` sha256=18dcbd3757e1f88994839ed3b0d819dcbfaa84ca7bf0d79658e1588ee48d6fb5 bytes=29155
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Fertilizers/Ammonium Phosphates/phophate data package - master data fit.apwz!/disasm/usrpa64.dll.asm.txt` sha256=0851cbdb0a9d5b3c1ac43e9a124431eb09c9dfa62d74c5ad713409cc9077d41d bytes=55791

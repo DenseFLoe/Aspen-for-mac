@@ -1,5 +1,12 @@
 # AspenTech.AspenONEShare.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=626）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/53c6f77ae980-AspenTech.AspenONEShare.dll/AspenTech.AspenONEShare.dll.cs.txt` sha256=e650c99192dd55dc06b6428398e9b8969c4aaf66bb7432da802eb9d4df44a58f bytes=185767
+- `clr/53c6f77ae980-AspenTech.AspenONEShare.dll/AspenTech.AspenONEShare.dll.il.txt` sha256=1fed1abfd950dc231e99453e55b967e6d17eb476196e0e79805ce789b3088fa3 bytes=795156

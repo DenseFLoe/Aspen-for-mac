@@ -1,5 +1,13 @@
 # 009_NETExtnLoader.dll 静态复核报告（Aspen-Plus / 全程序集 IL + C# 反编译）
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=7）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 样本别名：`009_NETExtnLoader.dll`（清单 read-test-waiting.csv（schema B），原件目录只读、未上传）
 来源：分支 codex/waiting-for-tietoumao｜git_blob 9b7985e76ce8｜自算 sha256 531c4d2bb30ffb4448e9f1805a5007c7781f187bb69c6530f3eeb10c94a4c936｜台账 20261119-61 缺失〔待验证〕
 落点：`01-completed/Aspen-Plus/[CommonFiles64Folder]/Hyprotech/CAPE-OPEN/`（相对 `out/R1`）｜定位规则：`local-rel`
@@ -168,6 +176,7 @@ PE 导入表：1 个 DLL。
 
 ## dumps
 
-dumps: repo:逆向成果/待静态验收/Plus/[CommonFiles64Folder]/Hyprotech/CAPE-OPEN/NETExtnLoader.dll.md/分支交付/
+dumps: repo:analysis/20261120-batch-driver/Aspen-Plus/[CommonFiles64Folder]/Hyprotech/CAPE-OPEN/（仓内产物，不在 Release 包）
 
-- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- `Aspen-Plus/[CommonFiles64Folder]/Hyprotech/CAPE-OPEN/decompiled/NETExtnLoader.dll.cs.txt` sha256=9b4ca9a5e7d82e1b6f01d788e89432b8f268bdec7be053bd8e4dca91e1729bc8 bytes=4484
+- `Aspen-Plus/[CommonFiles64Folder]/Hyprotech/CAPE-OPEN/il/NETExtnLoader.dll.il.txt` sha256=33cdfdc0319c174d7c473fa1dfec3f8ccdfd7cce0ccd040f6a5229be685a76d3 bytes=12699

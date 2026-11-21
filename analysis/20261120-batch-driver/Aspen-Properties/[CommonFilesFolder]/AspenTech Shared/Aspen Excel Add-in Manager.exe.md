@@ -1,5 +1,12 @@
 # Aspen Excel Add-in Manager.exe
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=188）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/5c253a5eafc6-Aspen Excel Add-in Manager.exe/Aspen Excel Add-in Manager.exe.cs.txt` sha256=0a866b90a40a638568933b1a046eb559d5c96786a1689692e60dd3d4e44fd09d bytes=59118
+- `clr/5c253a5eafc6-Aspen Excel Add-in Manager.exe/Aspen Excel Add-in Manager.exe.il.txt` sha256=d5f54e4017429be16dea4a5ff6674168a540ba33be816d51a9a113f62dd8526c bytes=224619

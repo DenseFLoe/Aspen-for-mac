@@ -102,5 +102,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part1.tar.gz
 
-- `decompiled/msscript.ocx.c.txt` sha256=88332d152b4c3afc19229e089cb402931d868983f90f7fb7bb05bbae23e797d4 bytes=415927
-- `disasm/msscript.ocx.asm.txt` sha256=f7a14e74756e59a2779fad578e834ba8eef29d565b99f72660fdfacc0388eb94 bytes=791499
+- `native2/01-completed/Aspen-Plus/Windows/SysWOW64/decompiled/msscript.ocx.c.txt` sha256=88332d152b4c3afc19229e089cb402931d868983f90f7fb7bb05bbae23e797d4 bytes=415927
+- `native2/01-completed/Aspen-Plus/Windows/SysWOW64/disasm/msscript.ocx.asm.txt` sha256=f7a14e74756e59a2779fad578e834ba8eef29d565b99f72660fdfacc0388eb94 bytes=791499

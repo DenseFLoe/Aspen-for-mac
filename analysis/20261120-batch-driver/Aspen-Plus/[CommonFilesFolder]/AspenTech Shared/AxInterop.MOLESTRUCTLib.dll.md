@@ -1,5 +1,12 @@
 # AxInterop.MOLESTRUCTLib.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=78）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/df5c39b29daa-AxInterop.MOLESTRUCTLib.dll/AxInterop.MOLESTRUCTLib.dll.cs.txt` sha256=102806f12b7b0c591add8503943918566386e17c39654d69f42aba4ed3c22af3 bytes=11132
+- `clr/df5c39b29daa-AxInterop.MOLESTRUCTLib.dll/AxInterop.MOLESTRUCTLib.dll.il.txt` sha256=43fad3e59799280c6a87575f1b66add00335fdc4b5f28bc9f6524ccd6b8a5116 bytes=58904

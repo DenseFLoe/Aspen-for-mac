@@ -1,5 +1,12 @@
 # System.Data.SqlClient.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=5386）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/d3d8a8e35cb6-System.Data.SqlClient.dll/System.Data.SqlClient.dll.cs.txt` sha256=abedb06bbe755eb114490872e009de3d47e6c7e6e73bd1a77f4a4e5dfdb58004 bytes=1979869
+- `clr/d3d8a8e35cb6-System.Data.SqlClient.dll/System.Data.SqlClient.dll.il.txt` sha256=560e66aeea13d13f336de9a6df4d301ed31c9dbd4c51a8d6549951ecddb6c444 bytes=7743090

@@ -1,5 +1,12 @@
 # Npgsql.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=7446）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/0a6e1a30ca36-Npgsql.dll/Npgsql.dll.cs.txt` sha256=544cbc1a0ac87e35abc923a7d349897c6e9ab48a589bb1e55fb8808c99bef389 bytes=1835659
+- `clr/0a6e1a30ca36-Npgsql.dll/Npgsql.dll.il.txt` sha256=c28005275418cf0a4afab7a1de4493c344b9e39b9179be8f9b7fb02134bac42b bytes=10443964

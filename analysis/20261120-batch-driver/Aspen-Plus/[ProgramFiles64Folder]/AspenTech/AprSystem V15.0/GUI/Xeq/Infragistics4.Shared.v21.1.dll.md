@@ -1,5 +1,12 @@
 # Infragistics4.Shared.v21.1.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=1526）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/d52d3cc9faf8-Infragistics4.Shared.v21.1.dll/Infragistics4.Shared.v21.1.dll.cs.txt` sha256=39d0108a0b2d62efc14e835541b2931cc8774a59dba04bfb9ad7bfa4a557177f bytes=475257
+- `clr/d52d3cc9faf8-Infragistics4.Shared.v21.1.dll/Infragistics4.Shared.v21.1.dll.il.txt` sha256=1cc3b5c79dde1797d689a6cd0e81b324c3a9f947bbd6ffd093eab4fb8a8863fc bytes=1970480

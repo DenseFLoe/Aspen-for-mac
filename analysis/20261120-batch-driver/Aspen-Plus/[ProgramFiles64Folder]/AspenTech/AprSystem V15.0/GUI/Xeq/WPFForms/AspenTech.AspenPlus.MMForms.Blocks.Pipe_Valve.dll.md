@@ -1,5 +1,12 @@
 # AspenTech.AspenPlus.MMForms.Blocks.Pipe_Valve.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=1533）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/34d4acf20ddc-AspenTech.AspenPlus.MMForms.Blocks.Pipe_Valve.dll/AspenTech.AspenPlus.MMForms.Blocks.Pipe_Valve.dll.cs.txt` sha256=eb572c1f57c6efa05665d827d535a2f81ed374a897b7ac66f93be4a10dcf412f bytes=1505726
+- `clr/34d4acf20ddc-AspenTech.AspenPlus.MMForms.Blocks.Pipe_Valve.dll/AspenTech.AspenPlus.MMForms.Blocks.Pipe_Valve.dll.il.txt` sha256=e7ef0c73639b7ea81cd9d7fc791e020f032f93e21ff6e30a8bcd52cdd31dd4a4 bytes=3033909

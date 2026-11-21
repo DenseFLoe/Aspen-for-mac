@@ -1,5 +1,12 @@
 # ICSharpCode.SharpZipLib.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=585）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/c182a48c429c-ICSharpCode.SharpZipLib.dll/ICSharpCode.SharpZipLib.dll.cs.txt` sha256=7d2bc282c24713a5cd81b97f2a1f88578276af390f39e285c6bd4985ec30a501 bytes=211863
+- `clr/c182a48c429c-ICSharpCode.SharpZipLib.dll/ICSharpCode.SharpZipLib.dll.il.txt` sha256=fb9c14bf1d06bd74f8e871bfd3a86dfb9afa16a36d386f33fa0f5716de62993f bytes=1245543

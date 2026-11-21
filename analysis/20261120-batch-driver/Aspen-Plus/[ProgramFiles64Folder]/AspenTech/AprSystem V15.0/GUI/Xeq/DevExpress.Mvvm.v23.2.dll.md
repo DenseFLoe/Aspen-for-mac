@@ -1,5 +1,12 @@
 # DevExpress.Mvvm.v23.2.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=15819）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/3ffa17fbb82a-DevExpress.Mvvm.v23.2.dll/DevExpress.Mvvm.v23.2.dll.cs.txt` sha256=eb283084652e7170a6f33f9518961a1eaf38ea520118528ff6038ee4edc09f89 bytes=1082703
+- `clr/3ffa17fbb82a-DevExpress.Mvvm.v23.2.dll/DevExpress.Mvvm.v23.2.dll.il.txt` sha256=e3af61b7b7efc3c965484a7d7f86aad4a88cd72691c86c2bbbbbeb1775494166 bytes=6916600

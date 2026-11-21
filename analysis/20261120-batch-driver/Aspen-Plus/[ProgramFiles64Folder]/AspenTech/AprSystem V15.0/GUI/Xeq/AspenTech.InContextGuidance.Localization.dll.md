@@ -1,5 +1,12 @@
 # AspenTech.InContextGuidance.Localization.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=54）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/4ba616f0691d-AspenTech.InContextGuidance.Localization.dll/AspenTech.InContextGuidance.Localization.dll.cs.txt` sha256=40a09fb6b73254c39099baea9bfa14cabb4f23292b4d334bb8af9e2b17d77588 bytes=10806
+- `clr/4ba616f0691d-AspenTech.InContextGuidance.Localization.dll/AspenTech.InContextGuidance.Localization.dll.il.txt` sha256=37a4ad127470115eff9416f2739febc4b8c71e47f04b96f180553388d2e600ea bytes=47158

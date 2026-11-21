@@ -88,3 +88,10 @@
 - 仅 Ghidra 有、IDA 未单列：无
 - 仅 IDA 有：`ExtractHysys`, `DllMain`, `sub_1800010F0`, `sub_180001470`, `sub_1800015E0`, `sub_180001920`, `sub_180001D30`, `sub_180001DF0`
 - 命名口径：上两行按函数名对比。IDA 应用了 FLIRT 库签名（如 `__CRT_INIT@12`、`@__security_check_cookie@4`），同一地址在 Ghidra 侧仍是 `FUN_<addr>`，因此名单差异主要是命名差异；函数个数按上表比对。
+
+## dumps
+
+dumps: v0.20261121-w2#dumps-w2-part1.tar.gz
+
+- `native2/01-completed/Aspen-Plus/[CommonFiles64Folder]/AspenTech Shared/Aspen Data Share V15.0/decompiled/AdbHysysExtract.dll.c.txt` sha256=3d8a1b02a86cf44793012daa1e8821017fa4fc28e34de0d384525b0e140f6c80 bytes=200443
+- `native2/01-completed/Aspen-Plus/[CommonFiles64Folder]/AspenTech Shared/Aspen Data Share V15.0/disasm/AdbHysysExtract.dll.asm.txt` sha256=ba485a6dac491de431640d7cbf8e84d1e47b091c2bccbc62f3baca252e47be9f bytes=309376

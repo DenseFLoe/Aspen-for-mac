@@ -1,5 +1,12 @@
 # Infragistics4.Win.UltraWinToolbars.v21.1.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=15548）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/5209d4d6bc26-Infragistics4.Win.UltraWinToolbars.v21.1.dll/Infragistics4.Win.UltraWinToolbars.v21.1.dll.cs.txt` sha256=1b53c9a03700b9a2cf18f7e1bd060c135a9c65ddab55eca84e2b955c845f154c bytes=7374571
+- `clr/5209d4d6bc26-Infragistics4.Win.UltraWinToolbars.v21.1.dll/Infragistics4.Win.UltraWinToolbars.v21.1.dll.il.txt` sha256=72043879e7ef2eaaf51311b6e36f82d9aad6edd846ad08e4e1770ada6b4d4671 bytes=28052202

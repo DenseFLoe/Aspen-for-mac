@@ -1,5 +1,12 @@
 # Infragistics4.Win.UltraWinDock.v21.1.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=3290）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/def67d762d83-Infragistics4.Win.UltraWinDock.v21.1.dll/Infragistics4.Win.UltraWinDock.v21.1.dll.cs.txt` sha256=25a09cb4bab8bebbf1c343d3246f63518d84dfc3e8529e1354c8bd05e202ebf0 bytes=1703192
+- `clr/def67d762d83-Infragistics4.Win.UltraWinDock.v21.1.dll/Infragistics4.Win.UltraWinDock.v21.1.dll.il.txt` sha256=03b601f808af3edb5e71f981c276890e9c35f77b8ef5f3a8388bfe781b50ce2e bytes=6505217

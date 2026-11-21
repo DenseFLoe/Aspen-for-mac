@@ -93,5 +93,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part5.tar.gz
 
-- `decompiled/HYPCOThK.dll.c.txt` sha256=2b12762ba103a73fc3be751a9146f5d79676a6c572fc32dcb3ba4f21eb170bb5 bytes=2699356
-- `disasm/HYPCOThK.dll.asm.txt` sha256=10c79610f8134a2c4fe450d1e15b4e4f9b101ba942c33809be8b175aa2913015 bytes=4801481
+- `native5/01-completed/Aspen-Plus/[CommonFiles64Folder]/Hyprotech/CAPE-OPEN/decompiled/HYPCOThK.dll.c.txt` sha256=2b12762ba103a73fc3be751a9146f5d79676a6c572fc32dcb3ba4f21eb170bb5 bytes=2699356
+- `native5/01-completed/Aspen-Plus/[CommonFiles64Folder]/Hyprotech/CAPE-OPEN/disasm/HYPCOThK.dll.asm.txt` sha256=10c79610f8134a2c4fe450d1e15b4e4f9b101ba942c33809be8b175aa2913015 bytes=4801481

@@ -1,5 +1,12 @@
 # AspenTech.AspenCxs.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=1654）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/8e5089cad02f-AspenTech.AspenCxs.dll/AspenTech.AspenCxs.dll.cs.txt` sha256=9a0b14f29ae40cca560e97bc840102374ce89c37fce9fe4f1b52441ec17e8d6f bytes=598537
+- `clr/8e5089cad02f-AspenTech.AspenCxs.dll/AspenTech.AspenCxs.dll.il.txt` sha256=cd40ecf6acda5d51ed8b2b734e24bd02beb0219ebbacb9eaa6f77ed7f53714c8 bytes=2409726

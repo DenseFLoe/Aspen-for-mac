@@ -1,5 +1,12 @@
 # System.Data.SQLite.EF6.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=470）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/996ac5f7d5f7-System.Data.SQLite.EF6.dll/System.Data.SQLite.EF6.dll.cs.txt` sha256=920c1b272f15a34512a5eef97bdc30fd7844d66c068c1a8b8f8dfc1f8987a48a bytes=186571
+- `clr/996ac5f7d5f7-System.Data.SQLite.EF6.dll/System.Data.SQLite.EF6.dll.il.txt` sha256=2b9f181e8246e43b6a37df3cf7b8fe019c413757c1298a621b5a9d6601280ca8 bytes=702440

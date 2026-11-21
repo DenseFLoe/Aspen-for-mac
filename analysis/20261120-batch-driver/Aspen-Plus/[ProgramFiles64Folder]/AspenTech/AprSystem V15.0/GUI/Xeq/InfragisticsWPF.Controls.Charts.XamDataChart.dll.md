@@ -1,5 +1,12 @@
 # InfragisticsWPF.Controls.Charts.XamDataChart.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=17962）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/ea6399886d4f-InfragisticsWPF.Controls.Charts.XamDataChart.dll/InfragisticsWPF.Controls.Charts.XamDataChart.dll.cs.txt` sha256=8370f0cbd0330213267980f482c803703adfae3fd2425c0e58d467087994f009 bytes=4417633
+- `clr/ea6399886d4f-InfragisticsWPF.Controls.Charts.XamDataChart.dll/InfragisticsWPF.Controls.Charts.XamDataChart.dll.il.txt` sha256=bf2b01a2a00bcb77cf6dfee8f28c69e053bd9b68a3ec51bc70add8c9de5caf33 bytes=22985982

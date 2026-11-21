@@ -1,5 +1,12 @@
 # Stingray.GridUtils71.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=215）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/04ef7136488b-Stingray.GridUtils71.dll/Stingray.GridUtils71.dll.cs.txt` sha256=b88633855eff737a954cd3a5c48f7bba4c37078eb58588c05a7bdbe56d95bfbb bytes=50862
+- `clr/04ef7136488b-Stingray.GridUtils71.dll/Stingray.GridUtils71.dll.il.txt` sha256=334fe1436d34f8f9215e3e1fa2f900c77cf8d218cfca9b5c3ffcbba0e86fbdc3 bytes=251782

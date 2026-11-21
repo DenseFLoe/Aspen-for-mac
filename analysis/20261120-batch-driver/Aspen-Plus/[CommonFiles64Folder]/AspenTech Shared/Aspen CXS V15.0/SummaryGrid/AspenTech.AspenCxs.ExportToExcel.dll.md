@@ -1,5 +1,12 @@
 # AspenTech.AspenCxs.ExportToExcel.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=666）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/8dd8fce8dfa9-AspenTech.AspenCxs.ExportToExcel.dll/AspenTech.AspenCxs.ExportToExcel.dll.cs.txt` sha256=6c32ad23ec857ee63de2792f62f06e9f299f4dc5b0f7a601b572cbebc4c18764 bytes=189537
+- `clr/8dd8fce8dfa9-AspenTech.AspenCxs.ExportToExcel.dll/AspenTech.AspenCxs.ExportToExcel.dll.il.txt` sha256=e887e097161a695ce11179684521dad00fc244965f2c6eba8533053ae5a0c905 bytes=836271

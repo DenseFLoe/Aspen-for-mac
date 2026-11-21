@@ -88,3 +88,10 @@
 - 仅 Ghidra 有、IDA 未单列：无
 - 仅 IDA 有：`ISSelfRegisterFiles`, `ISUnSelfRegisterFiles`, `sub_10001040`, `ISSelfRegisterCosting`, `ISSelfRegisterFinalize`, `sub_100011F0`, `sub_100012B0`, `sub_10001320`
 - 命名口径：上两行按函数名对比。IDA 应用了 FLIRT 库签名（如 `__CRT_INIT@12`、`@__security_check_cookie@4`），同一地址在 Ghidra 侧仍是 `FUN_<addr>`，因此名单差异主要是命名差异；函数个数按上表比对。
+
+## dumps
+
+dumps: v0.20261121-w2#dumps-w2-part1.tar.gz
+
+- `native2/01-completed/Aspen-Plus/Binary/decompiled/ISSELFREG.DLL.c.txt` sha256=757d68f3ba25ea7b81a78028f97106db53c7df006b813a0ff2b41d51c15a87ae bytes=225638
+- `native2/01-completed/Aspen-Plus/Binary/disasm/ISSELFREG.DLL.asm.txt` sha256=2055abe6cc3a2544ba794d30d9ccf88bdf80afcda84c21f6c3802d3e5e54bbcb bytes=457956

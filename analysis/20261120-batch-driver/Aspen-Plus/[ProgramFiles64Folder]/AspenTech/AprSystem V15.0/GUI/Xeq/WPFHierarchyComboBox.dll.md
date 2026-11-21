@@ -1,5 +1,12 @@
 # WPFHierarchyComboBox.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=48）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/bdba187f71ea-WPFHierarchyComboBox.dll/WPFHierarchyComboBox.dll.cs.txt` sha256=9178941f1274851bec3da15bc34baf67a9f27f0fc3cff09e72e3a5f85bf3230b bytes=12232
+- `clr/bdba187f71ea-WPFHierarchyComboBox.dll/WPFHierarchyComboBox.dll.il.txt` sha256=7af4de427b9e3411ba3fd01d7d0fa61328805599628dcbcaabbb5634285ff3c1 bytes=41697

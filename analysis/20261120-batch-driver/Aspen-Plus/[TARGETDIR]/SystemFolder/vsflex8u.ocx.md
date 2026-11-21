@@ -101,11 +101,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part3.tar.gz
 
-- `decompiled/Vsflex7N.ocx.c.txt` sha256=e806a7938816b648a8f2df3e00ad468398a2cfa8d4002a5f8481e7142ac6e7e4 bytes=1486635
-- `decompiled/vsflex8l.ocx.c.txt` sha256=32086b64339714e701932a69ac111dac21bb184cc4de4575eef54a86c494b272 bytes=2195691
-- `decompiled/vsflex8n.ocx.c.txt` sha256=67c5aadca817f0ca6e4039fbd1c2360419b70863960cf1faf806a206f78c4ddd bytes=2213373
-- `decompiled/vsflex8u.ocx.c.txt` sha256=1b2653cb0a59e88945a7371849989a1f61f7b1c86323f219537b83cff5ecb31b bytes=1936478
-- `disasm/Vsflex7N.ocx.asm.txt` sha256=407ec34dac935b94a8880752da240d607b6ec9b4e2e9c06ba88b2571f71406de bytes=3107366
-- `disasm/vsflex8l.ocx.asm.txt` sha256=e2dcfca7961a2c65a6187c0a8397f5b3fb04fbf1ed5908aaa6a1351abc946e44 bytes=4539290
-- `disasm/vsflex8n.ocx.asm.txt` sha256=72700c93b6d832e2666bd3b7566a26c02815f322cab587161eb1a4bc9a91c3e1 bytes=4567804
-- `disasm/vsflex8u.ocx.asm.txt` sha256=b5657070ef4569c511281ab0bc6c47e048fe0c626ced1c302dfea3c814b77835 bytes=4027315
+- `native4/01-completed/Aspen-Plus/[TARGETDIR]/SystemFolder/decompiled/vsflex8u.ocx.c.txt` sha256=1b2653cb0a59e88945a7371849989a1f61f7b1c86323f219537b83cff5ecb31b bytes=1936478
+- `native4/01-completed/Aspen-Plus/[TARGETDIR]/SystemFolder/disasm/vsflex8u.ocx.asm.txt` sha256=b5657070ef4569c511281ab0bc6c47e048fe0c626ced1c302dfea3c814b77835 bytes=4027315

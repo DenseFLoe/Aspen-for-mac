@@ -91,4 +91,7 @@
 
 ## dumps
 
-dumps: repo:逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Polymers/Polypropylene/Spheripol High Impact Polypropylene Copolymer Process.apwz!/USERPP.DLL.md/分支交付/
+dumps: repo:analysis/20261120-batch-driver/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Polymers/Polypropylene/Spheripol High Impact Polypropylene Copolymer Process.apwz!/（仓内产物，不在 Release 包）
+
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Polymers/Polypropylene/Spheripol High Impact Polypropylene Copolymer Process.apwz!/decompiled/USERPP.DLL.c.txt` sha256=60a072533d66abedf404d254693c8d858df013d724be5431677ec9255c7a4c52 bytes=26942
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Polymers/Polypropylene/Spheripol High Impact Polypropylene Copolymer Process.apwz!/disasm/USERPP.DLL.asm.txt` sha256=327a9e2e9b44af5cb378fbe0598b4822685d9d73525814f08231e802795fb7bd bytes=47076

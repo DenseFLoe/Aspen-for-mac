@@ -1,5 +1,12 @@
 # AdbComInterfaces.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=66）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/ac9f22c325f8-AdbComInterfaces.dll/AdbComInterfaces.dll.cs.txt` sha256=a60ea4e0567f93310fd26943bafc443c2bba0a4147ada8a9950f895096a96507 bytes=4821
+- `clr/ac9f22c325f8-AdbComInterfaces.dll/AdbComInterfaces.dll.il.txt` sha256=72dfb495580e09b0c3a4b27fd0984c3cde030df200f8b3b3626756931005a7f0 bytes=9250

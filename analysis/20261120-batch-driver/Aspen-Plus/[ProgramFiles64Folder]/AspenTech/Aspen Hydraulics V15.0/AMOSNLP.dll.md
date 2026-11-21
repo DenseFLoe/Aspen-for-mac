@@ -1,5 +1,12 @@
 # AMOSNLP.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=208）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/83671179f8d3-AMOSNLP.dll/AMOSNLP.dll.cs.txt` sha256=f9a6c4a543e6c0b2e7bb23dded04af2f4221df8fb4bf3658cc60456131c0ebb1 bytes=196927
+- `clr/83671179f8d3-AMOSNLP.dll/AMOSNLP.dll.il.txt` sha256=4bb37099c15921dff8faa303b7068db745cff572a4dd817b1dd48e1019b3082c bytes=3331393

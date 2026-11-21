@@ -1,5 +1,12 @@
 # HYSYSObjects.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=1343）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/a1631abcbf55-HYSYSObjects.dll/HYSYSObjects.dll.cs.txt` sha256=8439005e341ca4d23f4e8c8ecdb9d1f61a3511d78051f1056dad519ecc1df3a6 bytes=58491
+- `clr/a1631abcbf55-HYSYSObjects.dll/HYSYSObjects.dll.il.txt` sha256=f170915aa463b65f83ebf559a1388303b960d55f7ca09981783f0ef1e3303832 bytes=534681

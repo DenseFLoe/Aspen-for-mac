@@ -1,5 +1,12 @@
 # AspenTech.AspenPlus.MMForms.PlotForms.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=1244）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/99b3839a67de-AspenTech.AspenPlus.MMForms.PlotForms.dll/AspenTech.AspenPlus.MMForms.PlotForms.dll.cs.txt` sha256=0ddc983caf962fd796837a2048b84d18515403cb18d4744e3adb56d2639a26f1 bytes=429521
+- `clr/99b3839a67de-AspenTech.AspenPlus.MMForms.PlotForms.dll/AspenTech.AspenPlus.MMForms.PlotForms.dll.il.txt` sha256=3e28b4292204843d6030944b0e6d5c7cfcb2ae00cabae5f6b14b931353451933 bytes=2107947

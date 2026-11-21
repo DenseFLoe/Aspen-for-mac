@@ -1,5 +1,12 @@
 # DevExpress.Sparkline.v23.2.Core.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=553）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/a0b79f6bbe51-DevExpress.Sparkline.v23.2.Core.dll/DevExpress.Sparkline.v23.2.Core.dll.cs.txt` sha256=50ac48fa61e6bacd30951803e2d37cb0cff63badc74ebbaabb69562bb041d244 bytes=125769
+- `clr/a0b79f6bbe51-DevExpress.Sparkline.v23.2.Core.dll/DevExpress.Sparkline.v23.2.Core.dll.il.txt` sha256=46de404cf62bde0cdcd4f00f1d25617c1a1e8992ecc4886c0fbe66ee8b5fba47 bytes=534259

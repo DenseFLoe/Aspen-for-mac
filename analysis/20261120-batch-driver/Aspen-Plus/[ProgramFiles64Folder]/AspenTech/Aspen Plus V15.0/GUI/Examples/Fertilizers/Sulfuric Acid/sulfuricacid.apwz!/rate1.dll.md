@@ -91,4 +91,7 @@
 
 ## dumps
 
-dumps: repo:逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Fertilizers/Sulfuric Acid/sulfuricacid.apwz!/rate1.dll.md/分支交付/
+dumps: repo:analysis/20261120-batch-driver/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Fertilizers/Sulfuric Acid/sulfuricacid.apwz!/（仓内产物，不在 Release 包）
+
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Fertilizers/Sulfuric Acid/sulfuricacid.apwz!/decompiled/rate1.dll.c.txt` sha256=40c57d0f5dc6534fc82e25435fadc8d582c23d2d2b7cc9181360526f6f1a4bef bytes=27627
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Fertilizers/Sulfuric Acid/sulfuricacid.apwz!/disasm/rate1.dll.asm.txt` sha256=d0e6548d80c6d7abfaed51d21de487cce1f0b7255e7bd8b97e079f5b5178d44f bytes=51428

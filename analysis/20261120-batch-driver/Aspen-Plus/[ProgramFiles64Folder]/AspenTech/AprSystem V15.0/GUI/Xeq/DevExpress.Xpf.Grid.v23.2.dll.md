@@ -1,5 +1,12 @@
 # DevExpress.Xpf.Grid.v23.2.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=18103）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/cb5fbb858638-DevExpress.Xpf.Grid.v23.2.dll/DevExpress.Xpf.Grid.v23.2.dll.cs.txt` sha256=3c8f1a1a11fd501bafe215cb0fe0090799e686d8559bfd5ba1f0518cd4b44c6f bytes=3943120
+- `clr/cb5fbb858638-DevExpress.Xpf.Grid.v23.2.dll/DevExpress.Xpf.Grid.v23.2.dll.il.txt` sha256=bffc6dd083492b9bb9fde7ca7bc1adc9101c5ec0c6bb02d361ad21124f6025a5 bytes=16229667

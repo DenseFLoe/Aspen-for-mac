@@ -1,5 +1,12 @@
 # ApedCommon.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=321）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/db2efaac65c7-ApedCommon.dll/ApedCommon.dll.cs.txt` sha256=53710eb0dd791e63ebf3f6f512c7579528e41e04465d1c6cc2837ea3fc580a59 bytes=280471
+- `clr/db2efaac65c7-ApedCommon.dll/ApedCommon.dll.il.txt` sha256=9bd285892f732c4f336ac6176f11a901f0aa09f4a27429811fc93f5c69979079 bytes=1135543

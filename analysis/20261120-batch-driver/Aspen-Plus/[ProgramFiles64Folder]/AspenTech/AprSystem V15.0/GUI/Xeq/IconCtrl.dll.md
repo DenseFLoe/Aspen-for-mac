@@ -1,5 +1,12 @@
 # IconCtrl.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=1144）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/22b27245bc76-IconCtrl.dll/IconCtrl.dll.cs.txt` sha256=9cae3f0bce5c3c24cb006f6a1e580e8aa00387247c626e6d353a11170e80f3f7 bytes=609553
+- `clr/22b27245bc76-IconCtrl.dll/IconCtrl.dll.il.txt` sha256=94eb20a2d5bc9e1460b8192f516402d1584c6a5e76a2343346b79dfc3f14faf3 bytes=3571209

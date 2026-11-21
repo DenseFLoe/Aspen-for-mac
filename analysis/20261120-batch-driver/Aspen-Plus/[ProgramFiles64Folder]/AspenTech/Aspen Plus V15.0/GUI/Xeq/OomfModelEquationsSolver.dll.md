@@ -1,5 +1,12 @@
 # OomfModelEquationsSolver.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=689）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/8a536f32733a-OomfModelEquationsSolver.dll/OomfModelEquationsSolver.dll.cs.txt` sha256=ecd3abf93ea5330a1be8ea42fa53dd5d097c4e83b7c07a6c9791a875b669023e bytes=91515
+- `clr/8a536f32733a-OomfModelEquationsSolver.dll/OomfModelEquationsSolver.dll.il.txt` sha256=b55a0e63d6c948c8da3a2333824744c7720edc0b92bab1c706897543687f5b88 bytes=383132

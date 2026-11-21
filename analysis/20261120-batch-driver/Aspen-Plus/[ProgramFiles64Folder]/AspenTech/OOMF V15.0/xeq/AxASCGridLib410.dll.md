@@ -1,5 +1,12 @@
 # AxASCGridLib410.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=105）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/c6e0de222bc0-AxASCGridLib410.dll/AxASCGridLib410.dll.cs.txt` sha256=bc94d94566e56bc327b3b0a90443b82cc82e247295aa5c3047e7c6b670d8d835 bytes=20454
+- `clr/c6e0de222bc0-AxASCGridLib410.dll/AxASCGridLib410.dll.il.txt` sha256=8fd3798b59f22dac9b310cf48f62a0659316981947d36d4f5ea24503ba2d4a61 bytes=73262

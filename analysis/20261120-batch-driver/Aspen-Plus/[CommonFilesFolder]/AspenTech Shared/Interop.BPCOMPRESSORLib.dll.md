@@ -1,5 +1,13 @@
 # 010_Interop.BPCOMPRESSORLib.dll 静态复核报告（Aspen-Plus / 全程序集 IL + C# 反编译）
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=0）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 样本别名：`010_Interop.BPCOMPRESSORLib.dll`（清单 read-test-waiting.csv（schema B），原件目录只读、未上传）
 来源：分支 codex/waiting-for-tietoumao｜git_blob 0981c745b942｜自算 sha256 8f6170db6d38e53989acb3cc6b324697e834f99b152e8cf778f6a01310eb4690｜台账 20261119-61 缺失〔待验证〕
 落点：`01-completed/Aspen-Plus/[CommonFilesFolder]/AspenTech Shared/`（相对 `out/R1`）｜定位规则：`local-rel`
@@ -128,6 +136,7 @@ PE 导入表：1 个 DLL。
 
 ## dumps
 
-dumps: repo:逆向成果/待静态验收/Plus/[CommonFilesFolder]/AspenTech Shared/Interop.BPCOMPRESSORLib.dll.md/分支交付/
+dumps: repo:analysis/20261120-batch-driver/Aspen-Plus/[CommonFilesFolder]/AspenTech Shared/（仓内产物，不在 Release 包）
 
-- tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
+- `Aspen-Plus/[CommonFilesFolder]/AspenTech Shared/decompiled/Interop.BPCOMPRESSORLib.dll.cs.txt` sha256=6aeb6a0154ec86c4ba7227c205da793d91d1c556dcf99e3e3e45faee681f3b32 bytes=2326
+- `Aspen-Plus/[CommonFilesFolder]/AspenTech Shared/il/Interop.BPCOMPRESSORLib.dll.il.txt` sha256=c7c780d59533bf034d3b1ade39618cf9531e3941ccf5e77cfd46dc08ec0907ad bytes=1507

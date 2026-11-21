@@ -1,5 +1,12 @@
 # DevExpress.Xpf.Ribbon.v23.2.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=7709）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/c57e8a55495d-DevExpress.Xpf.Ribbon.v23.2.dll/DevExpress.Xpf.Ribbon.v23.2.dll.cs.txt` sha256=4174fad48812278e9842f642a6c97f3d4f91c7c426510045b9f4291720670123 bytes=1803474
+- `clr/c57e8a55495d-DevExpress.Xpf.Ribbon.v23.2.dll/DevExpress.Xpf.Ribbon.v23.2.dll.il.txt` sha256=2d4db4bdaf3c3dcc580a474909a003429f4d956f4572f3d848f0512d78572564 bytes=7588271

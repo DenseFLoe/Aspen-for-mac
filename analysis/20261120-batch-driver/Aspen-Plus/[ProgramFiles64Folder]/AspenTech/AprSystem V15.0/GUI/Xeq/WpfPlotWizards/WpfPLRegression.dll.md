@@ -1,5 +1,12 @@
 # WpfPLRegression.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=666）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/0b8376280913-WpfPLRegression.dll/WpfPLRegression.dll.cs.txt` sha256=36e5be636f4bc1e366ed2c1a387e7a53a1c7753ea06531a83359c79cc6ef4190 bytes=290282
+- `clr/0b8376280913-WpfPLRegression.dll/WpfPLRegression.dll.il.txt` sha256=6e61b6907aaa48c6b6fc3943811746392cd3b985b95ebc6f30892de7b311570f bytes=1695546

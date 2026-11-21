@@ -91,4 +91,7 @@
 
 ## dumps
 
-dumps: repo:逆向成果/待静态验收/Plus/Windows/SysWOW64/psapi.dll.md/分支交付/
+dumps: v0.20261121-w2#dumps-w2-part1.tar.gz
+
+- `native2/01-completed/Aspen-Plus/[SystemFolder]/decompiled/psapi.dll.c.txt` sha256=289f9f15a0e3afdcb65f732b7d489164fec97b359006880b97128d933af35f40 bytes=150260
+- `native2/01-completed/Aspen-Plus/[SystemFolder]/disasm/psapi.dll.asm.txt` sha256=561e0314d5a637358797247675e74b2c0482550b2b0728f69c43dde885d60062 bytes=302757

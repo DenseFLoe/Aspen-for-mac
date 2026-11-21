@@ -93,9 +93,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part2.tar.gz
 
-- `decompiled/ComWrappers.exe.c.txt` sha256=8e5e12557604deab5b67bd789fe8a9c1fe64bb2e42953def14b17b955151388e bytes=347625
-- `decompiled/CxsInteropComV20.dll.c.txt` sha256=492e3c4abd7ae452272b12ddd2115f308c67915bb01cb19c524c2a30f090303a bytes=452842
-- `decompiled/CxsInteropComV22.dll.c.txt` sha256=dad361489c62888569b3de39c9381feff081a76d2527513b180f903eb6eb981a bytes=514170
-- `disasm/ComWrappers.exe.asm.txt` sha256=a927d7ec13edfd08ef5717e74cf2ca911b22752cadb0153d532e5e0df6236d9a bytes=701737
-- `disasm/CxsInteropComV20.dll.asm.txt` sha256=dc25bf67b324284fe6ec90e39eb8500026044e49bdb3747f2fd9eba60b2c832e bytes=798904
-- `disasm/CxsInteropComV22.dll.asm.txt` sha256=64b178962a822ec941548d7ba7e4b1bf27b8dcf8c09954d96cf96fa163b4cfa6 bytes=908531
+- `native3/01-completed/Aspen-Plus/[CommonFiles64Folder]/AspenTech Shared/decompiled/CxsInteropComV22.dll.c.txt` sha256=dad361489c62888569b3de39c9381feff081a76d2527513b180f903eb6eb981a bytes=514170
+- `native3/01-completed/Aspen-Plus/[CommonFiles64Folder]/AspenTech Shared/disasm/CxsInteropComV22.dll.asm.txt` sha256=64b178962a822ec941548d7ba7e4b1bf27b8dcf8c09954d96cf96fa163b4cfa6 bytes=908531

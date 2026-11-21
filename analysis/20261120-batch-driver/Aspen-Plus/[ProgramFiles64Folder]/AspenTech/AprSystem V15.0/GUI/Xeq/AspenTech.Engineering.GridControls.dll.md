@@ -1,5 +1,12 @@
 # AspenTech.Engineering.GridControls.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=2602）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/7397923ef3df-AspenTech.Engineering.GridControls.dll/AspenTech.Engineering.GridControls.dll.cs.txt` sha256=af12c1a8ec1c684f7b9887968ab3eab6640fe8503351ff71eb4a3e399c7600dd bytes=636562
+- `clr/7397923ef3df-AspenTech.Engineering.GridControls.dll/AspenTech.Engineering.GridControls.dll.il.txt` sha256=300aa153f9c8acfb48a655c3dcf4afa22c6529f3addfff38bc059bdbe778cb98 bytes=3212900

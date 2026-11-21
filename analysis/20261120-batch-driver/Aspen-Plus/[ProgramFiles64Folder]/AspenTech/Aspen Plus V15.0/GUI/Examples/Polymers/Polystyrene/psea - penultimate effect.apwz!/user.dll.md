@@ -91,4 +91,7 @@
 
 ## dumps
 
-dumps: repo:逆向成果/待静态验收/Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Polymers/Polystyrene/psea - penultimate effect.apwz!/user.dll.md/分支交付/
+dumps: repo:analysis/20261120-batch-driver/Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Polymers/Polystyrene/psea - penultimate effect.apwz!/（仓内产物，不在 Release 包）
+
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Polymers/Polystyrene/psea - penultimate effect.apwz!/decompiled/user.dll.c.txt` sha256=efa391f8cd3f9a76c93ad03f73e24eb4ba744da53cef2070a32411325642d327 bytes=20998
+- `Aspen-Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/GUI/Examples/Polymers/Polystyrene/psea - penultimate effect.apwz!/disasm/user.dll.asm.txt` sha256=0d5d5412e0d33a2ffa0ebb15a0c2ddc58621f5637f6b02138def530ccec4e9a2 bytes=38427

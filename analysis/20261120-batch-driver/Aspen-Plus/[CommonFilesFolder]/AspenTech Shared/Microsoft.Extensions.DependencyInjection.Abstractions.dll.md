@@ -1,5 +1,12 @@
 # Microsoft.Extensions.DependencyInjection.Abstractions.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=351）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/c5a119ec8947-Microsoft.Extensions.DependencyInjection.Abstractions.dll/Microsoft.Extensions.DependencyInjection.Abstractions.dll.cs.txt` sha256=14a5a12e8aa40ce534799d3a9f0c85d018002c3100325d95157a79631232d48d bytes=110094
+- `clr/c5a119ec8947-Microsoft.Extensions.DependencyInjection.Abstractions.dll/Microsoft.Extensions.DependencyInjection.Abstractions.dll.il.txt` sha256=177dcf85ce3ba38327cd3c400342c4c2e4d41bbb1dbd716644cb72298302c0ad bytes=318520

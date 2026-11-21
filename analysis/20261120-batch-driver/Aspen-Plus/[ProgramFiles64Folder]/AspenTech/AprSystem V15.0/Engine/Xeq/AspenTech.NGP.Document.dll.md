@@ -1,5 +1,12 @@
 # AspenTech.NGP.Document.dll
 
+## 必填字段（T0 口径，逐项可按名检索）
+
+- functions=N/A（CLR 托管程序集，无 native 函数概念；methods=256）
+- decomp_ok=N/A（CLR：无函数级反编译统计）
+- decomp_fail=N/A（CLR：无函数级反编译统计）
+
+
 ## 0. 摘要
 - tool=ILSpy 9.1.0.7988 + dnfile 0.18.0
 - kind=CLR
@@ -17,4 +24,5 @@
 
 dumps: v0.20261121-w2#dumps-w2-part4.tar.gz
 
-- （本件无 dump 产物：failed_analyze / unsupported_non_pe）
+- `clr/23474fed3c99-AspenTech.NGP.Document.dll/AspenTech.NGP.Document.dll.cs.txt` sha256=00c664d27f0193b4da2747475ae1492ecf86ff16e6759feace03ce97b425fa17 bytes=104302
+- `clr/23474fed3c99-AspenTech.NGP.Document.dll/AspenTech.NGP.Document.dll.il.txt` sha256=7e3412f494fb71bd60c6977650a2c4428e09f6afcad0242f17ebdb4409cd7a84 bytes=343230
