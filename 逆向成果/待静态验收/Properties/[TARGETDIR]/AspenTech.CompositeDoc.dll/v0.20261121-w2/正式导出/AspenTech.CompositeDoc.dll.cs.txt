@@ -336,7 +336,7 @@ public class AspenPackage : IPackage
 	{
 		get
 		{
-			if (m_File != null && m_File.Exists)
+			if (m_File != null && ((FileSystemItem)m_File).Exists)
 			{
 				return m_File.Size;
 			}
@@ -353,7 +353,7 @@ public class AspenPackage : IPackage
 
 	static AspenPackage()
 	{
-		Xceed.Zip.Licenser.LicenseKey = "SFN36A14WB6W4K5Y8ZA";
+		Licenser.LicenseKey = "SFN36A14WB6W4K5Y8ZA";
 	}
 
 	public bool SetRootUri(string path)
@@ -408,7 +408,7 @@ public class AspenPackage : IPackage
 		}
 		else if (m_OriginalStream != null)
 		{
-			m_File.CopyTo(m_OriginalStream, replaceIfExists: true);
+			m_File.CopyTo((AbstractFile)(object)m_OriginalStream, true);
 		}
 		m_Changed = false;
 		m_Archive = null;
@@ -539,7 +539,8 @@ public class AspenPackage : IPackage
 	{
 		try
 		{
-			(m_Archive.GetFile(partUri) as ZippedFile).Delete();
+			AbstractFile file = ((AbstractFolder)m_Archive).GetFile(partUri);
+			((FileSystemItem)((file is ZippedFile) ? file : null)).Delete();
 			m_Changed = true;
 		}
 		catch
@@ -570,9 +571,11 @@ public class AspenPackage : IPackage
 		{
 			text = text.Remove(0, 1);
 		}
-		if (m_Archive.GetFile(text) is ZippedFile { Exists: not false } zippedFile)
+		AbstractFile file = ((AbstractFolder)m_Archive).GetFile(text);
+		ZippedFile val = (ZippedFile)(object)((file is ZippedFile) ? file : null);
+		if (val != null && ((FileSystemItem)val).Exists)
 		{
-			return new AspenPart(this, text, string.Compare(text, RootUri, ignoreCase: true, CultureInfo.CurrentCulture) == 0, zippedFile.Comment);
+			return new AspenPart(this, text, string.Compare(text, RootUri, ignoreCase: true, CultureInfo.CurrentCulture) == 0, val.Comment);
 		}
 		return null;
 	}
@@ -583,12 +586,13 @@ public class AspenPackage : IPackage
 		{
 			return null;
 		}
-		AbstractFile[] files = m_Archive.GetFiles(true, "");
+		AbstractFile[] files = ((AbstractFolder)m_Archive).GetFiles(true, new object[1] { "" });
 		IPart[] array = new IPart[files.Length];
 		for (int i = 0; i < files.Length; i++)
 		{
-			ZippedFile zippedFile = files[i] as ZippedFile;
-			string text = zippedFile.FullName;
+			AbstractFile obj = files[i];
+			ZippedFile val = (ZippedFile)(object)((obj is ZippedFile) ? obj : null);
+			string text = ((FileSystemItem)val).FullName;
 			if (text.StartsWith(".\\"))
 			{
 				text = text.Remove(0, 2);
@@ -597,13 +601,17 @@ public class AspenPackage : IPackage
 			{
 				text = text.Remove(0, 1);
 			}
-			array[i] = new AspenPart(this, text, string.Compare(text, RootUri, ignoreCase: true, CultureInfo.CurrentCulture) == 0, zippedFile.Comment);
+			array[i] = new AspenPart(this, text, string.Compare(text, RootUri, ignoreCase: true, CultureInfo.CurrentCulture) == 0, val.Comment);
 		}
 		return array;
 	}
 
 	public bool Open(string filePath, FileMode mode, bool checkWriteAccess)
 	{
+		//IL_006a: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0074: Expected O, but got Unknown
+		//IL_007b: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0085: Expected O, but got Unknown
 		Close();
 		m_Mode = mode;
 		m_OriginalPath = filePath;
@@ -619,8 +627,8 @@ public class AspenPackage : IPackage
 		}
 		try
 		{
-			m_File = new DiskFile(m_LocalPath);
-			m_Archive = new ZipArchive(m_File);
+			m_File = (AbstractFile)new DiskFile(m_LocalPath);
+			m_Archive = (ZippedFolder)new ZipArchive(m_File);
 			ParseDocInfo(m_Archive.Comment);
 			if (checkWriteAccess)
 			{
@@ -643,16 +651,22 @@ public class AspenPackage : IPackage
 
 	public bool OpenStream(Stream stream)
 	{
+		//IL_0008: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0012: Expected O, but got Unknown
+		//IL_0013: Unknown result type (might be due to invalid IL or missing references)
+		//IL_001d: Expected O, but got Unknown
+		//IL_0046: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0050: Expected O, but got Unknown
 		Close();
 		try
 		{
 			m_OriginalStream = new StreamFile(stream);
-			m_File = new MemoryFile();
-			if (m_OriginalStream.Size > 0)
+			m_File = (AbstractFile)new MemoryFile();
+			if (((AbstractFile)m_OriginalStream).Size > 0)
 			{
-				m_OriginalStream.CopyTo(m_File, replaceIfExists: true);
+				((AbstractFile)m_OriginalStream).CopyTo(m_File, true);
 			}
-			m_Archive = new ZipArchive(m_File);
+			m_Archive = (ZippedFolder)new ZipArchive(m_File);
 			ParseDocInfo(m_Archive.Comment);
 			return true;
 		}
@@ -664,11 +678,13 @@ public class AspenPackage : IPackage
 
 	public byte[] SaveToData()
 	{
+		//IL_0007: Unknown result type (might be due to invalid IL or missing references)
+		//IL_000d: Expected O, but got Unknown
 		MemoryStream memoryStream = new MemoryStream();
-		StreamFile destinationFile = new StreamFile(memoryStream);
+		StreamFile val = new StreamFile((Stream)memoryStream);
 		try
 		{
-			m_File.CopyTo(destinationFile, replaceIfExists: true);
+			m_File.CopyTo((AbstractFile)(object)val, true);
 			memoryStream.Seek(0L, SeekOrigin.Begin);
 			byte[] array = new byte[memoryStream.Length];
 			memoryStream.Write(array, 0, array.Length);
@@ -750,12 +766,12 @@ public class AspenPackage : IPackage
 
 	public bool RefreshContents()
 	{
-		AbstractFile[] files = m_Archive.GetFiles(true, "");
+		AbstractFile[] files = ((AbstractFolder)m_Archive).GetFiles(true, new object[1] { "" });
 		try
 		{
-			for (int i = 0; i < files.Length; i++)
+			foreach (AbstractFile obj in files)
 			{
-				(files[i] as ZippedFile).Refresh();
+				((FileSystemItem)((obj is ZippedFile) ? obj : null)).Refresh();
 			}
 		}
 		catch
@@ -1002,7 +1018,7 @@ public class AspenPart : IPart
 		}
 		set
 		{
-			GetFile().Name = value;
+			((FileSystemItem)GetFile()).Name = value;
 			m_Uri = FilePath + Path.DirectorySeparatorChar + value;
 			m_Package.Touch();
 		}
@@ -1132,29 +1148,32 @@ public class AspenPart : IPart
 		{
 			text += m_Uri;
 		}
-		ZippedFile obj = m_Package.Archive.CreateFile(m_Uri, replaceIfExists: true) as ZippedFile;
-		obj.Comment = GetPartInfo();
-		return obj;
+		AbstractFile obj = ((AbstractFolder)m_Package.Archive).CreateFile(m_Uri, true);
+		AbstractFile obj2 = ((obj is ZippedFile) ? obj : null);
+		((ZippedFile)obj2).Comment = GetPartInfo();
+		return (ZippedFile)(object)obj2;
 	}
 
 	private ZippedFile GetFile()
 	{
-		return m_Package.Archive.GetFile(m_Uri) as ZippedFile;
+		AbstractFile file = ((AbstractFolder)m_Package.Archive).GetFile(m_Uri);
+		return (ZippedFile)(object)((file is ZippedFile) ? file : null);
 	}
 
 	private void UpdateZipFile()
 	{
-		ZippedFile zippedFile = CreateFile();
-		if (zippedFile != null)
+		ZippedFile val = CreateFile();
+		if (val != null)
 		{
-			m_Package.Archive.CreateFile(zippedFile.Name, replaceIfExists: true);
+			((AbstractFolder)m_Package.Archive).CreateFile(((FileSystemItem)val).Name, true);
 		}
 	}
 
 	private void UpdatePartComment()
 	{
 		string partInfo = GetPartInfo();
-		(m_Package.Archive.GetFile(m_Uri) as ZippedFile).Comment = partInfo;
+		AbstractFile file = ((AbstractFolder)m_Package.Archive).GetFile(m_Uri);
+		((ZippedFile)((file is ZippedFile) ? file : null)).Comment = partInfo;
 	}
 
 	private void ReadPartProperties()
@@ -1164,8 +1183,8 @@ public class AspenPart : IPart
 			ZippedFile file = GetFile();
 			if (file != null)
 			{
-				m_Size = file.Size;
-				m_LastModified = file.LastWriteDateTime;
+				m_Size = ((AbstractFile)file).Size;
+				m_LastModified = ((FileSystemItem)file).LastWriteDateTime;
 			}
 		}
 		else if (File.Exists(m_Uri))
@@ -1187,19 +1206,22 @@ public class AspenPart : IPart
 		{
 			text = text.Remove(0, 1);
 		}
-		if (mode == FileMode.Open)
+		if (mode != FileMode.Open)
 		{
-			if (m_Package.Archive.GetFile(text) is ZippedFile zippedFile)
-			{
-				m_IsRoot = text == m_Package.RootUri;
-				return zippedFile.OpenRead();
-			}
-			return null;
+			AbstractFile obj = ((AbstractFolder)m_Package.Archive).CreateFile(text, true);
+			AbstractFile obj2 = ((obj is ZippedFile) ? obj : null);
+			((ZippedFile)obj2).Comment = GetPartInfo();
+			m_Package.Touch();
+			return obj2.OpenWrite(true);
 		}
-		ZippedFile obj = m_Package.Archive.CreateFile(text, replaceIfExists: true) as ZippedFile;
-		obj.Comment = GetPartInfo();
-		m_Package.Touch();
-		return obj.OpenWrite(overwrite: true);
+		AbstractFile file = ((AbstractFolder)m_Package.Archive).GetFile(text);
+		ZippedFile val = (ZippedFile)(object)((file is ZippedFile) ? file : null);
+		if (val != null)
+		{
+			m_IsRoot = text == m_Package.RootUri;
+			return ((AbstractFile)val).OpenRead();
+		}
+		return null;
 	}
 
 	public bool LoadFromFile(string filePath)
@@ -1209,8 +1231,9 @@ public class AspenPart : IPart
 			return false;
 		}
 		bool result = false;
-		ZippedFile zippedFile = m_Package.Archive.CreateFile(m_Uri, replaceIfExists: true) as ZippedFile;
-		zippedFile.Comment = GetPartInfo();
+		AbstractFile obj = ((AbstractFolder)m_Package.Archive).CreateFile(m_Uri, true);
+		ZippedFile val = (ZippedFile)(object)((obj is ZippedFile) ? obj : null);
+		val.Comment = GetPartInfo();
 		FileStream fileStream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 		try
 		{
@@ -1218,12 +1241,12 @@ public class AspenPart : IPart
 			{
 				byte[] array = new byte[fileStream.Length];
 				fileStream.Read(array, 0, array.Length);
-				Stream stream = zippedFile.OpenWrite(overwrite: true);
+				Stream stream = ((AbstractFile)val).OpenWrite(true);
 				stream.Write(array, 0, array.Length);
 				stream.Close();
 			}
-			zippedFile.CreationDateTime = File.GetCreationTime(filePath);
-			zippedFile.LastWriteDateTime = File.GetLastWriteTime(filePath);
+			((FileSystemItem)val).CreationDateTime = File.GetCreationTime(filePath);
+			((FileSystemItem)val).LastWriteDateTime = File.GetLastWriteTime(filePath);
 			m_Package.Touch();
 			result = true;
 		}
@@ -1244,7 +1267,7 @@ public class AspenPart : IPart
 		{
 			return false;
 		}
-		Stream stream = GetFile().OpenRead();
+		Stream stream = ((AbstractFile)GetFile()).OpenRead();
 		FileStream fileStream = File.Create(filePath);
 		try
 		{
@@ -1274,17 +1297,17 @@ public class AspenPart : IPart
 	public bool Refresh()
 	{
 		string filePath = FilePath;
-		AbstractFile file = m_Package.Archive.GetFile(m_Uri);
+		AbstractFile file = ((AbstractFolder)m_Package.Archive).GetFile(m_Uri);
 		FileStream fileStream = File.OpenRead(filePath);
 		try
 		{
 			byte[] array = new byte[fileStream.Length];
 			fileStream.Read(array, 0, array.Length);
-			Stream stream = file.OpenWrite(overwrite: true);
+			Stream stream = file.OpenWrite(true);
 			stream.Write(array, 0, array.Length);
 			stream.Close();
-			file.CreationDateTime = File.GetCreationTime(filePath);
-			file.LastWriteDateTime = File.GetLastWriteTime(filePath);
+			((FileSystemItem)file).CreationDateTime = File.GetCreationTime(filePath);
+			((FileSystemItem)file).LastWriteDateTime = File.GetLastWriteTime(filePath);
 			m_Package.Touch();
 			return true;
 		}
@@ -1304,10 +1327,10 @@ public class AspenPart : IPart
 		{
 			return false;
 		}
-		ZippedFile zippedFile = null;
+		ZippedFile val = null;
 		try
 		{
-			zippedFile = CreateFile();
+			val = CreateFile();
 		}
 		catch
 		{
@@ -1315,7 +1338,7 @@ public class AspenPart : IPart
 		}
 		try
 		{
-			using Stream stream = zippedFile.OpenWrite(overwrite: true);
+			using Stream stream = ((AbstractFile)val).OpenWrite(true);
 			stream.Write(data, 0, data.Length);
 		}
 		catch
@@ -1338,7 +1361,7 @@ public class AspenPart : IPart
 				return array;
 			}
 		}
-		using Stream stream2 = GetFile().OpenRead();
+		using Stream stream2 = ((AbstractFile)GetFile()).OpenRead();
 		byte[] array2 = new byte[Size];
 		stream2.Read(array2, 0, array2.Length);
 		stream2.Close();
@@ -3055,5 +3078,3 @@ internal class Strings
 	{
 	}
 }
-You are not using the latest version of the tool, please update.
-Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

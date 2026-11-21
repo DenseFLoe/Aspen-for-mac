@@ -1,5 +1,6 @@
 using System;
 using System.CodeDom.Compiler;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -43,6 +44,7 @@ using Infragistics.Windows.Ribbon;
 using Microsoft.Practices.Composite.Events;
 using Microsoft.Practices.Composite.Modularity;
 using Microsoft.Practices.Composite.Presentation.Commands;
+using Microsoft.Practices.Composite.Presentation.Events;
 using Microsoft.Practices.ObjectBuilder2;
 using Microsoft.Practices.Unity;
 using Microsoft.Practices.Unity.ObjectBuilder;
@@ -88,12 +90,12 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVForms
 				return null;
 			}
 			PSVMain pSVMain = UnityContainerExtensions.Resolve<PSVMain>(container, Array.Empty<ResolverOverride>());
-			pSVMain.InitializeScreen(container, screenSubject, screenState);
+			((ScreenContentControl)pSVMain).InitializeScreen(container, screenSubject, screenState);
 			if (pSVMain._myControl == null)
 			{
 				return null;
 			}
-			UnityContainerExtensions.Resolve<IEventAggregator>(container, Array.Empty<ResolverOverride>()).GetEvent<SafetyScreenCreatedEvent>().Publish(new SafetyScreenCreatedEventArgs(pSVMain));
+			((CompositePresentationEvent<SafetyScreenCreatedEventArgs>)UnityContainerExtensions.Resolve<IEventAggregator>(container, Array.Empty<ResolverOverride>()).GetEvent<SafetyScreenCreatedEvent>()).Publish(new SafetyScreenCreatedEventArgs((ScreenContentControl)(object)pSVMain));
 			return pSVMain;
 		}
 
@@ -104,10 +106,10 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVForms
 
 		public override void InitializeScreen(IUnityContainer container, ScreenSubject screenSubjectOpaque, ScreenState screenStateOpaque)
 		{
-			base.InitializeScreen(container, screenSubjectOpaque, screenStateOpaque);
-			base.AllowFloating = false;
-			base.AllowCloning = false;
-			PSVApplication pSVApplication = UnityContainerExtensions.Resolve<PSVApplication>(base.UnityContainer, Array.Empty<ResolverOverride>());
+			((ScreenContentControl)this).InitializeScreen(container, screenSubjectOpaque, screenStateOpaque);
+			((ScreenContentControl)this).AllowFloating = false;
+			((ScreenContentControl)this).AllowCloning = false;
+			PSVApplication pSVApplication = UnityContainerExtensions.Resolve<PSVApplication>(((ScreenContentControl)this).UnityContainer, Array.Empty<ResolverOverride>());
 			if (pSVApplication.ActiveCase == null)
 			{
 				IPSVMessager iPSVMessager = UnityContainerExtensions.Resolve<IPSVMessager>(container, Array.Empty<ResolverOverride>());
@@ -118,50 +120,45 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVForms
 			}
 			_mycase = pSVApplication.ActiveCase;
 			PSVScreenSubject pSVScreenSubject = screenSubjectOpaque as PSVScreenSubject;
-			base.Header = pSVScreenSubject.TabLabel;
+			((ScreenContentControl)this).Header = pSVScreenSubject.TabLabel;
 			InitializeFormContent(pSVScreenSubject);
 			DoInitialization();
-			base.ShouldApplyZoomToTransform = false;
-			base.NavigationGroupKey = "PSVPlus";
+			((ScreenContentControl)this).ShouldApplyZoomToTransform = false;
+			((ScreenContentControl)this).NavigationGroupKey = "PSVPlus";
 		}
 
 		private void InitializeFormContent(PSVScreenSubject formSubject)
 		{
-			//IL_001e: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0028: Expected O, but got Unknown
 			RegisterEvents();
 			_myControl = (BaseUserControl)_mycase.GetUserControl(formSubject.Id, formSubject.ModelKey);
 			if (_myControl is ErrorControl)
 			{
-				base.Content = _myControl;
+				((ContentControl)this).Content = _myControl;
 				return;
 			}
 			if (formSubject.Id == PSVctrlIDs.ctrlVapRelief)
 			{
-				BaseUserControl myControl = _myControl;
-				BaseUserControl obj = ((myControl is PSVScenarioControl) ? myControl : null);
+				PSVScenarioControl obj = _myControl as PSVScenarioControl;
 				ScenarioScreenSubject scenarioScreenSubject = formSubject as ScenarioScreenSubject;
 				obj.ModelKey = scenarioScreenSubject.ModelKey;
-				((PSVScenarioControl)obj).NodeKey = scenarioScreenSubject.NodeKey;
+				obj.NodeKey = scenarioScreenSubject.NodeKey;
 			}
 			else if (formSubject.Id == PSVctrlIDs.ctrlPSVSummaryForm)
 			{
-				BaseUserControl myControl2 = _myControl;
-				BaseUserControl obj2 = ((myControl2 is PRDSummary) ? myControl2 : null);
+				PRDSummary obj2 = _myControl as PRDSummary;
 				PSVSummaryScreenSubject pSVSummaryScreenSubject = formSubject as PSVSummaryScreenSubject;
-				((PRDSummary)obj2).NodeKey = pSVSummaryScreenSubject.NodeKey;
-				((PRDSummary)obj2).PSVkey = pSVSummaryScreenSubject.ModelKey;
-				((PRDSummary)obj2).PSVName = pSVSummaryScreenSubject.PSVName;
+				obj2.NodeKey = pSVSummaryScreenSubject.NodeKey;
+				obj2.PSVkey = pSVSummaryScreenSubject.ModelKey;
+				obj2.PSVName = pSVSummaryScreenSubject.PSVName;
 			}
 			else if (formSubject.Id == PSVctrlIDs.ctrlTankVent)
 			{
-				BaseUserControl myControl3 = _myControl;
-				PSVTank val = (PSVTank)(object)((myControl3 is PSVTank) ? myControl3 : null);
+				PSVTank pSVTank = _myControl as PSVTank;
 				PSVTankScreenSubject pSVTankScreenSubject = formSubject as PSVTankScreenSubject;
 				if (pSVTankScreenSubject.NodePath == null || pSVTankScreenSubject.NodeKey.Equals(pSVTankScreenSubject.NodePath))
 				{
-					val.NodeKey = pSVTankScreenSubject.NodeKey;
-					val.TankKey = pSVTankScreenSubject.ModelKey;
+					pSVTank.NodeKey = pSVTankScreenSubject.NodeKey;
+					pSVTank.TankKey = pSVTankScreenSubject.ModelKey;
 				}
 				else
 				{
@@ -173,47 +170,45 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVForms
 				_ = formSubject.Id;
 				_ = 26;
 			}
-			base.Content = _myControl;
+			((ContentControl)this).Content = _myControl;
 		}
 
 		private void RegisterEvents()
 		{
-			UnityContainerExtensions.Resolve<IEventAggregator>(base.UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<UpdatePSVSummaryEvent>().Subscribe(OnValveFormUpdate);
-			UnityContainerExtensions.Resolve<IEventAggregator>(base.UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<PSVUnitSetChangedEvent>().Subscribe(OnUnitSetChanged);
-			UnityContainerExtensions.Resolve<IEventAggregator>(base.UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<RenameEvent>().Subscribe(OnNameChanged);
-			UnityContainerExtensions.Resolve<IEventAggregator>(base.UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<LineSizingSettingsChangedEvent>().Subscribe(OnLineSizingSettingsChanged);
-			UnityContainerExtensions.Resolve<IEventAggregator>(base.UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<PSVOwnerStreamChangedEvent>().Subscribe(OnOwnerStreamChanged);
+			((CompositePresentationEvent<UpdatePSVSummaryEventArgs>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(((ScreenContentControl)this).UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<UpdatePSVSummaryEvent>()).Subscribe((Action<UpdatePSVSummaryEventArgs>)OnValveFormUpdate);
+			((CompositePresentationEvent<EventArgs>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(((ScreenContentControl)this).UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<PSVUnitSetChangedEvent>()).Subscribe((Action<EventArgs>)OnUnitSetChanged);
+			((CompositePresentationEvent<RenameEventArgs>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(((ScreenContentControl)this).UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<RenameEvent>()).Subscribe((Action<RenameEventArgs>)OnNameChanged);
+			((CompositePresentationEvent<LineSizingSettingsChangedEventArgs>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(((ScreenContentControl)this).UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<LineSizingSettingsChangedEvent>()).Subscribe((Action<LineSizingSettingsChangedEventArgs>)OnLineSizingSettingsChanged);
+			((CompositePresentationEvent<PSVOwnerStreamChangedEventArgs>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(((ScreenContentControl)this).UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<PSVOwnerStreamChangedEvent>()).Subscribe((Action<PSVOwnerStreamChangedEventArgs>)OnOwnerStreamChanged);
 		}
 
 		private void OnOwnerStreamChanged(PSVOwnerStreamChangedEventArgs args)
 		{
-			PSVScreenSubject pSVScreenSubject = base.ScreenSubject as PSVScreenSubject;
+			PSVScreenSubject pSVScreenSubject = ((ScreenContentControl)this).ScreenSubject as PSVScreenSubject;
 			if (pSVScreenSubject.Id == PSVctrlIDs.ctrlPSVSummaryForm)
 			{
 				if (_myControl is PRDSummary)
 				{
-					BaseUserControl myControl = _myControl;
-					PRDSummary val = (PRDSummary)(object)((myControl is PRDSummary) ? myControl : null);
-					if (val.PSVkey == args.PSVKey && string.Compare(val.NodeKey, args.NewCxsPath, ignoreCase: true) != 0)
+					PRDSummary pRDSummary = _myControl as PRDSummary;
+					if (pRDSummary.PSVkey == args.PSVKey && string.Compare(pRDSummary.NodeKey, args.NewCxsPath, ignoreCase: true) != 0)
 					{
-						val.UpdateNodeKey(args.NewCxsPath);
+						pRDSummary.UpdateNodeKey(args.NewCxsPath);
 					}
 				}
 			}
 			else if (pSVScreenSubject.Id == PSVctrlIDs.ctrlVapRelief && _myControl is PSVScenarioControl)
 			{
-				BaseUserControl myControl2 = _myControl;
-				PSVScenarioControl val2 = (PSVScenarioControl)(object)((myControl2 is PSVScenarioControl) ? myControl2 : null);
-				if (string.Compare(val2.NodeKey, args.OldCxsPath, ignoreCase: true) == 0)
+				PSVScenarioControl pSVScenarioControl = _myControl as PSVScenarioControl;
+				if (string.Compare(pSVScenarioControl.NodeKey, args.OldCxsPath, ignoreCase: true) == 0)
 				{
-					val2.UpdateNodeKey(args.NewCxsPath);
+					pSVScenarioControl.UpdateNodeKey(args.NewCxsPath);
 				}
 			}
 		}
 
 		private void OnLineSizingSettingsChanged(LineSizingSettingsChangedEventArgs args)
 		{
-			if (!this.IsActiveScreen() || !(base.ScreenSubject is PSVScreenSubject pSVScreenSubject))
+			if (!((ScreenContentControl)(object)this).IsActiveScreen() || !(((ScreenContentControl)this).ScreenSubject is PSVScreenSubject pSVScreenSubject))
 			{
 				return;
 			}
@@ -221,24 +216,18 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVForms
 			{
 				if (_myControl is PSVScenarioControl)
 				{
-					BaseUserControl myControl = _myControl;
-					((PSVScenarioControl)((myControl is PSVScenarioControl) ? myControl : null)).OnLineSizingSettingsChanged();
+					(_myControl as PSVScenarioControl).OnLineSizingSettingsChanged();
 				}
 			}
-			else if (pSVScreenSubject.Id == PSVctrlIDs.ctrlPSVSummaryForm)
+			else if (pSVScreenSubject.Id == PSVctrlIDs.ctrlPSVSummaryForm && _myControl is PRDSummary pRDSummary)
 			{
-				BaseUserControl myControl2 = _myControl;
-				PRDSummary val = (PRDSummary)(object)((myControl2 is PRDSummary) ? myControl2 : null);
-				if (val != null)
-				{
-					val.UpdateRatingTabSelOriCombo();
-				}
+				pRDSummary.UpdateRatingTabSelOriCombo();
 			}
 		}
 
 		private void OnValveFormUpdate(UpdatePSVSummaryEventArgs args)
 		{
-			if (this.IsActiveScreen() && string.Compare(args.OriginalSource, "navigator", ignoreCase: true) == 0)
+			if (((ScreenContentControl)(object)this).IsActiveScreen() && string.Compare(args.OriginalSource, "navigator", ignoreCase: true) == 0)
 			{
 				_myControl.RefreshForm();
 			}
@@ -246,7 +235,7 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVForms
 
 		private void OnUnitSetChanged(EventArgs args)
 		{
-			if (this.IsActiveScreen())
+			if (((ScreenContentControl)(object)this).IsActiveScreen())
 			{
 				_myControl.UpdateUnit();
 			}
@@ -254,18 +243,18 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVForms
 
 		private void OnNameChanged(RenameEventArgs args)
 		{
-			if (!this.IsActiveScreen() || !(base.ScreenSubject is PSVScreenSubject pSVScreenSubject))
+			if (!((ScreenContentControl)(object)this).IsActiveScreen() || !(((ScreenContentControl)this).ScreenSubject is PSVScreenSubject pSVScreenSubject))
 			{
 				return;
 			}
-			IPSVMessager iPSVMessager = UnityContainerExtensions.Resolve<IPSVMessager>(base.UnityContainer, Array.Empty<ResolverOverride>());
+			IPSVMessager iPSVMessager = UnityContainerExtensions.Resolve<IPSVMessager>(((ScreenContentControl)this).UnityContainer, Array.Empty<ResolverOverride>());
 			if (pSVScreenSubject.Id == PSVctrlIDs.ctrlVapRelief)
 			{
 				if (!(pSVScreenSubject is ScenarioScreenSubject scenarioScreenSubject))
 				{
 					return;
 				}
-				string header = base.Header;
+				string header = ((ScreenContentControl)this).Header;
 				string text = null;
 				bool flag = false;
 				if (string.Compare(args.ObjectType, "ScenarioName", ignoreCase: false) == 0 && object.Equals(pSVScreenSubject.ModelKey, args.Key))
@@ -286,24 +275,22 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVForms
 				}
 				if (flag && string.Compare(header, text, ignoreCase: true) != 0)
 				{
-					base.Header = text;
+					((ScreenContentControl)this).Header = text;
 					pSVScreenSubject.TabLabel = text;
 				}
 			}
 			if (pSVScreenSubject.Id == PSVctrlIDs.ctrlPSVSummaryForm && string.Compare(args.ObjectType, "ValveName", ignoreCase: true) == 0 && object.Equals(pSVScreenSubject.ModelKey, args.Key))
 			{
 				string newName = args.NewName;
-				if (string.Compare(base.Header, newName, ignoreCase: true) != 0)
+				if (string.Compare(((ScreenContentControl)this).Header, newName, ignoreCase: true) != 0)
 				{
-					base.Header = newName;
+					((ScreenContentControl)this).Header = newName;
 					pSVScreenSubject.TabLabel = newName;
 					((PSVSummaryScreenSubject)pSVScreenSubject).PSVName = newName;
 				}
-				BaseUserControl myControl = _myControl;
-				PRDSummary val = (PRDSummary)(object)((myControl is PRDSummary) ? myControl : null);
-				if (val != null)
+				if (_myControl is PRDSummary pRDSummary)
 				{
-					val.ValveNameChanged();
+					pRDSummary.ValveNameChanged();
 				}
 				if (iPSVMessager != null && iPSVMessager.PSVHostType.Equals("ASPENPLUS") && pSVScreenSubject is PSVSummaryScreenSubject pSVSummaryScreenSubject && !string.IsNullOrEmpty(args.Path))
 				{
@@ -319,7 +306,7 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVForms
 			if (pSVScreenSubject.Id == PSVctrlIDs.ctrlTankVent && string.Compare(args.ObjectType, "TankName", ignoreCase: true) == 0 && object.Equals(pSVScreenSubject.ModelKey, args.Key) && pSVScreenSubject is PSVTankScreenSubject pSVTankScreenSubject && pSVTankScreenSubject.ModelKey == args.Key)
 			{
 				pSVTankScreenSubject.TankName = args.NewName;
-				base.Header = args.NewName;
+				((ScreenContentControl)this).Header = args.NewName;
 				pSVScreenSubject.NodePath = args.Path;
 				pSVScreenSubject.NodeKey = args.Path;
 				pSVScreenSubject.TabLabel = args.NewName;
@@ -338,15 +325,15 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVForms
 
 		protected override void OnClosing(CancelEventArgs args)
 		{
-			base.OnClosing(args);
-			if (base.UnityContainer != null)
+			((ScreenContentControl)this).OnClosing(args);
+			if (((ScreenContentControl)this).UnityContainer != null)
 			{
-				UnityContainerExtensions.Resolve<IEventAggregator>(base.UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<UpdatePSVSummaryEvent>().Unsubscribe(OnValveFormUpdate);
-				UnityContainerExtensions.Resolve<IEventAggregator>(base.UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<PSVUnitSetChangedEvent>().Unsubscribe(OnUnitSetChanged);
-				UnityContainerExtensions.Resolve<IEventAggregator>(base.UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<RenameEvent>().Unsubscribe(OnNameChanged);
-				UnityContainerExtensions.Resolve<IEventAggregator>(base.UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<LineSizingSettingsChangedEvent>().Unsubscribe(OnLineSizingSettingsChanged);
-				UnityContainerExtensions.Resolve<IEventAggregator>(base.UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<PSVOwnerStreamChangedEvent>().Unsubscribe(OnOwnerStreamChanged);
-				base.UnityContainer = null;
+				((CompositePresentationEvent<UpdatePSVSummaryEventArgs>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(((ScreenContentControl)this).UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<UpdatePSVSummaryEvent>()).Unsubscribe((Action<UpdatePSVSummaryEventArgs>)OnValveFormUpdate);
+				((CompositePresentationEvent<EventArgs>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(((ScreenContentControl)this).UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<PSVUnitSetChangedEvent>()).Unsubscribe((Action<EventArgs>)OnUnitSetChanged);
+				((CompositePresentationEvent<RenameEventArgs>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(((ScreenContentControl)this).UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<RenameEvent>()).Unsubscribe((Action<RenameEventArgs>)OnNameChanged);
+				((CompositePresentationEvent<LineSizingSettingsChangedEventArgs>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(((ScreenContentControl)this).UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<LineSizingSettingsChangedEvent>()).Unsubscribe((Action<LineSizingSettingsChangedEventArgs>)OnLineSizingSettingsChanged);
+				((CompositePresentationEvent<PSVOwnerStreamChangedEventArgs>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(((ScreenContentControl)this).UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<PSVOwnerStreamChangedEvent>()).Unsubscribe((Action<PSVOwnerStreamChangedEventArgs>)OnOwnerStreamChanged);
+				((ScreenContentControl)this).UnityContainer = null;
 			}
 			if (_myControl != null)
 			{
@@ -355,10 +342,10 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVForms
 					disposable.Dispose();
 				}
 				_myControl.CleanControl();
-				((FrameworkElement)(object)_myControl).DataContext = null;
+				_myControl.DataContext = null;
 				_myControl = null;
 			}
-			base.Content = null;
+			((ContentControl)this).Content = null;
 			_mycase = null;
 		}
 
@@ -514,7 +501,7 @@ namespace AspenTech.EquipmentAnalysis.Modules.ExtensionMethods
 			{
 				throw new ArgumentNullException("screen");
 			}
-			if (UnityContainerExtensions.Resolve<IShellApplication>(screen.UnityContainer, Array.Empty<ResolverOverride>()).ActiveWindow.FindScreen((ScreenContentControl s) => s.Equals(screen)) != null)
+			if (UnityContainerExtensions.Resolve<IShellApplication>(screen.UnityContainer, Array.Empty<ResolverOverride>()).ActiveWindow.FindScreen((Func<ScreenContentControl, bool>)((ScreenContentControl s) => ((object)s).Equals((object)screen))) != null)
 			{
 				return true;
 			}
@@ -523,10 +510,10 @@ namespace AspenTech.EquipmentAnalysis.Modules.ExtensionMethods
 
 		public static string GenerateVisualNodePath(this PSVRootNode node)
 		{
-			string text = node.Text.Trim();
+			string text = ((SimpleNavigatorTreeNode)node).Text.Trim();
 			while (node.Parent != null)
 			{
-				text = node.Parent.Text + "." + text;
+				text = ((SimpleNavigatorTreeNode)node.Parent).Text + "." + text;
 				node = node.Parent;
 			}
 			return text;
@@ -711,7 +698,7 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 				PSVRootNode pSVRootNode = args.Parameter as PSVRootNode;
 				args.CanExecute = pSVRootNode != null && canExecuteFunction(pSVRootNode);
 			};
-			navigatorView.CommandBindings.Add(new CommandBinding(command, executed, canExecute));
+			((UIElement)(object)navigatorView).CommandBindings.Add(new CommandBinding(command, executed, canExecute));
 		}
 
 		private static void AppendNavPaneTankRootCommandBinding(TreeNavigatorView navigatorView, RoutedUICommand command, Action<TankRootNode> executeAction, Func<TankRootNode, bool> canExecuteFunction)
@@ -726,7 +713,7 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 				TankRootNode tankRootNode = args.Parameter as TankRootNode;
 				args.CanExecute = tankRootNode != null && canExecuteFunction(tankRootNode);
 			};
-			navigatorView.CommandBindings.Add(new CommandBinding(command, executed, canExecute));
+			((UIElement)(object)navigatorView).CommandBindings.Add(new CommandBinding(command, executed, canExecute));
 		}
 
 		private static void AppendNavPaneTankCommandBinding(TreeNavigatorView navigatorView, RoutedUICommand command, Action<TankNode> executeAction, Func<TankNode, bool> canExecuteFunction)
@@ -741,7 +728,7 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 				TankNode tankNode = args.Parameter as TankNode;
 				args.CanExecute = tankNode != null && canExecuteFunction(tankNode);
 			};
-			navigatorView.CommandBindings.Add(new CommandBinding(command, executed, canExecute));
+			((UIElement)(object)navigatorView).CommandBindings.Add(new CommandBinding(command, executed, canExecute));
 		}
 
 		private static void AppendContextMenuItem(TreeNavigatorView targetNavigatorView, PSVRootNode targetNode, ContextMenu menu, RoutedUICommand command, bool insertSeparatorFirst = false)
@@ -754,7 +741,7 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 			{
 				Command = command,
 				CommandParameter = targetNode,
-				CommandTarget = targetNavigatorView
+				CommandTarget = (IInputElement)targetNavigatorView
 			});
 		}
 
@@ -768,7 +755,7 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 			{
 				Command = command,
 				CommandParameter = targetNode,
-				CommandTarget = targetNavigatorView
+				CommandTarget = (IInputElement)targetNavigatorView
 			});
 		}
 
@@ -782,7 +769,7 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 			{
 				Command = command,
 				CommandParameter = targetNode,
-				CommandTarget = targetNavigatorView
+				CommandTarget = (IInputElement)targetNavigatorView
 			});
 		}
 
@@ -838,14 +825,14 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 			{
 				menuItem.Click += delegate
 				{
-					AddPSV(root, streamInfo.path, streamInfo.id, root.Text);
+					AddPSV(root, streamInfo.path, streamInfo.id, ((SimpleNavigatorTreeNode)root).Text);
 				};
 			}
 			else
 			{
 				menuItem.Click += delegate
 				{
-					AddRD(root, streamInfo.path, streamInfo.id, root.Text);
+					AddRD(root, streamInfo.path, streamInfo.id, ((SimpleNavigatorTreeNode)root).Text);
 				};
 			}
 			return menuItem;
@@ -901,7 +888,7 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 		{
 			if (node != null && !string.IsNullOrEmpty(node.DataPath))
 			{
-				AddPSV(node, node.DataPath, node.Text, string.Empty);
+				AddPSV(node, node.DataPath, ((SimpleNavigatorTreeNode)node).Text, string.Empty);
 			}
 		}
 
@@ -909,7 +896,7 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 		{
 			if (node != null && !string.IsNullOrEmpty(node.DataPath))
 			{
-				AddRD(node, node.DataPath, node.Text, string.Empty);
+				AddRD(node, node.DataPath, ((SimpleNavigatorTreeNode)node).Text, string.Empty);
 			}
 		}
 
@@ -957,7 +944,7 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 
 		private static void NavPaneCommand_DeleteTank_Executed(TankNode node)
 		{
-			if (MessageBox.Show(string.Format(FormResource.message_DeleteTank, node.Text), FormResource.PSVSizing, MessageBoxButton.OKCancel, MessageBoxImage.Question) == MessageBoxResult.OK)
+			if (MessageBox.Show(string.Format(FormResource.message_DeleteTank, ((SimpleNavigatorTreeNode)node).Text), FormResource.PSVSizing, MessageBoxButton.OKCancel, MessageBoxImage.Question) == MessageBoxResult.OK)
 			{
 				CxsCaseHelper.MyDataProvider.InvokeAction(node.DataPath, "SendMessage", false, new object[1] { "Delete" });
 			}
@@ -993,22 +980,22 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 
 		private static void NavPaneCommand_Rename_Executed(PSVRootNode node)
 		{
-			ValveNameWindow obj = UnityContainerExtensions.Resolve<ValveNameWindow>(node.UnityContainer, Array.Empty<ResolverOverride>());
+			ValveNameWindow valveNameWindow = UnityContainerExtensions.Resolve<ValveNameWindow>(((SimpleNavigatorTreeNode)node).UnityContainer, Array.Empty<ResolverOverride>());
 			string dataPath = node.DataPath;
 			PsvModelKey pSVkey = (node as PSVNode).PSVkey;
-			IPsvCase activeCase = UnityContainerExtensions.Resolve<PSVApplication>(node.UnityContainer, Array.Empty<ResolverOverride>()).ActiveCase;
-			obj.Initialize(dataPath, ref activeCase, (PsvKey)pSVkey, (PRDData)null);
-			((Window)(object)obj).ShowDialog();
+			IPsvCase PSVCase = UnityContainerExtensions.Resolve<PSVApplication>(((SimpleNavigatorTreeNode)node).UnityContainer, Array.Empty<ResolverOverride>()).ActiveCase;
+			valveNameWindow.Initialize(dataPath, ref PSVCase, pSVkey);
+			valveNameWindow.ShowDialog();
 		}
 
 		private static void NavPaneCommand_EditScenario_Executed(PSVRootNode node)
 		{
-			node.IsSelected = true;
+			((NavigatorTreeNode)node).IsSelected = true;
 		}
 
 		private static void NavPaneCommand_EditTank_Executed(PSVRootNode node)
 		{
-			node.IsSelected = true;
+			((NavigatorTreeNode)node).IsSelected = true;
 		}
 
 		private static void NavPaneCommand_ChangeType_Executed(PSVRootNode node)
@@ -1147,7 +1134,7 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 				if (value != _isExpanded)
 				{
 					_isExpanded = value;
-					OnIsExpandedChanged();
+					((SimpleNavigatorTreeNode)this).OnIsExpandedChanged();
 				}
 			}
 		}
@@ -1163,17 +1150,17 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 			{
 				PSVRootNode.IsExpandedChanged(this, EventArgs.Empty);
 			}
-			base.OnIsExpandedChanged();
+			((SimpleNavigatorTreeNode)this).OnIsExpandedChanged();
 		}
 
 		public void NotifyChilrenChanged()
 		{
-			OnPropertyChanged("Children");
+			((SimpleNavigatorTreeNode)this).OnPropertyChanged("Children");
 		}
 
 		public virtual void RefreshChildren()
 		{
-			Children.Clear();
+			((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)this).Children).Clear();
 			if (!IsLeaf.HasValue || !IsLeaf.Value)
 			{
 				AppendChildrenToParent(this);
@@ -1183,9 +1170,9 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 		public virtual void InitializeNode(CxsNodeInfo info)
 		{
 			DataPath = info.path;
-			base.Text = info.id;
+			((SimpleNavigatorTreeNode)this).Text = info.id;
 			IsLeaf = info.isleaf;
-			base.UnityContainer = Parent.UnityContainer;
+			((SimpleNavigatorTreeNode)this).UnityContainer = ((SimpleNavigatorTreeNode)Parent).UnityContainer;
 			if (NodeType == "PRD" && !NavigatorNodeHelper.NodesCache.ContainsKey(info.id))
 			{
 				NavigatorNodeHelper.NodesCache.Add(info.id, new List<string>
@@ -1344,8 +1331,8 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 		{
 			foreach (CxsNodeInfo item in RetrieveScenariosNodes(valve))
 			{
-				ScenarioNode scenarioNode = UnityContainerExtensions.Resolve<ScenarioNode>(valve.UnityContainer, Array.Empty<ResolverOverride>());
-				valve.Children.Add(scenarioNode);
+				ScenarioNode scenarioNode = UnityContainerExtensions.Resolve<ScenarioNode>(((SimpleNavigatorTreeNode)valve).UnityContainer, Array.Empty<ResolverOverride>());
+				((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)valve).Children).Add((NavigatorTreeNode)(object)scenarioNode);
 				scenarioNode.Parent = valve;
 				scenarioNode.InitializeNode(item);
 			}
@@ -1360,10 +1347,10 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 			int num = 0;
 			foreach (CxsNodeInfo item in RetrievePSVNodes(block))
 			{
-				PSVNode pSVNode = UnityContainerExtensions.Resolve<PSVNode>(block.UnityContainer, Array.Empty<ResolverOverride>());
+				PSVNode pSVNode = UnityContainerExtensions.Resolve<PSVNode>(((SimpleNavigatorTreeNode)block).UnityContainer, Array.Empty<ResolverOverride>());
 				if (pSVNode != null)
 				{
-					block.Children.Add(pSVNode);
+					((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)block).Children).Add((NavigatorTreeNode)(object)pSVNode);
 					pSVNode.Parent = block;
 					pSVNode.InitializeNode(item);
 					num++;
@@ -1376,10 +1363,10 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 			CxsNodeInfo valveNodeInfo = CxsNodeInfoHelper.GetValveNodeInfo(CxsCaseHelper.MyCase, stream.DataPath);
 			if (!string.IsNullOrEmpty(valveNodeInfo.id))
 			{
-				PSVNode pSVNode = UnityContainerExtensions.Resolve<PSVNode>(stream.UnityContainer, Array.Empty<ResolverOverride>());
+				PSVNode pSVNode = UnityContainerExtensions.Resolve<PSVNode>(((SimpleNavigatorTreeNode)stream).UnityContainer, Array.Empty<ResolverOverride>());
 				if (pSVNode != null)
 				{
-					stream.Children.Add(pSVNode);
+					((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)stream).Children).Add((NavigatorTreeNode)(object)pSVNode);
 					pSVNode.Parent = stream;
 					pSVNode.InitializeNode(valveNodeInfo);
 				}
@@ -1389,7 +1376,7 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 		private bool IsNeedAppendChildren()
 		{
 			bool result = false;
-			if (Children.Count == 1 && string.Compare((Children[0] as SimpleNavigatorTreeNode).Text, "dummy", ignoreCase: true) == 0)
+			if (((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)this).Children).Count == 1 && string.Compare(((SimpleNavigatorTreeNode)/*isinst with value type is only supported in some contexts*/).Text, "dummy", ignoreCase: true) == 0)
 			{
 				result = true;
 			}
@@ -1399,9 +1386,9 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 		public bool ChildExists(string childdatapath)
 		{
 			bool result = false;
-			foreach (NavigatorTreeNode child in Children)
+			foreach (NavigatorTreeNode item in (Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)this).Children)
 			{
-				if (child is PSVRootNode pSVRootNode && pSVRootNode.DataPath == childdatapath)
+				if (item is PSVRootNode pSVRootNode && pSVRootNode.DataPath == childdatapath)
 				{
 					result = true;
 					break;
@@ -1415,12 +1402,12 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 			PSVRootNode pSVRootNode = parent;
 			if ((parent.NodeType == "Subflowsheet" || parent.NodeType == "ColSubflowsheet") && bcreateRoot)
 			{
-				pSVRootNode = UnityContainerExtensions.Resolve<PSVRootNode>(base.UnityContainer, Array.Empty<ResolverOverride>());
+				pSVRootNode = UnityContainerExtensions.Resolve<PSVRootNode>(((SimpleNavigatorTreeNode)this).UnityContainer, Array.Empty<ResolverOverride>());
 				pSVRootNode.NodeType = "UnitOpsContainer";
-				pSVRootNode.Text = FormResource.Header_Unitops;
-				pSVRootNode.IsExpanded = false;
-				pSVRootNode.UnityContainer = parent.UnityContainer;
-				parent.Children.Add(pSVRootNode);
+				((SimpleNavigatorTreeNode)pSVRootNode).Text = FormResource.Header_Unitops;
+				((NavigatorTreeNode)pSVRootNode).IsExpanded = false;
+				((SimpleNavigatorTreeNode)pSVRootNode).UnityContainer = ((SimpleNavigatorTreeNode)parent).UnityContainer;
+				((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)parent).Children).Add((NavigatorTreeNode)(object)pSVRootNode);
 				pSVRootNode.Parent = parent;
 			}
 			for (int i = 0; i < uoNodes.Count; i++)
@@ -1432,10 +1419,10 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 				{
 					continue;
 				}
-				UONode uONode = UnityContainerExtensions.Resolve<UONode>(base.UnityContainer, Array.Empty<ResolverOverride>());
+				UONode uONode = UnityContainerExtensions.Resolve<UONode>(((SimpleNavigatorTreeNode)this).UnityContainer, Array.Empty<ResolverOverride>());
 				if (uONode != null)
 				{
-					pSVRootNode.Children.Add(uONode);
+					((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)pSVRootNode).Children).Add((NavigatorTreeNode)(object)uONode);
 					uONode.Parent = pSVRootNode;
 					if (IsFlowSheetType(type))
 					{
@@ -1460,7 +1447,7 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 					uONode.InitializeNode(info);
 					if (uONode.NodeType == "Subflowsheet" || uONode.NodeType == "ColSubflowsheet")
 					{
-						uONode.IsExpanded = true;
+						((NavigatorTreeNode)uONode).IsExpanded = true;
 					}
 				}
 			}
@@ -1468,23 +1455,31 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 
 		private void CreateStreamChild(PSVRootNode parent, List<CxsNodeInfo> collection, string psvnodetype, bool bcreateRoot, bool bcreatechild)
 		{
+			//IL_007c: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0081: Unknown result type (might be due to invalid IL or missing references)
+			//IL_008c: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0098: Expected O, but got Unknown
+			//IL_0138: Unknown result type (might be due to invalid IL or missing references)
+			//IL_013d: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0148: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0154: Expected O, but got Unknown
 			if (bcreateRoot)
 			{
-				PSVRootNode pSVRootNode = UnityContainerExtensions.Resolve<PSVRootNode>(base.UnityContainer, Array.Empty<ResolverOverride>());
+				PSVRootNode pSVRootNode = UnityContainerExtensions.Resolve<PSVRootNode>(((SimpleNavigatorTreeNode)this).UnityContainer, Array.Empty<ResolverOverride>());
 				if (pSVRootNode != null)
 				{
-					pSVRootNode.Text = FormResource.Header_SStreams;
+					((SimpleNavigatorTreeNode)pSVRootNode).Text = FormResource.Header_SStreams;
 					pSVRootNode.DataPath = "SubflowsheetStandaloneStreams";
-					pSVRootNode.IsExpanded = false;
+					((NavigatorTreeNode)pSVRootNode).IsExpanded = false;
 					pSVRootNode.IsLeaf = false;
 					pSVRootNode.Parent = parent;
-					pSVRootNode.UnityContainer = parent.UnityContainer;
+					((SimpleNavigatorTreeNode)pSVRootNode).UnityContainer = ((SimpleNavigatorTreeNode)parent).UnityContainer;
 					pSVRootNode.NodeType = psvnodetype;
-					parent.Children.Add(pSVRootNode);
+					((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)parent).Children).Add((NavigatorTreeNode)(object)pSVRootNode);
 					parent = pSVRootNode;
 					if (collection.Count > 0)
 					{
-						pSVRootNode.Children.Add(new SimpleNavigatorTreeNode
+						((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)pSVRootNode).Children).Add((NavigatorTreeNode)new SimpleNavigatorTreeNode
 						{
 							Text = "dummy",
 							IsVisible = false
@@ -1498,52 +1493,52 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 			}
 			foreach (CxsNodeInfo item in collection)
 			{
-				PSVRootNode pSVRootNode2 = UnityContainerExtensions.Resolve<PSVRootNode>(base.UnityContainer, Array.Empty<ResolverOverride>());
+				PSVRootNode pSVRootNode2 = UnityContainerExtensions.Resolve<PSVRootNode>(((SimpleNavigatorTreeNode)this).UnityContainer, Array.Empty<ResolverOverride>());
 				if (pSVRootNode2 != null)
 				{
-					pSVRootNode2.Text = item.id;
+					((SimpleNavigatorTreeNode)pSVRootNode2).Text = item.id;
 					pSVRootNode2.DataPath = item.path;
-					pSVRootNode2.IsExpanded = false;
+					((NavigatorTreeNode)pSVRootNode2).IsExpanded = false;
 					pSVRootNode2.IsLeaf = item.isleaf;
 					pSVRootNode2.Parent = parent;
 					pSVRootNode2.NodeType = "UnattachedStreams";
-					pSVRootNode2.UnityContainer = parent.UnityContainer;
+					((SimpleNavigatorTreeNode)pSVRootNode2).UnityContainer = ((SimpleNavigatorTreeNode)parent).UnityContainer;
 					if (!string.IsNullOrEmpty(CxsNodeInfoHelper.GetValveNodeInfo(CxsCaseHelper.MyCase, pSVRootNode2.DataPath).id))
 					{
-						pSVRootNode2.Children.Add(new SimpleNavigatorTreeNode
+						((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)pSVRootNode2).Children).Add((NavigatorTreeNode)new SimpleNavigatorTreeNode
 						{
 							Text = "dummy",
 							IsVisible = false
 						});
 					}
-					parent.Children.Add(pSVRootNode2);
+					((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)parent).Children).Add((NavigatorTreeNode)(object)pSVRootNode2);
 				}
 			}
 		}
 
 		protected override void InternalExecuteShowScreen(ShowScreenOptions options)
 		{
-			base.InternalExecuteShowScreen(options);
+			((SimpleNavigatorTreeNode)this).InternalExecuteShowScreen(options);
 		}
 
 		protected override void OnIsSelectedChanged()
 		{
-			base.OnIsSelectedChanged();
+			((SimpleNavigatorTreeNode)this).OnIsSelectedChanged();
 		}
 
 		public override bool HasScreenToShow()
 		{
-			return base.HasScreenToShow();
+			return ((SimpleNavigatorTreeNode)this).HasScreenToShow();
 		}
 
 		protected bool CreateNewTab(string screenKey, PSVctrlIDs contentId, PsvModelKey key)
 		{
-			IShellApplication shellApplication = UnityContainerExtensions.Resolve<IShellApplication>(base.UnityContainer, Array.Empty<ResolverOverride>());
-			if (shellApplication == null)
+			IShellApplication val = UnityContainerExtensions.Resolve<IShellApplication>(((SimpleNavigatorTreeNode)this).UnityContainer, Array.Empty<ResolverOverride>());
+			if (val == null)
 			{
 				return true;
 			}
-			if (shellApplication.ActiveWindow.FindScreen((ScreenContentControl s) => string.Compare(s.ScreenFactoryKey, screenKey, ignoreCase: true) == 0 && s.ScreenSubject != null && (s.ScreenSubject as PSVScreenSubject).ModelKey == key && s.ScreenSubject != null && (s.ScreenSubject as PSVScreenSubject).Id == contentId) == null)
+			if (val.ActiveWindow.FindScreen((Func<ScreenContentControl, bool>)((ScreenContentControl s) => string.Compare(s.ScreenFactoryKey, screenKey, ignoreCase: true) == 0 && s.ScreenSubject != null && (s.ScreenSubject as PSVScreenSubject).ModelKey == key && s.ScreenSubject != null && (s.ScreenSubject as PSVScreenSubject).Id == contentId)) == null)
 			{
 				return true;
 			}
@@ -1552,8 +1547,9 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 
 		public override void OnContextMenuOpening(ContextMenuEventArgs e, ContextMenu contextMenuToShow)
 		{
-			NodeContextMenu.AppendContextMenuItemsToNode(Utilities.GetAncestorFromType(e.OriginalSource as DependencyObject, typeof(TreeNavigatorView), allowSubclassOfType: true) as TreeNavigatorView, this, contextMenuToShow);
-			base.OnContextMenuOpening(e, contextMenuToShow);
+			DependencyObject ancestorFromType = Utilities.GetAncestorFromType(e.OriginalSource as DependencyObject, typeof(TreeNavigatorView), true);
+			NodeContextMenu.AppendContextMenuItemsToNode((TreeNavigatorView)(object)((ancestorFromType is TreeNavigatorView) ? ancestorFromType : null), this, contextMenuToShow);
+			((NavigatorTreeNode)this).OnContextMenuOpening(e, contextMenuToShow);
 		}
 	}
 	public static class NavigatorNodeHelper
@@ -1602,12 +1598,12 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 		[InjectionConstructor]
 		public PSVNavigatorView(PSVPlusNavigatorViewModel vm)
 		{
-			base.ViewModel = vm;
-			base.Header = FormResource.Title_EAModule;
-			base.Key = "PSVPlus";
-			NodeContextMenu.RegisterNavPaneCommands(this);
-			base.SmallImage = ResourceHelper.ToImageSource(FormResource.EquipmentAnalysis_24);
-			base.LargeImage = ResourceHelper.ToImageSource(FormResource.EquipmentAnalysis_24);
+			((TreeNavigatorView)this).ViewModel = (TreeNavigatorViewModel)(object)vm;
+			((NavigatorView)this).Header = FormResource.Title_EAModule;
+			((NavigatorView)this).Key = "PSVPlus";
+			NodeContextMenu.RegisterNavPaneCommands((TreeNavigatorView)(object)this);
+			((NavigatorView)this).SmallImage = FormResource.EquipmentAnalysis_24.ToImageSource();
+			((NavigatorView)this).LargeImage = FormResource.EquipmentAnalysis_24.ToImageSource();
 		}
 	}
 	public class PSVPlusNavigatorViewModel : SimpleTreeNavigatorViewModel, IPSVNavigator
@@ -1648,54 +1644,54 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 					if (pSVScreenSubject.Id == PSVctrlIDs.ctrlTankVent)
 					{
 						string[] paths = pSVScreenSubject.NodePath.Split('.');
-						NavigatorTreeNodeCollection children = Children;
+						NavigatorTreeNodeCollection children = ((TreeNavigatorViewModel)this).Children;
 						TankRootNode tankRootNode = null;
 						TankNode tankNode = null;
-						tankRootNode = children.OfType<TankRootNode>().FirstOrDefault((TankRootNode p) => string.Compare(p.Text, FormResource.StorageTankProtection, ignoreCase: true) == 0);
+						tankRootNode = ((IEnumerable)children).OfType<TankRootNode>().FirstOrDefault((TankRootNode p) => string.Compare(((SimpleNavigatorTreeNode)p).Text, FormResource.StorageTankProtection, ignoreCase: true) == 0);
 						if (tankRootNode != null)
 						{
-							tankRootNode.IsExpanded = true;
-							children = tankRootNode.Children;
+							((NavigatorTreeNode)tankRootNode).IsExpanded = true;
+							children = ((NavigatorTreeNode)tankRootNode).Children;
 						}
 						int i;
 						for (i = 0; i < paths.Length; i++)
 						{
-							tankNode = children.OfType<TankNode>().FirstOrDefault((TankNode p) => string.Compare(p.Text, paths[i], ignoreCase: true) == 0);
+							tankNode = ((IEnumerable)children).OfType<TankNode>().FirstOrDefault((TankNode p) => string.Compare(((SimpleNavigatorTreeNode)p).Text, paths[i], ignoreCase: true) == 0);
 							if (tankNode != null)
 							{
-								tankNode.IsSelected = true;
+								((NavigatorTreeNode)tankNode).IsSelected = true;
 							}
 						}
 					}
 					else
 					{
 						string[] paths2 = pSVScreenSubject.NodePath.Split('.');
-						NavigatorTreeNodeCollection children2 = Children;
+						NavigatorTreeNodeCollection children2 = ((TreeNavigatorViewModel)this).Children;
 						PSVRootNode pSVRootNode = null;
 						int i2;
 						for (i2 = 0; i2 < paths2.Length; i2++)
 						{
-							pSVRootNode = children2.OfType<PSVRootNode>().FirstOrDefault((PSVRootNode p) => string.Compare(p.Text, paths2[i2], ignoreCase: true) == 0);
+							pSVRootNode = ((IEnumerable)children2).OfType<PSVRootNode>().FirstOrDefault((PSVRootNode p) => string.Compare(((SimpleNavigatorTreeNode)p).Text, paths2[i2], ignoreCase: true) == 0);
 							if (pSVRootNode == null)
 							{
 								return false;
 							}
-							pSVRootNode.IsExpanded = true;
-							children2 = pSVRootNode.Children;
+							((NavigatorTreeNode)pSVRootNode).IsExpanded = true;
+							children2 = ((NavigatorTreeNode)pSVRootNode).Children;
 						}
 						if (pSVRootNode != null)
 						{
-							if (pSVRootNode.Children.Count > 0 && !pSVRootNode.IsExpanded)
+							if (((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)pSVRootNode).Children).Count > 0 && !((NavigatorTreeNode)pSVRootNode).IsExpanded)
 							{
-								pSVRootNode.IsExpanded = true;
+								((NavigatorTreeNode)pSVRootNode).IsExpanded = true;
 							}
-							pSVRootNode.IsSelected = true;
+							((NavigatorTreeNode)pSVRootNode).IsSelected = true;
 						}
 					}
 				}
 				if (pSVScreenSubject != null && pSVScreenSubject.Id == PSVctrlIDs.ctrlTankManager)
 				{
-					Children[2].IsSelected = true;
+					((Collection<NavigatorTreeNode>)(object)((TreeNavigatorViewModel)this).Children)[2].IsSelected = true;
 				}
 			}
 			return true;
@@ -1703,16 +1699,22 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 
 		private SimpleNavigatorTreeNode CreatRootNode(string text, bool bvisible, string path, string type)
 		{
+			//IL_0095: Unknown result type (might be due to invalid IL or missing references)
+			//IL_009a: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00aa: Expected O, but got Unknown
+			//IL_0175: Unknown result type (might be due to invalid IL or missing references)
+			//IL_017a: Unknown result type (might be due to invalid IL or missing references)
+			//IL_018a: Expected O, but got Unknown
 			if (type == "TopPSVTankRoot")
 			{
 				TankRootNode tankRootNode = UnityContainerExtensions.Resolve<TankRootNode>(_container, Array.Empty<ResolverOverride>());
-				tankRootNode.UnityContainer = _container;
-				tankRootNode.Text = text;
-				tankRootNode.IsSelected = false;
-				tankRootNode.IsExpanded = false;
-				tankRootNode.IsVisible = bvisible;
-				tankRootNode.ScreenFactoryKey = "Main";
-				tankRootNode.ScreenSubject = new PSVSummaryScreenSubject
+				((SimpleNavigatorTreeNode)tankRootNode).UnityContainer = _container;
+				((SimpleNavigatorTreeNode)tankRootNode).Text = text;
+				((NavigatorTreeNode)tankRootNode).IsSelected = false;
+				((NavigatorTreeNode)tankRootNode).IsExpanded = false;
+				((NavigatorTreeNode)tankRootNode).IsVisible = bvisible;
+				((SimpleNavigatorTreeNode)tankRootNode).ScreenFactoryKey = "Main";
+				((SimpleNavigatorTreeNode)tankRootNode).ScreenSubject = (ScreenSubject)(object)new PSVSummaryScreenSubject
 				{
 					Id = PSVctrlIDs.ctrlTankManager,
 					TabLabel = FormResource.tab_TankManager
@@ -1720,20 +1722,20 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 				List<CxsNodeInfo> list = AspenCaseDataRequest.BuildNodeInfo("Top.appModel.Variables.PSV Sizing Manager.Storage Tanks", CxsCaseHelper.MyCase);
 				if (list != null && list.Count > 0)
 				{
-					tankRootNode.Children.Add(new SimpleNavigatorTreeNode
+					((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)tankRootNode).Children).Add((NavigatorTreeNode)new SimpleNavigatorTreeNode
 					{
 						Text = "Dummy"
 					});
 				}
-				return tankRootNode;
+				return (SimpleNavigatorTreeNode)(object)tankRootNode;
 			}
 			PSVRootNode pSVRootNode = UnityContainerExtensions.Resolve<PSVRootNode>(_container, Array.Empty<ResolverOverride>());
-			pSVRootNode.Text = text;
-			pSVRootNode.UnityContainer = _container;
+			((SimpleNavigatorTreeNode)pSVRootNode).Text = text;
+			((SimpleNavigatorTreeNode)pSVRootNode).UnityContainer = _container;
 			pSVRootNode.DataPath = path;
-			pSVRootNode.IsSelected = false;
-			pSVRootNode.IsExpanded = false;
-			pSVRootNode.IsVisible = bvisible;
+			((NavigatorTreeNode)pSVRootNode).IsSelected = false;
+			((NavigatorTreeNode)pSVRootNode).IsExpanded = false;
+			((NavigatorTreeNode)pSVRootNode).IsVisible = bvisible;
 			pSVRootNode.IsLeaf = false;
 			pSVRootNode.NodeType = type;
 			pSVRootNode.NavigatorVM = this;
@@ -1755,31 +1757,31 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 			}
 			if (flag)
 			{
-				pSVRootNode.Children.Add(new SimpleNavigatorTreeNode
+				((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)pSVRootNode).Children).Add((NavigatorTreeNode)new SimpleNavigatorTreeNode
 				{
 					Text = "Dummy"
 				});
 			}
-			return pSVRootNode;
+			return (SimpleNavigatorTreeNode)(object)pSVRootNode;
 		}
 
 		private void UnSubscribeEvents()
 		{
-			_eventAggregator.GetEvent<OpenCaseEvent>().Unsubscribe(OpenCase);
-			_eventAggregator.GetEvent<UpdatePSVTreeViewEvent>().Unsubscribe(UpdatePSVTreeView);
-			_eventAggregator.GetEvent<RenameEvent>().Unsubscribe(RenamePSV);
-			_eventAggregator.GetEvent<NavigateToFormTabEvent>().Unsubscribe(NavigateToFormTab);
-			_eventAggregator.GetEvent<PRDTypeChangedEventEx>().Unsubscribe(OnPRDTypeChanged);
+			((CompositePresentationEvent<OpenCaseEventArgs>)(object)_eventAggregator.GetEvent<OpenCaseEvent>()).Unsubscribe((Action<OpenCaseEventArgs>)OpenCase);
+			((CompositePresentationEvent<UpdatePSVTreeViewEventArgs>)(object)_eventAggregator.GetEvent<UpdatePSVTreeViewEvent>()).Unsubscribe((Action<UpdatePSVTreeViewEventArgs>)UpdatePSVTreeView);
+			((CompositePresentationEvent<RenameEventArgs>)(object)_eventAggregator.GetEvent<RenameEvent>()).Unsubscribe((Action<RenameEventArgs>)RenamePSV);
+			((CompositePresentationEvent<NavigateToFormTabEventArgs>)(object)_eventAggregator.GetEvent<NavigateToFormTabEvent>()).Unsubscribe((Action<NavigateToFormTabEventArgs>)NavigateToFormTab);
+			((CompositePresentationEvent<PRDTypeChangedEventArgsEx>)_eventAggregator.GetEvent<PRDTypeChangedEventEx>()).Unsubscribe((Action<PRDTypeChangedEventArgsEx>)OnPRDTypeChanged);
 		}
 
 		private void SubscribeEvents()
 		{
 			UnSubscribeEvents();
-			_eventAggregator.GetEvent<OpenCaseEvent>().Subscribe(OpenCase);
-			_eventAggregator.GetEvent<UpdatePSVTreeViewEvent>().Subscribe(UpdatePSVTreeView);
-			_eventAggregator.GetEvent<RenameEvent>().Subscribe(RenamePSV);
-			_eventAggregator.GetEvent<NavigateToFormTabEvent>().Subscribe(NavigateToFormTab);
-			_eventAggregator.GetEvent<PRDTypeChangedEventEx>().Subscribe(OnPRDTypeChanged);
+			((CompositePresentationEvent<OpenCaseEventArgs>)(object)_eventAggregator.GetEvent<OpenCaseEvent>()).Subscribe((Action<OpenCaseEventArgs>)OpenCase);
+			((CompositePresentationEvent<UpdatePSVTreeViewEventArgs>)(object)_eventAggregator.GetEvent<UpdatePSVTreeViewEvent>()).Subscribe((Action<UpdatePSVTreeViewEventArgs>)UpdatePSVTreeView);
+			((CompositePresentationEvent<RenameEventArgs>)(object)_eventAggregator.GetEvent<RenameEvent>()).Subscribe((Action<RenameEventArgs>)RenamePSV);
+			((CompositePresentationEvent<NavigateToFormTabEventArgs>)(object)_eventAggregator.GetEvent<NavigateToFormTabEvent>()).Subscribe((Action<NavigateToFormTabEventArgs>)NavigateToFormTab);
+			((CompositePresentationEvent<PRDTypeChangedEventArgsEx>)_eventAggregator.GetEvent<PRDTypeChangedEventEx>()).Subscribe((Action<PRDTypeChangedEventArgsEx>)OnPRDTypeChanged);
 		}
 
 		private void OnPRDTypeChanged(PRDTypeChangedEventArgsEx args)
@@ -1793,7 +1795,7 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 			{
 				if (item.Value[0] == pRDPath)
 				{
-					if (FindNode(item.Value[1], Children) is PSVNode pSVNode)
+					if (FindNode(item.Value[1], ((TreeNavigatorViewModel)this).Children) is PSVNode pSVNode)
 					{
 						pSVNode.PRDType = args.NewPRDType;
 					}
@@ -1819,15 +1821,20 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 
 		private void NavigateToFormTab(NavigateToFormTabEventArgs args)
 		{
-			IShellApplication shellApplication = UnityContainerExtensions.Resolve<IShellApplication>(_container, Array.Empty<ResolverOverride>());
-			if (shellApplication == null)
+			//IL_00e8: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00ed: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00f4: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00ff: Unknown result type (might be due to invalid IL or missing references)
+			//IL_010b: Expected O, but got Unknown
+			IShellApplication val = UnityContainerExtensions.Resolve<IShellApplication>(_container, Array.Empty<ResolverOverride>());
+			if (val == null)
 			{
 				return;
 			}
 			PSVSummaryScreenSubject pSVSummaryScreenSubject = null;
-			ScreenContentControl screenContentControl = shellApplication.ActiveWindow.FindScreen((ScreenContentControl s) => string.Compare(s.ScreenFactoryKey, "Main", ignoreCase: true) == 0 && s.ScreenSubject != null && (s.ScreenSubject as PSVScreenSubject).Id == PSVctrlIDs.ctrlPSVSummaryForm && s.ScreenSubject != null && (s.ScreenSubject as PSVScreenSubject).ModelKey == args.Key);
+			ScreenContentControl val2 = val.ActiveWindow.FindScreen((Func<ScreenContentControl, bool>)((ScreenContentControl s) => string.Compare(s.ScreenFactoryKey, "Main", ignoreCase: true) == 0 && s.ScreenSubject != null && (s.ScreenSubject as PSVScreenSubject).Id == PSVctrlIDs.ctrlPSVSummaryForm && s.ScreenSubject != null && (s.ScreenSubject as PSVScreenSubject).ModelKey == args.Key));
 			bool flag = false;
-			if (screenContentControl == null)
+			if (val2 == null)
 			{
 				string nodePath = string.Empty;
 				if (NavigatorNodeHelper.NodesCache.Count > 0 && NavigatorNodeHelper.NodesCache.ContainsKey(args.PRDName))
@@ -1842,41 +1849,36 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 					NodeKey = args.PSVPath,
 					NodePath = nodePath
 				};
-				shellApplication.ActiveWindow.ShowScreen(new ShowScreenEventArgs
+				val.ActiveWindow.ShowScreen(new ShowScreenEventArgs
 				{
 					CreateNewTab = true,
 					ScreenFactoryKey = "Main",
-					ScreenSubject = pSVSummaryScreenSubject
+					ScreenSubject = (ScreenSubject)(object)pSVSummaryScreenSubject
 				});
 			}
 			else
 			{
-				shellApplication.ActiveWindow.ActivateScreen(screenContentControl);
+				val.ActiveWindow.ActivateScreen(val2);
 			}
 			CommonShellWindow wnd = default(CommonShellWindow);
 			ref CommonShellWindow reference = ref wnd;
-			IShellMainWindow activeWindow = shellApplication.ActiveWindow;
-			reference = (CommonShellWindow)((activeWindow is CommonShellWindow) ? activeWindow : null);
+			IShellMainWindow activeWindow = val.ActiveWindow;
+			reference = (CommonShellWindow)(object)((activeWindow is CommonShellWindow) ? activeWindow : null);
 			((DispatcherObject)(object)wnd).Dispatcher.BeginInvoke(DispatcherPriority.Input, (Action)delegate
 			{
-				ScreenContentControl screenContentControl2 = wnd.FindScreen((Func<ScreenContentControl, bool>)((ScreenContentControl s) => (s.ScreenFactoryKey == "Main" && s.ScreenSubject is PSVSummaryScreenSubject pSVSummaryScreenSubject2 && pSVSummaryScreenSubject2.ModelKey == args.Key) ? true : false));
-				if (screenContentControl2 != null)
+				ScreenContentControl val3 = wnd.FindScreen((Func<ScreenContentControl, bool>)((ScreenContentControl s) => (s.ScreenFactoryKey == "Main" && s.ScreenSubject is PSVSummaryScreenSubject pSVSummaryScreenSubject2 && pSVSummaryScreenSubject2.ModelKey == args.Key) ? true : false));
+				if (val3 != null && ((ContentControl)(object)val3).Content is PRDSummary pRDSummary)
 				{
-					object content = screenContentControl2.Content;
-					PRDSummary val = (PRDSummary)((content is PRDSummary) ? content : null);
-					if (val != null)
+					if (args.ToTabName == "PRDData")
 					{
-						if (args.ToTabName == "PRDData")
+						if (Utilities.GetDescendantFromName((DependencyObject)pRDSummary, "tabItemPRDData") is TabItem tabItem)
 						{
-							if (Utilities.GetDescendantFromName((DependencyObject)(object)val, "tabItemPRDData") is TabItem tabItem)
-							{
-								tabItem.IsSelected = true;
-							}
+							tabItem.IsSelected = true;
 						}
-						else if (args.ToTabName == "LineSizing" && Utilities.GetDescendantFromName((DependencyObject)(object)val, "TabItemLineSizing") is TabItem tabItem2)
-						{
-							tabItem2.IsSelected = true;
-						}
+					}
+					else if (args.ToTabName == "LineSizing" && Utilities.GetDescendantFromName((DependencyObject)pRDSummary, "TabItemLineSizing") is TabItem tabItem2)
+					{
+						tabItem2.IsSelected = true;
 					}
 				}
 			});
@@ -1896,24 +1898,24 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 					return;
 				}
 				string key = NavigatorNodeHelper.NodesCache[args.OldName][1];
-				PSVRootNode pSVRootNode = FindNode(key, Children);
+				PSVRootNode pSVRootNode = FindNode(key, ((TreeNavigatorViewModel)this).Children);
 				if (pSVRootNode == null)
 				{
 					return;
 				}
-				pSVRootNode.Text = args.NewName;
+				((SimpleNavigatorTreeNode)pSVRootNode).Text = args.NewName;
 				NavigatorNodeHelper.NodesCache.Add(args.NewName, NavigatorNodeHelper.NodesCache[oldName]);
 				NavigatorNodeHelper.NodesCache[args.NewName][1] = pSVRootNode.GenerateVisualNodePath();
 				NavigatorNodeHelper.NodesCache.Remove(args.OldName);
-				((PSVScreenSubject)pSVRootNode.ScreenSubject).TabLabel = args.NewName;
-				foreach (ScenarioNode child in pSVRootNode.Children)
+				((PSVScreenSubject)(object)((SimpleNavigatorTreeNode)pSVRootNode).ScreenSubject).TabLabel = args.NewName;
+				foreach (ScenarioNode item in (Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)pSVRootNode).Children)
 				{
-					string key2 = child.ModelKey.Value.ToString();
+					string key2 = item.ModelKey.Value.ToString();
 					if (NavigatorNodeHelper.NodesCache.ContainsKey(key2))
 					{
-						string value = child.GenerateVisualNodePath();
+						string value = item.GenerateVisualNodePath();
 						NavigatorNodeHelper.NodesCache[key2][1] = value;
-						ScenarioScreenSubject obj = (ScenarioScreenSubject)child.ScreenSubject;
+						ScenarioScreenSubject obj = (ScenarioScreenSubject)(object)((SimpleNavigatorTreeNode)item).ScreenSubject;
 						obj.NodePath = NavigatorNodeHelper.NodesCache[key2][1];
 						string tabLabel = obj.TabLabel;
 						obj.TabLabel = tabLabel.Replace($"{oldName}-", $"{args.NewName}-");
@@ -1930,12 +1932,12 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 				if (NavigatorNodeHelper.NodesCache.ContainsKey(args.Key.Value.ToString()))
 				{
 					string key3 = NavigatorNodeHelper.NodesCache[args.Key.Value.ToString()][1];
-					PSVRootNode pSVRootNode2 = FindNode(key3, Children);
-					if (pSVRootNode2 != null && string.Compare(pSVRootNode2.Text.Trim(), args.NewName.Trim(), ignoreCase: false) != 0)
+					PSVRootNode pSVRootNode2 = FindNode(key3, ((TreeNavigatorViewModel)this).Children);
+					if (pSVRootNode2 != null && string.Compare(((SimpleNavigatorTreeNode)pSVRootNode2).Text.Trim(), args.NewName.Trim(), ignoreCase: false) != 0)
 					{
-						pSVRootNode2.Text = args.NewName;
+						((SimpleNavigatorTreeNode)pSVRootNode2).Text = args.NewName;
 						NavigatorNodeHelper.NodesCache[args.Key.Value.ToString()][1] = pSVRootNode2.GenerateVisualNodePath();
-						ScenarioScreenSubject obj2 = (ScenarioScreenSubject)pSVRootNode2.ScreenSubject;
+						ScenarioScreenSubject obj2 = (ScenarioScreenSubject)(object)((SimpleNavigatorTreeNode)pSVRootNode2).ScreenSubject;
 						string tabLabel2 = obj2.TabLabel;
 						obj2.NodePath = NavigatorNodeHelper.NodesCache[args.Key.Value.ToString()][1];
 						obj2.TabLabel = tabLabel2.Replace($"-{oldName}", $"-{args.NewName}");
@@ -1949,18 +1951,18 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 				{
 					return;
 				}
-				TankRootNode tankRootNode = Children.OfType<TankRootNode>().FirstOrDefault((TankRootNode p) => string.Compare(p.Text, FormResource.StorageTankProtection, ignoreCase: true) == 0);
+				TankRootNode tankRootNode = ((IEnumerable)((TreeNavigatorViewModel)this).Children).OfType<TankRootNode>().FirstOrDefault((TankRootNode p) => string.Compare(((SimpleNavigatorTreeNode)p).Text, FormResource.StorageTankProtection, ignoreCase: true) == 0);
 				if (tankRootNode == null)
 				{
 					return;
 				}
-				foreach (TankNode child2 in tankRootNode.Children)
+				foreach (TankNode item2 in (Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)tankRootNode).Children)
 				{
-					if (child2.TankKey == args.Key)
+					if (item2.TankKey == args.Key)
 					{
-						child2.Text = args.NewName;
-						child2.DataPath = args.Path;
-						PSVTankScreenSubject obj3 = child2.ScreenSubject as PSVTankScreenSubject;
+						((SimpleNavigatorTreeNode)item2).Text = args.NewName;
+						item2.DataPath = args.Path;
+						PSVTankScreenSubject obj3 = ((SimpleNavigatorTreeNode)item2).ScreenSubject as PSVTankScreenSubject;
 						obj3.TabLabel = args.NewName;
 						obj3.NodePath = args.Path;
 						obj3.NodeKey = args.Path;
@@ -2008,46 +2010,53 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 
 		private void LocatePSVTreeView(string nodepath, ScreenSubject subject)
 		{
+			//IL_01b6: Unknown result type (might be due to invalid IL or missing references)
+			//IL_01c0: Expected O, but got Unknown
+			//IL_013c: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0141: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0148: Unknown result type (might be due to invalid IL or missing references)
+			//IL_015a: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0171: Expected O, but got Unknown
 			if (string.IsNullOrEmpty(nodepath))
 			{
 				return;
 			}
 			PSVRootNode pSVRootNode = null;
 			string[] paths = nodepath.Split('.');
-			NavigatorTreeNodeCollection children = Children;
+			NavigatorTreeNodeCollection children = ((TreeNavigatorViewModel)this).Children;
 			int i;
 			for (i = 0; i < paths.Length; i++)
 			{
-				pSVRootNode = children.OfType<PSVRootNode>().FirstOrDefault((PSVRootNode p) => string.Compare(p.Text, paths[i], ignoreCase: true) == 0);
+				pSVRootNode = ((IEnumerable)children).OfType<PSVRootNode>().FirstOrDefault((PSVRootNode p) => string.Compare(((SimpleNavigatorTreeNode)p).Text, paths[i], ignoreCase: true) == 0);
 				if (pSVRootNode == null)
 				{
 					break;
 				}
-				pSVRootNode.IsExpanded = true;
-				children = pSVRootNode.Children;
+				((NavigatorTreeNode)pSVRootNode).IsExpanded = true;
+				children = ((NavigatorTreeNode)pSVRootNode).Children;
 			}
 			if (pSVRootNode == null)
 			{
-				IShellApplication shellApplication = UnityContainerExtensions.Resolve<IShellApplication>(_container, Array.Empty<ResolverOverride>());
-				if (shellApplication == null)
+				IShellApplication val = UnityContainerExtensions.Resolve<IShellApplication>(_container, Array.Empty<ResolverOverride>());
+				if (val == null)
 				{
 					return;
 				}
 				string screenKey = "Main";
 				PSVSummaryScreenSubject psvsubject = subject as PSVSummaryScreenSubject;
-				IShellMainWindow wnd = shellApplication.ActiveWindow;
+				IShellMainWindow wnd = val.ActiveWindow;
 				if (wnd == null)
 				{
 					return;
 				}
-				ScreenContentControl screen = wnd.FindScreen((ScreenContentControl s) => string.Compare(s.ScreenFactoryKey, screenKey, ignoreCase: true) == 0 && string.Compare(s.Header, psvsubject.PSVName, ignoreCase: true) == 0 && s.ScreenSubject != null && (s.ScreenSubject as PSVScreenSubject).Id == psvsubject.Id);
+				ScreenContentControl screen = wnd.FindScreen((Func<ScreenContentControl, bool>)((ScreenContentControl s) => string.Compare(s.ScreenFactoryKey, screenKey, ignoreCase: true) == 0 && string.Compare(s.Header, psvsubject.PSVName, ignoreCase: true) == 0 && s.ScreenSubject != null && (s.ScreenSubject as PSVScreenSubject).Id == psvsubject.Id));
 				if (screen == null)
 				{
 					wnd.ShowScreen(new ShowScreenEventArgs
 					{
 						CreateNewTab = true,
 						ScreenFactoryKey = screenKey,
-						ScreenSubject = psvsubject
+						ScreenSubject = (ScreenSubject)(object)psvsubject
 					});
 				}
 				else
@@ -2060,12 +2069,12 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 			}
 			else
 			{
-				if (pSVRootNode.Children.Count > 0 && !pSVRootNode.IsExpanded)
+				if (((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)pSVRootNode).Children).Count > 0 && !((NavigatorTreeNode)pSVRootNode).IsExpanded)
 				{
-					pSVRootNode.IsExpanded = true;
+					((NavigatorTreeNode)pSVRootNode).IsExpanded = true;
 				}
-				pSVRootNode.SetSelectedWithoutSideEffects(value: true);
-				pSVRootNode.ExecuteShowScreen(new ShowScreenOptions());
+				((NavigatorTreeNode)pSVRootNode).SetSelectedWithoutSideEffects(true);
+				((NavigatorTreeNode)pSVRootNode).ExecuteShowScreen(new ShowScreenOptions());
 			}
 		}
 
@@ -2078,29 +2087,29 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 			PSVRootNode target = null;
 			TankRootNode tankRootNode = null;
 			string[] array = nodepath.Split('.');
-			NavigatorTreeNodeCollection children = Children;
+			NavigatorTreeNodeCollection children = ((TreeNavigatorViewModel)this).Children;
 			if (type == "Tank")
 			{
-				tankRootNode = children.OfType<TankRootNode>().FirstOrDefault((TankRootNode p) => string.Compare(p.Text, nodepath, ignoreCase: true) == 0);
+				tankRootNode = ((IEnumerable)children).OfType<TankRootNode>().FirstOrDefault((TankRootNode p) => string.Compare(((SimpleNavigatorTreeNode)p).Text, nodepath, ignoreCase: true) == 0);
 				if (tankRootNode == null)
 				{
 					return;
 				}
 				tankRootNode.RefreshChildren();
-				if (tankRootNode.Children.Count <= 0)
+				if (((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)tankRootNode).Children).Count <= 0)
 				{
 					return;
 				}
-				if (!tankRootNode.IsExpanded)
+				if (!((NavigatorTreeNode)tankRootNode).IsExpanded)
 				{
-					tankRootNode.IsExpanded = true;
+					((NavigatorTreeNode)tankRootNode).IsExpanded = true;
 				}
 				if (displayscreen)
 				{
-					TankNode tankNode = tankRootNode.Children.OfType<TankNode>().FirstOrDefault((TankNode p) => p.TankKey == modelKey);
+					TankNode tankNode = ((IEnumerable)((NavigatorTreeNode)tankRootNode).Children).OfType<TankNode>().FirstOrDefault((TankNode p) => p.TankKey == modelKey);
 					if (tankNode != null)
 					{
-						tankNode.IsSelected = true;
+						((NavigatorTreeNode)tankNode).IsSelected = true;
 					}
 				}
 				return;
@@ -2108,57 +2117,57 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 			for (int num = 0; num < array.Length; num++)
 			{
 				string tag = array[num].Replace("\"", "");
-				target = children.OfType<PSVRootNode>().FirstOrDefault((PSVRootNode p) => string.Compare(p.Text, tag, ignoreCase: true) == 0);
+				target = ((IEnumerable)children).OfType<PSVRootNode>().FirstOrDefault((PSVRootNode p) => string.Compare(((SimpleNavigatorTreeNode)p).Text, tag, ignoreCase: true) == 0);
 				if (target == null)
 				{
 					return;
 				}
-				if (!target.IsExpanded)
+				if (!((NavigatorTreeNode)target).IsExpanded)
 				{
-					target.IsExpanded = true;
+					((NavigatorTreeNode)target).IsExpanded = true;
 				}
 				else if (target.NodeType == "UnattachedStreams" || target.NodeType == "UO" || target.NodeType == "PRD")
 				{
 					target.RefreshChildren();
 				}
-				children = target.Children;
+				children = ((NavigatorTreeNode)target).Children;
 			}
-			if (target.Children.Count <= 0)
+			if (((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)target).Children).Count <= 0)
 			{
 				return;
 			}
-			if (!target.IsExpanded)
+			if (!((NavigatorTreeNode)target).IsExpanded)
 			{
-				target.IsExpanded = true;
+				((NavigatorTreeNode)target).IsExpanded = true;
 			}
 			if (displayscreen)
 			{
 				if (type == "PRD")
 				{
-					PSVNode pSVNode = (from p in target.Children.OfType<PSVNode>()
+					PSVNode pSVNode = (from p in ((IEnumerable)((NavigatorTreeNode)target).Children).OfType<PSVNode>()
 						where p.PSVkey == modelKey
 						select p).FirstOrDefault();
 					if (pSVNode != null)
 					{
-						pSVNode.IsSelected = true;
+						((NavigatorTreeNode)pSVNode).IsSelected = true;
 					}
 				}
 				else
 				{
-					ScenarioNode scenarioNode = (from p in target.Children.OfType<ScenarioNode>()
+					ScenarioNode scenarioNode = (from p in ((IEnumerable)((NavigatorTreeNode)target).Children).OfType<ScenarioNode>()
 						where p.ModelKey == modelKey
 						select p).FirstOrDefault();
 					if (scenarioNode != null)
 					{
-						scenarioNode.IsSelected = true;
+						((NavigatorTreeNode)scenarioNode).IsSelected = true;
 					}
 				}
 			}
 			else if (target.NodeType == "PRD")
 			{
-				if (UnityContainerExtensions.Resolve<IShellApplication>(target.UnityContainer, Array.Empty<ResolverOverride>()).ActiveWindow.FindScreen((ScreenContentControl s) => string.Compare(s.Header, target.Text, ignoreCase: true) == 0) != null && !target.IsSelected)
+				if (UnityContainerExtensions.Resolve<IShellApplication>(((SimpleNavigatorTreeNode)target).UnityContainer, Array.Empty<ResolverOverride>()).ActiveWindow.FindScreen((Func<ScreenContentControl, bool>)((ScreenContentControl s) => string.Compare(s.Header, ((SimpleNavigatorTreeNode)target).Text, ignoreCase: true) == 0)) != null && !((NavigatorTreeNode)target).IsSelected)
 				{
-					target.IsSelected = true;
+					((NavigatorTreeNode)target).IsSelected = true;
 				}
 			}
 			else if (target.NodeType == "ColSubflowsheet" || target.NodeType == "Subflowsheet")
@@ -2179,67 +2188,67 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 			}
 			PSVRootNode pSVRootNode = null;
 			string[] paths = nodepath.Split('.');
-			NavigatorTreeNodeCollection children = Children;
+			NavigatorTreeNodeCollection children = ((TreeNavigatorViewModel)this).Children;
 			TankRootNode tankRootNode = null;
 			int i;
 			for (i = 0; i < paths.Length; i++)
 			{
-				pSVRootNode = children.OfType<PSVRootNode>().FirstOrDefault((PSVRootNode p) => string.Compare(p.Text, paths[i], ignoreCase: true) == 0);
+				pSVRootNode = ((IEnumerable)children).OfType<PSVRootNode>().FirstOrDefault((PSVRootNode p) => string.Compare(((SimpleNavigatorTreeNode)p).Text, paths[i], ignoreCase: true) == 0);
 				if (pSVRootNode == null)
 				{
 					break;
 				}
-				if (!pSVRootNode.IsExpanded && pSVRootNode.NodeType != "PRD" && pSVRootNode.NodeType != "EmScenario")
+				if (!((NavigatorTreeNode)pSVRootNode).IsExpanded && pSVRootNode.NodeType != "PRD" && pSVRootNode.NodeType != "EmScenario")
 				{
 					return;
 				}
-				children = pSVRootNode.Children;
+				children = ((NavigatorTreeNode)pSVRootNode).Children;
 			}
 			if (pSVRootNode != null)
 			{
 				if (pSVRootNode.NodeType == "PRD")
 				{
-					if (NavigatorNodeHelper.NodesCache.ContainsKey(pSVRootNode.Text))
+					if (NavigatorNodeHelper.NodesCache.ContainsKey(((SimpleNavigatorTreeNode)pSVRootNode).Text))
 					{
-						NavigatorNodeHelper.NodesCache.Remove(pSVRootNode.Text);
+						NavigatorNodeHelper.NodesCache.Remove(((SimpleNavigatorTreeNode)pSVRootNode).Text);
 					}
-					foreach (ScenarioNode child in pSVRootNode.Children)
+					foreach (ScenarioNode item in (Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)pSVRootNode).Children)
 					{
-						if (NavigatorNodeHelper.NodesCache.ContainsKey(child.ModelKey.Value.ToString()))
+						if (NavigatorNodeHelper.NodesCache.ContainsKey(item.ModelKey.Value.ToString()))
 						{
-							NavigatorNodeHelper.NodesCache.Remove(child.ModelKey.Value.ToString());
+							NavigatorNodeHelper.NodesCache.Remove(item.ModelKey.Value.ToString());
 						}
 					}
 				}
-				pSVRootNode.Parent.Children.Remove(pSVRootNode);
+				((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)pSVRootNode.Parent).Children).Remove((NavigatorTreeNode)(object)pSVRootNode);
 				if (pSVRootNode.NodeType == "EmScenario")
 				{
-					pSVRootNode.Parent.IsSelected = true;
+					((NavigatorTreeNode)pSVRootNode.Parent).IsSelected = true;
 				}
 				return;
 			}
-			tankRootNode = children.OfType<TankRootNode>().FirstOrDefault((TankRootNode p) => string.Compare(p.Text, FormResource.StorageTankProtection, ignoreCase: true) == 0);
-			if (tankRootNode != null && tankRootNode.IsExpanded)
+			tankRootNode = ((IEnumerable)children).OfType<TankRootNode>().FirstOrDefault((TankRootNode p) => string.Compare(((SimpleNavigatorTreeNode)p).Text, FormResource.StorageTankProtection, ignoreCase: true) == 0);
+			if (tankRootNode != null && ((NavigatorTreeNode)tankRootNode).IsExpanded)
 			{
-				children = tankRootNode.Children;
-				TankNode tankNode = children.OfType<TankNode>().FirstOrDefault((TankNode p) => string.Compare(p.Text, paths[paths.Length - 1], ignoreCase: true) == 0);
+				children = ((NavigatorTreeNode)tankRootNode).Children;
+				TankNode tankNode = ((IEnumerable)children).OfType<TankNode>().FirstOrDefault((TankNode p) => string.Compare(((SimpleNavigatorTreeNode)p).Text, paths[paths.Length - 1], ignoreCase: true) == 0);
 				if (tankNode != null)
 				{
-					tankRootNode.Children.Remove(tankNode);
+					((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)tankRootNode).Children).Remove((NavigatorTreeNode)(object)tankNode);
 				}
 			}
 		}
 
 		private void ReloadPSVTreeView()
 		{
-			Children.Clear();
+			((Collection<NavigatorTreeNode>)(object)((TreeNavigatorViewModel)this).Children).Clear();
 			(Dictionary<string, List<CxsNodeInfo>>, Dictionary<string, List<CxsNodeInfo>>, List<CxsNodeInfo>) tuple = CxsNodeInfoHelper.CollectUoAndStream(CxsCaseHelper.MyCase, "appModel.FlowSheetObjects.Streams");
 			NavigatorNodeHelper.InitializeCollections();
 			uoOutletDic = tuple.Item2;
 			(uoFeedDic, _, standaloneStreams) = tuple;
-			Children.Add(CreatRootNode(FormResource.Header_Unitops, bvisible: true, "appModel.FlowSheetObjects.UnitOps", "TopLevelUOs"));
-			Children.Add(CreatRootNode(FormResource.Header_SStreams, bvisible: true, "StandaloneStream", "TopUnattachedStreams"));
-			Children.Add(CreatRootNode(FormResource.StorageTankProtection, bvisible: true, "StorageTankProtection", "TopPSVTankRoot"));
+			((Collection<NavigatorTreeNode>)(object)((TreeNavigatorViewModel)this).Children).Add((NavigatorTreeNode)(object)CreatRootNode(FormResource.Header_Unitops, bvisible: true, "appModel.FlowSheetObjects.UnitOps", "TopLevelUOs"));
+			((Collection<NavigatorTreeNode>)(object)((TreeNavigatorViewModel)this).Children).Add((NavigatorTreeNode)(object)CreatRootNode(FormResource.Header_SStreams, bvisible: true, "StandaloneStream", "TopUnattachedStreams"));
+			((Collection<NavigatorTreeNode>)(object)((TreeNavigatorViewModel)this).Children).Add((NavigatorTreeNode)(object)CreatRootNode(FormResource.StorageTankProtection, bvisible: true, "StorageTankProtection", "TopPSVTankRoot"));
 		}
 
 		private PSVNode AddValveNode(string parentNodePath, PSVRootNode parent, PsvModelKey key)
@@ -2257,7 +2266,7 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 			pSVNode.PSVkey = key;
 			pSVNode.Parent = parent;
 			pSVNode.ParentStreamDataPath = parentNodePath;
-			parent.Children.Add(pSVNode);
+			((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)parent).Children).Add((NavigatorTreeNode)(object)pSVNode);
 			pSVNode.InitializeNode(valveNodeInfo);
 			return pSVNode;
 		}
@@ -2272,7 +2281,7 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 			{
 				return null;
 			}
-			CxsNodeInfo scenarioNodeInfo = CxsNodeInfoHelper.GetScenarioNodeInfo(CxsCaseHelper.MyCase, parentNodePath, parent.Children.Count);
+			CxsNodeInfo scenarioNodeInfo = CxsNodeInfoHelper.GetScenarioNodeInfo(CxsCaseHelper.MyCase, parentNodePath, ((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)parent).Children).Count);
 			if (string.IsNullOrEmpty(scenarioNodeInfo.id))
 			{
 				return null;
@@ -2281,7 +2290,7 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 			scenarioNode.Parent = parent;
 			scenarioNode.ModelKey = key;
 			scenarioNode.SizingMethod = method;
-			parent.Children.Add(scenarioNode);
+			((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)parent).Children).Add((NavigatorTreeNode)(object)scenarioNode);
 			scenarioNode.InitializeNode(scenarioNodeInfo);
 			return scenarioNode;
 		}
@@ -2300,12 +2309,12 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 					{
 						break;
 					}
-					pSVRootNode = nodes.OfType<PSVRootNode>().FirstOrDefault((PSVRootNode p) => string.Compare(p.Text, path, ignoreCase: true) == 0);
+					pSVRootNode = ((IEnumerable)nodes).OfType<PSVRootNode>().FirstOrDefault((PSVRootNode p) => string.Compare(((SimpleNavigatorTreeNode)p).Text, path, ignoreCase: true) == 0);
 					if (pSVRootNode == null)
 					{
 						break;
 					}
-					nodes = pSVRootNode.Children;
+					nodes = ((NavigatorTreeNode)pSVRootNode).Children;
 					num--;
 				}
 			}
@@ -2314,14 +2323,14 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 
 		public void GenerateTopLevelNodes()
 		{
-			Children.Clear();
+			((Collection<NavigatorTreeNode>)(object)((TreeNavigatorViewModel)this).Children).Clear();
 			(Dictionary<string, List<CxsNodeInfo>>, Dictionary<string, List<CxsNodeInfo>>, List<CxsNodeInfo>) tuple = CxsNodeInfoHelper.CollectUoAndStream(CxsCaseHelper.MyCase, "appModel.FlowSheetObjects.Streams");
 			NavigatorNodeHelper.InitializeCollections();
 			uoOutletDic = tuple.Item2;
 			(uoFeedDic, _, standaloneStreams) = tuple;
-			Children.Add(CreatRootNode(FormResource.Header_Unitops, bvisible: true, "appModel.FlowSheetObjects.UnitOps", "TopLevelUOs"));
-			Children.Add(CreatRootNode(FormResource.Header_SStreams, bvisible: true, "StandaloneStream", "TopUnattachedStreams"));
-			Children.Add(CreatRootNode(FormResource.StorageTankProtection, bvisible: true, "StorageTankProtection", "TopPSVTankRoot"));
+			((Collection<NavigatorTreeNode>)(object)((TreeNavigatorViewModel)this).Children).Add((NavigatorTreeNode)(object)CreatRootNode(FormResource.Header_Unitops, bvisible: true, "appModel.FlowSheetObjects.UnitOps", "TopLevelUOs"));
+			((Collection<NavigatorTreeNode>)(object)((TreeNavigatorViewModel)this).Children).Add((NavigatorTreeNode)(object)CreatRootNode(FormResource.Header_SStreams, bvisible: true, "StandaloneStream", "TopUnattachedStreams"));
+			((Collection<NavigatorTreeNode>)(object)((TreeNavigatorViewModel)this).Children).Add((NavigatorTreeNode)(object)CreatRootNode(FormResource.StorageTankProtection, bvisible: true, "StorageTankProtection", "TopPSVTankRoot"));
 		}
 
 		private bool IsEmpty(double val)
@@ -2355,15 +2364,19 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 
 		protected override void InternalExecuteShowScreen(ShowScreenOptions options)
 		{
+			//IL_0012: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0017: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0023: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0042: Expected O, but got Unknown
 			if (NavigatorNodeHelper.PSVNodeKeyPathMap.ContainsKey(PSVkey))
 			{
-				ShowScreenOptions showScreenOptions = new ShowScreenOptions
+				ShowScreenOptions val = new ShowScreenOptions
 				{
-					InitialLocation = ScreenLocation.TabbedDocument,
+					InitialLocation = (ScreenLocation)0,
 					CreateNewTab = CreateNewTab("Main", PSVctrlIDs.ctrlPSVSummaryForm, PSVkey)
 				};
-				showScreenOptions.ReuseExisting = ((!showScreenOptions.CreateNewTab.Value) ? ShowScreenReuseOptions.CurrentWindow : ShowScreenReuseOptions.None);
-				base.InternalExecuteShowScreen(showScreenOptions);
+				val.ReuseExisting = (ShowScreenReuseOptions)(!val.CreateNewTab.Value);
+				base.InternalExecuteShowScreen(val);
 			}
 		}
 
@@ -2375,19 +2388,19 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 			PSVkey = FoundDBKeyFromPath(base.DataPath);
 			if (!NavigatorNodeHelper.PSVNodeKeyPathMap.ContainsKey(PSVkey))
 			{
-				NavigatorNodeHelper.PSVNodeKeyPathMap.Add(PSVkey, NavigatorNodeHelper.NodesCache[base.Text][1]);
+				NavigatorNodeHelper.PSVNodeKeyPathMap.Add(PSVkey, NavigatorNodeHelper.NodesCache[((SimpleNavigatorTreeNode)this).Text][1]);
 			}
-			base.ScreenFactoryKey = "Main";
-			base.ScreenSubject = new PSVSummaryScreenSubject
+			((SimpleNavigatorTreeNode)this).ScreenFactoryKey = "Main";
+			((SimpleNavigatorTreeNode)this).ScreenSubject = (ScreenSubject)(object)new PSVSummaryScreenSubject
 			{
 				Id = PSVctrlIDs.ctrlPSVSummaryForm,
-				TabLabel = base.Text,
+				TabLabel = ((SimpleNavigatorTreeNode)this).Text,
 				ModelKey = PSVkey,
-				PSVName = base.Text,
+				PSVName = ((SimpleNavigatorTreeNode)this).Text,
 				NodeKey = base.DataPath,
 				NodePath = NavigatorNodeHelper.PSVNodeKeyPathMap[PSVkey]
 			};
-			IsExpanded = true;
+			((NavigatorTreeNode)this).IsExpanded = true;
 		}
 	}
 	public class UONode : PSVRootNode
@@ -2409,7 +2422,7 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 				{
 					Feeds = new List<CxsNodeInfo>();
 				}
-				IsExpanded = true;
+				((NavigatorTreeNode)this).IsExpanded = true;
 			}
 		}
 	}
@@ -2423,13 +2436,17 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 
 		protected override void InternalExecuteShowScreen(ShowScreenOptions options)
 		{
-			ShowScreenOptions showScreenOptions = new ShowScreenOptions
+			//IL_0000: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0005: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0011: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0030: Expected O, but got Unknown
+			ShowScreenOptions val = new ShowScreenOptions
 			{
-				InitialLocation = ScreenLocation.TabbedDocument,
+				InitialLocation = (ScreenLocation)0,
 				CreateNewTab = CreateNewTab("Main", PSVctrlIDs.ctrlVapRelief, ModelKey)
 			};
-			showScreenOptions.ReuseExisting = ((!showScreenOptions.CreateNewTab.Value) ? ShowScreenReuseOptions.CurrentWindow : ShowScreenReuseOptions.None);
-			base.InternalExecuteShowScreen(showScreenOptions);
+			val.ReuseExisting = (ShowScreenReuseOptions)(!val.CreateNewTab.Value);
+			base.InternalExecuteShowScreen(val);
 		}
 
 		public override void InitializeNode(CxsNodeInfo info)
@@ -2437,7 +2454,7 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 			base.NodeType = "EmScenario";
 			base.InitializeNode(info);
 			base.IsLeaf = true;
-			base.ScreenFactoryKey = "Main";
+			((SimpleNavigatorTreeNode)this).ScreenFactoryKey = "Main";
 			ModelKey = FoundDBKeyFromPath(base.DataPath);
 			if (!NavigatorNodeHelper.NodesCache.ContainsKey(ModelKey.Value.ToString()))
 			{
@@ -2447,11 +2464,11 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 					this.GenerateVisualNodePath()
 				});
 			}
-			base.ScreenSubject = new ScenarioScreenSubject
+			((SimpleNavigatorTreeNode)this).ScreenSubject = (ScreenSubject)(object)new ScenarioScreenSubject
 			{
 				Id = PSVctrlIDs.ctrlVapRelief,
-				ScenarioName = base.Text,
-				TabLabel = $"{base.Parent.Text}-{base.Text}",
+				ScenarioName = ((SimpleNavigatorTreeNode)this).Text,
+				TabLabel = $"{((SimpleNavigatorTreeNode)base.Parent).Text}-{((SimpleNavigatorTreeNode)this).Text}",
 				ValvePhase = SizingMethod,
 				ModelKey = ModelKey,
 				NodeKey = base.Parent.DataPath,
@@ -2487,41 +2504,45 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 
 		protected override void InternalExecuteShowScreen(ShowScreenOptions options)
 		{
-			IShellApplication shellApplication = UnityContainerExtensions.Resolve<IShellApplication>(base.UnityContainer, Array.Empty<ResolverOverride>());
-			if (shellApplication != null)
+			//IL_0036: Unknown result type (might be due to invalid IL or missing references)
+			//IL_003b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0047: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0054: Expected O, but got Unknown
+			IShellApplication val = UnityContainerExtensions.Resolve<IShellApplication>(((SimpleNavigatorTreeNode)this).UnityContainer, Array.Empty<ResolverOverride>());
+			if (val != null)
 			{
-				ScreenContentControl screenContentControl = shellApplication.ActiveWindow.FindScreen((ScreenContentControl s) => string.Compare(s.ScreenFactoryKey, "Main", ignoreCase: true) == 0 && s.ScreenSubject != null && (s.ScreenSubject as PSVScreenSubject).Id == PSVctrlIDs.ctrlTankVent && s.ScreenSubject != null && (s.ScreenSubject as PSVScreenSubject).ModelKey == TankKey);
+				ScreenContentControl obj = val.ActiveWindow.FindScreen((Func<ScreenContentControl, bool>)((ScreenContentControl s) => string.Compare(s.ScreenFactoryKey, "Main", ignoreCase: true) == 0 && s.ScreenSubject != null && (s.ScreenSubject as PSVScreenSubject).Id == PSVctrlIDs.ctrlTankVent && s.ScreenSubject != null && (s.ScreenSubject as PSVScreenSubject).ModelKey == TankKey));
 				bool flag = false;
-				flag = screenContentControl == null;
-				ShowScreenOptions showScreenOptions = new ShowScreenOptions
+				flag = obj == null;
+				ShowScreenOptions val2 = new ShowScreenOptions
 				{
-					InitialLocation = ScreenLocation.TabbedDocument,
+					InitialLocation = (ScreenLocation)0,
 					CreateNewTab = flag
 				};
-				showScreenOptions.ReuseExisting = ((!showScreenOptions.CreateNewTab.Value) ? ShowScreenReuseOptions.CurrentWindow : ShowScreenReuseOptions.None);
+				val2.ReuseExisting = (ShowScreenReuseOptions)(!val2.CreateNewTab.Value);
 				if (Parent != null)
 				{
-					Parent.IsExpanded = true;
-					IsSelected = true;
+					((NavigatorTreeNode)Parent).IsExpanded = true;
+					((NavigatorTreeNode)this).IsSelected = true;
 				}
-				base.InternalExecuteShowScreen(showScreenOptions);
+				((SimpleNavigatorTreeNode)this).InternalExecuteShowScreen(val2);
 			}
 		}
 
 		public void InitializeNode(CxsNodeInfo info)
 		{
 			DataPath = info.path;
-			base.Text = info.id;
-			base.UnityContainer = Parent.UnityContainer;
+			((SimpleNavigatorTreeNode)this).Text = info.id;
+			((SimpleNavigatorTreeNode)this).UnityContainer = ((SimpleNavigatorTreeNode)Parent).UnityContainer;
 			NodeType = "Tank";
 			IsLeaf = true;
-			base.ScreenFactoryKey = "Main";
+			((SimpleNavigatorTreeNode)this).ScreenFactoryKey = "Main";
 			TankKey = FoundDBKeyFromPath(DataPath);
-			base.ScreenSubject = new PSVTankScreenSubject
+			((SimpleNavigatorTreeNode)this).ScreenSubject = (ScreenSubject)(object)new PSVTankScreenSubject
 			{
 				Id = PSVctrlIDs.ctrlTankVent,
-				TabLabel = base.Text,
-				TankName = base.Text,
+				TabLabel = ((SimpleNavigatorTreeNode)this).Text,
+				TankName = ((SimpleNavigatorTreeNode)this).Text,
 				ModelKey = TankKey,
 				NodeKey = DataPath,
 				NodePath = DataPath
@@ -2530,8 +2551,9 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 
 		public override void OnContextMenuOpening(ContextMenuEventArgs e, ContextMenu contextMenuToShow)
 		{
-			NodeContextMenu.AppendTankContextMenuItemsToNode(Utilities.GetAncestorFromType(e.OriginalSource as DependencyObject, typeof(TreeNavigatorView), allowSubclassOfType: true) as TreeNavigatorView, this, contextMenuToShow);
-			base.OnContextMenuOpening(e, contextMenuToShow);
+			DependencyObject ancestorFromType = Utilities.GetAncestorFromType(e.OriginalSource as DependencyObject, typeof(TreeNavigatorView), true);
+			NodeContextMenu.AppendTankContextMenuItemsToNode((TreeNavigatorView)(object)((ancestorFromType is TreeNavigatorView) ? ancestorFromType : null), this, contextMenuToShow);
+			((NavigatorTreeNode)this).OnContextMenuOpening(e, contextMenuToShow);
 		}
 	}
 	public class TankRootNode : SimpleNavigatorTreeNode
@@ -2551,7 +2573,7 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 				if (value != _isExpanded)
 				{
 					_isExpanded = value;
-					OnIsExpandedChanged();
+					((SimpleNavigatorTreeNode)this).OnIsExpandedChanged();
 				}
 			}
 		}
@@ -2565,41 +2587,46 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 			{
 				TankRootNode.IsExpandedChanged(this, EventArgs.Empty);
 			}
-			base.OnIsExpandedChanged();
+			((SimpleNavigatorTreeNode)this).OnIsExpandedChanged();
 		}
 
 		protected override void InternalExecuteShowScreen(ShowScreenOptions options)
 		{
+			//IL_0074: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0079: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0085: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0092: Expected O, but got Unknown
 			if (options != null && options.CreateNewTab.HasValue && options.CreateNewTab.Value)
 			{
-				base.InternalExecuteShowScreen(options);
+				((SimpleNavigatorTreeNode)this).InternalExecuteShowScreen(options);
 				return;
 			}
-			IShellApplication shellApplication = UnityContainerExtensions.Resolve<IShellApplication>(base.UnityContainer, Array.Empty<ResolverOverride>());
-			if (shellApplication != null)
+			IShellApplication val = UnityContainerExtensions.Resolve<IShellApplication>(((SimpleNavigatorTreeNode)this).UnityContainer, Array.Empty<ResolverOverride>());
+			if (val != null)
 			{
-				ScreenContentControl screenContentControl = shellApplication.ActiveWindow.FindScreen((ScreenContentControl s) => string.Compare(s.ScreenFactoryKey, "Main", ignoreCase: true) == 0 && s.ScreenSubject != null && (s.ScreenSubject as PSVScreenSubject).Id == PSVctrlIDs.ctrlTankManager);
+				ScreenContentControl obj = val.ActiveWindow.FindScreen((Func<ScreenContentControl, bool>)((ScreenContentControl s) => string.Compare(s.ScreenFactoryKey, "Main", ignoreCase: true) == 0 && s.ScreenSubject != null && (s.ScreenSubject as PSVScreenSubject).Id == PSVctrlIDs.ctrlTankManager));
 				bool flag = false;
-				flag = screenContentControl == null;
-				ShowScreenOptions showScreenOptions = new ShowScreenOptions
+				flag = obj == null;
+				ShowScreenOptions val2 = new ShowScreenOptions
 				{
-					InitialLocation = ScreenLocation.TabbedDocument,
+					InitialLocation = (ScreenLocation)0,
 					CreateNewTab = flag
 				};
-				showScreenOptions.ReuseExisting = ((!showScreenOptions.CreateNewTab.Value) ? ShowScreenReuseOptions.CurrentWindow : ShowScreenReuseOptions.None);
-				base.InternalExecuteShowScreen(showScreenOptions);
+				val2.ReuseExisting = (ShowScreenReuseOptions)(!val2.CreateNewTab.Value);
+				((SimpleNavigatorTreeNode)this).InternalExecuteShowScreen(val2);
 			}
 		}
 
 		public override void OnContextMenuOpening(ContextMenuEventArgs e, ContextMenu contextMenuToShow)
 		{
-			NodeContextMenu.AppendTankRootContextMenuItemsToNode(Utilities.GetAncestorFromType(e.OriginalSource as DependencyObject, typeof(TreeNavigatorView), allowSubclassOfType: true) as TreeNavigatorView, this, contextMenuToShow);
-			base.OnContextMenuOpening(e, contextMenuToShow);
+			DependencyObject ancestorFromType = Utilities.GetAncestorFromType(e.OriginalSource as DependencyObject, typeof(TreeNavigatorView), true);
+			NodeContextMenu.AppendTankRootContextMenuItemsToNode((TreeNavigatorView)(object)((ancestorFromType is TreeNavigatorView) ? ancestorFromType : null), this, contextMenuToShow);
+			((NavigatorTreeNode)this).OnContextMenuOpening(e, contextMenuToShow);
 		}
 
 		public void RefreshChildren()
 		{
-			Children.Clear();
+			((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)this).Children).Clear();
 			AppendChildrenToParent(this);
 		}
 
@@ -2607,8 +2634,8 @@ namespace AspenTech.EquipmentAnalysis.Modules.PSVBrowser
 		{
 			foreach (CxsNodeInfo item in AspenCaseDataRequest.BuildNodeInfo("Top.appModel.Variables.PSV Sizing Manager.Storage Tanks", CxsCaseHelper.MyCase))
 			{
-				TankNode tankNode = UnityContainerExtensions.Resolve<TankNode>(father.UnityContainer, Array.Empty<ResolverOverride>());
-				father.Children.Add(tankNode);
+				TankNode tankNode = UnityContainerExtensions.Resolve<TankNode>(((SimpleNavigatorTreeNode)father).UnityContainer, Array.Empty<ResolverOverride>());
+				((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)father).Children).Add((NavigatorTreeNode)(object)tankNode);
 				tankNode.Parent = father;
 				tankNode.InitializeNode(item);
 			}
@@ -2687,7 +2714,7 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 					psvCase.SelectedUnitSet = eUnitSet;
 				}
 				Common.PSVUnitSet = eUnitSet;
-				_aggregator.GetEvent<PSVUnitSetChangedEvent>().Publish(new EventArgs());
+				((CompositePresentationEvent<EventArgs>)(object)_aggregator.GetEvent<PSVUnitSetChangedEvent>()).Publish(new EventArgs());
 			}
 		}
 
@@ -2784,9 +2811,9 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 			{
 				if (_psvStorageTankProtectionCommand == null)
 				{
-					_psvStorageTankProtectionCommand = new DelegateCommand<object>(PSVStorageTankProtectionCommand_Executed);
+					_psvStorageTankProtectionCommand = new DelegateCommand<object>((Action<object>)PSVStorageTankProtectionCommand_Executed);
 				}
-				return _psvStorageTankProtectionCommand;
+				return (ICommand)_psvStorageTankProtectionCommand;
 			}
 		}
 
@@ -2796,9 +2823,9 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 			{
 				if (_OpenDatabase == null)
 				{
-					_OpenDatabase = new DelegateCommand<object>(ExecuteOpenDatabase, CanExecuteOpenDatabase);
+					_OpenDatabase = new DelegateCommand<object>((Action<object>)ExecuteOpenDatabase, (Func<object, bool>)CanExecuteOpenDatabase);
 				}
-				return _OpenDatabase;
+				return (ICommand)_OpenDatabase;
 			}
 		}
 
@@ -2808,9 +2835,9 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 			{
 				if (_psvPreferenceManagerCommand == null)
 				{
-					_psvPreferenceManagerCommand = new DelegateCommand<object>(PSVPreferenceManagerCommand_Executed);
+					_psvPreferenceManagerCommand = new DelegateCommand<object>((Action<object>)PSVPreferenceManagerCommand_Executed);
 				}
-				return _psvPreferenceManagerCommand;
+				return (ICommand)_psvPreferenceManagerCommand;
 			}
 		}
 
@@ -2838,9 +2865,9 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 			return new List<Control>
 			{
 				(Control)(object)comboUnitSetPSV,
-				tbt_AddPSV,
-				tbt_AddRuptureDisk,
-				btn_StorageTankProtection,
+				(Control)(object)tbt_AddPSV,
+				(Control)(object)tbt_AddRuptureDisk,
+				(Control)(object)btn_StorageTankProtection,
 				(Control)(object)comboDesignCodePSV
 			};
 		}
@@ -2902,6 +2929,18 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 		[EditorBrowsable(EditorBrowsableState.Never)]
 		void IComponentConnector.Connect(int connectionId, object target)
 		{
+			//IL_0035: Unknown result type (might be due to invalid IL or missing references)
+			//IL_003f: Expected O, but got Unknown
+			//IL_0042: Unknown result type (might be due to invalid IL or missing references)
+			//IL_004c: Expected O, but got Unknown
+			//IL_004f: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0059: Expected O, but got Unknown
+			//IL_005c: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0066: Expected O, but got Unknown
+			//IL_0069: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0073: Expected O, but got Unknown
+			//IL_0076: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0080: Expected O, but got Unknown
 			switch (connectionId)
 			{
 			case 1:
@@ -3020,7 +3059,7 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 				if (value != null && !SuppressUnitSetChangedEvent)
 				{
 					Common.PSVUnitSet = value.SelectedUnitSet;
-					_eventAggregator.GetEvent<PSVUnitSetChangedEvent>().Publish(new EventArgs());
+					((CompositePresentationEvent<EventArgs>)(object)_eventAggregator.GetEvent<PSVUnitSetChangedEvent>()).Publish(new EventArgs());
 				}
 			}
 		}
@@ -3039,13 +3078,28 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 
 		private void SubscribeEvents()
 		{
-			_eventAggregator.GetEvent<ViewEmergencyScenarioNodeEvent>().Subscribe(ShowScenarioForm);
-			_eventAggregator.GetEvent<ViewStorageTankEvent>().Subscribe(ShowTankForm);
-			_eventAggregator.GetEvent<PSVShowHelpEvent>().Subscribe(PSVHelpExecuted);
+			((CompositePresentationEvent<ViewEmergencyScenarioNodeEventArgs>)(object)_eventAggregator.GetEvent<ViewEmergencyScenarioNodeEvent>()).Subscribe((Action<ViewEmergencyScenarioNodeEventArgs>)ShowScenarioForm);
+			((CompositePresentationEvent<ViewStorageTankEventArgs>)(object)_eventAggregator.GetEvent<ViewStorageTankEvent>()).Subscribe((Action<ViewStorageTankEventArgs>)ShowTankForm);
+			((CompositePresentationEvent<PSVHelpEventArgs>)(object)_eventAggregator.GetEvent<PSVShowHelpEvent>()).Subscribe((Action<PSVHelpEventArgs>)PSVHelpExecuted);
 		}
 
 		public void StartPSVAction(string actionXML)
 		{
+			//IL_0aa4: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0aab: Expected O, but got Unknown
+			//IL_0aad: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0ab4: Expected O, but got Unknown
+			//IL_0ab6: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0abd: Expected O, but got Unknown
+			//IL_0abf: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0ac6: Expected O, but got Unknown
+			//IL_0866: Unknown result type (might be due to invalid IL or missing references)
+			//IL_086d: Expected O, but got Unknown
+			//IL_084f: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0856: Expected O, but got Unknown
+			//IL_08bc: Unknown result type (might be due to invalid IL or missing references)
+			//IL_08c1: Unknown result type (might be due to invalid IL or missing references)
+			//IL_08c9: Unknown result type (might be due to invalid IL or missing references)
 			if (string.IsNullOrEmpty(actionXML))
 			{
 				return;
@@ -3114,10 +3168,10 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 							psvModelKey5 = TankAddedInSimulator(text);
 							nodeType2 = "Tank";
 							nodeVisualPath = FormResource.StorageTankProtection;
-							_eventAggregator.GetEvent<UpdateTankManagerGridEvent>().Publish(new EventArgs());
+							((CompositePresentationEvent<EventArgs>)(object)_eventAggregator.GetEvent<UpdateTankManagerGridEvent>()).Publish(new EventArgs());
 							break;
 						}
-						_eventAggregator.GetEvent<UpdatePSVTreeViewEvent>().Publish(new UpdatePSVTreeViewEventArgs
+						((CompositePresentationEvent<UpdatePSVTreeViewEventArgs>)(object)_eventAggregator.GetEvent<UpdatePSVTreeViewEvent>()).Publish(new UpdatePSVTreeViewEventArgs
 						{
 							Operation = Common.TreeViewOperation.Add,
 							NodeVisualPath = nodeVisualPath,
@@ -3179,13 +3233,13 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 							PsvModelKey psvModelKey = new PsvModelKey(eRecordType.Utility, value3);
 							nodeVisualPath2 = GetTankNodePath(text, psvModelKey);
 							DeleteTank(psvModelKey);
-							_eventAggregator.GetEvent<UpdateTankManagerGridEvent>().Publish(new EventArgs());
+							((CompositePresentationEvent<EventArgs>)(object)_eventAggregator.GetEvent<UpdateTankManagerGridEvent>()).Publish(new EventArgs());
 							break;
 						}
 						}
 						if (flag2)
 						{
-							_eventAggregator.GetEvent<UpdatePSVTreeViewEvent>().Publish(new UpdatePSVTreeViewEventArgs
+							((CompositePresentationEvent<UpdatePSVTreeViewEventArgs>)(object)_eventAggregator.GetEvent<UpdatePSVTreeViewEvent>()).Publish(new UpdatePSVTreeViewEventArgs
 							{
 								Operation = Common.TreeViewOperation.Delete,
 								NodeVisualPath = nodeVisualPath2,
@@ -3205,7 +3259,7 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 							PsvModelKey psvModelKey3 = new PsvModelKey(eRecordType.PRDSystem, value7);
 							PsvModelKey psvModelKey4 = PastedPRDInSimulator(text, psvModelKey3, typeOfPRD);
 							CopyScenariosToNewPRDModel(psvModelKey3, psvModelKey4, 0, null, null);
-							_eventAggregator.GetEvent<UpdatePSVTreeViewEvent>().Publish(new UpdatePSVTreeViewEventArgs
+							((CompositePresentationEvent<UpdatePSVTreeViewEventArgs>)(object)_eventAggregator.GetEvent<UpdatePSVTreeViewEvent>()).Publish(new UpdatePSVTreeViewEventArgs
 							{
 								Operation = Common.TreeViewOperation.Add,
 								NodeVisualPath = nodeVisualPath,
@@ -3222,8 +3276,8 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 							CopyTankModelToNewOne(source, psvModelKey5);
 							string nodeType2 = "Tank";
 							nodeVisualPath = FormResource.StorageTankProtection;
-							_eventAggregator.GetEvent<UpdateTankManagerGridEvent>().Publish(new EventArgs());
-							_eventAggregator.GetEvent<UpdatePSVTreeViewEvent>().Publish(new UpdatePSVTreeViewEventArgs
+							((CompositePresentationEvent<EventArgs>)(object)_eventAggregator.GetEvent<UpdateTankManagerGridEvent>()).Publish(new EventArgs());
+							((CompositePresentationEvent<UpdatePSVTreeViewEventArgs>)(object)_eventAggregator.GetEvent<UpdatePSVTreeViewEvent>()).Publish(new UpdatePSVTreeViewEventArgs
 							{
 								Operation = Common.TreeViewOperation.Add,
 								NodeVisualPath = nodeVisualPath,
@@ -3257,33 +3311,33 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 								throw new InvalidOperationException("There's already a saved case, EndExport must be called before running BeginExport again");
 							}
 							IPsvCase psvCase = ActiveCase;
-							AcsTopRecord acsTopRecord;
+							AcsTopRecord val;
 							if (psvCase == null)
 							{
 								IAdbTop adbTopForActiveDocument = iPSVMessager.GetAdbTopForActiveDocument();
 								string fileName3 = adbTopForActiveDocument.GetFileName();
-								psvCase = (IPsvCase)UnityContainerExtensions.Resolve<PsvCase>(_container, Array.Empty<ResolverOverride>());
+								psvCase = UnityContainerExtensions.Resolve<PsvCase>(_container, Array.Empty<ResolverOverride>());
 								psvCase.Initialize(fileName3, adbTopForActiveDocument, null, testForMdbRecall: false);
 								_psvCaseMgr.AddCase(psvCase.CaseKey, psvCase);
-								acsTopRecord = new AcsTopRecord(adbTopForActiveDocument);
+								val = new AcsTopRecord(adbTopForActiveDocument);
 								_importExportShouldCloseCase = true;
 							}
 							else
 							{
-								acsTopRecord = new AcsTopRecord(psvCase.AdbTop);
+								val = new AcsTopRecord(psvCase.AdbTop);
 								_importExportShouldCloseCase = false;
 							}
 							_savedCase = psvCase;
-							text2 = acsTopRecord?.AbeServerUrl;
-							text3 = acsTopRecord?.AbeWorkspaceName;
-							num = acsTopRecord?.AbeCaseId;
+							text2 = ((val != null) ? val.AbeServerUrl : null);
+							text3 = ((val != null) ? val.AbeWorkspaceName : null);
+							num = ((val != null) ? new int?(val.AbeCaseId) : ((int?)null));
 							new AcsTopRecord(adbTopForImportExport)
 							{
 								AbeServerUrl = text2,
 								AbeWorkspaceName = text3,
 								AbeCaseId = num.GetValueOrDefault()
 							};
-							psvcase = (IPsvCase)UnityContainerExtensions.Resolve<PsvCase>(_container, Array.Empty<ResolverOverride>());
+							psvcase = UnityContainerExtensions.Resolve<PsvCase>(_container, Array.Empty<ResolverOverride>());
 							psvcase.Initialize(fileName2, adbTopForImportExport, null, testForMdbRecall: false);
 							_psvCaseMgr.AddCase(psvcase.CaseKey, psvcase);
 							SuppressUnitSetChangedEvent = true;
@@ -3342,22 +3396,22 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 						object objectForIUnknown2 = Marshal.GetObjectForIUnknown(pUnk2);
 						Marshal.Release(pUnk);
 						Marshal.Release(pUnk2);
-						IAdbTop adbTop = (IAdbTop)objectForIUnknown;
-						IAdbTop adbTop2 = (IAdbTop)objectForIUnknown2;
-						AcsTopRecord acsTopRecord2 = new AcsTopRecord(adbTop);
-						AcsTopRecord acsTopRecord3 = new AcsTopRecord(adbTop2);
-						if (string.IsNullOrEmpty(acsTopRecord3.AbeServerUrl))
+						IAdbTop val2 = (IAdbTop)objectForIUnknown;
+						IAdbTop val3 = (IAdbTop)objectForIUnknown2;
+						AcsTopRecord val4 = new AcsTopRecord(val2);
+						AcsTopRecord val5 = new AcsTopRecord(val3);
+						if (string.IsNullOrEmpty(val5.AbeServerUrl))
 						{
-							acsTopRecord3.AbeServerUrl = acsTopRecord2.AbeServerUrl;
-							acsTopRecord3.AbeWorkspaceName = acsTopRecord2.AbeWorkspaceName;
-							acsTopRecord3.AbeCaseId = acsTopRecord2.AbeCaseId;
+							val5.AbeServerUrl = val4.AbeServerUrl;
+							val5.AbeWorkspaceName = val4.AbeWorkspaceName;
+							val5.AbeCaseId = val4.AbeCaseId;
 						}
-						string fileName4 = adbTop2.GetFileName();
+						string fileName4 = val3.GetFileName();
 						IPsvCase psvcase2 = null;
-						if (!_psvCaseMgr.TryGetCase(adbTop2, out psvcase2))
+						if (!_psvCaseMgr.TryGetCase(val3, out psvcase2))
 						{
-							psvcase2 = (IPsvCase)UnityContainerExtensions.Resolve<PsvCase>(_container, Array.Empty<ResolverOverride>());
-							psvcase2.Initialize(fileName4, adbTop2, fileName4, testForMdbRecall: false);
+							psvcase2 = UnityContainerExtensions.Resolve<PsvCase>(_container, Array.Empty<ResolverOverride>());
+							psvcase2.Initialize(fileName4, val3, fileName4, testForMdbRecall: false);
 							_psvCaseMgr.AddCase(psvcase2.CaseKey, psvcase2);
 							_importExportShouldCloseCase = true;
 						}
@@ -3365,12 +3419,12 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 						{
 							_importExportShouldCloseCase = false;
 						}
-						string fileName5 = adbTop.GetFileName();
+						string fileName5 = val2.GetFileName();
 						IPsvCase psvcase3 = null;
-						if (!_psvCaseMgr.TryGetCase(adbTop, out psvcase3))
+						if (!_psvCaseMgr.TryGetCase(val2, out psvcase3))
 						{
-							psvcase3 = (IPsvCase)UnityContainerExtensions.Resolve<PsvCase>(_container, Array.Empty<ResolverOverride>());
-							psvcase3.Initialize(fileName5, adbTop, fileName5, testForMdbRecall: false);
+							psvcase3 = UnityContainerExtensions.Resolve<PsvCase>(_container, Array.Empty<ResolverOverride>());
+							psvcase3.Initialize(fileName5, val2, fileName5, testForMdbRecall: false);
 							_psvCaseMgr.AddCase(psvcase3.CaseKey, psvcase3);
 							_savedCase = psvcase3;
 							ActiveCase?.Deactivate();
@@ -3484,7 +3538,7 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 						string attribute4 = xmlTextReader.GetAttribute("prdtype");
 						ReliefDeviceType reliefDeviceType2 = ((!(attribute4 == "PSV") && attribute4 == "RD") ? ReliefDeviceType.RuptureDisk : ReliefDeviceType.Psv);
 						psvModelKey3 = PRDAddedInSimulator2(empty2, attribute3, fromRestore: false, reliefDeviceType2);
-						_eventAggregator.GetEvent<UpdatePSVTreeNavigatorViewEvent>().Publish(new UpdatePSVTreeNavigatorViewEventArgs
+						((CompositePresentationEvent<UpdatePSVTreeNavigatorViewEventArgs>)(object)_eventAggregator.GetEvent<UpdatePSVTreeNavigatorViewEvent>()).Publish(new UpdatePSVTreeNavigatorViewEventArgs
 						{
 							UpdateOption = UpdatePSVTreeNavigatorViewOption.AddPSV,
 							DataPath = empty2,
@@ -3510,7 +3564,7 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 								bool isFromCopy = xmlTextReader.GetAttribute("fromcopy") == "True";
 								PsvModelKey psvkey = new PsvModelKey(eRecordType.PRDSystem, num2);
 								psvModelKey3 = ScenarioAddedInSimulator2(empty2, psvkey, attribute3, fromRestore: false, isFromCopy);
-								_eventAggregator.GetEvent<UpdatePSVTreeNavigatorViewEvent>().Publish(new UpdatePSVTreeNavigatorViewEventArgs
+								((CompositePresentationEvent<UpdatePSVTreeNavigatorViewEventArgs>)(object)_eventAggregator.GetEvent<UpdatePSVTreeNavigatorViewEvent>()).Publish(new UpdatePSVTreeNavigatorViewEventArgs
 								{
 									UpdateOption = UpdatePSVTreeNavigatorViewOption.AddScenario,
 									DataPath = empty2,
@@ -3526,16 +3580,16 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 						string cXSDatapath = empty2 + "." + attribute3;
 						psvModelKey3 = TankAddedInSimulator(cXSDatapath);
 						_tankNameTankKeyMap.Add(attribute3, psvModelKey3);
-						IShellApplication shellApplication = UnityContainerExtensions.Resolve<IShellApplication>(_container, Array.Empty<ResolverOverride>());
-						if (shellApplication != null)
+						IShellApplication val = UnityContainerExtensions.Resolve<IShellApplication>(_container, Array.Empty<ResolverOverride>());
+						if (val != null)
 						{
-							IShellMainWindow activeWindow = shellApplication.ActiveWindow;
-							((DispatcherObject)((activeWindow is CommonShellWindow) ? activeWindow : null))?.Dispatcher.BeginInvoke(DispatcherPriority.Normal, (ThreadStart)delegate
+							IShellMainWindow activeWindow = val.ActiveWindow;
+							((DispatcherObject)(object)((activeWindow is CommonShellWindow) ? activeWindow : null))?.Dispatcher.BeginInvoke(DispatcherPriority.Normal, (ThreadStart)delegate
 							{
-								_eventAggregator.GetEvent<UpdateTankManagerGridEvent>().Publish(new EventArgs());
+								((CompositePresentationEvent<EventArgs>)(object)_eventAggregator.GetEvent<UpdateTankManagerGridEvent>()).Publish(new EventArgs());
 							});
 						}
-						_eventAggregator.GetEvent<UpdatePSVTreeNavigatorViewEvent>().Publish(new UpdatePSVTreeNavigatorViewEventArgs
+						((CompositePresentationEvent<UpdatePSVTreeNavigatorViewEventArgs>)(object)_eventAggregator.GetEvent<UpdatePSVTreeNavigatorViewEvent>()).Publish(new UpdatePSVTreeNavigatorViewEventArgs
 						{
 							UpdateOption = UpdatePSVTreeNavigatorViewOption.AddTank,
 							DataPath = empty2,
@@ -3584,7 +3638,7 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 						if (psvModelKey4 != null)
 						{
 							DeletePSV(psvModelKey4, prdtyp, empty2);
-							_eventAggregator.GetEvent<UpdatePSVTreeNavigatorViewEvent>().Publish(new UpdatePSVTreeNavigatorViewEventArgs
+							((CompositePresentationEvent<UpdatePSVTreeNavigatorViewEventArgs>)(object)_eventAggregator.GetEvent<UpdatePSVTreeNavigatorViewEvent>()).Publish(new UpdatePSVTreeNavigatorViewEventArgs
 							{
 								UpdateOption = UpdatePSVTreeNavigatorViewOption.DeletePSV,
 								DataPath = empty2,
@@ -3614,7 +3668,7 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 						if (psvModelKey5 != null)
 						{
 							DeleteScenario(psvModelKey5, psvkey2);
-							_eventAggregator.GetEvent<UpdatePSVTreeNavigatorViewEvent>().Publish(new UpdatePSVTreeNavigatorViewEventArgs
+							((CompositePresentationEvent<UpdatePSVTreeNavigatorViewEventArgs>)(object)_eventAggregator.GetEvent<UpdatePSVTreeNavigatorViewEvent>()).Publish(new UpdatePSVTreeNavigatorViewEventArgs
 							{
 								UpdateOption = UpdatePSVTreeNavigatorViewOption.DeleteScenario,
 								DataPath = empty2,
@@ -3632,16 +3686,16 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 							_tankNameTankKeyMap.Remove(attribute5);
 						}
 						DeleteTank(tankkey);
-						IShellApplication shellApplication2 = UnityContainerExtensions.Resolve<IShellApplication>(_container, Array.Empty<ResolverOverride>());
-						if (shellApplication2 != null)
+						IShellApplication val2 = UnityContainerExtensions.Resolve<IShellApplication>(_container, Array.Empty<ResolverOverride>());
+						if (val2 != null)
 						{
-							IShellMainWindow activeWindow2 = shellApplication2.ActiveWindow;
-							((DispatcherObject)((activeWindow2 is CommonShellWindow) ? activeWindow2 : null))?.Dispatcher.BeginInvoke(DispatcherPriority.Normal, (ThreadStart)delegate
+							IShellMainWindow activeWindow2 = val2.ActiveWindow;
+							((DispatcherObject)(object)((activeWindow2 is CommonShellWindow) ? activeWindow2 : null))?.Dispatcher.BeginInvoke(DispatcherPriority.Normal, (ThreadStart)delegate
 							{
-								_eventAggregator.GetEvent<UpdateTankManagerGridEvent>().Publish(new EventArgs());
+								((CompositePresentationEvent<EventArgs>)(object)_eventAggregator.GetEvent<UpdateTankManagerGridEvent>()).Publish(new EventArgs());
 							});
 						}
-						_eventAggregator.GetEvent<UpdatePSVTreeNavigatorViewEvent>().Publish(new UpdatePSVTreeNavigatorViewEventArgs
+						((CompositePresentationEvent<UpdatePSVTreeNavigatorViewEventArgs>)(object)_eventAggregator.GetEvent<UpdatePSVTreeNavigatorViewEvent>()).Publish(new UpdatePSVTreeNavigatorViewEventArgs
 						{
 							UpdateOption = UpdatePSVTreeNavigatorViewOption.DeleteTank,
 							DataPath = empty2,
@@ -3670,7 +3724,7 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 							oldNames = xmlTextReader.GetAttribute("OldNames");
 							newNames = xmlTextReader.GetAttribute("NewNames");
 						}
-						_eventAggregator.GetEvent<UpdatePSVTreeNavigatorViewEvent>().Publish(new UpdatePSVTreeNavigatorViewEventArgs
+						((CompositePresentationEvent<UpdatePSVTreeNavigatorViewEventArgs>)(object)_eventAggregator.GetEvent<UpdatePSVTreeNavigatorViewEvent>()).Publish(new UpdatePSVTreeNavigatorViewEventArgs
 						{
 							UpdateOption = UpdatePSVTreeNavigatorViewOption.AddPSV,
 							DataPath = empty2,
@@ -3688,8 +3742,8 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 						PsvModelKey source = new PsvModelKey(eRecordType.Utility, value2);
 						CopyTankModelToNewOne(source, psvModelKey3);
 						empty3 = FormResource.StorageTankProtection;
-						_eventAggregator.GetEvent<UpdateTankManagerGridEvent>().Publish(new EventArgs());
-						_eventAggregator.GetEvent<UpdatePSVTreeViewEvent>().Publish(new UpdatePSVTreeViewEventArgs
+						((CompositePresentationEvent<EventArgs>)(object)_eventAggregator.GetEvent<UpdateTankManagerGridEvent>()).Publish(new EventArgs());
+						((CompositePresentationEvent<UpdatePSVTreeViewEventArgs>)(object)_eventAggregator.GetEvent<UpdatePSVTreeViewEvent>()).Publish(new UpdatePSVTreeViewEventArgs
 						{
 							Operation = Common.TreeViewOperation.Add,
 							NodeVisualPath = empty3,
@@ -3776,15 +3830,15 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 		public void CheckAndUpdateExistingScreenSubject(string cxspath, PsvModelKey key)
 		{
 			IShellMainWindow activeWindow = UnityContainerExtensions.Resolve<IShellApplication>(_container, Array.Empty<ResolverOverride>()).ActiveWindow;
-			CommonShellWindow val = (CommonShellWindow)((activeWindow is CommonShellWindow) ? activeWindow : null);
+			CommonShellWindow val = (CommonShellWindow)(object)((activeWindow is CommonShellWindow) ? activeWindow : null);
 			if (!string.IsNullOrEmpty(CxsCaseHelper.MyCase.BatchGet(Simulator.PSVNavigationStrings.TopNode, Simulator.PSVNavigationStrings.Attribute_CaseKey).ToString()) && val != null)
 			{
-				ScreenContentControl screenContentControl = val.FindScreen((Func<ScreenContentControl, bool>)((ScreenContentControl s) => s.ScreenFactoryKey == "Main" && s.ScreenSubject != null && (s.ScreenSubject as PSVScreenSubject).Id == PSVctrlIDs.ctrlPSVSummaryForm && (s.ScreenSubject as PSVScreenSubject).ModelKey == key && (s.ScreenSubject as PSVScreenSubject).NodeKey.Trim().ToLower() != cxspath.ToLower().Trim()));
-				if (screenContentControl != null)
+				ScreenContentControl val2 = val.FindScreen((Func<ScreenContentControl, bool>)((ScreenContentControl s) => s.ScreenFactoryKey == "Main" && s.ScreenSubject != null && (s.ScreenSubject as PSVScreenSubject).Id == PSVctrlIDs.ctrlPSVSummaryForm && (s.ScreenSubject as PSVScreenSubject).ModelKey == key && (s.ScreenSubject as PSVScreenSubject).NodeKey.Trim().ToLower() != cxspath.ToLower().Trim()));
+				if (val2 != null)
 				{
-					string nodeKey = (screenContentControl.ScreenSubject as PSVScreenSubject).NodeKey;
-					(screenContentControl.ScreenSubject as PSVScreenSubject).NodeKey = cxspath;
-					_eventAggregator.GetEvent<PSVOwnerStreamChangedEvent>().Publish(new PSVOwnerStreamChangedEventArgs
+					string nodeKey = (val2.ScreenSubject as PSVScreenSubject).NodeKey;
+					(val2.ScreenSubject as PSVScreenSubject).NodeKey = cxspath;
+					((CompositePresentationEvent<PSVOwnerStreamChangedEventArgs>)(object)_eventAggregator.GetEvent<PSVOwnerStreamChangedEvent>()).Publish(new PSVOwnerStreamChangedEventArgs
 					{
 						PSVKey = key,
 						NewCxsPath = cxspath,
@@ -3868,23 +3922,19 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 		private void CopyScenariosToNewPRDModel(PsvModelKey source, PsvModelKey target, int NScen, string OldNames, string NewNames)
 		{
 			IPsvCase activeCase = ActiveCase;
-			object pRDSystemModel = activeCase.GetPRDSystemModel(target);
-			PRDSystemModel val = (PRDSystemModel)((pRDSystemModel is PRDSystemModel) ? pRDSystemModel : null);
-			object pRDSystemModel2 = activeCase.GetPRDSystemModel(source);
-			PRDSystemModel val2 = (PRDSystemModel)((pRDSystemModel2 is PRDSystemModel) ? pRDSystemModel2 : null);
-			val.CopyScenariosFrom(val2, NScen, OldNames, NewNames);
+			PRDSystemModel pRDSystemModel = activeCase.GetPRDSystemModel(target) as PRDSystemModel;
+			PRDSystemModel source2 = activeCase.GetPRDSystemModel(source) as PRDSystemModel;
+			pRDSystemModel.CopyScenariosFrom(source2, NScen, OldNames, NewNames);
 		}
 
 		private void CopyTankModelToNewOne(PsvKey source, PsvKey target)
 		{
 			IPsvCase activeCase = ActiveCase;
-			object storageTankModel = activeCase.GetStorageTankModel(source);
-			IBaseModel val = (IBaseModel)((storageTankModel is IBaseModel) ? storageTankModel : null);
-			object storageTankModel2 = activeCase.GetStorageTankModel(target);
-			IBaseModel val2 = (IBaseModel)((storageTankModel2 is IBaseModel) ? storageTankModel2 : null);
-			if (val != null && val2 != null)
+			AspenTech.EquipmentAnalysis.PSVModelLibrary.IBaseModel baseModel = activeCase.GetStorageTankModel(source) as AspenTech.EquipmentAnalysis.PSVModelLibrary.IBaseModel;
+			AspenTech.EquipmentAnalysis.PSVModelLibrary.IBaseModel baseModel2 = activeCase.GetStorageTankModel(target) as AspenTech.EquipmentAnalysis.PSVModelLibrary.IBaseModel;
+			if (baseModel != null)
 			{
-				val2.CopyFrom(val);
+				baseModel2?.CopyFrom(baseModel);
 			}
 		}
 
@@ -3984,11 +4034,9 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 				else
 				{
 					_psvCaseMgr.GetCase(text3).UpdatePRDSystem(typeOfPRD, psvModelKey, cxsDatapath, null);
-					object pRDSystemModel = _psvCaseMgr.GetCase(text3).GetPRDSystemModel(psvModelKey);
-					IBaseModel val2 = (IBaseModel)((pRDSystemModel is IBaseModel) ? pRDSystemModel : null);
-					if (val2 != null && !string.Equals(cxsDatapath, val2.Datapath))
+					if (_psvCaseMgr.GetCase(text3).GetPRDSystemModel(psvModelKey) is AspenTech.EquipmentAnalysis.PSVModelLibrary.IBaseModel baseModel && !string.Equals(cxsDatapath, baseModel.Datapath))
 					{
-						val2.UpdateDataPath(cxsDatapath);
+						baseModel.UpdateDataPath(cxsDatapath);
 					}
 				}
 			}
@@ -4037,8 +4085,7 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 					psvModelKey = psvModelKey2;
 				}
 			}
-			object obj = iPSVMessager?.CreateHostSpecificFluid(text2);
-			IPPPFluid fluid = (IPPPFluid)(((obj is IPPPFluid) ? obj : null) ?? new PSVProperties(text2, Simulator));
+			IPPPFluid fluid = (iPSVMessager?.CreateHostSpecificFluid(text2) as IPPPFluid) ?? new PSVProperties(text2, Simulator);
 			string text3 = CxsCaseHelper.MyCase.BatchGet(Simulator.PSVNavigationStrings.TopNode, Simulator.PSVNavigationStrings.Attribute_CaseKey).ToString();
 			if (!string.IsNullOrWhiteSpace(text3))
 			{
@@ -4085,14 +4132,12 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 				else
 				{
 					_psvCaseMgr.GetCase(text3).UpdateScenario(psvkey, psvModelKey, fluid);
-					object pSVScenarioModel = _psvCaseMgr.GetCase(text3).GetPSVScenarioModel(psvModelKey);
-					IBaseModel val2 = (IBaseModel)((pSVScenarioModel is IBaseModel) ? pSVScenarioModel : null);
-					if (val2 != null && _psvKeyStreamPathMap.ContainsKey(psvkey.AsPsvModelKey()))
+					if (_psvCaseMgr.GetCase(text3).GetPSVScenarioModel(psvModelKey) is AspenTech.EquipmentAnalysis.PSVModelLibrary.IBaseModel baseModel && _psvKeyStreamPathMap.ContainsKey(psvkey.AsPsvModelKey()))
 					{
 						string text6 = _psvKeyStreamPathMap[psvkey.AsPsvModelKey()];
-						if (!string.IsNullOrEmpty(text6) && !string.Equals(text6, val2.Datapath))
+						if (!string.IsNullOrEmpty(text6) && !string.Equals(text6, baseModel.Datapath))
 						{
-							val2.UpdateDataPath(text6);
+							baseModel.UpdateDataPath(text6);
 						}
 					}
 				}
@@ -4104,15 +4149,13 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 
 		private string GetTankNodePath(string CXSDataPath, PsvModelKey tankKey)
 		{
-			//IL_004c: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0052: Expected O, but got Unknown
 			string text = CxsCaseHelper.MyCase.BatchGet(Simulator.PSVNavigationStrings.TopNode, Simulator.PSVNavigationStrings.Attribute_CaseKey).ToString();
-			TankModel val = null;
+			TankModel tankModel = null;
 			if (!string.IsNullOrWhiteSpace(text))
 			{
-				val = (TankModel)_psvCaseMgr.GetCase(text).GetStorageTankModel(tankKey);
+				tankModel = (TankModel)_psvCaseMgr.GetCase(text).GetStorageTankModel(tankKey);
 			}
-			return val.DataPath;
+			return tankModel.Datapath;
 		}
 
 		public void DeletePSV(PsvModelKey psvkey, int prdtyp = -1, string path = null)
@@ -4130,11 +4173,11 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 			{
 				_psvKeyStreamPathMap.Remove(psvkey);
 			}
-			IShellApplication shellApplication = UnityContainerExtensions.Resolve<IShellApplication>(_container, Array.Empty<ResolverOverride>());
+			IShellApplication val = UnityContainerExtensions.Resolve<IShellApplication>(_container, Array.Empty<ResolverOverride>());
 			CommonShellWindow wnd = default(CommonShellWindow);
 			ref CommonShellWindow reference = ref wnd;
-			IShellMainWindow activeWindow = shellApplication.ActiveWindow;
-			reference = (CommonShellWindow)((activeWindow is CommonShellWindow) ? activeWindow : null);
+			IShellMainWindow activeWindow = val.ActiveWindow;
+			reference = (CommonShellWindow)(object)((activeWindow is CommonShellWindow) ? activeWindow : null);
 			if (wnd != null)
 			{
 				string screenKey = "Main";
@@ -4165,11 +4208,11 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 			{
 				return;
 			}
-			IShellApplication shellApplication = UnityContainerExtensions.Resolve<IShellApplication>(_container, Array.Empty<ResolverOverride>());
+			IShellApplication val = UnityContainerExtensions.Resolve<IShellApplication>(_container, Array.Empty<ResolverOverride>());
 			CommonShellWindow wnd = default(CommonShellWindow);
 			ref CommonShellWindow reference = ref wnd;
-			IShellMainWindow activeWindow = shellApplication.ActiveWindow;
-			reference = (CommonShellWindow)((activeWindow is CommonShellWindow) ? activeWindow : null);
+			IShellMainWindow activeWindow = val.ActiveWindow;
+			reference = (CommonShellWindow)(object)((activeWindow is CommonShellWindow) ? activeWindow : null);
 			if (wnd != null)
 			{
 				string screenKey = "Main";
@@ -4200,11 +4243,11 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 			{
 				return;
 			}
-			IShellApplication shellApplication = UnityContainerExtensions.Resolve<IShellApplication>(_container, Array.Empty<ResolverOverride>());
+			IShellApplication val = UnityContainerExtensions.Resolve<IShellApplication>(_container, Array.Empty<ResolverOverride>());
 			CommonShellWindow wnd = default(CommonShellWindow);
 			ref CommonShellWindow reference = ref wnd;
-			IShellMainWindow activeWindow = shellApplication.ActiveWindow;
-			reference = (CommonShellWindow)((activeWindow is CommonShellWindow) ? activeWindow : null);
+			IShellMainWindow activeWindow = val.ActiveWindow;
+			reference = (CommonShellWindow)(object)((activeWindow is CommonShellWindow) ? activeWindow : null);
 			if (wnd != null)
 			{
 				string screenKey = "Main";
@@ -4235,11 +4278,10 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 			}
 			IPSVMessager iPSVMessager = UnityContainerExtensions.Resolve<IPSVMessager>(_container, Array.Empty<ResolverOverride>());
 			string text2 = datapath + ".Fluid";
-			object obj = iPSVMessager.CreateHostSpecificFluid(text2);
-			IPPPFluid val = (IPPPFluid)((obj is IPPPFluid) ? obj : null);
-			if (val == null)
+			IPPPFluid iPPPFluid = iPSVMessager.CreateHostSpecificFluid(text2) as IPPPFluid;
+			if (iPPPFluid == null)
 			{
-				val = (IPPPFluid)(object)new PSVProperties(text2, Simulator);
+				iPPPFluid = new PSVProperties(text2, Simulator);
 			}
 			string objectName = GetObjectName(datapath);
 			string text3 = CxsCaseHelper.MyCase.BatchGet(Simulator.PSVNavigationStrings.TopNode, Simulator.PSVNavigationStrings.Attribute_CaseKey).ToString();
@@ -4247,12 +4289,12 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 			{
 				if (psvModelKey == null)
 				{
-					psvModelKey = _psvCaseMgr.GetCase(text3).AddNewScenario(psvkey, objectName, val);
+					psvModelKey = _psvCaseMgr.GetCase(text3).AddNewScenario(psvkey, objectName, iPPPFluid);
 					CxsCaseHelper.MyDataProvider.BatchSet(text, "value", (string)null, (object)psvModelKey.Value);
 				}
 				else
 				{
-					_psvCaseMgr.GetCase(text3).UpdateScenario(psvkey, psvModelKey, val);
+					_psvCaseMgr.GetCase(text3).UpdateScenario(psvkey, psvModelKey, iPPPFluid);
 				}
 			}
 			return psvModelKey;
@@ -4271,20 +4313,19 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 			if (!string.IsNullOrWhiteSpace(text2))
 			{
 				string text3 = ((!string.Equals(Host, "HYSYS")) ? CXSDatapath : (CXSDatapath + "." + Simulator.PSVNavigationStrings.TankFluid));
-				object obj = UnityContainerExtensions.Resolve<IPSVMessager>(_container, Array.Empty<ResolverOverride>()).CreateHostSpecificFluid(text3);
-				IPPPFluid val = (IPPPFluid)((obj is IPPPFluid) ? obj : null);
-				if (val == null)
+				IPPPFluid iPPPFluid = UnityContainerExtensions.Resolve<IPSVMessager>(_container, Array.Empty<ResolverOverride>()).CreateHostSpecificFluid(text3) as IPPPFluid;
+				if (iPPPFluid == null)
 				{
-					val = (IPPPFluid)(object)new PSVProperties(text3, Simulator);
+					iPPPFluid = new PSVProperties(text3, Simulator);
 				}
 				if (psvModelKey == null)
 				{
-					psvModelKey = _psvCaseMgr.GetCase(text2).AddNewStorageTank(CXSDatapath, val);
+					psvModelKey = _psvCaseMgr.GetCase(text2).AddNewStorageTank(CXSDatapath, iPPPFluid);
 					CxsCaseHelper.MyCase.BatchSet(text, "value", (object)psvModelKey.Value);
 				}
 				else
 				{
-					_psvCaseMgr.GetCase(text2).UpdateStorageTank(psvModelKey, CXSDatapath, val, null);
+					_psvCaseMgr.GetCase(text2).UpdateStorageTank(psvModelKey, CXSDatapath, iPPPFluid, null);
 				}
 			}
 			return psvModelKey;
@@ -4292,13 +4333,18 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 
 		public void ShowTankForm(ViewStorageTankEventArgs args)
 		{
-			IShellApplication shellApplication = UnityContainerExtensions.Resolve<IShellApplication>(_container, Array.Empty<ResolverOverride>());
-			if (shellApplication != null)
+			//IL_00ba: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00bf: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00c6: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00d1: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00dd: Expected O, but got Unknown
+			IShellApplication val = UnityContainerExtensions.Resolve<IShellApplication>(_container, Array.Empty<ResolverOverride>());
+			if (val != null)
 			{
 				PSVTankScreenSubject pSVTankScreenSubject = null;
-				ScreenContentControl screenContentControl = shellApplication.ActiveWindow.FindScreen((ScreenContentControl s) => string.Compare(s.ScreenFactoryKey, "Main", ignoreCase: true) == 0 && s.ScreenSubject != null && (s.ScreenSubject as PSVScreenSubject).Id == PSVctrlIDs.ctrlTankVent && s.ScreenSubject != null && (s.ScreenSubject as PSVScreenSubject).ModelKey == args.TankKey);
+				ScreenContentControl val2 = val.ActiveWindow.FindScreen((Func<ScreenContentControl, bool>)((ScreenContentControl s) => string.Compare(s.ScreenFactoryKey, "Main", ignoreCase: true) == 0 && s.ScreenSubject != null && (s.ScreenSubject as PSVScreenSubject).Id == PSVctrlIDs.ctrlTankVent && s.ScreenSubject != null && (s.ScreenSubject as PSVScreenSubject).ModelKey == args.TankKey));
 				bool flag = false;
-				if (screenContentControl == null)
+				if (val2 == null)
 				{
 					pSVTankScreenSubject = new PSVTankScreenSubject
 					{
@@ -4309,28 +4355,33 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 						NodeKey = args.NodePath,
 						NodePath = args.NodePath
 					};
-					shellApplication.ActiveWindow.ShowScreen(new ShowScreenEventArgs
+					val.ActiveWindow.ShowScreen(new ShowScreenEventArgs
 					{
 						CreateNewTab = true,
 						ScreenFactoryKey = "Main",
-						ScreenSubject = pSVTankScreenSubject
+						ScreenSubject = (ScreenSubject)(object)pSVTankScreenSubject
 					});
 				}
 				else
 				{
-					shellApplication.ActiveWindow.ActivateScreen(screenContentControl);
+					val.ActiveWindow.ActivateScreen(val2);
 				}
 			}
 		}
 
 		public void ShowScenarioForm(ViewEmergencyScenarioNodeEventArgs args)
 		{
-			IShellApplication shellApplication = UnityContainerExtensions.Resolve<IShellApplication>(_container, Array.Empty<ResolverOverride>());
-			if (shellApplication == null)
+			//IL_01c9: Unknown result type (might be due to invalid IL or missing references)
+			//IL_01ce: Unknown result type (might be due to invalid IL or missing references)
+			//IL_01d5: Unknown result type (might be due to invalid IL or missing references)
+			//IL_01e1: Unknown result type (might be due to invalid IL or missing references)
+			//IL_01ed: Expected O, but got Unknown
+			IShellApplication val = UnityContainerExtensions.Resolve<IShellApplication>(_container, Array.Empty<ResolverOverride>());
+			if (val == null)
 			{
 				return;
 			}
-			ScreenSubject screenSubject = null;
+			ScreenSubject val2 = null;
 			string screenKey = "Main";
 			PSVctrlIDs contentId = PSVctrlIDs.ctrlVapRelief;
 			string nodePath = string.Empty;
@@ -4338,7 +4389,7 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 			{
 				nodePath = NavigatorNodeHelper.NodesCache[args.Key.Value.ToString()][1];
 			}
-			screenSubject = new ScenarioScreenSubject
+			val2 = (ScreenSubject)(object)new ScenarioScreenSubject
 			{
 				Id = PSVctrlIDs.ctrlVapRelief,
 				ScenarioName = args.ScenarioName,
@@ -4354,28 +4405,28 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 				if (array.Length == 3)
 				{
 					string text = array[1] + array[2];
-					if (!string.IsNullOrEmpty(text) && screenSubject is ScenarioScreenSubject scenarioScreenSubject)
+					if (!string.IsNullOrEmpty(text) && val2 is ScenarioScreenSubject scenarioScreenSubject)
 					{
 						scenarioScreenSubject.TabLabel = $"{text}-{args.ScenarioName}";
 					}
 				}
 			}
-			IShellMainWindow activeWindow = shellApplication.ActiveWindow;
+			IShellMainWindow activeWindow = val.ActiveWindow;
 			if (activeWindow != null)
 			{
-				ScreenContentControl screenContentControl = activeWindow.FindScreen((ScreenContentControl s) => string.Compare(s.ScreenFactoryKey, screenKey, ignoreCase: true) == 0 && s.ScreenSubject != null && (s.ScreenSubject as PSVScreenSubject).ModelKey == args.Key && s.ScreenSubject != null && (s.ScreenSubject as PSVScreenSubject).Id == contentId);
-				if (screenContentControl == null)
+				ScreenContentControl val3 = activeWindow.FindScreen((Func<ScreenContentControl, bool>)((ScreenContentControl s) => string.Compare(s.ScreenFactoryKey, screenKey, ignoreCase: true) == 0 && s.ScreenSubject != null && (s.ScreenSubject as PSVScreenSubject).ModelKey == args.Key && s.ScreenSubject != null && (s.ScreenSubject as PSVScreenSubject).Id == contentId));
+				if (val3 == null)
 				{
 					activeWindow.ShowScreen(new ShowScreenEventArgs
 					{
 						CreateNewTab = true,
 						ScreenFactoryKey = screenKey,
-						ScreenSubject = screenSubject
+						ScreenSubject = val2
 					});
 				}
 				else
 				{
-					activeWindow.ActivateScreen(screenContentControl);
+					activeWindow.ActivateScreen(val3);
 				}
 			}
 		}
@@ -4388,7 +4439,7 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 				PSVctrlIDs id = PSVctrlIDs.ctrlPSVSummaryForm;
 				PsvModelKey pSVKey = GetPSVKey(datapath);
 				string objectName = GetObjectName(datapath);
-				screenSubject = new PSVSummaryScreenSubject
+				screenSubject = (ScreenSubject)(object)new PSVSummaryScreenSubject
 				{
 					Id = id,
 					TabLabel = objectName,
@@ -4397,7 +4448,7 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 					NodeKey = datapath
 				};
 			}
-			_eventAggregator.GetEvent<UpdatePSVTreeViewEvent>().Publish(new UpdatePSVTreeViewEventArgs
+			((CompositePresentationEvent<UpdatePSVTreeViewEventArgs>)(object)_eventAggregator.GetEvent<UpdatePSVTreeViewEvent>()).Publish(new UpdatePSVTreeViewEventArgs
 			{
 				Operation = Common.TreeViewOperation.Locate,
 				NodeVisualPath = navigatorpath,
@@ -4407,51 +4458,56 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 
 		public void ViewPSVForm(string viewabletype)
 		{
+			//IL_00a4: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00a9: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00b0: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00bb: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00c8: Expected O, but got Unknown
 			Window window = null;
-			IShellApplication shellApplication = UnityContainerExtensions.Resolve<IShellApplication>(_container, Array.Empty<ResolverOverride>());
-			if (shellApplication != null)
+			IShellApplication val = UnityContainerExtensions.Resolve<IShellApplication>(_container, Array.Empty<ResolverOverride>());
+			if (val != null)
 			{
-				window = shellApplication.ActiveWindow as Window;
+				window = val.ActiveWindow as Window;
 			}
 			if (viewabletype == "PSVStorageTankProtection")
 			{
-				IShellApplication shellApplication2 = UnityContainerExtensions.Resolve<IShellApplication>(_container, Array.Empty<ResolverOverride>());
-				if (shellApplication2 != null)
+				IShellApplication val2 = UnityContainerExtensions.Resolve<IShellApplication>(_container, Array.Empty<ResolverOverride>());
+				if (val2 != null)
 				{
-					ScreenContentControl screenContentControl = shellApplication2.ActiveWindow.FindScreen((ScreenContentControl s) => string.Compare(s.ScreenFactoryKey, "Main", ignoreCase: true) == 0 && s.ScreenSubject != null && (s.ScreenSubject as PSVScreenSubject).Id == PSVctrlIDs.ctrlTankManager);
+					ScreenContentControl val3 = val2.ActiveWindow.FindScreen((Func<ScreenContentControl, bool>)((ScreenContentControl s) => string.Compare(s.ScreenFactoryKey, "Main", ignoreCase: true) == 0 && s.ScreenSubject != null && (s.ScreenSubject as PSVScreenSubject).Id == PSVctrlIDs.ctrlTankManager));
 					bool flag = false;
-					if (screenContentControl == null)
+					if (val3 == null)
 					{
 						PSVSummaryScreenSubject screenSubject = new PSVSummaryScreenSubject
 						{
 							Id = PSVctrlIDs.ctrlTankManager,
 							TabLabel = FormResource.tab_TankManager
 						};
-						shellApplication2.ActiveWindow.ShowScreen(new ShowScreenEventArgs
+						val2.ActiveWindow.ShowScreen(new ShowScreenEventArgs
 						{
 							CreateNewTab = true,
 							ScreenFactoryKey = "Main",
-							ScreenSubject = screenSubject
+							ScreenSubject = (ScreenSubject)(object)screenSubject
 						});
 					}
 					else
 					{
-						shellApplication2.ActiveWindow.ActivateScreen(screenContentControl);
+						val2.ActiveWindow.ActivateScreen(val3);
 					}
 				}
 			}
 			else if (viewabletype == "Preferences")
 			{
-				PreferenceManagerWindow val = UnityContainerExtensions.Resolve<PreferenceManagerWindow>(_container, Array.Empty<ResolverOverride>());
-				IPsvCase activeCase = ActiveCase;
+				PreferenceManagerWindow preferenceManagerWindow = UnityContainerExtensions.Resolve<PreferenceManagerWindow>(_container, Array.Empty<ResolverOverride>());
+				IPsvCase PSVCase = ActiveCase;
 				if (window != null)
 				{
-					((Window)(object)val).Owner = window;
+					preferenceManagerWindow.Owner = window;
 				}
-				((Window)(object)val).WindowStartupLocation = WindowStartupLocation.CenterOwner;
-				((Window)(object)val).ShowInTaskbar = false;
-				val.Initialize(ref activeCase, (PsvKey)null);
-				((Window)(object)val).ShowDialog();
+				preferenceManagerWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+				preferenceManagerWindow.ShowInTaskbar = false;
+				preferenceManagerWindow.Initialize(ref PSVCase, null);
+				preferenceManagerWindow.ShowDialog();
 			}
 		}
 
@@ -4572,7 +4628,7 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 		{
 			if (string.Equals(Host, "HYSYS"))
 			{
-				UnityContainerExtensions.Resolve<IEventAggregator>(_container, Array.Empty<ResolverOverride>()).GetEvent<OpenCaseEvent>().Publish(new OpenCaseEventArgs
+				((CompositePresentationEvent<OpenCaseEventArgs>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(_container, Array.Empty<ResolverOverride>()).GetEvent<OpenCaseEvent>()).Publish(new OpenCaseEventArgs
 				{
 					Host = "HYSYS",
 					UpdateTreeView = true,
@@ -4587,7 +4643,7 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 			{
 				return false;
 			}
-			IPsvCase psvCase = (IPsvCase)UnityContainerExtensions.Resolve<PsvCase>(_container, Array.Empty<ResolverOverride>());
+			IPsvCase psvCase = UnityContainerExtensions.Resolve<PsvCase>(_container, Array.Empty<ResolverOverride>());
 			string activeCase = ((ActiveCase != null) ? ActiveCase.CaseKey : string.Empty);
 			psvCase.Initialize(psvCaseKey, adbTop, caseFileName);
 			try
@@ -4715,8 +4771,10 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 			//IL_003d: Expected O, but got Unknown
 			//IL_0065: Unknown result type (might be due to invalid IL or missing references)
 			//IL_006f: Expected O, but got Unknown
-			//IL_007c: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0086: Expected O, but got Unknown
+			//IL_00a4: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00ae: Expected O, but got Unknown
+			//IL_00d8: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00e2: Expected O, but got Unknown
 			UnityContainerExtensions.AddNewExtension<SubscriptionExtension>(_container);
 			UnityContainerExtensions.RegisterType<IPSVCaseManager, PSVCaseManager>(_container, Array.Empty<InjectionMember>());
 			UnityContainerExtensions.RegisterInstance<PSVCaseManager>(_container, UnityContainerExtensions.Resolve<PSVCaseManager>(_container, Array.Empty<ResolverOverride>()), (LifetimeManager)new ContainerControlledLifetimeManager());
@@ -4724,8 +4782,8 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 			UnityContainerExtensions.RegisterInstance<PSVApplication>(_container, UnityContainerExtensions.Resolve<PSVApplication>(_container, Array.Empty<ResolverOverride>()), (LifetimeManager)new ContainerControlledLifetimeManager());
 			UnityContainerExtensions.RegisterInstance<PSVMessageCollection>(_container, new PSVMessageCollection(_container));
 			RegisterNavigationView();
-			_screenFactoryCatalog.RegisterScreenFactory(new DelegateScreenFactory("Main", PSVMain.CreateScreen));
-			_screenFactoryCatalog.RegisterScreenFactory(new DelegateScreenFactory("PsvMessageScreen", (IUnityContainer container, ScreenSubject screenSubject, ScreenState screenState) => UnityContainerExtensions.Resolve<PsvMessageScreen>(container, Array.Empty<ResolverOverride>())));
+			_screenFactoryCatalog.RegisterScreenFactory((IScreenFactory)new DelegateScreenFactory("Main", (Func<IUnityContainer, ScreenSubject, ScreenState, ScreenContentControl>)PSVMain.CreateScreen));
+			_screenFactoryCatalog.RegisterScreenFactory((IScreenFactory)new DelegateScreenFactory("PsvMessageScreen", (Func<IUnityContainer, ScreenSubject, ScreenState, ScreenContentControl>)((IUnityContainer container, ScreenSubject screenSubject, ScreenState screenState) => (ScreenContentControl)(object)UnityContainerExtensions.Resolve<PsvMessageScreen>(container, Array.Empty<ResolverOverride>()))));
 		}
 
 		protected abstract void RegisterNavigationView();
@@ -5492,7 +5550,7 @@ namespace AspenTech.EquipmentAnalysis.UserInterface
 			throw new NotImplementedException();
 		}
 
-		public bool StoreFireFractions(FluidPhaseSelection selectedPhase = (FluidPhaseSelection)0)
+		public bool StoreFireFractions(FluidPhaseSelection selectedPhase = FluidPhaseSelection.Vapor)
 		{
 			throw new NotImplementedException();
 		}
@@ -5711,12 +5769,12 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVForms
 		public PsvMessageScreen(IUnityContainer container)
 		{
 			InitializeComponent();
-			base.Content = UnityContainerExtensions.Resolve<PsvMessageListView>(container, Array.Empty<ResolverOverride>());
+			((ContentControl)this).Content = UnityContainerExtensions.Resolve<PsvMessageListView>(container, Array.Empty<ResolverOverride>());
 		}
 
 		protected override void OnClosed(EventArgs args)
 		{
-			base.OnClosed(args);
+			((ScreenContentControl)this).OnClosed(args);
 		}
 
 		[DebuggerNonUserCode]
@@ -5743,7 +5801,7 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVForms
 	{
 		public PsvMessageScreenSubject()
 		{
-			base.NavigationGroupKey = "PSVPlus";
+			((ScreenSubject)this).NavigationGroupKey = "PSVPlus";
 		}
 	}
 	public class PsvMessageScreenState : ScreenState
@@ -5757,12 +5815,12 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 		[InjectionConstructor]
 		public PSVTreeNavigatorView(PSVTreeNavigatorViewModel vm)
 		{
-			base.ViewModel = vm;
-			vm.UIDispatcher = base.Dispatcher;
-			base.Header = FormResource.Title_EAModule;
-			base.Key = "PSVPlus";
-			base.SmallImage = ResourceHelper.ToImageSource(FormResource.EquipmentAnalysis_24);
-			base.LargeImage = ResourceHelper.ToImageSource(FormResource.EquipmentAnalysis_24);
+			((TreeNavigatorView)this).ViewModel = (TreeNavigatorViewModel)(object)vm;
+			vm.UIDispatcher = ((DispatcherObject)this).Dispatcher;
+			((NavigatorView)this).Header = FormResource.Title_EAModule;
+			((NavigatorView)this).Key = "PSVPlus";
+			((NavigatorView)this).SmallImage = FormResource.EquipmentAnalysis_24.ToImageSource();
+			((NavigatorView)this).LargeImage = FormResource.EquipmentAnalysis_24.ToImageSource();
 		}
 	}
 	public class PSVTreeNavigatorViewModel : SimpleTreeNavigatorViewModel
@@ -5811,7 +5869,7 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 			_nameTankTreeNodeMap.Clear();
 			_expandedNodePathTypeMap.Clear();
 			Dictionary<string, TreeNodeType> dictionary = new Dictionary<string, TreeNodeType>();
-			GetExpandedNodeFullPathTypeMap(Children, dictionary);
+			GetExpandedNodeFullPathTypeMap(((TreeNavigatorViewModel)this).Children, dictionary);
 			foreach (KeyValuePair<string, TreeNodeType> item in dictionary)
 			{
 				_expandedNodePathTypeMap.Add(item.Key, item.Value);
@@ -5820,30 +5878,30 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 
 		private static void GetFullPathNodeMap(NavigatorTreeNodeCollection children, Dictionary<string, CommonTreeNode> results)
 		{
-			foreach (CommonTreeNode item in children.OfType<CommonTreeNode>())
+			foreach (CommonTreeNode item in ((IEnumerable)children).OfType<CommonTreeNode>())
 			{
-				results.Add(string.IsNullOrEmpty(item.FullPath) ? item.GetHashCode().ToString() : item.FullPath, item);
+				results.Add(string.IsNullOrEmpty(item.FullPath) ? ((object)item).GetHashCode().ToString() : item.FullPath, item);
 				if (item.HasChildren)
 				{
-					GetFullPathNodeMap(item.Children, results);
+					GetFullPathNodeMap(((NavigatorTreeNode)item).Children, results);
 				}
 			}
 		}
 
 		private static void GetExpandedNodeFullPathTypeMap(NavigatorTreeNodeCollection children, Dictionary<string, TreeNodeType> results)
 		{
-			foreach (CommonTreeNode item in children.OfType<CommonTreeNode>())
+			foreach (CommonTreeNode item in ((IEnumerable)children).OfType<CommonTreeNode>())
 			{
 				if (string.IsNullOrEmpty(item.FullPath))
 				{
 					throw new ArgumentException("tree node's fullpath in psv cannot be null");
 				}
-				if (item.IsExpanded)
+				if (((NavigatorTreeNode)item).IsExpanded)
 				{
 					results.Add(item.FullPath, item.NodeType);
 					if (item.HasChildren)
 					{
-						GetExpandedNodeFullPathTypeMap(item.Children, results);
+						GetExpandedNodeFullPathTypeMap(((NavigatorTreeNode)item).Children, results);
 					}
 				}
 			}
@@ -5864,12 +5922,12 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 			}
 			_container = container;
 			CxsCaseHelper.Container = _container;
-			UnityContainerExtensions.Resolve<IEventAggregator>(_container, Array.Empty<ResolverOverride>()).GetEvent<UpdatePSVTreeNavigatorViewEvent>().Subscribe(UpdatePSVTreeNavigatorView);
+			((CompositePresentationEvent<UpdatePSVTreeNavigatorViewEventArgs>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(_container, Array.Empty<ResolverOverride>()).GetEvent<UpdatePSVTreeNavigatorViewEvent>()).Subscribe((Action<UpdatePSVTreeNavigatorViewEventArgs>)UpdatePSVTreeNavigatorView);
 			if (_container.Parent != null)
 			{
-				UnityContainerExtensions.Resolve<IEventAggregator>(_container.Parent, Array.Empty<ResolverOverride>()).GetEvent<RenameEvent>().Subscribe(RenamePSV);
-				UnityContainerExtensions.Resolve<IEventAggregator>(_container.Parent, Array.Empty<ResolverOverride>()).GetEvent<NavigateToFormTabEvent>().Subscribe(NavigateToFormTab);
-				UnityContainerExtensions.Resolve<IEventAggregator>(_container.Parent, Array.Empty<ResolverOverride>()).GetEvent<PRDTypeChangedEventEx>().Subscribe(ChangReliefDeviceType);
+				((CompositePresentationEvent<RenameEventArgs>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(_container.Parent, Array.Empty<ResolverOverride>()).GetEvent<RenameEvent>()).Subscribe((Action<RenameEventArgs>)RenamePSV);
+				((CompositePresentationEvent<NavigateToFormTabEventArgs>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(_container.Parent, Array.Empty<ResolverOverride>()).GetEvent<NavigateToFormTabEvent>()).Subscribe((Action<NavigateToFormTabEventArgs>)NavigateToFormTab);
+				((CompositePresentationEvent<PRDTypeChangedEventArgsEx>)UnityContainerExtensions.Resolve<IEventAggregator>(_container.Parent, Array.Empty<ResolverOverride>()).GetEvent<PRDTypeChangedEventEx>()).Subscribe((Action<PRDTypeChangedEventArgsEx>)ChangReliefDeviceType);
 			}
 			UnitConversion.ParseUnitsFile();
 		}
@@ -5888,6 +5946,10 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 
 		private void NavigateToFormTab(NavigateToFormTabEventArgs args)
 		{
+			//IL_0180: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0185: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0191: Unknown result type (might be due to invalid IL or missing references)
+			//IL_01a2: Expected O, but got Unknown
 			string text = string.Empty;
 			PsvModelKey key = null;
 			if (!string.IsNullOrEmpty(args.PSVPath) && args.PSVPath.IndexOf(".PSValve.") > 0 && _namePsvTreeNodeMap != null && _namePsvTreeNodeMap.ContainsKey(args.PSVPath))
@@ -5898,15 +5960,15 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 					PSVTreeNode pSVTreeNode2 = pSVTreeNode;
 					if (pSVTreeNode2 != null)
 					{
-						PSVSummaryScreenSubject pSVSummaryScreenSubject = pSVTreeNode2.ScreenSubject as PSVSummaryScreenSubject;
+						PSVSummaryScreenSubject pSVSummaryScreenSubject = ((SimpleNavigatorTreeNode)pSVTreeNode2).ScreenSubject as PSVSummaryScreenSubject;
 						key = pSVSummaryScreenSubject.ModelKey;
 					}
-					INavigatorTreeNodeOwner navigatorTreeNodeOwner = pSVTreeNode;
-					while (navigatorTreeNodeOwner != null && navigatorTreeNodeOwner.Owner != this)
+					INavigatorTreeNodeOwner val = (INavigatorTreeNodeOwner)(object)pSVTreeNode;
+					while (val != null && (object)val.Owner != this)
 					{
-						navigatorTreeNodeOwner = navigatorTreeNodeOwner.Owner;
+						val = val.Owner;
 					}
-					if (navigatorTreeNodeOwner != null && navigatorTreeNodeOwner is CommonTreeNode commonTreeNode && !string.IsNullOrEmpty(commonTreeNode.FullPath) && !string.IsNullOrEmpty(pSVTreeNode.FullPath))
+					if (val != null && val is CommonTreeNode commonTreeNode && !string.IsNullOrEmpty(commonTreeNode.FullPath) && !string.IsNullOrEmpty(pSVTreeNode.FullPath))
 					{
 						text = (commonTreeNode.FullPath + "/" + pSVTreeNode.FullPath).Replace(".", "/");
 					}
@@ -5916,44 +5978,39 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 			{
 				return;
 			}
-			IShellApplication shellApplication = UnityContainerExtensions.Resolve<IShellApplication>(_container, Array.Empty<ResolverOverride>());
-			if (shellApplication == null)
+			IShellApplication val2 = UnityContainerExtensions.Resolve<IShellApplication>(_container, Array.Empty<ResolverOverride>());
+			if (val2 == null)
 			{
 				return;
 			}
 			CommonShellWindow wnd = default(CommonShellWindow);
 			ref CommonShellWindow reference = ref wnd;
-			IShellMainWindow activeWindow = shellApplication.ActiveWindow;
-			reference = (CommonShellWindow)((activeWindow is CommonShellWindow) ? activeWindow : null);
+			IShellMainWindow activeWindow = val2.ActiveWindow;
+			reference = (CommonShellWindow)(object)((activeWindow is CommonShellWindow) ? activeWindow : null);
 			if (wnd == null)
 			{
 				return;
 			}
 			wnd.NavigateTo("PSVPlus", text, new ShowScreenOptions
 			{
-				ReuseExisting = ShowScreenReuseOptions.CurrentWindow,
+				ReuseExisting = (ShowScreenReuseOptions)1,
 				CreateNewTab = true
 			});
 			UIDispatcher.BeginInvoke(DispatcherPriority.Input, (Action)delegate
 			{
-				ScreenContentControl screenContentControl = wnd.FindScreen((Func<ScreenContentControl, bool>)((ScreenContentControl screen) => (screen.ScreenFactoryKey == "Main" && screen.ScreenSubject is PSVSummaryScreenSubject pSVSummaryScreenSubject2 && pSVSummaryScreenSubject2.ModelKey == key) ? true : false));
-				if (screenContentControl != null)
+				ScreenContentControl val3 = wnd.FindScreen((Func<ScreenContentControl, bool>)((ScreenContentControl screen) => (screen.ScreenFactoryKey == "Main" && screen.ScreenSubject is PSVSummaryScreenSubject pSVSummaryScreenSubject2 && pSVSummaryScreenSubject2.ModelKey == key) ? true : false));
+				if (val3 != null && ((ContentControl)(object)val3).Content is PRDSummary pRDSummary)
 				{
-					object content = screenContentControl.Content;
-					PRDSummary val = (PRDSummary)((content is PRDSummary) ? content : null);
-					if (val != null)
+					if (args.ToTabName == "PRDData")
 					{
-						if (args.ToTabName == "PRDData")
+						if (Utilities.GetDescendantFromName((DependencyObject)pRDSummary, "tabItemPRDData") is TabItem tabItem)
 						{
-							if (Utilities.GetDescendantFromName((DependencyObject)(object)val, "tabItemPRDData") is TabItem tabItem)
-							{
-								tabItem.IsSelected = true;
-							}
+							tabItem.IsSelected = true;
 						}
-						else if (args.ToTabName == "LineSizing" && Utilities.GetDescendantFromName((DependencyObject)(object)val, "TabItemLineSizing") is TabItem tabItem2)
-						{
-							tabItem2.IsSelected = true;
-						}
+					}
+					else if (args.ToTabName == "LineSizing" && Utilities.GetDescendantFromName((DependencyObject)pRDSummary, "TabItemLineSizing") is TabItem tabItem2)
+					{
+						tabItem2.IsSelected = true;
 					}
 				}
 			});
@@ -6009,13 +6066,13 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 			bool isAddingNodeFromNavTree = parentNode.IsAddingNodeFromNavTree;
 			UIDispatcher.BeginInvoke(DispatcherPriority.Normal, (Action)delegate
 			{
-				parentNode.Children.Add(child);
+				((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)parentNode).Children).Add((NavigatorTreeNode)(object)child);
 				if (isAddingNodeFromNavTree)
 				{
-					parentNode.IsExpanded = true;
+					((NavigatorTreeNode)parentNode).IsExpanded = true;
 					if (!(args.IsCopyPaste ?? false))
 					{
-						child.IsSelected = true;
+						((NavigatorTreeNode)child).IsSelected = true;
 					}
 				}
 				else
@@ -6041,12 +6098,12 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 			ScenarioTreeNode child = CreateScenarioTreeNode(psvNode, args.CreatedObjectName, args.DataPath, args.Key);
 			UIDispatcher.BeginInvoke(DispatcherPriority.Normal, (Action)delegate
 			{
-				psvNode.Children.Add(child);
-				psvNode.IsExpanded = true;
+				((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)psvNode).Children).Add((NavigatorTreeNode)(object)child);
+				((NavigatorTreeNode)psvNode).IsExpanded = true;
 				if (psvNode.IsAddingScenarioFromNavTree)
 				{
 					psvNode.IsAddingScenarioFromNavTree = false;
-					child.IsSelected = true;
+					((NavigatorTreeNode)child).IsSelected = true;
 				}
 			});
 		}
@@ -6059,19 +6116,19 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 			}
 			PSVTreeNode psvNode = _namePsvTreeNodeMap[args.DataPath];
 			_namePsvTreeNodeMap.Remove(args.DataPath);
-			foreach (NavigatorTreeNode child in psvNode.Children)
+			foreach (NavigatorTreeNode item in (Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)psvNode).Children)
 			{
-				if (child is ScenarioTreeNode scenarioTreeNode && _nameScenarioTreeNodeMap.ContainsKey(scenarioTreeNode.ScenarioPath))
+				if (item is ScenarioTreeNode scenarioTreeNode && _nameScenarioTreeNodeMap.ContainsKey(scenarioTreeNode.ScenarioPath))
 				{
 					_nameScenarioTreeNodeMap.Remove(scenarioTreeNode.ScenarioPath);
 				}
 			}
-			CommonTreeNode parentNode = psvNode.Owner as CommonTreeNode;
+			CommonTreeNode parentNode = ((NavigatorTreeNode)psvNode).Owner as CommonTreeNode;
 			if (parentNode != null)
 			{
 				UIDispatcher.BeginInvoke(DispatcherPriority.Input, (Action)delegate
 				{
-					parentNode.Children.Remove(psvNode);
+					((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)parentNode).Children).Remove((NavigatorTreeNode)(object)psvNode);
 				});
 				if (psvNode.IsDeletingNodeFromNavTree)
 				{
@@ -6089,12 +6146,12 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 			}
 			ScenarioTreeNode scenarioNode = _nameScenarioTreeNodeMap[args.DataPath];
 			_nameScenarioTreeNodeMap.Remove(args.DataPath);
-			PSVTreeNode parentNode = scenarioNode.Owner as PSVTreeNode;
+			PSVTreeNode parentNode = ((NavigatorTreeNode)scenarioNode).Owner as PSVTreeNode;
 			if (parentNode != null)
 			{
 				UIDispatcher.BeginInvoke(DispatcherPriority.Input, (Action)delegate
 				{
-					parentNode.Children.Remove(scenarioNode);
+					((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)parentNode).Children).Remove((NavigatorTreeNode)(object)scenarioNode);
 				});
 			}
 		}
@@ -6110,7 +6167,7 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 			{
 				return;
 			}
-			CommonTreeNode parentNode = Children.FirstOrDefault((NavigatorTreeNode n) => ((CommonTreeNode)n).Text == blockName) as CommonTreeNode;
+			CommonTreeNode parentNode = ((IEnumerable<NavigatorTreeNode>)((TreeNavigatorViewModel)this).Children).FirstOrDefault((NavigatorTreeNode n) => ((SimpleNavigatorTreeNode)(CommonTreeNode)(object)n).Text == blockName) as CommonTreeNode;
 			if (parentNode == null)
 			{
 				return;
@@ -6118,12 +6175,12 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 			TankTreeNode child = CreateTankTreeNode(parentNode, args.CreatedObjectName, args.DataPath, args.Key);
 			UIDispatcher.BeginInvoke(DispatcherPriority.Normal, (Action)delegate
 			{
-				parentNode.Children.Add(child);
-				parentNode.IsExpanded = true;
+				((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)parentNode).Children).Add((NavigatorTreeNode)(object)child);
+				((NavigatorTreeNode)parentNode).IsExpanded = true;
 				if (parentNode.IsAddingNodeFromNavTree)
 				{
 					parentNode.IsAddingNodeFromNavTree = false;
-					child.IsSelected = true;
+					((NavigatorTreeNode)child).IsSelected = true;
 				}
 			});
 		}
@@ -6136,12 +6193,12 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 			}
 			TankTreeNode tankNode = _nameTankTreeNodeMap[args.CreatedObjectName];
 			_nameTankTreeNodeMap.Remove(args.CreatedObjectName);
-			CommonTreeNode parentNode = tankNode.Owner as CommonTreeNode;
+			CommonTreeNode parentNode = ((NavigatorTreeNode)tankNode).Owner as CommonTreeNode;
 			if (parentNode != null)
 			{
 				UIDispatcher.BeginInvoke(DispatcherPriority.Input, (Action)delegate
 				{
-					parentNode.Children.Remove(tankNode);
+					((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)parentNode).Children).Remove((NavigatorTreeNode)(object)tankNode);
 				});
 			}
 		}
@@ -6187,17 +6244,17 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 				}
 				_namePsvTreeNodeMap.Add(args.Path.Substring(0, num2 + 9) + args.NewName, pSVTreeNode2);
 				pSVTreeNode2.FullPath = pSVTreeNode2.ParentPath + "." + args.NewName;
-				pSVTreeNode2.Text = args.NewName;
+				((SimpleNavigatorTreeNode)pSVTreeNode2).Text = args.NewName;
 				if (!string.IsNullOrEmpty(pSVTreeNode2.PsvPath))
 				{
 					int num3 = pSVTreeNode2.PsvPath.IndexOf(".PSValve.");
 					pSVTreeNode2.PsvPath = pSVTreeNode2.PsvPath.Substring(0, num3 + 8) + "." + args.NewName;
 				}
-				PSVSummaryScreenSubject subj = pSVTreeNode2.ScreenSubject as PSVSummaryScreenSubject;
+				PSVSummaryScreenSubject subj = ((SimpleNavigatorTreeNode)pSVTreeNode2).ScreenSubject as PSVSummaryScreenSubject;
 				if (subj != null)
 				{
-					subj.TabLabel = pSVTreeNode2.Text;
-					subj.PSVName = pSVTreeNode2.Text;
+					subj.TabLabel = ((SimpleNavigatorTreeNode)pSVTreeNode2).Text;
+					subj.PSVName = ((SimpleNavigatorTreeNode)pSVTreeNode2).Text;
 					subj.NodeKey = pSVTreeNode2.PsvPath;
 				}
 				UnityContainerExtensions.Resolve<PSVApplication>(_container, Array.Empty<ResolverOverride>())?.RenamePSV(args.Path, pSVTreeNode2.PsvPath);
@@ -6205,44 +6262,40 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 				{
 					CxsCaseHelper.MyDataProvider.InvokeAction(args.Path.Substring(0, num2 + 8), "RenameChild", false, new object[2] { text4, args.NewName });
 				}
-				IShellApplication shellApplication = UnityContainerExtensions.Resolve<IShellApplication>(_container, Array.Empty<ResolverOverride>());
-				if (shellApplication != null)
+				IShellApplication val = UnityContainerExtensions.Resolve<IShellApplication>(_container, Array.Empty<ResolverOverride>());
+				if (val != null)
 				{
-					IShellMainWindow activeWindow = shellApplication.ActiveWindow;
-					CommonShellWindow val = (CommonShellWindow)((activeWindow is CommonShellWindow) ? activeWindow : null);
-					if (val != null)
+					IShellMainWindow activeWindow = val.ActiveWindow;
+					CommonShellWindow val2 = (CommonShellWindow)(object)((activeWindow is CommonShellWindow) ? activeWindow : null);
+					if (val2 != null)
 					{
-						IEnumerable<ScreenContentControl> enumerable = val.SelectScreens((Func<ScreenContentControl, bool>)((ScreenContentControl screen) => (screen.ScreenFactoryKey == "Main" && screen.ScreenSubject is PSVSummaryScreenSubject pSVSummaryScreenSubject && pSVSummaryScreenSubject.ModelKey == subj.ModelKey) ? true : false));
+						IEnumerable<ScreenContentControl> enumerable = val2.SelectScreens((Func<ScreenContentControl, bool>)((ScreenContentControl screen) => (screen.ScreenFactoryKey == "Main" && screen.ScreenSubject is PSVSummaryScreenSubject pSVSummaryScreenSubject && pSVSummaryScreenSubject.ModelKey == subj.ModelKey) ? true : false));
 						if (enumerable != null)
 						{
 							foreach (ScreenContentControl item in enumerable)
 							{
 								item.Header = args.NewName;
-								object content = item.Content;
-								PRDSummary val2 = (PRDSummary)((content is PRDSummary) ? content : null);
-								if (val2 != null)
+								if (((ContentControl)(object)item).Content is PRDSummary pRDSummary)
 								{
-									val2.UpdateNodeKey(pSVTreeNode2.PsvPath);
-									val2.PSVName = args.NewName;
+									pRDSummary.UpdateNodeKey(pSVTreeNode2.PsvPath);
+									pRDSummary.PSVName = args.NewName;
 								}
 							}
 						}
-						foreach (ScreenContentControl item2 in val.SelectScreens((Func<ScreenContentControl, bool>)((ScreenContentControl screen) => (screen.ScreenFactoryKey == "Main" && screen.ScreenSubject is ScenarioScreenSubject scenarioScreenSubject3 && scenarioScreenSubject3.NodeKey == args.Path) ? true : false)))
+						foreach (ScreenContentControl item2 in val2.SelectScreens((Func<ScreenContentControl, bool>)((ScreenContentControl screen) => (screen.ScreenFactoryKey == "Main" && screen.ScreenSubject is ScenarioScreenSubject scenarioScreenSubject3 && scenarioScreenSubject3.NodeKey == args.Path) ? true : false)))
 						{
-							object content2 = item2.Content;
-							PSVScenarioControl val3 = (PSVScenarioControl)((content2 is PSVScenarioControl) ? content2 : null);
-							if (val3 != null)
+							if (((ContentControl)(object)item2).Content is PSVScenarioControl pSVScenarioControl)
 							{
-								val3.UpdateNodeKey(pSVTreeNode2.PsvPath);
-								item2.Header = args.NewName + "-" + val3.ScenarioName;
+								pSVScenarioControl.UpdateNodeKey(pSVTreeNode2.PsvPath);
+								item2.Header = args.NewName + "-" + pSVScenarioControl.ScenarioName;
 							}
 						}
-						foreach (NavigatorTreeNode child in pSVTreeNode2.Children)
+						foreach (NavigatorTreeNode item3 in (Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)pSVTreeNode2).Children)
 						{
-							if (child is ScenarioTreeNode scenarioTreeNode2)
+							if (item3 is ScenarioTreeNode scenarioTreeNode2)
 							{
 								scenarioTreeNode2.FullPath = scenarioTreeNode2.FullPath.Replace("." + text4 + ".", "." + args.NewName + ".");
-								if (scenarioTreeNode2.ScreenSubject is ScenarioScreenSubject scenarioScreenSubject2)
+								if (((SimpleNavigatorTreeNode)scenarioTreeNode2).ScreenSubject is ScenarioScreenSubject scenarioScreenSubject2)
 								{
 									scenarioScreenSubject2.NodeKey = pSVTreeNode2.PsvPath;
 									scenarioScreenSubject2.TabLabel = args.NewName + "-" + scenarioScreenSubject2.ScenarioName;
@@ -6277,16 +6330,16 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 					_nameScenarioTreeNodeMap.Remove(text2);
 					_nameScenarioTreeNodeMap.Add(text3, scenarioTreeNode);
 					scenarioTreeNode.FullPath = scenarioTreeNode.FullPath.Replace("." + args.OldName, "." + args.NewName);
-					scenarioTreeNode.Text = args.NewName;
+					((SimpleNavigatorTreeNode)scenarioTreeNode).Text = args.NewName;
 					scenarioTreeNode.ScenarioPath = text3;
-					ScenarioScreenSubject scenarioScreenSubject = scenarioTreeNode.ScreenSubject as ScenarioScreenSubject;
+					ScenarioScreenSubject scenarioScreenSubject = ((SimpleNavigatorTreeNode)scenarioTreeNode).ScreenSubject as ScenarioScreenSubject;
 					if (scenarioScreenSubject != null)
 					{
-						scenarioScreenSubject.ScenarioName = scenarioTreeNode.Text;
+						scenarioScreenSubject.ScenarioName = ((SimpleNavigatorTreeNode)scenarioTreeNode).Text;
 					}
-					if (scenarioTreeNode.Owner is PSVTreeNode pSVTreeNode && scenarioScreenSubject != null)
+					if (((NavigatorTreeNode)scenarioTreeNode).Owner is PSVTreeNode pSVTreeNode && scenarioScreenSubject != null)
 					{
-						scenarioScreenSubject.TabLabel = $"{pSVTreeNode.Text}-{args.NewName}";
+						scenarioScreenSubject.TabLabel = $"{((SimpleNavigatorTreeNode)pSVTreeNode).Text}-{args.NewName}";
 					}
 					UnityContainerExtensions.Resolve<PSVApplication>(_container, Array.Empty<ResolverOverride>())?.RenameScenario(text2, text3);
 					if (scenarioScreenSubject != null)
@@ -6306,8 +6359,8 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 					_nameTankTreeNodeMap.Remove(oldName);
 					_nameTankTreeNodeMap.Add(newName, tankTreeNode);
 					tankTreeNode.FullPath = tankTreeNode.FullPath.Replace("." + oldName, "." + newName);
-					tankTreeNode.Text = newName;
-					if (tankTreeNode.ScreenSubject is PSVTankScreenSubject pSVTankScreenSubject)
+					((SimpleNavigatorTreeNode)tankTreeNode).Text = newName;
+					if (((SimpleNavigatorTreeNode)tankTreeNode).ScreenSubject is PSVTankScreenSubject pSVTankScreenSubject)
 					{
 						pSVTankScreenSubject.TabLabel = newName;
 						pSVTankScreenSubject.TankName = newName;
@@ -6327,20 +6380,20 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 			{
 				return;
 			}
-			IShellApplication shellApplication = UnityContainerExtensions.Resolve<IShellApplication>(_container, Array.Empty<ResolverOverride>());
-			if (shellApplication == null)
-			{
-				return;
-			}
-			IShellMainWindow activeWindow = shellApplication.ActiveWindow;
-			CommonShellWindow val = (CommonShellWindow)((activeWindow is CommonShellWindow) ? activeWindow : null);
+			IShellApplication val = UnityContainerExtensions.Resolve<IShellApplication>(_container, Array.Empty<ResolverOverride>());
 			if (val == null)
 			{
 				return;
 			}
-			foreach (ScreenContentControl item in val.SelectScreens((Func<ScreenContentControl, bool>)((ScreenContentControl screen) => (screen.ScreenFactoryKey == "Main" && screen.ScreenSubject is ScenarioScreenSubject scenarioScreenSubject && scenarioScreenSubject.NodeKey == nodeKey && scenarioScreenSubject.ModelKey == modelKey) ? true : false)))
+			IShellMainWindow activeWindow = val.ActiveWindow;
+			CommonShellWindow val2 = (CommonShellWindow)(object)((activeWindow is CommonShellWindow) ? activeWindow : null);
+			if (val2 == null)
 			{
-				if (item.Content is PSVScenarioControl)
+				return;
+			}
+			foreach (ScreenContentControl item in val2.SelectScreens((Func<ScreenContentControl, bool>)((ScreenContentControl screen) => (screen.ScreenFactoryKey == "Main" && screen.ScreenSubject is ScenarioScreenSubject scenarioScreenSubject && scenarioScreenSubject.NodeKey == nodeKey && scenarioScreenSubject.ModelKey == modelKey) ? true : false)))
+			{
+				if (((ContentControl)(object)item).Content is PSVScenarioControl)
 				{
 					item.Header = newTabLabel;
 				}
@@ -6353,49 +6406,49 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 			{
 				return;
 			}
-			Children.Clear();
+			((Collection<NavigatorTreeNode>)(object)((TreeNavigatorViewModel)this).Children).Clear();
 			CommonTreeNode commonTreeNode = UnityContainerExtensions.Resolve<CommonTreeNode>(_container, Array.Empty<ResolverOverride>());
 			commonTreeNode.FullPath = "Unit Operations";
 			commonTreeNode.IsHierarchyRoot = true;
-			commonTreeNode.Text = FormResource.Header_Unitops;
+			((SimpleNavigatorTreeNode)commonTreeNode).Text = FormResource.Header_Unitops;
 			commonTreeNode.NodeType = TreeNodeType.UnitOperationsTopNode;
 			if (_messager != null)
 			{
 				NavigatorTreeNodeCollection unitOperationsTreeView = _messager.UnitOperationsTreeView;
 				if (unitOperationsTreeView != null)
 				{
-					foreach (NavigatorTreeNode item in unitOperationsTreeView)
+					foreach (NavigatorTreeNode item in (Collection<NavigatorTreeNode>)(object)unitOperationsTreeView)
 					{
-						commonTreeNode.Children.Add(item);
+						((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)commonTreeNode).Children).Add(item);
 					}
 				}
 			}
-			Children.Add(commonTreeNode);
+			((Collection<NavigatorTreeNode>)(object)((TreeNavigatorViewModel)this).Children).Add((NavigatorTreeNode)(object)commonTreeNode);
 			if (_messager != null && _messager.UnattachedStreamsRootNode is CommonTreeNode commonTreeNode2)
 			{
 				commonTreeNode2.FullPath = "Unattached Streams";
-				Children.Add(commonTreeNode2);
+				((Collection<NavigatorTreeNode>)(object)((TreeNavigatorViewModel)this).Children).Add((NavigatorTreeNode)(object)commonTreeNode2);
 			}
 			CommonTreeNode commonTreeNode3 = UnityContainerExtensions.Resolve<CommonTreeNode>(_container, Array.Empty<ResolverOverride>());
 			commonTreeNode3.FullPath = "StorageTank";
-			commonTreeNode3.Text = FormResource.StorageTankProtection;
+			((SimpleNavigatorTreeNode)commonTreeNode3).Text = FormResource.StorageTankProtection;
 			commonTreeNode3.IsHierarchyRoot = true;
-			commonTreeNode3.ScreenFactoryKey = "Main";
-			commonTreeNode3.ScreenSubject = new PSVSummaryScreenSubject
+			((SimpleNavigatorTreeNode)commonTreeNode3).ScreenFactoryKey = "Main";
+			((SimpleNavigatorTreeNode)commonTreeNode3).ScreenSubject = (ScreenSubject)(object)new PSVSummaryScreenSubject
 			{
 				Id = PSVctrlIDs.ctrlTankManager,
 				TabLabel = FormResource.tab_TankManager
 			};
 			commonTreeNode3.NodeType = TreeNodeType.StorageTankProtectionTopNode;
-			Children.Add(commonTreeNode3);
-			RestorePSV(Children);
+			((Collection<NavigatorTreeNode>)(object)((TreeNavigatorViewModel)this).Children).Add((NavigatorTreeNode)(object)commonTreeNode3);
+			RestorePSV(((TreeNavigatorViewModel)this).Children);
 			Dictionary<string, CommonTreeNode> dictionary = new Dictionary<string, CommonTreeNode>();
-			GetFullPathNodeMap(Children, dictionary);
+			GetFullPathNodeMap(((TreeNavigatorViewModel)this).Children, dictionary);
 			foreach (KeyValuePair<string, TreeNodeType> item2 in _expandedNodePathTypeMap)
 			{
 				if (dictionary.ContainsKey(item2.Key))
 				{
-					dictionary[item2.Key].IsExpanded = true;
+					((NavigatorTreeNode)dictionary[item2.Key]).IsExpanded = true;
 				}
 			}
 			_built = true;
@@ -6403,9 +6456,9 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 
 		private void RestorePSV(NavigatorTreeNodeCollection children)
 		{
-			foreach (NavigatorTreeNode child in children)
+			foreach (NavigatorTreeNode item in (Collection<NavigatorTreeNode>)(object)children)
 			{
-				if (!(child is CommonTreeNode commonTreeNode))
+				if (!(item is CommonTreeNode commonTreeNode))
 				{
 					continue;
 				}
@@ -6416,7 +6469,7 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 				}
 				if (commonTreeNode.IsHierarchyRoot)
 				{
-					RestorePSV(commonTreeNode.Children);
+					RestorePSV(((NavigatorTreeNode)commonTreeNode).Children);
 					continue;
 				}
 				StreamTreeNode streamTreeNode = commonTreeNode as StreamTreeNode;
@@ -6429,9 +6482,9 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 						pSVTreeNode = RestorePSVTreeNode(commonTreeNode, streamTreeNode.StreamInfo.DataPath);
 						if (pSVTreeNode != null)
 						{
-							UnityContainerExtensions.Resolve<PSVApplication>(_container, Array.Empty<ResolverOverride>())?.PRDAddedInSimulator2(pSVTreeNode.StreamPath, pSVTreeNode.Text, fromRestore: true, pSVTreeNode.PRDType);
+							UnityContainerExtensions.Resolve<PSVApplication>(_container, Array.Empty<ResolverOverride>())?.PRDAddedInSimulator2(pSVTreeNode.StreamPath, ((SimpleNavigatorTreeNode)pSVTreeNode).Text, fromRestore: true, pSVTreeNode.PRDType);
 							AddScenarioNodeToPSVNode(pSVTreeNode);
-							commonTreeNode.Children.Add(pSVTreeNode);
+							((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)commonTreeNode).Children).Add((NavigatorTreeNode)(object)pSVTreeNode);
 						}
 					}
 				}
@@ -6446,14 +6499,14 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 					{
 						continue;
 					}
-					foreach (StreamInformation item in outMaterialStreamByBlockName)
+					foreach (StreamInformation item2 in outMaterialStreamByBlockName)
 					{
-						pSVTreeNode = RestorePSVTreeNode(commonTreeNode, item.DataPath);
+						pSVTreeNode = RestorePSVTreeNode(commonTreeNode, item2.DataPath);
 						if (pSVTreeNode != null)
 						{
-							UnityContainerExtensions.Resolve<PSVApplication>(_container, Array.Empty<ResolverOverride>())?.PRDAddedInSimulator2(pSVTreeNode.StreamPath, pSVTreeNode.Text, fromRestore: true, pSVTreeNode.PRDType);
+							UnityContainerExtensions.Resolve<PSVApplication>(_container, Array.Empty<ResolverOverride>())?.PRDAddedInSimulator2(pSVTreeNode.StreamPath, ((SimpleNavigatorTreeNode)pSVTreeNode).Text, fromRestore: true, pSVTreeNode.PRDType);
 							AddScenarioNodeToPSVNode(pSVTreeNode);
-							commonTreeNode.Children.Add(pSVTreeNode);
+							((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)commonTreeNode).Children).Add((NavigatorTreeNode)(object)pSVTreeNode);
 						}
 					}
 				}
@@ -6496,28 +6549,28 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 
 		private PSVTreeNode CreatePSVTreeNode(CommonTreeNode parentNode, string psvName, string streamPath, PsvModelKey key, ReliefDeviceType prdType)
 		{
-			PSVTreeNode pSVTreeNode = UnityContainerExtensions.Resolve<PSVTreeNode>(parentNode.UnityContainer, Array.Empty<ResolverOverride>());
+			PSVTreeNode pSVTreeNode = UnityContainerExtensions.Resolve<PSVTreeNode>(((SimpleNavigatorTreeNode)parentNode).UnityContainer, Array.Empty<ResolverOverride>());
 			pSVTreeNode.ParentPath = parentNode.FullPath;
 			pSVTreeNode.FullPath = parentNode.FullPath + "." + psvName;
-			pSVTreeNode.Text = psvName;
+			((SimpleNavigatorTreeNode)pSVTreeNode).Text = psvName;
 			pSVTreeNode.StreamPath = streamPath;
-			pSVTreeNode.ScreenFactoryKey = "Main";
+			((SimpleNavigatorTreeNode)pSVTreeNode).ScreenFactoryKey = "Main";
 			pSVTreeNode.PRDType = prdType;
 			int num = streamPath.IndexOf(".Streams.");
 			if (num > 0)
 			{
 				pSVTreeNode.PsvPath = streamPath.Substring(0, num) + ".PSValve." + psvName;
-				if (!(parentNode is StreamTreeNode) && !string.Equals(CxsCaseHelper.MyDataProvider.BatchGet(pSVTreeNode.PsvPath + ".Input.PROTUNIT", "value", (string)null) as string, parentNode.Text))
+				if (!(parentNode is StreamTreeNode) && !string.Equals(CxsCaseHelper.MyDataProvider.BatchGet(pSVTreeNode.PsvPath + ".Input.PROTUNIT", "value", (string)null) as string, ((SimpleNavigatorTreeNode)parentNode).Text))
 				{
-					SetStringValue(pSVTreeNode.PsvPath + ".Input.PROTUNIT", parentNode.Text);
+					SetStringValue(pSVTreeNode.PsvPath + ".Input.PROTUNIT", ((SimpleNavigatorTreeNode)parentNode).Text);
 				}
 			}
-			pSVTreeNode.ScreenSubject = new PSVSummaryScreenSubject
+			((SimpleNavigatorTreeNode)pSVTreeNode).ScreenSubject = (ScreenSubject)(object)new PSVSummaryScreenSubject
 			{
 				Id = PSVctrlIDs.ctrlPSVSummaryForm,
-				TabLabel = pSVTreeNode.Text,
+				TabLabel = ((SimpleNavigatorTreeNode)pSVTreeNode).Text,
 				ModelKey = key,
-				PSVName = pSVTreeNode.Text,
+				PSVName = ((SimpleNavigatorTreeNode)pSVTreeNode).Text,
 				NodeKey = pSVTreeNode.PsvPath
 			};
 			_namePsvTreeNodeMap.Add(pSVTreeNode.PsvPath, pSVTreeNode);
@@ -6527,16 +6580,16 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 		private ScenarioTreeNode CreateScenarioTreeNode(PSVTreeNode parentNode, string scenarioName, string psvPath, PsvModelKey key)
 		{
 			int num = psvPath.IndexOf(".PSValve.");
-			ScenarioTreeNode scenarioTreeNode = UnityContainerExtensions.Resolve<ScenarioTreeNode>(parentNode.UnityContainer, Array.Empty<ResolverOverride>());
+			ScenarioTreeNode scenarioTreeNode = UnityContainerExtensions.Resolve<ScenarioTreeNode>(((SimpleNavigatorTreeNode)parentNode).UnityContainer, Array.Empty<ResolverOverride>());
 			scenarioTreeNode.FullPath = parentNode.FullPath + "." + scenarioName;
-			scenarioTreeNode.Text = scenarioName;
+			((SimpleNavigatorTreeNode)scenarioTreeNode).Text = scenarioName;
 			scenarioTreeNode.ModelKey = key;
-			scenarioTreeNode.ScreenFactoryKey = "Main";
-			scenarioTreeNode.ScreenSubject = new ScenarioScreenSubject
+			((SimpleNavigatorTreeNode)scenarioTreeNode).ScreenFactoryKey = "Main";
+			((SimpleNavigatorTreeNode)scenarioTreeNode).ScreenSubject = (ScreenSubject)(object)new ScenarioScreenSubject
 			{
 				Id = PSVctrlIDs.ctrlVapRelief,
-				ScenarioName = scenarioTreeNode.Text,
-				TabLabel = $"{parentNode.Text}-{scenarioTreeNode.Text}",
+				ScenarioName = ((SimpleNavigatorTreeNode)scenarioTreeNode).Text,
+				TabLabel = $"{((SimpleNavigatorTreeNode)parentNode).Text}-{((SimpleNavigatorTreeNode)scenarioTreeNode).Text}",
 				ValvePhase = scenarioTreeNode.SizingMethod,
 				ModelKey = key,
 				NodeKey = psvPath
@@ -6552,18 +6605,18 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 		private TankTreeNode CreateTankTreeNode(CommonTreeNode parentNode, string tankName, string path, PsvModelKey key)
 		{
 			UnityContainerExtensions.Resolve<PSVApplication>(_container, Array.Empty<ResolverOverride>());
-			TankTreeNode tankTreeNode = UnityContainerExtensions.Resolve<TankTreeNode>(parentNode.UnityContainer, Array.Empty<ResolverOverride>());
+			TankTreeNode tankTreeNode = UnityContainerExtensions.Resolve<TankTreeNode>(((SimpleNavigatorTreeNode)parentNode).UnityContainer, Array.Empty<ResolverOverride>());
 			tankTreeNode.FullPath = parentNode.FullPath + "." + tankName;
-			tankTreeNode.Text = tankName;
-			tankTreeNode.ScreenFactoryKey = "Main";
-			tankTreeNode.ScreenSubject = new PSVTankScreenSubject
+			((SimpleNavigatorTreeNode)tankTreeNode).Text = tankName;
+			((SimpleNavigatorTreeNode)tankTreeNode).ScreenFactoryKey = "Main";
+			((SimpleNavigatorTreeNode)tankTreeNode).ScreenSubject = (ScreenSubject)(object)new PSVTankScreenSubject
 			{
 				Id = PSVctrlIDs.ctrlTankVent,
-				TabLabel = tankTreeNode.Text,
+				TabLabel = ((SimpleNavigatorTreeNode)tankTreeNode).Text,
 				ModelKey = key,
-				TankName = tankTreeNode.Text,
-				NodeKey = path + "." + tankTreeNode.Text,
-				NodePath = path + "." + tankTreeNode.Text
+				TankName = ((SimpleNavigatorTreeNode)tankTreeNode).Text,
+				NodeKey = path + "." + ((SimpleNavigatorTreeNode)tankTreeNode).Text,
+				NodePath = path + "." + ((SimpleNavigatorTreeNode)tankTreeNode).Text
 			};
 			_nameTankTreeNodeMap.Add(tankName, tankTreeNode);
 			return tankTreeNode;
@@ -6571,9 +6624,9 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 
 		private static void ExpandParentNodes(CommonTreeNode node)
 		{
-			for (CommonTreeNode commonTreeNode = node; commonTreeNode != null; commonTreeNode = commonTreeNode.Owner as CommonTreeNode)
+			for (CommonTreeNode commonTreeNode = node; commonTreeNode != null; commonTreeNode = ((NavigatorTreeNode)commonTreeNode).Owner as CommonTreeNode)
 			{
-				commonTreeNode.IsExpanded = true;
+				((NavigatorTreeNode)commonTreeNode).IsExpanded = true;
 			}
 		}
 
@@ -6598,9 +6651,9 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 				{
 					PsvModelKey key = new PsvModelKey(eRecordType.OrificeCalc, int32Value);
 					ScenarioTreeNode item = CreateScenarioTreeNode(psvNode, stringValue, psvNode.PsvPath, key);
-					psvNode.Children.Add(item);
+					((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)psvNode).Children).Add((NavigatorTreeNode)(object)item);
 					PSVApplication pSVApplication = UnityContainerExtensions.Resolve<PSVApplication>(_container, Array.Empty<ResolverOverride>());
-					if (pSVApplication != null && psvNode.ScreenSubject is PSVSummaryScreenSubject pSVSummaryScreenSubject)
+					if (pSVApplication != null && ((SimpleNavigatorTreeNode)psvNode).ScreenSubject is PSVSummaryScreenSubject pSVSummaryScreenSubject)
 					{
 						pSVApplication.ScenarioAddedInSimulator2(psvNode.PsvPath, pSVSummaryScreenSubject.ModelKey, stringValue, fromRestore: true, isFromCopy: false);
 					}
@@ -6623,7 +6676,7 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 				{
 					PsvModelKey psvModelKey = new PsvModelKey(eRecordType.Utility, int32Value);
 					TankTreeNode item = CreateTankTreeNode(stpNode, item2, "Top.appModelV8.PSVTank", psvModelKey);
-					stpNode.Children.Add(item);
+					((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)stpNode).Children).Add((NavigatorTreeNode)(object)item);
 					PSVApplication pSVApplication = UnityContainerExtensions.Resolve<PSVApplication>(_container, Array.Empty<ResolverOverride>());
 					if (pSVApplication != null)
 					{
@@ -6677,7 +6730,7 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 	{
 		private IPSVMessager _messager;
 
-		public bool HasChildren => Children.Count > 0;
+		public bool HasChildren => ((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)this).Children).Count > 0;
 
 		public bool IsHierarchyRoot { get; set; }
 
@@ -6697,7 +6750,7 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 				{
 					return FullPath.Split('.').Last();
 				}
-				return base.KeyReadOnly;
+				return ((SimpleNavigatorTreeNode)this).KeyReadOnly;
 			}
 		}
 
@@ -6716,30 +6769,32 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 
 		protected override void InternalExecuteShowScreen(ShowScreenOptions options)
 		{
+			//IL_0003: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000a: Expected O, but got Unknown
 			if (options == null)
 			{
 				options = new ShowScreenOptions();
 			}
 			bool flag = !IsTabExisting();
-			options.ReuseExisting = ((!flag) ? ShowScreenReuseOptions.CurrentWindow : ShowScreenReuseOptions.None);
+			options.ReuseExisting = (ShowScreenReuseOptions)(!flag);
 			options.CreateNewTab = flag;
-			base.InternalExecuteShowScreen(options);
+			((SimpleNavigatorTreeNode)this).InternalExecuteShowScreen(options);
 		}
 
 		private bool IsTabExisting()
 		{
-			if (base.UnityContainer != null)
+			if (((SimpleNavigatorTreeNode)this).UnityContainer != null)
 			{
-				IShellApplication shellApplication = UnityContainerExtensions.Resolve<IShellApplication>(base.UnityContainer, Array.Empty<ResolverOverride>());
-				if (shellApplication != null)
+				IShellApplication val = UnityContainerExtensions.Resolve<IShellApplication>(((SimpleNavigatorTreeNode)this).UnityContainer, Array.Empty<ResolverOverride>());
+				if (val != null)
 				{
-					IShellMainWindow activeWindow = shellApplication.ActiveWindow;
+					IShellMainWindow activeWindow = val.ActiveWindow;
 					if (activeWindow != null)
 					{
-						PSVScreenSubject subj2 = base.ScreenSubject as PSVScreenSubject;
+						PSVScreenSubject subj2 = ((SimpleNavigatorTreeNode)this).ScreenSubject as PSVScreenSubject;
 						if (subj2 != null)
 						{
-							if (activeWindow.FindScreen((ScreenContentControl screen) => (screen.ScreenFactoryKey == "Main" && screen.ScreenSubject is PSVScreenSubject pSVScreenSubject && pSVScreenSubject.ModelKey == subj2.ModelKey && pSVScreenSubject.Id == subj2.Id) ? true : false) != null)
+							if (activeWindow.FindScreen((Func<ScreenContentControl, bool>)((ScreenContentControl screen) => (screen.ScreenFactoryKey == "Main" && screen.ScreenSubject is PSVScreenSubject pSVScreenSubject && pSVScreenSubject.ModelKey == subj2.ModelKey && pSVScreenSubject.Id == subj2.Id) ? true : false)) != null)
 							{
 								return true;
 							}
@@ -6765,8 +6820,8 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 					break;
 				}
 			}
-			UnityContainerExtensions.Resolve<IEventAggregator>(base.UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<RoutedCompositePresentationEvent<KeyValuePair<string, object>>>().Publish(new KeyValuePair<string, object>("NavigatorTreeNodeContextMenuEventKey", new object[2] { this, contextMenuToShow }));
-			base.OnContextMenuOpening(e, contextMenuToShow);
+			((CompositePresentationEvent<KeyValuePair<string, object>>)(object)UnityContainerExtensions.Resolve<IEventAggregator>(((SimpleNavigatorTreeNode)this).UnityContainer, Array.Empty<ResolverOverride>()).GetEvent<RoutedCompositePresentationEvent<KeyValuePair<string, object>>>()).Publish(new KeyValuePair<string, object>("NavigatorTreeNodeContextMenuEventKey", new object[2] { this, contextMenuToShow }));
+			((NavigatorTreeNode)this).OnContextMenuOpening(e, contextMenuToShow);
 		}
 
 		private void BuildMenuForStorageTankProtectionTopNode(ContextMenuEventArgs e, ContextMenu parentMenu)
@@ -7079,18 +7134,23 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 		public static void ExecuteAddPSVCommand(object sender, ExecutedRoutedEventArgs e)
 		{
 			string text = e.Parameter as string;
-			if (string.IsNullOrEmpty(text) || !(sender is TreeNavigatorViewTreeViewItem treeNavigatorViewTreeViewItem))
+			if (string.IsNullOrEmpty(text))
+			{
+				return;
+			}
+			TreeNavigatorViewTreeViewItem val = (TreeNavigatorViewTreeViewItem)((sender is TreeNavigatorViewTreeViewItem) ? sender : null);
+			if (val == null)
 			{
 				return;
 			}
 			CommonTreeNode cNode = null;
 			bool prdTypeIsPSV = false;
-			if (IsPRDAttached(treeNavigatorViewTreeViewItem, text, out cNode, out prdTypeIsPSV))
+			if (IsPRDAttached(val, text, out cNode, out prdTypeIsPSV))
 			{
 				if (cNode != null && cNode.Messager != null)
 				{
 					string applicationName = cNode.Messager.ApplicationName;
-					cNode.Messager.ShowMessageBox(Window.GetWindow(treeNavigatorViewTreeViewItem), prdTypeIsPSV ? FormResource.PsvAlreadyAttachedToStream : FormResource.RDAlreadyAttachedToStream, applicationName, MessageBoxButton.OK, MessageBoxImage.Exclamation, MessageBoxResult.OK, MessageBoxOptions.None);
+					cNode.Messager.ShowMessageBox(Window.GetWindow((DependencyObject)(object)val), prdTypeIsPSV ? FormResource.PsvAlreadyAttachedToStream : FormResource.RDAlreadyAttachedToStream, applicationName, MessageBoxButton.OK, MessageBoxImage.Exclamation, MessageBoxResult.OK, MessageBoxOptions.None);
 				}
 				return;
 			}
@@ -7104,18 +7164,23 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 		public static void ExecuteAddRDCommand(object sender, ExecutedRoutedEventArgs e)
 		{
 			string text = e.Parameter as string;
-			if (string.IsNullOrEmpty(text) || !(sender is TreeNavigatorViewTreeViewItem treeNavigatorViewTreeViewItem))
+			if (string.IsNullOrEmpty(text))
+			{
+				return;
+			}
+			TreeNavigatorViewTreeViewItem val = (TreeNavigatorViewTreeViewItem)((sender is TreeNavigatorViewTreeViewItem) ? sender : null);
+			if (val == null)
 			{
 				return;
 			}
 			CommonTreeNode cNode = null;
 			bool prdTypeIsPSV = false;
-			if (IsPRDAttached(treeNavigatorViewTreeViewItem, text, out cNode, out prdTypeIsPSV))
+			if (IsPRDAttached(val, text, out cNode, out prdTypeIsPSV))
 			{
 				if (cNode != null && cNode.Messager != null)
 				{
 					string applicationName = cNode.Messager.ApplicationName;
-					cNode.Messager.ShowMessageBox(Window.GetWindow(treeNavigatorViewTreeViewItem), prdTypeIsPSV ? FormResource.PsvAlreadyAttachedToStream : FormResource.RDAlreadyAttachedToStream, applicationName, MessageBoxButton.OK, MessageBoxImage.Exclamation, MessageBoxResult.OK, MessageBoxOptions.None);
+					cNode.Messager.ShowMessageBox(Window.GetWindow((DependencyObject)(object)val), prdTypeIsPSV ? FormResource.PsvAlreadyAttachedToStream : FormResource.RDAlreadyAttachedToStream, applicationName, MessageBoxButton.OK, MessageBoxImage.Exclamation, MessageBoxResult.OK, MessageBoxOptions.None);
 				}
 				return;
 			}
@@ -7135,22 +7200,22 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 				return false;
 			}
 			bool result = false;
-			if (treeViewItem.DataContext is StreamTreeNode streamTreeNode)
+			if (((FrameworkElement)(object)treeViewItem).DataContext is StreamTreeNode streamTreeNode)
 			{
 				cNode = streamTreeNode;
 				if (streamTreeNode.HasChildren)
 				{
 					result = true;
-					if (streamTreeNode.Children[0] is PSVTreeNode pSVTreeNode)
+					if (((Collection<NavigatorTreeNode>)(object)((NavigatorTreeNode)streamTreeNode).Children)[0] is PSVTreeNode pSVTreeNode)
 					{
 						prdTypeIsPSV = pSVTreeNode.PRDType == ReliefDeviceType.Psv;
 					}
 				}
 			}
-			else if (treeViewItem.DataContext is CommonTreeNode commonTreeNode)
+			else if (((FrameworkElement)(object)treeViewItem).DataContext is CommonTreeNode commonTreeNode)
 			{
 				cNode = commonTreeNode;
-				PSVTreeNode pSVTreeNode2 = commonTreeNode.Children.OfType<PSVTreeNode>().FirstOrDefault((PSVTreeNode p) => string.Equals(dataPath, p.StreamPath));
+				PSVTreeNode pSVTreeNode2 = ((IEnumerable)((NavigatorTreeNode)commonTreeNode).Children).OfType<PSVTreeNode>().FirstOrDefault((PSVTreeNode p) => string.Equals(dataPath, p.StreamPath));
 				if (pSVTreeNode2 != null)
 				{
 					result = true;
@@ -7172,60 +7237,64 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 
 		public static void ExecuteAddScenarioCommand(object sender, ExecutedRoutedEventArgs e)
 		{
-			if (sender is TreeNavigatorViewTreeViewItem { DataContext: PSVTreeNode dataContext })
+			TreeNavigatorViewTreeViewItem val = (TreeNavigatorViewTreeViewItem)((sender is TreeNavigatorViewTreeViewItem) ? sender : null);
+			if (val != null && ((FrameworkElement)(object)val).DataContext is PSVTreeNode pSVTreeNode)
 			{
-				dataContext.IsAddingScenarioFromNavTree = true;
-				CxsCaseHelper.MyDataProvider.InvokeAction(dataContext.PsvPath, "SendMessage", false, new object[1] { "CreateEmergencyScenario" });
+				pSVTreeNode.IsAddingScenarioFromNavTree = true;
+				CxsCaseHelper.MyDataProvider.InvokeAction(pSVTreeNode.PsvPath, "SendMessage", false, new object[1] { "CreateEmergencyScenario" });
 			}
 		}
 
 		public static void ExecuteRenameCommand(object sender, ExecutedRoutedEventArgs e)
 		{
-			if (!(sender is TreeNavigatorViewTreeViewItem { DataContext: PSVTreeNode dataContext }))
+			TreeNavigatorViewTreeViewItem val = (TreeNavigatorViewTreeViewItem)((sender is TreeNavigatorViewTreeViewItem) ? sender : null);
+			if (val == null || !(((FrameworkElement)(object)val).DataContext is PSVTreeNode pSVTreeNode))
 			{
 				return;
 			}
-			ValveNameWindow val = UnityContainerExtensions.Resolve<ValveNameWindow>(dataContext.UnityContainer, Array.Empty<ResolverOverride>());
-			string text = string.Empty;
-			PsvModelKey psvModelKey = null;
-			if (dataContext.ScreenSubject is PSVSummaryScreenSubject pSVSummaryScreenSubject)
+			ValveNameWindow valveNameWindow = UnityContainerExtensions.Resolve<ValveNameWindow>(((SimpleNavigatorTreeNode)pSVTreeNode).UnityContainer, Array.Empty<ResolverOverride>());
+			string nodeKey = string.Empty;
+			PsvModelKey modelKey = null;
+			if (((SimpleNavigatorTreeNode)pSVTreeNode).ScreenSubject is PSVSummaryScreenSubject pSVSummaryScreenSubject)
 			{
-				psvModelKey = pSVSummaryScreenSubject.ModelKey;
-				text = pSVSummaryScreenSubject.NodeKey;
+				modelKey = pSVSummaryScreenSubject.ModelKey;
+				nodeKey = pSVSummaryScreenSubject.NodeKey;
 			}
-			IShellApplication shellApplication = UnityContainerExtensions.Resolve<IShellApplication>(dataContext.UnityContainer, Array.Empty<ResolverOverride>());
-			if (shellApplication != null)
+			IShellApplication val2 = UnityContainerExtensions.Resolve<IShellApplication>(((SimpleNavigatorTreeNode)pSVTreeNode).UnityContainer, Array.Empty<ResolverOverride>());
+			if (val2 != null)
 			{
-				IShellMainWindow activeWindow = shellApplication.ActiveWindow;
-				CommonShellWindow val2 = (CommonShellWindow)((activeWindow is CommonShellWindow) ? activeWindow : null);
-				if (val2 != null)
+				IShellMainWindow activeWindow = val2.ActiveWindow;
+				CommonShellWindow val3 = (CommonShellWindow)(object)((activeWindow is CommonShellWindow) ? activeWindow : null);
+				if (val3 != null)
 				{
-					((Window)(object)val).Owner = (Window)(object)val2;
-					((Window)(object)val).WindowStartupLocation = WindowStartupLocation.CenterOwner;
+					valveNameWindow.Owner = (Window)(object)val3;
+					valveNameWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner;
 				}
 			}
-			IPsvCase activeCase = UnityContainerExtensions.Resolve<PSVApplication>(dataContext.UnityContainer, Array.Empty<ResolverOverride>()).ActiveCase;
-			val.Initialize(text, ref activeCase, (PsvKey)psvModelKey, (PRDData)null);
-			((Window)(object)val).ShowDialog();
+			IPsvCase PSVCase = UnityContainerExtensions.Resolve<PSVApplication>(((SimpleNavigatorTreeNode)pSVTreeNode).UnityContainer, Array.Empty<ResolverOverride>()).ActiveCase;
+			valveNameWindow.Initialize(nodeKey, ref PSVCase, modelKey);
+			valveNameWindow.ShowDialog();
 		}
 
 		public static void ExecuteDeleteTankCommand(object sender, ExecutedRoutedEventArgs e)
 		{
-			if (sender is TreeNavigatorViewTreeViewItem { DataContext: TankTreeNode dataContext })
+			TreeNavigatorViewTreeViewItem val = (TreeNavigatorViewTreeViewItem)((sender is TreeNavigatorViewTreeViewItem) ? sender : null);
+			if (val != null && ((FrameworkElement)(object)val).DataContext is TankTreeNode tankTreeNode)
 			{
-				int num = dataContext.FullPath.IndexOf("StorageTank.");
+				int num = tankTreeNode.FullPath.IndexOf("StorageTank.");
 				string text = "Top.appModelV8.Custom Actions";
-				CxsCaseHelper.MyDataProvider.InvokeAction(text, "DeleteStorageTank", false, new object[1] { dataContext.FullPath.Substring(num + 12) });
+				CxsCaseHelper.MyDataProvider.InvokeAction(text, "DeleteStorageTank", false, new object[1] { tankTreeNode.FullPath.Substring(num + 12) });
 			}
 		}
 
 		public static void ExecuteDeleteCommand(object sender, ExecutedRoutedEventArgs e)
 		{
-			if (!(sender is TreeNavigatorViewTreeViewItem treeNavigatorViewTreeViewItem))
+			TreeNavigatorViewTreeViewItem val = (TreeNavigatorViewTreeViewItem)((sender is TreeNavigatorViewTreeViewItem) ? sender : null);
+			if (val == null)
 			{
 				return;
 			}
-			if (treeNavigatorViewTreeViewItem.DataContext is PSVTreeNode pSVTreeNode)
+			if (((FrameworkElement)(object)val).DataContext is PSVTreeNode pSVTreeNode)
 			{
 				if (_copiedPSVTreeNode != null && pSVTreeNode == _copiedPSVTreeNode)
 				{
@@ -7236,7 +7305,7 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 				if (pSVTreeNode.Messager != null)
 				{
 					string applicationName = pSVTreeNode.Messager.ApplicationName;
-					MessageBoxResult messageBoxResult = pSVTreeNode.Messager.ShowMessageBox(Window.GetWindow(treeNavigatorViewTreeViewItem), string.Format(FormResource.ConfirmDelete, text), applicationName, MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No, MessageBoxOptions.None);
+					MessageBoxResult messageBoxResult = pSVTreeNode.Messager.ShowMessageBox(Window.GetWindow((DependencyObject)(object)val), string.Format(FormResource.ConfirmDelete, text), applicationName, MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No, MessageBoxOptions.None);
 					if (messageBoxResult == MessageBoxResult.No || messageBoxResult == MessageBoxResult.Cancel)
 					{
 						return;
@@ -7246,7 +7315,7 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 				pSVTreeNode.IsDeletingNodeFromNavTree = true;
 				CxsCaseHelper.MyDataProvider.InvokeAction(pSVTreeNode.PsvPath, "SendMessage", false, new object[1] { text2 });
 			}
-			else if (treeNavigatorViewTreeViewItem.DataContext is ScenarioTreeNode scenarioTreeNode)
+			else if (((FrameworkElement)(object)val).DataContext is ScenarioTreeNode scenarioTreeNode)
 			{
 				int num2 = scenarioTreeNode.ScenarioPath.IndexOf(".PSVScenario.");
 				if (MessageBox.Show(string.Format(FormResource.ConfirmDelete, scenarioTreeNode.ScenarioPath.Substring(num2 + 13)), "Aspen Plus", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
@@ -7260,12 +7329,13 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 
 		public static void ExecuteCopyCommand(object sender, ExecutedRoutedEventArgs e)
 		{
-			if (sender is TreeNavigatorViewTreeViewItem { DataContext: PSVTreeNode dataContext })
+			TreeNavigatorViewTreeViewItem val = (TreeNavigatorViewTreeViewItem)((sender is TreeNavigatorViewTreeViewItem) ? sender : null);
+			if (val != null && ((FrameworkElement)(object)val).DataContext is PSVTreeNode pSVTreeNode)
 			{
-				_copiedPSVTreeNode = dataContext;
-				int num = dataContext.PsvPath.LastIndexOf('.');
-				string text = dataContext.PsvPath.Substring(0, num);
-				object[] array = new object[1] { dataContext.PsvPath.Substring(num + 1) };
+				_copiedPSVTreeNode = pSVTreeNode;
+				int num = pSVTreeNode.PsvPath.LastIndexOf('.');
+				string text = pSVTreeNode.PsvPath.Substring(0, num);
+				object[] array = new object[1] { pSVTreeNode.PsvPath.Substring(num + 1) };
 				CxsCaseHelper.MyDataProvider.InvokeAction(text, "CopyChildren", false, array);
 			}
 		}
@@ -7278,7 +7348,7 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 
 		public static void CanExecutePasteCommand(object sender, CanExecuteRoutedEventArgs e)
 		{
-			if (_copiedPSVTreeNode != null && UnityContainerExtensions.Resolve<PSVApplication>(_copiedPSVTreeNode.UnityContainer, Array.Empty<ResolverOverride>()).GetModelKeyByName(_copiedPSVTreeNode.PsvPath) != null && Clipboard.ContainsData("Aspen Plus Selection") && Clipboard.ContainsData("Aspen Plus Selection Type"))
+			if (_copiedPSVTreeNode != null && UnityContainerExtensions.Resolve<PSVApplication>(((SimpleNavigatorTreeNode)_copiedPSVTreeNode).UnityContainer, Array.Empty<ResolverOverride>()).GetModelKeyByName(_copiedPSVTreeNode.PsvPath) != null && Clipboard.ContainsData("Aspen Plus Selection") && Clipboard.ContainsData("Aspen Plus Selection Type"))
 			{
 				GetWindowThreadProcessId(GetClipboardOwner(), out var lpdwProcessId);
 				if (Process.GetCurrentProcess().Id == lpdwProcessId)
@@ -7301,18 +7371,23 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 		public static void ExecutePasteCommand(object sender, ExecutedRoutedEventArgs e)
 		{
 			string text = e.Parameter as string;
-			if (string.IsNullOrEmpty(text) || !(sender is TreeNavigatorViewTreeViewItem treeNavigatorViewTreeViewItem))
+			if (string.IsNullOrEmpty(text))
+			{
+				return;
+			}
+			TreeNavigatorViewTreeViewItem val = (TreeNavigatorViewTreeViewItem)((sender is TreeNavigatorViewTreeViewItem) ? sender : null);
+			if (val == null)
 			{
 				return;
 			}
 			CommonTreeNode cNode = null;
 			bool prdTypeIsPSV = false;
-			if (IsPRDAttached(treeNavigatorViewTreeViewItem, text, out cNode, out prdTypeIsPSV))
+			if (IsPRDAttached(val, text, out cNode, out prdTypeIsPSV))
 			{
 				if (cNode != null && cNode.Messager != null)
 				{
 					string applicationName = cNode.Messager.ApplicationName;
-					cNode.Messager.ShowMessageBox(Window.GetWindow(treeNavigatorViewTreeViewItem), prdTypeIsPSV ? FormResource.PsvAlreadyAttachedToStream : FormResource.RDAlreadyAttachedToStream, applicationName, MessageBoxButton.OK, MessageBoxImage.Exclamation, MessageBoxResult.OK, MessageBoxOptions.None);
+					cNode.Messager.ShowMessageBox(Window.GetWindow((DependencyObject)(object)val), prdTypeIsPSV ? FormResource.PsvAlreadyAttachedToStream : FormResource.RDAlreadyAttachedToStream, applicationName, MessageBoxButton.OK, MessageBoxImage.Exclamation, MessageBoxResult.OK, MessageBoxOptions.None);
 				}
 				return;
 			}
@@ -7327,7 +7402,7 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 				return;
 			}
 			PSVTreeNode copiedPSVTreeNode = _copiedPSVTreeNode;
-			PsvModelKey modelKeyByName = UnityContainerExtensions.Resolve<PSVApplication>(copiedPSVTreeNode.UnityContainer, Array.Empty<ResolverOverride>()).GetModelKeyByName(copiedPSVTreeNode.PsvPath);
+			PsvModelKey modelKeyByName = UnityContainerExtensions.Resolve<PSVApplication>(((SimpleNavigatorTreeNode)copiedPSVTreeNode).UnityContainer, Array.Empty<ResolverOverride>()).GetModelKeyByName(copiedPSVTreeNode.PsvPath);
 			if (!(modelKeyByName == null))
 			{
 				if (copiedPSVTreeNode.PRDType == ReliefDeviceType.Psv)
@@ -7342,5 +7417,3 @@ namespace AspenTech.EquipmentAnalysis.UserInterface.PSVBrowser.New
 		}
 	}
 }
-You are not using the latest version of the tool, please update.
-Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

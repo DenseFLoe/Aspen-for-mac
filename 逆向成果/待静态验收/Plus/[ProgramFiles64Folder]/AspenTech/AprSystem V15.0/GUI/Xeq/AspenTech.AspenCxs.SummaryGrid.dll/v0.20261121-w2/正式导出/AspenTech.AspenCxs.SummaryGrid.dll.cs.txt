@@ -2132,7 +2132,7 @@ namespace AspenTech.AspenCxs.SummaryGrid
 						}
 						try
 						{
-							object obj7 = curCase.InvokeAction("Top.SummaryGrid", "GetContainerInfo", new object[2] { text7, text6 });
+							object obj7 = curCase.InvokeAction("Top.SummaryGrid", "GetContainerInfo", text7, text6);
 							if (obj7 != null)
 							{
 								if (obj7.ToString().EndsWith("\t", StringComparison.Ordinal))
@@ -3247,7 +3247,7 @@ namespace AspenTech.AspenCxs.SummaryGrid
 					object obj = null;
 					try
 					{
-						obj = _Case.InvokeAction("Top.SummaryGrid", "GetObjects", new object[2] { sGTab.Name, text });
+						obj = _Case.InvokeAction("Top.SummaryGrid", "GetObjects", sGTab.Name, text);
 					}
 					catch
 					{
@@ -3713,19 +3713,14 @@ namespace AspenTech.AspenCxs.SummaryGrid
 
 		private void DisconnectFromRunningCase()
 		{
-			CxsCase val = _Case;
+			CxsCase cxsCase = _Case;
 			_Case = null;
 			PropogateCaseToTabs();
-			if (val != null)
-			{
-				val.Dispose();
-			}
+			cxsCase?.Dispose();
 		}
 
 		private void ConnectToRunningCase()
 		{
-			//IL_0047: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0051: Expected O, but got Unknown
 			if (_RunningCase == null || (string.IsNullOrEmpty(_CasePath) && string.IsNullOrEmpty(_ApplicationName)))
 			{
 				return;
@@ -4404,7 +4399,7 @@ namespace AspenTech.AspenCxs.SummaryGrid
 			string text = string.Empty;
 			try
 			{
-				object obj = _Case.InvokeAction("Top.SummaryGrid", "GetSummaryGridTplXml", new object[1] { templateKey });
+				object obj = _Case.InvokeAction("Top.SummaryGrid", "GetSummaryGridTplXml", templateKey);
 				if (string.IsNullOrWhiteSpace(obj.ToString()))
 				{
 					return;
@@ -4428,7 +4423,7 @@ namespace AspenTech.AspenCxs.SummaryGrid
 			}
 			try
 			{
-				_Case.InvokeAction("Top.SummaryGrid", "SetSummaryGridTplXml", new object[2] { templateKey, SummaryGridTplCol });
+				_Case.InvokeAction("Top.SummaryGrid", "SetSummaryGridTplXml", templateKey, SummaryGridTplCol);
 			}
 			catch
 			{
@@ -4689,8 +4684,8 @@ namespace AspenTech.AspenCxs.SummaryGrid
 		{
 			Error = false;
 			ErrorDesc = string.Empty;
-			CxsNode val = Case.ResolveNode(Path);
-			if (val == null)
+			CxsNode cxsNode = Case.ResolveNode(Path);
+			if (cxsNode == null)
 			{
 				Error = true;
 				ErrorDesc = Global.GetString("VariableInfo_InvalidPath");
@@ -4703,16 +4698,7 @@ namespace AspenTech.AspenCxs.SummaryGrid
 				ErrorDesc = Global.GetString("VariableInfo_InvalidContainer");
 				return;
 			}
-			object obj = (string.IsNullOrWhiteSpace(selectedTabName) ? Case.InvokeAction("Top.SummaryGrid", "GetContainerInfo", new object[2]
-			{
-				Container,
-				TabbedSummaryGrid.CFlagIsPaste
-			}) : Case.InvokeAction("Top.SummaryGrid", "GetContainerInfo", new object[3]
-			{
-				Container,
-				TabbedSummaryGrid.CFlagIsPaste,
-				TabbedSummaryGrid.CFlagCurSelectedTab + selectedTabName
-			}));
+			object obj = (string.IsNullOrWhiteSpace(selectedTabName) ? Case.InvokeAction("Top.SummaryGrid", "GetContainerInfo", Container, TabbedSummaryGrid.CFlagIsPaste) : Case.InvokeAction("Top.SummaryGrid", "GetContainerInfo", Container, TabbedSummaryGrid.CFlagIsPaste, TabbedSummaryGrid.CFlagCurSelectedTab + selectedTabName));
 			string[] array = new string[0];
 			if (obj != null)
 			{
@@ -4734,9 +4720,9 @@ namespace AspenTech.AspenCxs.SummaryGrid
 				ContainerUniqueName += "@";
 				ContainerUniqueName += FlowSheetName;
 			}
-			PropertyDisplayName = ((!IsSubObjectsNode(val)) ? val.Name : SubObjectDisplayName(val));
-			string text = val.PathFromContainer;
-			if (string.Compare(val.Path, text, StringComparison.OrdinalIgnoreCase) == 0)
+			PropertyDisplayName = ((!IsSubObjectsNode(cxsNode)) ? cxsNode.Name : SubObjectDisplayName(cxsNode));
+			string text = cxsNode.PathFromContainer;
+			if (string.Compare(cxsNode.Path, text, StringComparison.OrdinalIgnoreCase) == 0)
 			{
 				string[] array2 = Container.Split(".".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
 				if (array2.Length != 0)
@@ -4763,9 +4749,9 @@ namespace AspenTech.AspenCxs.SummaryGrid
 					text = stringBuilder.ToString();
 				}
 			}
-			if (!string.IsNullOrEmpty(val.Container))
+			if (!string.IsNullOrEmpty(cxsNode.Container))
 			{
-				text = text.Replace(val.Container + ".", "");
+				text = text.Replace(cxsNode.Container + ".", "");
 			}
 			PropertyPath = text;
 			if (string.IsNullOrEmpty(Container))
@@ -4798,35 +4784,35 @@ namespace AspenTech.AspenCxs.SummaryGrid
 		private static string GetContainerPath(CxsCase curCase, string origPath)
 		{
 			string text = origPath;
-			CxsNode val = null;
+			CxsNode cxsNode = null;
 			try
 			{
-				val = curCase.ResolveNode(text);
+				cxsNode = curCase.ResolveNode(text);
 			}
 			catch
 			{
-				val = null;
+				cxsNode = null;
 			}
-			while (val != null && !string.IsNullOrWhiteSpace(text))
+			while (cxsNode != null && !string.IsNullOrWhiteSpace(text))
 			{
-				if (val == null)
+				if (cxsNode == null)
 				{
 					continue;
 				}
-				if (val.IsContainer)
+				if (cxsNode.IsContainer)
 				{
 					return text;
 				}
-				text = val.ParentPath;
+				text = cxsNode.ParentPath;
 				if (!string.IsNullOrWhiteSpace(text))
 				{
 					try
 					{
-						val = curCase.ResolveNode(text);
+						cxsNode = curCase.ResolveNode(text);
 					}
 					catch
 					{
-						val = null;
+						cxsNode = null;
 					}
 				}
 			}
@@ -9067,7 +9053,6 @@ namespace AspenTech.AspenCxs.SummaryGrid
 
 		public bool PasteFromClipboard()
 		{
-			//IL_02b3: Expected O, but got Unknown
 			SGClipboardMetaData sGClipboardMetaData = null;
 			if (System.Windows.Clipboard.ContainsData(System.Windows.DataFormats.Serializable))
 			{
@@ -9185,31 +9170,30 @@ namespace AspenTech.AspenCxs.SummaryGrid
 						}
 						catch (CxsException ex)
 						{
-							CxsException ex2 = ex;
 							string text4 = string.Empty;
-							if (((Exception)(object)ex2).InnerException != null)
+							if (ex.InnerException != null)
 							{
-								text4 = ((Exception)(object)ex2).InnerException.Message;
+								text4 = ex.InnerException.Message;
 							}
 							if (!string.IsNullOrWhiteSpace(text4))
 							{
 								System.Windows.Forms.MessageBox.Show(text4, Global.GetString("SummaryGridControl_InputError"), MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
 							}
-							else if (((Exception)(object)ex2).Message == "BatchSet failed")
+							else if (ex.Message == "BatchSet failed")
 							{
 								System.Windows.Forms.MessageBox.Show(Global.GetString("SummaryGridControl_BatchSetFailed"), Global.GetString("SummaryGridControl_InputError"), MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
 							}
 							else
 							{
-								System.Windows.Forms.MessageBox.Show(((Exception)(object)ex2).Message, Global.GetString("SummaryGridControl_InputError"), MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
+								System.Windows.Forms.MessageBox.Show(ex.Message, Global.GetString("SummaryGridControl_InputError"), MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
 							}
 						}
 					}
 				}
 			}
-			catch (Exception ex3)
+			catch (Exception ex2)
 			{
-				System.Windows.MessageBox.Show("Error occurred during paste. " + Environment.NewLine + ex3.Message + Environment.NewLine + ex3.StackTrace, "Paste Error", MessageBoxButton.OK, MessageBoxImage.Hand);
+				System.Windows.MessageBox.Show("Error occurred during paste. " + Environment.NewLine + ex2.Message + Environment.NewLine + ex2.StackTrace, "Paste Error", MessageBoxButton.OK, MessageBoxImage.Hand);
 			}
 			finally
 			{
@@ -11400,7 +11384,7 @@ namespace AspenTech.AspenCxs.SummaryGrid
 							{
 								for (int i = 0; i < array.Length; i++)
 								{
-									if ((int)array[i] == 0)
+									if (array[i] == CxsVerificationResult.Valid)
 									{
 										object obj = summaryGridControl._GridCache.Case.BatchGet(list[i], "value");
 										if (obj != null && obj is string)
@@ -12110,10 +12094,6 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 		{
 			get
 			{
-				//IL_00e5: Unknown result type (might be due to invalid IL or missing references)
-				//IL_00eb: Expected O, but got Unknown
-				//IL_00ee: Unknown result type (might be due to invalid IL or missing references)
-				//IL_0115: Unknown result type (might be due to invalid IL or missing references)
 				if (GridColumn.DataType == ColumnDataType.Boolean)
 				{
 					return true;
@@ -12141,15 +12121,16 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 							else
 							{
 								UseUnderlyingPathForOptions = false;
-								CxsBatchRequestData val = new CxsBatchRequestData();
-								CxsBatchRequest val2 = default(CxsBatchRequest);
-								((CxsBatchRequest)(ref val2)).Path = _UnderlyingPath;
-								((CxsBatchRequest)(ref val2)).Attribute = "valid_attributes";
-								((CxsBatchRequest)(ref val2)).Tag = this;
-								val.AddRequest(val2);
+								CxsBatchRequestData cxsBatchRequestData = new CxsBatchRequestData();
+								cxsBatchRequestData.AddRequest(new CxsBatchRequest
+								{
+									Path = _UnderlyingPath,
+									Attribute = "valid_attributes",
+									Tag = this
+								});
 								try
 								{
-									object[] array = RowProxy.GridCache.Case.BatchGet(val);
+									object[] array = RowProxy.GridCache.Case.BatchGet(cxsBatchRequestData);
 									if (array != null && array.Length != 0)
 									{
 										string[] array2 = CxsConverter.ValueToStringArray(array[0]);
@@ -12238,56 +12219,49 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 
 		internal void AddValueGetRequest(CxsBatchRequestData request)
 		{
-			//IL_0085: Unknown result type (might be due to invalid IL or missing references)
-			//IL_00ba: Unknown result type (might be due to invalid IL or missing references)
-			//IL_001e: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0045: Unknown result type (might be due to invalid IL or missing references)
-			//IL_004e: Unknown result type (might be due to invalid IL or missing references)
-			//IL_007b: Unknown result type (might be due to invalid IL or missing references)
 			if (ValueNeedsUpdate)
 			{
 				string units = Units;
-				CxsBatchRequest val;
 				if (units == null && DisplayingValueAttribute)
 				{
-					val = default(CxsBatchRequest);
-					((CxsBatchRequest)(ref val)).Path = _Path;
-					((CxsBatchRequest)(ref val)).Attribute = "uom";
-					((CxsBatchRequest)(ref val)).Tag = this;
-					request.AddRequest(val);
-					val = default(CxsBatchRequest);
-					((CxsBatchRequest)(ref val)).Path = _Path;
-					((CxsBatchRequest)(ref val)).Attribute = GridColumn.ResolvedAttribute;
-					((CxsBatchRequest)(ref val)).Tag = this;
-					request.AddRequest(val);
+					request.AddRequest(new CxsBatchRequest
+					{
+						Path = _Path,
+						Attribute = "uom",
+						Tag = this
+					});
+					request.AddRequest(new CxsBatchRequest
+					{
+						Path = _Path,
+						Attribute = GridColumn.ResolvedAttribute,
+						Tag = this
+					});
 				}
 				else
 				{
-					val = default(CxsBatchRequest);
-					((CxsBatchRequest)(ref val)).Path = _Path;
-					((CxsBatchRequest)(ref val)).Attribute = GridColumn.ResolvedAttribute;
-					((CxsBatchRequest)(ref val)).Units = units;
-					((CxsBatchRequest)(ref val)).Tag = this;
-					request.AddRequest(val);
+					request.AddRequest(new CxsBatchRequest
+					{
+						Path = _Path,
+						Attribute = GridColumn.ResolvedAttribute,
+						Units = units,
+						Tag = this
+					});
 				}
 			}
 		}
 
 		internal void UpdateFromBatchGet(CxsBatchRequestData requestData)
 		{
-			//IL_0012: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0017: Unknown result type (might be due to invalid IL or missing references)
 			foreach (CxsBatchRequest request in requestData.Requests)
 			{
-				CxsBatchRequest current = request;
-				if (((CxsBatchRequest)(ref current)).Tag != this)
+				if (request.Tag != this)
 				{
 					continue;
 				}
-				if (((CxsBatchRequest)(ref current)).Attribute == GridColumn.ResolvedAttribute)
+				if (request.Attribute == GridColumn.ResolvedAttribute)
 				{
 					_ValueNeedsUpdate = false;
-					Value = ((CxsBatchRequest)(ref current)).Value;
+					Value = request.Value;
 					if (Value != null && GridColumn.DataType == ColumnDataType.Unspecified)
 					{
 						bool flag = true;
@@ -12327,23 +12301,23 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 						break;
 					}
 				}
-				switch (((CxsBatchRequest)(ref current)).Attribute)
+				switch (request.Attribute)
 				{
 				case "uom":
-					_Units = CxsConverter.ValueToString(((CxsBatchRequest)(ref current)).Value);
+					_Units = CxsConverter.ValueToString(request.Value);
 					break;
 				case "option_list":
-					_OptionList = CxsConverter.ValueToOptionArray(((CxsBatchRequest)(ref current)).Value);
+					_OptionList = CxsConverter.ValueToOptionArray(request.Value);
 					break;
 				case "display_option_list":
-					_displayOptionList = CxsConverter.ValueToOptionArray(((CxsBatchRequest)(ref current)).Value);
+					_displayOptionList = CxsConverter.ValueToOptionArray(request.Value);
 					break;
 				case "uom_options":
-					_UnitsList = CxsConverter.ValueToUnitsArray(((CxsBatchRequest)(ref current)).Value);
+					_UnitsList = CxsConverter.ValueToUnitsArray(request.Value);
 					break;
 				case "can_enter":
 				{
-					bool? flag2 = CxsConverter.ValueToBoolean(((CxsBatchRequest)(ref current)).Value);
+					bool? flag2 = CxsConverter.ValueToBoolean(request.Value);
 					if (flag2.HasValue)
 					{
 						_IsReadOnly = !flag2.Value;
@@ -12740,75 +12714,25 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 
 		public bool GetAllGridData()
 		{
-			//IL_0028: Unknown result type (might be due to invalid IL or missing references)
-			//IL_002e: Expected O, but got Unknown
-			//IL_0060: Unknown result type (might be due to invalid IL or missing references)
-			//IL_00a0: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0256: Unknown result type (might be due to invalid IL or missing references)
-			//IL_025e: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0148: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0172: Unknown result type (might be due to invalid IL or missing references)
-			//IL_017b: Unknown result type (might be due to invalid IL or missing references)
-			//IL_01a5: Unknown result type (might be due to invalid IL or missing references)
-			//IL_02c7: Unknown result type (might be due to invalid IL or missing references)
-			//IL_02ce: Expected O, but got Unknown
-			//IL_0108: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0134: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0422: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0427: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0517: Unknown result type (might be due to invalid IL or missing references)
-			//IL_051c: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0534: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0539: Unknown result type (might be due to invalid IL or missing references)
-			//IL_045a: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0468: Unknown result type (might be due to invalid IL or missing references)
-			//IL_046d: Unknown result type (might be due to invalid IL or missing references)
-			//IL_02fd: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0304: Expected O, but got Unknown
-			//IL_030e: Unknown result type (might be due to invalid IL or missing references)
-			//IL_02e8: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0483: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0488: Unknown result type (might be due to invalid IL or missing references)
-			//IL_04a5: Unknown result type (might be due to invalid IL or missing references)
-			//IL_04aa: Unknown result type (might be due to invalid IL or missing references)
-			//IL_05af: Unknown result type (might be due to invalid IL or missing references)
-			//IL_05b5: Expected O, but got Unknown
-			//IL_05b6: Unknown result type (might be due to invalid IL or missing references)
-			//IL_04cf: Unknown result type (might be due to invalid IL or missing references)
-			//IL_04d4: Unknown result type (might be due to invalid IL or missing references)
-			//IL_04f1: Unknown result type (might be due to invalid IL or missing references)
-			//IL_04f6: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0647: Unknown result type (might be due to invalid IL or missing references)
-			//IL_05e3: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0673: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0679: Expected O, but got Unknown
-			//IL_05f4: Unknown result type (might be due to invalid IL or missing references)
-			//IL_03ea: Unknown result type (might be due to invalid IL or missing references)
-			//IL_03ef: Unknown result type (might be due to invalid IL or missing references)
-			//IL_03f4: Unknown result type (might be due to invalid IL or missing references)
-			//IL_03fe: Expected O, but got Unknown
-			//IL_0607: Unknown result type (might be due to invalid IL or missing references)
-			//IL_061a: Unknown result type (might be due to invalid IL or missing references)
-			//IL_062d: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0640: Unknown result type (might be due to invalid IL or missing references)
 			if (SummaryColumns.Count == 0 || SummaryRows.Count == 0)
 			{
 				return false;
 			}
 			List<CellCache> list = new List<CellCache>();
 			List<string> list2 = new List<string>();
-			CxsBatchRequestData val = new CxsBatchRequestData();
+			CxsBatchRequestData cxsBatchRequestData = new CxsBatchRequestData();
 			bool flag = false;
 			foreach (SummaryGridRow summaryRow in SummaryRows)
 			{
 				RowProxy rowProxy = FindRowProxy(summaryRow);
 				if (rowProxy.CheckStatus)
 				{
-					CxsBatchRequest val2 = default(CxsBatchRequest);
-					((CxsBatchRequest)(ref val2)).Path = CxsPath.CombinePaths(rowProxy.GridRow.Path, rowProxy.GridRow.EEStatusPath);
-					((CxsBatchRequest)(ref val2)).Attribute = "value";
-					((CxsBatchRequest)(ref val2)).Tag = rowProxy;
-					val.AddRequest(val2);
+					cxsBatchRequestData.AddRequest(new CxsBatchRequest
+					{
+						Path = CxsPath.CombinePaths(rowProxy.GridRow.Path, rowProxy.GridRow.EEStatusPath),
+						Attribute = "value",
+						Tag = rowProxy
+					});
 				}
 				foreach (SummaryGridColumn summaryColumn in SummaryColumns)
 				{
@@ -12818,24 +12742,27 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 					{
 						if (!flag && !summaryRow.Path.StartsWith("#", StringComparison.Ordinal))
 						{
-							CxsBatchRequest val3 = default(CxsBatchRequest);
-							((CxsBatchRequest)(ref val3)).Path = summaryRow.CalculateColumnPath(summaryColumn);
-							((CxsBatchRequest)(ref val3)).Attribute = "uom";
-							((CxsBatchRequest)(ref val3)).Tag = summaryColumn;
-							val.AddRequest(val3);
+							cxsBatchRequestData.AddRequest(new CxsBatchRequest
+							{
+								Path = summaryRow.CalculateColumnPath(summaryColumn),
+								Attribute = "uom",
+								Tag = summaryColumn
+							});
 						}
-						int count = val.Requests.Count;
-						CxsBatchRequest val4 = default(CxsBatchRequest);
-						((CxsBatchRequest)(ref val4)).Path = cellCache.Path;
-						((CxsBatchRequest)(ref val4)).Attribute = "value";
-						((CxsBatchRequest)(ref val4)).Tag = cellCache;
-						val.AddRequest(val4);
-						CxsBatchRequest val5 = default(CxsBatchRequest);
-						((CxsBatchRequest)(ref val5)).Path = cellCache.Path;
-						((CxsBatchRequest)(ref val5)).Attribute = "can_enter";
-						((CxsBatchRequest)(ref val5)).Tag = cellCache;
-						val.AddRequest(val5);
-						if (count < val.Requests.Count)
+						int count = cxsBatchRequestData.Requests.Count;
+						cxsBatchRequestData.AddRequest(new CxsBatchRequest
+						{
+							Path = cellCache.Path,
+							Attribute = "value",
+							Tag = cellCache
+						});
+						cxsBatchRequestData.AddRequest(new CxsBatchRequest
+						{
+							Path = cellCache.Path,
+							Attribute = "can_enter",
+							Tag = cellCache
+						});
+						if (count < cxsBatchRequestData.Requests.Count)
 						{
 							list.Add(cellCache);
 							list2.Add(cellCache.Path);
@@ -12845,48 +12772,46 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 				}
 				flag = true;
 			}
-			int count2 = val.Requests.Count;
+			int count2 = cxsBatchRequestData.Requests.Count;
 			int count3 = list2.Count;
 			if (count3 > 0)
 			{
-				CxsBatchRequest val6 = default(CxsBatchRequest);
-				CxsBatchRequest val7 = default(CxsBatchRequest);
 				foreach (string item in list2)
 				{
-					((CxsBatchRequest)(ref val6))..ctor(item, "valid_attributes");
-					((CxsBatchRequest)(ref val7))..ctor(item, "value_type");
-					val.AddRequest(val6);
-					val.AddRequest(val7);
+					CxsBatchRequest request = new CxsBatchRequest(item, "valid_attributes");
+					CxsBatchRequest request2 = new CxsBatchRequest(item, "value_type");
+					cxsBatchRequestData.AddRequest(request);
+					cxsBatchRequestData.AddRequest(request2);
 				}
 			}
-			if (val.Requests.Count > 0)
+			if (cxsBatchRequestData.Requests.Count > 0)
 			{
 				System.Windows.Forms.Cursor current4 = System.Windows.Forms.Cursor.Current;
 				try
 				{
 					object[] array = null;
-					if (val.Requests.Count > 0)
+					if (cxsBatchRequestData.Requests.Count > 0)
 					{
 						System.Windows.Forms.Cursor.Current = System.Windows.Forms.Cursors.WaitCursor;
 						int num = 45;
 						if (num > 0)
 						{
 							List<CxsBatchRequestData> list3 = new List<CxsBatchRequestData>();
-							CxsBatchRequestData val8 = new CxsBatchRequestData();
-							for (int i = 0; i < val.RequestsCount; i++)
+							CxsBatchRequestData cxsBatchRequestData2 = new CxsBatchRequestData();
+							for (int i = 0; i < cxsBatchRequestData.RequestsCount; i++)
 							{
-								if (val8.RequestsCount < num)
+								if (cxsBatchRequestData2.RequestsCount < num)
 								{
-									val8.AddRequest(val.Requests[i]);
+									cxsBatchRequestData2.AddRequest(cxsBatchRequestData.Requests[i]);
 									continue;
 								}
-								list3.Add(val8);
-								val8 = new CxsBatchRequestData();
-								val8.AddRequest(val.Requests[i]);
+								list3.Add(cxsBatchRequestData2);
+								cxsBatchRequestData2 = new CxsBatchRequestData();
+								cxsBatchRequestData2.AddRequest(cxsBatchRequestData.Requests[i]);
 							}
-							if (val8.RequestsCount > 0)
+							if (cxsBatchRequestData2.RequestsCount > 0)
 							{
-								list3.Add(val8);
+								list3.Add(cxsBatchRequestData2);
 							}
 							List<object> list4 = new List<object>();
 							foreach (CxsBatchRequestData item2 in list3)
@@ -12897,7 +12822,7 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 						}
 						else
 						{
-							array = Case.BatchGet(val);
+							array = Case.BatchGet(cxsBatchRequestData);
 						}
 						if (array != null && array.Length != 0)
 						{
@@ -12914,7 +12839,7 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 							{
 								for (int k = 0; k < array.Length; k++)
 								{
-									array[k] = Case.BatchGet(new CxsBatchRequestData((CxsBatchRequest[])(object)new CxsBatchRequest[1] { val.Requests[k] }))[0];
+									array[k] = Case.BatchGet(new CxsBatchRequestData(new CxsBatchRequest[1] { cxsBatchRequestData.Requests[k] }))[0];
 								}
 							}
 						}
@@ -12922,51 +12847,31 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 					bool flag3 = false;
 					for (int l = 0; l < count2; l++)
 					{
-						CxsBatchRequest val9 = val.Requests[l];
-						if (((CxsBatchRequest)(ref val9)).Tag is SummaryGridColumn)
+						if (cxsBatchRequestData.Requests[l].Tag is SummaryGridColumn)
 						{
 							string text = CxsConverter.ValueToString(array[l]);
-							if (string.IsNullOrEmpty(text))
+							if (!string.IsNullOrEmpty(text))
 							{
-								continue;
-							}
-							_ = val.Requests[l];
-							val9 = val.Requests[l];
-							if (((CxsBatchRequest)(ref val9)).Tag == null)
-							{
-								continue;
-							}
-							val9 = val.Requests[l];
-							if (((CxsBatchRequest)(ref val9)).Tag is SummaryGridColumn)
-							{
-								val9 = val.Requests[l];
-								if (string.CompareOrdinal(text, (((CxsBatchRequest)(ref val9)).Tag as SummaryGridColumn).Units) != 0)
+								_ = cxsBatchRequestData.Requests[l];
+								if (cxsBatchRequestData.Requests[l].Tag != null && cxsBatchRequestData.Requests[l].Tag is SummaryGridColumn && string.CompareOrdinal(text, (cxsBatchRequestData.Requests[l].Tag as SummaryGridColumn).Units) != 0)
 								{
-									val9 = val.Requests[l];
-									(((CxsBatchRequest)(ref val9)).Tag as SummaryGridColumn).Units = text;
-									val9 = val.Requests[l];
-									(((CxsBatchRequest)(ref val9)).Tag as SummaryGridColumn).UnitsDirty = true;
+									(cxsBatchRequestData.Requests[l].Tag as SummaryGridColumn).Units = text;
+									(cxsBatchRequestData.Requests[l].Tag as SummaryGridColumn).UnitsDirty = true;
 									flag3 = true;
 								}
 							}
-							continue;
 						}
-						val9 = val.Requests[l];
-						if (((CxsBatchRequest)(ref val9)).Tag is RowProxy)
+						else if (cxsBatchRequestData.Requests[l].Tag is RowProxy && cxsBatchRequestData.Requests[l].Tag is RowProxy rowProxy2)
 						{
-							val9 = val.Requests[l];
-							if (((CxsBatchRequest)(ref val9)).Tag is RowProxy rowProxy2)
-							{
-								string eEStatus = CxsConverter.ValueToString(array[l]);
-								rowProxy2.GridRow.EEStatus = eEStatus;
-							}
+							string eEStatus = CxsConverter.ValueToString(array[l]);
+							rowProxy2.GridRow.EEStatus = eEStatus;
 						}
 					}
 					if (!flag3)
 					{
 						BatchGetColUnits();
 					}
-					CxsNodeTraits[] array2 = (CxsNodeTraits[])(object)new CxsNodeTraits[count3];
+					CxsNodeTraits[] array2 = new CxsNodeTraits[count3];
 					for (int m = 0; m < count3; m++)
 					{
 						string[] array3 = CxsConverter.ValueToStringArray(array[count2 + 2 * m]);
@@ -12975,30 +12880,30 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 							continue;
 						}
 						array2[m] = new CxsNodeTraits(array3);
-						CxsNodeValueType valueType = (CxsNodeValueType)0;
+						CxsNodeValueType valueType = CxsNodeValueType.Unknown;
 						string text2 = CxsConverter.ValueToString(array[count2 + 2 * m + 1]);
 						if (!string.IsNullOrEmpty(text2))
 						{
 							if (text2 == "none")
 							{
-								valueType = (CxsNodeValueType)6;
+								valueType = CxsNodeValueType.None;
 							}
 							switch (text2)
 							{
 							case "integer":
-								valueType = (CxsNodeValueType)3;
+								valueType = CxsNodeValueType.Integer;
 								break;
 							case "real":
-								valueType = (CxsNodeValueType)1;
+								valueType = CxsNodeValueType.Real;
 								break;
 							case "boolean":
-								valueType = (CxsNodeValueType)5;
+								valueType = CxsNodeValueType.Boolean;
 								break;
 							case "string":
-								valueType = (CxsNodeValueType)2;
+								valueType = CxsNodeValueType.String;
 								break;
 							case "enum":
-								valueType = (CxsNodeValueType)4;
+								valueType = CxsNodeValueType.Enumeration;
 								break;
 							}
 						}
@@ -13012,10 +12917,10 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 						}
 						list[n].NodeTraits = array2[n];
 					}
-					val.UpdateRequestValues(array);
+					cxsBatchRequestData.UpdateRequestValues(array);
 					foreach (CellCache item3 in list)
 					{
-						item3.UpdateFromBatchGet(val);
+						item3.UpdateFromBatchGet(cxsBatchRequestData);
 						item3.GridColumn.ValuesDirty = true;
 					}
 					foreach (SummaryGridColumn summaryColumn2 in SummaryColumns)
@@ -13089,11 +12994,6 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 
 		public object GetValue(RowProxy rowProxy, RowProxyPropertyDescriptor property)
 		{
-			//IL_004a: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0051: Expected O, but got Unknown
-			//IL_0176: Unknown result type (might be due to invalid IL or missing references)
-			//IL_017b: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0189: Unknown result type (might be due to invalid IL or missing references)
 			if (rowProxy == null)
 			{
 				return null;
@@ -13110,7 +13010,7 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 				List<CellCache> list = new List<CellCache>();
 				try
 				{
-					CxsBatchRequestData val = new CxsBatchRequestData();
+					CxsBatchRequestData cxsBatchRequestData = new CxsBatchRequestData();
 					foreach (SummaryGridColumn item in adjacentColumns)
 					{
 						RowProxyPropertyDescriptor property2 = FindColumnProperty(item);
@@ -13120,9 +13020,9 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 							CellCache cellCache2 = GetCellCache(row, property2);
 							if (cellCache2.ValueNeedsUpdate && !cellCache2.UpdateInProgress)
 							{
-								int requestsCount = val.RequestsCount;
-								cellCache2.AddValueGetRequest(val);
-								if (requestsCount < val.RequestsCount)
+								int requestsCount = cxsBatchRequestData.RequestsCount;
+								cellCache2.AddValueGetRequest(cxsBatchRequestData);
+								if (requestsCount < cxsBatchRequestData.RequestsCount)
 								{
 									list.Add(cellCache2);
 									cellCache2.UpdateInProgress = true;
@@ -13130,11 +13030,11 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 							}
 						}
 					}
-					if (val.RequestsCount > 0)
+					if (cxsBatchRequestData.RequestsCount > 0)
 					{
 						try
 						{
-							object[] array = Case.BatchGet(val);
+							object[] array = Case.BatchGet(cxsBatchRequestData);
 							if (array != null && array.Length != 0)
 							{
 								bool flag = true;
@@ -13152,17 +13052,15 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 									for (int j = 0; j < array.Length; j++)
 									{
 										list2 = new List<CxsBatchRequest>();
-										List<CxsBatchRequest> list3 = list2;
-										CxsBatchRequest val2 = val.Requests[j];
-										list3.Add(new CxsBatchRequest(((CxsBatchRequest)(ref val2)).Path, "value"));
+										list2.Add(new CxsBatchRequest(cxsBatchRequestData.Requests[j].Path, "value"));
 										array[j] = Case.BatchGet(list2.ToArray())[0];
 									}
 								}
 							}
-							val.UpdateRequestValues(array);
+							cxsBatchRequestData.UpdateRequestValues(array);
 							foreach (CellCache item3 in list)
 							{
-								item3.UpdateFromBatchGet(val);
+								item3.UpdateFromBatchGet(cxsBatchRequestData);
 								item3.GridColumn.ValuesDirty = true;
 							}
 						}
@@ -13189,24 +13087,8 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 
 		public void SetValue(RowProxy rowProxy, RowProxyPropertyDescriptor property, object value)
 		{
-			//IL_03fa: Expected O, but got Unknown
-			//IL_0486: Unknown result type (might be due to invalid IL or missing references)
-			//IL_048d: Expected O, but got Unknown
-			//IL_04c3: Unknown result type (might be due to invalid IL or missing references)
-			//IL_04ca: Expected O, but got Unknown
-			//IL_02a3: Unknown result type (might be due to invalid IL or missing references)
-			//IL_02aa: Expected O, but got Unknown
-			//IL_02ae: Unknown result type (might be due to invalid IL or missing references)
-			//IL_01f0: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0224: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0177: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0300: Unknown result type (might be due to invalid IL or missing references)
-			//IL_030d: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0313: Expected O, but got Unknown
-			//IL_0316: Unknown result type (might be due to invalid IL or missing references)
-			//IL_036d: Unknown result type (might be due to invalid IL or missing references)
-			CxsBatchRequestData val = null;
-			CxsBatchRequestData val2 = null;
+			CxsBatchRequestData cxsBatchRequestData = null;
+			CxsBatchRequestData cxsBatchRequestData2 = null;
 			bool flag = false;
 			bool flag2 = false;
 			try
@@ -13307,31 +13189,32 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 				}
 				if (!string.IsNullOrEmpty(text3) && text3[0] != '#')
 				{
-					CxsBatchRequestData val3 = new CxsBatchRequestData();
-					CxsBatchRequest val4 = default(CxsBatchRequest);
-					((CxsBatchRequest)(ref val4)).Path = text3;
-					((CxsBatchRequest)(ref val4)).Attribute = cellCache.ValueAttribute;
-					((CxsBatchRequest)(ref val4)).Units = (string.IsNullOrWhiteSpace(_summaryGridControl.CurrentPopUpUnits) ? cellCache.Units : _summaryGridControl.CurrentPopUpUnits);
-					((CxsBatchRequest)(ref val4)).Value = value;
-					val3.AddRequest(val4);
-					val = val3;
+					CxsBatchRequestData cxsBatchRequestData3 = new CxsBatchRequestData();
+					cxsBatchRequestData3.AddRequest(new CxsBatchRequest
+					{
+						Path = text3,
+						Attribute = cellCache.ValueAttribute,
+						Units = (string.IsNullOrWhiteSpace(_summaryGridControl.CurrentPopUpUnits) ? cellCache.Units : _summaryGridControl.CurrentPopUpUnits),
+						Value = value
+					});
+					cxsBatchRequestData = cxsBatchRequestData3;
 					if (flag)
 					{
-						val2 = new CxsBatchRequestData();
-						CxsBatchRequestData obj = val2;
-						val4 = default(CxsBatchRequest);
-						((CxsBatchRequest)(ref val4)).Path = cellCache.Path;
-						((CxsBatchRequest)(ref val4)).Attribute = cellCache.ValueAttribute;
-						((CxsBatchRequest)(ref val4)).Units = (string.IsNullOrWhiteSpace(_summaryGridControl.CurrentPopUpUnits) ? cellCache.Units : _summaryGridControl.CurrentPopUpUnits);
-						((CxsBatchRequest)(ref val4)).Value = value;
-						obj.AddRequest(val4);
+						cxsBatchRequestData2 = new CxsBatchRequestData();
+						cxsBatchRequestData2.AddRequest(new CxsBatchRequest
+						{
+							Path = cellCache.Path,
+							Attribute = cellCache.ValueAttribute,
+							Units = (string.IsNullOrWhiteSpace(_summaryGridControl.CurrentPopUpUnits) ? cellCache.Units : _summaryGridControl.CurrentPopUpUnits),
+							Value = value
+						});
 					}
-					Case.BatchSet(val3);
+					Case.BatchSet(cxsBatchRequestData3);
 					if (flag)
 					{
-						val = val2;
+						cxsBatchRequestData = cxsBatchRequestData2;
 						flag = false;
-						Case.BatchSet(val2);
+						Case.BatchSet(cxsBatchRequestData2);
 					}
 					cellCache.ResetValueCache();
 					if (_summaryGridControl != null && _summaryGridControl.TabbedSummaryGrid != null)
@@ -13347,21 +13230,20 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 			}
 			catch (CxsException ex)
 			{
-				CxsException ex2 = ex;
-				if (((Exception)(object)ex2).InnerException is COMException { ErrorCode: -2147176446 } ex3)
+				if (ex.InnerException is COMException { ErrorCode: -2147176446 } ex2)
 				{
-					if (System.Windows.Forms.MessageBox.Show(string.Format(CultureInfo.InvariantCulture, Global.GetString("GridCache_ErrorSettingValue") + " " + ex3.Message + "\r\n\r\n" + Global.GetString("GridCache_OverrideError")), Global.GetString("GridCache_ConsistencyError"), MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question) == DialogResult.Yes)
+					if (System.Windows.Forms.MessageBox.Show(string.Format(CultureInfo.InvariantCulture, Global.GetString("GridCache_ErrorSettingValue") + " " + ex2.Message + "\r\n\r\n" + Global.GetString("GridCache_OverrideError")), Global.GetString("GridCache_ConsistencyError"), MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question) == DialogResult.Yes)
 					{
-						CxsBatchRequestData val5 = new CxsBatchRequestData();
-						val5.AddRequest(val.CommonBasePath, "ignore_errors", (string)null, (object)1);
-						val5.AddRequests((IEnumerable<CxsBatchRequest>)val.Requests);
-						Case.BatchSet(val5);
+						CxsBatchRequestData cxsBatchRequestData4 = new CxsBatchRequestData();
+						cxsBatchRequestData4.AddRequest(cxsBatchRequestData.CommonBasePath, "ignore_errors", null, 1);
+						cxsBatchRequestData4.AddRequests(cxsBatchRequestData.Requests);
+						Case.BatchSet(cxsBatchRequestData4);
 						if (flag)
 						{
-							val5 = new CxsBatchRequestData();
-							val5.AddRequest(val2.CommonBasePath, "ignore_errors", (string)null, (object)1);
-							val5.AddRequests((IEnumerable<CxsBatchRequest>)val2.Requests);
-							Case.BatchSet(val5);
+							cxsBatchRequestData4 = new CxsBatchRequestData();
+							cxsBatchRequestData4.AddRequest(cxsBatchRequestData2.CommonBasePath, "ignore_errors", null, 1);
+							cxsBatchRequestData4.AddRequests(cxsBatchRequestData2.Requests);
+							Case.BatchSet(cxsBatchRequestData4);
 						}
 						RefreshData(resetDataCache: true);
 						_summaryGridControl.TabbedSummaryGrid.TriggerOnBatchSetEvent();
@@ -13371,14 +13253,14 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 						_summaryGridControl.RefreshDisplay(resetDataCache: false);
 					}
 				}
-				else if (((Exception)(object)ex2).InnerException != null && ((Exception)(object)ex2).InnerException.Message == "refresh needed")
+				else if (ex.InnerException != null && ex.InnerException.Message == "refresh needed")
 				{
 					if (flag)
 					{
 						flag = false;
 						try
 						{
-							Case.BatchSet(val2);
+							Case.BatchSet(cxsBatchRequestData2);
 						}
 						catch (Exception)
 						{
@@ -13395,7 +13277,7 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 					bool flag6 = false;
 					if (this.DataInputExceptionRaised != null)
 					{
-						DataInputExceptionEventArgs e = new DataInputExceptionEventArgs((Exception)(object)ex2);
+						DataInputExceptionEventArgs e = new DataInputExceptionEventArgs(ex);
 						this.DataInputExceptionRaised(this, e);
 						flag6 = e.Handled;
 					}
@@ -13740,8 +13622,6 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 
 		internal string[] GetColumnUnitsList(SummaryGridColumn column)
 		{
-			//IL_004c: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0052: Expected O, but got Unknown
 			if (!column.UsesUnits)
 			{
 				return null;
@@ -13758,19 +13638,19 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 			{
 				return null;
 			}
-			CxsBatchRequestData val = new CxsBatchRequestData();
+			CxsBatchRequestData cxsBatchRequestData = new CxsBatchRequestData();
 			foreach (SummaryGridRow summaryRow in SummaryRows)
 			{
-				string text = summaryRow.CalculateColumnPath(column);
-				if (SummaryGridRow.IsRealPath(text))
+				string path = summaryRow.CalculateColumnPath(column);
+				if (SummaryGridRow.IsRealPath(path))
 				{
-					val.AddRequest(text, "uom_options");
+					cxsBatchRequestData.AddRequest(path, "uom_options");
 				}
 			}
 			object[] array = null;
 			try
 			{
-				array = Case.BatchGet(val);
+				array = Case.BatchGet(cxsBatchRequestData);
 			}
 			catch
 			{
@@ -13779,13 +13659,13 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 			{
 				for (int i = 0; i < array.Length; i++)
 				{
-					string text2 = CxsConverter.ValueToString(array[i]);
-					if (string.IsNullOrEmpty(text2))
+					string text = CxsConverter.ValueToString(array[i]);
+					if (string.IsNullOrEmpty(text))
 					{
 						continue;
 					}
 					List<string> list = new List<string>();
-					string[] array2 = text2.Split('\n');
+					string[] array2 = text.Split('\n');
 					foreach (string item in array2)
 					{
 						int num = list.BinarySearch(item);
@@ -13825,34 +13705,21 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 
 		public void BatchGetColUnits()
 		{
-			//IL_00a6: Unknown result type (might be due to invalid IL or missing references)
-			//IL_00b4: Unknown result type (might be due to invalid IL or missing references)
-			//IL_00b9: Unknown result type (might be due to invalid IL or missing references)
-			//IL_00cf: Unknown result type (might be due to invalid IL or missing references)
-			//IL_00d4: Unknown result type (might be due to invalid IL or missing references)
-			//IL_00f1: Unknown result type (might be due to invalid IL or missing references)
-			//IL_00f6: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0118: Unknown result type (might be due to invalid IL or missing references)
-			//IL_011d: Unknown result type (might be due to invalid IL or missing references)
-			//IL_013a: Unknown result type (might be due to invalid IL or missing references)
-			//IL_013f: Unknown result type (might be due to invalid IL or missing references)
-			//IL_015b: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0160: Unknown result type (might be due to invalid IL or missing references)
 			if (Case == null || !Case.IsConnected)
 			{
 				return;
 			}
 			for (int i = 0; i < SummaryRows.Count; i++)
 			{
-				CxsBatchRequestData val = CreateColUnitsRequestData(i);
-				if (val == null || val.RequestsCount == 0)
+				CxsBatchRequestData cxsBatchRequestData = CreateColUnitsRequestData(i);
+				if (cxsBatchRequestData == null || cxsBatchRequestData.RequestsCount == 0)
 				{
 					continue;
 				}
 				object[] array = null;
 				try
 				{
-					array = Case.BatchGet(val);
+					array = Case.BatchGet(cxsBatchRequestData);
 				}
 				catch
 				{
@@ -13880,28 +13747,14 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 					for (int k = 0; k < array.Length; k++)
 					{
 						string text = CxsConverter.ValueToString(array[k]);
-						if (string.IsNullOrEmpty(text))
+						if (!string.IsNullOrEmpty(text))
 						{
-							continue;
-						}
-						_ = val.Requests[k];
-						CxsBatchRequest val2 = val.Requests[k];
-						if (((CxsBatchRequest)(ref val2)).Tag == null)
-						{
-							continue;
-						}
-						val2 = val.Requests[k];
-						if (((CxsBatchRequest)(ref val2)).Tag is SummaryGridColumn)
-						{
-							val2 = val.Requests[k];
-							if (string.CompareOrdinal(text, (((CxsBatchRequest)(ref val2)).Tag as SummaryGridColumn).Units) != 0)
+							_ = cxsBatchRequestData.Requests[k];
+							if (cxsBatchRequestData.Requests[k].Tag != null && cxsBatchRequestData.Requests[k].Tag is SummaryGridColumn && string.CompareOrdinal(text, (cxsBatchRequestData.Requests[k].Tag as SummaryGridColumn).Units) != 0)
 							{
-								val2 = val.Requests[k];
-								(((CxsBatchRequest)(ref val2)).Tag as SummaryGridColumn).Units = text;
-								val2 = val.Requests[k];
-								(((CxsBatchRequest)(ref val2)).Tag as SummaryGridColumn).UnitsDirty = true;
-								val2 = val.Requests[k];
-								(((CxsBatchRequest)(ref val2)).Tag as SummaryGridColumn).UsesUnits = true;
+								(cxsBatchRequestData.Requests[k].Tag as SummaryGridColumn).Units = text;
+								(cxsBatchRequestData.Requests[k].Tag as SummaryGridColumn).UnitsDirty = true;
+								(cxsBatchRequestData.Requests[k].Tag as SummaryGridColumn).UsesUnits = true;
 							}
 						}
 					}
@@ -13923,15 +13776,11 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 
 		private CxsBatchRequestData CreateColUnitsRequestData(int RowIndex)
 		{
-			//IL_0010: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0016: Expected O, but got Unknown
-			//IL_006d: Unknown result type (might be due to invalid IL or missing references)
-			//IL_00a9: Unknown result type (might be due to invalid IL or missing references)
 			if (RowIndex >= SummaryRows.Count)
 			{
 				return null;
 			}
-			CxsBatchRequestData val = new CxsBatchRequestData();
+			CxsBatchRequestData cxsBatchRequestData = new CxsBatchRequestData();
 			foreach (SummaryGridColumn summaryColumn in SummaryColumns)
 			{
 				if (!string.IsNullOrWhiteSpace(summaryColumn.Units))
@@ -13943,30 +13792,26 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 					SummaryGridRow summaryGridRow = SummaryRows[RowIndex];
 					if (!summaryGridRow.Path.StartsWith("#", StringComparison.Ordinal))
 					{
-						CxsBatchRequest val2 = default(CxsBatchRequest);
-						((CxsBatchRequest)(ref val2)).Path = summaryGridRow.CalculateColumnPath(summaryColumn);
-						if (((CxsBatchRequest)(ref val2)).Path.StartsWith("#"))
+						CxsBatchRequest request = new CxsBatchRequest
+						{
+							Path = summaryGridRow.CalculateColumnPath(summaryColumn)
+						};
+						if (request.Path.StartsWith("#"))
 						{
 							continue;
 						}
-						((CxsBatchRequest)(ref val2)).Attribute = "uom";
-						((CxsBatchRequest)(ref val2)).Tag = summaryColumn;
-						val.AddRequest(val2);
+						request.Attribute = "uom";
+						request.Tag = summaryColumn;
+						cxsBatchRequestData.AddRequest(request);
 					}
 				}
 				summaryColumn.ValuesDirty = false;
 			}
-			return val;
+			return cxsBatchRequestData;
 		}
 
 		public string GetColumnUnits(SummaryGridColumn column)
 		{
-			//IL_0150: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0155: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0069: Unknown result type (might be due to invalid IL or missing references)
-			//IL_006f: Expected O, but got Unknown
-			//IL_00b2: Unknown result type (might be due to invalid IL or missing references)
-			//IL_00eb: Unknown result type (might be due to invalid IL or missing references)
 			if (!string.IsNullOrEmpty(column.Units))
 			{
 				return column.Units;
@@ -13982,29 +13827,31 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 			bool flag = true;
 			foreach (SummaryGridRow summaryRow in SummaryRows)
 			{
-				CxsBatchRequestData val = new CxsBatchRequestData();
+				CxsBatchRequestData cxsBatchRequestData = new CxsBatchRequestData();
 				foreach (SummaryGridColumn summaryColumn in SummaryColumns)
 				{
 					if ((!_summaryGridControl.TabbedSummaryGrid.UseProvidedRowInfo || summaryColumn.UsesUnits) && string.IsNullOrEmpty(summaryColumn.Units))
 					{
-						CxsBatchRequest val2 = default(CxsBatchRequest);
-						((CxsBatchRequest)(ref val2)).Path = summaryRow.CalculateColumnPath(summaryColumn);
-						if (SummaryGridRow.IsRealPath(((CxsBatchRequest)(ref val2)).Path))
+						CxsBatchRequest request = new CxsBatchRequest
 						{
-							((CxsBatchRequest)(ref val2)).Attribute = "uom";
-							((CxsBatchRequest)(ref val2)).Tag = summaryColumn;
-							val.AddRequest(val2);
+							Path = summaryRow.CalculateColumnPath(summaryColumn)
+						};
+						if (SummaryGridRow.IsRealPath(request.Path))
+						{
+							request.Attribute = "uom";
+							request.Tag = summaryColumn;
+							cxsBatchRequestData.AddRequest(request);
 						}
 					}
 				}
-				if (val.RequestsCount == 0)
+				if (cxsBatchRequestData.RequestsCount == 0)
 				{
 					continue;
 				}
 				object[] array = null;
 				try
 				{
-					array = Case.BatchGet(val);
+					array = Case.BatchGet(cxsBatchRequestData);
 				}
 				catch
 				{
@@ -14016,8 +13863,7 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 						string text = CxsConverter.ValueToString(array[i]);
 						if (!string.IsNullOrEmpty(text))
 						{
-							CxsBatchRequest val3 = val.Requests[i];
-							(((CxsBatchRequest)(ref val3)).Tag as SummaryGridColumn).Units = text;
+							(cxsBatchRequestData.Requests[i].Tag as SummaryGridColumn).Units = text;
 						}
 					}
 				}
@@ -14071,36 +13917,29 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 
 		internal void UpdateRowEEStatus()
 		{
-			//IL_0000: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0006: Expected O, but got Unknown
-			//IL_0039: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0070: Unknown result type (might be due to invalid IL or missing references)
-			//IL_014f: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0156: Expected O, but got Unknown
-			//IL_0166: Unknown result type (might be due to invalid IL or missing references)
-			//IL_018f: Unknown result type (might be due to invalid IL or missing references)
-			CxsBatchRequestData val = new CxsBatchRequestData();
+			CxsBatchRequestData cxsBatchRequestData = new CxsBatchRequestData();
 			List<RowProxy> list = new List<RowProxy>();
 			foreach (SummaryGridRow summaryRow in SummaryRows)
 			{
 				RowProxy rowProxy = FindRowProxy(summaryRow);
 				if (rowProxy != null && rowProxy.CheckStatus)
 				{
-					CxsBatchRequest val2 = default(CxsBatchRequest);
-					((CxsBatchRequest)(ref val2)).Path = CxsPath.CombinePaths(rowProxy.GridRow.Path, rowProxy.GridRow.EEStatusPath);
-					((CxsBatchRequest)(ref val2)).Attribute = "value";
-					val.AddRequest(val2);
+					cxsBatchRequestData.AddRequest(new CxsBatchRequest
+					{
+						Path = CxsPath.CombinePaths(rowProxy.GridRow.Path, rowProxy.GridRow.EEStatusPath),
+						Attribute = "value"
+					});
 					list.Add(rowProxy);
 				}
 			}
-			if (val.Requests.Count <= 0)
+			if (cxsBatchRequestData.Requests.Count <= 0)
 			{
 				return;
 			}
 			object[] array = null;
 			try
 			{
-				array = Case.BatchGet(val);
+				array = Case.BatchGet(cxsBatchRequestData);
 			}
 			catch
 			{
@@ -14127,19 +13966,20 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 				}
 				string[] statusReportPaths = rowProxy2.GridRow.StatusReportPaths;
 				string path = rowProxy2.GridRow.Path;
-				CxsBatchRequestData val3 = new CxsBatchRequestData();
+				CxsBatchRequestData cxsBatchRequestData2 = new CxsBatchRequestData();
 				string[] array2 = statusReportPaths;
 				foreach (string text in array2)
 				{
-					CxsBatchRequest val4 = default(CxsBatchRequest);
-					((CxsBatchRequest)(ref val4)).Path = path + "." + text;
-					((CxsBatchRequest)(ref val4)).Attribute = "value";
-					val3.AddRequest(val4);
+					cxsBatchRequestData2.AddRequest(new CxsBatchRequest
+					{
+						Path = path + "." + text,
+						Attribute = "value"
+					});
 				}
 				object[] array3 = null;
 				try
 				{
-					array3 = Case.BatchGet(val3);
+					array3 = Case.BatchGet(cxsBatchRequestData2);
 				}
 				catch
 				{
@@ -14167,8 +14007,6 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 
 		internal void BatchGetCellNodeTraits()
 		{
-			//IL_0108: Unknown result type (might be due to invalid IL or missing references)
-			//IL_010e: Expected O, but got Unknown
 			List<string> list = new List<string>();
 			List<CellCache> list2 = new List<CellCache>();
 			foreach (SummaryGridColumn summaryColumn in SummaryColumns)
@@ -14227,10 +14065,6 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 
 		internal bool? IsReadOnly(RowProxy rowProxy, RowProxyPropertyDescriptor property)
 		{
-			//IL_004e: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0054: Expected O, but got Unknown
-			//IL_00c3: Unknown result type (might be due to invalid IL or missing references)
-			//IL_00ec: Unknown result type (might be due to invalid IL or missing references)
 			bool? isReadOnly = property.GridColumn.IsReadOnly;
 			if (isReadOnly.HasValue)
 			{
@@ -14243,7 +14077,7 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 				return isReadOnly.Value;
 			}
 			List<CellCache> list = new List<CellCache>();
-			CxsBatchRequestData val = new CxsBatchRequestData();
+			CxsBatchRequestData cxsBatchRequestData = new CxsBatchRequestData();
 			foreach (SummaryGridRow adjacentRow in GetAdjacentRows(rowProxy.GridRow))
 			{
 				RowProxy row = FindRowProxy(adjacentRow);
@@ -14251,20 +14085,21 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 				if (!cellCache2.IsReadOnly.HasValue && (cellCache2.NodeTraits == null || cellCache2.NodeTraits.IsValidAttribute("can_enter")))
 				{
 					list.Add(cellCache2);
-					CxsBatchRequest val2 = default(CxsBatchRequest);
-					((CxsBatchRequest)(ref val2)).Path = cellCache2.Path;
-					((CxsBatchRequest)(ref val2)).Attribute = "can_enter";
-					((CxsBatchRequest)(ref val2)).Tag = cellCache2;
-					val.AddRequest(val2);
+					cxsBatchRequestData.AddRequest(new CxsBatchRequest
+					{
+						Path = cellCache2.Path,
+						Attribute = "can_enter",
+						Tag = cellCache2
+					});
 				}
 			}
-			if (val.RequestsCount > 0)
+			if (cxsBatchRequestData.RequestsCount > 0)
 			{
-				object[] array = Case.BatchGet(val);
-				val.UpdateRequestValues(array);
+				object[] values = Case.BatchGet(cxsBatchRequestData);
+				cxsBatchRequestData.UpdateRequestValues(values);
 				foreach (CellCache item in list)
 				{
-					item.UpdateFromBatchGet(val);
+					item.UpdateFromBatchGet(cxsBatchRequestData);
 				}
 				isReadOnly = cellCache.IsReadOnly;
 			}
@@ -14273,10 +14108,6 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 
 		internal string[] GetDisplayOptionList(RowProxy row, RowProxyPropertyDescriptor property)
 		{
-			//IL_0036: Unknown result type (might be due to invalid IL or missing references)
-			//IL_003c: Expected O, but got Unknown
-			//IL_0061: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0084: Unknown result type (might be due to invalid IL or missing references)
 			string[] array = null;
 			CellCache cellCache = GetCellCache(row, property);
 			array = cellCache.DisplayOptionList;
@@ -14285,20 +14116,21 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 				bool? flag = HasOptionList(row, property);
 				if (flag.HasValue && flag.Value)
 				{
-					CxsBatchRequestData val = new CxsBatchRequestData();
+					CxsBatchRequestData cxsBatchRequestData = new CxsBatchRequestData();
 					string path = cellCache.Path;
 					if (cellCache.UseUnderlyingPathForOptions ?? false)
 					{
 						path = cellCache.UnderlyingPath;
 					}
-					CxsBatchRequest val2 = default(CxsBatchRequest);
-					((CxsBatchRequest)(ref val2)).Path = path;
-					((CxsBatchRequest)(ref val2)).Attribute = "display_option_list";
-					((CxsBatchRequest)(ref val2)).Tag = cellCache;
-					val.AddRequest(val2);
-					object[] array2 = Case.BatchGet(val);
-					val.UpdateRequestValues(array2);
-					cellCache.UpdateFromBatchGet(val);
+					cxsBatchRequestData.AddRequest(new CxsBatchRequest
+					{
+						Path = path,
+						Attribute = "display_option_list",
+						Tag = cellCache
+					});
+					object[] values = Case.BatchGet(cxsBatchRequestData);
+					cxsBatchRequestData.UpdateRequestValues(values);
+					cellCache.UpdateFromBatchGet(cxsBatchRequestData);
 					array = cellCache.DisplayOptionList;
 				}
 			}
@@ -14307,10 +14139,6 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 
 		internal string[] GetOptionList(RowProxy row, RowProxyPropertyDescriptor property)
 		{
-			//IL_0036: Unknown result type (might be due to invalid IL or missing references)
-			//IL_003c: Expected O, but got Unknown
-			//IL_0061: Unknown result type (might be due to invalid IL or missing references)
-			//IL_0084: Unknown result type (might be due to invalid IL or missing references)
 			string[] array = null;
 			CellCache cellCache = GetCellCache(row, property);
 			array = cellCache.OptionList;
@@ -14319,20 +14147,21 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 				bool? flag = HasOptionList(row, property);
 				if (flag.HasValue && flag.Value)
 				{
-					CxsBatchRequestData val = new CxsBatchRequestData();
+					CxsBatchRequestData cxsBatchRequestData = new CxsBatchRequestData();
 					string path = cellCache.Path;
 					if (cellCache.UseUnderlyingPathForOptions ?? false)
 					{
 						path = cellCache.UnderlyingPath;
 					}
-					CxsBatchRequest val2 = default(CxsBatchRequest);
-					((CxsBatchRequest)(ref val2)).Path = path;
-					((CxsBatchRequest)(ref val2)).Attribute = "option_list";
-					((CxsBatchRequest)(ref val2)).Tag = cellCache;
-					val.AddRequest(val2);
-					object[] array2 = Case.BatchGet(val);
-					val.UpdateRequestValues(array2);
-					cellCache.UpdateFromBatchGet(val);
+					cxsBatchRequestData.AddRequest(new CxsBatchRequest
+					{
+						Path = path,
+						Attribute = "option_list",
+						Tag = cellCache
+					});
+					object[] values = Case.BatchGet(cxsBatchRequestData);
+					cxsBatchRequestData.UpdateRequestValues(values);
+					cellCache.UpdateFromBatchGet(cxsBatchRequestData);
 					array = cellCache.OptionList;
 				}
 			}
@@ -14500,5 +14329,3 @@ namespace AspenTech.AspenCxs.SummaryGrid.GridInternals
 		}
 	}
 }
-You are not using the latest version of the tool, please update.
-Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

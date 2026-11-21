@@ -756,7 +756,7 @@ namespace AspenTech.Visualisation.CommonShell
 			}
 			if (_screenType != null && container != null)
 			{
-				screenContentControl = UnityContainerExtensions.Resolve(container, _screenType, Array.Empty<ResolverOverride>()) as ScreenContentControl;
+				screenContentControl = container.Resolve(_screenType) as ScreenContentControl;
 				screenContentControl.InitializeScreen(container, screenSubject, screenState);
 			}
 			return screenContentControl;
@@ -1151,24 +1151,23 @@ namespace AspenTech.Visualisation.CommonShell
 
 		private IEnumerable<IUnityContainer> EnumerateContainerChildren()
 		{
-			ILifetimeContainer lifetime = ((UnityContainerExtension)this).Context.Lifetime;
+			ILifetimeContainer lifetime = base.Context.Lifetime;
 			if (lifetime == null)
 			{
 				yield break;
 			}
-			foreach (object item in (IEnumerable<object>)lifetime)
+			foreach (object item in lifetime)
 			{
-				IUnityContainer val = (IUnityContainer)((item is IUnityContainer) ? item : null);
-				if (val != null)
+				if (item is IUnityContainer unityContainer)
 				{
-					yield return val;
+					yield return unityContainer;
 				}
 			}
 		}
 
 		public static IEnumerable<IUnityContainer> EnumerateContainerChildren(IUnityContainer container)
 		{
-			RoutingEventAggregatorUnityExtension routingEventAggregatorUnityExtension = UnityContainerExtensions.Configure<RoutingEventAggregatorUnityExtension>(container);
+			RoutingEventAggregatorUnityExtension routingEventAggregatorUnityExtension = container.Configure<RoutingEventAggregatorUnityExtension>();
 			if (routingEventAggregatorUnityExtension == null)
 			{
 				yield break;
@@ -1195,7 +1194,7 @@ namespace AspenTech.Visualisation.CommonShell
 			TEventType val = _events.FirstOrDefault((EventBase evt) => evt.GetType() == typeof(TEventType)) as TEventType;
 			if (val == null)
 			{
-				val = UnityContainerExtensions.Resolve<TEventType>(Container, Array.Empty<ResolverOverride>());
+				val = Container.Resolve<TEventType>(Array.Empty<ResolverOverride>());
 				_events.Add(val);
 			}
 			return val;
@@ -1206,13 +1205,13 @@ namespace AspenTech.Visualisation.CommonShell
 			Type type = eventInstance.GetType();
 			if (strategy == CompositeEventRoutingStrategy.AllTopDown)
 			{
-				IUnityContainer val = Container;
-				while (val.Parent != null)
+				IUnityContainer unityContainer = Container;
+				while (unityContainer.Parent != null)
 				{
-					val = val.Parent;
+					unityContainer = unityContainer.Parent;
 				}
-				PublishToContainer(val, type, payload);
-				PublishToChildren(val, type, payload, stopAtFirstSubscriber: false);
+				PublishToContainer(unityContainer, type, payload);
+				PublishToChildren(unityContainer, type, payload, stopAtFirstSubscriber: false);
 				return;
 			}
 			bool flag = false;
@@ -1272,7 +1271,7 @@ namespace AspenTech.Visualisation.CommonShell
 				RoutingEventAggregator routingEventAggregator = null;
 				try
 				{
-					routingEventAggregator = UnityContainerExtensions.Resolve<IEventAggregator>(parent, Array.Empty<ResolverOverride>()) as RoutingEventAggregator;
+					routingEventAggregator = parent.Resolve<IEventAggregator>(Array.Empty<ResolverOverride>()) as RoutingEventAggregator;
 				}
 				catch (Exception)
 				{
@@ -1299,7 +1298,7 @@ namespace AspenTech.Visualisation.CommonShell
 			RoutingEventAggregator routingEventAggregator = null;
 			try
 			{
-				routingEventAggregator = UnityContainerExtensions.Resolve<IEventAggregator>(container, Array.Empty<ResolverOverride>()) as RoutingEventAggregator;
+				routingEventAggregator = container.Resolve<IEventAggregator>(Array.Empty<ResolverOverride>()) as RoutingEventAggregator;
 			}
 			catch (Exception)
 			{
@@ -1319,7 +1318,7 @@ namespace AspenTech.Visualisation.CommonShell
 				RoutingEventAggregator routingEventAggregator = null;
 				try
 				{
-					routingEventAggregator = UnityContainerExtensions.Resolve<IEventAggregator>(item, Array.Empty<ResolverOverride>()) as RoutingEventAggregator;
+					routingEventAggregator = item.Resolve<IEventAggregator>(Array.Empty<ResolverOverride>()) as RoutingEventAggregator;
 				}
 				catch (Exception)
 				{
@@ -1350,7 +1349,7 @@ namespace AspenTech.Visualisation.CommonShell
 			IShellMainWindow shellMainWindow = null;
 			try
 			{
-				IShellApplication shellApplication = UnityContainerExtensions.Resolve<IShellApplication>(Container, Array.Empty<ResolverOverride>());
+				IShellApplication shellApplication = Container.Resolve<IShellApplication>(Array.Empty<ResolverOverride>());
 				if (shellApplication != null)
 				{
 					shellMainWindow = shellApplication.ActiveWindow;
@@ -1377,7 +1376,7 @@ namespace AspenTech.Visualisation.CommonShell
 	{
 		public CompositeEventRoutingStrategy RoutingStrategy { get; set; }
 
-		[Dependency]
+		[Microsoft.Practices.Unity.Dependency]
 		public IEventAggregator EventAggregator { get; set; }
 
 		public RoutedCompositePresentationEvent()
@@ -1494,8 +1493,7 @@ namespace AspenTech.Visualisation.CommonShell
 		{
 			get
 			{
-				object value = GetValue(UnityContainerProperty);
-				return (IUnityContainer)((value is IUnityContainer) ? value : null);
+				return GetValue(UnityContainerProperty) as IUnityContainer;
 			}
 			set
 			{
@@ -1874,9 +1872,7 @@ namespace AspenTech.Visualisation.CommonShell
 		{
 			if (d is ScreenContentControl screenContentControl && args.OldValue != args.NewValue)
 			{
-				object oldValue = (object)/*isinst with value type is only supported in some contexts*/;
-				object newValue = args.NewValue;
-				screenContentControl.OnUnityContainerChanged((IUnityContainer)oldValue, (IUnityContainer)((newValue is IUnityContainer) ? newValue : null));
+				screenContentControl.OnUnityContainerChanged(args.OldValue as IUnityContainer, args.NewValue as IUnityContainer);
 			}
 		}
 
@@ -1901,7 +1897,7 @@ namespace AspenTech.Visualisation.CommonShell
 			UnityContainer = container;
 			if (container != null)
 			{
-				EventAggregator = UnityContainerExtensions.Resolve<IEventAggregator>(container, Array.Empty<ResolverOverride>());
+				EventAggregator = container.Resolve<IEventAggregator>(Array.Empty<ResolverOverride>());
 			}
 			ScreenSubject = screenSubject;
 			if (screenSubject != null)
@@ -2090,7 +2086,7 @@ namespace AspenTech.Visualisation.CommonShell
 		{
 			if (UnityContainer != null)
 			{
-				UnityContainerExtensions.Resolve<IShellMainWindow>(UnityContainer, Array.Empty<ResolverOverride>())?.ActivateScreen(this);
+				UnityContainer.Resolve<IShellMainWindow>(Array.Empty<ResolverOverride>())?.ActivateScreen(this);
 			}
 		}
 
@@ -2159,7 +2155,7 @@ namespace AspenTech.Visualisation.CommonShell
 		public override void InitializeScreen(IUnityContainer container, ScreenSubject screenSubject, ScreenState screenState)
 		{
 			base.InitializeScreen(container, screenSubject, screenState);
-			IShellMainWindow shellMainWindow = ((container != null) ? UnityContainerExtensions.Resolve<IShellMainWindow>(container, Array.Empty<ResolverOverride>()) : null);
+			IShellMainWindow shellMainWindow = container?.Resolve<IShellMainWindow>(Array.Empty<ResolverOverride>());
 			if (shellMainWindow != null)
 			{
 				BindingOperations.SetBinding(this, ActiveDocumentScreenProperty, new Binding
@@ -2784,10 +2780,10 @@ namespace AspenTech.Visualisation.CommonShell
 
 		private bool _showScreenPending;
 
-		[Dependency]
+		[Microsoft.Practices.Unity.Dependency]
 		public IUnityContainer UnityContainer { get; set; }
 
-		[Dependency]
+		[Microsoft.Practices.Unity.Dependency]
 		public IEventAggregator EventAggregator { get; set; }
 
 		public ImageSource Image
@@ -2907,11 +2903,11 @@ namespace AspenTech.Visualisation.CommonShell
 				IShellMainWindow shellMainWindow = null;
 				if (UnityContainer != null)
 				{
-					shellMainWindow = UnityContainerExtensions.Resolve<IShellMainWindow>(UnityContainer, Array.Empty<ResolverOverride>());
+					shellMainWindow = UnityContainer.Resolve<IShellMainWindow>(Array.Empty<ResolverOverride>());
 				}
 				if (EventAggregator is RoutingEventAggregator { Container: not null } routingEventAggregator)
 				{
-					shellMainWindow = UnityContainerExtensions.Resolve<IShellMainWindow>(routingEventAggregator.Container, Array.Empty<ResolverOverride>());
+					shellMainWindow = routingEventAggregator.Container.Resolve<IShellMainWindow>(Array.Empty<ResolverOverride>());
 				}
 				if (shellMainWindow == null)
 				{
@@ -3297,7 +3293,7 @@ namespace AspenTech.Visualisation.CommonShell
 			}
 		}
 
-		[Dependency]
+		[Microsoft.Practices.Unity.Dependency]
 		[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
 		public IShellMainWindow ShellMainWindow { get; set; }
 
@@ -4723,5 +4719,3 @@ namespace AspenTech.Visualisation.CommonShell.AutomationPeers
 		}
 	}
 }
-You are not using the latest version of the tool, please update.
-Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

@@ -78,13 +78,13 @@ using Microsoft.Win32;
 [assembly: AssemblyResourceSetLoader(typeof(EditorsAssemblyResourceSetLoader))]
 [assembly: AssemblyThemeGroupingName("Editors")]
 [assembly: ThemeInfo(ResourceDictionaryLocation.SourceAssembly, ResourceDictionaryLocation.SourceAssembly)]
-[assembly: AssemblyFileVersion("21.2.20212.9")]
+[assembly: AssemblyFileVersion("21.1.20211.27")]
 [assembly: NeutralResourcesLanguage("en-US")]
-[assembly: SatelliteContractVersion("21.2.0.0")]
+[assembly: SatelliteContractVersion("21.1.0.0")]
 [assembly: InternalsVisibleTo("InfragisticsWPF.DataPresenter, PublicKey=002400000480000094000000060200000024000052534131000400000100010001afa6285b0af5cdd03aa2b6fdaf33fc4759cf9cd9bcf8b778ae60b9fcf71fc8126b78dbf930519614013b7999297907dd9c00bcc487a14f4c6733fe9adb96c053f005d7148f1666fcb882a0f9ba4307c85694b3322889dab357ad5cefd72ccc45e1b6973bdd2f15b2a300077b8d9de30739200887c5407c8a68c90345cbc4f1")]
 [assembly: InternalsVisibleTo("InfragisticsWPF.Ribbon, PublicKey=002400000480000094000000060200000024000052534131000400000100010001afa6285b0af5cdd03aa2b6fdaf33fc4759cf9cd9bcf8b778ae60b9fcf71fc8126b78dbf930519614013b7999297907dd9c00bcc487a14f4c6733fe9adb96c053f005d7148f1666fcb882a0f9ba4307c85694b3322889dab357ad5cefd72ccc45e1b6973bdd2f15b2a300077b8d9de30739200887c5407c8a68c90345cbc4f1")]
 [assembly: TargetFramework(".NETFramework,Version=v4.0,Profile=Client", FrameworkDisplayName = ".NET Framework 4 Client Profile")]
-[assembly: AssemblyVersion("21.2.20212.9")]
+[assembly: AssemblyVersion("21.1.20211.27")]
 internal sealed class SR
 {
 	private static SR loader;
@@ -19402,13 +19402,10 @@ namespace Infragistics.Windows.Editors
 				if (IsInitialized && value != _caretPosition)
 				{
 					_caretPosition = CoerceCaretPosition(value);
-					if (!IsSettingSelectedText)
-					{
-						MaskedEditor.CaretPosition = _caretPosition;
-						ScrollDisplayCharIntoView(_caretPosition);
-						MaskedEditor.ResetCaretBlinking();
-						InvalidateMaskElement();
-					}
+					MaskedEditor.CaretPosition = _caretPosition;
+					ScrollDisplayCharIntoView(_caretPosition);
+					MaskedEditor.ResetCaretBlinking();
+					InvalidateMaskElement();
 				}
 			}
 		}
@@ -19527,8 +19524,6 @@ namespace Infragistics.Windows.Editors
 				SetSelectedText(value, fireValueChanged: true);
 			}
 		}
-
-		internal bool IsSettingSelectedText { get; set; }
 
 		internal EditInfo(MaskInfo maskInfo)
 		{
@@ -23253,28 +23248,6 @@ namespace Infragistics.Windows.Editors
 		}
 
 		private void SetSelectedText(string text, bool fireValueChanged, bool isPaste = false)
-		{
-			bool isSettingSelectedText = IsSettingSelectedText;
-			IsSettingSelectedText = true;
-			try
-			{
-				SetSelectedTextImpl(text, fireValueChanged, isPaste);
-			}
-			finally
-			{
-				IsSettingSelectedText = isSettingSelectedText;
-				if (!isSettingSelectedText && MaskedEditor != null)
-				{
-					MaskedEditor.SyncDrawAsSelectedOnDisplayPresenters();
-					MaskedEditor.CaretPosition = _caretPosition;
-					ScrollDisplayCharIntoView(_caretPosition);
-					MaskedEditor.ResetCaretBlinking();
-					InvalidateMaskElement();
-				}
-			}
-		}
-
-		private void SetSelectedTextImpl(string text, bool fireValueChanged, bool isPaste = false)
 		{
 			if (text == null)
 			{
@@ -29070,7 +29043,7 @@ namespace Infragistics.Windows.Editors
 
 		internal void SyncDrawAsSelectedOnDisplayPresenters()
 		{
-			if (!base.IsInEditMode || EditInfo == null || EditInfo.IsSettingSelectedText)
+			if (!base.IsInEditMode || EditInfo == null)
 			{
 				return;
 			}
@@ -34164,16 +34137,6 @@ namespace Infragistics.Windows.Editors
 
 		private static Dictionary<Type, Type> g_defaultEditors;
 
-		internal static MethodInfo _isComposingMethod;
-
-		internal static PropertyInfo _textCompositionSourceProp;
-
-		internal static PropertyInfo _textCompositionStageProp;
-
-		internal static object _textCompositionStageDone;
-
-		internal static bool _isComposingReflectionFailed;
-
 		private bool _inSyncValueProperties;
 
 		public static readonly RoutedEvent EditModeEndedEvent;
@@ -34774,7 +34737,6 @@ namespace Infragistics.Windows.Editors
 
 		static ValueEditor()
 		{
-			_isComposingReflectionFailed = false;
 			EditModeEndedEvent = EventManager.RegisterRoutedEvent("EditModeEnded", RoutingStrategy.Bubble, typeof(EventHandler<EditModeEndedEventArgs>), typeof(ValueEditor));
 			EditModeEndingEvent = EventManager.RegisterRoutedEvent("EditModeEnding", RoutingStrategy.Bubble, typeof(EventHandler<EditModeEndingEventArgs>), typeof(ValueEditor));
 			EditModeStartedEvent = EventManager.RegisterRoutedEvent("EditModeStarted", RoutingStrategy.Bubble, typeof(EventHandler<EditModeStartedEventArgs>), typeof(ValueEditor));
@@ -34833,27 +34795,6 @@ namespace Infragistics.Windows.Editors
 			Control.TemplateProperty.OverrideMetadata(typeof(ValueEditor), new FrameworkPropertyMetadata(null, OnCoerceTemplate));
 			FocusWithinManager.RegisterType(typeof(ValueEditor));
 			UIElement.IsEnabledProperty.OverrideMetadata(typeof(ValueEditor), new FrameworkPropertyMetadata(OnVisualStatePropertyChanged));
-			try
-			{
-				Type type = typeof(Button).Assembly.GetType("MS.Internal.Helper");
-				if (type != null)
-				{
-					MethodInfo method = type.GetMethod("IsComposing", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, new Type[1] { typeof(TextBoxBase) }, null);
-					PropertyInfo property = typeof(TextComposition).GetProperty("Source", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-					PropertyInfo property2 = typeof(TextComposition).GetProperty("Stage", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-					if (property2 != null && property2.PropertyType.IsEnum)
-					{
-						_textCompositionStageDone = Enum.Parse(property2.PropertyType, "Done");
-						_textCompositionStageProp = property2;
-						_textCompositionSourceProp = property;
-						_isComposingMethod = method;
-					}
-				}
-			}
-			catch (Exception)
-			{
-				_isComposingReflectionFailed = true;
-			}
 		}
 
 		protected ValueEditor()
@@ -35264,41 +35205,16 @@ namespace Infragistics.Windows.Editors
 		private static void OnTextChanged(DependencyObject dependencyObject, DependencyPropertyChangedEventArgs e)
 		{
 			ValueEditor valueEditor = (ValueEditor)dependencyObject;
-			if (!valueEditor._initialized)
+			if (valueEditor._initialized)
 			{
-				return;
-			}
-			string text = (string)e.NewValue;
-			bool flag = false;
-			if (dependencyObject is XamTextEditor && !_isComposingReflectionFailed)
-			{
-				XamTextEditor xamTextEditor = dependencyObject as XamTextEditor;
-				if (_isComposingMethod != null)
-				{
-					TextBoxBase textBox = xamTextEditor.TextBox;
-					try
-					{
-						flag = textBox != null && true.Equals(_isComposingMethod.Invoke(null, new object[1] { textBox }));
-					}
-					catch
-					{
-						_isComposingReflectionFailed = true;
-					}
-				}
-				if (flag)
-				{
-					xamTextEditor.IsCurrentlyComposing = true;
-				}
-			}
-			if (!flag)
-			{
+				string text = (string)e.NewValue;
 				string text2 = (string)valueEditor.GetValue(InSyncTextWithValueProperty);
 				if (text2 == null || text != text2)
 				{
 					valueEditor.SyncValueProperties(e.Property, text);
 				}
+				valueEditor.OnTextChanged((string)e.OldValue, text);
 			}
-			valueEditor.OnTextChanged((string)e.OldValue, text);
 		}
 
 		protected virtual void OnTextChanged(string previousValue, string currentValue)
@@ -37139,23 +37055,6 @@ namespace Infragistics.Windows.Editors
 	[ContentProperty("Value")]
 	public class XamTextEditor : TextEditorBase, ISupportsSelectableText
 	{
-		private class TextHolder : DependencyObject
-		{
-			public static readonly DependencyProperty TextProperty = DependencyProperty.Register("Text", typeof(string), typeof(TextHolder), new PropertyMetadata(string.Empty));
-
-			public string Text
-			{
-				get
-				{
-					return (string)GetValue(TextProperty);
-				}
-				set
-				{
-					SetValue(TextProperty, value);
-				}
-			}
-		}
-
 		private UltraLicense _license;
 
 		private TextBox _lastTextBox;
@@ -37167,8 +37066,6 @@ namespace Infragistics.Windows.Editors
 		private int _cachedSelectionLength;
 
 		private PropertyValueTracker _textBoxTextPvt;
-
-		private TextHolder _textBoxTextHolder;
 
 		public static readonly DependencyProperty AcceptsReturnProperty;
 
@@ -37340,8 +37237,6 @@ namespace Infragistics.Windows.Editors
 			}
 		}
 
-		internal bool IsCurrentlyComposing { get; set; }
-
 		static XamTextEditor()
 		{
 			AcceptsReturnProperty = KeyboardNavigation.AcceptsReturnProperty.AddOwner(typeof(XamTextEditor));
@@ -37427,11 +37322,6 @@ namespace Infragistics.Windows.Editors
 					_textBoxTextPvt.Deactivate();
 					_textBoxTextPvt = null;
 				}
-				if (_textBoxTextHolder != null)
-				{
-					BindingOperations.ClearBinding(_textBoxTextHolder, TextHolder.TextProperty);
-					_textBoxTextHolder = null;
-				}
 				_lastTextBox = null;
 			}
 			_lastTextBox = base.FocusSite as TextBox;
@@ -37441,12 +37331,6 @@ namespace Infragistics.Windows.Editors
 				_lastTextBox.SelectionLength = _cachedSelectionLength;
 				_lastTextBox.SelectionChanged += OnTextBoxSelectionChanged;
 				_textBoxTextPvt = new PropertyValueTracker(_lastTextBox, TextBox.TextProperty, OnTextBoxTextChanged);
-				_textBoxTextHolder = new TextHolder();
-				BindingOperations.SetBinding(_textBoxTextHolder, TextHolder.TextProperty, new Binding
-				{
-					Path = new PropertyPath(TextBox.TextProperty),
-					Source = _lastTextBox
-				});
 				SyncTextBoxText();
 			}
 		}
@@ -37521,34 +37405,6 @@ namespace Infragistics.Windows.Editors
 		private void InitializeCachedPropertyValues()
 		{
 			_cachedTextWrapping = (TextWrapping)TextWrappingProperty.GetMetadata(this).DefaultValue;
-		}
-
-		protected override void OnEditModeEnding(EditModeEndingEventArgs args)
-		{
-			base.OnEditModeEnding(args);
-			if (!args.Cancel && IsCurrentlyComposing)
-			{
-				IsCurrentlyComposing = false;
-				string text = (string)GetValue(ValueEditor.InSyncTextWithValueProperty);
-				if (text == null)
-				{
-					SyncValueProperties(ValueEditor.TextProperty, base.Text);
-				}
-			}
-		}
-
-		protected override void OnPreviewTextInput(TextCompositionEventArgs e)
-		{
-			base.OnPreviewTextInput(e);
-			if (IsCurrentlyComposing && ValueEditor._textCompositionSourceProp.GetValue(e.TextComposition, null) == TextBox && object.Equals(ValueEditor._textCompositionStageProp.GetValue(e.TextComposition, null), ValueEditor._textCompositionStageDone))
-			{
-				IsCurrentlyComposing = false;
-				string text = (string)GetValue(ValueEditor.InSyncTextWithValueProperty);
-				if (text == null)
-				{
-					SyncValueProperties(ValueEditor.TextProperty, _textBoxTextHolder.Text);
-				}
-			}
 		}
 
 		internal void OnTextBoxSelectionChanged(object sender, RoutedEventArgs e)
@@ -40214,5 +40070,3 @@ namespace Infragistics.Windows.Automation.Peers.Editors
 		}
 	}
 }
-You are not using the latest version of the tool, please update.
-Latest version is '11.2.0.10050' (yours is '9.1.0.7988')
