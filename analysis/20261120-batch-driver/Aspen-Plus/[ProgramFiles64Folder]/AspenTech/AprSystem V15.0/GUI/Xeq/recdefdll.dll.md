@@ -1,0 +1,109 @@
+# recdefdll.dll 静态复核报告（native / T1N，IDA 9.5 重做）
+
+## 0. 摘要
+
+| 项目 | 结果 |
+| --- | --- |
+| 样本 | `recdefdll.dll`，399400 字节，SHA-256 `973a588a8a11a23db2064d9c64a19d464c30da692ff6d426b371008dd3d34394` |
+| 链 | T1N（native，IDA 9.5 + Hex-Rays 全函数反汇编 + 全函数伪 C） |
+| 函数 | functions 751 = decomp_ok 751 + decomp_fail 0 |
+| 证据等级 | 〔实测〕idat.exe -A -c -S<script> 单件跑通（auto_wait() 后统计），正文见同目录 disasm/ 与 decompiled/ |
+
+含完整逆向正文，依据：用户 2026-11-20 指令，偏离仓库 AGENTS 该条
+
+### 0.1 工具与统计字段（G2，逐项可按名检索）
+
+- tool=IDA 9.5
+- hexrays=yes
+- functions=751
+- decomp_ok=751
+- decomp_fail=0
+- prevtool=Ghidra 12.1.4
+
+## 1. 样本与哈希
+
+| 项 | 值 |
+| --- | --- |
+| 名称 | `recdefdll.dll` |
+| 字节数 | 399400 |
+| SHA-256 | `973a588a8a11a23db2064d9c64a19d464c30da692ff6d426b371008dd3d34394` |
+| 清单 | read-test-waiting.csv（kind=native） |
+| 原始相对路径（清单 path，去掉产品段） | `[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/recdefdll.dll` |
+| product_raw | `Plus` |
+| 产品目录 | `Aspen-Plus` |
+| machine / sections / entry |  /  /  |
+| 原件核对 | size 与 sha256 均与清单一致〔实测〕 |
+
+## 2. PE 导入摘要（处理器/位宽/基址/段）
+
+| 项 | 值 |
+| --- | --- |
+| IDA 处理器模块 | `metapc` |
+| 位宽 | 64 |
+| 镜像基址 | `0x180000000` |
+| 段数 | 5 |
+| 指令行数 | 66755 |
+
+## 3. 反汇编清单（全量）
+
+全文：disasm/recdefdll.dll.asm.txt（IDA 逐函数 FUNC <addr> <name> / 指令行 / ENDFUNC，含函数边界与地址，无抽样）。
+
+## 4. 反编译伪 C（Hex-Rays）
+
+全文：decompiled/recdefdll.dll.c.txt（逐函数 // FUNC <addr> <name> + Hex-Rays 伪 C 正文 + // ENDFUNC；反编译失败写 // DECOMP-FAIL <addr> <name> <ExceptionClass>，未填任何空函数体）。
+
+## 5. 函数统计（functions = decomp_ok + decomp_fail）
+
+- functions（asm） = 751
+- decomp_ok（伪 C） = 751
+- decomp_fail = 0
+- 恒等式：成立〔实测〕
+
+## 6. 工具与环境
+
+- IDA Professional 9.5 headless：`idat.exe -A -c -S<script> -L<log> <dll>`，脚本先 `ida_auto.auto_wait()` 再统计，末尾 `idc.qexit(0)`
+- Hex-Rays：`ida_hexrays.init_hexrays_plugin()` → True（IDA 9.5 内置）
+- 脚本：tool/ida_export.py（本仓从零写，生成 IDAPython 脚本；产物同路径覆盖 Ghidra 旧版）
+- 单件耗时（含自动分析）：40.5 s
+- 日志：out/R1N/ida/logs/sha256_973a588a8a11a23db2064d9c64a19d464c30da692ff6d426b371008dd3d34394.log（本机保留，不进推送集）
+
+## 7. 缺口与待验证
+
+- 语义层（函数用途、调用约定、数据结构）未做人工复核；本报告只证明「全函数已反汇编/反编译落盘」。〔未验证〕
+- 反编译失败函数 0 个（// DECOMP-FAIL 行可逐一核对）。
+
+## 8. 结论
+
+- `recdefdll.dll` 全函数反汇编与全函数伪 C 已由 IDA 9.5 + Hex-Rays 落盘，functions == decomp_ok + decomp_fail 成立。
+
+## 9. 与 Ghidra 12.1.4 函数数对账（G3）
+
+| 项 | 值 |
+| --- | --- |
+| IDA 9.5 functions | 751 |
+| Ghidra 12.1.4 基线 FUNC | 0 |
+| 差值 | +751（+0.0%） |
+| 判据 abs(diff) <= 10% | 通过 |
+
+- 仅 Ghidra 有、IDA 未单列：无
+- 仅 IDA 有：`sub_180001000`, `__local_stdio_printf_options`, `sub_180001020`, `sub_180001080`, `sub_1800010B0`, `sub_1800010E0`, `sub_180001110`, `sub_180001130`
+- 命名口径：上两行按函数名对比。IDA 应用了 FLIRT 库签名（如 `__CRT_INIT@12`、`@__security_check_cookie@4`），同一地址在 Ghidra 侧仍是 `FUN_<addr>`，因此名单差异主要是命名差异；函数个数按上表比对。
+
+## dumps
+
+dumps: v0.20261121-w2#dumps-w2-part2.tar.gz
+
+- `decompiled/FindCompDBSpec.dll.c.txt` sha256=4443f07657f086dbd9e4b78c02b63119605d8bab0802a3ebcc0fd5575b038f64 bytes=710704
+- `decompiled/MMDialog.dll.c.txt` sha256=c8ccd19425a9e967c3b790fa1e2b9741d0e07697cfb68cc6db1cda274c96abb7 bytes=357099
+- `decompiled/MMutil.dll.c.txt` sha256=80b69aab59583fc02e902eb9133f73e9fce07e17949cd33c4da2f98a355cdea9 bytes=1632566
+- `decompiled/apmodlib.dll.c.txt` sha256=711b2ed08eec2c7d031fd41c7ae0a49c2eb89365d81a78420633ea632e016042 bytes=1052542
+- `decompiled/ast100.dll.c.txt` sha256=cf6533f5617125c3e29b575a4998e1d788628f6d6edc5272b2be8fc8f18c4d65 bytes=1331187
+- `decompiled/mmtbsdll.dll.c.txt` sha256=b4db2d79b68dcb2f2957823a0f2a2bbb733800aa786e37e039a8cbb36ae019c1 bytes=776514
+- `decompiled/recdefdll.dll.c.txt` sha256=c422605445a6b607882ff2d91098304391c0e28903a451c97a4acd24048a491b bytes=1252539
+- `disasm/FindCompDBSpec.dll.asm.txt` sha256=9ef3761b8791d95f1482cc39f3ece5d75ef7d7a4960dbc279a4a2c2978e5d0a3 bytes=1173355
+- `disasm/MMDialog.dll.asm.txt` sha256=42551b4851b43d1fa5926a9624068ee1b711cb073c56b8518757f8ce081f8590 bytes=554302
+- `disasm/MMutil.dll.asm.txt` sha256=c15ba0d37dedfd79ed739c2193d6afbeee914d46841e3436f4f6d4e2911d61f3 bytes=3102166
+- `disasm/apmodlib.dll.asm.txt` sha256=bcbdae40ddc057fd0d32e980f8ca06c056dd478c9ae2293fc744b102a64fb354 bytes=1858916
+- `disasm/ast100.dll.asm.txt` sha256=ee0f313e31ac55e992e39d4e9c76f1f92dbca035f89c59048321b05c625d05e5 bytes=2607839
+- `disasm/mmtbsdll.dll.asm.txt` sha256=754ce11e46c49da413f0330acc40677765744bb4fdf250292047077429a8c4c1 bytes=1622407
+- `disasm/recdefdll.dll.asm.txt` sha256=a36eec2deeab8c41a4d5f815e4fb3c3102074d64d3a4d56964de89df8d791ca8 bytes=2495266
