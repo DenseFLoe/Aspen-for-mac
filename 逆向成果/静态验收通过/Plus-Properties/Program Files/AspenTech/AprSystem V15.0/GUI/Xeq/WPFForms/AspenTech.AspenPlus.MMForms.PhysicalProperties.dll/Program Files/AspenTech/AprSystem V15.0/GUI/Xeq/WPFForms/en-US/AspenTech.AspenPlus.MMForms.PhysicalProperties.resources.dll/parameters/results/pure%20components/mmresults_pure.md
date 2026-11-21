@@ -1,0 +1,7 @@
+# mmresults_pure.xaml
+
+来自 Aspen Plus 与 Aspen Properties 共用的 en-US 卫星程序集，版本 `41.0.0.614`。原路径为 `Program Files/AspenTech/AprSystem V15.0/GUI/Xeq/WPFForms/en-US/AspenTech.AspenPlus.MMForms.PhysicalProperties.resources.dll`，程序集 SHA-256 为 `e34abb6976c613c377efe1ced99c0f1585c393b237b61e47ffb5ce39ccb7ca1c`。资源键为 `parameters/results/pure%20components/mmresults_pure.baml`，原始 BAML SHA-256 为 `8d44ff3e5009197f8425b7abc2b9fdb59982c667826559d5cdcf77d15f2fbe71`。
+
+完整布局通过静态验收。 本地完整 XAML SHA-256 为 `a44d086400b8e0f8511954d442eff50fcbcd5a6c4cf8eb2ebdac684f876bbe85`。
+
+主库 SHA-256 为 `65ce3da43613a061e2b316c518ef9c6f530ef74cc106544313a3cf70373d45a9`。初始化方法 `0x06000259` 与该资源路径相符。核对 5 个布局对象、19 个原属性、4 个字段和 0 个连接器事件。原版 BAML 及恢复版 XAML 均经 WPF 静态读取。页级数据见 `Plus-Properties/evidence/ui-pages.csv`，实际数据上下文和交互留待 Windows 宿主验证。

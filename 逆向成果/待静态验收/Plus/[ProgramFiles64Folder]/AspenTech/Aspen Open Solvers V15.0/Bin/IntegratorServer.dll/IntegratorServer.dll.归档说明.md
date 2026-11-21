@@ -1,0 +1,15 @@
+# IntegratorServer.dll
+
+状态为**待静态验收**。已定位并核对发布包中的导出文件，等待逐件静态验收。
+
+原路径为 `Plus/[ProgramFiles64Folder]/AspenTech/Aspen Open Solvers V15.0/Bin/IntegratorServer.dll`。
+
+原件 SHA-256 为 `7cbe58bf8ae8331c3ac28a6d354e75b05232f29b329214c3687b4e490f8a5bd6`。
+
+发布包交付共有 4 份内容或格式不同的文件。以下为本次整理时生成的目录。原始来源见[发布页](https://github.com/DenseFLoe/Aspen-for-mac/releases/tag/v0.20261121-w2)。
+
+- [阶段导出 · asm · 1196edeea2e0](v0.20261121-w2/%E9%98%B6%E6%AE%B5%E5%AF%BC%E5%87%BA/IntegratorServer.dll~1196edeea2e0.asm.txt)（1,702,163 字节）
+- [正式导出 · asm · 25bb26fb08e7](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/IntegratorServer.dll~25bb26fb08e7.asm.txt)（1,698,944 字节）
+- [阶段导出 · c · 1279601ead91](v0.20261121-w2/%E9%98%B6%E6%AE%B5%E5%AF%BC%E5%87%BA/IntegratorServer.dll~1279601ead91.c.txt)（656,669 字节）
+- [正式导出 · c · 7855d5cd5d10](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/IntegratorServer.dll~7855d5cd5d10.c.txt)（652,082 字节）
+

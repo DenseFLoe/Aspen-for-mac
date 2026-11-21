@@ -1,0 +1,13 @@
+# WpfPLDataNIST.dll
+
+状态为**待静态验收**。已定位并核对发布包中的导出文件，等待逐件静态验收。
+
+原路径为 `Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/WpfPlotWizards/WpfPLDataNIST.dll`。
+
+原件 SHA-256 为 `62ca577d31db4bbd418e6e5aa93625a18f6bf1c1122b167b91571a760cb57f84`。
+
+发布包交付共有 2 份内容或格式不同的文件。以下为本次整理时生成的目录。原始来源见[发布页](https://github.com/DenseFLoe/Aspen-for-mac/releases/tag/v0.20261121-w2)。
+
+- [正式导出 · cs · 671851a3dcd8](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/WpfPLDataNIST.dll.cs.txt)（116,247 字节）
+- [正式导出 · il · 59724c385171](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/WpfPLDataNIST.dll.il.txt)（626,623 字节）
+

@@ -1,0 +1,153 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyTitle("NETExtnLoader")]
+[assembly: AssemblyDescription("Aspen HYSYS® CLR Extension Loader")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyProduct("NETExtnLoader")]
+[assembly: AssemblyTrademark("")]
+[assembly: ComVisible(true)]
+[assembly: Guid("b54667a6-f2f6-425f-b30f-52be3c9ee95c")]
+[assembly: AssemblyCompany("AspenTech LTD.")]
+[assembly: AssemblyCopyright("Copyright © AspenTech LTD. 2024")]
+[assembly: AssemblyFileVersion("41.0.0.0")]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.0")]
+namespace NETExtnLoader;
+
+public sealed class AssemblyResolveHelper : IDisposable
+{
+	internal readonly string assemblySearchLocation;
+
+	private bool disposedValue;
+
+	public AssemblyResolveHelper(string location)
+	{
+		assemblySearchLocation = location;
+		AppDomain.CurrentDomain.AssemblyResolve += ResolveAssemblyInSearchLocation;
+	}
+
+	private Assembly ResolveAssemblyInSearchLocation(object sender, ResolveEventArgs args)
+	{
+		string path = args.Name.Split(',').First() + ".dll";
+		string text = Path.Combine(assemblySearchLocation, path);
+		if (File.Exists(text) && AssemblyName.GetAssemblyName(text).FullName == args.Name)
+		{
+			return Assembly.LoadFile(text);
+		}
+		return null;
+	}
+
+	private void Dispose(bool disposing)
+	{
+		if (!disposedValue)
+		{
+			if (disposing)
+			{
+				AppDomain.CurrentDomain.AssemblyResolve -= ResolveAssemblyInSearchLocation;
+			}
+			disposedValue = true;
+		}
+	}
+
+	public void Dispose()
+	{
+		Dispose(disposing: true);
+	}
+}
+[Guid("6108CBFE-D366-4DD5-BBBC-32BEA9975E71")]
+[ComVisible(true)]
+public interface IExtnLoader
+{
+	[return: MarshalAs(UnmanagedType.IUnknown)]
+	object CreateObjectWithGuidInDLL([In][MarshalAs(UnmanagedType.BStr)] string guid, [In][MarshalAs(UnmanagedType.BStr)] string path);
+
+	[return: MarshalAs(UnmanagedType.IUnknown)]
+	object CreateObjectWithProgIdInDLL([In][MarshalAs(UnmanagedType.BStr)] string progId, [In][MarshalAs(UnmanagedType.BStr)] string path);
+}
+[Guid("6F08E9B6-1436-49E6-A1E5-756EB0D00360")]
+[ComVisible(true)]
+public class ExtnLoader : IExtnLoader
+{
+	[return: MarshalAs(UnmanagedType.IUnknown)]
+	public object CreateObjectWithGuidInDLL([In][MarshalAs(UnmanagedType.BStr)] string guid, [In][MarshalAs(UnmanagedType.BStr)] string path)
+	{
+		if (string.IsNullOrEmpty(path) || string.IsNullOrEmpty(guid))
+		{
+			return null;
+		}
+		if (!Path.HasExtension(path) || !File.Exists(path))
+		{
+			return null;
+		}
+		if (!Guid.TryParse(guid, out var result))
+		{
+			return null;
+		}
+		using (new AssemblyResolveHelper(Path.GetDirectoryName(path)))
+		{
+			Type[] exportedTypes = Assembly.LoadFile(path).GetExportedTypes();
+			foreach (Type type in exportedTypes)
+			{
+				if (!(result != type.GUID))
+				{
+					try
+					{
+						return Activator.CreateComInstanceFrom(path, type.FullName).Unwrap();
+					}
+					catch
+					{
+						return null;
+					}
+				}
+			}
+		}
+		return null;
+	}
+
+	[return: MarshalAs(UnmanagedType.IUnknown)]
+	public object CreateObjectWithProgIdInDLL([In][MarshalAs(UnmanagedType.BStr)] string progId, [In][MarshalAs(UnmanagedType.BStr)] string path)
+	{
+		if (string.IsNullOrEmpty(path) || string.IsNullOrEmpty(progId))
+		{
+			return null;
+		}
+		if (!Path.HasExtension(path) || !File.Exists(path))
+		{
+			return null;
+		}
+		using (new AssemblyResolveHelper(Path.GetDirectoryName(path)))
+		{
+			Type[] exportedTypes = Assembly.LoadFile(path).GetExportedTypes();
+			foreach (Type type in exportedTypes)
+			{
+				IEnumerable<Attribute> customAttributes = type.GetCustomAttributes(typeof(ProgIdAttribute));
+				string text = ((!customAttributes.Any()) ? type.FullName : (customAttributes.First() as ProgIdAttribute).Value);
+				if (!(text != progId))
+				{
+					try
+					{
+						return Activator.CreateComInstanceFrom(path, type.FullName).Unwrap();
+					}
+					catch
+					{
+						return null;
+					}
+				}
+			}
+		}
+		return null;
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

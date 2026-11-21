@@ -1,0 +1,144 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using CefSharp;
+using CefSharp.Wpf;
+using Microsoft.Practices.Composite.Presentation.Events;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyFileVersion("2023.15.0.2")]
+[assembly: AssemblyTitle("AspenTech.HtmlHelp.HelpInfrastructure")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("Aspen Technology, INC.")]
+[assembly: AssemblyProduct("AspenTech.HtmlHelp.HelpInfrastructure")]
+[assembly: AssemblyCopyright("Copyright © Aspen Technology, Inc. 2023")]
+[assembly: AssemblyTrademark("")]
+[assembly: ComVisible(false)]
+[assembly: Guid("7649fa91-1cdb-450d-b419-9550227063e6")]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("2023.15.0.2")]
+namespace AspenTech.HtmlHelp.HelpInfrastructure;
+
+public class AspenTechHelpConsts
+{
+	public const string strMS_TS_LangPtn = "help_language_ts|";
+
+	public const int iMS_TS_LangPtnLen = 17;
+}
+public class HtmlHelpCefLibMgr
+{
+	private static string strRenderPath;
+
+	private static HtmlHelpCefLibMgr helpCefLibMgr;
+
+	private HtmlHelpCefLibMgr()
+	{
+		string location = GetType().Assembly.Location;
+		FileInfo fileInfo = new FileInfo(location);
+		if (fileInfo != null)
+		{
+			location = fileInfo.DirectoryName;
+			if (!string.IsNullOrWhiteSpace(location))
+			{
+				strRenderPath = Path.Combine(location, "CefSharp.BrowserSubprocess.exe");
+			}
+			else
+			{
+				strRenderPath = "CefSharp.BrowserSubprocess.exe";
+			}
+		}
+	}
+
+	public static void InitLib()
+	{
+		//IL_004d: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0052: Unknown result type (might be due to invalid IL or missing references)
+		//IL_005a: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0065: Unknown result type (might be due to invalid IL or missing references)
+		//IL_006c: Unknown result type (might be due to invalid IL or missing references)
+		//IL_007d: Expected O, but got Unknown
+		if (helpCefLibMgr == null)
+		{
+			helpCefLibMgr = new HtmlHelpCefLibMgr();
+		}
+		string text = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.Create) ?? "";
+		string text2 = string.Empty;
+		try
+		{
+			text2 = Directory.CreateDirectory(text + "\\HTMLHelp").FullName;
+		}
+		catch (Exception value)
+		{
+			Console.WriteLine(value);
+		}
+		try
+		{
+			CefSettings val = new CefSettings
+			{
+				LogSeverity = (LogSeverity)99,
+				BrowserSubprocessPath = strRenderPath,
+				IgnoreCertificateErrors = true,
+				CachePath = (text2 ?? "")
+			};
+			((Dictionary<string, string>)(object)((CefSettingsBase)val).CefCommandLineArgs).Add("disable-gpu", "1");
+			if (!Cef.IsInitialized)
+			{
+				Cef.Initialize((CefSettingsBase)(object)val, false, (IBrowserProcessHandler)null);
+			}
+		}
+		catch (Exception)
+		{
+		}
+	}
+
+	public static void Shutdown()
+	{
+		Cef.Shutdown();
+	}
+}
+public class HtmlHelpNavigateToEventArgs : EventArgs
+{
+	public string HelpTopicUrl { get; set; }
+
+	public HtmlHelpNavigateToEventArgs(string strUrl = null)
+	{
+		HelpTopicUrl = strUrl;
+	}
+}
+public class HtmlHelpNavigateToEvent : CompositePresentationEvent<HtmlHelpNavigateToEventArgs>
+{
+}
+public class HtmlHelpShowHelpViewerEventArgs : EventArgs
+{
+	public string HelpFileRelativeURL { get; set; }
+
+	public HtmlHelpShowHelpViewerEventArgs(string strFileUrl = null)
+	{
+		HelpFileRelativeURL = strFileUrl;
+	}
+}
+public class HtmlHelpShowHelpViewerEvent : CompositePresentationEvent<HtmlHelpShowHelpViewerEventArgs>
+{
+}
+public class HtmlHelpViewerNavigatingEventArgs : EventArgs
+{
+	public string HelpFileRelativeURL { get; set; }
+
+	public HtmlHelpViewerNavigatingEventArgs(string strUrl = null)
+	{
+		HelpFileRelativeURL = strUrl;
+	}
+}
+public class HtmlHelpViewerNavigatingEvent : CompositePresentationEvent<HtmlHelpViewerNavigatingEventArgs>
+{
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

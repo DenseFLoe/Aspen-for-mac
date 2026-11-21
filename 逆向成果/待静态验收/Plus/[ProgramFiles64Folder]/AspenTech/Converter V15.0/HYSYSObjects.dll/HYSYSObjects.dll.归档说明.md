@@ -1,0 +1,13 @@
+# HYSYSObjects.dll
+
+状态为**待静态验收**。已定位并核对发布包中的导出文件，等待逐件静态验收。
+
+原路径为 `Plus/[ProgramFiles64Folder]/AspenTech/Converter V15.0/HYSYSObjects.dll`。
+
+原件 SHA-256 为 `a1631abcbf55a2ac4b6ac4952c3e30b2178b120fbc8ada326abd61dbe43b635a`。
+
+发布包交付共有 2 份内容或格式不同的文件。以下为本次整理时生成的目录。原始来源见[发布页](https://github.com/DenseFLoe/Aspen-for-mac/releases/tag/v0.20261121-w2)。
+
+- [正式导出 · cs · 8439005e341c](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/HYSYSObjects.dll.cs.txt)（58,491 字节）
+- [正式导出 · il · f170915aa463](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/HYSYSObjects.dll.il.txt)（534,681 字节）
+

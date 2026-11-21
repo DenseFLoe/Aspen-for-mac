@@ -1,0 +1,13 @@
+# Infragistics4.Win.UltraWinGrid.v15.1.dll
+
+状态为**待静态验收**。已定位并核对发布包中的导出文件，等待逐件静态验收。
+
+原路径为 `Plus/[ProgramFiles64Folder]/AspenTech/AMSystem V15.0/Bin/Infragistics4.Win.UltraWinGrid.v15.1.dll`。
+
+原件 SHA-256 为 `b4c0a16a790ce6734ad07b1a71981fce7e67d9e4764e5b0889757de1c754b25e`。
+
+发布包交付共有 2 份内容或格式不同的文件。以下为本次整理时生成的目录。原始来源见[发布页](https://github.com/DenseFLoe/Aspen-for-mac/releases/tag/v0.20261121-w2)。
+
+- [正式导出 · cs · 85477aeae620](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/Infragistics4.Win.UltraWinGrid.v15.1.dll.cs.txt)（6,141,026 字节）
+- [正式导出 · il · 932d913cf888](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/Infragistics4.Win.UltraWinGrid.v15.1.dll.il.txt)（23,630,525 字节）
+

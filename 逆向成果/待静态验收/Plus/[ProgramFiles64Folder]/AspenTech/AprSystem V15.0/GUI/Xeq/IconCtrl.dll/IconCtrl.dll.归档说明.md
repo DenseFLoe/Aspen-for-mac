@@ -1,0 +1,13 @@
+# IconCtrl.dll
+
+状态为**待静态验收**。已定位并核对发布包中的导出文件，等待逐件静态验收。
+
+原路径为 `Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/IconCtrl.dll`。
+
+原件 SHA-256 为 `22b27245bc76ef9126411c614ac65282c3c27d306b31040fe7bf4d68094e663c`。
+
+发布包交付共有 2 份内容或格式不同的文件。以下为本次整理时生成的目录。原始来源见[发布页](https://github.com/DenseFLoe/Aspen-for-mac/releases/tag/v0.20261121-w2)。
+
+- [正式导出 · cs · 9cae3f0bce5c](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/IconCtrl.dll.cs.txt)（609,553 字节）
+- [正式导出 · il · 94eb20a2d5bc](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/IconCtrl.dll.il.txt)（3,571,209 字节）
+

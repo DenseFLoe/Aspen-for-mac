@@ -1,0 +1,15 @@
+# cbcCInterfaceDll.dll
+
+状态为**待静态验收**。已定位并核对发布包中的导出文件，等待逐件静态验收。
+
+原路径为 `Plus/[ProgramFiles64Folder]/AspenTech/Aspen Open Solvers V15.0/Bin/cbcCInterfaceDll.dll`。
+
+原件 SHA-256 为 `a16fb85e095281aa0ea3e85cbb87abfa0c714a5383fecf1c1cc95f85aa65888e`。
+
+发布包交付共有 4 份内容或格式不同的文件。以下为本次整理时生成的目录。原始来源见[发布页](https://github.com/DenseFLoe/Aspen-for-mac/releases/tag/v0.20261121-w2)。
+
+- [正式导出 · asm · 5eed88e656bf](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/cbcCInterfaceDll.dll~5eed88e656bf.asm.txt)（18,134,369 字节）
+- [阶段导出 · asm · 7476a7a29342](v0.20261121-w2/%E9%98%B6%E6%AE%B5%E5%AF%BC%E5%87%BA/cbcCInterfaceDll.dll~7476a7a29342.asm.txt)（18,134,357 字节）
+- [正式导出 · c · 1f61bdf1fec2](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/cbcCInterfaceDll.dll~1f61bdf1fec2.c.txt)（11,177,214 字节）
+- [阶段导出 · c · f53d20373cd8](v0.20261121-w2/%E9%98%B6%E6%AE%B5%E5%AF%BC%E5%87%BA/cbcCInterfaceDll.dll~f53d20373cd8.c.txt)（11,177,202 字节）
+

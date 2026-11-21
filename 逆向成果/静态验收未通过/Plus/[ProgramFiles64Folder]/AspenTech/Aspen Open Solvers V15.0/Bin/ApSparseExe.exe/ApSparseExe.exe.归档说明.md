@@ -1,0 +1,15 @@
+# ApSparseExe.exe
+
+状态为**静态验收未通过**。发布包的代码中有明确的反编译失败记录。
+
+原路径为 `Plus/[ProgramFiles64Folder]/AspenTech/Aspen Open Solvers V15.0/Bin/ApSparseExe.exe`。
+
+原件 SHA-256 为 `1225fff778f248df7be4db4e4aafd9945203279c161fc45a1df5fd919c247827`。
+
+发布包交付共有 2 份内容或格式不同的文件。以下为本次整理时生成的目录。原始来源见[发布页](https://github.com/DenseFLoe/Aspen-for-mac/releases/tag/v0.20261121-w2)。
+
+正式 C 导出包含 3 处函数反编译失败标记。
+
+- [正式导出 · asm · 736f8a19dc7f](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/ApSparseExe.exe.asm.txt)（2,311,608 字节）
+- [正式导出 · c · 2dc257bf2dd9](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/ApSparseExe.exe.c.txt)（1,465,962 字节）
+

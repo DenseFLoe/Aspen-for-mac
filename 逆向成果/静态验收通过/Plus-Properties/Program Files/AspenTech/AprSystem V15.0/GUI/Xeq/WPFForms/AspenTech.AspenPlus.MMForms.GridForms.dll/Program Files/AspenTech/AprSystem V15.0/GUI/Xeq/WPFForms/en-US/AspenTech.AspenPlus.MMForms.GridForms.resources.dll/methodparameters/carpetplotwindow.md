@@ -1,0 +1,5 @@
+# carpetplotwindow.xaml
+
+Aspen Plus 与 Aspen Properties V15 共用这份布局。原始卫星程序集为 `Program Files/AspenTech/AprSystem V15.0/GUI/Xeq/WPFForms/en-US/AspenTech.AspenPlus.MMForms.GridForms.resources.dll`，版本 41.0.0.614，SHA-256 为 `6a832f97f15c50bb706280d128104dbf1d348f2d5ffc2b220d8e5539289fd2e7`。原始逻辑成员为 `AspenTech.AspenPlus.MMForms.GridForms.g.en-US.resources` 内的 `methodparameters/carpetplotwindow.baml`，共 4,100 字节，SHA-256 为 `9c17e663e0368d23478bc22d58c4f95b4a4c6bda8b2869a72bf9c36b615d94e6`。[来源核对](../../../../../../../../../evidence/satellite-identity.json)
+
+`AspenTech.AspenPlus.MMForms.GridForms.MethodParameters.CarpetPlotWindow` 的 `InitializeComponent`（0x0600077A）加载此页。已恢复整页可编辑 XAML，文件为 4,220 字节，SHA-256 为 `fd7df3359f7c30a8e45c015fd0af54a01954361f428081db21af6bb8d976a878`。本页通过静态验收。已比较 36 个对象、2 个连接号、1 个命名字段和 1 次事件订阅。WPF 标记编译器生成的布局逐对象读回，结构、成员值和连接均与原件相符。Windows 阶段再对照实际显示和操作。[逐页核对](../../../../../../../../../evidence/ui-pages.csv) · [连接核对](../../../../../../../../../evidence/ui-connections.csv) · [绑定位置](../../../../../../../../../evidence/ui-bindings.csv)

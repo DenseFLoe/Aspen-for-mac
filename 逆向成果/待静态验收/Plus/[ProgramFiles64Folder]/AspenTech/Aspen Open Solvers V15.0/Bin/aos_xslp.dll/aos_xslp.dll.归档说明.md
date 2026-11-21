@@ -1,0 +1,13 @@
+# aos_xslp.dll
+
+状态为**待静态验收**。已定位并核对发布包中的导出文件，等待逐件静态验收。
+
+原路径为 `Plus/[ProgramFiles64Folder]/AspenTech/Aspen Open Solvers V15.0/Bin/aos_xslp.dll`。
+
+原件 SHA-256 为 `e859a57e632a715087a31cc50266ed81766edb535b5ec66898633bf662b1c958`。
+
+发布包交付共有 2 份内容或格式不同的文件。以下为本次整理时生成的目录。原始来源见[发布页](https://github.com/DenseFLoe/Aspen-for-mac/releases/tag/v0.20261121-w2)。
+
+- [正式导出 · asm · d7a37e412ce6](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/aos_xslp.dll.asm.txt)（3,143,799 字节）
+- [正式导出 · c · 15a122015aa2](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/aos_xslp.dll.c.txt)（1,380,624 字节）
+

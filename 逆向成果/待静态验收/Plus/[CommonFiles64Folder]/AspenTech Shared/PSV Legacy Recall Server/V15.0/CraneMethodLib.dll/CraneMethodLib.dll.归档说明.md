@@ -1,0 +1,13 @@
+# CraneMethodLib.dll
+
+状态为**待静态验收**。已定位并核对发布包中的导出文件，等待逐件静态验收。
+
+原路径为 `Plus/[CommonFiles64Folder]/AspenTech Shared/PSV Legacy Recall Server/V15.0/CraneMethodLib.dll`。
+
+原件 SHA-256 为 `1e237585dcba34c3d8bef46a2a2ec2fa2897d70b2173e3ee046b4d3ae8438407`。
+
+发布包交付共有 2 份内容或格式不同的文件。以下为本次整理时生成的目录。原始来源见[发布页](https://github.com/DenseFLoe/Aspen-for-mac/releases/tag/v0.20261121-w2)。
+
+- [正式导出 · cs · 12dc64850d92](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/CraneMethodLib.dll.cs.txt)（11,182 字节）
+- [正式导出 · il · e6e3e63f3dca](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/CraneMethodLib.dll.il.txt)（47,769 字节）
+

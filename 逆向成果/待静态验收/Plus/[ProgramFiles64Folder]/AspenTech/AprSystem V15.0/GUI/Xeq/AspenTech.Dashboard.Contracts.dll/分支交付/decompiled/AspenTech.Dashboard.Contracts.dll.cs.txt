@@ -1,0 +1,233 @@
+using System.CodeDom.Compiler;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Configuration;
+using System.Diagnostics;
+using System.Globalization;
+using System.Reflection;
+using System.Resources;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Windows;
+using System.Windows.Controls;
+using ATVInterfacesVB;
+using Microsoft.Practices.Unity;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyTitle("AspenTech.Dashboard.Contracts")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("Aspen Technology, Inc.")]
+[assembly: AssemblyProduct("AspenTech.Dashboard.Contracts")]
+[assembly: AssemblyCopyright("Copyright © Aspen Technology, Inc. 2013 - 2024")]
+[assembly: AssemblyTrademark("")]
+[assembly: ComVisible(false)]
+[assembly: ThemeInfo(ResourceDictionaryLocation.None, ResourceDictionaryLocation.SourceAssembly)]
+[assembly: AssemblyFileVersion("41.0.0.19")]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.19")]
+namespace AspenTech.Dashboard.Contracts
+{
+	public struct IEDRBaseLineValue
+	{
+		public double Value;
+
+		public string Uom;
+	}
+	public struct IEDRConvertOption
+	{
+		public int index;
+
+		public string label;
+	}
+	public interface IEDRActivatedExchanger
+	{
+		bool CalcError { get; set; }
+
+		bool IsRigorous { get; }
+
+		bool IsContainer { get; }
+
+		IList<string> Contains { get; }
+
+		string ContainerName { get; }
+
+		string ExchangerName { get; }
+
+		string ModelType { get; }
+
+		string SimpleType { get; }
+
+		IATVApp EDRApp { get; }
+
+		IDictionary<string, IEDRBaseLineValue> BaseLineValues { get; }
+
+		IDictionary<string, IEDRBaseLineValue> SimulatorValues { get; }
+
+		IList<IEDRConvertOption> ConvertOptions { get; }
+
+		bool Convert(int convertIndex);
+
+		void ConvertUnit(EDRActivateVariable sourceVar, out EDRActivateVariable convertedVar);
+
+		void NavigateToRigorousExchangerForm();
+
+		string RelativeContainerName(string container);
+	}
+	public interface IEdrActivationMessenger
+	{
+		string ContainerLabel { get; }
+
+		Simulator SimulatorType { get; }
+
+		IList<string> GetExchangerNames();
+
+		IDictionary<string, IEDRActivatedExchanger> ExchangerInformation();
+
+		void Load();
+
+		void Unload();
+	}
+	public class EDRActivateVariable
+	{
+		public EDRActivateQuantityType QuantityType { get; set; }
+
+		public string Unit { get; set; }
+
+		public double Value { get; set; }
+
+		public string FormatedStringValue { get; set; }
+
+		public EDRActivateVariable()
+		{
+		}
+
+		public EDRActivateVariable(EDRActivateQuantityType qt)
+		{
+			QuantityType = qt;
+		}
+	}
+	public enum EDRActivateQuantityType
+	{
+		None,
+		Temperature,
+		Pressure,
+		MoleFlow,
+		MassFlow,
+		VolumFlow,
+		MoleEnthalpy,
+		DeltaTemperature,
+		DeltaPressure,
+		Time,
+		MassEnthalpy,
+		Area,
+		HeatLoad
+	}
+	public enum Simulator
+	{
+		AspenPlus,
+		AspenHysys
+	}
+}
+namespace AspenTech.Dashboard.Contracts.Properties
+{
+	[GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
+	[DebuggerNonUserCode]
+	[CompilerGenerated]
+	internal class Resources
+	{
+		private static ResourceManager resourceMan;
+
+		private static CultureInfo resourceCulture;
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		internal static ResourceManager ResourceManager
+		{
+			get
+			{
+				if (resourceMan == null)
+				{
+					resourceMan = new ResourceManager("AspenTech.Dashboard.Contracts.Properties.Resources", typeof(Resources).Assembly);
+				}
+				return resourceMan;
+			}
+		}
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		internal static CultureInfo Culture
+		{
+			get
+			{
+				return resourceCulture;
+			}
+			set
+			{
+				resourceCulture = value;
+			}
+		}
+
+		internal Resources()
+		{
+		}
+	}
+	[CompilerGenerated]
+	[GeneratedCode("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "16.10.0.0")]
+	internal sealed class Settings : ApplicationSettingsBase
+	{
+		private static Settings defaultInstance = (Settings)SettingsBase.Synchronized(new Settings());
+
+		public static Settings Default => defaultInstance;
+	}
+}
+namespace AspenTech.Dashboard.Contracts.Generic
+{
+	public class DashboardItemClosingEventArgs : CancelEventArgs
+	{
+		public bool IsMannuallyClosed { get; private set; }
+
+		public DashboardItemClosingEventArgs(bool isMannuallyClosed)
+		{
+			IsMannuallyClosed = isMannuallyClosed;
+		}
+	}
+	public interface IDashboardItem
+	{
+		string SerializationId { get; }
+
+		Orientation Orientation { get; set; }
+
+		void Initialize(IUnityContainer unityContainer);
+
+		string SaveState();
+
+		void RestoreState(string state);
+
+		void OnClosing(DashboardItemClosingEventArgs args);
+
+		void OnClosed(bool manuallyClosedByUser);
+	}
+	public interface IDashboardItemFactory
+	{
+		void Register<T>(int sequence = 0) where T : UIElement, IDashboardItem;
+
+		IEnumerable<IDashboardItem> CreateItems(IUnityContainer unityContainer);
+	}
+	public enum ApplicationType
+	{
+		AspenPlus,
+		AspenHYSYS
+	}
+	public interface IHostApplicationInfoMessenger
+	{
+		ApplicationType HostApplicationType { get; }
+
+		string HostProductName { get; }
+
+		string CurrentDocumentPath { get; }
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

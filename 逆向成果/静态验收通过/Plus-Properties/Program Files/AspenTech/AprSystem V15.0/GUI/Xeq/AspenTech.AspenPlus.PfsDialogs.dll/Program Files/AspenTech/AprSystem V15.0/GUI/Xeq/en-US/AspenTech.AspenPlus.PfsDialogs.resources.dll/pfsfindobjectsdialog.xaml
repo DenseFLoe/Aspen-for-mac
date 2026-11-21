@@ -1,0 +1,86 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Window x:Class="AspenTech.AspenPlus.PfsDialogs.PFSFindObjectsDialog" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:res="clr-namespace:AspenTech.AspenPlus.Localization;assembly=AspenTech.AspenPlus.Localization" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:mm="clr-namespace:AspenTech.AspenPlus.MMControls;assembly=AspenTech.AspenPlus.MMControls" xmlns:my="clr-namespace:AspenTech.AspenPlus.PfsDialogs" Loaded="OnDialogLoaded" Closed="OnDialogClosed" x:Uid="Window_1" Title="{x:Static res:WpfPfsDialogsResources.FindObject}" Width="380" Height="300" MinWidth="300" MinHeight="270" ResizeMode="CanResizeWithGrip" mm:MMHelp.HelpFile="userguide1.chm" mm:MMHelp.HelpId="45" Style="{StaticResource MMDialogStyle}">
+  <Grid Name="Grid1" x:Uid="Grid1" Margin="7">
+    <Grid.RowDefinitions>
+      <RowDefinition x:Uid="RowDefinition_1" Height="Auto" />
+      <RowDefinition x:Uid="RowDefinition_2" Height="*" MinHeight="100" />
+      <RowDefinition x:Uid="RowDefinition_3" Height="Auto" />
+      <RowDefinition x:Uid="RowDefinition_4" Height="Auto" />
+    </Grid.RowDefinitions>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition x:Uid="ColumnDefinition_1" Width="*" MinWidth="60" />
+      <ColumnDefinition x:Uid="ColumnDefinition_2" Width="*" MinWidth="60" />
+      <ColumnDefinition x:Uid="ColumnDefinition_3" Width="*" MinWidth="60" />
+    </Grid.ColumnDefinitions>
+    <Label Name="HierarchyLabel" x:Uid="HierarchyLabel" Grid.Row="0" Grid.Column="0" Content="{x:Static res:WpfPfsDialogsResources.Hierarchy}" />
+    <TreeView SelectedItemChanged="OnHierarchySelected" Name="HierarchyTreeView" x:Uid="HierarchyTreeView" Grid.Row="1" Grid.Column="0" Margin="0,0,0,5" />
+    <Label Name="BlocksLabel" x:Uid="BlocksLabel" Grid.Row="0" Grid.Column="1" Content="{x:Static res:WpfPfsDialogsResources.Blocks}" />
+    <ListBox SelectionChanged="OnBlockSelectionChanged" MouseDoubleClick="OnBlockListDoubleClick" Name="BlocksListBox" x:Uid="BlocksListBox" Grid.Row="1" Grid.Column="1" MinWidth="100" MinHeight="100" Margin="5,0,0,5" DisplayMemberPath="Name" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=my:PFSFindObjectsDialog, AncestorLevel=1}, Path=BlocksListFiltered}">
+      <ItemsControl.ItemContainerStyle>
+        <Style TargetType="{x:Type ListBoxItem}" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+          <Setter Property="FrameworkElement.ToolTip" Value="{Binding TooltipText}" />
+        </Style>
+      </ItemsControl.ItemContainerStyle>
+    </ListBox>
+    <Label Name="StreamsLabel" x:Uid="StreamsLabel" Grid.Row="0" Grid.Column="2" Content="{x:Static res:WpfPfsDialogsResources.Streams}" />
+    <ListBox SelectionChanged="OnStreamSelectionChanged" MouseDoubleClick="OnStreamListDoubleClick" Name="StreamsListBox" x:Uid="StreamsListBox" Grid.Row="1" Grid.Column="2" MinWidth="100" MinHeight="100" Margin="5,0,0,5" DisplayMemberPath="Name" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=my:PFSFindObjectsDialog, AncestorLevel=1}, Path=StreamsListFiltered}">
+      <ItemsControl.ItemContainerStyle>
+        <Style TargetType="{x:Type ListBoxItem}" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+          <Setter Property="FrameworkElement.ToolTip" Value="{Binding TooltipText}" />
+        </Style>
+      </ItemsControl.ItemContainerStyle>
+    </ListBox>
+    <Grid Name="OptionsStackPanel" x:Uid="OptionsStackPanel" Grid.Row="2" Grid.Column="0" Grid.RowSpan="2">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+      <CheckBox Click="OnClickedShowSubHier" Name="SubHierarchiesCheckBox" Grid.Row="0" x:Uid="SubHierarchiesCheckBox" MinHeight="20" Margin="0,5,0,5" MinWidth="100" HorizontalAlignment="Left">
+        <ToggleButton.IsChecked>
+          <Binding Path="ShowSubHierarchies" RelativeSource="{RelativeSource FindAncestor, AncestorType=my:PFSFindObjectsDialog, AncestorLevel=1}" />
+        </ToggleButton.IsChecked>
+        <TextBlock x:Uid="TextBlock_1" TextWrapping="Wrap" Text="{x:Static res:WpfPfsDialogsResources.ShowObjInSubHier}" />
+      </CheckBox>
+      <CheckBox Click="OnClickedCenterView" Name="CenterViewCheckBox" Grid.Row="1" x:Uid="CenterViewCheckBox" Content="{x:Static res:WpfPfsDialogsResources.CenterView}" MinHeight="20" MinWidth="0">
+        <ToggleButton.IsChecked>
+          <Binding Path="CenterView" RelativeSource="{RelativeSource FindAncestor, AncestorType=my:PFSFindObjectsDialog, AncestorLevel=1}" />
+        </ToggleButton.IsChecked>
+      </CheckBox>
+      <CheckBox Click="OnClickedZoomView" Name="ZoomViewCheckBox" Grid.Row="2" x:Uid="ZoomViewCheckBox" Content="{x:Static res:WpfPfsDialogsResources.ZoomView}" MinHeight="20" MinWidth="0" Margin="0,5,0,0">
+        <ToggleButton.IsChecked>
+          <Binding Path="ZoomView" RelativeSource="{RelativeSource FindAncestor, AncestorType=my:PFSFindObjectsDialog, AncestorLevel=1}" />
+        </ToggleButton.IsChecked>
+      </CheckBox>
+    </Grid>
+    <Grid Name="BlockFilterStackPanel" x:Uid="BlockFilterStackPanel" Grid.Row="2" Grid.Column="1" Margin="0,0,5,0">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+      <Label Name="BlockFilterLabel" Grid.Row="0" x:Uid="BlockFilterLabel" Content="{x:Static res:WpfPfsDialogsResources.BlockNameFilter}" />
+      <ComboBox KeyUp="OnFilterTextChanged" SelectionChanged="OnBlockFilterSelectionChanged" Name="BlockFilterComboBox" Grid.Row="1" HorizontalAlignment="Stretch" x:Uid="BlockFilterComboBox" IsEditable="True" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=my:PFSFindObjectsDialog, AncestorLevel=1}, Path=BlockFilterList}">
+        <ComboBox.Text>
+          <Binding Path="BlockFilter" RelativeSource="{RelativeSource FindAncestor, AncestorType=my:PFSFindObjectsDialog, AncestorLevel=1}" />
+        </ComboBox.Text>
+      </ComboBox>
+    </Grid>
+    <Grid Name="StreamFilterStackPanel" x:Uid="StreamFilterStackPanel" Grid.Row="2" Grid.Column="2" Margin="5,0,0,0">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+      <Label Name="StreamFilterLabel" Grid.Row="0" x:Uid="StreamFilterLabel" Content="{x:Static res:WpfPfsDialogsResources.StreamNameFilter}" />
+      <ComboBox KeyUp="OnFilterTextChanged" SelectionChanged="OnStreamFilterSelectionChanged" Name="StreamFilterComboBox" Grid.Row="1" HorizontalAlignment="Stretch" x:Uid="StreamFilterComboBox" IsEditable="True" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=my:PFSFindObjectsDialog, AncestorLevel=1}, Path=StreamFilterList}">
+        <ComboBox.Text>
+          <Binding Path="StreamFilter" RelativeSource="{RelativeSource FindAncestor, AncestorType=my:PFSFindObjectsDialog, AncestorLevel=1}" />
+        </ComboBox.Text>
+      </ComboBox>
+    </Grid>
+    <StackPanel Name="ButtonsStackPanel" x:Uid="ButtonsStackPanel" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Orientation="Horizontal" Width="Auto">
+      <Button Click="OnClickApplyFilters" Name="ApplyFiltersButton" x:Uid="ApplyFiltersButton" Content="{x:Static res:WpfPfsDialogsResources.BtnApplyF}" MinWidth="60" Margin="0,10,7,0" />
+      <Button Click="OnClickFind" Name="FindButton" x:Uid="FindButton" IsDefault="True" Content="{x:Static res:WpfPfsDialogsResources.BtnFind}" MinWidth="60" Margin="0,10,7,0" />
+      <Button Click="OnClickClose" Name="CloseButton" x:Uid="CloseButton" IsCancel="True" Content="{x:Static res:WpfPfsDialogsResources.BtnClose}" MinWidth="60" Margin="0,10,7,0" />
+    </StackPanel>
+  </Grid>
+</Window>

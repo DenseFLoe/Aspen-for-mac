@@ -1,0 +1,115 @@
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using Microsoft.Build.Utilities;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyTitle("ApDotNelAsmReg")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("Aspen Technology, Inc.")]
+[assembly: AssemblyProduct("ApDotNelAsmReg")]
+[assembly: AssemblyCopyright("Copyright © Aspen Technology, Inc. 2009 - 2024")]
+[assembly: AssemblyTrademark("")]
+[assembly: ComVisible(false)]
+[assembly: Guid("74db109b-67d7-403c-95ab-f6d15178f9b7")]
+[assembly: AssemblyFileVersion("1.0.0.0")]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("1.0.0.0")]
+namespace ApDotNetAsmReg;
+
+public class ApRegAsm
+{
+	private static string _parameter = "";
+
+	private static void Main(string[] args)
+	{
+		bool bShowWindow = false;
+		if (args.GetLength(0) == 0)
+		{
+			RunRegAsm(_parameter, bShowWindow: false);
+			return;
+		}
+		if (!File.Exists(args[0]))
+		{
+			Console.WriteLine("File: " + args[0] + "does not exist");
+			return;
+		}
+		AddParameter("");
+		AddParameter(args[0]);
+		foreach (string text in args)
+		{
+			if (text.StartsWith("/"))
+			{
+				if (text.ToLower().CompareTo("/unregister") == 0 || text.ToLower().CompareTo("/tlb") == 0 || text.ToLower().CompareTo("/regfile") == 0 || text.ToLower().CompareTo("/codebase") == 0 || text.ToLower().CompareTo("/nologo") == 0 || text.ToLower().CompareTo("/help") == 0 || text.ToLower().CompareTo("/silent") == 0 || text.ToLower().CompareTo("/verbose") == 0 || text.ToLower().CompareTo("/registered") == 0)
+				{
+					AddParameter(text);
+				}
+				else if (text.ToLower().CompareTo("/showwindow") == 0)
+				{
+					bShowWindow = true;
+				}
+				else
+				{
+					Console.WriteLine("Unknown argument " + text);
+				}
+			}
+		}
+		RunRegAsm(_parameter, bShowWindow);
+	}
+
+	public static void RunRegAsm(string argument, bool bShowWindow)
+	{
+		string text = ToolLocationHelper.GetPathToDotNetFrameworkFile("regasm.exe", TargetDotNetFrameworkVersion.Version45);
+		if (!File.Exists(text))
+		{
+			text = ToolLocationHelper.GetPathToDotNetFrameworkFile("regasm.exe", TargetDotNetFrameworkVersion.Version20);
+		}
+		if (text.Length <= 0 || !File.Exists(text))
+		{
+			text = "regasm.exe";
+			Console.Write("DotNet FrameWork is not installed on this machine");
+		}
+		ProcessStartInfo processStartInfo = new ProcessStartInfo();
+		processStartInfo.FileName = text;
+		processStartInfo.CreateNoWindow = bShowWindow;
+		if (argument.Length > 0)
+		{
+			argument = " " + argument;
+		}
+		processStartInfo.Arguments = ((argument.Length > 0) ? argument : " /help");
+		try
+		{
+			Process process = new Process();
+			process.StartInfo = processStartInfo;
+			process.Start();
+			process.WaitForExit();
+			Console.WriteLine(processStartInfo.FileName + processStartInfo.Arguments);
+			process.Close();
+		}
+		catch
+		{
+			Console.WriteLine("Failed to run " + processStartInfo.FileName + processStartInfo.Arguments);
+		}
+	}
+
+	public static void AddParameter(string value)
+	{
+		if (_parameter.Length > 0)
+		{
+			_parameter = _parameter + " " + value;
+		}
+		else
+		{
+			_parameter = value;
+		}
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

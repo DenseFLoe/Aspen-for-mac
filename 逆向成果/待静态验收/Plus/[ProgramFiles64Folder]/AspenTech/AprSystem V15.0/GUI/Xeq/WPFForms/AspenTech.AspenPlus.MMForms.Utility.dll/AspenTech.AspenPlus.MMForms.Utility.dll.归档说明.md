@@ -1,0 +1,13 @@
+# AspenTech.AspenPlus.MMForms.Utility.dll
+
+状态为**待静态验收**。已定位并核对发布包中的导出文件，等待逐件静态验收。
+
+原路径为 `Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/WPFForms/AspenTech.AspenPlus.MMForms.Utility.dll`。
+
+原件 SHA-256 为 `9d0c82742e6ae4bfa6e6927e1e8d3151b34af636d4e7dd6542ff1badac06a188`。
+
+发布包交付共有 2 份内容或格式不同的文件。以下为本次整理时生成的目录。原始来源见[发布页](https://github.com/DenseFLoe/Aspen-for-mac/releases/tag/v0.20261121-w2)。
+
+- [正式导出 · cs · c2f0400d3dbf](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/AspenTech.AspenPlus.MMForms.Utility.dll.cs.txt)（252,652 字节）
+- [正式导出 · il · 75b940284b88](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/AspenTech.AspenPlus.MMForms.Utility.dll.il.txt)（522,072 字节）
+

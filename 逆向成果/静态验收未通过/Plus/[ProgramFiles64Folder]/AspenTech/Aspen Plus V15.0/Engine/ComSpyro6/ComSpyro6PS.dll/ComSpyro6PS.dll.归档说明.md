@@ -1,0 +1,15 @@
+# ComSpyro6PS.dll
+
+状态为**静态验收未通过**。发布包的代码中有明确的反编译失败记录。
+
+原路径为 `Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/Engine/ComSpyro6/ComSpyro6PS.dll`。
+
+原件 SHA-256 为 `344a9760f16ee3708493fca85c2f4900371ac4e4f2be0d82bc40c50a50750be0`。
+
+发布包交付共有 2 份内容或格式不同的文件。以下为本次整理时生成的目录。原始来源见[发布页](https://github.com/DenseFLoe/Aspen-for-mac/releases/tag/v0.20261121-w2)。
+
+正式 C 导出包含 2 处函数反编译失败标记。
+
+- [正式导出 · asm · e5c62e56f936](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/ComSpyro6PS.dll.asm.txt)（43,922 字节）
+- [正式导出 · c · 11d70fc4beb9](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/ComSpyro6PS.dll.c.txt)（26,093 字节）
+
