@@ -1,6 +1,6 @@
 # 静态验收未通过
 
-共 303 件。已有代码或局部成果，逐件记录有明确缺口。
+共 304 件。已有代码或局部成果，逐件记录有明确缺口。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -41,6 +41,7 @@
 | [AspenTech.APED.Core.dll](Plus-Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/Bin/AspenTech.APED.Core.dll/) | Plus-Properties | `7995945d8ff9` |
 | [AspenTech.APED.Core.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseConfiguration/AspenTech.APED.Core.dll/) | Properties | `e4e66a5e8597` |
 | [AspenTech.AspenPlus.UnmanagedWrapper.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.AspenPlus.UnmanagedWrapper.dll/) | Plus-Properties | `12726eceaf4f` |
+| [AspenTech.HtmlHelp.HelpIntegration.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.HtmlHelp.HelpIntegration.dll/) | Plus | `061d5a3a8409` |
 | [AspenTech.HtmlHelp.StrongNameInvoke.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.HtmlHelp.StrongNameInvoke.dll/) | Plus | `02826aae6dfd` |
 | [AssistEd.exe](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/AssistEd.exe/) | Plus | `f948cf2ce74f` |
 | [ASW_pw8.2394B958_0137_40A8_A8CA_BB6DB1AE36C0.exe](Properties/Icon/ASW_pw8.2394B958_0137_40A8_A8CA_BB6DB1AE36C0.exe/) | Properties | `b17a58755b3a` |

@@ -1,6 +1,6 @@
 # 待静态验收
 
-共 942 件。已有代码，等待逐件核对。
+共 941 件。已有代码，等待逐件核对。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -239,7 +239,6 @@
 | [AspenTech.FeatureToggle.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.FeatureToggle.dll/) | Plus | `103fb93bb98c` |
 | [AspenTech.HtmlHelp.HelpCefViewer.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.HtmlHelp.HelpCefViewer.dll/) | Plus | `78a67fbf7302` |
 | [AspenTech.HtmlHelp.HelpInfrastructure.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.HtmlHelp.HelpInfrastructure.dll/) | Plus | `353d4748e2b5` |
-| [AspenTech.HtmlHelp.HelpIntegration.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.HtmlHelp.HelpIntegration.dll/) | Plus | `061d5a3a8409` |
 | [AspenTech.HtmlHelp.HelpLauncher.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.HtmlHelp.HelpLauncher.dll/) | Plus | `22dfdebff1c0` |
 | [AspenTech.HtmlHelp.Logging.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.HtmlHelp.Logging.dll/) | Plus | `b3483be1cee5` |
 | [AspenTech.HtmlHelp.StrongNameInvoke.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Converter%20V15.0/AspenTech.HtmlHelp.StrongNameInvoke.dll/) | Plus | `d9e08466e285` |
