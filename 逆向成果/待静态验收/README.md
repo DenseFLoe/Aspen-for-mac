@@ -1,6 +1,6 @@
 # 待静态验收
 
-共 950 件。已有代码，等待逐件核对。
+共 949 件。已有代码，等待逐件核对。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -356,7 +356,6 @@
 | [CSSExtern.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Shared%20Engineering%20Models%20V15.0/CSSExtern.dll/) | Plus | `c1e9989f597a` |
 | [cstabledata.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/cstabledata.dll/) | Plus | `34b21afe6f91` |
 | [CxsInteropComV20.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/CxsInteropComV20.dll/) | Plus | `a01e1f0cd689` |
-| [CxsInteropComV22.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/CxsInteropComV22.dll/) | Plus | `00501719049f` |
 | [Data.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/PSV%20Legacy%20Recall%20Server/V15.0/Data.dll/) | Plus | `0cfb6db889fc` |
 | [Data.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Hydraulics%20V15.0/Data.dll/) | Plus | `a98aafc96c94` |
 | [DataSvr.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/DataSvr.dll/) | Plus | `41c4a7af5bed` |

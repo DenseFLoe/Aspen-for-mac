@@ -1,6 +1,6 @@
 # CxsInteropComV22.dll
 
-状态为**待静态验收**。已定位并核对发布包中的导出文件，等待逐件静态验收。
+状态为**静态验收未通过**。一组核对了原件、两份导出和资源，缺口见[静态验收记录](CxsInteropComV22.dll.md)。
 
 原路径为 `Plus/[CommonFiles64Folder]/AspenTech Shared/CxsInteropComV22.dll`。
 

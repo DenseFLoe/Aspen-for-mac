@@ -1,6 +1,6 @@
 # 静态验收未通过
 
-共 295 件。已有代码或局部成果，逐件记录有明确缺口。
+共 296 件。已有代码或局部成果，逐件记录有明确缺口。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -67,6 +67,7 @@
 | [ComWrappersPS.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/ComWrappersPS.dll/) | Plus | `06279d9c3166` |
 | [converterV150_Aspe_67A0A657A37A4D428016F5A8559D1D1F.exe](Plus/Icon/converterV150_Aspe_67A0A657A37A4D428016F5A8559D1D1F.exe/) | Plus | `1eaf8fcbe9a7` |
 | [CxsInteropComV20.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/CxsInteropComV20.dll/) | Plus | `ea55ecec1b78` |
+| [CxsInteropComV22.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/CxsInteropComV22.dll/) | Plus | `00501719049f` |
 | [CxsInteropComV22.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/CxsInteropComV22.dll/) | Plus | `3220b58f8dfe` |
 | [dblist32.ocx](Plus/%5BSystemFolder%5D/dblist32.ocx/) | Plus | `114c72a291f7` |
 | [dbt_pw8.F17E0647_A8B1_438F_B777_C7BFE25C71D7.exe](Plus/Icon/dbt_pw8.F17E0647_A8B1_438F_B777_C7BFE25C71D7.exe/) | Plus | `362f525bd061` |
