@@ -1,6 +1,6 @@
 # 待静态验收
 
-共 957 件。已有代码，等待逐件核对。
+共 955 件。已有代码，等待逐件核对。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -104,7 +104,6 @@
 | [ApStgUtl.exe](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/ApStgUtl.exe/) | Plus | `57a4f5458956` |
 | [apstorage.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/apstorage.dll/) | Plus | `ed3e9036118a` |
 | [apstrm.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/apstrm.dll/) | Plus | `a704d1525e32` |
-| [aptime.exe](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/aptime.exe/) | Plus | `0116abb36340` |
 | [aptrain.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/aptrain.dll/) | Plus | `16084f7c59d0` |
 | [ApTrainExe.exe](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/ApTrainExe.exe/) | Plus | `bdfebb7d5559` |
 | [ApTrainExePS.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/ApTrainExePS.dll/) | Plus | `573c1ca00597` |
@@ -692,7 +691,6 @@
 | [rtmalloc.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/rtmalloc.dll/) | Plus | `4a75ff2645df` |
 | [rtoblk.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/rtoblk.dll/) | Plus | `1d62e8c44de8` |
 | [rtodof.exe](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/rtodof.exe/) | Plus | `c20c343ebfab` |
-| [rtogen.exe](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/rtogen.exe/) | Plus | `024611d1a18e` |
 | [rtojac.exe](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/rtojac.exe/) | Plus | `973fd916a9fd` |
 | [rtores.exe](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/rtores.exe/) | Plus | `3871fe332614` |
 | [rtotran.exe](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/rtotran.exe/) | Plus | `29a9be69a2d1` |
