@@ -1,6 +1,6 @@
 # Microsoft.Practices.Composite.Presentation.dll
 
-状态为**待静态验收**。已定位并核对发布包中的导出文件，等待逐件静态验收。
+状态为**静态验收未通过**。缺字符串资源和 PE 版本资源重建输入。见[第 5 轮验收证据](Microsoft.Practices.Composite.Presentation.dll.%E9%9D%99%E6%80%81%E9%AA%8C%E6%94%B6.md)。
 
 原路径为 `Plus/[CommonFiles64Folder]/AspenTech Shared/PSV Legacy Recall Server/V15.0/Microsoft.Practices.Composite.Presentation.dll`。
 
