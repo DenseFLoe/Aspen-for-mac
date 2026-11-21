@@ -1,6 +1,6 @@
 # AspenTech.HtmlHelp.HelpIntegration.dll
 
-状态为**待静态验收**。已定位并核对发布包中的导出文件，等待逐件静态验收。
+状态为**静态验收未通过**。正式 C# 导出有语法错误，发布包缺少原件的空托管资源容器。详见[三组第 3 轮验收证据](AspenTech.HtmlHelp.HelpIntegration.dll.%E9%9D%99%E6%80%81%E9%AA%8C%E6%94%B6.md)。
 
 原路径为 `Plus/[ProgramFiles64Folder]/AspenTech/AprSystem V15.0/GUI/Xeq/AspenTech.HtmlHelp.HelpIntegration.dll`。
 
