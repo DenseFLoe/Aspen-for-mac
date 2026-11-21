@@ -1,0 +1,461 @@
+using System;
+using System.CodeDom.Compiler;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Configuration;
+using System.Diagnostics;
+using System.Globalization;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Input;
+using System.Windows.Markup;
+using System.Windows.Media;
+using System.Windows.Shapes;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyFileVersion("41.0.0.614")]
+[assembly: AssemblyTitle("WPFHierarchyComboBox")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("Aspen Technology, Inc.")]
+[assembly: AssemblyProduct("WPFHierarchyComboBox.dll")]
+[assembly: AssemblyCopyright("Copyright © Aspen Technology, Inc. 2011 - 2024, All Rights Reserved")]
+[assembly: AssemblyTrademark("")]
+[assembly: ComVisible(false)]
+[assembly: ThemeInfo(ResourceDictionaryLocation.None, ResourceDictionaryLocation.SourceAssembly)]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.614")]
+namespace WPFHierarchyComboBox
+{
+	public class HierarchyTree : Page, IComponentConnector
+	{
+		internal Grid PodClock;
+
+		internal TextBlock MonthDay;
+
+		internal Rectangle HourHand;
+
+		internal RotateTransform HourHand2;
+
+		internal Rectangle MinuteHand;
+
+		internal Rectangle SecondHand;
+
+		private bool _contentLoaded;
+
+		public HierarchyTree()
+		{
+			InitializeComponent();
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WPFHierarchyComboBox;component/hierarchytree.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			switch (connectionId)
+			{
+			case 1:
+				PodClock = (Grid)target;
+				break;
+			case 2:
+				MonthDay = (TextBlock)target;
+				break;
+			case 3:
+				HourHand = (Rectangle)target;
+				break;
+			case 4:
+				HourHand2 = (RotateTransform)target;
+				break;
+			case 5:
+				MinuteHand = (Rectangle)target;
+				break;
+			case 6:
+				SecondHand = (Rectangle)target;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+	public class HierarchyTreeViewItemViewModel : INotifyPropertyChanged
+	{
+		private string m_strName;
+
+		private string m_strHierarchyID;
+
+		private bool m_bIsExpanded;
+
+		private bool m_bIsSelected;
+
+		private ObservableCollection<HierarchyTreeViewItemViewModel> m_Children = new ObservableCollection<HierarchyTreeViewItemViewModel>();
+
+		public string Name
+		{
+			get
+			{
+				return m_strName;
+			}
+			set
+			{
+				m_strName = value;
+			}
+		}
+
+		public string HierarchyID
+		{
+			get
+			{
+				return m_strHierarchyID;
+			}
+			private set
+			{
+			}
+		}
+
+		public bool IsExpanded
+		{
+			get
+			{
+				return m_bIsExpanded;
+			}
+			set
+			{
+				if (value != m_bIsExpanded)
+				{
+					m_bIsExpanded = value;
+					OnPropertyChanged("IsExpanded");
+					if (m_bIsExpanded && Parent != null)
+					{
+						Parent.IsExpanded = true;
+					}
+				}
+			}
+		}
+
+		public bool IsSelected
+		{
+			get
+			{
+				return m_bIsSelected;
+			}
+			set
+			{
+				if (value != m_bIsSelected)
+				{
+					m_bIsSelected = value;
+					OnPropertyChanged("IsSelected");
+				}
+			}
+		}
+
+		public HierarchyTreeViewItemViewModel Parent { get; set; }
+
+		public ObservableCollection<HierarchyTreeViewItemViewModel> Children
+		{
+			get
+			{
+				return m_Children;
+			}
+			set
+			{
+				m_Children = value;
+			}
+		}
+
+		public bool IsLeafNode => Children.Count == 0;
+
+		public event PropertyChangedEventHandler PropertyChanged;
+
+		protected virtual void OnPropertyChanged(string strPropertyName)
+		{
+			if (this.PropertyChanged != null)
+			{
+				this.PropertyChanged(this, new PropertyChangedEventArgs(strPropertyName));
+			}
+		}
+
+		public HierarchyTreeViewItemViewModel(string strName, HierarchyTreeViewItemViewModel tvmParent = null)
+		{
+			m_strName = strName;
+			Parent = tvmParent;
+			m_strHierarchyID = strName;
+			if (Parent != null)
+			{
+				m_strHierarchyID = Parent.HierarchyID + "." + m_strName;
+			}
+		}
+	}
+	public class UserControl1 : UserControl, IComponentConnector
+	{
+		private ObservableCollection<HierarchyTreeViewItemViewModel> m_TreeViewRootNodes = new ObservableCollection<HierarchyTreeViewItemViewModel>();
+
+		private string m_strHierarchyID = string.Empty;
+
+		private const int LOGPIXELSX = 88;
+
+		private const int LOGPIXELSY = 90;
+
+		internal StackPanel StackPanelHierarchy;
+
+		internal ComboBox Combox1;
+
+		internal TreeView tree1;
+
+		private bool _contentLoaded;
+
+		public ObservableCollection<HierarchyTreeViewItemViewModel> RootNodes
+		{
+			get
+			{
+				return m_TreeViewRootNodes;
+			}
+			set
+			{
+				m_TreeViewRootNodes = value;
+			}
+		}
+
+		[DllImport("user32.dll")]
+		public static extern bool SetProcessDPIAware();
+
+		[DllImport("user32.dll")]
+		public static extern IntPtr GetDC(IntPtr pWnd);
+
+		[DllImport("user32.dll")]
+		public static extern IntPtr ReleaseDC(IntPtr hWnd, IntPtr hDC);
+
+		[DllImport("gdi32.dll")]
+		public static extern int GetDeviceCaps(IntPtr hDC, int nIndex);
+
+		public UserControl1()
+		{
+			InitializeComponent();
+			base.Loaded += UserControl1_Loaded;
+			base.PreviewKeyDown += UserControl1_PreviewKeyDown;
+		}
+
+		private void UserControl1_PreviewKeyDown(object sender, KeyEventArgs e)
+		{
+		}
+
+		public UserControl1(string strTesting)
+		{
+			new List<string>();
+			InitializeComponent();
+			base.Loaded += UserControl1_Loaded;
+		}
+
+		private void UserControl1_Loaded(object sender, RoutedEventArgs e)
+		{
+			base.DataContext = this;
+		}
+
+		public string GetSelectedHierarchy()
+		{
+			return m_strHierarchyID;
+		}
+
+		private void Combox1_DropDownClosed(object sender, EventArgs e)
+		{
+			if (tree1.SelectedValue is HierarchyTreeViewItemViewModel hierarchyTreeViewItemViewModel)
+			{
+				m_strHierarchyID = hierarchyTreeViewItemViewModel.HierarchyID;
+			}
+		}
+
+		private void Combox1_Loaded(object sender, RoutedEventArgs e)
+		{
+			(sender as ComboBox).IsDropDownOpen = true;
+			(sender as ComboBox).IsDropDownOpen = false;
+		}
+
+		public void SetHierarchyComboSize(int nWidth, int nHeight)
+		{
+			int nDpiX = 0;
+			int nDpiY = 0;
+			GetSystemDPI(ref nDpiX, ref nDpiY);
+			base.Width = (double)nWidth * (96.0 / (double)nDpiX);
+			base.Height = (double)nHeight * (96.0 / (double)nDpiY) + 5.0;
+			Combox1.Width = (double)nWidth * (96.0 / (double)nDpiX);
+			Combox1.VerticalAlignment = VerticalAlignment.Top;
+		}
+
+		public void SetTreeViewData(List<string> lstHierarchies)
+		{
+			GenerateTreeviewData(lstHierarchies);
+		}
+
+		private void GetSystemDPI(ref int nDpiX, ref int nDpiY)
+		{
+			IntPtr dC = GetDC(IntPtr.Zero);
+			nDpiX = GetDeviceCaps(dC, 88);
+			nDpiY = GetDeviceCaps(dC, 90);
+			ReleaseDC(IntPtr.Zero, dC);
+		}
+
+		public void GenerateTreeviewData(List<string> lstHierarchies)
+		{
+			HierarchyTreeViewItemViewModel hierarchyTreeViewItemViewModel = null;
+			foreach (string lstHierarchy in lstHierarchies)
+			{
+				string[] array = lstHierarchy.Split('.');
+				hierarchyTreeViewItemViewModel = GenerateRootNodes(array[0]);
+				GenerateIterationNodes(hierarchyTreeViewItemViewModel, array);
+			}
+			if (RootNodes.Count > 0)
+			{
+				RootNodes[0].IsSelected = true;
+			}
+		}
+
+		public HierarchyTreeViewItemViewModel GenerateRootNodes(string strName)
+		{
+			bool flag = false;
+			HierarchyTreeViewItemViewModel result = null;
+			foreach (HierarchyTreeViewItemViewModel rootNode in RootNodes)
+			{
+				if (rootNode.Name.CompareTo(strName) == 0)
+				{
+					flag = true;
+					result = rootNode;
+					break;
+				}
+			}
+			if (!flag)
+			{
+				HierarchyTreeViewItemViewModel hierarchyTreeViewItemViewModel = new HierarchyTreeViewItemViewModel(strName);
+				m_TreeViewRootNodes.Add(hierarchyTreeViewItemViewModel);
+				result = hierarchyTreeViewItemViewModel;
+			}
+			return result;
+		}
+
+		public void GenerateIterationNodes(HierarchyTreeViewItemViewModel tvmParent, string[] arrStrHierarchies)
+		{
+			if (tvmParent == null || arrStrHierarchies == null)
+			{
+				return;
+			}
+			HierarchyTreeViewItemViewModel hierarchyTreeViewItemViewModel = tvmParent;
+			int num = 0;
+			int i = 1;
+			num = arrStrHierarchies.Count();
+			while (i < num)
+			{
+				HierarchyTreeViewItemViewModel hierarchyTreeViewItemViewModel2 = FindNodeInChildren(hierarchyTreeViewItemViewModel, arrStrHierarchies[i]);
+				if (hierarchyTreeViewItemViewModel2 == null)
+				{
+					for (; i < num; i++)
+					{
+						HierarchyTreeViewItemViewModel hierarchyTreeViewItemViewModel3 = new HierarchyTreeViewItemViewModel(arrStrHierarchies[i], hierarchyTreeViewItemViewModel);
+						hierarchyTreeViewItemViewModel.Children.Add(hierarchyTreeViewItemViewModel3);
+						hierarchyTreeViewItemViewModel = hierarchyTreeViewItemViewModel3;
+					}
+					break;
+				}
+				i++;
+				hierarchyTreeViewItemViewModel = hierarchyTreeViewItemViewModel2;
+			}
+		}
+
+		private HierarchyTreeViewItemViewModel FindNodeInChildren(HierarchyTreeViewItemViewModel tvmParent, string strName)
+		{
+			HierarchyTreeViewItemViewModel result = null;
+			foreach (HierarchyTreeViewItemViewModel child in tvmParent.Children)
+			{
+				if (child.Name.CompareTo(strName) == 0)
+				{
+					result = child;
+					break;
+				}
+			}
+			return result;
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WPFHierarchyComboBox;component/wpfcombotree.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			switch (connectionId)
+			{
+			case 1:
+				StackPanelHierarchy = (StackPanel)target;
+				break;
+			case 2:
+				Combox1 = (ComboBox)target;
+				Combox1.DropDownClosed += Combox1_DropDownClosed;
+				Combox1.Loaded += Combox1_Loaded;
+				break;
+			case 3:
+				tree1 = (TreeView)target;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+	internal class TreeViewLineConverter : IValueConverter
+	{
+		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			TreeViewItem container = (TreeViewItem)value;
+			ItemsControl itemsControl = ItemsControl.ItemsControlFromItemContainer(container);
+			return itemsControl.ItemContainerGenerator.IndexFromContainer(container) == itemsControl.Items.Count - 1;
+		}
+
+		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			throw new NotImplementedException();
+		}
+	}
+}
+namespace WPFHierarchyComboBox.Properties
+{
+	[CompilerGenerated]
+	[GeneratedCode("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "15.3.0.0")]
+	internal sealed class Settings : ApplicationSettingsBase
+	{
+		private static Settings defaultInstance = (Settings)SettingsBase.Synchronized(new Settings());
+
+		public static Settings Default => defaultInstance;
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

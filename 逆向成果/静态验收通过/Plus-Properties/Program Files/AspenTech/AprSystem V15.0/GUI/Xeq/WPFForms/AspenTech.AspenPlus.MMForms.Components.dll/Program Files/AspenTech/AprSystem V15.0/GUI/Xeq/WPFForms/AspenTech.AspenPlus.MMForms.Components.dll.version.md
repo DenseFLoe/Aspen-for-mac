@@ -1,0 +1,7 @@
+# 组分表单程序集的 Windows 版本资源
+
+Aspen Plus V15 和 Aspen Properties V15 均将此文件安装到 `Program Files/AspenTech/AprSystem V15.0/GUI/Xeq/WPFForms/AspenTech.AspenPlus.MMForms.Components.dll`。两套 MSI 的 File 序号分别为 1858 和 1495，对应各自 `APRS~371.cab` 中的成员 `aspentech.aspenplus.29.01AE6323_4069_4985_B882_1C2F459EE258`。本轮核对了两套 MSI 的 File、Media 记录以及各 MSI 和 CAB 的指纹，并沿用已有的成员解包记录。两个包成员和当前安装件均为 336,936 字节，版本为 41.0.0.614，SHA-256 为 `127354937eea94cce668a8101498e9aa2675e05ccc5d0bc29350cc0434ec3894`。[来源与清单位置](../../../../../../evidence/identity.json)
+
+同目录的 `AspenTech.AspenPlus.MMForms.Components.dll.version.rc` 已通过静态验收，SHA-256 为 `316dad430516c45ea9d8ce1f42513b9b263cb717297929a63e617cf2f9ad2ef5`。主库 PE 资源目录只有一个 RT_VERSION，名称 ID 为 1、语言 ID 为 0，原始文件偏移为 324,696。RC 恢复了固定版本字段、11 个字符串、语言及代码页 0/1200，其中版权字段保留原件中的 Microsoft 字样。用 GNU windres 2.39 编译，再用 pefile 2024.8.26 回读，字段一致，整个版本块的 1,134 字节也与原件逐字节相同，SHA-256 为 `bc259235111ff8405bd17e9c4d4a1ca09c961f70f01204444107ac238dd277a3`。dnfile 0.18.0 核对主库的 CLR 资源区 RVA、长度及清单资源行数均为 0。[资源结构与回读结果](../../../../../../evidence/resources.json)
+
+页面由 en-US 卫星程序集提供，其两个原版包成员与安装件均为 297,512 字节，文件版本为 41.0.0.614，SHA-256 为 `df0e2444c6c214264d1d26a449b333474be330c3886b45f491fac74c31fc13f2`。该卫星含 1 份 CLR 清单资源及 0 个方法定义。Windows 对主库和卫星安装件的 Authenticode 核验均返回 Valid，签名者为 Aspentech Corporation，两件均带时间戳证书。两份 PE 证书表均为 10,280 字节，CLR 强名称签名区均为空。Windows 重建阶段可在文件属性页核对版本信息的实际显示。[卫星来源](../../../../../../evidence/satellite-identity.json) · [签名核验](../../../../../../evidence/signing.json)

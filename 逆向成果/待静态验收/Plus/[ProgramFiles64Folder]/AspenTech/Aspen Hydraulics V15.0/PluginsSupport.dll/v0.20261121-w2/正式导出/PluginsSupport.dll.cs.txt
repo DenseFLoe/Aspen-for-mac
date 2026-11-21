@@ -1,0 +1,311 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Diagnostics;
+using System.IO;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyCompany("Aspen Technology, Inc.")]
+[assembly: AssemblyProduct("Aspen Hydraulics")]
+[assembly: AssemblyCopyright("Copyright © Aspen Technology, Inc. 2024")]
+[assembly: AssemblyTitle("")]
+[assembly: AssemblyDescription("Plugins Support")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyDelaySign(false)]
+[assembly: AssemblyKeyFile("..\\..\\..\\packages\\AspenTech.StrongName.SNK.1.0.0\\content\\AspenTech.snk")]
+[assembly: AssemblyKeyName("")]
+[assembly: AssemblyFileVersion("41.0.0.99")]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.0")]
+namespace AspenTech.Hydraulics.PluginsSupport;
+
+[Guid("44E311B2-5562-4F5F-BD54-59A85A03716C")]
+public interface IPlugin
+{
+	string AssemblyName { get; }
+
+	string ClassName { get; }
+
+	string VendorName { get; }
+
+	string QueriedInterface { get; }
+
+	object Object { get; }
+
+	bool IsRemotable { get; }
+}
+[Guid("2CAAB725-1ACE-4EE0-9522-C1EC6F3A0E9A")]
+public class Plugin : IPlugin
+{
+	private string _assemblyName;
+
+	private string _className;
+
+	private string _vendorName;
+
+	private bool _isRemotable;
+
+	private string _solverInterfaceName;
+
+	public string AssemblyName => _assemblyName;
+
+	public string ClassName => _className;
+
+	public string VendorName => _vendorName;
+
+	public object Object
+	{
+		get
+		{
+			Assembly assembly = Assembly.LoadFrom(_assemblyName);
+			return assembly.CreateInstance(_className, ignoreCase: true);
+		}
+	}
+
+	public string QueriedInterface => _solverInterfaceName;
+
+	public bool IsRemotable => _isRemotable;
+
+	public Plugin(string AssemblyName, string ClassName, string QueriedInterface, string VendorName)
+	{
+		_assemblyName = AssemblyName;
+		_className = ClassName;
+		_vendorName = VendorName;
+		_solverInterfaceName = QueriedInterface;
+	}
+
+	public Plugin(string AssemblyName, string ClassName, string QueriedInterface)
+	{
+		_assemblyName = AssemblyName;
+		_className = ClassName;
+		_solverInterfaceName = QueriedInterface;
+	}
+
+	public Plugin()
+	{
+	}
+}
+[Guid("0A97A37B-D766-4578-A90A-7E725FCF4AB9")]
+public interface IPluginManager
+{
+	StringCollection Locations { get; set; }
+
+	IPlugins QueryInterface(string InterfaceName);
+
+	IPlugins QueryInterface(string AssemblyName, string InterfaceName);
+
+	void AddLocation(string location);
+
+	void ClearLocations();
+}
+[Guid("F447C52F-30E8-473F-BEAE-FA92E2E006CD")]
+public class PluginManager : IPluginManager
+{
+	private StringCollection _locations;
+
+	public StringCollection Locations
+	{
+		get
+		{
+			return _locations;
+		}
+		set
+		{
+			_locations = value;
+		}
+	}
+
+	public PluginManager()
+	{
+		Locations = new StringCollection();
+	}
+
+	public IPlugins QueryInterface(string InterfaceName)
+	{
+		StringCollection stringCollection = new StringCollection();
+		if (Locations.Count == 0)
+		{
+			Assembly assembly = Assembly.GetAssembly(GetType());
+			Locations.Add(Path.GetDirectoryName(assembly.Location));
+		}
+		string[] array = new string[Locations.Count];
+		Locations.CopyTo(array, 0);
+		for (int i = 0; i < Locations.Count; i++)
+		{
+			if (Directory.Exists(array[i]))
+			{
+				stringCollection.AddRange(Directory.GetFiles(array[i], "*.dll"));
+			}
+		}
+		string[] array2 = new string[stringCollection.Count];
+		stringCollection.CopyTo(array2, 0);
+		return new Plugins(array2, InterfaceName);
+	}
+
+	public IPlugins QueryInterface(string AssemblyName, string InterfaceName)
+	{
+		return new Plugins(AssemblyName, InterfaceName);
+	}
+
+	public void AddLocation(string location)
+	{
+		_locations.Add(location);
+	}
+
+	public void ClearLocations()
+	{
+		_locations.Clear();
+	}
+}
+[Guid("40733608-90A1-407D-94FB-6BD45C0A48F5")]
+public interface IPlugins
+{
+	int PlugInCount { get; }
+
+	void Add(IPlugin thePlugin);
+
+	void Remove(int index);
+
+	IPlugin Item(int index);
+}
+[Guid("103BC927-893D-4720-ADEE-3FA1FD07AAB3")]
+public class Plugins : CollectionBase, IPlugins, IEnumerable
+{
+	[Guid("7C55586B-A25E-4DBE-B3E6-43E035BA1035")]
+	public class PluginEnumerator : IEnumerator
+	{
+		private int _position;
+
+		private readonly Plugins _pluginCollection;
+
+		public Plugin Current => (Plugin)_pluginCollection.Item(_position);
+
+		object IEnumerator.Current => _pluginCollection.Item(_position);
+
+		public PluginEnumerator(Plugins PluginCollection)
+		{
+			_pluginCollection = PluginCollection;
+			_position = -1;
+		}
+
+		public bool MoveNext()
+		{
+			if (_position < _pluginCollection.Count - 1)
+			{
+				_position++;
+				return true;
+			}
+			return false;
+		}
+
+		public void Reset()
+		{
+			_position = -1;
+		}
+	}
+
+	private static readonly List<string> _notAssembly = new List<string>();
+
+	public int PlugInCount => base.List.Count;
+
+	public Plugins(string[] AssemblyNames, string QueriedInterface)
+	{
+		foreach (string assemblyName in AssemblyNames)
+		{
+			ExtractPlugins(assemblyName, QueriedInterface);
+		}
+	}
+
+	public Plugins(string AssemblyName, string QueriedInterface)
+	{
+		ExtractPlugins(AssemblyName, QueriedInterface);
+	}
+
+	public new PluginEnumerator GetEnumerator()
+	{
+		return new PluginEnumerator(this);
+	}
+
+	IEnumerator IEnumerable.GetEnumerator()
+	{
+		return new PluginEnumerator(this);
+	}
+
+	public void Add(IPlugin ThePlugin)
+	{
+		base.List.Add(ThePlugin);
+	}
+
+	public void Remove(int Index)
+	{
+		if (Index > base.List.Count - 1 || Index < 0)
+		{
+			throw new IndexOutOfRangeException();
+		}
+		base.List.RemoveAt(Index);
+	}
+
+	public static Plugins operator +(Plugins LHS, Plugins RHS)
+	{
+		for (int i = 0; i < RHS.Count; i++)
+		{
+			LHS.Add(RHS.Item(i));
+		}
+		return LHS;
+	}
+
+	public IPlugin Item(int Index)
+	{
+		Plugin plugin = null;
+		if (Index > base.List.Count - 1 || Index < 0)
+		{
+			return null;
+		}
+		return (Plugin)base.List[Index];
+	}
+
+	private void ExtractPlugins(string AssemblyName, string QueriedInterface)
+	{
+		if (_notAssembly.Contains(AssemblyName))
+		{
+			return;
+		}
+		try
+		{
+			Assembly assembly;
+			try
+			{
+				assembly = Assembly.LoadFrom(AssemblyName);
+			}
+			catch (BadImageFormatException)
+			{
+				_notAssembly.Add(AssemblyName);
+				return;
+			}
+			Type[] types = assembly.GetTypes();
+			Type[] array = types;
+			foreach (Type type in array)
+			{
+				if (null != type.GetInterface(QueriedInterface) && !type.IsAbstract)
+				{
+					Plugin value = new Plugin(assembly.Location, type.FullName, QueriedInterface);
+					base.List.Add(value);
+				}
+			}
+		}
+		catch (Exception ex2)
+		{
+			string text = ex2.ToString();
+		}
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

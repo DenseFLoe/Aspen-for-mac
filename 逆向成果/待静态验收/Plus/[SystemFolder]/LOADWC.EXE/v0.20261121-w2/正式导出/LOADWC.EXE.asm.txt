@@ -1,0 +1,2092 @@
+# TOOL IDA 9.5
+# ARCH metapc
+# BITS 32
+# BASE 0x1000000
+# SEGS 3
+# FUNCS 33
+FUNC 10025f4 sub_10025F4
+  10025f4: mov     eax, hModule
+  10025f9: test    eax, eax
+  10025fb: jnz     short loc_1002611
+  10025fd: push    offset LibFileName; "SHELL32.DLL"
+  1002602: call    ds:LoadLibraryA; KERNEL32
+  1002608: test    eax, eax
+  100260a: mov     hModule, eax
+  100260f: jz      short loc_1002633
+  1002611: mov     ecx, dword_100504C
+  1002617: test    ecx, ecx
+  1002619: jnz     short loc_1002637
+  100261b: push    offset ProcName; "ShellExecuteExA"
+  1002620: push    eax; hModule
+  1002621: call    ds:GetProcAddress; KERNEL32
+  1002627: mov     ecx, eax
+  1002629: test    ecx, ecx
+  100262b: mov     dword_100504C, ecx
+  1002631: jnz     short loc_1002637
+  1002633: xor     eax, eax
+  1002635: jmp     short locret_100263D
+  1002637: push    [esp+arg_0]
+  100263b: call    ecx ; dword_100504C
+  100263d: retn    4
+ENDFUNC
+FUNC 1002640 sub_1002640
+  1002640: mov     eax, hModule
+  1002645: test    eax, eax
+  1002647: jnz     short loc_100265D
+  1002649: push    offset LibFileName; "SHELL32.DLL"
+  100264e: call    ds:LoadLibraryA; KERNEL32
+  1002654: test    eax, eax
+  1002656: mov     hModule, eax
+  100265b: jz      short loc_100267F
+  100265d: mov     ecx, dword_1005050
+  1002663: test    ecx, ecx
+  1002665: jnz     short loc_1002684
+  1002667: push    28Dh; lpProcName
+  100266c: push    eax; hModule
+  100266d: call    ds:GetProcAddress; KERNEL32
+  1002673: mov     ecx, eax
+  1002675: test    ecx, ecx
+  1002677: mov     dword_1005050, ecx
+  100267d: jnz     short loc_1002684
+  100267f: or      eax, 0FFFFFFFFh
+  1002682: jmp     short locret_1002696
+  1002684: push    [esp+arg_C]
+  1002688: push    [esp+4+arg_8]
+  100268c: push    [esp+8+arg_4]
+  1002690: push    [esp+0Ch+arg_0]
+  1002694: call    ecx ; dword_1005050
+  1002696: retn    10h
+ENDFUNC
+FUNC 1002699 sub_1002699
+  1002699: cmp     hInstance, 0
+  10026a0: jnz     short locret_10026AB
+  10026a2: mov     eax, [esp+arg_0]
+  10026a6: mov     hInstance, eax
+  10026ab: retn    8
+ENDFUNC
+FUNC 10026ae sub_10026AE
+  10026ae: mov     eax, hInstance
+  10026b3: test    eax, eax
+  10026b5: jz      short locret_10026CB
+  10026b7: cmp     eax, [esp+arg_0]
+  10026bb: jz      short locret_10026CB
+  10026bd: push    eax
+  10026be: call    ds:MLClearMLHInstance
+  10026c4: and     hInstance, 0
+  10026cb: retn    4
+ENDFUNC
+FUNC 10026ce sub_10026CE
+  10026ce: push    [esp+cchBufferMax]; cchBufferMax
+  10026d2: push    [esp+4+lpBuffer]; lpBuffer
+  10026d6: push    [esp+8+uID]; uID
+  10026da: push    hInstance; hInstance
+  10026e0: call    ds:LoadStringA; USER32
+  10026e6: retn    0Ch
+ENDFUNC
+FUNC 10026e9 sub_10026E9
+  10026e9: push    ebp
+  10026ea: mov     ebp, esp
+  10026ec: sub     esp, 10h
+  10026ef: push    edi
+  10026f0: push    1
+  10026f2: xor     edi, edi
+  10026f4: call    sub_1003C27
+  10026f9: test    eax, eax
+  10026fb: jz      short loc_1002702
+  10026fd: push    1
+  10026ff: pop     edi
+  1002700: jmp     short loc_1002761
+  1002702: lea     eax, [ebp+phkResult]
+  1002705: push    eax; phkResult
+  1002706: push    1; samDesired
+  1002708: push    edi; ulOptions
+  1002709: push    offset SubKey; "Network\\Logon"
+  100270e: push    80000002h; hKey
+  1002713: call    ds:RegOpenKeyExA; ADVAPI32
+  1002719: test    eax, eax
+  100271b: jnz     short loc_1002761
+  100271d: lea     eax, [ebp+cbData]
+  1002720: mov     [ebp+cbData], 4
+  1002727: push    eax; lpcbData
+  1002728: lea     eax, [ebp+Data]
+  100272b: push    eax; lpData
+  100272c: lea     eax, [ebp+Type]
+  100272f: push    eax; lpType
+  1002730: push    edi; lpReserved
+  1002731: push    offset ValueName; "UserProfiles"
+  1002736: push    [ebp+phkResult]; hKey
+  1002739: call    ds:RegQueryValueExA; ADVAPI32
+  100273f: test    eax, eax
+  1002741: jnz     short loc_1002758
+  1002743: cmp     [ebp+Type], 4
+  1002747: jz      short loc_1002755
+  1002749: cmp     [ebp+Type], 3
+  100274d: jnz     short loc_1002758
+  100274f: cmp     [ebp+cbData], 4
+  1002753: jnz     short loc_1002758
+  1002755: mov     edi, dword ptr [ebp+Data]
+  1002758: push    [ebp+phkResult]; hKey
+  100275b: call    ds:RegCloseKey; ADVAPI32
+  1002761: mov     eax, edi
+  1002763: pop     edi
+  1002764: leave
+  1002765: retn
+ENDFUNC
+FUNC 1002766 sub_1002766
+  1002766: push    ebp
+  1002767: mov     ebp, esp
+  1002769: sub     esp, 1Ch
+  100276c: push    esi
+  100276d: push    edi
+  100276e: mov     edi, ds:PeekMessageA; USER32
+  1002774: xor     esi, esi
+  1002776: push    0FFh; dwWakeMask
+  100277b: lea     eax, [ebp+pHandles]
+  100277e: push    [ebp+dwMilliseconds]; dwMilliseconds
+  1002781: push    esi; fWaitAll
+  1002782: push    eax; pHandles
+  1002783: push    1; nCount
+  1002785: call    ds:MsgWaitForMultipleObjects; USER32
+  100278b: cmp     eax, esi
+  100278d: jz      short loc_10027C0
+  100278f: cmp     eax, 1
+  1002792: jz      short loc_100279B
+  1002794: cmp     eax, 0FFFFFFFFh
+  1002797: jz      short loc_10027C0
+  1002799: jmp     short loc_1002776
+  100279b: push    1; wRemoveMsg
+  100279d: push    esi; wMsgFilterMax
+  100279e: push    esi; wMsgFilterMin
+  100279f: lea     eax, [ebp+Msg]
+  10027a2: push    esi; hWnd
+  10027a3: push    eax; lpMsg
+  10027a4: call    edi ; PeekMessageA; USER32
+  10027a6: test    eax, eax
+  10027a8: jz      short loc_1002776
+  10027aa: lea     eax, [ebp+Msg]
+  10027ad: push    eax; lpMsg
+  10027ae: call    ds:TranslateMessage; USER32
+  10027b4: lea     eax, [ebp+Msg]
+  10027b7: push    eax; lpMsg
+  10027b8: call    ds:DispatchMessageA; USER32
+  10027be: jmp     short loc_100279B
+  10027c0: pop     edi
+  10027c1: pop     esi
+  10027c2: leave
+  10027c3: retn    8
+ENDFUNC
+FUNC 10027c6 sub_10027C6
+  10027c6: push    ebp
+  10027c7: mov     ebp, esp
+  10027c9: sub     esp, 144h
+  10027cf: push    ebx
+  10027d0: push    esi
+  10027d1: mov     esi, [ebp+lpString2]
+  10027d4: xor     ebx, ebx
+  10027d6: cmp     esi, ebx
+  10027d8: jz      loc_10028B2
+  10027de: cmp     [esi], bl
+  10027e0: jz      loc_10028B2
+  10027e6: push    43h ; 'C'
+  10027e8: lea     eax, [ebp+String1]
+  10027ee: push    106h
+  10027f3: push    eax
+  10027f4: push    esi
+  10027f5: call    ds:off_10025F0
+  10027fb: cmp     eax, 0FFFFFFFFh
+  10027fe: jnz     short loc_1002813
+  1002800: push    104h; iMaxLength
+  1002805: lea     eax, [ebp+String1]
+  100280b: push    esi; lpString2
+  100280c: push    eax; lpString1
+  100280d: call    ds:lstrcpynA; KERNEL32
+  1002813: lea     eax, [ebp+String1]
+  1002819: push    eax; pszPath
+  100281a: call    ds:PathGetArgsA; SHLWAPI
+  1002820: mov     esi, eax
+  1002822: cmp     [esi], bl
+  1002824: jz      short loc_1002829
+  1002826: mov     [esi-1], bl
+  1002829: lea     eax, [ebp+String1]
+  100282f: mov     [ebp+var_2C], eax
+  1002832: lea     eax, [ebp+String1]
+  1002838: push    eax; lpString
+  1002839: call    ds:lstrlenA; KERNEL32
+  100283f: cmp     [ebp+String1], 22h ; '"'
+  1002846: jnz     short loc_100285E
+  1002848: cmp     [ebp+eax+var_145], 22h ; '"'
+  1002850: lea     eax, [ebp+eax+var_145]
+  1002857: jnz     short loc_100285E
+  1002859: inc     [ebp+var_2C]
+  100285c: mov     [eax], bl
+  100285e: mov     eax, [ebp+arg_4]
+  1002861: mov     [ebp+var_3C], 3Ch ; '<'
+  1002868: and     eax, 8
+  100286b: mov     [ebp+var_34], ebx
+  100286e: shl     eax, 7
+  1002871: or      al, 40h
+  1002873: mov     [ebp+var_30], ebx
+  1002876: mov     [ebp+var_38], eax
+  1002879: lea     eax, [ebp+var_3C]
+  100287c: push    eax
+  100287d: mov     [ebp+var_28], esi
+  1002880: mov     [ebp+var_24], ebx
+  1002883: mov     [ebp+var_20], 1
+  100288a: call    ds:off_10025EC
+  1002890: test    eax, eax
+  1002892: jz      short loc_10028B2
+  1002894: test    byte ptr [ebp+arg_4], 2
+  1002898: jz      short loc_10028A9
+  100289a: cmp     [ebp+hObject], ebx
+  100289d: jz      short loc_10028A9
+  100289f: push    0FFFFFFFFh; dwMilliseconds
+  10028a1: push    [ebp+hObject]; pHandles
+  10028a4: call    sub_1002766
+  10028a9: push    [ebp+hObject]; hObject
+  10028ac: call    ds:CloseHandle; KERNEL32
+  10028b2: pop     esi
+  10028b3: pop     ebx
+  10028b4: leave
+  10028b5: retn    8
+ENDFUNC
+FUNC 10028b8 sub_10028B8
+  10028b8: push    ebp
+  10028b9: mov     ebp, esp
+  10028bb: sub     esp, 18h
+  10028be: push    ebx
+  10028bf: mov     ebx, [ebp+arg_8]
+  10028c2: push    esi
+  10028c3: mov     esi, [ebp+lpString1]
+  10028c6: push    edi
+  10028c7: mov     edi, [ebp+arg_4]
+  10028ca: xor     eax, eax
+  10028cc: mov     [edi], eax
+  10028ce: cmp     esi, eax
+  10028d0: mov     [ebp+var_4], eax
+  10028d3: mov     [ebp+var_C], eax
+  10028d6: mov     [ebp+var_10], eax
+  10028d9: mov     [ebp+var_14], eax
+  10028dc: mov     [ebp+var_18], eax
+  10028df: mov     [ebp+var_8], eax
+  10028e2: mov     [ebx], eax
+  10028e4: jz      loc_10029B0
+  10028ea: push    offset String2; "-1,-1,-1,-1"
+  10028ef: push    esi; lpString1
+  10028f0: call    ds:lstrcmpA; KERNEL32
+  10028f6: test    eax, eax
+  10028f8: jnz     short loc_1002900
+  10028fa: or      dword ptr [edi], 0FFFFFFFFh
+  10028fd: or      dword ptr [ebx], 0FFFFFFFFh
+  1002900: mov     cl, [esi]
+  1002902: lea     edx, [esi+1]
+  1002905: cmp     cl, 2Ch ; ','
+  1002908: jz      short loc_100292B
+  100290a: test    cl, cl
+  100290c: jz      short loc_100292B
+  100290e: cmp     cl, 30h ; '0'
+  1002911: jl      short loc_100298B
+  1002913: cmp     cl, 39h ; '9'
+  1002916: jg      short loc_100298B
+  1002918: mov     eax, [ebp+var_4]
+  100291b: movsx   cx, cl
+  100291f: lea     eax, [eax+eax*4]
+  1002922: lea     eax, [ecx+eax*2-30h]
+  1002926: mov     [ebp+var_4], eax
+  1002929: jmp     short loc_1002983
+  100292b: mov     eax, [ebp+var_8]
+  100292e: sub     eax, 0
+  1002931: jz      short loc_100296E
+  1002933: dec     eax
+  1002934: jz      short loc_100295F
+  1002936: dec     eax
+  1002937: jz      short loc_1002950
+  1002939: dec     eax
+  100293a: jz      short loc_1002941
+  100293c: dec     eax
+  100293d: jz      short loc_100298B
+  100293f: jmp     short loc_100297B
+  1002941: mov     eax, [ebp+var_4]
+  1002944: mov     [ebp+var_8], 4
+  100294b: mov     [ebp+var_18], eax
+  100294e: jmp     short loc_100297B
+  1002950: mov     eax, [ebp+var_4]
+  1002953: mov     [ebp+var_8], 3
+  100295a: mov     [ebp+var_14], eax
+  100295d: jmp     short loc_100297B
+  100295f: mov     eax, [ebp+var_4]
+  1002962: mov     [ebp+var_8], 2
+  1002969: mov     [ebp+var_10], eax
+  100296c: jmp     short loc_100297B
+  100296e: mov     eax, [ebp+var_4]
+  1002971: mov     [ebp+var_8], 1
+  1002978: mov     [ebp+var_C], eax
+  100297b: test    cl, cl
+  100297d: jz      short loc_1002992
+  100297f: and     [ebp+var_4], 0
+  1002983: mov     cl, [edx]
+  1002985: inc     edx
+  1002986: jmp     loc_1002905
+  100298b: mov     eax, 80070057h
+  1002990: jmp     short loc_10029B2
+  1002992: movzx   eax, word ptr [ebp+var_C]
+  1002996: movzx   ecx, word ptr [ebp+var_10]
+  100299a: shl     eax, 10h
+  100299d: or      eax, ecx
+  100299f: movzx   ecx, word ptr [ebp+var_18]
+  10029a3: mov     [edi], eax
+  10029a5: movzx   eax, word ptr [ebp+var_14]
+  10029a9: shl     eax, 10h
+  10029ac: or      eax, ecx
+  10029ae: mov     [ebx], eax
+  10029b0: xor     eax, eax
+  10029b2: pop     edi
+  10029b3: pop     esi
+  10029b4: pop     ebx
+  10029b5: leave
+  10029b6: retn    0Ch
+ENDFUNC
+FUNC 10029b9 sub_10029B9
+  10029b9: push    ebp
+  10029ba: mov     ebp, esp
+  10029bc: sub     esp, 208h
+  10029c2: call    sub_10026E9
+  10029c7: test    eax, eax
+  10029c9: jnz     short loc_10029D3
+  10029cb: push    6
+  10029cd: pop     eax
+  10029ce: jmp     locret_1002A6A
+  10029d3: push    edi
+  10029d4: push    esi
+  10029d5: mov     esi, 104h
+  10029da: lea     eax, [ebp+Caption]
+  10029e0: push    esi; cchBufferMax
+  10029e1: push    eax; lpBuffer
+  10029e2: push    65h ; 'e'; uID
+  10029e4: call    sub_10026CE
+  10029e9: lea     eax, [ebp+String]
+  10029ef: push    esi; cchBufferMax
+  10029f0: push    eax; lpBuffer
+  10029f1: push    64h ; 'd'; uID
+  10029f3: call    sub_10026CE
+  10029f8: push    [ebp+lpString]; lpString
+  10029fb: mov     esi, ds:lstrlenA; KERNEL32
+  1002a01: call    esi ; lstrlenA; KERNEL32
+  1002a03: mov     edi, eax
+  1002a05: lea     eax, [ebp+String]
+  1002a0b: push    eax; lpString
+  1002a0c: call    esi ; lstrlenA; KERNEL32
+  1002a0e: lea     esi, [edi+eax+4]
+  1002a12: push    esi; uBytes
+  1002a13: push    40h ; '@'; uFlags
+  1002a15: call    ds:LocalAlloc; KERNEL32
+  1002a1b: mov     edi, eax
+  1002a1d: test    edi, edi
+  1002a1f: jz      short loc_1002A38
+  1002a21: push    [ebp+lpString]
+  1002a24: lea     eax, [ebp+String]
+  1002a2a: push    eax; pszFmt
+  1002a2b: push    esi; cchDest
+  1002a2c: push    edi; pszDest
+  1002a2d: call    ds:wnsprintfA; SHLWAPI
+  1002a33: add     esp, 10h
+  1002a36: jmp     short loc_1002A3E
+  1002a38: lea     edi, [ebp+String]
+  1002a3e: lea     eax, [ebp+Caption]
+  1002a44: push    10124h; uType
+  1002a49: push    eax; lpCaption
+  1002a4a: push    edi; lpText
+  1002a4b: push    0; hWnd
+  1002a4d: call    ds:MessageBoxA; USER32
+  1002a53: mov     esi, eax
+  1002a55: lea     eax, [ebp+String]
+  1002a5b: cmp     edi, eax
+  1002a5d: jz      short loc_1002A66
+  1002a5f: push    edi; hMem
+  1002a60: call    ds:LocalFree; KERNEL32
+  1002a66: mov     eax, esi
+  1002a68: pop     esi
+  1002a69: pop     edi
+  1002a6a: leave
+  1002a6b: retn    4
+ENDFUNC
+FUNC 1002a6e DialogFunc
+  1002a6e: cmp     [esp+arg_4], 20h ; ' '
+  1002a73: jz      short loc_1002A84
+  1002a75: xor     eax, eax
+  1002a77: cmp     [esp+arg_4], 110h
+  1002a7f: setz    al
+  1002a82: jmp     short locret_1002A9B
+  1002a84: push    7F02h; lpCursorName
+  1002a89: push    0; hInstance
+  1002a8b: call    ds:LoadCursorA; USER32
+  1002a91: push    eax; hCursor
+  1002a92: call    ds:SetCursor; USER32
+  1002a98: push    1
+  1002a9a: pop     eax
+  1002a9b: retn    10h
+ENDFUNC
+FUNC 1002a9e sub_1002A9E
+  1002a9e: push    ebx
+  1002a9f: push    ebp
+  1002aa0: mov     ebp, [esp+8+hDlg]
+  1002aa4: push    esi
+  1002aa5: mov     esi, ds:GetDlgItem; USER32
+  1002aab: push    edi
+  1002aac: push    3E8h; nIDDlgItem
+  1002ab1: push    ebp; hDlg
+  1002ab2: call    esi ; GetDlgItem; USER32
+  1002ab4: push    3E9h; nIDDlgItem
+  1002ab9: push    ebp; hDlg
+  1002aba: mov     ebx, eax
+  1002abc: call    esi ; GetDlgItem; USER32
+  1002abe: mov     edi, ds:ShowWindow; USER32
+  1002ac4: mov     esi, [esp+10h+bEnable]
+  1002ac8: mov     [esp+10h+hDlg], eax
+  1002acc: mov     eax, esi
+  1002ace: neg     eax
+  1002ad0: sbb     eax, eax
+  1002ad2: and     eax, 5
+  1002ad5: push    eax; nCmdShow
+  1002ad6: push    ebx; hWnd
+  1002ad7: call    edi ; ShowWindow; USER32
+  1002ad9: push    esi; bEnable
+  1002ada: push    ebx; hWnd
+  1002adb: mov     ebx, ds:EnableWindow; USER32
+  1002ae1: call    ebx ; EnableWindow; USER32
+  1002ae3: mov     eax, esi
+  1002ae5: neg     eax
+  1002ae7: sbb     eax, eax
+  1002ae9: and     al, 0FBh
+  1002aeb: add     eax, 5
+  1002aee: push    eax; nCmdShow
+  1002aef: push    [esp+14h+hDlg]; hWnd
+  1002af3: call    edi ; ShowWindow; USER32
+  1002af5: xor     eax, eax
+  1002af7: test    esi, esi
+  1002af9: setz    al
+  1002afc: push    eax; bEnable
+  1002afd: push    [esp+14h+hDlg]; hWnd
+  1002b01: call    ebx ; EnableWindow; USER32
+  1002b03: push    [esp+10h+lpString]; lpString
+  1002b07: push    3EAh; nIDDlgItem
+  1002b0c: push    ebp; hDlg
+  1002b0d: call    ds:SetDlgItemTextA; USER32
+  1002b13: pop     edi
+  1002b14: pop     esi
+  1002b15: pop     ebp
+  1002b16: pop     ebx
+  1002b17: retn    0Ch
+ENDFUNC
+FUNC 1002b1a sub_1002B1A
+  1002b1a: mov     eax, hDlg
+  1002b1f: test    eax, eax
+  1002b21: jnz     short loc_1002B49
+  1002b23: cmp     dword_1005290, eax
+  1002b29: jnz     short loc_1002B45
+  1002b2b: push    eax; dwInitParam
+  1002b2c: push    offset DialogFunc; lpDialogFunc
+  1002b31: push    eax; hWndParent
+  1002b32: push    0Ah; lpTemplateName
+  1002b34: push    dword_1005058; hInstance
+  1002b3a: call    ds:CreateDialogParamA; USER32
+  1002b40: mov     hDlg, eax
+  1002b45: test    eax, eax
+  1002b47: jz      short loc_1002B7A
+  1002b49: push    [esp+bEnable]; bEnable
+  1002b4d: push    [esp+4+lpString]; lpString
+  1002b51: push    eax; hDlg
+  1002b52: call    sub_1002A9E
+  1002b57: cmp     dword_1005290, 0
+  1002b5e: jnz     short loc_1002B7A
+  1002b60: push    9; nCmdShow
+  1002b62: push    hDlg; hWnd
+  1002b68: call    ds:ShowWindow; USER32
+  1002b6e: push    hDlg; hWnd
+  1002b74: call    ds:SetForegroundWindow; USER32
+  1002b7a: mov     dword_1005290, 1
+  1002b84: retn    8
+ENDFUNC
+FUNC 1002b87 sub_1002B87
+  1002b87: mov     eax, hDlg
+  1002b8c: test    eax, eax
+  1002b8e: jz      short locret_1002B9E
+  1002b90: push    eax; hWnd
+  1002b91: call    ds:DestroyWindow; USER32
+  1002b97: and     hDlg, 0
+  1002b9e: retn
+ENDFUNC
+FUNC 1002b9f sub_1002B9F
+  1002b9f: push    ebp
+  1002ba0: mov     ebp, esp
+  1002ba2: sub     esp, 408h
+  1002ba8: push    ebx
+  1002ba9: push    esi
+  1002baa: lea     eax, [ebp+phkResult]
+  1002bad: push    edi
+  1002bae: push    eax; phkResult
+  1002baf: mov     edi, ds:RegOpenKeyExA; ADVAPI32
+  1002bb5: and     [ebp+var_10], 0
+  1002bb9: push    1; samDesired
+  1002bbb: push    0; ulOptions
+  1002bbd: push    [ebp+lpSubKey]; lpSubKey
+  1002bc0: push    [ebp+hKey]; hKey
+  1002bc3: call    edi ; RegOpenKeyExA; ADVAPI32
+  1002bc5: test    eax, eax
+  1002bc7: jnz     loc_1003090
+  1002bcd: and     [ebp+var_8], eax
+  1002bd0: lea     eax, [ebp+pcbData]
+  1002bd3: push    eax; pcbData
+  1002bd4: lea     eax, [ebp+pvData]
+  1002bda: push    eax; pvData
+  1002bdb: mov     esi, ds:SHQueryValueExA; SHLWAPI
+  1002be1: lea     eax, [ebp+hKey]
+  1002be4: mov     ebx, 104h
+  1002be9: push    eax; pdwType
+  1002bea: push    0; pdwReserved
+  1002bec: push    offset pszValue; "StubPath"
+  1002bf1: mov     [ebp+pcbData], ebx
+  1002bf4: push    [ebp+phkResult]; hkey
+  1002bf7: call    esi ; SHQueryValueExA; SHLWAPI
+  1002bf9: test    eax, eax
+  1002bfb: jnz     loc_100309A
+  1002c01: cmp     [ebp+hKey], 1
+  1002c05: jz      short loc_1002C11
+  1002c07: cmp     [ebp+hKey], 2
+  1002c0b: jnz     loc_100309A
+  1002c11: cmp     [ebp+hKey], 2
+  1002c15: jnz     short loc_1002C44
+  1002c17: lea     eax, [ebp+Dst]
+  1002c1d: push    ebx; nSize
+  1002c1e: push    eax; lpDst
+  1002c1f: lea     eax, [ebp+pvData]
+  1002c25: push    eax; lpSrc
+  1002c26: call    ds:ExpandEnvironmentStringsA; KERNEL32
+  1002c2c: test    eax, eax
+  1002c2e: jz      short loc_1002C44
+  1002c30: lea     eax, [ebp+Dst]
+  1002c36: push    eax; lpString2
+  1002c37: lea     eax, [ebp+pvData]
+  1002c3d: push    eax; lpString1
+  1002c3e: call    ds:lstrcpyA; KERNEL32
+  1002c44: lea     eax, [ebp+var_408]
+  1002c4a: mov     [ebp+pcbData], ebx
+  1002c4d: mov     [ebp+lpString], eax
+  1002c50: lea     eax, [ebp+pcbData]
+  1002c53: push    eax; pcbData
+  1002c54: lea     eax, [ebp+var_408]
+  1002c5a: push    eax; pvData
+  1002c5b: lea     eax, [ebp+hKey]
+  1002c5e: push    eax; pdwType
+  1002c5f: push    0; pdwReserved
+  1002c61: push    offset Class; pszValue
+  1002c66: push    [ebp+phkResult]; hkey
+  1002c69: call    esi ; SHQueryValueExA; SHLWAPI
+  1002c6b: test    eax, eax
+  1002c6d: jnz     short loc_1002C75
+  1002c6f: cmp     [ebp+hKey], 1
+  1002c73: jz      short loc_1002C7E
+  1002c75: lea     eax, [ebp+pvData]
+  1002c7b: mov     [ebp+lpString], eax
+  1002c7e: lea     eax, [ebp+pcbData]
+  1002c81: mov     esi, ds:RegQueryValueExA; ADVAPI32
+  1002c87: push    eax; lpcbData
+  1002c88: lea     eax, [ebp+Data]
+  1002c8b: push    eax; lpData
+  1002c8c: lea     eax, [ebp+hKey]
+  1002c8f: push    eax; lpType
+  1002c90: push    0; lpReserved
+  1002c92: push    offset aIsinstalled; "IsInstalled"
+  1002c97: push    [ebp+phkResult]; hKey
+  1002c9a: call    esi ; RegQueryValueExA; ADVAPI32
+  1002c9c: push    4
+  1002c9e: test    eax, eax
+  1002ca0: pop     ebx
+  1002ca1: jnz     short loc_1002CB3
+  1002ca3: cmp     [ebp+hKey], ebx
+  1002ca6: jz      short loc_1002CBA
+  1002ca8: cmp     [ebp+hKey], 3
+  1002cac: jnz     short loc_1002CB3
+  1002cae: cmp     [ebp+pcbData], ebx
+  1002cb1: jz      short loc_1002CBA
+  1002cb3: mov     dword ptr [ebp+Data], 1
+  1002cba: cmp     dword ptr [ebp+Data], 0
+  1002cbe: jz      loc_1002F8D
+  1002cc4: lea     ecx, [ebp+pcbData]
+  1002cc7: xor     eax, eax
+  1002cc9: push    ecx; lpcbData
+  1002cca: lea     ecx, [ebp+var_18]
+  1002ccd: push    ecx; lpData
+  1002cce: lea     ecx, [ebp+hKey]
+  1002cd1: push    ecx; lpType
+  1002cd2: push    eax; lpReserved
+  1002cd3: push    offset aCloneuser; "CloneUser"
+  1002cd8: mov     [ebp+var_14], eax
+  1002cdb: push    [ebp+phkResult]; hKey
+  1002cde: mov     [ebp+var_20], eax
+  1002ce1: mov     [ebp+pcbData], ebx
+  1002ce4: call    esi ; RegQueryValueExA; ADVAPI32
+  1002ce6: test    eax, eax
+  1002ce8: jnz     short loc_1002CFA
+  1002cea: cmp     [ebp+hKey], ebx
+  1002ced: jz      short loc_1002CFE
+  1002cef: cmp     [ebp+hKey], 3
+  1002cf3: jnz     short loc_1002CFA
+  1002cf5: cmp     [ebp+pcbData], ebx
+  1002cf8: jz      short loc_1002CFE
+  1002cfa: and     dword ptr [ebp+var_18], 0
+  1002cfe: push    18h
+  1002d00: lea     eax, [ebp+pcbData]
+  1002d03: pop     ebx
+  1002d04: push    eax; lpcbData
+  1002d05: lea     eax, [ebp+var_60]
+  1002d08: push    eax; lpData
+  1002d09: lea     eax, [ebp+hKey]
+  1002d0c: push    eax; lpType
+  1002d0d: push    0; lpReserved
+  1002d0f: push    offset aVersion; "Version"
+  1002d14: mov     [ebp+pcbData], ebx
+  1002d17: push    [ebp+phkResult]; hKey
+  1002d1a: call    esi ; RegQueryValueExA; ADVAPI32
+  1002d1c: test    eax, eax
+  1002d1e: jnz     short loc_1002D44
+  1002d20: cmp     [ebp+hKey], 1
+  1002d24: jnz     short loc_1002D44
+  1002d26: lea     eax, [ebp+var_3C]
+  1002d29: push    eax; int
+  1002d2a: lea     eax, [ebp+var_38]
+  1002d2d: push    eax; int
+  1002d2e: lea     eax, [ebp+var_60]
+  1002d31: push    eax; lpString1
+  1002d32: call    sub_10028B8
+  1002d37: test    eax, eax
+  1002d39: jl      short loc_1002D44
+  1002d3b: mov     [ebp+var_24], 1
+  1002d42: jmp     short loc_1002D4F
+  1002d44: xor     eax, eax
+  1002d46: mov     [ebp+var_24], eax
+  1002d49: mov     [ebp+var_38], eax
+  1002d4c: mov     [ebp+var_3C], eax
+  1002d4f: lea     eax, [ebp+pcbData]
+  1002d52: mov     [ebp+pcbData], 0Ah
+  1002d59: push    eax; lpcbData
+  1002d5a: lea     eax, [ebp+var_30]
+  1002d5d: push    eax; lpData
+  1002d5e: lea     eax, [ebp+hKey]
+  1002d61: push    eax; lpType
+  1002d62: push    0; lpReserved
+  1002d64: push    offset aLocale; "Locale"
+  1002d69: push    [ebp+phkResult]; hKey
+  1002d6c: call    esi ; RegQueryValueExA; ADVAPI32
+  1002d6e: test    eax, eax
+  1002d70: jnz     short loc_1002D78
+  1002d72: cmp     [ebp+hKey], 1
+  1002d76: jz      short loc_1002D7C
+  1002d78: and     [ebp+var_30], 0
+  1002d7c: lea     eax, [ebp+var_8]
+  1002d7f: push    eax; phkResult
+  1002d80: push    3; samDesired
+  1002d82: push    0; ulOptions
+  1002d84: push    [ebp+lpSubKey]; lpSubKey
+  1002d87: push    [ebp+arg_4]; hKey
+  1002d8a: call    edi ; RegOpenKeyExA; ADVAPI32
+  1002d8c: test    eax, eax
+  1002d8e: jnz     loc_1002E51
+  1002d94: lea     eax, [ebp+pcbData]
+  1002d97: mov     [ebp+pcbData], ebx
+  1002d9a: push    eax; lpcbData
+  1002d9b: lea     eax, [ebp+var_78]
+  1002d9e: push    eax; lpData
+  1002d9f: lea     eax, [ebp+hKey]
+  1002da2: xor     ebx, ebx
+  1002da4: push    eax; lpType
+  1002da5: push    ebx; lpReserved
+  1002da6: push    offset aVersion; "Version"
+  1002dab: push    [ebp+var_8]; hKey
+  1002dae: call    esi ; RegQueryValueExA; ADVAPI32
+  1002db0: push    1
+  1002db2: test    eax, eax
+  1002db4: pop     edi
+  1002db5: jnz     short loc_1002DD1
+  1002db7: cmp     [ebp+hKey], edi
+  1002dba: jnz     short loc_1002DD1
+  1002dbc: lea     eax, [ebp+var_20]
+  1002dbf: push    eax; int
+  1002dc0: lea     eax, [ebp+var_14]
+  1002dc3: push    eax; int
+  1002dc4: lea     eax, [ebp+var_78]
+  1002dc7: push    eax; lpString1
+  1002dc8: call    sub_10028B8
+  1002dcd: test    eax, eax
+  1002dcf: jge     short loc_1002DD7
+  1002dd1: mov     [ebp+var_14], ebx
+  1002dd4: mov     [ebp+var_20], ebx
+  1002dd7: cmp     [ebp+var_30], 0
+  1002ddb: jz      short loc_1002E19
+  1002ddd: lea     eax, [ebp+pcbData]
+  1002de0: mov     [ebp+pcbData], 0Ah
+  1002de7: push    eax; lpcbData
+  1002de8: lea     eax, [ebp+var_48]
+  1002deb: push    eax; lpData
+  1002dec: lea     eax, [ebp+hKey]
+  1002def: push    eax; lpType
+  1002df0: push    ebx; lpReserved
+  1002df1: push    offset aLocale; "Locale"
+  1002df6: push    [ebp+var_8]; hKey
+  1002df9: call    esi ; RegQueryValueExA; ADVAPI32
+  1002dfb: cmp     eax, ebx
+  1002dfd: jnz     short loc_1002E19
+  1002dff: cmp     [ebp+hKey], edi
+  1002e02: jnz     short loc_1002E19
+  1002e04: lea     eax, [ebp+var_48]
+  1002e07: push    eax; lpString2
+  1002e08: lea     eax, [ebp+var_30]
+  1002e0b: push    eax; lpString1
+  1002e0c: call    ds:lstrcmpA; KERNEL32
+  1002e12: test    eax, eax
+  1002e14: jnz     short loc_1002E19
+  1002e16: and     [ebp+var_30], al
+  1002e19: cmp     dword ptr [ebp+var_18], ebx
+  1002e1c: jz      short loc_1002E5A
+  1002e1e: lea     eax, [ebp+pcbData]
+  1002e21: mov     [ebp+pcbData], 81h
+  1002e28: push    eax; lpcbData
+  1002e29: lea     eax, [ebp+var_200]
+  1002e2f: push    eax; lpData
+  1002e30: lea     eax, [ebp+hKey]
+  1002e33: push    eax; lpType
+  1002e34: push    ebx; lpReserved
+  1002e35: push    offset aUsername; "Username"
+  1002e3a: push    [ebp+var_8]; hKey
+  1002e3d: call    esi ; RegQueryValueExA; ADVAPI32
+  1002e3f: test    eax, eax
+  1002e41: jnz     short loc_1002E48
+  1002e43: cmp     [ebp+hKey], edi
+  1002e46: jz      short loc_1002E5A
+  1002e48: and     [ebp+var_200], 0
+  1002e4f: jmp     short loc_1002E5A
+  1002e51: and     [ebp+var_8], 0
+  1002e55: push    1
+  1002e57: xor     ebx, ebx
+  1002e59: pop     edi
+  1002e5a: cmp     [ebp+var_8], ebx
+  1002e5d: jz      short loc_1002E9D
+  1002e5f: cmp     [ebp+var_24], ebx
+  1002e62: jz      short loc_1002E76
+  1002e64: mov     eax, [ebp+var_38]
+  1002e67: cmp     eax, [ebp+var_14]
+  1002e6a: ja      short loc_1002E9D
+  1002e6c: jnz     short loc_1002E76
+  1002e6e: mov     eax, [ebp+var_20]
+  1002e71: cmp     [ebp+var_3C], eax
+  1002e74: ja      short loc_1002E9D
+  1002e76: cmp     [ebp+var_30], 0
+  1002e7a: jnz     short loc_1002E9D
+  1002e7c: cmp     dword ptr [ebp+var_18], ebx
+  1002e7f: jz      loc_1003078
+  1002e85: push    [ebp+lpString2]; lpString2
+  1002e88: lea     eax, [ebp+var_200]
+  1002e8e: push    eax; lpString1
+  1002e8f: call    ds:lstrcmpiA; KERNEL32
+  1002e95: test    eax, eax
+  1002e97: jz      loc_1003078
+  1002e9d: mov     ecx, [ebp+arg_10]
+  1002ea0: cmp     ecx, 0FFFFFFFFh
+  1002ea3: jz      short loc_1002EE6
+  1002ea5: mov     esi, [ebp+lpSubKey]
+  1002ea8: cmp     ecx, ebx
+  1002eaa: jnz     short loc_1002EB1
+  1002eac: cmp     byte ptr [esi], 3Ch ; '<'
+  1002eaf: jz      short loc_1002EE9
+  1002eb1: cmp     ecx, edi
+  1002eb3: jnz     short loc_1002EBF
+  1002eb5: mov     al, [esi]
+  1002eb7: cmp     al, 3Ch ; '<'
+  1002eb9: jz      short loc_1002EBF
+  1002ebb: cmp     al, 3Eh ; '>'
+  1002ebd: jnz     short loc_1002EE9
+  1002ebf: cmp     ecx, 2
+  1002ec2: jnz     short loc_1002EC9
+  1002ec4: cmp     byte ptr [esi], 3Eh ; '>'
+  1002ec7: jz      short loc_1002EE9
+  1002ec9: cmp     ecx, ebx
+  1002ecb: jz      short loc_1002EDE
+  1002ecd: cmp     ecx, edi
+  1002ecf: jnz     loc_1003078
+  1002ed5: cmp     byte ptr [esi], 3Eh ; '>'
+  1002ed8: jnz     loc_1003078
+  1002ede: mov     [ebp+var_10], edi
+  1002ee1: jmp     loc_1003078
+  1002ee6: mov     esi, [ebp+lpSubKey]
+  1002ee9: push    edi; bEnable
+  1002eea: push    [ebp+lpString]; lpString
+  1002eed: call    sub_1002B1A
+  1002ef2: lea     eax, [ebp+pvData]
+  1002ef8: push    0Ah; int
+  1002efa: push    eax; lpString2
+  1002efb: call    sub_10027C6
+  1002f00: cmp     [ebp+var_8], ebx
+  1002f03: jnz     short loc_1002F1C
+  1002f05: lea     eax, [ebp+var_8]
+  1002f08: push    eax; phkResult
+  1002f09: push    esi; lpSubKey
+  1002f0a: push    [ebp+arg_4]; hKey
+  1002f0d: call    ds:RegCreateKeyA; ADVAPI32
+  1002f13: cmp     [ebp+var_8], ebx
+  1002f16: jz      loc_1003078
+  1002f1c: mov     esi, ds:RegSetValueExA; ADVAPI32
+  1002f22: mov     edi, ds:lstrlenA; KERNEL32
+  1002f28: xor     ebx, ebx
+  1002f2a: cmp     [ebp+var_24], ebx
+  1002f2d: jz      short loc_1002F48
+  1002f2f: lea     eax, [ebp+var_60]
+  1002f32: push    eax; lpString
+  1002f33: call    edi ; lstrlenA; KERNEL32
+  1002f35: inc     eax
+  1002f36: push    eax; cbData
+  1002f37: lea     eax, [ebp+var_60]
+  1002f3a: push    eax; lpData
+  1002f3b: push    1; dwType
+  1002f3d: push    ebx; Reserved
+  1002f3e: push    offset aVersion; "Version"
+  1002f43: push    [ebp+var_8]; hKey
+  1002f46: call    esi ; RegSetValueExA; ADVAPI32
+  1002f48: cmp     [ebp+var_30], 0
+  1002f4c: jz      short loc_1002F67
+  1002f4e: lea     eax, [ebp+var_30]
+  1002f51: push    eax; lpString
+  1002f52: call    edi ; lstrlenA; KERNEL32
+  1002f54: inc     eax
+  1002f55: push    eax; cbData
+  1002f56: lea     eax, [ebp+var_30]
+  1002f59: push    eax; lpData
+  1002f5a: push    1; dwType
+  1002f5c: push    ebx; Reserved
+  1002f5d: push    offset aLocale; "Locale"
+  1002f62: push    [ebp+var_8]; hKey
+  1002f65: call    esi ; RegSetValueExA; ADVAPI32
+  1002f67: cmp     dword ptr [ebp+var_18], ebx
+  1002f6a: jz      loc_1003078
+  1002f70: push    [ebp+lpString2]; lpString
+  1002f73: call    edi ; lstrlenA; KERNEL32
+  1002f75: inc     eax
+  1002f76: push    eax; cbData
+  1002f77: push    [ebp+lpString2]; lpData
+  1002f7a: push    1; dwType
+  1002f7c: push    0; Reserved
+  1002f7e: push    offset aUsername; "Username"
+  1002f83: push    [ebp+var_8]; hKey
+  1002f86: call    esi ; RegSetValueExA; ADVAPI32
+  1002f88: jmp     loc_1003078
+  1002f8d: lea     eax, [ebp+var_8]
+  1002f90: push    eax; phkResult
+  1002f91: push    1; samDesired
+  1002f93: push    0; ulOptions
+  1002f95: push    [ebp+lpSubKey]; lpSubKey
+  1002f98: push    [ebp+arg_4]; hKey
+  1002f9b: call    edi ; RegOpenKeyExA; ADVAPI32
+  1002f9d: test    eax, eax
+  1002f9f: jnz     loc_1003078
+  1002fa5: and     [ebp+lpString2], eax
+  1002fa8: lea     eax, [ebp+pcbData]
+  1002fab: push    eax; lpcbData
+  1002fac: lea     eax, [ebp+lpString2]
+  1002faf: push    eax; lpData
+  1002fb0: lea     eax, [ebp+hKey]
+  1002fb3: push    eax; lpType
+  1002fb4: push    0; lpReserved
+  1002fb6: push    offset aDontask; "DontAsk"
+  1002fbb: mov     [ebp+pcbData], ebx
+  1002fbe: push    [ebp+phkResult]; hKey
+  1002fc1: call    esi ; RegQueryValueExA; ADVAPI32
+  1002fc3: test    eax, eax
+  1002fc5: jnz     short loc_1002FE1
+  1002fc7: cmp     [ebp+hKey], ebx
+  1002fca: jz      short loc_1002FD7
+  1002fcc: cmp     [ebp+hKey], 3
+  1002fd0: jnz     short loc_1002FE1
+  1002fd2: cmp     [ebp+pcbData], ebx
+  1002fd5: jnz     short loc_1002FE1
+  1002fd7: cmp     [ebp+lpString2], 1
+  1002fdb: jz      loc_1003078
+  1002fe1: mov     ecx, [ebp+arg_10]
+  1002fe4: cmp     ecx, 0FFFFFFFFh
+  1002fe7: jz      short loc_1003034
+  1002fe9: test    ecx, ecx
+  1002feb: jnz     short loc_1002FF5
+  1002fed: mov     eax, [ebp+lpSubKey]
+  1002ff0: cmp     byte ptr [eax], 3Eh ; '>'
+  1002ff3: jz      short loc_1003034
+  1002ff5: push    1
+  1002ff7: pop     edx
+  1002ff8: cmp     ecx, edx
+  1002ffa: jnz     short loc_1003009
+  1002ffc: mov     eax, [ebp+lpSubKey]
+  1002fff: mov     al, [eax]
+  1003001: cmp     al, 3Ch ; '<'
+  1003003: jz      short loc_1003009
+  1003005: cmp     al, 3Eh ; '>'
+  1003007: jnz     short loc_1003034
+  1003009: cmp     ecx, 2
+  100300c: jnz     short loc_1003016
+  100300e: mov     eax, [ebp+lpSubKey]
+  1003011: cmp     byte ptr [eax], 3Ch ; '<'
+  1003014: jz      short loc_1003034
+  1003016: test    ecx, ecx
+  1003018: jnz     short loc_100301F
+  100301a: mov     [ebp+var_10], edx
+  100301d: jmp     short loc_1003078
+  100301f: cmp     ecx, edx
+  1003021: jnz     short loc_1003078
+  1003023: mov     eax, [ebp+lpSubKey]
+  1003026: cmp     byte ptr [eax], 3Ch ; '<'
+  1003029: jnz     short loc_1003078
+  100302b: mov     [ebp+var_10], 1
+  1003032: jmp     short loc_1003078
+  1003034: cmp     [ebp+lpString2], 2
+  1003038: jz      short loc_1003047
+  100303a: push    [ebp+lpString]; lpString
+  100303d: call    sub_10029B9
+  1003042: cmp     eax, 6
+  1003045: jnz     short loc_1003078
+  1003047: push    0; bEnable
+  1003049: push    [ebp+lpString]; lpString
+  100304c: call    sub_1002B1A
+  1003051: lea     eax, [ebp+pvData]
+  1003057: push    0Ah; int
+  1003059: push    eax; lpString2
+  100305a: call    sub_10027C6
+  100305f: push    [ebp+var_8]; hKey
+  1003062: call    ds:RegCloseKey; ADVAPI32
+  1003068: push    [ebp+lpSubKey]; lpSubKey
+  100306b: and     [ebp+var_8], 0
+  100306f: push    [ebp+arg_4]; hKey
+  1003072: call    ds:RegDeleteKeyA; ADVAPI32
+  1003078: cmp     [ebp+var_8], 0
+  100307c: jz      short loc_1003087
+  100307e: push    [ebp+var_8]; hKey
+  1003081: call    ds:RegCloseKey; ADVAPI32
+  1003087: push    [ebp+phkResult]; hKey
+  100308a: call    ds:RegCloseKey; ADVAPI32
+  1003090: mov     eax, [ebp+var_10]
+  1003093: pop     edi
+  1003094: pop     esi
+  1003095: pop     ebx
+  1003096: leave
+  1003097: retn    14h
+  100309a: push    [ebp+phkResult]; hKey
+  100309d: call    ds:RegCloseKey; ADVAPI32
+  10030a3: xor     eax, eax
+  10030a5: jmp     short loc_1003093
+ENDFUNC
+FUNC 10030a7 sub_10030A7
+  10030a7: push    ebp
+  10030a8: mov     ebp, esp
+  10030aa: sub     esp, 0E8h
+  10030b0: push    ebx
+  10030b1: push    esi
+  10030b2: xor     ebx, ebx
+  10030b4: lea     eax, [ebp+Buffer]
+  10030ba: push    edi
+  10030bb: mov     [ebp+phkResult], ebx
+  10030be: mov     [ebp+hKey], ebx
+  10030c1: mov     [ebp+hMem], eax
+  10030c4: call    sub_10026E9
+  10030c9: test    eax, eax
+  10030cb: jz      short loc_100312A
+  10030cd: mov     edi, ds:GetUserNameA; ADVAPI32
+  10030d3: lea     eax, [ebp+pcbBuffer]
+  10030d6: push    eax; pcbBuffer
+  10030d7: lea     eax, [ebp+Buffer]
+  10030dd: mov     esi, 81h
+  10030e2: push    eax; lpBuffer
+  10030e3: mov     [ebp+pcbBuffer], esi
+  10030e6: call    edi ; GetUserNameA; ADVAPI32
+  10030e8: test    eax, eax
+  10030ea: jnz     short loc_1003131
+  10030ec: cmp     [ebp+pcbBuffer], esi
+  10030ef: jbe     short loc_100312A
+  10030f1: inc     [ebp+pcbBuffer]
+  10030f4: mov     eax, [ebp+pcbBuffer]
+  10030f7: inc     eax
+  10030f8: push    eax; uBytes
+  10030f9: push    40h ; '@'; uFlags
+  10030fb: call    ds:LocalAlloc; KERNEL32
+  1003101: cmp     eax, ebx
+  1003103: mov     [ebp+hMem], eax
+  1003106: jz      short loc_1003113
+  1003108: lea     ecx, [ebp+pcbBuffer]
+  100310b: push    ecx; pcbBuffer
+  100310c: push    eax; lpBuffer
+  100310d: call    edi ; GetUserNameA; ADVAPI32
+  100310f: test    eax, eax
+  1003111: jnz     short loc_1003131
+  1003113: cmp     [ebp+hMem], ebx
+  1003116: jz      short loc_1003121
+  1003118: push    [ebp+hMem]; hMem
+  100311b: call    ds:LocalFree; KERNEL32
+  1003121: lea     eax, [ebp+Buffer]
+  1003127: mov     [ebp+hMem], eax
+  100312a: and     [ebp+Buffer], 0
+  1003131: lea     eax, [ebp+phkResult]
+  1003134: mov     esi, offset aSoftwareMicros; "Software\\Microsoft\\Active Setup\\Inst"...
+  1003139: push    eax; phkResult
+  100313a: push    9; samDesired
+  100313c: push    ebx; ulOptions
+  100313d: push    esi; lpSubKey
+  100313e: push    80000002h; hKey
+  1003143: call    ds:RegOpenKeyExA; ADVAPI32
+  1003149: cmp     eax, ebx
+  100314b: jnz     loc_1003270
+  1003151: lea     eax, [ebp+dwDisposition]
+  1003154: push    eax; lpdwDisposition
+  1003155: lea     eax, [ebp+hKey]
+  1003158: push    eax; phkResult
+  1003159: push    ebx; lpSecurityAttributes
+  100315a: push    2001Fh; samDesired
+  100315f: push    ebx; dwOptions
+  1003160: push    offset Class; lpClass
+  1003165: push    ebx; Reserved
+  1003166: push    esi; lpSubKey
+  1003167: push    80000001h; hKey
+  100316c: call    ds:RegCreateKeyExA; ADVAPI32
+  1003172: cmp     eax, ebx
+  1003174: jnz     loc_1003270
+  100317a: cmp     [ebp+lpSubKey], ebx
+  100317d: jz      short loc_1003197
+  100317f: push    0FFFFFFFFh; int
+  1003181: push    [ebp+hMem]; lpString2
+  1003184: push    [ebp+lpSubKey]; lpSubKey
+  1003187: push    [ebp+hKey]; HKEY
+  100318a: push    [ebp+phkResult]; hKey
+  100318d: call    sub_1002B9F
+  1003192: jmp     loc_1003270
+  1003197: push    50h ; 'P'
+  1003199: lea     eax, [ebp+dwDisposition]
+  100319c: pop     esi
+  100319d: mov     [ebp+pcbBuffer], 1
+  10031a4: push    eax; lpcbData
+  10031a5: lea     eax, [ebp+Data]
+  10031a8: push    eax; lpData
+  10031a9: push    ebx; lpType
+  10031aa: push    ebx; lpReserved
+  10031ab: push    offset aNoie4stubproce; "NoIE4StubProcessing"
+  10031b0: push    [ebp+phkResult]; hKey
+  10031b3: mov     [ebp+dwDisposition], esi
+  10031b6: call    ds:RegQueryValueExA; ADVAPI32
+  10031bc: test    eax, eax
+  10031be: jnz     short loc_10031D3
+  10031c0: lea     eax, [ebp+Data]
+  10031c3: push    eax; lpsz
+  10031c4: call    ds:CharUpperA; USER32
+  10031ca: cmp     byte ptr [eax], 59h ; 'Y'
+  10031cd: jz      loc_1003270
+  10031d3: mov     [ebp+lpSubKey], ebx
+  10031d6: mov     ebx, offset a89820200Ecbd11; "{89820200-ECBD-11cf-8B85-00AA005B4383}"
+  10031db: cmp     [ebp+pcbBuffer], 0
+  10031df: jz      loc_100326E
+  10031e5: xor     edi, edi
+  10031e7: cmp     [ebp+lpSubKey], 1
+  10031eb: mov     [ebp+pcbBuffer], edi
+  10031ee: jnz     short loc_100320C
+  10031f0: push    1; int
+  10031f2: push    [ebp+hMem]; lpString2
+  10031f5: push    ebx; lpSubKey
+  10031f6: push    [ebp+hKey]; HKEY
+  10031f9: push    [ebp+phkResult]; hKey
+  10031fc: call    sub_1002B9F
+  1003201: test    eax, eax
+  1003203: jz      short loc_100320C
+  1003205: mov     [ebp+pcbBuffer], 1
+  100320c: lea     eax, [ebp+Data]
+  100320f: push    esi; cchName
+  1003210: push    eax; lpName
+  1003211: push    edi; dwIndex
+  1003212: push    [ebp+phkResult]; hKey
+  1003215: mov     [ebp+dwDisposition], esi
+  1003218: call    ds:RegEnumKeyA; ADVAPI32
+  100321e: cmp     eax, 0EAh
+  1003223: jz      short loc_100325E
+  1003225: test    eax, eax
+  1003227: jnz     short loc_1003261
+  1003229: cmp     [ebp+lpSubKey], 1
+  100322d: jnz     short loc_100323E
+  100322f: lea     eax, [ebp+Data]
+  1003232: push    ebx; lpString2
+  1003233: push    eax; lpString1
+  1003234: call    ds:lstrcmpiA; KERNEL32
+  100323a: test    eax, eax
+  100323c: jz      short loc_100325E
+  100323e: push    [ebp+lpSubKey]; int
+  1003241: lea     eax, [ebp+Data]
+  1003244: push    [ebp+hMem]; lpString2
+  1003247: push    eax; lpSubKey
+  1003248: push    [ebp+hKey]; HKEY
+  100324b: push    [ebp+phkResult]; hKey
+  100324e: call    sub_1002B9F
+  1003253: test    eax, eax
+  1003255: jz      short loc_100325E
+  1003257: mov     [ebp+pcbBuffer], 1
+  100325e: inc     edi
+  100325f: jmp     short loc_100320C
+  1003261: inc     [ebp+lpSubKey]
+  1003264: cmp     [ebp+lpSubKey], 3
+  1003268: jb      loc_10031DB
+  100326e: xor     ebx, ebx
+  1003270: cmp     [ebp+phkResult], ebx
+  1003273: mov     esi, ds:RegCloseKey; ADVAPI32
+  1003279: jz      short loc_1003280
+  100327b: push    [ebp+phkResult]; hKey
+  100327e: call    esi ; RegCloseKey; ADVAPI32
+  1003280: cmp     [ebp+hKey], ebx
+  1003283: jz      short loc_100328A
+  1003285: push    [ebp+hKey]; hKey
+  1003288: call    esi ; RegCloseKey; ADVAPI32
+  100328a: lea     eax, [ebp+Buffer]
+  1003290: cmp     [ebp+hMem], eax
+  1003293: jz      short loc_100329E
+  1003295: push    [ebp+hMem]; hMem
+  1003298: call    ds:LocalFree; KERNEL32
+  100329e: call    sub_1002B87
+  10032a3: pop     edi
+  10032a4: pop     esi
+  10032a5: pop     ebx
+  10032a6: leave
+  10032a7: retn    4
+ENDFUNC
+FUNC 10032aa start
+  10032aa: push    ebp
+  10032ab: mov     ebp, esp
+  10032ad: sub     esp, 44h
+  10032b0: push    esi
+  10032b1: call    ds:GetCommandLineA; KERNEL32
+  10032b7: push    1; uMode
+  10032b9: mov     esi, eax
+  10032bb: call    ds:SetErrorMode; KERNEL32
+  10032c1: mov     al, [esi]
+  10032c3: cmp     al, 22h ; '"'
+  10032c5: jnz     short loc_10032DB
+  10032c7: mov     al, [esi+1]
+  10032ca: inc     esi
+  10032cb: test    al, al
+  10032cd: jz      short loc_10032D3
+  10032cf: cmp     al, 22h ; '"'
+  10032d1: jnz     short loc_10032C7
+  10032d3: cmp     byte ptr [esi], 22h ; '"'
+  10032d6: jnz     short loc_10032E5
+  10032d8: inc     esi
+  10032d9: jmp     short loc_10032E5
+  10032db: cmp     al, 20h ; ' '
+  10032dd: jle     short loc_10032E5
+  10032df: inc     esi
+  10032e0: cmp     byte ptr [esi], 20h ; ' '
+  10032e3: jg      short loc_10032DF
+  10032e5: mov     al, [esi]
+  10032e7: test    al, al
+  10032e9: jz      short loc_10032F2
+  10032eb: cmp     al, 20h ; ' '
+  10032ed: jg      short loc_10032F2
+  10032ef: inc     esi
+  10032f0: jmp     short loc_10032E5
+  10032f2: and     [ebp+StartupInfo.dwFlags], 0
+  10032f6: lea     eax, [ebp+StartupInfo]
+  10032f9: push    eax; lpStartupInfo
+  10032fa: call    ds:GetStartupInfoA; KERNEL32
+  1003300: test    byte ptr [ebp+StartupInfo.dwFlags], 1
+  1003304: jz      short loc_100330C
+  1003306: movzx   eax, [ebp+StartupInfo.wShowWindow]
+  100330a: jmp     short loc_100330F
+  100330c: push    0Ah
+  100330e: pop     eax
+  100330f: push    eax; int
+  1003310: push    esi; lpsz
+  1003311: push    0; int
+  1003313: push    0; lpModuleName
+  1003315: call    ds:GetModuleHandleA; KERNEL32
+  100331b: push    eax; hInstance
+  100331c: call    sub_100393A
+  1003321: mov     esi, eax
+  1003323: push    esi; uExitCode
+  1003324: call    ds:ExitProcess; KERNEL32
+ENDFUNC
+FUNC 100332f sub_100332F
+  100332f: push    ebp
+  1003330: mov     ebp, esp
+  1003332: lea     eax, [ebp+lpSubKey]
+  1003335: push    eax; phkResult
+  1003336: push    [ebp+lpSubKey]; lpSubKey
+  1003339: push    [ebp+hKey]; hKey
+  100333c: call    ds:RegOpenKeyA; ADVAPI32
+  1003342: test    eax, eax
+  1003344: jz      short loc_100334A
+  1003346: xor     eax, eax
+  1003348: jmp     short loc_1003377
+  100334a: lea     eax, [ebp+cbData]
+  100334d: push    esi
+  100334e: push    eax; lpcbData
+  100334f: lea     eax, [ebp+hKey]
+  1003352: push    [ebp+lpData]; lpData
+  1003355: push    eax; lpType
+  1003356: push    0; lpReserved
+  1003358: push    [ebp+lpValueName]; lpValueName
+  100335b: push    [ebp+lpSubKey]; hKey
+  100335e: call    ds:RegQueryValueExA; ADVAPI32
+  1003364: push    [ebp+lpSubKey]; hKey
+  1003367: mov     esi, eax
+  1003369: call    ds:RegCloseKey; ADVAPI32
+  100336f: xor     eax, eax
+  1003371: test    esi, esi
+  1003373: setz    al
+  1003376: pop     esi
+  1003377: pop     ebp
+  1003378: retn    14h
+ENDFUNC
+FUNC 100337b sub_100337B
+  100337b: push    ebp
+  100337c: mov     ebp, esp
+  100337e: lea     eax, [ebp+lpSubKey]
+  1003381: push    esi
+  1003382: push    eax; phkResult
+  1003383: push    [ebp+lpSubKey]; lpSubKey
+  1003386: push    [ebp+hKey]; hKey
+  1003389: call    ds:RegOpenKeyA; ADVAPI32
+  100338f: mov     esi, eax
+  1003391: test    esi, esi
+  1003393: jnz     short loc_10033B6
+  1003395: push    [ebp+cbData]; cbData
+  1003398: push    [ebp+lpData]; lpData
+  100339b: push    [ebp+dwType]; dwType
+  100339e: push    eax; Reserved
+  100339f: push    [ebp+lpValueName]; lpValueName
+  10033a2: push    [ebp+lpSubKey]; hKey
+  10033a5: call    ds:RegSetValueExA; ADVAPI32
+  10033ab: push    [ebp+lpSubKey]; hKey
+  10033ae: mov     esi, eax
+  10033b0: call    ds:RegCloseKey; ADVAPI32
+  10033b6: xor     eax, eax
+  10033b8: test    esi, esi
+  10033ba: setz    al
+  10033bd: pop     esi
+  10033be: pop     ebp
+  10033bf: retn    18h
+ENDFUNC
+FUNC 10033c2 sub_10033C2
+  10033c2: push    esi
+  10033c3: push    edi
+  10033c4: mov     edi, [esp+8+lpsz]
+  10033c8: xor     esi, esi
+  10033ca: cmp     byte ptr [edi], 5Ch ; '\'
+  10033cd: jnz     short loc_10033FE
+  10033cf: cmp     byte ptr [edi+1], 5Ch ; '\'
+  10033d3: jnz     short loc_10033FE
+  10033d5: lea     esi, [edi+2]
+  10033d8: mov     al, [esi]
+  10033da: test    al, al
+  10033dc: jz      short loc_10033E5
+  10033de: cmp     al, 5Ch ; '\'
+  10033e0: jz      short loc_10033E5
+  10033e2: inc     esi
+  10033e3: jmp     short loc_10033D8
+  10033e5: cmp     byte ptr [esi], 0
+  10033e8: jz      short loc_1003413
+  10033ea: mov     al, [esi+1]
+  10033ed: inc     esi
+  10033ee: test    al, al
+  10033f0: jz      short loc_10033F6
+  10033f2: cmp     al, 5Ch ; '\'
+  10033f4: jnz     short loc_10033EA
+  10033f6: cmp     byte ptr [esi], 0
+  10033f9: jz      short loc_1003413
+  10033fb: inc     esi
+  10033fc: jmp     short loc_1003413
+  10033fe: push    edi; lpsz
+  10033ff: call    ds:CharNextA; USER32
+  1003405: cmp     byte ptr [eax], 3Ah ; ':'
+  1003408: jnz     short loc_1003413
+  100340a: cmp     byte ptr [eax+1], 5Ch ; '\'
+  100340e: jnz     short loc_1003413
+  1003410: lea     esi, [eax+2]
+  1003413: test    esi, esi
+  1003415: jz      short loc_100341C
+  1003417: and     byte ptr [esi], 0
+  100341a: jmp     short loc_1003445
+  100341c: cmp     byte ptr [edi], 0
+  100341f: mov     eax, edi
+  1003421: jz      short loc_1003434
+  1003423: push    edi; lpString
+  1003424: call    ds:lstrlenA; KERNEL32
+  100342a: add     eax, edi
+  100342c: push    eax; lpszCurrent
+  100342d: push    edi; lpszStart
+  100342e: call    ds:CharPrevA; USER32
+  1003434: cmp     byte ptr [eax], 5Ch ; '\'
+  1003437: jz      short loc_1003445
+  1003439: push    offset asc_1002394; "\\"
+  100343e: push    eax; lpString1
+  100343f: call    ds:lstrcatA; KERNEL32
+  1003445: pop     edi
+  1003446: pop     esi
+  1003447: retn    4
+ENDFUNC
+FUNC 100344a sub_100344A
+  100344a: push    ebp
+  100344b: mov     ebp, esp
+  100344d: sub     esp, 434h
+  1003453: push    ebx
+  1003454: push    esi
+  1003455: push    edi
+  1003456: lea     eax, [ebp+Buffer]
+  100345c: xor     edi, edi
+  100345e: push    104h; uSize
+  1003463: push    eax; lpBuffer
+  1003464: mov     [ebp+phkResult], edi
+  1003467: mov     [ebp+hKey], edi
+  100346a: call    ds:GetWindowsDirectoryA; KERNEL32
+  1003470: lea     eax, [ebp+Buffer]
+  1003476: push    eax; lpString2
+  1003477: lea     eax, [ebp+String1]
+  100347d: push    eax; lpString1
+  100347e: call    ds:lstrcpyA; KERNEL32
+  1003484: lea     eax, [ebp+String1]
+  100348a: push    eax; lpsz
+  100348b: call    sub_10033C2
+  1003490: mov     ebx, ds:lstrlenA; KERNEL32
+  1003496: lea     eax, [ebp+String1]
+  100349c: push    eax; lpString
+  100349d: call    ebx ; lstrlenA; KERNEL32
+  100349f: lea     esi, [ebp+eax+String1]
+  10034a6: lea     eax, [ebp+Buffer]
+  10034ac: push    eax; lpString
+  10034ad: mov     [ebp+lpBuffer], esi
+  10034b0: call    ebx ; lstrlenA; KERNEL32
+  10034b2: lea     eax, [ebp+eax+Buffer]
+  10034b9: push    eax; lpszCurrent
+  10034ba: lea     eax, [ebp+Buffer]
+  10034c0: push    eax; lpszStart
+  10034c1: call    ds:CharPrevA; USER32
+  10034c7: cmp     byte ptr [eax], 5Ch ; '\'
+  10034ca: mov     [ebp+var_8], eax
+  10034cd: jz      short loc_10034DD
+  10034cf: push    eax; lpsz
+  10034d0: call    ds:CharNextA; USER32
+  10034d6: mov     byte ptr [eax], 5Ch ; '\'
+  10034d9: inc     eax
+  10034da: mov     [ebp+var_8], eax
+  10034dd: lea     eax, [ebp+lpBuffer]
+  10034e0: sub     eax, [ebp+var_8]
+  10034e3: mov     [ebp+var_18], eax
+  10034e6: lea     eax, [ebp+var_127]
+  10034ec: sub     eax, esi
+  10034ee: mov     esi, ds:RegOpenKeyExA; ADVAPI32
+  10034f4: mov     [ebp+cchBufferMax], eax
+  10034f7: lea     eax, [ebp+phkResult]
+  10034fa: push    eax; phkResult
+  10034fb: push    3; samDesired
+  10034fd: push    edi; ulOptions
+  10034fe: mov     edi, 80000001h
+  1003503: push    offset aSoftwareMicros_0; "Software\\Microsoft\\Windows\\CurrentVe"...
+  1003508: push    edi; hKey
+  1003509: call    esi ; RegOpenKeyExA; ADVAPI32
+  100350b: test    eax, eax
+  100350d: jnz     loc_100363E
+  1003513: lea     eax, [ebp+hKey]
+  1003516: push    eax; phkResult
+  1003517: push    1; samDesired
+  1003519: push    0; ulOptions
+  100351b: push    offset aSoftwareMicros_1; "Software\\Microsoft\\Windows\\CurrentVe"...
+  1003520: push    edi; hKey
+  1003521: call    esi ; RegOpenKeyExA; ADVAPI32
+  1003523: test    eax, eax
+  1003525: jnz     loc_1003635
+  100352b: mov     esi, offset unk_1005008
+  1003530: lea     eax, [ebp+cbData]
+  1003533: mov     edi, 104h
+  1003538: push    eax; lpcbData
+  1003539: lea     eax, [ebp+Data]
+  100353f: push    eax; lpData
+  1003540: lea     eax, [ebp+Type]
+  1003543: push    eax; lpType
+  1003544: push    0; lpReserved
+  1003546: push    dword ptr [esi-4]; lpValueName
+  1003549: mov     [ebp+cbData], edi
+  100354c: push    [ebp+hKey]; hKey
+  100354f: call    ds:RegQueryValueExA; ADVAPI32
+  1003555: test    eax, eax
+  1003557: jnz     short loc_100358E
+  1003559: cmp     [ebp+Type], 2
+  100355d: jz      short loc_1003569
+  100355f: cmp     [ebp+Type], 1
+  1003563: jnz     loc_100361D
+  1003569: lea     eax, [ebp+Dst]
+  100356f: push    edi; nSize
+  1003570: push    eax; lpDst
+  1003571: lea     eax, [ebp+Data]
+  1003577: push    eax; lpSrc
+  1003578: call    ds:ExpandEnvironmentStringsA; KERNEL32
+  100357e: test    eax, eax
+  1003580: jz      loc_100361D
+  1003586: lea     edi, [ebp+Dst]
+  100358c: jmp     short loc_1003607
+  100358e: mov     eax, [esi]
+  1003590: mov     ecx, [ebp+cchBufferMax]
+  1003593: shl     eax, 1Fh
+  1003596: sar     eax, 1Fh
+  1003599: test    al, al
+  100359b: jnz     short loc_10035A0
+  100359d: mov     ecx, [ebp+var_18]
+  10035a0: test    al, al
+  10035a2: mov     eax, [ebp+lpBuffer]
+  10035a5: jnz     short loc_10035AA
+  10035a7: mov     eax, [ebp+var_8]
+  10035aa: push    ecx; cchBufferMax
+  10035ab: push    eax; lpBuffer
+  10035ac: push    dword ptr [esi-8]; uID
+  10035af: call    sub_10026CE
+  10035b4: test    eax, eax
+  10035b6: jz      short loc_100361D
+  10035b8: mov     eax, [esi]
+  10035ba: lea     edi, [ebp+String1]
+  10035c0: shl     eax, 1Fh
+  10035c3: sar     eax, 1Fh
+  10035c6: test    al, al
+  10035c8: jnz     short loc_10035D0
+  10035ca: lea     edi, [ebp+Buffer]
+  10035d0: push    edi; lpFileName
+  10035d1: call    ds:GetFileAttributesA; KERNEL32
+  10035d7: cmp     eax, 0FFFFFFFFh
+  10035da: jnz     short loc_10035E5
+  10035dc: push    0; lpSecurityAttributes
+  10035de: push    edi; lpPathName
+  10035df: call    ds:CreateDirectoryA; KERNEL32
+  10035e5: mov     eax, [esi]
+  10035e7: shl     eax, 1Eh
+  10035ea: sar     eax, 1Fh
+  10035ed: test    al, al
+  10035ef: jz      short loc_1003607
+  10035f1: push    edi; lpString
+  10035f2: call    ebx ; lstrlenA; KERNEL32
+  10035f4: inc     eax
+  10035f5: push    eax; cbData
+  10035f6: push    edi; lpData
+  10035f7: push    1; dwType
+  10035f9: push    0; Reserved
+  10035fb: push    dword ptr [esi-4]; lpValueName
+  10035fe: push    [ebp+hKey]; hKey
+  1003601: call    ds:RegSetValueExA; ADVAPI32
+  1003607: push    edi; lpString
+  1003608: call    ebx ; lstrlenA; KERNEL32
+  100360a: inc     eax
+  100360b: push    eax; cbData
+  100360c: push    edi; lpData
+  100360d: push    1; dwType
+  100360f: push    0; Reserved
+  1003611: push    dword ptr [esi-4]; lpValueName
+  1003614: push    [ebp+phkResult]; hKey
+  1003617: call    ds:RegSetValueExA; ADVAPI32
+  100361d: add     esi, 0Ch
+  1003620: cmp     esi, offset dword_1005050
+  1003626: jb      loc_1003530
+  100362c: push    [ebp+hKey]; hKey
+  100362f: call    ds:RegCloseKey; ADVAPI32
+  1003635: push    [ebp+phkResult]; hKey
+  1003638: call    ds:RegCloseKey; ADVAPI32
+  100363e: pop     edi
+  100363f: pop     esi
+  1003640: pop     ebx
+  1003641: leave
+  1003642: retn
+ENDFUNC
+FUNC 1003643 sub_1003643
+  1003643: push    esi
+  1003644: push    edi
+  1003645: push    offset aShell32Dll_0; "shell32.dll"
+  100364a: xor     edi, edi
+  100364c: call    ds:LoadLibraryA; KERNEL32
+  1003652: mov     esi, eax
+  1003654: test    esi, esi
+  1003656: jz      short loc_100366D
+  1003658: push    offset aDllgetversion; "DllGetVersion"
+  100365d: push    esi; hModule
+  100365e: call    ds:GetProcAddress; KERNEL32
+  1003664: push    esi; hLibModule
+  1003665: mov     edi, eax
+  1003667: call    ds:FreeLibrary; KERNEL32
+  100366d: xor     eax, eax
+  100366f: test    edi, edi
+  1003671: pop     edi
+  1003672: pop     esi
+  1003673: setnz   al
+  1003676: retn
+ENDFUNC
+FUNC 1003677 sub_1003677
+  1003677: mov     edx, [esp+arg_0]
+  100367b: xor     eax, eax
+  100367d: mov     cl, [edx]
+  100367f: cmp     cl, 30h ; '0'
+  1003682: jl      short locret_1003696
+  1003684: cmp     cl, 39h ; '9'
+  1003687: jg      short locret_1003696
+  1003689: movsx   ecx, cl
+  100368c: lea     eax, [eax+eax*4]
+  100368f: inc     edx
+  1003690: lea     eax, [ecx+eax*2-30h]
+  1003694: jmp     short loc_100367D
+  1003696: retn    4
+ENDFUNC
+FUNC 1003699 sub_1003699
+  1003699: push    esi
+  100369a: mov     esi, [esp+4+arg_0]
+  100369e: push    edi
+  100369f: xor     edi, edi
+  10036a1: cmp     byte ptr [esi], 34h ; '4'
+  10036a4: jnz     short loc_10036D5
+  10036a6: cmp     byte ptr [esi+1], 2Eh ; '.'
+  10036aa: jnz     short loc_10036D5
+  10036ac: lea     eax, [esi+2]
+  10036af: push    eax
+  10036b0: call    sub_1003677
+  10036b5: cmp     eax, 47h ; 'G'
+  10036b8: ja      short loc_10036D2
+  10036ba: jnz     short loc_10036D5
+  10036bc: cmp     byte ptr [esi+4], 2Eh ; '.'
+  10036c0: jnz     short loc_10036D5
+  10036c2: add     esi, 5
+  10036c5: push    esi
+  10036c6: call    sub_1003677
+  10036cb: cmp     eax, 4C2h
+  10036d0: jb      short loc_10036D5
+  10036d2: push    1
+  10036d4: pop     edi
+  10036d5: mov     eax, edi
+  10036d7: pop     edi
+  10036d8: pop     esi
+  10036d9: retn    4
+ENDFUNC
+FUNC 10036dc sub_10036DC
+  10036dc: push    ebp
+  10036dd: mov     ebp, esp
+  10036df: sub     esp, 104h
+  10036e5: push    esi
+  10036e6: lea     eax, [ebp+Data]
+  10036ec: push    104h; cbData
+  10036f1: push    eax; lpData
+  10036f2: push    offset aPreviousiesysf; "PreviousIESysFile"
+  10036f7: push    offset aSoftwareMicros_2; "Software\\Microsoft\\IE Setup\\Setup"
+  10036fc: push    80000002h; hKey
+  1003701: xor     esi, esi
+  1003703: call    sub_100332F
+  1003708: test    eax, eax
+  100370a: jz      short loc_100371A
+  100370c: lea     eax, [ebp+Data]
+  1003712: push    eax
+  1003713: call    sub_1003699
+  1003718: mov     esi, eax
+  100371a: mov     eax, esi
+  100371c: pop     esi
+  100371d: leave
+  100371e: retn
+ENDFUNC
+FUNC 100371f sub_100371F
+  100371f: push    ebp
+  1003720: mov     ebp, esp
+  1003722: sub     esp, 104h
+  1003728: push    esi
+  1003729: lea     eax, [ebp+Data]
+  100372f: push    104h; cbData
+  1003734: push    eax; lpData
+  1003735: push    offset aVersion_0; "Version"
+  100373a: push    offset aSoftwareMicros_3; "Software\\Microsoft\\Internet Explorer"
+  100373f: push    80000002h; hKey
+  1003744: xor     esi, esi
+  1003746: call    sub_100332F
+  100374b: test    eax, eax
+  100374d: jz      short loc_100375D
+  100374f: lea     eax, [ebp+Data]
+  1003755: push    eax
+  1003756: call    sub_1003699
+  100375b: mov     esi, eax
+  100375d: mov     eax, esi
+  100375f: pop     esi
+  1003760: leave
+  1003761: retn
+ENDFUNC
+FUNC 1003762 sub_1003762
+  1003762: push    ebp
+  1003763: mov     ebp, esp
+  1003765: sub     esp, 1BCh
+  100376b: push    ebx
+  100376c: push    esi
+  100376d: push    edi
+  100376e: mov     edi, 104h
+  1003773: lea     eax, [ebp+String1]
+  1003779: push    edi; cbData
+  100377a: push    eax; lpData
+  100377b: push    offset aInstallmode; "InstallMode"
+  1003780: mov     esi, 80000002h
+  1003785: push    offset aSoftwareMicros_2; "Software\\Microsoft\\IE Setup\\Setup"
+  100378a: push    esi; hKey
+  100378b: call    sub_100332F
+  1003790: test    eax, eax
+  1003792: jz      short loc_10037AE
+  1003794: lea     eax, [ebp+String1]
+  100379a: push    offset aR; "R"
+  100379f: push    eax; lpString1
+  10037a0: call    ds:lstrcmpA; KERNEL32
+  10037a6: test    eax, eax
+  10037a8: jz      loc_1003935
+  10037ae: lea     eax, [ebp+cbData]
+  10037b1: mov     [ebp+cbData], edi
+  10037b4: push    eax; lpcbData
+  10037b5: lea     eax, [ebp+String1]
+  10037bb: push    eax; lpData
+  10037bc: push    offset aSoftwareMicros_4; "Software\\Microsoft\\Windows\\CurrentVe"...
+  10037c1: push    esi; hKey
+  10037c2: call    ds:RegQueryValueA; ADVAPI32
+  10037c8: test    eax, eax
+  10037ca: jz      short loc_10037E9
+  10037cc: lea     eax, [ebp+String1]
+  10037d2: push    offset aIexploreExe; "IEXPLORE.EXE"
+  10037d7: mov     [ebp+lpString1], eax
+  10037da: lea     eax, [ebp+String1]
+  10037e0: push    eax; lpString1
+  10037e1: call    ds:lstrcpyA; KERNEL32
+  10037e7: jmp     short loc_1003820
+  10037e9: mov     cl, [ebp+String1]
+  10037ef: xor     esi, esi
+  10037f1: lea     eax, [ebp+String1]
+  10037f7: test    cl, cl
+  10037f9: jz      short loc_100380D
+  10037fb: cmp     cl, 5Ch ; '\'
+  10037fe: jnz     short loc_1003802
+  1003800: mov     esi, eax
+  1003802: push    eax; lpsz
+  1003803: call    ds:CharNextA; USER32
+  1003809: mov     cl, [eax]
+  100380b: jmp     short loc_10037F7
+  100380d: test    esi, esi
+  100380f: jnz     short loc_100381C
+  1003811: lea     eax, [ebp+String1]
+  1003817: mov     [ebp+lpString1], eax
+  100381a: jmp     short loc_1003820
+  100381c: inc     esi
+  100381d: mov     [ebp+lpString1], esi
+  1003820: and     [ebp+var_8], 0
+  1003824: lea     eax, [ebp+var_24]
+  1003827: push    14h; cbData
+  1003829: mov     ebx, offset aShowChannelban; "Show_ChannelBand"
+  100382e: push    eax; lpData
+  100382f: mov     edi, offset aSoftwareMicros_5; "Software\\Microsoft\\Internet Explorer"...
+  1003834: push    ebx; lpValueName
+  1003835: mov     esi, 80000001h
+  100383a: push    edi; lpSubKey
+  100383b: push    esi; hKey
+  100383c: call    sub_100332F
+  1003841: test    eax, eax
+  1003843: jz      short loc_1003861
+  1003845: lea     eax, [ebp+var_24]
+  1003848: push    offset aYes; "yes"
+  100384d: push    eax; lpString1
+  100384e: call    ds:lstrcmpiA; KERNEL32
+  1003854: test    eax, eax
+  1003856: jnz     short loc_10038B4
+  1003858: mov     [ebp+var_8], 1
+  100385f: jmp     short loc_10038B4
+  1003861: lea     eax, [ebp+VersionInformation]
+  1003867: mov     [ebp+VersionInformation.dwOSVersionInfoSize], 94h
+  1003871: push    eax; lpVersionInformation
+  1003872: call    ds:GetVersionExA; KERNEL32
+  1003878: cmp     [ebp+VersionInformation.dwPlatformId], 2
+  100387f: jz      short loc_10038A3
+  1003881: call    sub_10036DC
+  1003886: test    eax, eax
+  1003888: jnz     short loc_1003893
+  100388a: call    sub_100371F
+  100388f: test    eax, eax
+  1003891: jz      short loc_10038A3
+  1003893: push    1
+  1003895: pop     eax
+  1003896: push    4
+  1003898: push    offset aYes; "yes"
+  100389d: mov     [ebp+var_8], eax
+  10038a0: push    eax
+  10038a1: jmp     short loc_10038AC
+  10038a3: push    3; cbData
+  10038a5: push    offset Data; "no"
+  10038aa: push    1; dwType
+  10038ac: push    ebx; lpValueName
+  10038ad: push    edi; lpSubKey
+  10038ae: push    esi; hKey
+  10038af: call    sub_100337B
+  10038b4: cmp     [ebp+var_8], 0
+  10038b8: mov     edi, ds:lstrcpynA; KERNEL32
+  10038be: mov     ebx, ds:WinExec; KERNEL32
+  10038c4: jz      short loc_10038F5
+  10038c6: lea     eax, [ebp+String1]
+  10038cc: push    eax; lpString
+  10038cd: call    ds:lstrlenA; KERNEL32
+  10038d3: mov     ecx, 104h
+  10038d8: sub     ecx, eax
+  10038da: lea     eax, [ebp+eax+String1]
+  10038e1: push    ecx; iMaxLength
+  10038e2: push    offset aChannelband; " -channelband"
+  10038e7: push    eax; lpString1
+  10038e8: call    edi ; lstrcpynA; KERNEL32
+  10038ea: lea     eax, [ebp+String1]
+  10038f0: push    1; uCmdShow
+  10038f2: push    eax; lpCmdLine
+  10038f3: call    ebx ; WinExec; KERNEL32
+  10038f5: and     dword ptr [ebp+Data], 0
+  10038f9: lea     eax, [ebp+Data]
+  10038fc: push    4; cbData
+  10038fe: push    eax; lpData
+  10038ff: push    offset aShowie4; "ShowIE4"
+  1003904: push    offset aSoftwareMicros_6; "Software\\Microsoft\\Windows\\CurrentVe"...
+  1003909: push    esi; hKey
+  100390a: call    sub_100332F
+  100390f: test    eax, eax
+  1003911: jz      short loc_1003919
+  1003913: cmp     dword ptr [ebp+Data], 0
+  1003917: jz      short loc_1003935
+  1003919: lea     eax, [ebp+var_24]
+  100391c: sub     eax, [ebp+lpString1]
+  100391f: push    eax; iMaxLength
+  1003920: push    offset aWelcomeExeF; "WELCOME.EXE /f"
+  1003925: push    [ebp+lpString1]; lpString1
+  1003928: call    edi ; lstrcpynA; KERNEL32
+  100392a: lea     eax, [ebp+String1]
+  1003930: push    1; uCmdShow
+  1003932: push    eax; lpCmdLine
+  1003933: call    ebx ; WinExec; KERNEL32
+  1003935: pop     edi
+  1003936: pop     esi
+  1003937: pop     ebx
+  1003938: leave
+  1003939: retn
+ENDFUNC
+FUNC 100393a sub_100393A
+  100393a: push    ebp
+  100393b: mov     ebp, esp
+  100393d: sub     esp, 44h
+  1003940: mov     eax, [ebp+hInstance]
+  1003943: push    ebx
+  1003944: push    esi
+  1003945: xor     esi, esi
+  1003947: push    edi
+  1003948: mov     dword_1005058, eax
+  100394d: mov     nCmdShow, esi
+  1003953: mov     dword_1005068, esi
+  1003959: mov     dword_1005070, esi
+  100395f: call    sub_1003643
+  1003964: push    offset aLoadwclcDll; "loadwclc.dll"
+  1003969: mov     dword_100506C, eax
+  100396e: push    dword_1005058
+  1003974: mov     hLibModule, esi
+  100397a: call    sub_1002699
+  100397f: push    [ebp+arg_C]; int
+  1003982: push    [ebp+lpsz]; lpsz
+  1003985: call    sub_1003BC2
+  100398a: test    eax, eax
+  100398c: jz      loc_1003A64
+  1003992: mov     ebx, ds:FindWindowA; USER32
+  1003998: mov     eax, offset WindowName; "MS_WebcheckMonitor"
+  100399d: push    eax; lpWindowName
+  100399e: push    eax; lpClassName
+  100399f: call    ebx ; FindWindowA; USER32
+  10039a1: cmp     eax, esi
+  10039a3: mov     edi, offset ClassName; "LoadWC"
+  10039a8: jnz     short loc_10039B2
+  10039aa: push    edi; lpWindowName
+  10039ab: push    edi; lpClassName
+  10039ac: call    ebx ; FindWindowA; USER32
+  10039ae: cmp     eax, esi
+  10039b0: jz      short loc_10039D1
+  10039b2: cmp     dword_1005070, esi
+  10039b8: jz      loc_1003A64
+  10039be: push    esi; lParam
+  10039bf: push    esi; wParam
+  10039c0: push    4C8h; Msg
+  10039c5: push    eax; hWnd
+  10039c6: call    ds:PostMessageA; USER32
+  10039cc: jmp     loc_1003A64
+  10039d1: cmp     dword_1005068, esi
+  10039d7: jnz     short loc_10039DE
+  10039d9: call    sub_100344A
+  10039de: cmp     dword_100506C, esi
+  10039e4: jnz     short loc_10039EC
+  10039e6: push    esi; lpSubKey
+  10039e7: call    sub_10030A7
+  10039ec: cmp     dword_1005068, esi
+  10039f2: jnz     short loc_1003A64
+  10039f4: cmp     dword_100506C, esi
+  10039fa: jnz     short loc_1003A01
+  10039fc: call    sub_1003762
+  1003a01: cmp     [ebp+arg_4], esi
+  1003a04: jnz     short loc_1003A3E
+  1003a06: mov     eax, [ebp+hInstance]
+  1003a09: mov     [ebp+WndClass.style], esi
+  1003a0c: mov     [ebp+WndClass.hInstance], eax
+  1003a0f: lea     eax, [ebp+WndClass]
+  1003a12: push    eax; lpWndClass
+  1003a13: mov     [ebp+WndClass.lpfnWndProc], offset sub_1003ABA
+  1003a1a: mov     [ebp+WndClass.cbClsExtra], esi
+  1003a1d: mov     [ebp+WndClass.cbWndExtra], esi
+  1003a20: mov     [ebp+WndClass.hIcon], esi
+  1003a23: mov     [ebp+WndClass.hCursor], esi
+  1003a26: mov     [ebp+WndClass.hbrBackground], 6
+  1003a2d: mov     [ebp+WndClass.lpszMenuName], esi
+  1003a30: mov     [ebp+WndClass.lpszClassName], edi
+  1003a33: call    ds:RegisterClassA; USER32
+  1003a39: test    ax, ax
+  1003a3c: jz      short loc_1003A64
+  1003a3e: push    esi; lpParam
+  1003a3f: mov     eax, 80000000h
+  1003a44: push    [ebp+hInstance]; hInstance
+  1003a47: push    esi; hMenu
+  1003a48: push    esi; hWndParent
+  1003a49: push    eax; nHeight
+  1003a4a: push    eax; nWidth
+  1003a4b: push    eax; Y
+  1003a4c: push    eax; X
+  1003a4d: push    0CF0000h; dwStyle
+  1003a52: push    edi; lpWindowName
+  1003a53: push    edi; lpClassName
+  1003a54: push    esi; dwExStyle
+  1003a55: call    ds:CreateWindowExA; USER32
+  1003a5b: cmp     eax, esi
+  1003a5d: mov     dword_100505C, eax
+  1003a62: jnz     short loc_1003A68
+  1003a64: xor     eax, eax
+  1003a66: jmp     short loc_1003AB3
+  1003a68: push    nCmdShow; nCmdShow
+  1003a6e: push    eax; hWnd
+  1003a6f: call    ds:ShowWindow; USER32
+  1003a75: mov     edi, ds:GetMessageA; USER32
+  1003a7b: push    esi; wMsgFilterMax
+  1003a7c: push    esi; wMsgFilterMin
+  1003a7d: lea     eax, [ebp+Msg]
+  1003a80: push    esi; hWnd
+  1003a81: push    eax; lpMsg
+  1003a82: call    edi ; GetMessageA; USER32
+  1003a84: test    eax, eax
+  1003a86: jz      short loc_1003AA5
+  1003a88: lea     eax, [ebp+Msg]
+  1003a8b: push    eax; lpMsg
+  1003a8c: call    ds:TranslateMessage; USER32
+  1003a92: lea     eax, [ebp+Msg]
+  1003a95: push    eax; lpMsg
+  1003a96: call    ds:DispatchMessageA; USER32
+  1003a9c: push    esi
+  1003a9d: push    esi
+  1003a9e: lea     eax, [ebp+Msg]
+  1003aa1: push    esi
+  1003aa2: push    eax
+  1003aa3: jmp     short loc_1003A82
+  1003aa5: push    dword_1005058
+  1003aab: call    sub_10026AE
+  1003ab0: mov     eax, [ebp+Msg.wParam]
+  1003ab3: pop     edi
+  1003ab4: pop     esi
+  1003ab5: pop     ebx
+  1003ab6: leave
+  1003ab7: retn    10h
+ENDFUNC
+FUNC 1003aba sub_1003ABA
+  1003aba: push    ebp
+  1003abb: mov     ebp, esp
+  1003abd: push    ecx
+  1003abe: mov     eax, [ebp+Msg]
+  1003ac1: dec     eax
+  1003ac2: jz      short loc_1003B0F
+  1003ac4: dec     eax
+  1003ac5: jz      short loc_1003AFE
+  1003ac7: sub     eax, 14h
+  1003aca: jz      short loc_1003AF8
+  1003acc: sub     eax, 0FDh
+  1003ad1: jz      short loc_1003AE6
+  1003ad3: sub     eax, 3B5h
+  1003ad8: jnz     short loc_1003B4C
+  1003ada: mov     dword_1005070, 1
+  1003ae4: jmp     short loc_1003B4C
+  1003ae6: push    1; uIDEvent
+  1003ae8: push    [ebp+hWnd]; hWnd
+  1003aeb: call    ds:KillTimer; USER32
+  1003af1: call    sub_1003B62
+  1003af6: jmp     short loc_1003B0B
+  1003af8: cmp     [ebp+wParam], 0
+  1003afc: jz      short loc_1003B4C
+  1003afe: call    sub_1003BA9
+  1003b03: push    0; nExitCode
+  1003b05: call    ds:PostQuitMessage; USER32
+  1003b0b: xor     eax, eax
+  1003b0d: jmp     short locret_1003B5E
+  1003b0f: lea     eax, [ebp+Data]
+  1003b12: push    4; cbData
+  1003b14: push    eax; lpData
+  1003b15: push    offset aDelayload; "DelayLoad"
+  1003b1a: push    offset aSoftwareMicros_7; "Software\\Microsoft\\Windows\\CurrentVe"...
+  1003b1f: push    80000001h; hKey
+  1003b24: call    sub_100332F
+  1003b29: test    eax, eax
+  1003b2b: jnz     short loc_1003B35
+  1003b2d: push    0Fh
+  1003b2f: pop     eax
+  1003b30: mov     dword ptr [ebp+Data], eax
+  1003b33: jmp     short loc_1003B38
+  1003b35: mov     eax, dword ptr [ebp+Data]
+  1003b38: imul    eax, 3E8h
+  1003b3e: push    0; lpTimerFunc
+  1003b40: push    eax; uElapse
+  1003b41: push    1; nIDEvent
+  1003b43: push    [ebp+hWnd]; hWnd
+  1003b46: call    ds:SetTimer; USER32
+  1003b4c: push    [ebp+lParam]; lParam
+  1003b4f: push    [ebp+wParam]; wParam
+  1003b52: push    [ebp+Msg]; Msg
+  1003b55: push    [ebp+hWnd]; hWnd
+  1003b58: call    ds:DefWindowProcA; USER32
+  1003b5e: leave
+  1003b5f: retn    10h
+ENDFUNC
+FUNC 1003b62 sub_1003B62
+  1003b62: cmp     hLibModule, 0
+  1003b69: jnz     short locret_1003BA8
+  1003b6b: push    offset aWebcheckDll; "webcheck.dll"
+  1003b70: call    ds:LoadLibraryA; KERNEL32
+  1003b76: test    eax, eax
+  1003b78: mov     hLibModule, eax
+  1003b7d: jz      short locret_1003BA8
+  1003b7f: push    7; lpProcName
+  1003b81: push    eax; hModule
+  1003b82: call    ds:GetProcAddress; KERNEL32
+  1003b88: test    eax, eax
+  1003b8a: jz      short loc_1003B95
+  1003b8c: push    dword_1005070
+  1003b92: call    eax
+  1003b94: retn
+  1003b95: push    hLibModule; hLibModule
+  1003b9b: call    ds:FreeLibrary; KERNEL32
+  1003ba1: and     hLibModule, 0
+  1003ba8: retn
+ENDFUNC
+FUNC 1003ba9 sub_1003BA9
+  1003ba9: mov     eax, hLibModule
+  1003bae: test    eax, eax
+  1003bb0: jz      short locret_1003BC1
+  1003bb2: push    8; lpProcName
+  1003bb4: push    eax; hModule
+  1003bb5: call    ds:GetProcAddress; KERNEL32
+  1003bbb: test    eax, eax
+  1003bbd: jz      short locret_1003BC1
+  1003bbf: jmp     eax
+  1003bc1: retn
+ENDFUNC
+FUNC 1003bc2 sub_1003BC2
+  1003bc2: push    esi
+  1003bc3: mov     esi, [esp+4+lpsz]
+  1003bc7: test    esi, esi
+  1003bc9: jnz     short loc_1003BD0
+  1003bcb: push    1
+  1003bcd: pop     eax
+  1003bce: jmp     short loc_1003C23
+  1003bd0: push    esi; lpsz
+  1003bd1: call    ds:CharUpperA; USER32
+  1003bd7: mov     cl, [esi]
+  1003bd9: push    1
+  1003bdb: pop     eax
+  1003bdc: test    cl, cl
+  1003bde: jz      short loc_1003C23
+  1003be0: cmp     cl, 2Dh ; '-'
+  1003be3: jz      short loc_1003BEA
+  1003be5: cmp     cl, 2Fh ; '/'
+  1003be8: jnz     short loc_1003C23
+  1003bea: movsx   ecx, byte ptr [esi+1]
+  1003bee: inc     esi
+  1003bef: inc     esi
+  1003bf0: cmp     ecx, 45h ; 'E'
+  1003bf3: jz      short loc_1003C10
+  1003bf5: cmp     ecx, 4Bh ; 'K'
+  1003bf8: jle     short loc_1003C10
+  1003bfa: cmp     ecx, 4Dh ; 'M'
+  1003bfd: jle     short loc_1003C0B
+  1003bff: cmp     ecx, 55h ; 'U'
+  1003c02: jnz     short loc_1003C10
+  1003c04: mov     dword_1005068, eax
+  1003c09: jmp     short loc_1003C10
+  1003c0b: mov     dword_1005070, eax
+  1003c10: mov     cl, [esi]
+  1003c12: cmp     cl, 20h ; ' '
+  1003c15: jz      short loc_1003C1C
+  1003c17: cmp     cl, 9
+  1003c1a: jnz     short loc_1003C1F
+  1003c1c: inc     esi
+  1003c1d: jmp     short loc_1003C10
+  1003c1f: mov     cl, [esi]
+  1003c21: jmp     short loc_1003BDC
+  1003c23: pop     esi
+  1003c24: retn    8
+ENDFUNC
+FUNC 1003c27 sub_1003C27
+  1003c27: cmp     dword_100532C, 0
+  1003c2e: push    esi
+  1003c2f: push    1
+  1003c31: pop     esi
+  1003c32: jnz     short loc_1003C4F
+  1003c34: push    offset VersionInformation; lpVersionInformation
+  1003c39: mov     dword_100532C, esi
+  1003c3f: mov     VersionInformation.dwOSVersionInfoSize, 94h
+  1003c49: call    ds:GetVersionExA; KERNEL32
+  1003c4f: mov     eax, [esp+4+arg_0]
+  1003c53: sub     eax, 0
+  1003c56: jz      loc_1003CF7
+  1003c5c: dec     eax
+  1003c5d: jz      loc_1003CEC
+  1003c63: dec     eax
+  1003c64: jz      short loc_1003CD3
+  1003c66: dec     eax
+  1003c67: jz      short loc_1003CCA
+  1003c69: dec     eax
+  1003c6a: jz      short loc_1003CB8
+  1003c6c: dec     eax
+  1003c6d: jz      short loc_1003C99
+  1003c6f: dec     eax
+  1003c70: jnz     short loc_1003CE8
+  1003c72: cmp     VersionInformation.dwPlatformId, esi
+  1003c78: jnz     short loc_1003CE8
+  1003c7a: cmp     VersionInformation.dwMajorVersion, 4
+  1003c81: jnz     short loc_1003CE8
+  1003c83: cmp     VersionInformation.dwMinorVersion, 0Ah
+  1003c8a: jnz     short loc_1003CE8
+  1003c8c: cmp     word ptr VersionInformation.dwBuildNumber, 7CEh
+  1003c95: jnz     short loc_1003CE8
+  1003c97: jmp     short loc_1003CE4
+  1003c99: cmp     VersionInformation.dwPlatformId, esi
+  1003c9f: jnz     short loc_1003CE8
+  1003ca1: mov     eax, VersionInformation.dwMajorVersion
+  1003ca6: cmp     eax, 4
+  1003ca9: ja      short loc_1003CE4
+  1003cab: jnz     short loc_1003CE8
+  1003cad: cmp     VersionInformation.dwMinorVersion, 0Ah
+  1003cb4: jb      short loc_1003CE8
+  1003cb6: jmp     short loc_1003CE4
+  1003cb8: cmp     VersionInformation.dwPlatformId, 2
+  1003cbf: jnz     short loc_1003CE8
+  1003cc1: cmp     VersionInformation.dwMajorVersion, 5
+  1003cc8: jmp     short loc_1003CE2
+  1003cca: cmp     VersionInformation.dwPlatformId, 2
+  1003cd1: jmp     short loc_1003CD9
+  1003cd3: cmp     VersionInformation.dwPlatformId, esi
+  1003cd9: jnz     short loc_1003CE8
+  1003cdb: cmp     VersionInformation.dwMajorVersion, 4
+  1003ce2: jb      short loc_1003CE8
+  1003ce4: mov     eax, esi
+  1003ce6: jmp     short loc_1003D02
+  1003ce8: xor     eax, eax
+  1003cea: jmp     short loc_1003D02
+  1003cec: xor     eax, eax
+  1003cee: cmp     VersionInformation.dwPlatformId, 2
+  1003cf5: jmp     short loc_1003CFF
+  1003cf7: xor     eax, eax
+  1003cf9: cmp     VersionInformation.dwPlatformId, esi
+  1003cff: setz    al
+  1003d02: pop     esi
+  1003d03: retn    4
+ENDFUNC

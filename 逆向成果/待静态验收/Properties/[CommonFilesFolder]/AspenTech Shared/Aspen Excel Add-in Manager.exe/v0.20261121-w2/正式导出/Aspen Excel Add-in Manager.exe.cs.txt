@@ -1,0 +1,1971 @@
+using System;
+using System.CodeDom.Compiler;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Configuration;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Reflection;
+using System.Resources;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Security;
+using System.Text;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Input;
+using System.Windows.Markup;
+using System.Windows.Media;
+using AspenTech.ASWXL.Properties;
+using Microsoft.Win32;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyTitle("AspenTech Excel Add-in Manager")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("Aspen Technology, Inc.")]
+[assembly: AssemblyProduct("AspenTech Excel Add-in Manager")]
+[assembly: AssemblyCopyright("Copyright © Aspen Technology, Inc. 2025")]
+[assembly: AssemblyTrademark("")]
+[assembly: ComVisible(false)]
+[assembly: ThemeInfo(ResourceDictionaryLocation.None, ResourceDictionaryLocation.SourceAssembly)]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.40")]
+namespace AspenTech.ASWXL
+{
+	[GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
+	[DebuggerNonUserCode]
+	[CompilerGenerated]
+	internal class Strings
+	{
+		private static ResourceManager resourceMan;
+
+		private static CultureInfo resourceCulture;
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		internal static ResourceManager ResourceManager
+		{
+			get
+			{
+				if (resourceMan == null)
+				{
+					resourceMan = new ResourceManager("AspenTech.ASWXL.Strings", typeof(Strings).Assembly);
+				}
+				return resourceMan;
+			}
+		}
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		internal static CultureInfo Culture
+		{
+			get
+			{
+				return resourceCulture;
+			}
+			set
+			{
+				resourceCulture = value;
+			}
+		}
+
+		internal static string ASW_AddIns => ResourceManager.GetString("ASW_AddIns", resourceCulture);
+
+		internal static string ASW_Cancel => ResourceManager.GetString("ASW_Cancel", resourceCulture);
+
+		internal static string ASW_Description => ResourceManager.GetString("ASW_Description", resourceCulture);
+
+		internal static string ASW_DetectedVersion => ResourceManager.GetString("ASW_DetectedVersion", resourceCulture);
+
+		internal static string ASW_DueToInsufficientAccessPrivileges => ResourceManager.GetString("ASW_DueToInsufficientAccessPrivileges", resourceCulture);
+
+		internal static string ASW_FailedToWriteCULoadBehavior => ResourceManager.GetString("ASW_FailedToWriteCULoadBehavior", resourceCulture);
+
+		internal static string ASW_FileLocation => ResourceManager.GetString("ASW_FileLocation", resourceCulture);
+
+		internal static string ASW_LoadBehavior => ResourceManager.GetString("ASW_LoadBehavior", resourceCulture);
+
+		internal static string ASW_NoneSelected => ResourceManager.GetString("ASW_NoneSelected", resourceCulture);
+
+		internal static string ASW_NotDetectedVersion => ResourceManager.GetString("ASW_NotDetectedVersion", resourceCulture);
+
+		internal static string ASW_NoWriteAccessAllowedForRegistryKey => ResourceManager.GetString("ASW_NoWriteAccessAllowedForRegistryKey", resourceCulture);
+
+		internal static string ASW_OK => ResourceManager.GetString("ASW_OK", resourceCulture);
+
+		internal static string ASW_OtherAddIns => ResourceManager.GetString("ASW_OtherAddIns", resourceCulture);
+
+		internal static string ASW_RegistryKeyAccessFailed => ResourceManager.GetString("ASW_RegistryKeyAccessFailed", resourceCulture);
+
+		internal static string ASW_RegistryLocation => ResourceManager.GetString("ASW_RegistryLocation", resourceCulture);
+
+		internal static string ASW_SelectedDetails => ResourceManager.GetString("ASW_SelectedDetails", resourceCulture);
+
+		internal static string ASW_Title => ResourceManager.GetString("ASW_Title", resourceCulture);
+
+		internal static string ASW_TryRunningThisProgramAsAdministrator => ResourceManager.GetString("ASW_TryRunningThisProgramAsAdministrator", resourceCulture);
+
+		internal Strings()
+		{
+		}
+	}
+	[MarkupExtensionReturnType(typeof(string), typeof(string))]
+	public class TranslateExtension : MarkupExtension
+	{
+		private string _key;
+
+		private const string NotFoundError = "# XXXXXXXXXXXXXXXXXXX  StringNotFound XXXXXXXXXXXXXXXXXXXXXX  #";
+
+		public TranslateExtension(string key)
+		{
+			_key = key;
+		}
+
+		public override object ProvideValue(IServiceProvider serviceProvider)
+		{
+			if (string.IsNullOrEmpty(_key))
+			{
+				return _key;
+			}
+			return Strings.ResourceManager.GetString(_key) ?? _key;
+		}
+	}
+	public class AddinInfo : INotifyPropertyChanged
+	{
+		protected readonly string _cuHiveCaption = "Current user";
+
+		protected readonly string _lmHiveCaption = "Local machine";
+
+		private bool isDirty;
+
+		protected bool _isWow6432Node;
+
+		protected string _progId = string.Empty;
+
+		protected string _friendlyName = string.Empty;
+
+		protected string _description = string.Empty;
+
+		protected string _fileLocation = string.Empty;
+
+		protected AddinLoadBehavior _loadBehavior = AddinLoadBehavior.NotSetYet;
+
+		protected bool _loadAddin;
+
+		protected bool _loadAddinOrigVal;
+
+		protected bool? _isLM;
+
+		protected string _errorDesc = string.Empty;
+
+		protected bool _isDirty;
+
+		public bool IsWow6432Node
+		{
+			get
+			{
+				return _isWow6432Node;
+			}
+			set
+			{
+				if (_isWow6432Node != value)
+				{
+					_isWow6432Node = value;
+					Notify("IsWow6532Node");
+				}
+			}
+		}
+
+		public string ProgID
+		{
+			get
+			{
+				return _progId;
+			}
+			set
+			{
+				if (_progId != value)
+				{
+					_progId = value;
+					Notify("ProgID");
+				}
+			}
+		}
+
+		public string FriendlyName
+		{
+			get
+			{
+				return _friendlyName;
+			}
+			set
+			{
+				if (_friendlyName != value)
+				{
+					_friendlyName = value;
+					Notify("FriendlyName");
+				}
+			}
+		}
+
+		public string Description
+		{
+			get
+			{
+				return _description;
+			}
+			set
+			{
+				if (_description != value)
+				{
+					_description = value;
+					Notify("Description");
+				}
+			}
+		}
+
+		public string FileLocation
+		{
+			get
+			{
+				return _fileLocation;
+			}
+			set
+			{
+				if (_fileLocation != value)
+				{
+					_fileLocation = value;
+					Notify("FileLocation");
+				}
+			}
+		}
+
+		public AddinLoadBehavior LoadBehavior
+		{
+			get
+			{
+				return _loadBehavior;
+			}
+			set
+			{
+				if (_loadBehavior != value)
+				{
+					_loadBehavior = value;
+					Notify("LoadBehavior");
+					Notify("LoadBehaviorDesc");
+				}
+			}
+		}
+
+		public bool NumBitsMatch => ASWRegUtil.ExcelBits == ASWRegUtil.AppBits;
+
+		public virtual bool LoadAddin
+		{
+			get
+			{
+				return _loadAddin;
+			}
+			set
+			{
+				if (_loadAddin != value)
+				{
+					_loadAddin = value;
+					Notify("LoadAddin");
+					Notify("LoadBehaviorDesc");
+				}
+			}
+		}
+
+		public bool LoadAddinOrigVal
+		{
+			get
+			{
+				return _loadAddinOrigVal;
+			}
+			set
+			{
+				if (_loadAddinOrigVal != value)
+				{
+					_loadAddinOrigVal = value;
+					Notify("LoadAddinOrigVal");
+				}
+			}
+		}
+
+		public int LoadBehaviorRegCode
+		{
+			get
+			{
+				int num = (int)LoadBehavior;
+				if (LoadAddin)
+				{
+					num++;
+				}
+				return num;
+			}
+		}
+
+		public string LoadBehaviorDesc
+		{
+			get
+			{
+				string text = string.Empty;
+				switch (LoadBehavior)
+				{
+				case AddinLoadBehavior.NotSetYet:
+					text = "--";
+					break;
+				case AddinLoadBehavior.DoNotLoadAuto:
+					text = "Do not load";
+					break;
+				case AddinLoadBehavior.LoadAtStartup:
+					text = "Load at startup";
+					break;
+				case AddinLoadBehavior.LoadOnDemand:
+					text = "Load on demand";
+					break;
+				case AddinLoadBehavior.LoadFirstTimeThenOnDemand_Connect:
+					text = "Load first time on demand";
+					break;
+				}
+				if (LoadBehavior != AddinLoadBehavior.NotSetYet)
+				{
+					text += (LoadAddin ? " (Enabled)" : " (Disabled)");
+				}
+				return text;
+			}
+		}
+
+		public bool? IsLM
+		{
+			get
+			{
+				return _isLM;
+			}
+			set
+			{
+				if (_isLM != value)
+				{
+					_isLM = value;
+					Notify("IsLM");
+				}
+			}
+		}
+
+		public string ErrorDesc
+		{
+			get
+			{
+				return _errorDesc;
+			}
+			set
+			{
+				if (_errorDesc != value)
+				{
+					_errorDesc = value;
+					Notify("ErrorDesc");
+				}
+			}
+		}
+
+		public virtual bool IsDirty
+		{
+			get
+			{
+				isDirty = LoadAddin != LoadAddinOrigVal;
+				return isDirty;
+			}
+		}
+
+		public virtual string RegistryLocation
+		{
+			get
+			{
+				string result = "--";
+				if (IsLM.HasValue)
+				{
+					result = (IsLM.Value ? _lmHiveCaption : _cuHiveCaption);
+				}
+				return result;
+			}
+		}
+
+		public event PropertyChangedEventHandler PropertyChanged;
+
+		public AddinInfo()
+		{
+		}
+
+		public AddinInfo(bool isWow6432Node, string progId, string friendlyName, string desc, string fileLocation, AddinLoadBehavior loadBehavior, bool isAddinActive)
+		{
+			IsWow6432Node = isWow6432Node;
+			ProgID = progId;
+			FileLocation = fileLocation;
+			LoadBehavior = loadBehavior;
+			LoadAddinOrigVal = (LoadAddin = isAddinActive);
+			Description = desc;
+			FriendlyName = friendlyName;
+		}
+
+		public virtual bool Write(bool forceWrite = false)
+		{
+			bool flag = true;
+			ErrorDesc = string.Empty;
+			if (!IsDirty && !forceWrite)
+			{
+				return true;
+			}
+			if (!IsLM.HasValue)
+			{
+				ErrorDesc = "Hive not set yet";
+				return false;
+			}
+			RegHive regHive = RegHive.Unspecified;
+			regHive = (IsLM.Value ? RegHive.LocalMachine : RegHive.CurrentUser);
+			flag = false;
+			bool failDueToAccessRestrictrion = false;
+			RegistryKey regKey = GetRegKey(regHive, ProgID, createIfNeeded: true, writeAccess: true, ref failDueToAccessRestrictrion);
+			if (regKey == null)
+			{
+				if (failDueToAccessRestrictrion)
+				{
+					ErrorDesc = Resources.ResourceManager.GetString("ASW_RegistryKeyAccessFailed");
+					string messageBoxText = Resources.ResourceManager.GetString("ASW_DueToInsufficientAccessPrivileges") + "\r\n\r\n" + FriendlyName + "\r\n\r\n" + Resources.ResourceManager.GetString("ASW_TryRunningThisProgramAsAdministrator");
+					string appName = App.AppName;
+					MessageBox.Show(messageBoxText, appName, MessageBoxButton.OK, MessageBoxImage.Hand);
+				}
+				else
+				{
+					ErrorDesc = "Could not retrieve registry key";
+				}
+				return false;
+			}
+			try
+			{
+				regKey.SetValue("LoadBehavior", LoadBehaviorRegCode);
+			}
+			catch (Exception ex)
+			{
+				ErrorDesc = "Error setting LoadBehavior - " + ex.Message;
+				return false;
+			}
+			regKey?.Close();
+			return flag;
+		}
+
+		protected RegistryKey GetRegKey(RegHive hiveToWriteTo, string progIdName, bool createIfNeeded, bool writeAccess, ref bool failDueToAccessRestrictrion)
+		{
+			RegistryKey registryKey = null;
+			if (!IsLM.HasValue && hiveToWriteTo == RegHive.Unspecified)
+			{
+				return null;
+			}
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.Append("Software\\");
+			stringBuilder.Append("Microsoft\\Office\\Excel\\Addins\\");
+			stringBuilder.Append(progIdName);
+			if (hiveToWriteTo == RegHive.Unspecified)
+			{
+				hiveToWriteTo = (IsLM.Value ? RegHive.LocalMachine : RegHive.CurrentUser);
+			}
+			RegistryHive hKey;
+			switch (hiveToWriteTo)
+			{
+			case RegHive.Unspecified:
+				return null;
+			case RegHive.LocalMachine:
+				hKey = RegistryHive.LocalMachine;
+				break;
+			case RegHive.CurrentUser:
+				hKey = RegistryHive.CurrentUser;
+				break;
+			default:
+				return null;
+			}
+			RegistryView registryView = ASWRegUtil.GetRegistryView(IsWow6432Node);
+			RegistryKey registryKey2 = RegistryKey.OpenBaseKey(hKey, registryView);
+			try
+			{
+				registryKey = registryKey2.OpenSubKey(stringBuilder.ToString(), writeAccess);
+			}
+			catch (SecurityException)
+			{
+				failDueToAccessRestrictrion = true;
+			}
+			catch (Exception)
+			{
+			}
+			if (registryKey == null && createIfNeeded)
+			{
+				try
+				{
+					registryKey = registryKey2.CreateSubKey(stringBuilder.ToString());
+				}
+				catch
+				{
+				}
+			}
+			if (registryKey == null)
+			{
+				failDueToAccessRestrictrion = true;
+				return null;
+			}
+			return registryKey;
+		}
+
+		protected void Notify(string propName)
+		{
+			if (this.PropertyChanged != null)
+			{
+				this.PropertyChanged(this, new PropertyChangedEventArgs(propName));
+			}
+		}
+	}
+	public class AspenAddinInfo : AddinInfo
+	{
+		private string _productName = string.Empty;
+
+		private string _progIDCU = string.Empty;
+
+		private string _progIDLM = string.Empty;
+
+		private string _friendlyNameCU = string.Empty;
+
+		private string _friendlyNameLM = string.Empty;
+
+		private string _descriptionCU = string.Empty;
+
+		private string _descriptionLM = string.Empty;
+
+		private ObservableCollection<AspenAddinInfo> _parentLst;
+
+		public string ProductName
+		{
+			get
+			{
+				return _productName;
+			}
+			set
+			{
+				if (_productName != value)
+				{
+					_productName = value;
+					Notify("ProductName");
+				}
+			}
+		}
+
+		public string ProgIDCU
+		{
+			get
+			{
+				return _progIDCU;
+			}
+			set
+			{
+				if (_progIDCU != value)
+				{
+					_progIDCU = value;
+					Notify("ProgIDCU");
+				}
+			}
+		}
+
+		public string ProgIDLM
+		{
+			get
+			{
+				return _progIDLM;
+			}
+			set
+			{
+				if (_progIDLM != value)
+				{
+					_progIDLM = value;
+					Notify("ProgIDLM");
+				}
+			}
+		}
+
+		public string FriendlyNameCU
+		{
+			get
+			{
+				return _friendlyNameCU;
+			}
+			set
+			{
+				if (_friendlyNameCU != value)
+				{
+					_friendlyNameCU = value;
+					base.FriendlyName = value;
+					Notify("FriendlyNameCU");
+				}
+			}
+		}
+
+		public string FriendlyNameLM
+		{
+			get
+			{
+				return _friendlyNameLM;
+			}
+			set
+			{
+				if (_friendlyNameLM != value)
+				{
+					_friendlyNameLM = value;
+					Notify("FriendlyNameLM");
+				}
+			}
+		}
+
+		public string DescriptionCU
+		{
+			get
+			{
+				return _descriptionCU;
+			}
+			set
+			{
+				if (_descriptionCU != value)
+				{
+					_descriptionCU = value;
+					Notify("DescriptionCU");
+				}
+			}
+		}
+
+		public string DescriptionLM
+		{
+			get
+			{
+				return _descriptionLM;
+			}
+			set
+			{
+				if (_descriptionLM != value)
+				{
+					_descriptionLM = value;
+					Notify("DescriptionLM");
+				}
+			}
+		}
+
+		public override string RegistryLocation => _cuHiveCaption;
+
+		public override bool LoadAddin
+		{
+			get
+			{
+				return base.LoadAddin;
+			}
+			set
+			{
+				base.LoadAddin = value;
+				if (value && ParentLst != null)
+				{
+					for (int i = 0; i < ParentLst.Count; i++)
+					{
+						if (this != ParentLst[i] && ProductName == ParentLst[i].ProductName)
+						{
+							ParentLst[i].LoadAddin = false;
+						}
+					}
+				}
+				Notify("LoadAddin");
+			}
+		}
+
+		public ObservableCollection<AspenAddinInfo> ParentLst
+		{
+			get
+			{
+				return _parentLst;
+			}
+			set
+			{
+				_parentLst = value;
+				Notify("ParentList");
+			}
+		}
+
+		public AspenAddinInfo(bool isWow6432Node, string progIdCu, string progIdLm, string friendlyName, string desc, string fileLocation, AddinLoadBehavior loadBehavior, bool loadAddin = false, string productName = "")
+		{
+			base.IsWow6432Node = base.IsWow6432Node;
+			base.ProgID = progIdCu;
+			ProgIDCU = progIdCu;
+			ProgIDLM = progIdLm;
+			base.Description = desc;
+			base.FileLocation = fileLocation;
+			base.FriendlyName = friendlyName;
+			FriendlyNameCU = friendlyName;
+			base.LoadBehavior = loadBehavior;
+			LoadAddin = (base.LoadAddinOrigVal = loadAddin);
+			ProductName = productName;
+		}
+
+		public override bool Write(bool forceWrite = false)
+		{
+			if (!forceWrite && LoadAddin == base.LoadAddinOrigVal)
+			{
+				return true;
+			}
+			bool failDueToAccessRestrictrion = false;
+			RegistryKey regKey = GetRegKey(RegHive.LocalMachine, ProgIDLM, createIfNeeded: true, writeAccess: true, ref failDueToAccessRestrictrion);
+			RegistryKey regKey2 = GetRegKey(RegHive.CurrentUser, ProgIDLM, createIfNeeded: true, writeAccess: true, ref failDueToAccessRestrictrion);
+			RegistryKey regKey3 = GetRegKey(RegHive.CurrentUser, ProgIDCU, createIfNeeded: true, writeAccess: true, ref failDueToAccessRestrictrion);
+			if (regKey3 == null && failDueToAccessRestrictrion)
+			{
+				base.ErrorDesc = Resources.ResourceManager.GetString("ASW_RegistryKeyAccessFailed");
+				string messageBoxText = Resources.ResourceManager.GetString("ASW_DueToInsufficientAccessPrivileges") + "\r\n\r\n" + base.FriendlyName + Resources.ResourceManager.GetString("ASW_TryRunningThisProgramAsAdministrator");
+				string appName = App.AppName;
+				MessageBox.Show(messageBoxText, appName, MessageBoxButton.OK, MessageBoxImage.Hand);
+				base.ErrorDesc = Resources.ResourceManager.GetString("ASW_NoWriteAccessAllowedForRegistryKey");
+			}
+			if (!forceWrite)
+			{
+				try
+				{
+					regKey3.SetValue("LoadBehavior", base.LoadBehaviorRegCode);
+				}
+				catch (Exception ex)
+				{
+					base.ErrorDesc = Resources.ResourceManager.GetString("ASW_FailedToWriteCULoadBehavior") + ex.Message;
+					return false;
+				}
+				base.LoadAddinOrigVal = LoadAddin;
+			}
+			else
+			{
+				try
+				{
+					regKey3.SetValue("LoadBehavior", base.LoadBehaviorRegCode);
+					regKey3.SetValue("Description", DescriptionCU);
+					regKey3.SetValue("FriendlyName", FriendlyNameCU);
+				}
+				catch (Exception ex2)
+				{
+					base.ErrorDesc = "Failed to write CU entries: " + ex2.Message;
+				}
+				if (regKey2 != null)
+				{
+					try
+					{
+						regKey2.SetValue("LoadBehavior", 0);
+						regKey2.SetValue("Description", DescriptionLM);
+						regKey2.SetValue("FriendlyName", FriendlyNameLM);
+					}
+					catch
+					{
+					}
+				}
+				if (regKey != null)
+				{
+					try
+					{
+						regKey.SetValue("LoadBehavior", 3);
+						regKey.SetValue("Description", DescriptionLM);
+						regKey.SetValue("FriendlyName", FriendlyNameLM);
+					}
+					catch
+					{
+					}
+				}
+			}
+			regKey3?.Close();
+			regKey?.Close();
+			regKey2?.Close();
+			return true;
+		}
+
+		public void ResetLoadAddinValue(bool newLoadAddinValue)
+		{
+			bool loadAddinOrigVal = (LoadAddin = newLoadAddinValue);
+			base.LoadAddinOrigVal = loadAddinOrigVal;
+		}
+
+		private bool WriteAddinInfo(RegistryKey key, string friendlyNameToWrite, string descToWrite, AddinLoadBehavior behavior, bool isEnabled)
+		{
+			bool result = false;
+			int num = (int)behavior;
+			if (isEnabled)
+			{
+				num++;
+			}
+			if (key != null)
+			{
+				try
+				{
+					key.SetValue("FriendlyName", friendlyNameToWrite);
+					key.SetValue("Description", descToWrite);
+					key.SetValue("LoadBehavior", num);
+				}
+				catch
+				{
+					return false;
+				}
+				key.Close();
+			}
+			return result;
+		}
+	}
+	public enum AddinLoadBehavior
+	{
+		NotSetYet = -1,
+		DoNotLoadAuto = 0,
+		LoadAtStartup = 2,
+		LoadOnDemand = 8,
+		LoadFirstTimeThenOnDemand_Connect = 16
+	}
+	public enum RegHive
+	{
+		Unspecified,
+		LocalMachine,
+		CurrentUser
+	}
+	public class App : Application
+	{
+		public static string AppName => "AspenTech Excel Add-in Manager";
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			base.StartupUri = new Uri("ASWAddinSelectForm.xaml", UriKind.Relative);
+		}
+
+		[STAThread]
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public static void Main()
+		{
+			App app = new App();
+			app.InitializeComponent();
+			app.Run();
+		}
+	}
+	public class ASWRegUtil
+	{
+		private RegistryKey _addinRegKeyLM;
+
+		private RegistryKey _addinRegKeyCU;
+
+		private List<AspenAddInVersionInfo> _lstAspenVersionInfo;
+
+		private Dictionary<string, AspenAddInVersionInfo> _dicAspenProgIdLmToVerInfo;
+
+		private Dictionary<string, AspenAddInVersionInfo> _dicAspenProgIdToVerInfo;
+
+		public static NumBits AppBits
+		{
+			get
+			{
+				if (!Environment.Is64BitProcess)
+				{
+					return NumBits.Bits32;
+				}
+				return NumBits.Bits64;
+			}
+		}
+
+		public static NumBits ExcelBits { get; private set; }
+
+		public bool IsWow6432Node
+		{
+			get
+			{
+				if (AppBits == NumBits.Bits64)
+				{
+					return ExcelBits == NumBits.Bits32;
+				}
+				return false;
+			}
+		}
+
+		public string ErrorDesc { get; private set; } = string.Empty;
+
+		public ObservableCollection<AddinInfo> LstNonASWAddins { get; } = new ObservableCollection<AddinInfo>();
+
+		public ObservableCollection<AspenAddinInfo> LstASWAddins { get; } = new ObservableCollection<AspenAddinInfo>();
+
+		private string RegPathToXlAddins { get; set; } = string.Empty;
+
+		public ASWRegUtil()
+		{
+			Init();
+		}
+
+		public static RegistryView GetRegistryView(bool wow6432)
+		{
+			RegistryView result = RegistryView.Registry64;
+			if (wow6432)
+			{
+				result = RegistryView.Registry32;
+			}
+			else
+			{
+				switch (AppBits)
+				{
+				case NumBits.Unknown:
+					result = RegistryView.Default;
+					break;
+				case NumBits.Bits32:
+					result = RegistryView.Registry32;
+					break;
+				case NumBits.Bits64:
+					result = RegistryView.Registry64;
+					break;
+				}
+			}
+			return result;
+		}
+
+		private bool RetrieveAddinInfo()
+		{
+			ErrorDesc = string.Empty;
+			RegistryKey addinRegKeyLM = _addinRegKeyLM;
+			if (addinRegKeyLM == null)
+			{
+				ErrorDesc = "Could not retrieve LM add-ins registry key";
+				return false;
+			}
+			string[] subKeyNames = addinRegKeyLM.GetSubKeyNames();
+			foreach (string text in subKeyNames)
+			{
+				if (string.IsNullOrWhiteSpace(text))
+				{
+					continue;
+				}
+				RegistryKey registryKey = addinRegKeyLM.OpenSubKey(text);
+				if (registryKey == null)
+				{
+					continue;
+				}
+				string text2 = text;
+				string fileLocation = GetFileLocation(text2);
+				string desc = ReadAddinKeyValDescription(registryKey);
+				string friendlyName = ReadAddinKeyValFriendlyName(registryKey);
+				int num = ReadAddinKeyValLoadBehaviorInt(registryKey);
+				if (num >= 0)
+				{
+					AddinLoadBehavior regEntryLoadBehavior = GetRegEntryLoadBehavior(num);
+					bool regEntryIsAddinActive = GetRegEntryIsAddinActive(num);
+					if (!_dicAspenProgIdLmToVerInfo.ContainsKey(text2))
+					{
+						AddinInfo addinInfo = new AddinInfo(IsWow6432Node, text2, friendlyName, desc, fileLocation, regEntryLoadBehavior, regEntryIsAddinActive);
+						addinInfo.IsLM = true;
+						LstNonASWAddins.Add(addinInfo);
+						continue;
+					}
+					AspenAddInVersionInfo aspenAddInVersionInfo = _dicAspenProgIdLmToVerInfo[text2];
+					AspenAddinInfo aspenAddinInfo = new AspenAddinInfo(IsWow6432Node, aspenAddInVersionInfo.ProgID, aspenAddInVersionInfo.ProgIDLM, friendlyName, desc, fileLocation, regEntryLoadBehavior, loadAddin: false, aspenAddInVersionInfo.ProductName);
+					aspenAddinInfo.DescriptionCU = aspenAddInVersionInfo.Description;
+					aspenAddinInfo.DescriptionLM = aspenAddInVersionInfo.DescriptionLM;
+					aspenAddinInfo.FriendlyNameCU = aspenAddInVersionInfo.FriendlyName;
+					aspenAddinInfo.FriendlyNameLM = aspenAddInVersionInfo.FriendlyNameLM;
+					aspenAddinInfo.ParentLst = LstASWAddins;
+					LstASWAddins.Add(aspenAddinInfo);
+					aspenAddinInfo.LoadAddin = regEntryIsAddinActive;
+				}
+			}
+			RegistryKey addinRegKeyCU = _addinRegKeyCU;
+			List<string> list = new List<string>();
+			if (addinRegKeyCU == null)
+			{
+				ErrorDesc = "Could not retrieve Current User add-ins registry key";
+				return false;
+			}
+			subKeyNames = addinRegKeyCU.GetSubKeyNames();
+			foreach (string text3 in subKeyNames)
+			{
+				if (string.IsNullOrWhiteSpace(text3))
+				{
+					continue;
+				}
+				RegistryKey registryKey2 = addinRegKeyCU.OpenSubKey(text3);
+				if (registryKey2 == null)
+				{
+					continue;
+				}
+				string text4 = text3;
+				if (_dicAspenProgIdLmToVerInfo.ContainsKey(text4))
+				{
+					continue;
+				}
+				string fileLocation2 = GetFileLocation(text4);
+				string text5 = ReadAddinKeyValDescription(registryKey2);
+				string text6 = ReadAddinKeyValFriendlyName(registryKey2);
+				if (string.IsNullOrWhiteSpace(text6))
+				{
+					text6 = text4;
+				}
+				if (string.IsNullOrWhiteSpace(text5))
+				{
+					text5 = text4;
+				}
+				int num2 = ReadAddinKeyValLoadBehaviorInt(registryKey2);
+				if (num2 < 0)
+				{
+					continue;
+				}
+				AddinLoadBehavior regEntryLoadBehavior2 = GetRegEntryLoadBehavior(num2);
+				bool regEntryIsAddinActive2 = GetRegEntryIsAddinActive(num2);
+				if (regEntryLoadBehavior2 == AddinLoadBehavior.NotSetYet)
+				{
+					continue;
+				}
+				if (!_dicAspenProgIdToVerInfo.ContainsKey(text4))
+				{
+					AddinInfo addinInfo2 = new AddinInfo(IsWow6432Node, text4, text6, text5, fileLocation2, regEntryLoadBehavior2, regEntryIsAddinActive2);
+					addinInfo2.IsLM = false;
+					LstNonASWAddins.Add(addinInfo2);
+					continue;
+				}
+				string strB = string.Empty;
+				foreach (AspenAddinInfo lstASWAddin in LstASWAddins)
+				{
+					if (string.CompareOrdinal(lstASWAddin.ProgIDCU, text4) == 0)
+					{
+						strB = lstASWAddin.ProductName;
+						break;
+					}
+				}
+				bool flag = false;
+				foreach (AspenAddinInfo lstASWAddin2 in LstASWAddins)
+				{
+					if (string.CompareOrdinal(lstASWAddin2.ProductName, strB) == 0)
+					{
+						if (string.CompareOrdinal(lstASWAddin2.ProgIDCU, text4) == 0)
+						{
+							flag = true;
+							lstASWAddin2.LoadBehavior = regEntryLoadBehavior2;
+							lstASWAddin2.ResetLoadAddinValue(regEntryIsAddinActive2);
+							lstASWAddin2.FileLocation = fileLocation2;
+						}
+						else if (regEntryIsAddinActive2 && lstASWAddin2.LoadAddin && !list.Contains(lstASWAddin2.FriendlyName))
+						{
+							list.Add(lstASWAddin2.FriendlyName);
+						}
+					}
+				}
+				if (!flag)
+				{
+					AspenAddInVersionInfo aspenAddInVersionInfo2 = _dicAspenProgIdToVerInfo[text4];
+					AspenAddinInfo aspenAddinInfo2 = new AspenAddinInfo(IsWow6432Node, aspenAddInVersionInfo2.ProgID, aspenAddInVersionInfo2.ProgIDLM, text6, text5, fileLocation2, regEntryLoadBehavior2, loadAddin: false, aspenAddInVersionInfo2.ProductName);
+					aspenAddinInfo2.DescriptionCU = aspenAddInVersionInfo2.Description;
+					aspenAddinInfo2.DescriptionLM = aspenAddInVersionInfo2.DescriptionLM;
+					aspenAddinInfo2.FriendlyNameCU = aspenAddInVersionInfo2.FriendlyName;
+					aspenAddinInfo2.FriendlyNameLM = aspenAddInVersionInfo2.FriendlyNameLM;
+					LstASWAddins.Add(aspenAddinInfo2);
+					aspenAddinInfo2.ParentLst = LstASWAddins;
+					aspenAddinInfo2.LoadAddin = regEntryIsAddinActive2;
+				}
+			}
+			if (list.Count > 0)
+			{
+				StringBuilder stringBuilder = new StringBuilder();
+				stringBuilder.Append("Multiple versions of the same add-in cannot be loaded by Excel at the same time.  To avoid a conflict, the 'Load Behavior' registry settings for following add-ins were changed:");
+				stringBuilder.Append("\r\n\r\n");
+				foreach (string item in list)
+				{
+					stringBuilder.AppendLine(item);
+				}
+				string appName = App.AppName;
+				MessageBox.Show(stringBuilder.ToString(), appName, MessageBoxButton.OK, MessageBoxImage.Exclamation);
+			}
+			foreach (AspenAddinInfo lstASWAddin3 in LstASWAddins)
+			{
+				lstASWAddin3.Write(forceWrite: true);
+			}
+			return true;
+		}
+
+		private AddinLoadBehavior GetRegEntryLoadBehavior(int regVal)
+		{
+			Math.DivRem(regVal, 2, out var result);
+			if (result != 0)
+			{
+				regVal--;
+			}
+			return (AddinLoadBehavior)regVal;
+		}
+
+		private bool GetRegEntryIsAddinActive(int regVal)
+		{
+			Math.DivRem(regVal, 2, out var result);
+			return result != 0;
+		}
+
+		private void FillAspenAddinsVersionInfo()
+		{
+			_lstAspenVersionInfo = new List<AspenAddInVersionInfo>();
+			_lstAspenVersionInfo.Add(new AspenAddInVersionInfo("APXLAddinLoader.Connect.V15.0", "APXLAddinLoader.LMConnect.V15.0", "Provides tools for accessing AspenTech properties data from Excel.", "Provides tools for accessing AspenTech properties data from Excel.", "Aspen Properties Excel Calculator V15", "Aspen Properties Excel Calculator V15", "Aspen Properties Excel Calculator"));
+			_lstAspenVersionInfo.Add(new AspenAddInVersionInfo("APXLAddinLoader.Connect.V14.0", "APXLAddinLoader.LMConnect.V14.0", "Provides tools for accessing AspenTech properties data from Excel.", "Provides tools for accessing AspenTech properties data from Excel.", "Aspen Properties Excel Calculator V14", "Aspen Properties Excel Calculator V14", "Aspen Properties Excel Calculator"));
+			_lstAspenVersionInfo.Add(new AspenAddInVersionInfo("APXLAddinLoader.Connect.V12.1", "APXLAddinLoader.LMConnect.V12.1", "Provides tools for accessing AspenTech properties data from Excel.", "Provides tools for accessing AspenTech properties data from Excel.", "Aspen Properties Excel Calculator V12.1", "Aspen Properties Excel Calculator V12.1", "Aspen Properties Excel Calculator"));
+			_lstAspenVersionInfo.Add(new AspenAddInVersionInfo("APXLAddinLoader.Connect.V12.0", "APXLAddinLoader.LMConnect.V12.0", "Provides tools for accessing AspenTech properties data from Excel.", "Provides tools for accessing AspenTech properties data from Excel.", "Aspen Properties Excel Calculator V12", "Aspen Properties Excel Calculator V12", "Aspen Properties Excel Calculator"));
+			_lstAspenVersionInfo.Add(new AspenAddInVersionInfo("APXLAddinLoader.Connect.V11.0", "APXLAddinLoader.LMConnect.V11.0", "Provides tools for accessing AspenTech properties data from Excel.", "Provides tools for accessing AspenTech properties data from Excel.", "Aspen Properties Excel Calculator V11", "Aspen Properties Excel Calculator V11", "Aspen Properties Excel Calculator"));
+			_lstAspenVersionInfo.Add(new AspenAddInVersionInfo("APXLAddinLoader.Connect.V10.0", "APXLAddinLoader.LMConnect.V10.0", "Provides tools for accessing AspenTech properties data from Excel.", "Provides tools for accessing AspenTech properties data from Excel.", "Aspen Properties Excel Calculator V10", "Aspen Properties Excel Calculator V10", "Aspen Properties Excel Calculator"));
+			_lstAspenVersionInfo.Add(new AspenAddInVersionInfo("APXLAddinLoader.Connect.V9.0", "APXLAddinLoader.LMConnect.V9.0", "Provides tools for accessing AspenTech properties data from Excel.", "Provides tools for accessing AspenTech properties data from Excel.", "Aspen Properties Excel Calculator V9", "Aspen Properties Excel Calculator V9", "Aspen Properties Excel Calculator"));
+			_lstAspenVersionInfo.Add(new AspenAddInVersionInfo("ASWXLAddinLoader.Connect.V15.0", "ASWXLAddinLoader.LMConnect.V15.0", "Provides tools for accessing AspenTech simulator data from Excel.", "Provides tools for accessing AspenTech simulator data from Excel.", "Aspen Simulation Workbook V15", "Aspen Simulation Workbook V15", "Aspen Simluation Workbook"));
+			_lstAspenVersionInfo.Add(new AspenAddInVersionInfo("ASWXLAddinLoader.Connect.V14.0", "ASWXLAddinLoader.LMConnect.V14.0", "Provides tools for accessing AspenTech simulator data from Excel.", "Provides tools for accessing AspenTech simulator data from Excel.", "Aspen Simulation Workbook V14", "Aspen Simulation Workbook V14", "Aspen Simluation Workbook"));
+			_lstAspenVersionInfo.Add(new AspenAddInVersionInfo("ASWXLAddinLoader.Connect.V12.1", "ASWXLAddinLoader.LMConnect.V12.1", "Provides tools for accessing AspenTech simulator data from Excel.", "Provides tools for accessing AspenTech simulator data from Excel.", "Aspen Simulation Workbook V12.1", "Aspen Simulation Workbook V12.1", "Aspen Simluation Workbook"));
+			_lstAspenVersionInfo.Add(new AspenAddInVersionInfo("ASWXLAddinLoader.Connect.V12.0", "ASWXLAddinLoader.LMConnect.V12.0", "Provides tools for accessing AspenTech simulator data from Excel.", "Provides tools for accessing AspenTech simulator data from Excel.", "Aspen Simulation Workbook V12", "Aspen Simulation Workbook V12", "Aspen Simluation Workbook"));
+			_lstAspenVersionInfo.Add(new AspenAddInVersionInfo("ASWXLAddinLoader.Connect.V11.0", "ASWXLAddinLoader.LMConnect.V11.0", "Provides tools for accessing AspenTech simulator data from Excel.", "Provides tools for accessing AspenTech simulator data from Excel.", "Aspen Simulation Workbook V11", "Aspen Simulation Workbook V11", "Aspen Simluation Workbook"));
+			_lstAspenVersionInfo.Add(new AspenAddInVersionInfo("ASWXLAddinLoader.Connect.V10.0", "ASWXLAddinLoader.LMConnect.V10.0", "Provides tools for accessing AspenTech simulator data from Excel.", "Provides tools for accessing AspenTech simulator data from Excel.", "Aspen Simulation Workbook V10", "Aspen Simulation Workbook V10", "Aspen Simluation Workbook"));
+			_lstAspenVersionInfo.Add(new AspenAddInVersionInfo("ASWXLAddinLoader.Connect.V9.0", "ASWXLAddinLoader.LMConnect.V9.0", "Provides tools for accessing AspenTech simulator data from Excel.", "Provides tools for accessing AspenTech simulator data from Excel.", "Aspen Simulation Workbook V9", "Aspen Simulation Workbook V9", "Aspen Simluation Workbook"));
+			_lstAspenVersionInfo.Add(new AspenAddInVersionInfo("ASWXLAddinLoader.Connect.V8.8", "ASWXLAddinLoader.LMConnect.V8.8", "Provides tools for accessing AspenTech simulator data from Excel.", "Provides tools for accessing AspenTech simulator data from Excel.", "Aspen Simulation Workbook V8.8", "Aspen Simulation Workbook V8.8", "Aspen Simluation Workbook"));
+			_lstAspenVersionInfo.Add(new AspenAddInVersionInfo("ASWXLAddinLoader.Connect.V8.4", "ASWXLAddinLoader.LMConnect.V8.4", "Provides tools for accessing AspenTech simulator data from Excel.", "Provides tools for accessing AspenTech simulator data from Excel.", "Aspen Simulation Workbook V8.4", "Aspen Simulation Workbook V8.4", "Aspen Simluation Workbook"));
+			_lstAspenVersionInfo.Add(new AspenAddInVersionInfo("ASWXLAddinLoader.Connect.V8.3", "ASWXLAddinLoader.LMConnect.V8.3", "Provides tools for accessing AspenTech simulator data from Excel.", "Provides tools for accessing AspenTech simulator data from Excel.", "Aspen Simulation Workbook V8.3", "Aspen Simulation Workbook V8.3", "Aspen Simluation Workbook"));
+			_lstAspenVersionInfo.Add(new AspenAddInVersionInfo("ASWXLAddinLoader.Connect.V8.2", "ASWXLAddinLoader.LMConnect.V8.2", "Provides tools for accessing AspenTech simulator data from Excel.", "Provides tools for accessing AspenTech simulator data from Excel.", "Aspen Simulation Workbook V8.2", "Aspen Simulation Workbook V8.2", "Aspen Simluation Workbook"));
+			_lstAspenVersionInfo.Add(new AspenAddInVersionInfo("ASWXLAddinLoader.Connect.V8.0", "ASWXLAddinLoader.LMConnect.V8.0", "Provides tools for accessing AspenTech simulator data from Excel.", "Provides tools for accessing AspenTech simulator data from Excel.", "Aspen Simulation Workbook V8.0", "Aspen Simulation Workbook V8.0", "Aspen Simluation Workbook"));
+			_lstAspenVersionInfo.Add(new AspenAddInVersionInfo("ASWXLAddinLoader.Connect.V7.4", "ASWXLAddinLoader.LMConnect.V7.4", "Provides tools for accessing AspenTech simulator data from Excel.", "Provides tools for accessing AspenTech simulator data from Excel.", "Aspen Simulation Workbook V7.4", "Aspen Simulation Workbook V7.4", "Aspen Simluation Workbook"));
+			_lstAspenVersionInfo.Add(new AspenAddInVersionInfo("ASWXLAddinLoader.Connect.V7.3", "ASWXLAddinLoader.LMConnect.V7.3", "Provides tools for accessing AspenTech simulator data from Excel.", "Provides tools for accessing AspenTech simulator data from Excel.", "Aspen Simulation Workbook V7.3", "Aspen Simulation Workbook V7.3", "Aspen Simluation Workbook"));
+			_lstAspenVersionInfo.Add(new AspenAddInVersionInfo("ASWXLAddinLoader.Connect.V7.2", "ASWXLAddinLoader.LMConnect.V7.2", "Provides tools for accessing AspenTech simulator data from Excel.", "Provides tools for accessing AspenTech simulator data from Excel.", "Aspen Simulation Workbook V7.2", "Aspen Simulation Workbook V7.2", "Aspen Simluation Workbook"));
+			_lstAspenVersionInfo.Add(new AspenAddInVersionInfo("ASWXLAddinLoader.Connect.V7.1", "ASWXLAddinLoader.LMConnect.V7.1", "Provides tools for accessing AspenTech simulator data from Excel.", "Provides tools for accessing AspenTech simulator data from Excel.", "Aspen Simulation Workbook V7.1", "Aspen Simulation Workbook V7.1", "Aspen Simluation Workbook"));
+			_lstAspenVersionInfo.Add(new AspenAddInVersionInfo("ASWXLAddinLoader.Connect.V7.0", "ASWXLAddinLoader.LMConnect.V7.0", "Provides tools for accessing AspenTech simulator data from Excel.", "Provides tools for accessing AspenTech simulator data from Excel.", "Aspen Simulation Workbook V7.0", "Aspen Simulation Workbook V7.0", "Aspen Simluation Workbook"));
+			_lstAspenVersionInfo.Add(new AspenAddInVersionInfo("ASWXLAddinLoader.Connect.2006.5", "ASWXLAddinLoader.LMConnect.2006.5", "Provides tools for accessing AspenTech simulator data from Excel.", "Provides tools for accessing AspenTech simulator data from Excel.", "Aspen Simulation Workbook 2006.5", "Aspen Simulation Workbook 2006.5", "Aspen Simluation Workbook"));
+			_lstAspenVersionInfo.Add(new AspenAddInVersionInfo("ASWXLAddinLoader.Connect.2006", "ASWXLAddinLoader.LMConnect.2006", "Provides tools for accessing AspenTech simulator data from Excel.", "Provides tools for accessing AspenTech simulator data from Excel.", "Aspen Simulation Workbook 2006", "Aspen Simulation Workbook 2006", "Aspen Simluation Workbook"));
+			_lstAspenVersionInfo.Add(new AspenAddInVersionInfo("ASWXLAddinLoader.Connect.2004.2", "ASWXLAddinLoader.LMConnect.2004.2", "Provides tools for accessing AspenTech simulator data from Excel.", "Provides tools for accessing AspenTech simulator data from Excel.", "Aspen OSE Workbook 2004.2", "Aspen OSE Workbook 2004.2", "Aspen Simluation Workbook"));
+			_lstAspenVersionInfo.Add(new AspenAddInVersionInfo("ASWXLAddinLoader.Connect.1", "ASWXLAddinLoader.LMConnect.1", "Provides tools for accessing AspenTech simulator data from Excel.", "Provides tools for accessing AspenTech simulator data from Excel.", "Aspen OSE Workbook 2004.1", "Aspen OSE Workbook 2004.1", "Aspen Simluation Workbook"));
+			_dicAspenProgIdToVerInfo = new Dictionary<string, AspenAddInVersionInfo>();
+			_dicAspenProgIdLmToVerInfo = new Dictionary<string, AspenAddInVersionInfo>();
+			for (int i = 0; i < _lstAspenVersionInfo.Count; i++)
+			{
+				_dicAspenProgIdToVerInfo.Add(_lstAspenVersionInfo[i].ProgID, _lstAspenVersionInfo[i]);
+				_dicAspenProgIdLmToVerInfo.Add(_lstAspenVersionInfo[i].ProgIDLM, _lstAspenVersionInfo[i]);
+			}
+		}
+
+		private void Init()
+		{
+			ExcelBits = GetInstalledExcelBits();
+			FillAspenAddinsVersionInfo();
+			RegPathToXlAddins = "Software\\Microsoft\\Office\\Excel\\Addins";
+			UpdateRegLocations();
+			RetrieveAddinInfo();
+		}
+
+		private NumBits CheckKey(RegistryKey whichKey)
+		{
+			NumBits result = NumBits.Unknown;
+			try
+			{
+				RegistryKey registryKey = whichKey.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\excel.exe", writable: false);
+				if (registryKey != null)
+				{
+					result = (registryKey.GetValue(string.Empty).ToString().Contains("(x86)") ? NumBits.Bits32 : NumBits.Bits64);
+					registryKey.Close();
+				}
+			}
+			catch
+			{
+			}
+			return result;
+		}
+
+		private NumBits GetInstalledExcelBits()
+		{
+			NumBits numBits = NumBits.Unknown;
+			RegistryKey localMachine = Registry.LocalMachine;
+			numBits = CheckKey(localMachine);
+			if (numBits != NumBits.Unknown)
+			{
+				return numBits;
+			}
+			localMachine = Registry.CurrentUser;
+			return CheckKey(localMachine);
+		}
+
+		private bool IsValidExcelPathInReg(RegistryHive hive, bool wow6432, string verString)
+		{
+			bool result = false;
+			RegistryKey registryKey = null;
+			RegistryView registryView = GetRegistryView(wow6432);
+			switch (hive)
+			{
+			case RegistryHive.CurrentUser:
+				registryKey = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, registryView);
+				break;
+			case RegistryHive.LocalMachine:
+				registryKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, registryView);
+				break;
+			}
+			string name = "Software\\Microsoft\\Office";
+			RegistryKey registryKey2 = null;
+			try
+			{
+				registryKey2 = registryKey.OpenSubKey(name, writable: false);
+			}
+			catch
+			{
+			}
+			if (registryKey2 != null)
+			{
+				string[] subKeyNames = registryKey2.GetSubKeyNames();
+				foreach (string text in subKeyNames)
+				{
+					if (!text.StartsWith(verString))
+					{
+						continue;
+					}
+					RegistryKey registryKey3 = registryKey2.OpenSubKey(text);
+					if (registryKey3 != null)
+					{
+						string text2 = string.Empty;
+						RegistryKey registryKey4 = null;
+						try
+						{
+							registryKey4 = registryKey3.OpenSubKey("Excel\\InstallRoot");
+						}
+						catch
+						{
+						}
+						if (registryKey4 != null)
+						{
+							text2 = ReadSubKeyValString(registryKey4, string.Empty, "Path");
+						}
+						if (!string.IsNullOrWhiteSpace(text2) && (File.Exists(text2) || Directory.Exists(text2)))
+						{
+							result = true;
+							break;
+						}
+					}
+				}
+			}
+			return result;
+		}
+
+		private string GetASWCurVerFromCLSID()
+		{
+			string result = string.Empty;
+			string text = "Excel.Application";
+			int length = text.Length;
+			string name = "Excel.Application";
+			RegistryKey registryKey = null;
+			try
+			{
+				registryKey = Registry.ClassesRoot.OpenSubKey(name);
+				if (registryKey != null)
+				{
+					registryKey = registryKey.OpenSubKey("CurVer");
+					if (registryKey != null)
+					{
+						string text2 = (string)registryKey.GetValue("");
+						if (!string.IsNullOrWhiteSpace(text2) && text2.StartsWith(text) && text2.Length > length)
+						{
+							result = text2.Substring(length).TrimStart(".".ToCharArray());
+						}
+					}
+				}
+			}
+			catch
+			{
+			}
+			return result;
+		}
+
+		private void UpdateRegLocations()
+		{
+			if (AppBits != NumBits.Unknown && ExcelBits != NumBits.Unknown)
+			{
+				RegPathToXlAddins = "Software\\Microsoft\\Office\\Excel\\Addins";
+				RegistryView registryView = GetRegistryView(IsWow6432Node);
+				RegistryKey registryKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, registryView);
+				RegistryKey registryKey2 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, registryView);
+				_addinRegKeyLM = registryKey.OpenSubKey(RegPathToXlAddins);
+				_addinRegKeyCU = registryKey2.OpenSubKey(RegPathToXlAddins);
+			}
+		}
+
+		private string GetFileLocation(string progId)
+		{
+			string value = string.Empty;
+			string result = string.Empty;
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.Append("");
+			stringBuilder.Append(progId);
+			RegistryView registryView = GetRegistryView(IsWow6432Node);
+			RegistryKey registryKey = null;
+			RegistryKey registryKey2 = null;
+			try
+			{
+				registryKey = RegistryKey.OpenBaseKey(RegistryHive.ClassesRoot, registryView);
+				registryKey2 = Registry.ClassesRoot.OpenSubKey(stringBuilder.ToString());
+			}
+			catch
+			{
+			}
+			if (registryKey2 != null)
+			{
+				value = ReadSubKeyValString(registryKey2, "CLSID", "");
+			}
+			if (string.IsNullOrWhiteSpace(value))
+			{
+				return string.Empty;
+			}
+			stringBuilder = new StringBuilder();
+			stringBuilder.Append("CLSID\\");
+			stringBuilder.Append(value);
+			RegistryKey registryKey3 = null;
+			try
+			{
+				registryKey3 = registryKey.OpenSubKey(stringBuilder.ToString());
+			}
+			catch
+			{
+			}
+			if (registryKey3 != null)
+			{
+				try
+				{
+					result = ReadSubKeyValString(registryKey3, "InprocServer32", "");
+				}
+				catch
+				{
+				}
+			}
+			return result;
+		}
+
+		private string ReadAddinKeyValFriendlyName(RegistryKey key)
+		{
+			string result = string.Empty;
+			try
+			{
+				result = (string)key.GetValue("FriendlyName");
+			}
+			catch
+			{
+			}
+			return result;
+		}
+
+		private string ReadAddinKeyValDescription(RegistryKey key)
+		{
+			string result = string.Empty;
+			try
+			{
+				result = (string)key.GetValue("Description");
+			}
+			catch
+			{
+			}
+			return result;
+		}
+
+		private int ReadAddinKeyValLoadBehaviorInt(RegistryKey key)
+		{
+			int result = -1;
+			try
+			{
+				string text = ReadSubKeyValString(key, "", "LoadBehavior");
+				if (!string.IsNullOrWhiteSpace(text) && int.TryParse(text, out var result2))
+				{
+					result = result2;
+				}
+			}
+			catch
+			{
+			}
+			return result;
+		}
+
+		private string ReadSubKeyValString(RegistryKey key, string subKeyName, string valName)
+		{
+			if (key == null)
+			{
+				return string.Empty;
+			}
+			string empty = string.Empty;
+			try
+			{
+				RegistryKey registryKey = null;
+				if (!string.IsNullOrWhiteSpace(subKeyName))
+				{
+					if (key.SubKeyCount == 0)
+					{
+						return string.Empty;
+					}
+					if (!new List<string>(key.GetSubKeyNames()).Contains(subKeyName))
+					{
+						return string.Empty;
+					}
+					registryKey = key.OpenSubKey(subKeyName);
+					if (registryKey == null)
+					{
+						return string.Empty;
+					}
+				}
+				else
+				{
+					registryKey = key;
+				}
+				object value = registryKey.GetValue(valName);
+				if (value == null)
+				{
+					return string.Empty;
+				}
+				return value.ToString();
+			}
+			catch
+			{
+				return string.Empty;
+			}
+		}
+	}
+	public enum NumBits
+	{
+		Unknown,
+		Bits32,
+		Bits64
+	}
+	public class AspenAddInVersionInfo
+	{
+		public string ProductName { get; set; }
+
+		public string ProgIDLM { get; set; }
+
+		public string ProgID { get; set; }
+
+		public string Description { get; set; }
+
+		public string DescriptionLM { get; set; }
+
+		public string FriendlyName { get; set; }
+
+		public string FriendlyNameLM { get; set; }
+
+		public AspenAddInVersionInfo(string progidCU, string progidLM, string descLM, string descCU, string friendlyNameLM, string friendlyNameCU, string productName)
+		{
+			ProgID = progidCU;
+			ProgIDLM = progidLM;
+			Description = descCU;
+			DescriptionLM = descLM;
+			FriendlyName = friendlyNameCU;
+			FriendlyNameLM = friendlyNameLM;
+			ProductName = productName;
+		}
+	}
+	public class ASWRegVm : INotifyPropertyChanged
+	{
+		private ASWRegUtil _aswReg = new ASWRegUtil();
+
+		private AddinInfo _curAddinInfo;
+
+		private RelayCommand _closeRequest;
+
+		private RelayCommand _writeValsAndcloseRequest;
+
+		public ASWRegUtil ASWReg => _aswReg;
+
+		public ObservableCollection<AspenAddinInfo> LstAddinInfoASW => _aswReg.LstASWAddins;
+
+		public ObservableCollection<AddinInfo> LstAddinInfoNonASW => _aswReg.LstNonASWAddins;
+
+		public bool NumBitsMatch => ASWRegUtil.ExcelBits == ASWRegUtil.AppBits;
+
+		public string DetectedOrNot
+		{
+			get
+			{
+				if (!NumBitsMatch)
+				{
+					return Strings.ASW_NotDetectedVersion;
+				}
+				return Strings.ASW_DetectedVersion;
+			}
+		}
+
+		public NumBits AppBitsDetected => ASWRegUtil.AppBits;
+
+		public AddinInfo CurAddinInfo
+		{
+			get
+			{
+				return _curAddinInfo;
+			}
+			set
+			{
+				_curAddinInfo = value;
+				Notify("CurAddinInfo");
+			}
+		}
+
+		public ICommand CloseRequest
+		{
+			get
+			{
+				if (_closeRequest == null)
+				{
+					_closeRequest = new RelayCommand(delegate
+					{
+						RequestCloseNow();
+					}, (object param) => IsCloseEnabled());
+				}
+				return _closeRequest;
+			}
+		}
+
+		public ICommand WriteValsAndCloseRequest
+		{
+			get
+			{
+				if (_writeValsAndcloseRequest == null)
+				{
+					_writeValsAndcloseRequest = new RelayCommand(delegate
+					{
+						RequestWriteAndCloseNow();
+					}, (object param) => IsWriteAndCloseEnabled());
+				}
+				return _writeValsAndcloseRequest;
+			}
+		}
+
+		public event EventHandler OnCloseRequest;
+
+		public event PropertyChangedEventHandler PropertyChanged;
+
+		private bool IsCloseEnabled()
+		{
+			return true;
+		}
+
+		private void RequestCloseNow()
+		{
+			if (this.OnCloseRequest != null)
+			{
+				this.OnCloseRequest(this, new EventArgs());
+			}
+		}
+
+		private bool IsWriteAndCloseEnabled()
+		{
+			if (LstAddinInfoASW != null)
+			{
+				foreach (AspenAddinInfo item in LstAddinInfoASW)
+				{
+					if (item.IsDirty)
+					{
+						return true;
+					}
+				}
+			}
+			if (LstAddinInfoNonASW != null)
+			{
+				foreach (AddinInfo item2 in LstAddinInfoNonASW)
+				{
+					if (item2.IsDirty)
+					{
+						return true;
+					}
+				}
+			}
+			return false;
+		}
+
+		private void RequestWriteAndCloseNow()
+		{
+			foreach (AddinInfo item in LstAddinInfoNonASW)
+			{
+				item.Write();
+			}
+			foreach (AspenAddinInfo item2 in LstAddinInfoASW)
+			{
+				item2.Write();
+			}
+			if (this.OnCloseRequest != null)
+			{
+				this.OnCloseRequest(this, new EventArgs());
+			}
+		}
+
+		private void Notify(string propName)
+		{
+			if (this.PropertyChanged != null)
+			{
+				this.PropertyChanged(this, new PropertyChangedEventArgs(propName));
+			}
+		}
+	}
+	[ValueConversion(typeof(NumBits), typeof(string))]
+	public class ConvNumBitsToString : IValueConverter
+	{
+		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			if (targetType != typeof(string))
+			{
+				throw new InvalidOperationException("The target must be an object (string)");
+			}
+			string result = string.Empty;
+			switch ((NumBits)value)
+			{
+			case NumBits.Bits32:
+				result = "32 bit";
+				break;
+			case NumBits.Bits64:
+				result = "64 bit";
+				break;
+			case NumBits.Unknown:
+				result = "NONE DETECTED";
+				break;
+			}
+			return result;
+		}
+
+		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			throw new Exception("Convert back from string to NumBits not valid");
+		}
+	}
+	[ValueConversion(typeof(NumBits), typeof(Brush))]
+	public class ConvNumBitsToBrush : IValueConverter
+	{
+		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			if (targetType != typeof(Brush))
+			{
+				throw new InvalidOperationException("The target must be a Brush");
+			}
+			SolidColorBrush result = Brushes.Blue;
+			if ((NumBits)value == NumBits.Unknown)
+			{
+				result = Brushes.Red;
+			}
+			return result;
+		}
+
+		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			throw new Exception("Convert back from Brush to NumBits not valid");
+		}
+	}
+	[ValueConversion(typeof(AddinInfo), typeof(string))]
+	public class ConvAddinInfoToGroupBoxTitleString : IValueConverter
+	{
+		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			string text = "";
+			if (value is AddinInfo addinInfo)
+			{
+				return text + $"({addinInfo.FriendlyName})";
+			}
+			return text + "(" + Strings.ASW_NoneSelected + ")";
+		}
+
+		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			throw new Exception("Convert back from string to AddinInfo");
+		}
+	}
+	[ValueConversion(typeof(AddinInfo), typeof(FontWeight))]
+	public class ConvAddinInfoToFontWeight : IValueConverter
+	{
+		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			FontWeight fontWeight = FontWeights.Regular;
+			if (value is AspenAddinInfo)
+			{
+				fontWeight = FontWeights.Heavy;
+			}
+			return fontWeight;
+		}
+
+		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			throw new Exception("Convert back from string to AddinInfo");
+		}
+	}
+	[ValueConversion(typeof(NumBits), typeof(bool))]
+	public class ConvBits32ToBool : IValueConverter
+	{
+		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			bool flag = false;
+			if (value is NumBits)
+			{
+				flag = (NumBits)value == NumBits.Bits32;
+			}
+			return flag;
+		}
+
+		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			throw new Exception("Convert back from bool to NumBits");
+		}
+	}
+	public class RelayCommand : ICommand
+	{
+		private readonly Action<object> _execute;
+
+		private readonly Predicate<object> _canExecute;
+
+		public event EventHandler CanExecuteChanged
+		{
+			add
+			{
+				CommandManager.RequerySuggested += value;
+			}
+			remove
+			{
+				CommandManager.RequerySuggested -= value;
+			}
+		}
+
+		public RelayCommand(Action<object> execute)
+			: this(execute, null)
+		{
+		}
+
+		public RelayCommand(Action<object> execute, Predicate<object> canExecute)
+		{
+			if (execute == null)
+			{
+				throw new ArgumentNullException("execute");
+			}
+			_execute = execute;
+			_canExecute = canExecute;
+		}
+
+		[DebuggerStepThrough]
+		public bool CanExecute(object parameter)
+		{
+			if (_canExecute != null)
+			{
+				return _canExecute(parameter);
+			}
+			return true;
+		}
+
+		public void Execute(object parameter)
+		{
+			_execute(parameter);
+		}
+	}
+	public class MainWindow : Window, IComponentConnector, IStyleConnector
+	{
+		private ASWRegVm _vm = new ASWRegVm();
+
+		internal Grid GridASWAddins;
+
+		internal ListBox lstAswAddins;
+
+		internal Grid GridNonASWAddins;
+
+		internal ListBox lstNonAswAddins;
+
+		internal Button btnOk;
+
+		internal Button btnCancel;
+
+		private bool _contentLoaded;
+
+		public MainWindow()
+		{
+			InitializeComponent();
+			_vm.OnCloseRequest += _vm_OnCloseRequest;
+			base.DataContext = _vm;
+		}
+
+		private void _vm_OnCloseRequest(object sender, EventArgs e)
+		{
+			Close();
+		}
+
+		private void Window_Closing(object sender, CancelEventArgs e)
+		{
+		}
+
+		private void Window_Closed(object sender, EventArgs e)
+		{
+			try
+			{
+				if (_vm != null)
+				{
+					_vm.OnCloseRequest -= _vm_OnCloseRequest;
+				}
+			}
+			catch
+			{
+			}
+		}
+
+		private void lstAswAddins_SelectionChanged(object sender, SelectionChangedEventArgs e)
+		{
+			if (e.AddedItems != null && e.AddedItems.Count > 0)
+			{
+				lstNonAswAddins.SelectedIndex = -1;
+				if (_vm != null && lstAswAddins.SelectedIndex > -1 && _vm.LstAddinInfoASW != null && _vm.LstAddinInfoASW.Count > lstNonAswAddins.SelectedIndex)
+				{
+					_vm.CurAddinInfo = _vm.LstAddinInfoASW[lstAswAddins.SelectedIndex];
+				}
+			}
+		}
+
+		private void lstNonAswAddins_SelectionChanged(object sender, SelectionChangedEventArgs e)
+		{
+			if (e.AddedItems != null && e.AddedItems.Count > 0)
+			{
+				lstAswAddins.SelectedIndex = -1;
+				if (_vm != null && lstNonAswAddins.SelectedIndex > -1 && _vm.LstAddinInfoNonASW != null && _vm.LstAddinInfoNonASW.Count > lstNonAswAddins.SelectedIndex)
+				{
+					_vm.CurAddinInfo = _vm.LstAddinInfoNonASW[lstNonAswAddins.SelectedIndex];
+				}
+			}
+		}
+
+		private void CheckBox_Click(object sender, RoutedEventArgs e)
+		{
+			if (!((sender as CheckBox).DataContext is AspenAddinInfo aspenAddinInfo))
+			{
+				return;
+			}
+			for (int i = 0; i < lstAswAddins.Items.Count; i++)
+			{
+				if (lstAswAddins.Items[i] is AspenAddinInfo && lstAswAddins.Items[i] as AspenAddinInfo == aspenAddinInfo)
+				{
+					lstAswAddins.SelectedIndex = i;
+					break;
+				}
+			}
+		}
+
+		private void ChkNonAswAddins_Click(object sender, RoutedEventArgs e)
+		{
+			if (!((sender as CheckBox).DataContext is AddinInfo addinInfo))
+			{
+				return;
+			}
+			for (int i = 0; i < lstNonAswAddins.Items.Count; i++)
+			{
+				if (lstNonAswAddins.Items[i] is AddinInfo && lstNonAswAddins.Items[i] as AddinInfo == addinInfo)
+				{
+					lstNonAswAddins.SelectedIndex = i;
+					break;
+				}
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/Aspen Excel Add-in Manager;component/aswaddinselectform.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			switch (connectionId)
+			{
+			case 1:
+				((MainWindow)target).Closing += Window_Closing;
+				((MainWindow)target).Closed += Window_Closed;
+				break;
+			case 2:
+				GridASWAddins = (Grid)target;
+				break;
+			case 3:
+				lstAswAddins = (ListBox)target;
+				lstAswAddins.SelectionChanged += lstAswAddins_SelectionChanged;
+				break;
+			case 5:
+				GridNonASWAddins = (Grid)target;
+				break;
+			case 6:
+				lstNonAswAddins = (ListBox)target;
+				lstNonAswAddins.SelectionChanged += lstNonAswAddins_SelectionChanged;
+				break;
+			case 8:
+				btnOk = (Button)target;
+				break;
+			case 9:
+				btnCancel = (Button)target;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IStyleConnector.Connect(int connectionId, object target)
+		{
+			switch (connectionId)
+			{
+			case 4:
+				((CheckBox)target).Click += CheckBox_Click;
+				break;
+			case 7:
+				((CheckBox)target).Click += ChkNonAswAddins_Click;
+				break;
+			}
+		}
+	}
+}
+namespace AspenTech.ASWXL.Properties
+{
+	[GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
+	[DebuggerNonUserCode]
+	[CompilerGenerated]
+	internal class Resources
+	{
+		private static ResourceManager resourceMan;
+
+		private static CultureInfo resourceCulture;
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		internal static ResourceManager ResourceManager
+		{
+			get
+			{
+				if (resourceMan == null)
+				{
+					resourceMan = new ResourceManager("AspenTech.ASWXL.Properties.Resources", typeof(Resources).Assembly);
+				}
+				return resourceMan;
+			}
+		}
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		internal static CultureInfo Culture
+		{
+			get
+			{
+				return resourceCulture;
+			}
+			set
+			{
+				resourceCulture = value;
+			}
+		}
+
+		internal Resources()
+		{
+		}
+	}
+	[CompilerGenerated]
+	[GeneratedCode("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "16.10.0.0")]
+	internal sealed class Settings : ApplicationSettingsBase
+	{
+		private static Settings defaultInstance = (Settings)SettingsBase.Synchronized(new Settings());
+
+		public static Settings Default => defaultInstance;
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

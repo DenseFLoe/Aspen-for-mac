@@ -1,0 +1,18 @@
+# NewBinary1.00C8CD4F_F851_484A_A03B_6432F5895243
+
+状态为**静态验收未通过**。发布包的代码中有明确的反编译失败记录。
+
+原路径为 `Plus/Binary/NewBinary1.00C8CD4F_F851_484A_A03B_6432F5895243`。
+
+原件 SHA-256 为 `76e4e2352af5d3ca243e6500c089334be0ed9206e77a51073ccee09d7aa10a0f`。
+
+发布包交付共有 4 份内容或格式不同的文件。以下为本次整理时生成的目录。原始来源见[发布页](https://github.com/DenseFLoe/Aspen-for-mac/releases/tag/v0.20261121-w2)。
+
+正式 C 导出包含 2 处函数反编译失败标记。
+
+- [正式导出 · asm · 95078a4e84b3](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/NewBinary1.00C8CD4F_F851_484A_A03B_6432F5895243~95078a4e84b3.asm.txt)（1,032,786 字节）
+- [阶段导出 · asm · e9157811cce8](v0.20261121-w2/%E9%98%B6%E6%AE%B5%E5%AF%BC%E5%87%BA/NewBinary1.00C8CD4F_F851_484A_A03B_6432F5895243~e9157811cce8.asm.txt)（1,032,781 字节）
+- [阶段导出 · c · 231053e1a39a](v0.20261121-w2/%E9%98%B6%E6%AE%B5%E5%AF%BC%E5%87%BA/NewBinary1.00C8CD4F_F851_484A_A03B_6432F5895243~231053e1a39a.c.txt)（556,793 字节）
+- [正式导出 · c · 25d027c19d83](v0.20261121-w2/%E6%AD%A3%E5%BC%8F%E5%AF%BC%E5%87%BA/NewBinary1.00C8CD4F_F851_484A_A03B_6432F5895243~25d027c19d83.c.txt)（556,798 字节）
+
+[制作者的 W2 逐件报告](v0.20261121-w2/%E5%88%B6%E4%BD%9C%E8%80%85%E6%8A%A5%E5%91%8A/NewBinary1.00C8CD4F_F851_484A_A03B_6432F5895243.md)

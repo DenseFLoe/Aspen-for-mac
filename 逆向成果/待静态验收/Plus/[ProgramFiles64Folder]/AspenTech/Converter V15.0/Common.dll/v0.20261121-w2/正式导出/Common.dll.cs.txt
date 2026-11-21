@@ -1,0 +1,5611 @@
+using System;
+using System.CodeDom.Compiler;
+using System.Collections;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Diagnostics;
+using System.Drawing;
+using System.Globalization;
+using System.Linq;
+using System.Reflection;
+using System.Resources;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Text.RegularExpressions;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Documents;
+using System.Windows.Interop;
+using System.Windows.Markup;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using Microsoft.Win32;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyTitle("P2Converter")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("Aspen Technology, Inc.")]
+[assembly: AssemblyProduct("P2Converter")]
+[assembly: AssemblyCopyright("Copyright © 2024 Aspen Technology, Inc.")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyFileVersion("41.0.0.0")]
+[assembly: ComVisible(false)]
+[assembly: Guid("f1552ece-7a14-4f66-ac55-f91a3bf4aa42")]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.0")]
+namespace Common;
+
+public class BaseObject
+{
+	public string Name { get; set; }
+
+	public static Report _Report { get; set; }
+
+	public List<DEFINE> GlobalDefine { get; set; }
+
+	public List<DEFINE> LocalDefine { get; set; }
+
+	public List<Specification> GlobalSpec { get; set; }
+
+	public List<Specification> LocalSpec { get; set; }
+
+	public static string ApplicationFolder { get; set; }
+
+	public override string ToString()
+	{
+		return Name;
+	}
+}
+public class CleanResource
+{
+	public static void ReleaseComObjectHelper(object obj, bool bFinalRelease)
+	{
+		try
+		{
+			if (obj != null)
+			{
+				if (bFinalRelease)
+				{
+					Marshal.FinalReleaseComObject(obj);
+				}
+				else
+				{
+					Marshal.ReleaseComObject(obj);
+				}
+				obj = null;
+			}
+		}
+		catch (Exception)
+		{
+		}
+	}
+}
+public static class Categories
+{
+	public static string Title { get; private set; }
+
+	public static string Component { get; private set; }
+
+	public static string Thermodynamic { get; private set; }
+
+	public static string Stream { get; private set; }
+
+	public static string Unit { get; private set; }
+
+	public static string RX { get; private set; }
+
+	public static string Recy { get; private set; }
+
+	public static string Case { get; private set; }
+
+	static Categories()
+	{
+		Title = "TITL";
+		Component = "COMP";
+		Thermodynamic = "THER";
+		Stream = "STRE";
+		Unit = "UNIT";
+		RX = "RXDA";
+		Recy = "RECY";
+		Case = "CASE";
+	}
+}
+public static class CTitle
+{
+	public static string Dimension { get; private set; }
+
+	static CTitle()
+	{
+		Dimension = "DIME";
+	}
+}
+public static class CStream
+{
+	public static readonly string SET = "SET";
+
+	public static readonly string LIGHTEND = "LIGH";
+
+	public static readonly string COMPOSITION = "COMP";
+
+	public static readonly string RATE = "RATE";
+
+	public static readonly string FRACTION = "FRAC";
+
+	public static readonly string PERCENT = "PERC";
+
+	public static readonly string MATCH = "MATC";
+
+	public static readonly string NOMATCH = "NOMA";
+
+	public static readonly string STREAM = "STR";
+
+	public static readonly string NORMALIZE = "NORM";
+
+	public static readonly string AVERAGE = "AVE";
+
+	public static readonly string TEMP = "TEMP";
+
+	public static readonly string DATA = "DATA";
+
+	public static readonly string PRESSURE = "PRES";
+
+	public static readonly string PHASE = "PHAS";
+
+	public static readonly string LFRAC = "LFRA";
+
+	public static readonly string ASSAY = "ASSA";
+
+	public static readonly string BLEND = "BLEND";
+
+	public static readonly string XBLEND = "XBLE";
+
+	public static readonly string PROP = "PROP";
+
+	public static readonly string REFSTREAM = "REFS";
+
+	public static readonly string PPM = "PPM";
+
+	public static readonly string GRAINS = "GRAI";
+
+	public static readonly string MOISTURE = "MOIS";
+
+	public static readonly string LFACT = "LFRA";
+
+	public static readonly string VFRAC = "VFRA";
+
+	public static readonly string WFRAC = "WFRA";
+
+	public static readonly string MW = "MW";
+
+	public static readonly string SPGR = "SPGR";
+
+	public static readonly string API = "API";
+
+	public static readonly string DENSITY = "DENS";
+
+	public static readonly string MOLVOL = "MOLV";
+
+	public static readonly string HOTVOL = "HOTV";
+
+	public static readonly string ENTHALPY = "ENTH";
+
+	public static readonly string TBP = "TBP";
+
+	public static readonly string D86 = "D86";
+
+	public static readonly string D1160 = "D1160";
+
+	public static readonly string RVP = "RVP";
+
+	public static readonly string TVP = "TVP";
+
+	public static readonly string VISCOSITY = "VISC";
+
+	public static readonly string CONDUCTIVITY = "COND";
+
+	public static readonly string SURFACE = "SURF";
+
+	public static readonly string SPROPERTY = "SPRO";
+}
+public static class ApplicationName
+{
+	public static string appName { get; set; }
+}
+public static class HYSYSVersionNumber
+{
+	public static string versionNumber { get; set; }
+
+	public static string InternalVersion => "41.0";
+}
+public static class CComponent
+{
+	public static readonly string DENSITY;
+
+	public static readonly string TABULAR;
+
+	public static readonly string CUTSET;
+
+	public static readonly string BLEND;
+
+	public static readonly string DEFAULT;
+
+	public static readonly string TBPCUTS;
+
+	public static readonly string MW;
+
+	public static readonly string SPGR;
+
+	public static readonly string API;
+
+	public static readonly string NBP;
+
+	public static readonly string ACENTRIC;
+
+	public static readonly string VC;
+
+	public static readonly string TC;
+
+	public static readonly string PC;
+
+	public static readonly string ZC;
+
+	public static readonly string RACKETT;
+
+	public static readonly string CNUM;
+
+	public static readonly string ZNUM;
+
+	public static readonly string DIPOLE;
+
+	public static readonly string RADIUS;
+
+	public static readonly string SOLUPARA;
+
+	public static readonly string MOLVOL;
+
+	public static readonly string STDDENSITY;
+
+	public static readonly string HCOMBUST;
+
+	public static readonly string HVAPORIZE;
+
+	public static readonly string HFUSION;
+
+	public static readonly string NMP;
+
+	public static readonly string PTP;
+
+	public static readonly string TTP;
+
+	public static readonly string GHV;
+
+	public static readonly string LHV;
+
+	public static readonly string SVTB;
+
+	public static readonly string SLTB;
+
+	public static readonly string SLTM;
+
+	public static readonly string HVTB;
+
+	public static readonly string HLTB;
+
+	public static readonly string HLTM;
+
+	public static readonly string FIT;
+
+	public static readonly string CHARACTERIZE;
+
+	public static readonly string CONVERSION;
+
+	public static readonly string CURVEFIT;
+
+	public static readonly string GRAVITY;
+
+	public static readonly string TBPIP;
+
+	public static readonly string TBPEP;
+
+	public static readonly string KVRECONCILE;
+
+	public static string LIBID { get; private set; }
+
+	public static string BANK { get; private set; }
+
+	public static string FILL { get; private set; }
+
+	public static string NONLIBRARY { get; private set; }
+
+	public static string PETROLEUM { get; private set; }
+
+	public static string PHASE { get; private set; }
+
+	public static string ASSAY { get; private set; }
+
+	public static string CUTPOINTS { get; private set; }
+
+	static CComponent()
+	{
+		DENSITY = "DENS";
+		TABULAR = "TABU";
+		CUTSET = "CUTS";
+		BLEND = "BLEN";
+		DEFAULT = "DEFA";
+		TBPCUTS = "TBPC";
+		MW = "MW";
+		SPGR = "SPGR";
+		API = "API";
+		NBP = "NBP";
+		ACENTRIC = "ACEN";
+		VC = "VC";
+		TC = "TC";
+		PC = "PC";
+		ZC = "ZC";
+		RACKETT = "RACK";
+		CNUM = "CNUM";
+		ZNUM = "ZNUM";
+		DIPOLE = "DIPO";
+		RADIUS = "RADI";
+		SOLUPARA = "SOLU";
+		MOLVOL = "MOLV";
+		STDDENSITY = "STDD";
+		HCOMBUST = "HCOM";
+		HVAPORIZE = "HVAP";
+		HFUSION = "HFUS";
+		NMP = "NMP";
+		PTP = "PTP";
+		TTP = "TTP";
+		GHV = "GHV";
+		LHV = "LHV";
+		SVTB = "SVTB";
+		SLTB = "SLTB";
+		SLTM = "SLTM";
+		HVTB = "HVTB";
+		HLTB = "HLTB";
+		HLTM = "HLTM";
+		FIT = "FIT";
+		CHARACTERIZE = "CHAR";
+		CONVERSION = "CONV";
+		CURVEFIT = "CURV";
+		GRAVITY = "GRAV";
+		TBPIP = "TBPI";
+		TBPEP = "TBPE";
+		KVRECONCILE = "KVRE";
+		LIBID = "LIBI";
+		BANK = "BANK";
+		FILL = "FILL";
+		NONLIBRARY = "NONL";
+		PETROLEUM = "PETR";
+		PHASE = "PHAS";
+		ASSAY = "ASSA";
+		CUTPOINTS = "CUTP";
+	}
+}
+public static class CUnitOperation
+{
+	public static readonly string NAME = "NAME";
+
+	public static readonly string UID = "UID";
+
+	public static readonly string FLASH = "FLAS";
+
+	public static readonly string PUMP = "PUMP";
+
+	public static readonly string VALVE = "VALV";
+
+	public static readonly string MIXER = "MIXE";
+
+	public static readonly string COMPRESSOR = "COMP";
+
+	public static readonly string SIMPLEHEATEXCHANGER = "HX";
+
+	public static readonly string RIGOROUSHEATEXCHANGER = "HXRI";
+
+	public static readonly string LNGHEATEXCHANGER = "LNGH";
+
+	public static readonly string CONVERSIONREACTOR = "CONR";
+
+	public static readonly string EQUILIBRIUMREACTOR = "EQUR";
+
+	public static readonly string GIBBSREACTOR = "GIBB";
+
+	public static readonly string TUBES = "TUBE";
+
+	public static readonly string FINS = "FINS";
+
+	public static readonly string TNOZZLE = "TNOZ";
+
+	public static readonly string SHELL = "SHELL";
+
+	public static readonly string SHEL = "SHEL";
+
+	public static readonly string BAFFLE = "BAFF";
+
+	public static readonly string SNOZZLE = "SNOZ";
+
+	public static readonly string TYPE = "TYPE";
+
+	public static readonly string HXCALC = "HXCA";
+
+	public static readonly string PRINT = "PRIN";
+
+	public static readonly string DATA = "DATA";
+
+	public static readonly string FEED = "FEED";
+
+	public static readonly string PRODUCT = "PROD";
+
+	public static readonly string OPERATION = "OPER";
+
+	public static readonly string DEFINE = "DEFI";
+
+	public static readonly string DLTAPRESSURE = "DP";
+
+	public static readonly string PRESSURE = "PRES";
+
+	public static readonly string PDESIGN = "PDES";
+
+	public static readonly string PRATIO = "PRAT";
+
+	public static readonly string TEMPERATURE = "TEMP";
+
+	public static readonly string METHOD = "METH";
+
+	public static readonly string ZONES = "ZONE";
+
+	public static readonly string PLOT = "PLOT";
+
+	public static readonly string HOT = "HOT";
+
+	public static readonly string COLD = "COLD";
+
+	public static readonly string UTILITY = "UTIL";
+
+	public static readonly string ATTACH = "ATTA";
+
+	public static readonly string CONFIG = "CONF";
+
+	public static readonly string SPLITTER = "SPLI";
+
+	public static readonly string SPECIFICATION = "SPEC";
+
+	public static readonly string OPTION = "OPTI";
+
+	public static readonly string RESET = "RESE";
+
+	public static readonly string WORK = "WORK";
+
+	public static readonly string WTOL = "WTOL";
+
+	public static readonly string EFF = "EFF";
+
+	public static readonly string POLY = "POLY";
+
+	public static readonly string CALC = "CALC";
+
+	public static readonly string PRSWITCH = "PRSW";
+
+	public static readonly string PIN = "PIN";
+
+	public static readonly string TESTIMATE = "TEST";
+
+	public static readonly string RPM = "RPM";
+
+	public static readonly string REFRPM = "REFR";
+
+	public static readonly string FANH = "FANH";
+
+	public static readonly string FANE = "FANE";
+
+	public static readonly string HEAD = "HEAD";
+
+	public static readonly string EFFICIENCY = "EFFI";
+
+	public static readonly string PINLET = "PINL";
+
+	public static readonly string POUTLET = "POUT";
+
+	public static readonly string COOLER = "COOL";
+
+	public static readonly string EXPANDER = "EXPA";
+
+	public static readonly string COLUMN = "COLU";
+
+	public static readonly string SIDESTRIPPER = "SIDESTRIPPER";
+
+	public static readonly string SIDERECTIFIER = "SIDERECTIFIER";
+
+	public static readonly string RXCALC = "RXCA";
+
+	public static readonly string RXSTOIC = "RXST";
+
+	public static readonly string ISOTHERMAL = "ISO";
+
+	public static readonly string DTFEED = "DTFE";
+
+	public static readonly string ADIABATIC = "ADIA";
+
+	public static readonly string DUTY = "DUTY";
+
+	public static readonly string TMAX = "TMAX";
+
+	public static readonly string TMIN = "TMIN";
+
+	public static readonly string MODEL = "MODE";
+
+	public static readonly string CBASIS = "CBAS";
+
+	public static readonly string NOHBALANCE = "NOHB";
+
+	public static readonly string XOPTION = "XOPT";
+
+	public static readonly string RXSET = "RXSE";
+
+	public static readonly string REACTION = "REAC";
+
+	public static readonly string BASE = "BASE";
+
+	public static readonly string COMPONENT = "COMP";
+
+	public static readonly string CONVERSION = "CONV";
+
+	public static readonly string FURNACE = "FURN";
+
+	public static readonly string SIDE = "SIDE";
+
+	public static readonly string PROCESSSIDE = "PROC";
+
+	public static readonly string COMBUSTIONSIDE = "COMB";
+
+	public static readonly string INTEGER = "INT";
+
+	public static readonly string PARAMETER = "PAR";
+
+	public static readonly string APPROACH = "APPR";
+
+	public static readonly string MAXTRIAL = "MAXT";
+
+	public static readonly string FIBTOL = "FIBT";
+
+	public static readonly string PROFLAG = "PROF";
+
+	public static readonly string PHYSPROP = "PHYS";
+
+	public static readonly string TRIAL = "TRIA";
+
+	public static readonly string START = "STAR";
+
+	public static readonly string FREQUENCY = "FREQ";
+
+	public static readonly string INITIALPHASE = "INIT";
+
+	public static readonly string ELIMINATE = "ELIM";
+
+	public static readonly string ELEMENTS = "ELEM";
+
+	public static readonly string REACTANTS = "REAC";
+
+	public static readonly string COMPONENTS = "COMP";
+
+	public static readonly string NAMES = "NAME";
+
+	public static readonly string EXTENT = "EXTE";
+
+	public static readonly string PIPE = "PIPE";
+
+	public static readonly string LINE = "LINE";
+
+	public static readonly string NPS = "NPS";
+
+	public static readonly string LENGTH = "LENG";
+
+	public static readonly string ELEVATION = "ELEV";
+
+	public static readonly string FLOWEFF = "FLOW";
+
+	public static readonly string FRICTION = "FRIC";
+
+	public static readonly string AROUGH = "AROU";
+
+	public static readonly string RROUGH = "RROU";
+
+	public static readonly string U = "U";
+
+	public static readonly string TAMBIENT = "TAMB";
+
+	public static readonly string DPCORR = "DPCO";
+
+	public static readonly string DPEST = "DPES";
+
+	public static readonly string DPTOL = "DPTO";
+
+	public static readonly string NOACCEL = "NOAC";
+
+	public static readonly string BACK = "BACK";
+
+	public static readonly string KFACTOR = "KFAC";
+
+	public static readonly string DPMAX = "DPMA";
+
+	public static readonly string VMAX = "VMAX";
+
+	public static readonly string PMIN = "PMIN";
+
+	public static readonly string AIRCOOLEDHX = "AIRC";
+
+	public static readonly string AIRSIDE = "AIR";
+
+	public static readonly string PHASE = "PHAS";
+
+	public static readonly string OPERATION_PHASE = "OPER";
+
+	public static readonly string DEW = "DEW";
+
+	public static readonly string DEWHC = "DEWH";
+
+	public static readonly string DEWWATER = "DEWW";
+
+	public static readonly string BUBBLE = "BUBB";
+
+	public static readonly string UPPERDEWPOINT = "UPPE";
+
+	public static readonly string TPSPEC = "TPSP";
+
+	public static readonly string SPEC = "SPEC";
+
+	public static readonly string ENTRAINMENT = "ENTR";
+
+	public static readonly string ISENTROPIC = "ISEN";
+
+	public static readonly string KPRINT = "KPRI";
+
+	public static readonly string PESTIMATE = "PEST";
+
+	public static readonly string FROM = "FROM";
+
+	public static readonly string TO = "TO";
+
+	public static readonly string FRACTION = "FRAC";
+
+	public static readonly string PERCENT = "PERC";
+
+	public static readonly string RATE = "RATE";
+
+	public static readonly string Warning = "Warning: ";
+
+	public static readonly string P2Head_Flash = "PRO/II Flash ";
+
+	public static readonly string IO = "IO";
+
+	public static readonly string ERRINC = "ERRI";
+
+	public static readonly string DAMP = "DAMP";
+
+	public static readonly string TRAY = "TRAY";
+
+	public static readonly string SURE = "SURE";
+
+	public static readonly string STOP = "STOP";
+
+	public static readonly string CAVE = "CAVE";
+
+	public static readonly string KEY = "KEY";
+
+	public static readonly string FREEWATER = "FREEWATER";
+
+	public static readonly string CHEMDIST = "CHEM";
+
+	public static readonly string CUTOFF = "CUTO";
+
+	public static readonly string CVAR = "CVAR";
+
+	public static readonly string ENHANCEDIO = "ENHANCEDIO";
+
+	public static readonly string RATEFRAC = "RATEFRAC";
+
+	public static readonly string SEGMENTS = "SEGM";
+
+	public static readonly string LLEX = "LLEX";
+
+	public static readonly string SEPARATE = "SEPA";
+
+	public static readonly string NOTSEPARATE = "NOTSEPARATE";
+
+	public static readonly string SUPERCEDE = "SUPE";
+
+	public static readonly string OVHD = "OVHD";
+
+	public static readonly string BTMS = "BTMS";
+
+	public static readonly string LDRAW = "LDRA";
+
+	public static readonly string VDRAW = "VDRA";
+
+	public static readonly string WATER = "WATE";
+
+	public static readonly string L1DRAW = "L1DR";
+
+	public static readonly string L2DRAW = "L2DR";
+
+	public static readonly string L1PART = "L1PA";
+
+	public static readonly string L2PART = "L2PA";
+
+	public static readonly string TFLOW = "TFLO";
+
+	public static readonly string NET = "NET";
+
+	public static readonly string TOTAL = "TOTA";
+
+	public static readonly string PA = "PA";
+
+	public static readonly string TSFEED = "TSFE";
+
+	public static readonly string TSLIQUID = "TSLI";
+
+	public static readonly string TSVAPOR = "TSVA";
+
+	public static readonly string CONDENSER = "COND";
+
+	public static readonly string DT = "DT";
+
+	public static readonly string REBOILER = "REBO";
+
+	public static readonly string LFRAC = "LFRA";
+
+	public static readonly string VFRAC = "VFRA";
+
+	public static readonly string LFEST = "LFES";
+
+	public static readonly string VFEST = "VFES";
+
+	public static readonly string RTEST = "RTES";
+
+	public static readonly string QSPEC = "QSPE";
+
+	public static readonly string QCOLUMN = "QCOLUMN";
+
+	public static readonly string QCOND = "QCON";
+
+	public static readonly string QREBO = "QREB";
+
+	public static readonly string QCOL = "QCOL";
+
+	public static readonly string QTRAY = "QTRA";
+
+	public static readonly string PSPEC = "PSPE";
+
+	public static readonly string PTOP = "PTOP";
+
+	public static readonly string DPCOL = "DPCO";
+
+	public static readonly string DPTRAY = "DPTR";
+
+	public static readonly string ESTIMATE = "ESTI";
+
+	public static readonly string CTEMP = "CTEM";
+
+	public static readonly string TTEMP = "TTEM";
+
+	public static readonly string BTEMP = "BTEM";
+
+	public static readonly string RTEMP = "RTEM";
+
+	public static readonly string RRATIO = "RRAT";
+
+	public static readonly string REFLUX = "REFL";
+
+	public static readonly string VAPOR = "VAPO";
+
+	public static readonly string LIQUID = "LIQU";
+
+	public static readonly string CESTIMATE = "CEST";
+
+	public static readonly string WET = "WET";
+
+	public static readonly string DRY = "DRY";
+
+	public static readonly string VALUE = "VALU";
+
+	public static readonly string ATOL = "ATOL";
+
+	public static readonly string RTOL = "RTOL";
+
+	public static readonly string VARY = "VARY";
+
+	public static readonly string DNAME = "DNAM";
+
+	public static readonly string DRAW = "DRAW";
+
+	public static readonly string REFSTRM = "REFS";
+
+	public static readonly string PORDER = "PORD";
+
+	public static readonly string TEFF = "TEFF";
+
+	public static readonly string CEFF = "CEFF";
+
+	public static readonly string EFACTOR = "EFAC";
+
+	public static readonly string HOMOTOPY = "HOMO";
+
+	public static readonly string INITIAL = "INIT";
+
+	public static readonly string ITERATIONS = "ITERATION";
+
+	public static readonly string HVARYFLAG = "HVAR";
+
+	public static readonly string ITER = "ITER";
+
+	public static readonly string PROPTABLES = "PROPTABLES";
+
+	public static readonly string RECOVERY = "RECO";
+
+	public static readonly string TLOAD = "TLOA";
+
+	public static readonly string DIAGRAM = "DIAG";
+
+	public static readonly string PROFILE = "PROF";
+
+	public static readonly string KEYL = "KEYL";
+
+	public static readonly string KEYH = "KEYH";
+
+	public static readonly string SUMMARY = "SUMM";
+
+	public static readonly string FRIDATA = "FRID";
+
+	public static readonly string RFPRINT = "RFPR";
+
+	public static readonly string RFIEG = "RFIE";
+
+	public static readonly string RFCALC = "RFCA";
+
+	public static readonly string SPLITFRAC = "SPLITFRAC";
+
+	public static readonly string BULK = "BULK";
+
+	public static readonly string HETP = "HETP";
+
+	public static readonly string INTERFACE = "INTE";
+
+	public static readonly string DPFLOOD = "DPFL";
+
+	public static readonly string HTRATE = "HTRA";
+
+	public static readonly string MTRATE = "MTRA";
+
+	public static readonly string DCOEF = "DCOE";
+
+	public static readonly string HTCOEF = "HTCO";
+
+	public static readonly string MTCOEF = "MTCO";
+
+	public static readonly string XCOMP = "XCOM";
+
+	public static readonly string YCOMP = "YCOM";
+
+	public static readonly string LOG = "LOG";
+
+	public static readonly string SFACTOR = "SFAC";
+
+	public static readonly string FZONE = "FZON";
+
+	public static readonly string TLDT = "TLDT";
+
+	public static readonly string HEATEREFF = "HEATEREFF";
+
+	public static readonly string LBYPASSFRAC = "LBYP";
+
+	public static readonly string VBYPASSFRAC = "VBYP";
+
+	public static readonly string TSIZE = "TSIZ";
+
+	public static readonly string SECTION = "SECT";
+
+	public static readonly string SIEVE = "SIEV";
+
+	public static readonly string CAP = "CAP";
+
+	public static readonly string DMIN = "DMIN";
+
+	public static readonly string SPACING = "SPAC";
+
+	public static readonly string BASESEGMENT = "BASESEG";
+
+	public static readonly string TRATE = "TRAT";
+
+	public static readonly string V1 = "V1";
+
+	public static readonly string V4 = "V4";
+
+	public static readonly string DIAMETER = "DIAM";
+
+	public static readonly string PASSES = "PASS";
+
+	public static readonly string FFACTOR = "FFAC";
+
+	public static readonly string THICKNESS = "THIC";
+
+	public static readonly string NUMBER = "NUMB";
+
+	public static readonly string HOLEAREA = "HOLE";
+
+	public static readonly string MATERIAL = "MATE";
+
+	public static readonly string DCC = "DCC";
+
+	public static readonly string DCW = "DCW";
+
+	public static readonly string USID = "USID";
+
+	public static readonly string CASE = "CASE";
+
+	public static readonly string DPCALC = "DPCA";
+
+	public static readonly string TRAYSPERSEGMENT = "TRAYSPERSEGMENT";
+
+	public static readonly string LIQMIX = "LIQM";
+
+	public static readonly string VAPMIX = "VAPM";
+
+	public static readonly string DCRESTIME = "DCRE";
+
+	public static readonly string ACTAREA = "ACTA";
+
+	public static readonly string WEIRHEIGHT = "WEIR";
+
+	public static readonly string WLEN = "WLEN";
+
+	public static readonly string DCAREA = "DCAR";
+
+	public static readonly string ESTDIAM = "ESTD";
+
+	public static readonly string VAPVOLPCT = "VAPV";
+
+	public static readonly string PACKING = "PACK";
+
+	public static readonly string FACTOR = "FACT";
+
+	public static readonly string SIZE = "SIZE";
+
+	public static readonly string HEIGHT = "HEIG";
+
+	public static readonly string HMETHOD = "HMET";
+
+	public static readonly string DPMETHOD = "DPME";
+
+	public static readonly string DPSECTION = "DPSE";
+
+	public static readonly string DPPACK = "DPPA";
+
+	public static readonly string FLMETHOD = "FLME";
+
+	public static readonly string FLOOD = "FLOO";
+
+	public static readonly string DESIGN = "DESI";
+
+	public static readonly string FLAPPROACH = "FLAP";
+
+	public static readonly string CSMETHOD = "CSME";
+
+	public static readonly string CSMAX = "CSMA";
+
+	public static readonly string CSDESIGN = "CSDE";
+
+	public static readonly string CSAPPROACH = "CSAP";
+
+	public static readonly string SULZER = "SULZ";
+
+	public static readonly string CAPACITY = "CAPA";
+
+	public static readonly string SPAREA = "SPAR";
+
+	public static readonly string VOIDFRACTION = "VOID";
+
+	public static readonly string CSURFACETENSION = "CSUR";
+
+	public static readonly string FLEXE = "FLEXE";
+
+	public static readonly string FLEXI = "FLEXI";
+
+	public static readonly string INTALOX = "INTA";
+
+	public static readonly string KGWIREGAUZE = "KGWI";
+
+	public static readonly string TOLERANCE = "TOLE";
+
+	public static readonly string EQUILBRIUM = "EQUI";
+
+	public static readonly string VLLECHECK = "VLLECHECK";
+
+	public static readonly string CHECK = "CHEC";
+
+	public static readonly string RFVLLECHECK = "RFVL";
+
+	public static readonly string HEAT = "HEAT";
+
+	public static readonly string DPIN = "DPIN";
+
+	public static readonly string POINTS = "POIN";
+
+	public static readonly string THERMAL = "THER";
+
+	public static readonly string COCURRENT = "COCU";
+
+	public static readonly string COUNTERCURRENT = "COUN";
+
+	public static readonly string CONCENTRATION = "CONC";
+
+	public static readonly string PARTIALPRESSURE = "PART";
+
+	public static readonly string ACTIVITY = "ACTI";
+
+	public static readonly string RUNGEKUTTA = "RUNG";
+
+	public static readonly string GEAR = "GEAR,";
+
+	public static readonly string LSODA = "LSOD";
+
+	public static readonly string KINETICS = "KINE";
+
+	public static readonly string PDIAM = "PDIA";
+
+	public static readonly string PORO = "PORO";
+
+	public static readonly string SPHE = "SPHE,";
+
+	public static readonly string PSHAPE = "PSHA";
+
+	public static readonly string PLENGTH = "PLEN";
+
+	public static readonly string NSTEPS = "NSTE,";
+
+	public static readonly string STEPSIZE = "STEP";
+
+	public static readonly string TOUT = "TOUT";
+
+	public static readonly string TIN = "TIN,";
+
+	public static readonly string HTCO = "HTCO";
+
+	public static readonly string TSTR = "TSTR";
+
+	public static readonly string ACTIVATION = "ACTI,";
+
+	public static readonly string PEXP = "PEXP";
+
+	public static readonly string TEXPONENT = "TEXP";
+
+	public static readonly string KORDER = "KORD";
+
+	public static readonly string TPROFILE = "TPRO";
+
+	public static readonly string PPROFILE = "PPRO";
+
+	public static readonly string OPENPIPE = "OPEN";
+
+	public static readonly string CATALYST = "CATA";
+
+	public static readonly string PLUGFLOW = "PLUG";
+
+	public static readonly string SPHERICAL = "SPHE";
+
+	public static readonly string VOLUMN = "VOLU";
+
+	public static readonly string VMax = "VMAX";
+
+	public static readonly string TMax = "TMAX";
+
+	public static readonly string TMin = "TMIN";
+
+	public static readonly string NONVOLATILE = "NONV";
+
+	public static readonly string CHARGE = "CHAR";
+
+	public static readonly string BTRIAL = "BTRI";
+
+	public static readonly string DERIV = "DERI";
+
+	public static readonly string VESTIMATE = "VESTI";
+
+	public static readonly string ENTH = "ENTH";
+
+	public static readonly string CSTReactor = "CSTR";
+
+	public static readonly string FESTIMATE = "FEST";
+
+	public static readonly string CRYSTALLIZER = "CRYS";
+
+	public static readonly string FCENTRIFUGE = "FCEN";
+
+	public static readonly string CONTROL = "CONT";
+
+	public static readonly string DISSOLVER = "DISS";
+
+	public static readonly string MELTER = "MELT";
+
+	public static readonly string REFSTREAM = "REFS";
+
+	public static readonly string EVALUATE = "EVAL";
+
+	public static readonly string IPLOT = "IPLO";
+
+	public static readonly string CPLOT = "CPLO";
+
+	public static readonly string VERSION = "VERS";
+
+	public static readonly string PSTART = "PSTA";
+
+	public static readonly string STREAM = "STR";
+
+	public static readonly string INHIBITOR = "INHI";
+
+	public static readonly string IPRESSURE = "IPRE";
+
+	public static readonly string MAXPRESSURE = "MAXP";
+
+	public static readonly string ITEMP = "ITEM";
+
+	public static readonly string MAXTEMP = "MAXT";
+
+	public static readonly string PEST = "PEST";
+
+	public static readonly string XVALUES = "XVAL";
+
+	public static readonly string DELX = "DELX";
+
+	public static readonly string BVLE = "BVLE";
+
+	public static readonly string HYDRATE = "HYDR";
+
+	public static readonly string IPRINT = "IPRI";
+
+	public static readonly string NOPRINT = "NOPR";
+
+	public static readonly string SOLVE = "SOLV";
+
+	public static readonly string CONTINUE = "CONT";
+
+	public static readonly string RETURNUNIT = "RETU";
+
+	public static readonly string CPARAMETER = "CPAR";
+
+	public static readonly string HCURVE = "HCUR";
+
+	public static readonly string STREAMCALCULATOR = "STCA";
+
+	public static readonly string DEWTEMPERATURE = "DEWT";
+
+	public static readonly string BUBBLETEMPERATURE = "BUBT";
+
+	public static readonly string DTBB = "DTBB";
+
+	public static readonly string DTAD = "DTAD";
+
+	public static readonly string OVERHEADFRACTION = "FOVHD";
+
+	public static readonly string BOTTOMFRACTION = "FBTMS";
+
+	public static readonly string OVERHEADRATE = "ROVHD";
+
+	public static readonly string BOTTOMRATE = "RBTMS";
+
+	public static readonly string OVERHEADCOMP = "XOVHD";
+
+	public static readonly string BOTTOMCOMP = "XBTMS";
+
+	public static readonly string PRODUCTFRACTION = "FPROD";
+
+	public static readonly string PRODUCTRATE = "RPROD";
+
+	public static readonly string PRODUCTCOMP = "XPROD";
+
+	public static readonly string MAKEUP = "MAKE";
+
+	public static readonly string VESSEL = "VESSEL";
+
+	public static readonly string RELIEFVALVE = "RELIEFVALVE";
+
+	public static readonly string VOLUME = "VOLU";
+
+	public static readonly string WEIGHT = "WEIG";
+
+	public static readonly string CP = "CP";
+
+	public static readonly string HOLDUP = "HOLD";
+
+	public static readonly string VOLFACTOR = "VOLF";
+
+	public static readonly string LIQHEIGHT = "LIQH";
+
+	public static readonly string HORIZONTAL = "HORI";
+
+	public static readonly string VERTICAL = "VERT";
+
+	public static readonly string PFINAL = "PFIN";
+
+	public static readonly string FINALTIME = "FINA";
+
+	public static readonly string DTIME = "DTIM";
+
+	public static readonly string STEPTIME = "STEP";
+
+	public static readonly string RELIEFTIME = "RELIEFTIME";
+
+	public static readonly string PRELIEF = "PREL";
+
+	public static readonly string VTOL = "VTOL";
+
+	public static readonly string MAXSTEPS = "MAXS";
+
+	public static readonly string POPT = "POPT";
+
+	public static readonly string CSTEP = "CSTE";
+
+	public static readonly string CSIZE = "CSIZ";
+
+	public static readonly string CONSTANT = "CONS";
+
+	public static readonly string PBACK = "PBAC";
+
+	public static readonly string CONC = "CONC";
+
+	public static readonly string CV = "CV";
+
+	public static readonly string CF = "CF";
+
+	public static readonly string QFAC = "QFAC";
+
+	public static readonly string IWAREA = "IWAR";
+
+	public static readonly string AFAC = "AFAC";
+
+	public static readonly string HTAREA = "HTAR";
+
+	public static readonly string HTCFAC = "HTCF";
+
+	public static readonly string HTC = "HTC";
+
+	public static readonly string HTCVAP = "HTCV";
+
+	public static readonly string HTCLIQ = "HTCL";
+
+	public static readonly string DEPRESSURE = "DEPR";
+}
+public static class CThermo
+{
+	public static readonly string SET = "SET";
+
+	public static readonly string L1KEY = "L1KE";
+
+	public static readonly string L2KEY = "L2KE";
+
+	public static readonly string SLLE = "SLLE";
+
+	public static readonly string VLE = "VLE";
+
+	public static readonly string LLE = "LLE";
+
+	public static readonly string VLLE = "VLLE";
+
+	public static readonly string RVPMETHOD = "RVPM";
+
+	public static readonly string TVPMETHOD = "TVPM";
+
+	public static readonly string TRANSPORT = "TRAN";
+
+	public static readonly string FLPO = "FLPO";
+
+	public static readonly string METHOD = "METH";
+
+	public static readonly string WATER = "WATE";
+
+	public static readonly string KVALUE = "KVAL";
+
+	public static readonly string DIFFUSIVITY = "DIFF";
+
+	public static readonly string DECANT = "DECA";
+
+	public static readonly string SOLUBILITY = "SOLU";
+
+	public static readonly string PROPERTY = "PROP";
+
+	public static readonly string KDATA = "KDAT";
+
+	public static readonly string BWRS = "BWRS";
+
+	public static readonly string HEXA = "HEXA";
+
+	public static readonly string LKP = "LKP";
+
+	public static readonly string HOCV = "HOCV";
+
+	public static readonly string TVIRIAL = "TVIR";
+
+	public static readonly string IDIMER = "IDIM";
+
+	public static readonly string RK1 = "RK1";
+
+	public static readonly string RK2 = "RK2";
+
+	public static readonly string SRK = "SRK";
+
+	public static readonly string SRKKD = "SRKK";
+
+	public static readonly string SRKP = "SRKP";
+
+	public static readonly string PRP = "PRP";
+
+	public static readonly string SRKM = "SRKM";
+
+	public static readonly string PRM = "PRM";
+
+	public static readonly string SRKH = "SRKH";
+
+	public static readonly string PRH = "PRH";
+
+	public static readonly string SRKS = "SRKS";
+
+	public static readonly string NRTL = "NRTL";
+
+	public static readonly string UNIQUAC = "UNIQ";
+
+	public static readonly string WILSON = "WILS";
+
+	public static readonly string VANLAAR = "VANL";
+
+	public static readonly string MARGULES = "MARG";
+
+	public static readonly string FLORY = "FLOR";
+
+	public static readonly string AZEOTROPE = "AZEO";
+
+	public static readonly string INFINITE = "INFI";
+
+	public static readonly string SYSTEM = "SYST";
+
+	public static readonly string DEFAULT = "DEFA";
+
+	public static readonly string ENTHALPY = "ENTH";
+
+	public static readonly string DENSITY = "DENS";
+
+	public static readonly string VISCOSITY = "VISC";
+
+	public static readonly string SYSTEM_key = "SYSTEM";
+
+	public static readonly string KVALUE_key = "KVALUE";
+
+	public static readonly string PHI = "PHI";
+
+	public static readonly string HENRY = "HENR";
+
+	public static readonly string ENTROPY = "ENTR";
+
+	public static readonly string CONDUCTIVITY = "COND";
+
+	public static readonly string SURFACE = "SURF";
+}
+public static class CReactionData
+{
+	public static readonly string ID = "ID";
+
+	public static readonly string NAME = "NAME";
+
+	public static readonly string STOICHIOMETRY = "STOI";
+
+	public static readonly string HORX = "HORX";
+
+	public static readonly string HEAT = "HEAT";
+
+	public static readonly string REFTEMP = "REFT";
+
+	public static readonly string REFCOMP = "REFC";
+
+	public static readonly string REFPHASE = "REFP";
+
+	public static readonly string KINETIC = "KINE";
+
+	public static readonly string PEXP = "PEXP";
+
+	public static readonly string ACTIVATION = "ACTI";
+
+	public static readonly string TEXPONENT = "TEXP";
+
+	public static readonly string KPHASE = "KPHA";
+
+	public static readonly string DEFAULT = "DEFA";
+
+	public static readonly string COMPONENT = "COMP";
+
+	public static readonly string KBASIS = "KBAS";
+
+	public static readonly string VAPOR = "VAPO";
+
+	public static readonly string LIQUID = "LIQU";
+
+	public static readonly string KORDER = "KORD";
+
+	public static readonly string EQUILIBRIUM = "EQUI";
+
+	public static readonly string EPHASE = "EPHAS";
+
+	public static readonly string EBASIS = "EBAS";
+
+	public static readonly string EEXPONENT = "EEXP";
+}
+public enum ValueBasis
+{
+	WT,
+	LV,
+	GV,
+	M
+}
+public static class CurveInterpolation
+{
+	public static double GetInterpolationDatum(double[] ExperimentalX, double[] ExperimentalY, double x0)
+	{
+		double[] array = new double[3];
+		double[] array2 = new double[3];
+		if (ExperimentalX.Length > 2)
+		{
+			if (x0 <= ExperimentalX[2])
+			{
+				for (int i = 0; i <= 2; i++)
+				{
+					array[i] = ExperimentalX[i];
+					array2[i] = ExperimentalY[i];
+				}
+			}
+			else if (x0 >= ExperimentalX[ExperimentalX.Length - 3])
+			{
+				for (int j = 0; j <= 2; j++)
+				{
+					array[j] = ExperimentalX[ExperimentalX.Length - 3 + j];
+					array2[j] = ExperimentalY[ExperimentalX.Length - 3 + j];
+				}
+			}
+			else
+			{
+				int num = 0;
+				for (int k = 0; k <= ExperimentalX.Length - 1; k++)
+				{
+					if (x0 >= ExperimentalX[k])
+					{
+						num = k;
+					}
+				}
+				for (int l = 0; l <= 2; l++)
+				{
+					array[l] = ExperimentalX[num + l];
+					array2[l] = ExperimentalY[num + l];
+				}
+			}
+			return LagrangeInterpolation(array, array2, x0, 2);
+		}
+		if (ExperimentalX.Length == 2)
+		{
+			return LagrangeInterpolation(ExperimentalX, ExperimentalY, x0, 1);
+		}
+		DebugPrint.OutputDebugString(DebugLevel.BuildHYSYSObject, WarningLevel.Warning, "No Enough Points To Interpolate");
+		return 0.0;
+	}
+
+	public static double LagrangeInterpolation(double[] x, double[] y, double x0, int order)
+	{
+		double num = 0.0;
+		for (int i = 0; i <= order; i++)
+		{
+			double num2 = 1.0;
+			for (int j = 0; j <= order; j++)
+			{
+				if (i != j)
+				{
+					num2 = num2 * (x0 - x[j]) / (x[i] - x[j]);
+				}
+			}
+			num += y[i] * num2;
+		}
+		return num;
+	}
+}
+public enum DebugLevel
+{
+	Parse = 1,
+	BuildP2Object = 2,
+	BuildHYSYSObject = 4,
+	Convert = 8,
+	BuildHYSYSObjects = 0x10,
+	TestHYSYSObjects = 0x20,
+	BuildHYSYSCase = 0x40
+}
+public enum WarningLevel
+{
+	Notes = 1,
+	Warning = 2,
+	Error = 4
+}
+public enum ShowWarningLevel
+{
+	Notes = 1,
+	Warning = 2,
+	Error = 4,
+	All = 7
+}
+public static class DebugPrint
+{
+	private static BitmapSource biNotes;
+
+	private static BitmapSource biWarning;
+
+	private static BitmapSource biError;
+
+	private static DataTable dtOutput;
+
+	public static long DebugLevel { get; set; }
+
+	public static RichTextBox OutputText { get; set; }
+
+	public static ShowWarningLevel ShowLevel { get; set; }
+
+	static DebugPrint()
+	{
+		DebugLevel = 255L;
+		ShowLevel = ShowWarningLevel.All;
+		dtOutput = new DataTable();
+		dtOutput.Columns.Add("DebugLevel", typeof(DebugLevel));
+		dtOutput.Columns.Add("WarningLevel", typeof(WarningLevel));
+		dtOutput.Columns.Add("Message", typeof(string));
+		ResourceManager resourceManager = new ResourceManager("Common.resource", Assembly.GetExecutingAssembly());
+		biNotes = Imaging.CreateBitmapSourceFromHBitmap(((Bitmap)resourceManager.GetObject("notes.png")).GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+		biWarning = Imaging.CreateBitmapSourceFromHBitmap(((Bitmap)resourceManager.GetObject("warning.png")).GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+		biError = Imaging.CreateBitmapSourceFromHBitmap(((Bitmap)resourceManager.GetObject("error.png")).GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+	}
+
+	public static void Clear(bool LeaveParse)
+	{
+		if (LeaveParse)
+		{
+			int num = 1;
+			int num2 = dtOutput.Rows.Count;
+			for (int i = 0; i < num2; i++)
+			{
+				DataRow dataRow = dtOutput.Rows[i];
+				if (((int)dataRow["DebugLevel"] & num) == 0)
+				{
+					dtOutput.Rows.Remove(dataRow);
+					i--;
+					num2--;
+				}
+			}
+			Refresh();
+		}
+		else
+		{
+			dtOutput.Rows.Clear();
+		}
+	}
+
+	private static void Add2DataTable(DebugLevel level, WarningLevel warning, string strMessage)
+	{
+		DataRow dataRow = dtOutput.NewRow();
+		dataRow["DebugLevel"] = level;
+		dataRow["WarningLevel"] = warning;
+		dataRow["Message"] = strMessage;
+		dtOutput.Rows.Add(dataRow);
+	}
+
+	public static void Refresh()
+	{
+		if (OutputText == null)
+		{
+			return;
+		}
+		OutputText.Document.Blocks.Clear();
+		int showLevel = (int)ShowLevel;
+		foreach (DataRow row in dtOutput.Rows)
+		{
+			_ = (DebugLevel)row["DebugLevel"];
+			WarningLevel warningLevel = (WarningLevel)row["WarningLevel"];
+			string text = row["Message"].ToString();
+			int num = (int)warningLevel;
+			if ((showLevel & num) != 0)
+			{
+				System.Windows.Controls.Image image = new System.Windows.Controls.Image();
+				Paragraph paragraph = new Paragraph();
+				switch (warningLevel)
+				{
+				case WarningLevel.Notes:
+					image.Source = biNotes;
+					paragraph.Foreground = System.Windows.Media.Brushes.Black;
+					break;
+				case WarningLevel.Warning:
+					image.Source = biWarning;
+					paragraph.Foreground = System.Windows.Media.Brushes.Blue;
+					break;
+				case WarningLevel.Error:
+					image.Source = biError;
+					paragraph.Foreground = System.Windows.Media.Brushes.Red;
+					break;
+				}
+				image.Width = 10.0;
+				image.Margin = new Thickness(0.0, 0.0, 3.0, 0.0);
+				paragraph.Inlines.Add(image);
+				paragraph.Inlines.Add(text);
+				OutputText.Document.Blocks.Add(paragraph);
+				OutputText.ScrollToEnd();
+			}
+		}
+	}
+
+	public static void OutputDebugString(DebugLevel level, WarningLevel warning, string strMessage)
+	{
+		if ((long)((ulong)DebugLevel & (ulong)level) <= 0L || OutputText == null)
+		{
+			return;
+		}
+		if (((uint)ShowLevel & (uint)warning) != 0)
+		{
+			System.Windows.Controls.Image image = new System.Windows.Controls.Image();
+			Paragraph paragraph = new Paragraph();
+			switch (warning)
+			{
+			case WarningLevel.Notes:
+				image.Source = biNotes;
+				paragraph.Foreground = System.Windows.Media.Brushes.Black;
+				break;
+			case WarningLevel.Warning:
+				image.Source = biWarning;
+				paragraph.Foreground = System.Windows.Media.Brushes.Blue;
+				break;
+			case WarningLevel.Error:
+				image.Source = biError;
+				paragraph.Foreground = System.Windows.Media.Brushes.Red;
+				break;
+			}
+			image.Width = 10.0;
+			image.Margin = new Thickness(0.0, 0.0, 3.0, 0.0);
+			paragraph.Inlines.Add(image);
+			paragraph.Inlines.Add(strMessage);
+			OutputText.Document.Blocks.Add(paragraph);
+			OutputText.ScrollToEnd();
+		}
+		Add2DataTable(level, warning, strMessage);
+	}
+
+	public static void JumpToOutput(string strMessage)
+	{
+	}
+}
+public class DEFINE
+{
+	private int _trayNO = -1;
+
+	public string P2DefineExpression { get; set; }
+
+	public string MainProperty { get; set; }
+
+	public string FirstRefType { get; set; }
+
+	public string FirstRefID { get; set; }
+
+	public string FirstRefProperty { get; set; }
+
+	public int FirstRefCStartComp { get; set; }
+
+	public int FirstRefCEndComp { get; set; }
+
+	public string OperatorName { get; set; }
+
+	public string Value { get; set; }
+
+	public string SecondRefType { get; set; }
+
+	public string SecondRefID { get; set; }
+
+	public string SecondRefProperty { get; set; }
+
+	public int SecondRefCStartComp { get; set; }
+
+	public int SecondRefCEndComp { get; set; }
+
+	public bool bGlobalDefine { get; set; }
+
+	public string MainObjID { get; set; }
+
+	public bool bDryRate { get; set; }
+
+	public bool bConverted { get; set; }
+
+	public bool bLinkToCalculator { get; set; }
+
+	public string PHASE { get; set; }
+
+	public int TrayNumber
+	{
+		get
+		{
+			return _trayNO;
+		}
+		set
+		{
+			_trayNO = value;
+		}
+	}
+
+	public string sColumnSpecName { get; set; }
+
+	public DEFINE()
+	{
+	}
+
+	public DEFINE(string DefineExpress, string BlockName, string ID)
+	{
+		MainObjID = ID;
+		P2DefineExpression = DefineExpress;
+		int num = DefineExpress.IndexOf(" AS ");
+		if (num > 0)
+		{
+			string Type = string.Empty;
+			string ID2 = string.Empty;
+			string Prop = string.Empty;
+			bool bWetOrDry = false;
+			MainProperty = DefineExpress.Substring(0, num).Trim();
+			string text = DefineExpress.Substring(num + 4).Trim();
+			OperatorName = GetOperator(text);
+			if (!string.IsNullOrEmpty(OperatorName))
+			{
+				string[] array = text.Split(new string[1] { OperatorName }, StringSplitOptions.RemoveEmptyEntries);
+				if (array.Length == 2)
+				{
+					SetValue(array[0].ToString().Trim(), ref Type, ref ID2, ref Prop, ref bWetOrDry, bFirst: true);
+					FirstRefType = Type;
+					FirstRefID = ID2;
+					FirstRefProperty = Prop;
+					if (!bDryRate)
+					{
+						bDryRate = bWetOrDry;
+					}
+					Type = string.Empty;
+					ID2 = string.Empty;
+					Prop = string.Empty;
+					if (array[1].StartsWith(","))
+					{
+						array[1] = array[1].Remove(0, 1);
+					}
+					SetValue(array[1].ToString().Trim(), ref Type, ref ID2, ref Prop, ref bWetOrDry, bFirst: false);
+					SecondRefType = Type;
+					SecondRefID = ID2;
+					SecondRefProperty = Prop;
+					if (!bDryRate)
+					{
+						bDryRate = bWetOrDry;
+					}
+				}
+			}
+			else
+			{
+				SetValue(text, ref Type, ref ID2, ref Prop, ref bWetOrDry, bFirst: true);
+				FirstRefType = Type;
+				FirstRefID = ID2;
+				FirstRefProperty = Prop;
+				SecondRefType = string.Empty;
+				SecondRefID = string.Empty;
+				SecondRefProperty = string.Empty;
+				bDryRate = bWetOrDry;
+			}
+			DefineLinktoCalculator();
+		}
+		else
+		{
+			DebugPrint.OutputDebugString(DebugLevel.BuildP2Object, WarningLevel.Notes, $"Build P2 {BlockName}(ID={ID}): wrong DEFINE expression \"{DefineExpress}\"");
+		}
+	}
+
+	private void DefineLinktoCalculator()
+	{
+		if ((!string.IsNullOrEmpty(FirstRefType.ToUpper().Trim()) && FirstRefType.ToUpper().Trim().StartsWith("CALC")) || (!string.IsNullOrEmpty(SecondRefType.ToUpper().Trim()) && SecondRefType.ToUpper().Trim().StartsWith("CALC")))
+		{
+			bLinkToCalculator = true;
+		}
+	}
+
+	private void SetValue(string strExpress, ref string Type, ref string ID, ref string Prop, ref bool bWetOrDry, bool bFirst)
+	{
+		if (strExpress.ToUpper().Contains("COMP="))
+		{
+			strExpress = RemoveComponentDef(strExpress, bFirst);
+		}
+		string[] array = ParseUtilty.CutBySpaceOrComma(strExpress);
+		if (array.Length == 2)
+		{
+			string text = array[0].ToString().Trim();
+			string text2 = array[1].ToString().Trim();
+			if (text.Contains("="))
+			{
+				string[] array2 = ParseUtilty.CutByEqual(text);
+				Type = array2[0].ToString().Trim();
+				ID = array2[1].ToString().Trim();
+				Prop = text2;
+			}
+			else
+			{
+				string[] array2 = ParseUtilty.CutByEqual(text2);
+				Type = array2[0].ToString().Trim();
+				ID = array2[1].ToString().Trim();
+				Prop = text;
+			}
+			return;
+		}
+		if (array.Length == 1)
+		{
+			Prop = array[0].ToString().Trim();
+			return;
+		}
+		string[] array3 = array;
+		foreach (string text3 in array3)
+		{
+			if (text3.Contains("="))
+			{
+				if (text3.ToUpper().StartsWith("PHASE"))
+				{
+					PHASE = ParseUtilty.GetStringValue(text3);
+					continue;
+				}
+				if (text3.ToUpper().StartsWith("TRAY"))
+				{
+					TrayNumber = int.Parse(ParseUtilty.GetStringValue(text3));
+					continue;
+				}
+				string[] array2 = ParseUtilty.CutByEqual(text3);
+				Type = array2[0].ToString().Trim();
+				ID = array2[1].ToString().Trim();
+			}
+			else if (text3.ToUpper() == "WET")
+			{
+				bWetOrDry = false;
+			}
+			else if (text3.ToUpper() == "DRY")
+			{
+				bWetOrDry = true;
+			}
+			else
+			{
+				Prop = text3;
+			}
+		}
+	}
+
+	public double GetValueAsDouble()
+	{
+		if (double.TryParse(Value, out var result))
+		{
+			return result;
+		}
+		throw new Exception("Failed ot parse Value of " + Value + " to double");
+	}
+
+	public void SetGlobalProperty(string ID, List<string> Feeds, List<string> Products, List<string> SubBlocks, List<string> RealProducts)
+	{
+		if (!string.IsNullOrEmpty(SecondRefType) && SecondRefType != null)
+		{
+			if (SecondRefType.StartsWith("CALC"))
+			{
+				bGlobalDefine = true;
+			}
+			else if (SecondRefID != ID && !Feeds.Contains(SecondRefID) && !Products.Contains(SecondRefID) && !SubBlocks.Contains(SecondRefID) && !RealProducts.Contains(SecondRefID))
+			{
+				bGlobalDefine = true;
+			}
+		}
+	}
+
+	public void SetGlobalProperty(string ID, List<string> Feeds, List<string> Products)
+	{
+		if (string.IsNullOrEmpty(FirstRefID))
+		{
+			bGlobalDefine = true;
+		}
+		else if (SecondRefType.StartsWith("CALC"))
+		{
+			bGlobalDefine = true;
+		}
+		else if ((FirstRefID != ID && !Feeds.Contains(FirstRefID) && !Products.Contains(FirstRefID)) || (SecondRefID != ID && !Feeds.Contains(SecondRefID) && !Products.Contains(SecondRefID)))
+		{
+			bGlobalDefine = true;
+		}
+	}
+
+	private string GetOperator(string strExpress)
+	{
+		if (strExpress.Contains("PLUS,") || strExpress.Contains("PLUS "))
+		{
+			return "PLUS";
+		}
+		if (strExpress.Contains("SUM,") || strExpress.Contains("SUM "))
+		{
+			return "SUM";
+		}
+		if (strExpress.Contains("ADD,") || strExpress.Contains("ADD "))
+		{
+			return "ADD";
+		}
+		if (strExpress.Contains("MINUS,") || strExpress.Contains("MINUS "))
+		{
+			return "MINUS";
+		}
+		if (strExpress.Contains("MINU,") || strExpress.Contains("MINU "))
+		{
+			return "MINU";
+		}
+		if (strExpress.Contains("DIFF,") || strExpress.Contains("DIFF "))
+		{
+			return "DIFF";
+		}
+		if (strExpress.Contains("SUBT,") || strExpress.Contains("SUBT "))
+		{
+			return "SUBT";
+		}
+		if (strExpress.Contains("TIMES,") || strExpress.Contains("TIMES "))
+		{
+			return "TIMES";
+		}
+		if (strExpress.Contains("TIME,") || strExpress.Contains("TIME "))
+		{
+			return "TIME";
+		}
+		if (strExpress.Contains("MULTIPLY,") || strExpress.Contains("MULTIPLY "))
+		{
+			return "MULTIPLY";
+		}
+		if (strExpress.Contains("MULT,") || strExpress.Contains("MULT "))
+		{
+			return "MULT";
+		}
+		if (strExpress.ToUpper().Contains("MULTIPLIEDBY,") || strExpress.ToUpper().Contains("MULTIPLIEDBY "))
+		{
+			return "MULTIPLIEDBY";
+		}
+		if (strExpress.Contains("DIVIDE,") || strExpress.Contains("DIVIDE "))
+		{
+			return "DIVIDE";
+		}
+		if (strExpress.Contains("DIVI,") || strExpress.Contains("DIVI "))
+		{
+			return "DIVI";
+		}
+		if (strExpress.Contains("RATIO,") || strExpress.Contains("RATIO "))
+		{
+			return "RATIO";
+		}
+		if (strExpress.Contains("RATI,") || strExpress.Contains("RATI "))
+		{
+			return "RATI";
+		}
+		if (strExpress.Contains("OVER,") || strExpress.Contains("OVER "))
+		{
+			return "OVER";
+		}
+		return null;
+	}
+
+	private string RemoveComponentDef(string strExpress, bool bFirst)
+	{
+		_ = string.Empty;
+		MatchCollection matchCollection = new Regex("COMP\\s*=\\s*(\\d+),\\s*(\\d+)", RegexOptions.IgnoreCase).Matches(strExpress);
+		Match match = null;
+		if (matchCollection.Count == 1)
+		{
+			match = matchCollection[0];
+			return setComponentData(match, strExpress, bFirst);
+		}
+		matchCollection = new Regex("COMPONENT\\s*=\\s*(\\d+),\\s*(\\d+)", RegexOptions.IgnoreCase).Matches(strExpress);
+		if (matchCollection.Count == 1)
+		{
+			match = matchCollection[0];
+			return setComponentData(match, strExpress, bFirst);
+		}
+		matchCollection = new Regex("COMP\\s*=\\s*(\\d+)", RegexOptions.IgnoreCase).Matches(strExpress);
+		if (matchCollection.Count == 1)
+		{
+			match = matchCollection[0];
+			return setComponentData(match, strExpress, bFirst).Trim();
+		}
+		matchCollection = new Regex("COMPONENT\\s*=\\s*(\\d+)", RegexOptions.IgnoreCase).Matches(strExpress);
+		if (matchCollection.Count == 1)
+		{
+			match = matchCollection[0];
+			return setComponentData(match, strExpress, bFirst);
+		}
+		return strExpress;
+	}
+
+	private string setComponentData(Match match, string strExpress, bool bFirst)
+	{
+		if (bFirst)
+		{
+			FirstRefCStartComp = int.Parse(match.Groups[1].Value);
+			if (match.Groups.Count == 3)
+			{
+				FirstRefCEndComp = int.Parse(match.Groups[2].Value);
+			}
+			else if (match.Groups.Count == 2)
+			{
+				FirstRefCEndComp = FirstRefCStartComp;
+			}
+		}
+		else
+		{
+			SecondRefCStartComp = int.Parse(match.Groups[1].Value);
+			if (match.Groups.Count == 3)
+			{
+				SecondRefCEndComp = int.Parse(match.Groups[2].Value);
+			}
+			else if (match.Groups.Count == 2)
+			{
+				SecondRefCEndComp = SecondRefCStartComp;
+			}
+		}
+		int num = strExpress.IndexOf(match.Groups[0].Value);
+		int num2 = num + match.Groups[0].Value.Length;
+		if (num2 < strExpress.Length)
+		{
+			num2++;
+		}
+		return strExpress.Remove(num, num2 - num);
+	}
+}
+public class DetailMessageBox : Window, IComponentConnector
+{
+	internal DetailMessageBox detailWin;
+
+	internal TextBlock Message;
+
+	internal TextBlock Description;
+
+	internal Expander expander;
+
+	internal TextBlock MoreDeatail;
+
+	internal Button Ok;
+
+	private bool _contentLoaded;
+
+	public DetailMessageBox()
+	{
+		InitializeComponent();
+	}
+
+	public DetailMessageBox(string caption, string message, string description, string detailDescrption)
+	{
+		InitializeComponent();
+		detailWin.Title = caption;
+		Message.Text = message;
+		Description.Text = description;
+		MoreDeatail.Text = detailDescrption;
+		expander.IsExpanded = true;
+		base.Loaded += DetailMessageBox_Loaded;
+	}
+
+	private void DetailMessageBox_Loaded(object sender, RoutedEventArgs e)
+	{
+		expander.IsExpanded = false;
+	}
+
+	private void Ok_Click(object sender, RoutedEventArgs e)
+	{
+		Close();
+	}
+
+	private void Expander_Expanded(object sender, RoutedEventArgs e)
+	{
+		if (MoreDeatail.ActualHeight + 210.0 > 375.0)
+		{
+			detailWin.Height = 375.0;
+		}
+		else
+		{
+			detailWin.Height = MoreDeatail.ActualHeight + 210.0;
+		}
+	}
+
+	private void Expander_Collapsed(object sender, RoutedEventArgs e)
+	{
+		detailWin.Height = 200.0;
+	}
+
+	[DebuggerNonUserCode]
+	[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+	public void InitializeComponent()
+	{
+		if (!_contentLoaded)
+		{
+			_contentLoaded = true;
+			Uri resourceLocator = new Uri("/Common;component/detailmessagebox/detailmessagebox.xaml", UriKind.Relative);
+			Application.LoadComponent(this, resourceLocator);
+		}
+	}
+
+	[DebuggerNonUserCode]
+	[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+	void IComponentConnector.Connect(int connectionId, object target)
+	{
+		switch (connectionId)
+		{
+		case 1:
+			detailWin = (DetailMessageBox)target;
+			break;
+		case 2:
+			Message = (TextBlock)target;
+			break;
+		case 3:
+			Description = (TextBlock)target;
+			break;
+		case 4:
+			expander = (Expander)target;
+			expander.Expanded += Expander_Expanded;
+			expander.Collapsed += Expander_Collapsed;
+			break;
+		case 5:
+			MoreDeatail = (TextBlock)target;
+			break;
+		case 6:
+			Ok = (Button)target;
+			Ok.Click += Ok_Click;
+			break;
+		default:
+			_contentLoaded = true;
+			break;
+		}
+	}
+}
+public static class P2Globalization
+{
+	private static ResourceManager resourceManager;
+
+	static P2Globalization()
+	{
+		resourceManager = new ResourceManager("Common.Globalization", Assembly.GetAssembly(typeof(P2Globalization)));
+	}
+
+	public static string GetString(string ID)
+	{
+		string result = "";
+		try
+		{
+			result = resourceManager.GetString(ID);
+		}
+		catch (Exception ex)
+		{
+			_ = ex.Message;
+		}
+		return result;
+	}
+}
+[GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
+[DebuggerNonUserCode]
+[CompilerGenerated]
+public class Globalization
+{
+	private static ResourceManager resourceMan;
+
+	private static CultureInfo resourceCulture;
+
+	[EditorBrowsable(EditorBrowsableState.Advanced)]
+	public static ResourceManager ResourceManager
+	{
+		get
+		{
+			if (resourceMan == null)
+			{
+				resourceMan = new ResourceManager("Common.Globalization", typeof(Globalization).Assembly);
+			}
+			return resourceMan;
+		}
+	}
+
+	[EditorBrowsable(EditorBrowsableState.Advanced)]
+	public static CultureInfo Culture
+	{
+		get
+		{
+			return resourceCulture;
+		}
+		set
+		{
+			resourceCulture = value;
+		}
+	}
+
+	public static string AddColdPropertySpecificationFailed => ResourceManager.GetString("AddColdPropertySpecificationFailed", resourceCulture);
+
+	public static string AddComponentFlowSpecificationFailed => ResourceManager.GetString("AddComponentFlowSpecificationFailed", resourceCulture);
+
+	public static string AddComponentFractionSpecificationFailed => ResourceManager.GetString("AddComponentFractionSpecificationFailed", resourceCulture);
+
+	public static string AddComponentRatioSpecificationFailed => ResourceManager.GetString("AddComponentRatioSpecificationFailed", resourceCulture);
+
+	public static string AddComponentRecoverySpecificationFailed => ResourceManager.GetString("AddComponentRecoverySpecificationFailed", resourceCulture);
+
+	public static string AddComponents => ResourceManager.GetString("AddComponents", resourceCulture);
+
+	public static string AddCutPointSpecificationFailed => ResourceManager.GetString("AddCutPointSpecificationFailed", resourceCulture);
+
+	public static string AddDrawRateSpecificationFailed => ResourceManager.GetString("AddDrawRateSpecificationFailed", resourceCulture);
+
+	public static string AddDTSpecificationFailed => ResourceManager.GetString("AddDTSpecificationFailed", resourceCulture);
+
+	public static string AddDutyRatioSpecificationFailed => ResourceManager.GetString("AddDutyRatioSpecificationFailed", resourceCulture);
+
+	public static string AddDutySpecificationFailed => ResourceManager.GetString("AddDutySpecificationFailed", resourceCulture);
+
+	public static string AddEndPointBasedColumnCutPointSpecificationFailed => ResourceManager.GetString("AddEndPointBasedColumnCutPointSpecificationFailed", resourceCulture);
+
+	public static string AddEndPointBasedColumnGapSpecificationFailed => ResourceManager.GetString("AddEndPointBasedColumnGapSpecificationFailed", resourceCulture);
+
+	public static string AddFeedRatioSpecificationFailed => ResourceManager.GetString("AddFeedRatioSpecificationFailed", resourceCulture);
+
+	public static string AddGapCutPointSpecificationFailed => ResourceManager.GetString("AddGapCutPointSpecificationFailed", resourceCulture);
+
+	public static string AddGlobalDefineFailed => ResourceManager.GetString("AddGlobalDefineFailed", resourceCulture);
+
+	public static string AddGlobalSpecificationFailed => ResourceManager.GetString("AddGlobalSpecificationFailed", resourceCulture);
+
+	public static string AddHeaterCoolerDTSpecificationFailed => ResourceManager.GetString("AddHeaterCoolerDTSpecificationFailed", resourceCulture);
+
+	public static string AddHeatLossGainSpecificationFailed => ResourceManager.GetString("AddHeatLossGainSpecificationFailed", resourceCulture);
+
+	public static string AddLiquidFlowSpecificationFailed => ResourceManager.GetString("AddLiquidFlowSpecificationFailed", resourceCulture);
+
+	public static string AddLNGHXSpecFailed => ResourceManager.GetString("AddLNGHXSpecFailed", resourceCulture);
+
+	public static string AddLocalDefineFailed => ResourceManager.GetString("AddLocalDefineFailed", resourceCulture);
+
+	public static string AddLocalSpecificationFailed => ResourceManager.GetString("AddLocalSpecificationFailed", resourceCulture);
+
+	public static string AddNoLibComponent => ResourceManager.GetString("AddNoLibComponent", resourceCulture);
+
+	public static string AddPetroleum => ResourceManager.GetString("AddPetroleum", resourceCulture);
+
+	public static string AddPhysicalPropertySpecificationFailed => ResourceManager.GetString("AddPhysicalPropertySpecificationFailed", resourceCulture);
+
+	public static string AddPumparoundSpecificationFailed => ResourceManager.GetString("AddPumparoundSpecificationFailed", resourceCulture);
+
+	public static string AddReboilerRatioSpecificationFailed => ResourceManager.GetString("AddReboilerRatioSpecificationFailed", resourceCulture);
+
+	public static string AddReboilerSpecificationFailed => ResourceManager.GetString("AddReboilerSpecificationFailed", resourceCulture);
+
+	public static string AddRecoverySpecificationFailed => ResourceManager.GetString("AddRecoverySpecificationFailed", resourceCulture);
+
+	public static string AddRefluxFeedRatioSpecificationFailed => ResourceManager.GetString("AddRefluxFeedRatioSpecificationFailed", resourceCulture);
+
+	public static string AddRefluxFractionSpecificationFailed => ResourceManager.GetString("AddRefluxFractionSpecificationFailed", resourceCulture);
+
+	public static string AddRefluxRatioSpecificationFailed => ResourceManager.GetString("AddRefluxRatioSpecificationFailed", resourceCulture);
+
+	public static string AddSameNameComponent => ResourceManager.GetString("AddSameNameComponent", resourceCulture);
+
+	public static string AddStreamPropertySpecificationFailed => ResourceManager.GetString("AddStreamPropertySpecificationFailed", resourceCulture);
+
+	public static string AddStreamSpecificationFailed => ResourceManager.GetString("AddStreamSpecificationFailed", resourceCulture);
+
+	public static string AddTeeSplitSpecificationFailed => ResourceManager.GetString("AddTeeSplitSpecificationFailed", resourceCulture);
+
+	public static string AddTemperatureSpecificationFailed => ResourceManager.GetString("AddTemperatureSpecificationFailed", resourceCulture);
+
+	public static string AddTransportPropertySpecificationFailed => ResourceManager.GetString("AddTransportPropertySpecificationFailed", resourceCulture);
+
+	public static string AddTraySizingUtilityFailed => ResourceManager.GetString("AddTraySizingUtilityFailed", resourceCulture);
+
+	public static string AddUserPropertySpecificationFailed => ResourceManager.GetString("AddUserPropertySpecificationFailed", resourceCulture);
+
+	public static string AddVaporFlowSpecificationFailed => ResourceManager.GetString("AddVaporFlowSpecificationFailed", resourceCulture);
+
+	public static string AddVaporFractionSpecificationFailed => ResourceManager.GetString("AddVaporFractionSpecificationFailed", resourceCulture);
+
+	public static string AddVaporPressureSpecificationFailed => ResourceManager.GetString("AddVaporPressureSpecificationFailed", resourceCulture);
+
+	public static string AllPANotConvert => ResourceManager.GetString("AllPANotConvert", resourceCulture);
+
+	public static string AppTitle => ResourceManager.GetString("AppTitle", resourceCulture);
+
+	public static string ASSAYStreamNotConverted => ResourceManager.GetString("ASSAYStreamNotConverted", resourceCulture);
+
+	public static string BaffleNFARNotConvert => ResourceManager.GetString("BaffleNFARNotConvert", resourceCulture);
+
+	public static string BaffleSheetNotConvert => ResourceManager.GetString("BaffleSheetNotConvert", resourceCulture);
+
+	public static string BasicManagerInitalizeError => ResourceManager.GetString("BasicManagerInitalizeError", resourceCulture);
+
+	public static string BuildHYSYSRxnFailed => ResourceManager.GetString("BuildHYSYSRxnFailed", resourceCulture);
+
+	public static string BWGNotConvert => ResourceManager.GetString("BWGNotConvert", resourceCulture);
+
+	public static string CALMODELNotConvert => ResourceManager.GetString("CALMODELNotConvert", resourceCulture);
+
+	public static string CaseNotSavedNote => ResourceManager.GetString("CaseNotSavedNote", resourceCulture);
+
+	public static string CDTADNotConverted => ResourceManager.GetString("CDTADNotConverted", resourceCulture);
+
+	public static string CDTBBNotConverted => ResourceManager.GetString("CDTBBNotConverted", resourceCulture);
+
+	public static string CleanCompSplitterProductInfoFailed => ResourceManager.GetString("CleanCompSplitterProductInfoFailed", resourceCulture);
+
+	public static string CleanLNGHXOutletPropsFailed => ResourceManager.GetString("CleanLNGHXOutletPropsFailed", resourceCulture);
+
+	public static string ColumnDefineNotConvert => ResourceManager.GetString("ColumnDefineNotConvert", resourceCulture);
+
+	public static string Comp_AssayGravityCurveNotConverted => ResourceManager.GetString("Comp_AssayGravityCurveNotConverted", resourceCulture);
+
+	public static string Comp_ComponentAddedToUserComponentTable => ResourceManager.GetString("Comp_ComponentAddedToUserComponentTable", resourceCulture);
+
+	public static string Comp_ComponentNotConverted => ResourceManager.GetString("Comp_ComponentNotConverted", resourceCulture);
+
+	public static string Comp_ComponentNotIncludedInHYSYS => ResourceManager.GetString("Comp_ComponentNotIncludedInHYSYS", resourceCulture);
+
+	public static string Comp_ComponentsNotMappedCorectly => ResourceManager.GetString("Comp_ComponentsNotMappedCorectly", resourceCulture);
+
+	public static string Comp_ConvertFileAgain => ResourceManager.GetString("Comp_ConvertFileAgain", resourceCulture);
+
+	public static string Comp_CountComponentNotConverted => ResourceManager.GetString("Comp_CountComponentNotConverted", resourceCulture);
+
+	public static string Comp_DatabaseMappedCompDuplicated => ResourceManager.GetString("Comp_DatabaseMappedCompDuplicated", resourceCulture);
+
+	public static string Comp_HCOMBUSTNotConverted => ResourceManager.GetString("Comp_HCOMBUSTNotConverted", resourceCulture);
+
+	public static string Comp_InvariantProperty => ResourceManager.GetString("Comp_InvariantProperty", resourceCulture);
+
+	public static string Comp_LightEndBasisDiffer => ResourceManager.GetString("Comp_LightEndBasisDiffer", resourceCulture);
+
+	public static string Comp_Mapping => ResourceManager.GetString("Comp_Mapping", resourceCulture);
+
+	public static string Comp_MOLVOLNotConverted => ResourceManager.GetString("Comp_MOLVOLNotConverted", resourceCulture);
+
+	public static string Comp_NoAssayStream => ResourceManager.GetString("Comp_NoAssayStream", resourceCulture);
+
+	public static string Comp_OperateDatabaseNote1 => ResourceManager.GetString("Comp_OperateDatabaseNote1", resourceCulture);
+
+	public static string Comp_OperateDatabaseNote2 => ResourceManager.GetString("Comp_OperateDatabaseNote2", resourceCulture);
+
+	public static string Comp_OperateDatabaseNote3 => ResourceManager.GetString("Comp_OperateDatabaseNote3", resourceCulture);
+
+	public static string Comp_UnKnowLibraryComponent => ResourceManager.GetString("Comp_UnKnowLibraryComponent", resourceCulture);
+
+	public static string Comp_VCNotConverted => ResourceManager.GetString("Comp_VCNotConverted", resourceCulture);
+
+	public static string CompEffEstNotConvert => ResourceManager.GetString("CompEffEstNotConvert", resourceCulture);
+
+	public static string ComponentSplitterDefineNotConverted => ResourceManager.GetString("ComponentSplitterDefineNotConverted", resourceCulture);
+
+	public static string CompressorConverter_SetADIAEffFailed => ResourceManager.GetString("CompressorConverter_SetADIAEffFailed", resourceCulture);
+
+	public static string CompressorConverter_SetConversionNotesFailed => ResourceManager.GetString("CompressorConverter_SetConversionNotesFailed", resourceCulture);
+
+	public static string CompressorConverter_SetDPFailed => ResourceManager.GetString("CompressorConverter_SetDPFailed", resourceCulture);
+
+	public static string CompressorConverter_SetDutyFailed => ResourceManager.GetString("CompressorConverter_SetDutyFailed", resourceCulture);
+
+	public static string CompressorConverter_SetEnergyStreamFailed => ResourceManager.GetString("CompressorConverter_SetEnergyStreamFailed", resourceCulture);
+
+	public static string CompressorConverter_SetFeedStreamsFailed => ResourceManager.GetString("CompressorConverter_SetFeedStreamsFailed", resourceCulture);
+
+	public static string CompressorConverter_SetFPFailed => ResourceManager.GetString("CompressorConverter_SetFPFailed", resourceCulture);
+
+	public static string CompressorConverter_SetOutletPressureFailed => ResourceManager.GetString("CompressorConverter_SetOutletPressureFailed", resourceCulture);
+
+	public static string CompressorConverter_SetOutletTempFailed => ResourceManager.GetString("CompressorConverter_SetOutletTempFailed", resourceCulture);
+
+	public static string CompressorConverter_SetPerformanceCurveFailed => ResourceManager.GetString("CompressorConverter_SetPerformanceCurveFailed", resourceCulture);
+
+	public static string CompressorConverter_SetPolyEffFailed => ResourceManager.GetString("CompressorConverter_SetPolyEffFailed", resourceCulture);
+
+	public static string CompressorConverter_SetPRatioFailed => ResourceManager.GetString("CompressorConverter_SetPRatioFailed", resourceCulture);
+
+	public static string CompressorConverter_SetProductStreamsFailed => ResourceManager.GetString("CompressorConverter_SetProductStreamsFailed", resourceCulture);
+
+	public static string CompressorConverter_SetRPMFailed => ResourceManager.GetString("CompressorConverter_SetRPMFailed", resourceCulture);
+
+	public static string CompressorCurveNotConverted => ResourceManager.GetString("CompressorCurveNotConverted", resourceCulture);
+
+	public static string CompressorDefineNotConverted => ResourceManager.GetString("CompressorDefineNotConverted", resourceCulture);
+
+	public static string ConvertComp => ResourceManager.GetString("ConvertComp", resourceCulture);
+
+	public static string ConvertingCompleted => ResourceManager.GetString("ConvertingCompleted", resourceCulture);
+
+	public static string ConvertP2Rxn => ResourceManager.GetString("ConvertP2Rxn", resourceCulture);
+
+	public static string ConvertP2Rxn2HYSYSRxn => ResourceManager.GetString("ConvertP2Rxn2HYSYSRxn", resourceCulture);
+
+	public static string ConvertPropFailed => ResourceManager.GetString("ConvertPropFailed", resourceCulture);
+
+	public static string ConvertStream => ResourceManager.GetString("ConvertStream", resourceCulture);
+
+	public static string ConvertThermo => ResourceManager.GetString("ConvertThermo", resourceCulture);
+
+	public static string ConvertTitle => ResourceManager.GetString("ConvertTitle", resourceCulture);
+
+	public static string ConvertUO => ResourceManager.GetString("ConvertUO", resourceCulture);
+
+	public static string ConvRConverter_SetDPFailed => ResourceManager.GetString("ConvRConverter_SetDPFailed", resourceCulture);
+
+	public static string ConvRConverter_SetDTFEEDFailed => ResourceManager.GetString("ConvRConverter_SetDTFEEDFailed", resourceCulture);
+
+	public static string ConvRConverter_SetDutyFailed => ResourceManager.GetString("ConvRConverter_SetDutyFailed", resourceCulture);
+
+	public static string ConvRConverter_SetEnergyStreamFailed => ResourceManager.GetString("ConvRConverter_SetEnergyStreamFailed", resourceCulture);
+
+	public static string ConvRConverter_SetFeedStreamsFailed => ResourceManager.GetString("ConvRConverter_SetFeedStreamsFailed", resourceCulture);
+
+	public static string ConvRConverter_SetFPFailed => ResourceManager.GetString("ConvRConverter_SetFPFailed", resourceCulture);
+
+	public static string ConvRConverter_SetLFailed => ResourceManager.GetString("ConvRConverter_SetLFailed", resourceCulture);
+
+	public static string ConvRConverter_SetNotesFailed => ResourceManager.GetString("ConvRConverter_SetNotesFailed", resourceCulture);
+
+	public static string ConvRConverter_SetPressureFailed => ResourceManager.GetString("ConvRConverter_SetPressureFailed", resourceCulture);
+
+	public static string ConvRConverter_SetRXSetFailed => ResourceManager.GetString("ConvRConverter_SetRXSetFailed", resourceCulture);
+
+	public static string ConvRConverter_SetTemperatureFailed => ResourceManager.GetString("ConvRConverter_SetTemperatureFailed", resourceCulture);
+
+	public static string ConvRConverter_SetVFailed => ResourceManager.GetString("ConvRConverter_SetVFailed", resourceCulture);
+
+	public static string ConvRDefineNotConverted => ResourceManager.GetString("ConvRDefineNotConverted", resourceCulture);
+
+	public static string CR_IGNORED => ResourceManager.GetString("CR_IGNORED", resourceCulture);
+
+	public static string CreateHysysCoolerForHXFailed => ResourceManager.GetString("CreateHysysCoolerForHXFailed", resourceCulture);
+
+	public static string CreateHysysHeaterForHXFailed => ResourceManager.GetString("CreateHysysHeaterForHXFailed", resourceCulture);
+
+	public static string CreateHysysHeatExchangerForHXFailed => ResourceManager.GetString("CreateHysysHeatExchangerForHXFailed", resourceCulture);
+
+	public static string CreateHysysHeatExchangerForHXRIGFailed => ResourceManager.GetString("CreateHysysHeatExchangerForHXRIGFailed", resourceCulture);
+
+	public static string CreateLLExtractorFailed => ResourceManager.GetString("CreateLLExtractorFailed", resourceCulture);
+
+	public static string CreateMixerFailed => ResourceManager.GetString("CreateMixerFailed", resourceCulture);
+
+	public static string CSTRDefineNotConverted => ResourceManager.GetString("CSTRDefineNotConverted", resourceCulture);
+
+	public static string DefaultMethodNotConverted => ResourceManager.GetString("DefaultMethodNotConverted", resourceCulture);
+
+	public static string DPSMETHODNotConvert => ResourceManager.GetString("DPSMETHODNotConvert", resourceCulture);
+
+	public static string DPTMETHODNotConvert => ResourceManager.GetString("DPTMETHODNotConvert", resourceCulture);
+
+	public static string DTFEEDNotSet => ResourceManager.GetString("DTFEEDNotSet", resourceCulture);
+
+	public static string EffectiveAreaNotConvert => ResourceManager.GetString("EffectiveAreaNotConvert", resourceCulture);
+
+	public static string EffScalingFactorNotConvert => ResourceManager.GetString("EffScalingFactorNotConvert", resourceCulture);
+
+	public static string EquilRConverter_SetDPFailed => ResourceManager.GetString("EquilRConverter_SetDPFailed", resourceCulture);
+
+	public static string EquilRConverter_SetDTFEEDFailed => ResourceManager.GetString("EquilRConverter_SetDTFEEDFailed", resourceCulture);
+
+	public static string EquilRConverter_SetDutyFailed => ResourceManager.GetString("EquilRConverter_SetDutyFailed", resourceCulture);
+
+	public static string EquilRConverter_SetEnergyStreamFailed => ResourceManager.GetString("EquilRConverter_SetEnergyStreamFailed", resourceCulture);
+
+	public static string EquilRConverter_SetFeedStreamsFailed => ResourceManager.GetString("EquilRConverter_SetFeedStreamsFailed", resourceCulture);
+
+	public static string EquilRConverter_SetFPFailed => ResourceManager.GetString("EquilRConverter_SetFPFailed", resourceCulture);
+
+	public static string EquilRConverter_SetLFailed => ResourceManager.GetString("EquilRConverter_SetLFailed", resourceCulture);
+
+	public static string EquilRConverter_SetNotesFailed => ResourceManager.GetString("EquilRConverter_SetNotesFailed", resourceCulture);
+
+	public static string EquilRConverter_SetPressureFailed => ResourceManager.GetString("EquilRConverter_SetPressureFailed", resourceCulture);
+
+	public static string EquilRConverter_SetRXSetFailed => ResourceManager.GetString("EquilRConverter_SetRXSetFailed", resourceCulture);
+
+	public static string EquilRConverter_SetTemperatureFailed => ResourceManager.GetString("EquilRConverter_SetTemperatureFailed", resourceCulture);
+
+	public static string EquilRConverter_SetVFailed => ResourceManager.GetString("EquilRConverter_SetVFailed", resourceCulture);
+
+	public static string EquiRDefineNotConverted => ResourceManager.GetString("EquiRDefineNotConverted", resourceCulture);
+
+	public static string ExpanderConverter_SetADIAEffFailed => ResourceManager.GetString("ExpanderConverter_SetADIAEffFailed", resourceCulture);
+
+	public static string ExpanderConverter_SetConversionNotesFailed => ResourceManager.GetString("ExpanderConverter_SetConversionNotesFailed", resourceCulture);
+
+	public static string ExpanderConverter_SetDPFailed => ResourceManager.GetString("ExpanderConverter_SetDPFailed", resourceCulture);
+
+	public static string ExpanderConverter_SetDutyFailed => ResourceManager.GetString("ExpanderConverter_SetDutyFailed", resourceCulture);
+
+	public static string ExpanderConverter_SetEnergyStreamFailed => ResourceManager.GetString("ExpanderConverter_SetEnergyStreamFailed", resourceCulture);
+
+	public static string ExpanderConverter_SetFeedStreamFailed => ResourceManager.GetString("ExpanderConverter_SetFeedStreamFailed", resourceCulture);
+
+	public static string ExpanderConverter_SetFluidPackageFailed => ResourceManager.GetString("ExpanderConverter_SetFluidPackageFailed", resourceCulture);
+
+	public static string ExpanderConverter_SetOutletPressureFailed => ResourceManager.GetString("ExpanderConverter_SetOutletPressureFailed", resourceCulture);
+
+	public static string ExpanderConverter_SetPRatioFailed => ResourceManager.GetString("ExpanderConverter_SetPRatioFailed", resourceCulture);
+
+	public static string ExpanderConverter_SetProductStreamFailed => ResourceManager.GetString("ExpanderConverter_SetProductStreamFailed", resourceCulture);
+
+	public static string ExpanderDefineNotConverted => ResourceManager.GetString("ExpanderDefineNotConverted", resourceCulture);
+
+	public static string FileExists => ResourceManager.GetString("FileExists", resourceCulture);
+
+	public static string FileFilter => ResourceManager.GetString("FileFilter", resourceCulture);
+
+	public static string FinHeightNotConvert => ResourceManager.GetString("FinHeightNotConvert", resourceCulture);
+
+	public static string FinNumberNotConvert => ResourceManager.GetString("FinNumberNotConvert", resourceCulture);
+
+	public static string FinRootDiamNotConvert => ResourceManager.GetString("FinRootDiamNotConvert", resourceCulture);
+
+	public static string FinThickNotConvert => ResourceManager.GetString("FinThickNotConvert", resourceCulture);
+
+	public static string FinTubeTAreaNotConvert => ResourceManager.GetString("FinTubeTAreaNotConvert", resourceCulture);
+
+	public static string FiredHeater_Parameter_Info_1 => ResourceManager.GetString("FiredHeater_Parameter_Info_1", resourceCulture);
+
+	public static string FiredHeater_Parameter_Info_2 => ResourceManager.GetString("FiredHeater_Parameter_Info_2", resourceCulture);
+
+	public static string Flash_Heater => ResourceManager.GetString("Flash_Heater", resourceCulture);
+
+	public static string Flash_MixtureStreamToMixcer => ResourceManager.GetString("Flash_MixtureStreamToMixcer", resourceCulture);
+
+	public static string Flash_ProductSolidStream => ResourceManager.GetString("Flash_ProductSolidStream", resourceCulture);
+
+	public static string Flash_Valve => ResourceManager.GetString("Flash_Valve", resourceCulture);
+
+	public static string FlashDefineNotConverted => ResourceManager.GetString("FlashDefineNotConverted", resourceCulture);
+
+	public static string FreeWaterEstNotConvert => ResourceManager.GetString("FreeWaterEstNotConvert", resourceCulture);
+
+	public static string GDNotConvert1 => ResourceManager.GetString("GDNotConvert1", resourceCulture);
+
+	public static string GetUOFeedInfoFailed => ResourceManager.GetString("GetUOFeedInfoFailed", resourceCulture);
+
+	public static string GibbsRConverter_ConvertTo3PhaseFailed => ResourceManager.GetString("GibbsRConverter_ConvertTo3PhaseFailed", resourceCulture);
+
+	public static string GibbsRConverter_SetDPFailed => ResourceManager.GetString("GibbsRConverter_SetDPFailed", resourceCulture);
+
+	public static string GibbsRConverter_SetDutyFailed => ResourceManager.GetString("GibbsRConverter_SetDutyFailed", resourceCulture);
+
+	public static string GibbsRConverter_SetEnergyStreamFailed => ResourceManager.GetString("GibbsRConverter_SetEnergyStreamFailed", resourceCulture);
+
+	public static string GibbsRConverter_SetFeedStreamsFailed => ResourceManager.GetString("GibbsRConverter_SetFeedStreamsFailed", resourceCulture);
+
+	public static string GibbsRConverter_SetFixedSpecFailed => ResourceManager.GetString("GibbsRConverter_SetFixedSpecFailed", resourceCulture);
+
+	public static string GibbsRConverter_SetFPFailed => ResourceManager.GetString("GibbsRConverter_SetFPFailed", resourceCulture);
+
+	public static string GibbsRConverter_SetFracSpecFailed => ResourceManager.GetString("GibbsRConverter_SetFracSpecFailed", resourceCulture);
+
+	public static string GibbsRConverter_SetInertComponentFailed => ResourceManager.GetString("GibbsRConverter_SetInertComponentFailed", resourceCulture);
+
+	public static string GibbsRConverter_SetLFailed => ResourceManager.GetString("GibbsRConverter_SetLFailed", resourceCulture);
+
+	public static string GibbsRConverter_SetMaxIterationFailed => ResourceManager.GetString("GibbsRConverter_SetMaxIterationFailed", resourceCulture);
+
+	public static string GibbsRConverter_SetNotesFailed => ResourceManager.GetString("GibbsRConverter_SetNotesFailed", resourceCulture);
+
+	public static string GibbsRConverter_SetPressureFailed => ResourceManager.GetString("GibbsRConverter_SetPressureFailed", resourceCulture);
+
+	public static string GibbsRConverter_SetRXSetFailed => ResourceManager.GetString("GibbsRConverter_SetRXSetFailed", resourceCulture);
+
+	public static string GibbsRConverter_SetTemperatureFailed => ResourceManager.GetString("GibbsRConverter_SetTemperatureFailed", resourceCulture);
+
+	public static string GibbsRConverter_SetToleranceFailed => ResourceManager.GetString("GibbsRConverter_SetToleranceFailed", resourceCulture);
+
+	public static string GibbsRConverter_SetVFailed => ResourceManager.GetString("GibbsRConverter_SetVFailed", resourceCulture);
+
+	public static string GibbsRConverter_SetWFailed => ResourceManager.GetString("GibbsRConverter_SetWFailed", resourceCulture);
+
+	public static string GibbsRDefineNotConverted => ResourceManager.GetString("GibbsRDefineNotConverted", resourceCulture);
+
+	public static string GSNotConvert => ResourceManager.GetString("GSNotConvert", resourceCulture);
+
+	public static string GSNotConvert1 => ResourceManager.GetString("GSNotConvert1", resourceCulture);
+
+	public static string HCurveNotWorkMessage => ResourceManager.GetString("HCurveNotWorkMessage", resourceCulture);
+
+	public static string HDTADNotConverted => ResourceManager.GetString("HDTADNotConverted", resourceCulture);
+
+	public static string HDTBBNotConverted => ResourceManager.GetString("HDTBBNotConverted", resourceCulture);
+
+	public static string Helper_HandleRefStream => ResourceManager.GetString("Helper_HandleRefStream", resourceCulture);
+
+	public static string Helper_RefStream_Message => ResourceManager.GetString("Helper_RefStream_Message", resourceCulture);
+
+	public static string Helper_RefStreamNotConverted => ResourceManager.GetString("Helper_RefStreamNotConverted", resourceCulture);
+
+	public static string Helper_ThermoConvertedTo => ResourceManager.GetString("Helper_ThermoConvertedTo", resourceCulture);
+
+	public static string HICONotConverted => ResourceManager.GetString("HICONotConverted", resourceCulture);
+
+	public static string HOCINotConverted => ResourceManager.GetString("HOCINotConverted", resourceCulture);
+
+	public static string HOCONotConverted => ResourceManager.GetString("HOCONotConverted", resourceCulture);
+
+	public static string HORXDataNotConverted => ResourceManager.GetString("HORXDataNotConverted", resourceCulture);
+
+	public static string HTCMETHODNotConvert => ResourceManager.GetString("HTCMETHODNotConvert", resourceCulture);
+
+	public static string HXDefineNotConverted => ResourceManager.GetString("HXDefineNotConverted", resourceCulture);
+
+	public static string HXFTNotConvert => ResourceManager.GetString("HXFTNotConvert", resourceCulture);
+
+	public static string HXTubeShellPassNotConvert => ResourceManager.GetString("HXTubeShellPassNotConvert", resourceCulture);
+
+	public static string InvalidTEMATypeNotConvert => ResourceManager.GetString("InvalidTEMATypeNotConvert", resourceCulture);
+
+	public static string InvariantProperty => ResourceManager.GetString("InvariantProperty", resourceCulture);
+
+	public static string KeyWordsNotConverted => ResourceManager.GetString("KeyWordsNotConverted", resourceCulture);
+
+	public static string KeyWordsNotConvertedExcept => ResourceManager.GetString("KeyWordsNotConvertedExcept", resourceCulture);
+
+	public static string KeyWordWasNotConverted => ResourceManager.GetString("KeyWordWasNotConverted", resourceCulture);
+
+	public static string KineticDataIgnored4ConvRxn => ResourceManager.GetString("KineticDataIgnored4ConvRxn", resourceCulture);
+
+	public static string KineticDataIgnored4EquilRxn => ResourceManager.GetString("KineticDataIgnored4EquilRxn", resourceCulture);
+
+	public static string LNGDefineNotConverted => ResourceManager.GetString("LNGDefineNotConverted", resourceCulture);
+
+	public static string LowFinTubeTypeNotConvert => ResourceManager.GetString("LowFinTubeTypeNotConvert", resourceCulture);
+
+	public static string LSNotConvert => ResourceManager.GetString("LSNotConvert", resourceCulture);
+
+	public static string MITANotConverted => ResourceManager.GetString("MITANotConverted", resourceCulture);
+
+	public static string MixerDefineNotConverted => ResourceManager.GetString("MixerDefineNotConverted", resourceCulture);
+
+	public static string MultipleProducts => ResourceManager.GetString("MultipleProducts", resourceCulture);
+
+	public static string NoCompsFound => ResourceManager.GetString("NoCompsFound", resourceCulture);
+
+	public static string NotConvertedComps => ResourceManager.GetString("NotConvertedComps", resourceCulture);
+
+	public static string NoTemperatureEstimate => ResourceManager.GetString("NoTemperatureEstimate", resourceCulture);
+
+	public static string NoTemperatureEstimate1 => ResourceManager.GetString("NoTemperatureEstimate1", resourceCulture);
+
+	public static string NTIWNotConvert => ResourceManager.GetString("NTIWNotConvert", resourceCulture);
+
+	public static string OldVersionWarning => ResourceManager.GetString("OldVersionWarning", resourceCulture);
+
+	public static string OpenFirst => ResourceManager.GetString("OpenFirst", resourceCulture);
+
+	public static string P2Convert => ResourceManager.GetString("P2Convert", resourceCulture);
+
+	public static string P2ThermoNotConverted => ResourceManager.GetString("P2ThermoNotConverted", resourceCulture);
+
+	public static string PackSecNotConvert => ResourceManager.GetString("PackSecNotConvert", resourceCulture);
+
+	public static string PAReturnPNotConvert => ResourceManager.GetString("PAReturnPNotConvert", resourceCulture);
+
+	public static string ParseComp => ResourceManager.GetString("ParseComp", resourceCulture);
+
+	public static string ParseReactionData => ResourceManager.GetString("ParseReactionData", resourceCulture);
+
+	public static string ParseReactionError => ResourceManager.GetString("ParseReactionError", resourceCulture);
+
+	public static string ParseStream => ResourceManager.GetString("ParseStream", resourceCulture);
+
+	public static string ParseThermo => ResourceManager.GetString("ParseThermo", resourceCulture);
+
+	public static string ParseTitle => ResourceManager.GetString("ParseTitle", resourceCulture);
+
+	public static string ParseUO => ResourceManager.GetString("ParseUO", resourceCulture);
+
+	public static string PDFNotInstalled => ResourceManager.GetString("PDFNotInstalled", resourceCulture);
+
+	public static string PFRDefineNotConverted => ResourceManager.GetString("PFRDefineNotConverted", resourceCulture);
+
+	public static string PipeDefineNotConverted => ResourceManager.GetString("PipeDefineNotConverted", resourceCulture);
+
+	public static string PipeUValueWarning => ResourceManager.GetString("PipeUValueWarning", resourceCulture);
+
+	public static string PressureDataInComplete => ResourceManager.GetString("PressureDataInComplete", resourceCulture);
+
+	public static string Pro2AssayCheck => ResourceManager.GetString("Pro2AssayCheck", resourceCulture);
+
+	public static string Pro2Options => ResourceManager.GetString("Pro2Options", resourceCulture);
+
+	public static string PumpDefineNotConverted => ResourceManager.GetString("PumpDefineNotConverted", resourceCulture);
+
+	public static string RateFracNotConvert => ResourceManager.GetString("RateFracNotConvert", resourceCulture);
+
+	public static string ReactantDuplicate => ResourceManager.GetString("ReactantDuplicate", resourceCulture);
+
+	public static string ReactantNotFound => ResourceManager.GetString("ReactantNotFound", resourceCulture);
+
+	public static string ReactionsetConverter_SetReactionFailed => ResourceManager.GetString("ReactionsetConverter_SetReactionFailed", resourceCulture);
+
+	public static string ReplaceCaseNote => ResourceManager.GetString("ReplaceCaseNote", resourceCulture);
+
+	public static string SavedCaseNote => ResourceManager.GetString("SavedCaseNote", resourceCulture);
+
+	public static string SetAIRCEDRParasFailed => ResourceManager.GetString("SetAIRCEDRParasFailed", resourceCulture);
+
+	public static string SetAIRCSimpleParasFailed => ResourceManager.GetString("SetAIRCSimpleParasFailed", resourceCulture);
+
+	public static string SetAssayDataOfDensityFailed => ResourceManager.GetString("SetAssayDataOfDensityFailed", resourceCulture);
+
+	public static string SetColumnMethodFailed => ResourceManager.GetString("SetColumnMethodFailed", resourceCulture);
+
+	public static string SetComponentUserPropertyFailed => ResourceManager.GetString("SetComponentUserPropertyFailed", resourceCulture);
+
+	public static string SetCondenserFailed => ResourceManager.GetString("SetCondenserFailed", resourceCulture);
+
+	public static string SetConvergenceToleranceFailed => ResourceManager.GetString("SetConvergenceToleranceFailed", resourceCulture);
+
+	public static string SetCSTRPropFailed => ResourceManager.GetString("SetCSTRPropFailed", resourceCulture);
+
+	public static string SetExportPseudoStreamFailed => ResourceManager.GetString("SetExportPseudoStreamFailed", resourceCulture);
+
+	public static string SetFlowSheetFeedsFailed => ResourceManager.GetString("SetFlowSheetFeedsFailed", resourceCulture);
+
+	public static string SetFlowSheetProductsFailed => ResourceManager.GetString("SetFlowSheetProductsFailed", resourceCulture);
+
+	public static string SetIgnoreCheckboxErr => ResourceManager.GetString("SetIgnoreCheckboxErr", resourceCulture);
+
+	public static string SetLiquidFlowProfileFailed => ResourceManager.GetString("SetLiquidFlowProfileFailed", resourceCulture);
+
+	public static string SetLiquidPhaseCompositionProfiledFailed => ResourceManager.GetString("SetLiquidPhaseCompositionProfiledFailed", resourceCulture);
+
+	public static string SetPFRPropFailed => ResourceManager.GetString("SetPFRPropFailed", resourceCulture);
+
+	public static string SetPressureProfileFailed => ResourceManager.GetString("SetPressureProfileFailed", resourceCulture);
+
+	public static string SetPumparoundFailed => ResourceManager.GetString("SetPumparoundFailed", resourceCulture);
+
+	public static string SetQStreamFailed => ResourceManager.GetString("SetQStreamFailed", resourceCulture);
+
+	public static string SetQStreamFailed1 => ResourceManager.GetString("SetQStreamFailed1", resourceCulture);
+
+	public static string SetReboilerFailed => ResourceManager.GetString("SetReboilerFailed", resourceCulture);
+
+	public static string SetSideRectifierFailed => ResourceManager.GetString("SetSideRectifierFailed", resourceCulture);
+
+	public static string SetSideStripperFailed => ResourceManager.GetString("SetSideStripperFailed", resourceCulture);
+
+	public static string SetTemperatureProfileFailed => ResourceManager.GetString("SetTemperatureProfileFailed", resourceCulture);
+
+	public static string SetthermodynamicFailed => ResourceManager.GetString("SetthermodynamicFailed", resourceCulture);
+
+	public static string SetUOSplitsFailed => ResourceManager.GetString("SetUOSplitsFailed", resourceCulture);
+
+	public static string SetVaporFlowProfileFailed => ResourceManager.GetString("SetVaporFlowProfileFailed", resourceCulture);
+
+	public static string SetVLLECheckFailed => ResourceManager.GetString("SetVLLECheckFailed", resourceCulture);
+
+	public static string ShellBaffleInSpacNotConvert => ResourceManager.GetString("ShellBaffleInSpacNotConvert", resourceCulture);
+
+	public static string ShellBaffleOutSpacNotConvert => ResourceManager.GetString("ShellBaffleOutSpacNotConvert", resourceCulture);
+
+	public static string ShellBaffleThickNotConvert => ResourceManager.GetString("ShellBaffleThickNotConvert", resourceCulture);
+
+	public static string ShellDPSCALENotConvert => ResourceManager.GetString("ShellDPSCALENotConvert", resourceCulture);
+
+	public static string ShellFoulingLayerNotConvert => ResourceManager.GetString("ShellFoulingLayerNotConvert", resourceCulture);
+
+	public static string ShellHSCALENotConvert => ResourceManager.GetString("ShellHSCALENotConvert", resourceCulture);
+
+	public static string ShellMaterialNotConvert => ResourceManager.GetString("ShellMaterialNotConvert", resourceCulture);
+
+	public static string ShellMDensityNotConvert => ResourceManager.GetString("ShellMDensityNotConvert", resourceCulture);
+
+	public static string ShellMLabelNotConvert => ResourceManager.GetString("ShellMLabelNotConvert", resourceCulture);
+
+	public static string ShellSEALSNotConvert => ResourceManager.GetString("ShellSEALSNotConvert", resourceCulture);
+
+	public static string SieveHoleNotConvert => ResourceManager.GetString("SieveHoleNotConvert", resourceCulture);
+
+	public static string SNozzleInAreaNotConvert => ResourceManager.GetString("SNozzleInAreaNotConvert", resourceCulture);
+
+	public static string SNozzleInClearNotConvert => ResourceManager.GetString("SNozzleInClearNotConvert", resourceCulture);
+
+	public static string SNozzleInLenNotConvert => ResourceManager.GetString("SNozzleInLenNotConvert", resourceCulture);
+
+	public static string SNozzleNotConvert => ResourceManager.GetString("SNozzleNotConvert", resourceCulture);
+
+	public static string SNozzleOutAreaNotConvert => ResourceManager.GetString("SNozzleOutAreaNotConvert", resourceCulture);
+
+	public static string SNozzleOutClearNotConvert => ResourceManager.GetString("SNozzleOutClearNotConvert", resourceCulture);
+
+	public static string SNozzleOutLenNotConvert => ResourceManager.GetString("SNozzleOutLenNotConvert", resourceCulture);
+
+	public static string SpecialEDRDataNotConvert => ResourceManager.GetString("SpecialEDRDataNotConvert", resourceCulture);
+
+	public static string SplitterDefineNotConverted => ResourceManager.GetString("SplitterDefineNotConverted", resourceCulture);
+
+	public static string STCALNotConverted_1 => ResourceManager.GetString("STCALNotConverted_1", resourceCulture);
+
+	public static string STCALNotConverted_2 => ResourceManager.GetString("STCALNotConverted_2", resourceCulture);
+
+	public static string STCALRateNotConverted => ResourceManager.GetString("STCALRateNotConverted", resourceCulture);
+
+	public static string ThermosyphonRebConvertMsg => ResourceManager.GetString("ThermosyphonRebConvertMsg", resourceCulture);
+
+	public static string TMINNotConverted => ResourceManager.GetString("TMINNotConverted", resourceCulture);
+
+	public static string ToleranceNotConverted => ResourceManager.GetString("ToleranceNotConverted", resourceCulture);
+
+	public static string TrayEffEstNotConvert => ResourceManager.GetString("TrayEffEstNotConvert", resourceCulture);
+
+	public static string TSFoulingLayerNotConvert => ResourceManager.GetString("TSFoulingLayerNotConvert", resourceCulture);
+
+	public static string TSPDAdjustScaleNotConvert => ResourceManager.GetString("TSPDAdjustScaleNotConvert", resourceCulture);
+
+	public static string TubeAROUGHNotConvert => ResourceManager.GetString("TubeAROUGHNotConvert", resourceCulture);
+
+	public static string TubeHSCALENotConvert => ResourceManager.GetString("TubeHSCALENotConvert", resourceCulture);
+
+	public static string TubeMaterialLabelNotConvert => ResourceManager.GetString("TubeMaterialLabelNotConvert", resourceCulture);
+
+	public static string TubeMaterialNotConvert => ResourceManager.GetString("TubeMaterialNotConvert", resourceCulture);
+
+	public static string TubeRROUGHNotConvert => ResourceManager.GetString("TubeRROUGHNotConvert", resourceCulture);
+
+	public static string UANotConverted => ResourceManager.GetString("UANotConverted", resourceCulture);
+
+	public static string UEstimateNotConvert => ResourceManager.GetString("UEstimateNotConvert", resourceCulture);
+
+	public static string UnitNotConverted => ResourceManager.GetString("UnitNotConverted", resourceCulture);
+
+	public static string UOAdded => ResourceManager.GetString("UOAdded", resourceCulture);
+
+	public static string UOConverter_Failed => ResourceManager.GetString("UOConverter_Failed", resourceCulture);
+
+	public static string UONotConverted => ResourceManager.GetString("UONotConverted", resourceCulture);
+
+	public static string UScaleNotConvert => ResourceManager.GetString("UScaleNotConvert", resourceCulture);
+
+	public static string Utility_ForHydrateConversion => ResourceManager.GetString("Utility_ForHydrateConversion", resourceCulture);
+
+	public static string Utility_OnlyOneEvalueConverted => ResourceManager.GetString("Utility_OnlyOneEvalueConverted", resourceCulture);
+
+	public static string Utility_OnlyStreamInletStream => ResourceManager.GetString("Utility_OnlyStreamInletStream", resourceCulture);
+
+	public static string Utility_PhaseForHydrate => ResourceManager.GetString("Utility_PhaseForHydrate", resourceCulture);
+
+	public static string ValveDefineNotConverted => ResourceManager.GetString("ValveDefineNotConverted", resourceCulture);
+
+	public static string WasNotConverted => ResourceManager.GetString("WasNotConverted", resourceCulture);
+
+	internal Globalization()
+	{
+	}
+}
+[GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
+[DebuggerNonUserCode]
+[CompilerGenerated]
+public class GUIGlobalization
+{
+	private static ResourceManager resourceMan;
+
+	private static CultureInfo resourceCulture;
+
+	[EditorBrowsable(EditorBrowsableState.Advanced)]
+	public static ResourceManager ResourceManager
+	{
+		get
+		{
+			if (resourceMan == null)
+			{
+				resourceMan = new ResourceManager("Common.GUIGlobalization", typeof(GUIGlobalization).Assembly);
+			}
+			return resourceMan;
+		}
+	}
+
+	[EditorBrowsable(EditorBrowsableState.Advanced)]
+	public static CultureInfo Culture
+	{
+		get
+		{
+			return resourceCulture;
+		}
+		set
+		{
+			resourceCulture = value;
+		}
+	}
+
+	public static string AddData => ResourceManager.GetString("AddData", resourceCulture);
+
+	public static string AirCooler => ResourceManager.GetString("AirCooler", resourceCulture);
+
+	public static string All => ResourceManager.GetString("All", resourceCulture);
+
+	public static string AspenPlus => ResourceManager.GetString("AspenPlus", resourceCulture);
+
+	public static string AspenPropertiesHYSYS => ResourceManager.GetString("AspenPropertiesHYSYS", resourceCulture);
+
+	public static string BalanceSet => ResourceManager.GetString("BalanceSet", resourceCulture);
+
+	public static string CheckRedText => ResourceManager.GetString("CheckRedText", resourceCulture);
+
+	public static string ConversionTarget => ResourceManager.GetString("ConversionTarget", resourceCulture);
+
+	public static string DeletePoint => ResourceManager.GetString("DeletePoint", resourceCulture);
+
+	public static string EDRRating => ResourceManager.GetString("EDRRating", resourceCulture);
+
+	public static string EOSProperties => ResourceManager.GetString("EOSProperties", resourceCulture);
+
+	public static string Error => ResourceManager.GetString("Error", resourceCulture);
+
+	public static string FileStruct => ResourceManager.GetString("FileStruct", resourceCulture);
+
+	public static string HeatExchanger => ResourceManager.GetString("HeatExchanger", resourceCulture);
+
+	public static string Help => ResourceManager.GetString("Help", resourceCulture);
+
+	public static string HeritageAspenHYSYSProperties => ResourceManager.GetString("HeritageAspenHYSYSProperties", resourceCulture);
+
+	public static string HYSYS => ResourceManager.GetString("HYSYS", resourceCulture);
+
+	public static string HYSYSBasedRating => ResourceManager.GetString("HYSYSBasedRating", resourceCulture);
+
+	public static string IgnoreSolvingColumn => ResourceManager.GetString("IgnoreSolvingColumn", resourceCulture);
+
+	public static string MutipleStream => ResourceManager.GetString("MutipleStream", resourceCulture);
+
+	public static string Notes => ResourceManager.GetString("Notes", resourceCulture);
+
+	public static string Ok => ResourceManager.GetString("Ok", resourceCulture);
+
+	public static string Open => ResourceManager.GetString("Open", resourceCulture);
+
+	public static string Options => ResourceManager.GetString("Options", resourceCulture);
+
+	public static string RefStreamConversionApproach => ResourceManager.GetString("RefStreamConversionApproach", resourceCulture);
+
+	public static string Showoutputfrom => ResourceManager.GetString("Showoutputfrom", resourceCulture);
+
+	public static string StartConversion => ResourceManager.GetString("StartConversion", resourceCulture);
+
+	public static string UnableGetAspneInfo => ResourceManager.GetString("UnableGetAspneInfo", resourceCulture);
+
+	public static string UnableGetEDRInfo => ResourceManager.GetString("UnableGetEDRInfo", resourceCulture);
+
+	public static string Warning => ResourceManager.GetString("Warning", resourceCulture);
+
+	internal GUIGlobalization()
+	{
+	}
+}
+public static class NameHelper
+{
+	private static int nStreamIndex;
+
+	private static int nEquipmentIndex;
+
+	private static int nNewStreamIndex;
+
+	private static int nNewEquipmentIndex;
+
+	private static int nNewEnrgyStreamIndex;
+
+	private static Dictionary<string, string> dictStream;
+
+	private static Dictionary<string, string> dictEquipment;
+
+	private static Dictionary<string, string> dictEnergyStream;
+
+	private static bool ChangeName2HYSYS { get; set; }
+
+	static NameHelper()
+	{
+		nStreamIndex = 0;
+		nEquipmentIndex = 0;
+		nNewStreamIndex = 0;
+		nNewEquipmentIndex = 0;
+		nNewEnrgyStreamIndex = 0;
+		dictStream = new Dictionary<string, string>();
+		dictEquipment = new Dictionary<string, string>();
+		dictEnergyStream = new Dictionary<string, string>();
+		ChangeName2HYSYS = true;
+	}
+
+	public static void Reset()
+	{
+		nNewEnrgyStreamIndex = (nNewStreamIndex = (nNewEquipmentIndex = (nStreamIndex = (nEquipmentIndex = 0))));
+		dictStream.Clear();
+		dictEquipment.Clear();
+		dictEnergyStream.Clear();
+	}
+
+	public static string ConvertName(string strName, bool bIsStream)
+	{
+		if (ChangeName2HYSYS)
+		{
+			if (strName.Length >= 8)
+			{
+				if (bIsStream)
+				{
+					if (dictStream.ContainsKey(strName))
+					{
+						return dictStream[strName];
+					}
+				}
+				else if (dictEquipment.ContainsKey(strName))
+				{
+					return dictEquipment[strName];
+				}
+				string text = "";
+				while (true)
+				{
+					int num = (bIsStream ? nStreamIndex.ToString().Length : nEquipmentIndex.ToString().Length);
+					text = strName.Substring(0, 8 - num) + (bIsStream ? nStreamIndex.ToString() : nEquipmentIndex.ToString());
+					if (!(bIsStream ? dictStream.ContainsKey(text) : dictStream.ContainsKey(text)))
+					{
+						break;
+					}
+					if (bIsStream)
+					{
+						nStreamIndex++;
+					}
+					else
+					{
+						nEquipmentIndex++;
+					}
+				}
+				if (bIsStream)
+				{
+					dictStream.Add(strName, text);
+					nStreamIndex++;
+				}
+				else
+				{
+					dictEquipment.Add(strName, text);
+					nEquipmentIndex++;
+				}
+				return text;
+			}
+			return strName;
+		}
+		return strName;
+	}
+
+	public static string CreateName(bool bIsStream)
+	{
+		return CreateName(bIsStream, string.Empty);
+	}
+
+	public static string CreateName(bool bIsStream, string uid)
+	{
+		if (!string.IsNullOrEmpty(uid))
+		{
+			uid += "_";
+		}
+		if (bIsStream)
+		{
+			string text;
+			do
+			{
+				text = "S" + uid + nNewStreamIndex;
+				nNewStreamIndex++;
+			}
+			while (dictStream.ContainsKey(text));
+			return text;
+		}
+		string text2;
+		do
+		{
+			text2 = "E" + uid + nNewEquipmentIndex;
+			nNewEquipmentIndex++;
+		}
+		while (dictEquipment.ContainsKey(text2));
+		return text2;
+	}
+
+	public static string CreateEnergyStreamName()
+	{
+		string result = "Q-" + nNewEnrgyStreamIndex;
+		nNewEnrgyStreamIndex++;
+		return result;
+	}
+
+	public static void NotesName(string strName, bool bIsStream)
+	{
+		if (bIsStream)
+		{
+			if (!dictStream.ContainsKey(strName))
+			{
+				dictStream.Add(strName, strName);
+			}
+		}
+		else if (!dictEquipment.ContainsKey(strName))
+		{
+			dictEquipment.Add(strName, strName);
+		}
+	}
+}
+public class Options : Window, IComponentConnector
+{
+	public static bool IsEosHYSYSProp = true;
+
+	public static bool IsBalanceStreamRef = false;
+
+	public static bool IsHYSYSAirCooler = true;
+
+	public static bool IsHYSYSHeaterExchanger = true;
+
+	public static bool IgnoreSolvingColumn = false;
+
+	private bool local_IsEosHYSYSProp = true;
+
+	private bool local_IsBalanceStreamRef;
+
+	private bool local_IsHYSYSAirCooler = true;
+
+	private bool local_IsHYSYSHeaterExchanger = true;
+
+	private bool local_IgnoreSolvingColumn;
+
+	internal Options optionsWin;
+
+	internal GroupBox eosSelection;
+
+	internal RadioButton hysysProp;
+
+	internal RadioButton aspenPlus;
+
+	internal RadioButton balanceStreamRef;
+
+	internal RadioButton mutiStreamRef;
+
+	internal RadioButton hysysAirCooler;
+
+	internal RadioButton edrAirCooler;
+
+	internal RadioButton hysysHeaterExchanger;
+
+	internal RadioButton edrHeaterExchanger;
+
+	internal CheckBox IgnoreColumnSolve;
+
+	internal Button Ok;
+
+	private bool _contentLoaded;
+
+	public Options()
+	{
+		InitializeComponent();
+		optionsWin.Title = P2Globalization.GetString("Pro2Options");
+		if (IsEosHYSYSProp)
+		{
+			hysysProp.IsChecked = true;
+		}
+		else
+		{
+			aspenPlus.IsChecked = true;
+		}
+		if (IsBalanceStreamRef)
+		{
+			balanceStreamRef.IsChecked = true;
+		}
+		else
+		{
+			mutiStreamRef.IsChecked = true;
+		}
+		if (IgnoreSolvingColumn)
+		{
+			IgnoreColumnSolve.IsChecked = true;
+		}
+		base.Loaded += delegate
+		{
+			bool flag = false;
+			try
+			{
+				RegistryKey registryKey = Registry.LocalMachine.OpenSubKey("SOFTWARE").OpenSubKey("AspenTech");
+				if (registryKey != null && registryKey.OpenSubKey("B-JAC") != null)
+				{
+					flag = true;
+				}
+			}
+			catch (Exception)
+			{
+				DebugPrint.OutputDebugString(DebugLevel.Convert, WarningLevel.Error, P2Globalization.GetString("UnableGetEDRInfo"));
+			}
+			if (!flag)
+			{
+				edrAirCooler.IsEnabled = false;
+				edrHeaterExchanger.IsEnabled = false;
+				IsHYSYSAirCooler = (IsHYSYSHeaterExchanger = true);
+			}
+			if (IsHYSYSAirCooler)
+			{
+				hysysAirCooler.IsChecked = true;
+			}
+			else
+			{
+				edrAirCooler.IsChecked = true;
+			}
+			if (IsHYSYSHeaterExchanger)
+			{
+				hysysHeaterExchanger.IsChecked = true;
+			}
+			else
+			{
+				edrHeaterExchanger.IsChecked = true;
+			}
+			local_IsEosHYSYSProp = IsEosHYSYSProp;
+			local_IsBalanceStreamRef = IsBalanceStreamRef;
+			local_IsHYSYSAirCooler = IsHYSYSAirCooler;
+			local_IsHYSYSHeaterExchanger = IsHYSYSHeaterExchanger;
+			local_IgnoreSolvingColumn = IgnoreSolvingColumn;
+		};
+	}
+
+	public void SetEosPropStatus(bool isEnable)
+	{
+		eosSelection.IsEnabled = isEnable;
+	}
+
+	public static void ReSetStatus()
+	{
+		IsEosHYSYSProp = true;
+		IsBalanceStreamRef = true;
+	}
+
+	private void Ok_Click(object sender, RoutedEventArgs e)
+	{
+		IsEosHYSYSProp = local_IsEosHYSYSProp;
+		IsBalanceStreamRef = local_IsBalanceStreamRef;
+		IsHYSYSAirCooler = local_IsHYSYSAirCooler;
+		IsHYSYSHeaterExchanger = local_IsHYSYSHeaterExchanger;
+		IgnoreSolvingColumn = local_IgnoreSolvingColumn;
+		Close();
+	}
+
+	private void hysysProp_Click(object sender, RoutedEventArgs e)
+	{
+		if (hysysProp.IsChecked == true)
+		{
+			local_IsEosHYSYSProp = true;
+		}
+		else
+		{
+			local_IsEosHYSYSProp = false;
+		}
+	}
+
+	private void balanceStreamRef_Click(object sender, RoutedEventArgs e)
+	{
+		if (balanceStreamRef.IsChecked == true)
+		{
+			local_IsBalanceStreamRef = true;
+		}
+		else
+		{
+			local_IsBalanceStreamRef = false;
+		}
+	}
+
+	private void airCooler_Click(object sender, RoutedEventArgs e)
+	{
+		if (hysysAirCooler.IsChecked == true)
+		{
+			local_IsHYSYSAirCooler = true;
+		}
+		else
+		{
+			local_IsHYSYSAirCooler = false;
+		}
+	}
+
+	private void heaterExchanger_Click(object sender, RoutedEventArgs e)
+	{
+		if (hysysHeaterExchanger.IsChecked == true)
+		{
+			local_IsHYSYSHeaterExchanger = true;
+		}
+		else
+		{
+			local_IsHYSYSHeaterExchanger = false;
+		}
+	}
+
+	private void IgnoreColumnSolve_Click(object sender, RoutedEventArgs e)
+	{
+		if (IgnoreColumnSolve.IsChecked == true)
+		{
+			local_IgnoreSolvingColumn = true;
+		}
+		else
+		{
+			local_IgnoreSolvingColumn = false;
+		}
+	}
+
+	[DebuggerNonUserCode]
+	[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+	public void InitializeComponent()
+	{
+		if (!_contentLoaded)
+		{
+			_contentLoaded = true;
+			Uri resourceLocator = new Uri("/Common;component/options/options.xaml", UriKind.Relative);
+			Application.LoadComponent(this, resourceLocator);
+		}
+	}
+
+	[DebuggerNonUserCode]
+	[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+	void IComponentConnector.Connect(int connectionId, object target)
+	{
+		switch (connectionId)
+		{
+		case 1:
+			optionsWin = (Options)target;
+			break;
+		case 2:
+			eosSelection = (GroupBox)target;
+			break;
+		case 3:
+			hysysProp = (RadioButton)target;
+			hysysProp.Click += hysysProp_Click;
+			break;
+		case 4:
+			aspenPlus = (RadioButton)target;
+			aspenPlus.Click += hysysProp_Click;
+			break;
+		case 5:
+			balanceStreamRef = (RadioButton)target;
+			balanceStreamRef.Click += balanceStreamRef_Click;
+			break;
+		case 6:
+			mutiStreamRef = (RadioButton)target;
+			mutiStreamRef.Click += balanceStreamRef_Click;
+			break;
+		case 7:
+			hysysAirCooler = (RadioButton)target;
+			hysysAirCooler.Click += airCooler_Click;
+			break;
+		case 8:
+			edrAirCooler = (RadioButton)target;
+			edrAirCooler.Click += airCooler_Click;
+			break;
+		case 9:
+			hysysHeaterExchanger = (RadioButton)target;
+			hysysHeaterExchanger.Click += heaterExchanger_Click;
+			break;
+		case 10:
+			edrHeaterExchanger = (RadioButton)target;
+			edrHeaterExchanger.Click += heaterExchanger_Click;
+			break;
+		case 11:
+			IgnoreColumnSolve = (CheckBox)target;
+			IgnoreColumnSolve.Click += IgnoreColumnSolve_Click;
+			break;
+		case 12:
+			Ok = (Button)target;
+			Ok.Click += Ok_Click;
+			break;
+		default:
+			_contentLoaded = true;
+			break;
+		}
+	}
+}
+public class P2CException : Exception
+{
+	public P2CException(string strMsg)
+		: base(strMsg)
+	{
+	}
+}
+public static class ParseUtilty
+{
+	public static string[] CutByComma(string str)
+	{
+		if (string.IsNullOrEmpty(str))
+		{
+			return null;
+		}
+		List<string> list = new List<string>();
+		bool flag = true;
+		string text = "";
+		for (int i = 0; i < str.Length; i++)
+		{
+			char c = str[i];
+			switch (c)
+			{
+			case ',':
+				if (flag)
+				{
+					if (!string.IsNullOrEmpty(text))
+					{
+						list.Add(text.Trim());
+					}
+					text = "";
+				}
+				else
+				{
+					text += c;
+				}
+				break;
+			case '(':
+				flag = false;
+				text += c;
+				break;
+			case ')':
+				flag = true;
+				text += c;
+				break;
+			default:
+				text += c;
+				break;
+			}
+		}
+		if (!string.IsNullOrEmpty(text))
+		{
+			list.Add(text.Trim());
+		}
+		return list.ToArray();
+	}
+
+	public static string[] CutBySlash(string str)
+	{
+		if (string.IsNullOrEmpty(str))
+		{
+			return null;
+		}
+		string[] array = str.Split('/');
+		for (int i = 0; i < array.Length; i++)
+		{
+			array[i] = array[i].Trim();
+		}
+		return array;
+	}
+
+	public static string[] CutBySpace(string str)
+	{
+		if (string.IsNullOrEmpty(str))
+		{
+			return null;
+		}
+		string[] array = str.Split(' ');
+		List<string> list = new List<string>();
+		for (int i = 0; i < array.Length; i++)
+		{
+			if (!string.IsNullOrEmpty(array[i].ToString()))
+			{
+				list.Add(array[i].ToString().Trim());
+			}
+		}
+		return list.ToArray();
+	}
+
+	public static string[] CutByEqual(string str)
+	{
+		if (string.IsNullOrEmpty(str))
+		{
+			return null;
+		}
+		string[] array = str.Split('=');
+		for (int i = 0; i < array.Length; i++)
+		{
+			array[i] = array[i].Trim();
+		}
+		return array;
+	}
+
+	public static string[] CutBySpaceOrComma(string str)
+	{
+		if (string.IsNullOrEmpty(str))
+		{
+			return null;
+		}
+		List<string> list = new List<string>();
+		string[] array = CutByComma(str);
+		for (int i = 0; i < array.Length; i++)
+		{
+			array[i] = array[i].Trim();
+			if (array[i] == string.Empty)
+			{
+				list.Add(string.Empty);
+				continue;
+			}
+			string[] array2 = CutBySpace(array[i]);
+			for (int j = 0; j < array2.Length; j++)
+			{
+				list.Add(array2[j]);
+			}
+		}
+		return list.ToArray();
+	}
+
+	public static string RemoveHead(string str, char cutter)
+	{
+		if (string.IsNullOrEmpty(str))
+		{
+			return null;
+		}
+		int num;
+		if (cutter == ' ')
+		{
+			num = str.IndexOf(' ');
+			if (num == -1)
+			{
+				num = str.IndexOf('\t');
+			}
+			if (num == -1)
+			{
+				return str;
+			}
+		}
+		else
+		{
+			num = str.IndexOf(cutter);
+			if (num == -1)
+			{
+				return str;
+			}
+		}
+		return str.Substring(num + 1, str.Length - num - 1).Trim();
+	}
+
+	public static string RemoveHead(ref string str, char cutter)
+	{
+		if (string.IsNullOrEmpty(str))
+		{
+			return null;
+		}
+		int num;
+		if (cutter == ' ')
+		{
+			num = str.IndexOf(' ');
+			if (num == -1)
+			{
+				num = str.IndexOf('\t');
+			}
+			if (num == -1)
+			{
+				return str;
+			}
+		}
+		else
+		{
+			num = str.IndexOf(cutter);
+			if (num == -1)
+			{
+				string result = str;
+				str = "";
+				return result;
+			}
+		}
+		string text = str.Substring(0, num);
+		str = str.Substring(num + 1, str.Length - num - 1).Trim();
+		return text.Trim();
+	}
+
+	public static string GetHead(string str, char cutter)
+	{
+		if (string.IsNullOrEmpty(str))
+		{
+			return null;
+		}
+		int num;
+		if (cutter == ' ')
+		{
+			num = str.IndexOf(' ');
+			if (num == -1)
+			{
+				num = str.IndexOf('\t');
+			}
+			if (num == -1)
+			{
+				return str;
+			}
+		}
+		else
+		{
+			num = str.IndexOf(cutter);
+			if (num == -1)
+			{
+				return str;
+			}
+		}
+		return str.Substring(0, num).Trim();
+	}
+
+	public static string GetDoubleValue(string str, ref DoubleValue value)
+	{
+		if (string.IsNullOrEmpty(str))
+		{
+			return null;
+		}
+		string[] array = CutByEqual(str);
+		double.TryParse(array[1], out var result);
+		value.Value = result;
+		int num = str.IndexOf('(');
+		int num2 = str.IndexOf(')');
+		if (num != -1 && num2 != -1 && num < num2)
+		{
+			value.Unit = str.Substring(num + 1, num2 - num - 1);
+		}
+		if (num == -1)
+		{
+			return array[0];
+		}
+		return array[0].Substring(0, num);
+	}
+
+	public static DoubleValue GetDoubleValue(string str)
+	{
+		if (string.IsNullOrEmpty(str))
+		{
+			return null;
+		}
+		DoubleValue value = new DoubleValue();
+		GetDoubleValue(str, ref value);
+		return value;
+	}
+
+	public static string[] GetPairStringInBracket(string str)
+	{
+		if (string.IsNullOrEmpty(str))
+		{
+			return null;
+		}
+		int num = str.IndexOf('(');
+		int num2 = str.IndexOf(')');
+		string str2 = "";
+		if (num != -1 && num2 != -1 && num < num2)
+		{
+			str2 = str.Substring(num + 1, num2 - num - 1);
+		}
+		string[] array = CutByComma(str2);
+		if (array == null || array.Length == 0)
+		{
+			return new string[2]
+			{
+				string.Empty,
+				string.Empty
+			};
+		}
+		if (array.Length == 1)
+		{
+			return new string[2]
+			{
+				array[0],
+				string.Empty
+			};
+		}
+		_ = array.Length;
+		_ = 2;
+		return array;
+	}
+
+	public static string[] GetStringsInBracket(string str)
+	{
+		if (string.IsNullOrEmpty(str))
+		{
+			return null;
+		}
+		int num = str.IndexOf('(');
+		int num2 = str.IndexOf(')');
+		string str2 = "";
+		if (num != -1 && num2 != -1 && num < num2)
+		{
+			str2 = str.Substring(num + 1, num2 - num - 1);
+		}
+		string[] array = CutByComma(str2);
+		if (array == null || array.Length == 0)
+		{
+			return null;
+		}
+		return array;
+	}
+
+	public static string GetTypeUnitValue(string str, ref TypeUnitValue value)
+	{
+		if (string.IsNullOrEmpty(str))
+		{
+			return null;
+		}
+		string[] array = CutByEqual(str);
+		double.TryParse(array[1], out var result);
+		value.Value = result;
+		int num = str.IndexOf('(');
+		int num2 = str.IndexOf(')');
+		string[] array2;
+		if (num != -1 && num2 != -1 && num < num2)
+		{
+			array2 = CutByComma(str.Substring(num + 1, num2 - num - 1));
+			if (array2.Length >= 1)
+			{
+				string text = array2[0].ToString().Trim().ToUpper();
+				if (text != null)
+				{
+					switch (text.Length)
+					{
+					case 2:
+					{
+						char c = text[0];
+						if (c != 'G')
+						{
+							if (c != 'L')
+							{
+								if (c != 'W' || !(text == "WT"))
+								{
+									break;
+								}
+							}
+							else if (!(text == "LV"))
+							{
+								break;
+							}
+						}
+						else if (!(text == "GV"))
+						{
+							break;
+						}
+						goto IL_0131;
+					}
+					case 1:
+					{
+						char c = text[0];
+						if ((uint)c <= 77u)
+						{
+							if (c != 'G' && c != 'M')
+							{
+								break;
+							}
+						}
+						else if (c != 'V' && c != 'W')
+						{
+							break;
+						}
+						goto IL_0131;
+					}
+					case 3:
+						{
+							if (!(text == "VOL"))
+							{
+								break;
+							}
+							goto IL_0131;
+						}
+						IL_0131:
+						value.Type = array2[0];
+						goto IL_0149;
+					}
+				}
+				value.Unit = array2[0];
+			}
+			goto IL_0149;
+		}
+		goto IL_015b;
+		IL_0149:
+		if (array2.Length > 1)
+		{
+			value.Unit = array2[1];
+		}
+		goto IL_015b;
+		IL_015b:
+		if (num == -1)
+		{
+			value.Name = array[0];
+		}
+		else
+		{
+			value.Name = array[0].Substring(0, num);
+		}
+		return value.Name;
+	}
+
+	public static TypeUnitValue GetTypeUnitValue(string str)
+	{
+		if (string.IsNullOrEmpty(str))
+		{
+			return null;
+		}
+		TypeUnitValue value = new TypeUnitValue();
+		GetTypeUnitValue(str, ref value);
+		return value;
+	}
+
+	public static int GetSlashLength(string str, int nPreSlash)
+	{
+		if (string.IsNullOrEmpty(str))
+		{
+			return 0;
+		}
+		int i = 0;
+		int num = 0;
+		for (int j = 0; j < str.Length; i++, j++)
+		{
+			switch (str[j])
+			{
+			case ',':
+				if (++num != nPreSlash)
+				{
+					continue;
+				}
+				break;
+			case '/':
+				num = 0;
+				continue;
+			default:
+				continue;
+			}
+			break;
+		}
+		return i;
+	}
+
+	public static string GetStringValue(string strSource)
+	{
+		if (string.IsNullOrEmpty(strSource))
+		{
+			return null;
+		}
+		return strSource.Substring(strSource.IndexOf('=') + 1).Trim();
+	}
+
+	public static string GetParentheses(string str)
+	{
+		if (string.IsNullOrEmpty(str))
+		{
+			return null;
+		}
+		int num = str.IndexOf('(');
+		int num2 = str.IndexOf(')');
+		if (num != -1 && num2 != -1 && num < num2)
+		{
+			return str.Substring(num + 1, num2 - num - 1);
+		}
+		return null;
+	}
+
+	public static string GetQualifierValue(string str, ref QualifierValue value)
+	{
+		if (string.IsNullOrEmpty(str))
+		{
+			return null;
+		}
+		string[] array = null;
+		if (str.Contains('='))
+		{
+			array = CutByEqual(str);
+		}
+		else if (str.Contains(' '))
+		{
+			array = CutBySpace(str);
+		}
+		else
+		{
+			string empty = string.Empty;
+			string empty2 = string.Empty;
+			int num = str.IndexOf(')');
+			if (num != -1)
+			{
+				empty2 = str.Substring(num + 1);
+				empty = str.Substring(0, str.Length - empty2.Length);
+			}
+			else
+			{
+				empty2 = string.Empty;
+				empty = str;
+			}
+			array = new string[2] { empty, empty2 };
+		}
+		value.Value = array[1];
+		int num2 = str.IndexOf('(');
+		int num3 = str.IndexOf(')');
+		if (num2 != -1 && num3 != -1 && num2 < num3)
+		{
+			value.Qualifier = str.Substring(num2 + 1, num3 - num2 - 1);
+		}
+		if (num2 == -1)
+		{
+			return array[0];
+		}
+		return array[0].Substring(0, num2);
+	}
+
+	public static QualifierValue GetQualifierValue(string str)
+	{
+		if (string.IsNullOrEmpty(str))
+		{
+			return null;
+		}
+		QualifierValue value = new QualifierValue();
+		GetQualifierValue(str, ref value);
+		return value;
+	}
+
+	public static string GetTwoUnitsDoubleValue(string str, ref TwoUnitsDoubleValue value)
+	{
+		if (string.IsNullOrEmpty(str))
+		{
+			return null;
+		}
+		string[] array = CutByEqual(str);
+		double.TryParse(array[1], out var result);
+		value.Value = result;
+		int num = str.IndexOf('(');
+		int num2 = str.IndexOf(')');
+		string str2 = "";
+		if (num != -1 && num2 != -1 && num < num2)
+		{
+			str2 = str.Substring(num + 1, num2 - num - 1);
+		}
+		string[] array2 = CutByComma(str2);
+		if (array2 == null)
+		{
+			return null;
+		}
+		value.FirstUnit = array2[0];
+		value.SecondUnit = array2[1];
+		if (num == -1)
+		{
+			return array[0];
+		}
+		return array[0].Substring(0, num);
+	}
+
+	public static TwoUnitsDoubleValue GetTwoUnitsDoubleValue(string str)
+	{
+		if (string.IsNullOrEmpty(str))
+		{
+			return null;
+		}
+		TwoUnitsDoubleValue value = new TwoUnitsDoubleValue();
+		GetTwoUnitsDoubleValue(str, ref value);
+		return value;
+	}
+
+	public static Dictionary<double, double> GetTableValues(string str)
+	{
+		if (string.IsNullOrEmpty(str))
+		{
+			return null;
+		}
+		Dictionary<double, double> dictionary = new Dictionary<double, double>();
+		string[] array = CutBySlash(str);
+		for (int i = 0; i < array.Length; i++)
+		{
+			string[] array2 = CutByComma(array[i].Trim());
+			if (double.TryParse(array2[0].Trim(), out var result) && double.TryParse(array2[1].Trim(), out var result2))
+			{
+				dictionary.Add(result, result2);
+			}
+		}
+		if (dictionary.Count > 0)
+		{
+			return dictionary;
+		}
+		return null;
+	}
+
+	public static Dictionary<int, double> GetIntDoubleDic(string str)
+	{
+		str = RemoveHead(str, ' ');
+		Dictionary<int, double> dictionary = new Dictionary<int, double>();
+		foreach (KeyValuePair<double, double> tableValue in GetTableValues(str))
+		{
+			dictionary.Add((int)tableValue.Key, tableValue.Value);
+		}
+		return dictionary;
+	}
+
+	public static Dictionary<int, DoubleValue> GetDoubleValueDic(string str)
+	{
+		string text = GetPairStringInBracket(str)[0];
+		str = RemoveHead(str, ' ');
+		if (!string.IsNullOrEmpty(text) && str.Contains(text))
+		{
+			str = str.Replace("(", "");
+			str = str.Replace(")", "");
+			str = str.Replace(text, "");
+		}
+		Dictionary<int, DoubleValue> dictionary = new Dictionary<int, DoubleValue>();
+		foreach (KeyValuePair<double, double> tableValue in GetTableValues(str))
+		{
+			dictionary.Add((int)tableValue.Key, new DoubleValue(text, tableValue.Value));
+		}
+		return dictionary;
+	}
+
+	public static Dictionary<int, TypeUnitValue> GetTypeUniteDic(string str)
+	{
+		string empty = string.Empty;
+		string unit = string.Empty;
+		if (GetPairStringInBracket(str)[1].Length > 0)
+		{
+			empty = GetPairStringInBracket(str)[1];
+			unit = GetPairStringInBracket(str)[0];
+		}
+		else
+		{
+			empty = GetPairStringInBracket(str)[0];
+		}
+		str = RemoveHead(str, ' ');
+		Dictionary<int, TypeUnitValue> dictionary = new Dictionary<int, TypeUnitValue>();
+		foreach (KeyValuePair<double, double> tableValue in GetTableValues(str))
+		{
+			dictionary.Add((int)tableValue.Key, new TypeUnitValue(unit, empty, tableValue.Value));
+		}
+		return dictionary;
+	}
+
+	public static bool IsAspenPlusInstalled()
+	{
+		bool result = false;
+		try
+		{
+			if (Registry.LocalMachine.OpenSubKey("Software\\Aspentech\\Aspen Plus\\CurVer") != null)
+			{
+				result = true;
+			}
+		}
+		catch (Exception)
+		{
+			DebugPrint.OutputDebugString(DebugLevel.Convert, WarningLevel.Error, P2Globalization.GetString("UnableGetAspneInfo"));
+		}
+		return result;
+	}
+
+	public static string GetRangeValue(string str, ref RangeValue value)
+	{
+		if (string.IsNullOrEmpty(str))
+		{
+			return null;
+		}
+		string[] array = CutByEqual(str);
+		string[] array2 = CutByComma(array[1]);
+		if (array2.Length == 2)
+		{
+			value.StartValue = array2[0];
+			value.EndValue = array2[1];
+		}
+		int num = str.IndexOf('(');
+		int num2 = str.IndexOf(')');
+		if (num != -1 && num2 != -1 && num < num2)
+		{
+			value.Qualifier = str.Substring(num + 1, num2 - num - 1);
+		}
+		if (num == -1)
+		{
+			return array[0];
+		}
+		return array[0].Substring(0, num);
+	}
+
+	public static RangeValue GetRangeValue(string str)
+	{
+		if (string.IsNullOrEmpty(str))
+		{
+			return null;
+		}
+		RangeValue value = new RangeValue();
+		GetRangeValue(str, ref value);
+		return value;
+	}
+
+	public static List<PropertyPair> GetPropertySplit(List<string> propertyList, string strSource)
+	{
+		List<PropertyPair> list = new List<PropertyPair>();
+		List<string> list2 = new List<string>();
+		SortedList sortedList = new SortedList();
+		List<int> list3 = new List<int>();
+		Dictionary<string, List<int>> dictionary = new Dictionary<string, List<int>>();
+		propertyList = GetCorrectPropertyList(propertyList, strSource, dictionary);
+		if (dictionary.Count > 0)
+		{
+			foreach (string key in dictionary.Keys)
+			{
+				foreach (int item3 in dictionary[key])
+				{
+					if (!sortedList.ContainsKey(item3))
+					{
+						sortedList.Add(item3, key);
+					}
+				}
+			}
+		}
+		foreach (string property in propertyList)
+		{
+			int num = strSource.IndexOf(property);
+			if (num > -1 && !sortedList.ContainsKey(num))
+			{
+				sortedList.Add(num, property);
+				for (int num2 = strSource.IndexOf(property, num + 1); num2 > -1; num2 = strSource.IndexOf(property, num + 1))
+				{
+					sortedList.Add(num2, property);
+					num = num2;
+				}
+			}
+		}
+		foreach (DictionaryEntry item4 in sortedList)
+		{
+			list3.Add((int)item4.Key);
+		}
+		int num3 = 0;
+		int num4 = 0;
+		if (list3.Count >= 2)
+		{
+			string item;
+			for (int i = 0; i < list3.Count - 1; i++)
+			{
+				num3 = list3[i];
+				num4 = list3[i + 1];
+				int length = num4 - num3 - 1;
+				item = strSource.Substring(num3, length).Trim();
+				list2.Add(item);
+			}
+			item = strSource.Substring(num4).Trim();
+			list2.Add(item);
+		}
+		else
+		{
+			list2.Add(strSource.Trim());
+		}
+		if (list2 == null || list2.Count == 0)
+		{
+			return null;
+		}
+		for (int j = 0; j < list3.Count; j++)
+		{
+			int num5 = list3[j];
+			string name = (string)sortedList[num5];
+			string text = list2[j].Trim();
+			if (text[text.Length - 1] == ',')
+			{
+				text = text.Substring(0, text.Length - 1);
+			}
+			PropertyPair item2 = new PropertyPair(name, text);
+			list.Add(item2);
+		}
+		return list;
+	}
+
+	private static List<string> GetCorrectPropertyList(List<string> propertyList, string strSource, Dictionary<string, List<int>> specialProps)
+	{
+		List<string> list = new List<string>();
+		foreach (string property in propertyList)
+		{
+			if (IsGoodProp(property, propertyList) && !list.Contains(property))
+			{
+				list.Add(property);
+				continue;
+			}
+			List<string> list2 = new List<string>();
+			if (LocatedRightOfOtherProp(property, propertyList, strSource, list2))
+			{
+				List<int> list3 = new List<int>();
+				int startIndex = 0;
+				int num = 0;
+				int num2 = 0;
+				while (num2 >= 0 && num2 < strSource.Length)
+				{
+					num = strSource.IndexOf(property, startIndex);
+					if (num == 0)
+					{
+						list3.Add(num);
+						startIndex = property.Length;
+					}
+					else if (num > 0)
+					{
+						bool flag = false;
+						foreach (string item in list2)
+						{
+							if (num + property.Length - item.Length >= 0 && strSource.IndexOf(item, startIndex) == num + property.Length - item.Length)
+							{
+								startIndex = num + property.Length + 1;
+								break;
+							}
+							if (list2[list2.Count - 1] == item)
+							{
+								startIndex = num + 1;
+								flag = true;
+							}
+						}
+						if (flag)
+						{
+							list3.Add(num);
+						}
+						num2 = num + 1;
+					}
+					else
+					{
+						num2 = num;
+					}
+				}
+				if (list3.Count > 0)
+				{
+					specialProps.Add(property, list3);
+				}
+			}
+			else if (strSource.IndexOf(property) >= 0)
+			{
+				string text = ModifyKey(property, strSource);
+				if (!string.IsNullOrEmpty(text) && !list.Contains(text))
+				{
+					list.Add(text);
+				}
+			}
+		}
+		return list;
+	}
+
+	private static bool IsGoodProp(string propName, List<string> propertyList)
+	{
+		foreach (string property in propertyList)
+		{
+			if (property.Contains(propName) && property != propName)
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private static bool LocatedRightOfOtherProp(string propName, List<string> propertyList, string strSource, List<string> OtherProps)
+	{
+		foreach (string property in propertyList)
+		{
+			if (property.EndsWith(propName) && property != propName)
+			{
+				OtherProps.Add(property);
+			}
+		}
+		return OtherProps.Count > 0;
+	}
+
+	private static string ModifyKey(string propName, string strSource)
+	{
+		string result = string.Empty;
+		bool flag = false;
+		int num = 0;
+		int num2 = 0;
+		while (!flag && num2 >= 0)
+		{
+			num2 = strSource.IndexOf(propName, num);
+			if (num2 < 0)
+			{
+				break;
+			}
+			int num3 = num2 + propName.Length;
+			char c = strSource[num3];
+			if (c == '=' || c == '(' || c == ',' || c == ' ' || num3 == strSource.Length - 1)
+			{
+				flag = true;
+				num = num2;
+				num2 = num3 + 1;
+			}
+			else if (strSource[num3 - 1] == '(')
+			{
+				for (int i = num3; i < strSource.Length - 1; i++)
+				{
+					if (strSource[i] == ')')
+					{
+						flag = true;
+						num = num2;
+						num2 = i + 1;
+						break;
+					}
+				}
+			}
+			else
+			{
+				num = num3;
+			}
+		}
+		if (flag)
+		{
+			result = strSource.Substring(num, num2 - num);
+		}
+		return result;
+	}
+
+	public static void GetFlowbasisAndUnit(string propName, ref string flowbasis, ref string unit, ref double refValue)
+	{
+		if (!propName.Contains("("))
+		{
+			return;
+		}
+		string[] array = CutByComma(GetParentheses(propName));
+		foreach (string text in array)
+		{
+			if (double.TryParse(text, out var result))
+			{
+				refValue = result;
+				continue;
+			}
+			switch (text.ToUpper())
+			{
+			case "M":
+				flowbasis = text;
+				break;
+			case "WT":
+				flowbasis = text;
+				break;
+			case "W":
+				flowbasis = "WT";
+				break;
+			case "LV":
+				flowbasis = text;
+				break;
+			case "G":
+			case "GV":
+				flowbasis = text;
+				break;
+			case "VOL":
+				flowbasis = "V";
+				break;
+			case "V":
+				flowbasis = text;
+				break;
+			case "IP":
+				refValue = -10.0;
+				break;
+			case "EP":
+				refValue = -100.0;
+				break;
+			default:
+				unit = text;
+				break;
+			case "P10":
+			case "P760":
+				break;
+			}
+		}
+	}
+}
+public class PropertyPair
+{
+	public string Name { get; set; }
+
+	public string Content { get; set; }
+
+	public PropertyPair(string name, string content)
+	{
+		Name = name;
+		Content = content;
+	}
+}
+public class Report : INotifyPropertyChanged
+{
+	private int nP2ObjectCount;
+
+	private int nHYSYSObjectCount;
+
+	private int nP2StreamCount;
+
+	private int nHYSYSStreamCount;
+
+	private int nP2EquipmentCount;
+
+	private int nHYSYSEquipmentCount;
+
+	public int P2ObjectCount
+	{
+		get
+		{
+			return nP2ObjectCount;
+		}
+		set
+		{
+			nP2ObjectCount = value;
+			if (this.PropertyChanged != null)
+			{
+				this.PropertyChanged(this, new PropertyChangedEventArgs("P2ObjectCount"));
+			}
+		}
+	}
+
+	public int HYSYSObjectCount
+	{
+		get
+		{
+			return nHYSYSObjectCount;
+		}
+		set
+		{
+			nHYSYSObjectCount = value;
+			if (this.PropertyChanged != null)
+			{
+				this.PropertyChanged(this, new PropertyChangedEventArgs("HYSYSObjectCount"));
+			}
+		}
+	}
+
+	public int P2StreamCount
+	{
+		get
+		{
+			return nP2StreamCount;
+		}
+		set
+		{
+			nP2StreamCount = value;
+			if (this.PropertyChanged != null)
+			{
+				this.PropertyChanged(this, new PropertyChangedEventArgs("P2StreamCount"));
+			}
+		}
+	}
+
+	public int HYSYSStreamCount
+	{
+		get
+		{
+			return nHYSYSStreamCount;
+		}
+		set
+		{
+			nHYSYSStreamCount = value;
+			if (this.PropertyChanged != null)
+			{
+				this.PropertyChanged(this, new PropertyChangedEventArgs("HYSYSStreamCount"));
+			}
+		}
+	}
+
+	public int P2EquipmentCount
+	{
+		get
+		{
+			return nP2EquipmentCount;
+		}
+		set
+		{
+			nP2EquipmentCount = value;
+			if (this.PropertyChanged != null)
+			{
+				this.PropertyChanged(this, new PropertyChangedEventArgs("P2EquipmentCount"));
+			}
+		}
+	}
+
+	public int HYSYSEquipmentCount
+	{
+		get
+		{
+			return nHYSYSEquipmentCount;
+		}
+		set
+		{
+			nHYSYSEquipmentCount = value;
+			if (this.PropertyChanged != null)
+			{
+				this.PropertyChanged(this, new PropertyChangedEventArgs("HYSYSEquipmentCount"));
+			}
+		}
+	}
+
+	public event PropertyChangedEventHandler PropertyChanged;
+
+	public void ResetP2()
+	{
+		P2ObjectCount = 0;
+		P2StreamCount = 0;
+		P2EquipmentCount = 0;
+	}
+
+	public void ResetHYSYS()
+	{
+		HYSYSObjectCount = 0;
+		HYSYSStreamCount = 0;
+		HYSYSEquipmentCount = 0;
+	}
+}
+public class Specification
+{
+	public enum OperatorType
+	{
+		plus,
+		minus,
+		times,
+		divide,
+		none
+	}
+
+	private string _PrimaryPHASE = "T";
+
+	private string _PrimaryBasis = "WET";
+
+	private string _ReferencePHASE = "T";
+
+	private string _ReferenceBasis = "WET";
+
+	private OperatorType _operator = OperatorType.none;
+
+	public string SpecID { get; set; }
+
+	public string P2SpecExpression { get; set; }
+
+	public SpecificationType SpecType { get; set; }
+
+	public string PrimaryName { get; set; }
+
+	public string PrimaryID { get; set; }
+
+	public string PrimaryPropertyName { get; set; }
+
+	public int PrimaryStartComponent { get; set; }
+
+	public int PrimaryEndComponent { get; set; }
+
+	public string PrimaryPHASE
+	{
+		get
+		{
+			return _PrimaryPHASE;
+		}
+		set
+		{
+			_PrimaryPHASE = value;
+		}
+	}
+
+	public string PrimaryBasis
+	{
+		get
+		{
+			return _PrimaryBasis;
+		}
+		set
+		{
+			_PrimaryBasis = value;
+		}
+	}
+
+	public int PrimaryTrayNumber { get; set; }
+
+	public string PrimPropRefTemp { get; set; }
+
+	public string OperatorName { get; set; }
+
+	public string ReferenceName { get; set; }
+
+	public string ReferenceID { get; set; }
+
+	public string ReferencePropertyName { get; set; }
+
+	public int ReferenceStartComponent { get; set; }
+
+	public int ReferenceEndComponent { get; set; }
+
+	public string ReferencePHASE
+	{
+		get
+		{
+			return _ReferencePHASE;
+		}
+		set
+		{
+			_ReferencePHASE = value;
+		}
+	}
+
+	public string ReferenceBasis
+	{
+		get
+		{
+			return _ReferenceBasis;
+		}
+		set
+		{
+			_ReferenceBasis = value;
+		}
+	}
+
+	public int ReferenceTrayNumber { get; set; }
+
+	public string RefPropRefTemp { get; set; }
+
+	public DoubleValue Value { get; set; }
+
+	public double ATOL { get; set; }
+
+	public double RTOL { get; set; }
+
+	public bool bGlobalSpec { get; set; }
+
+	public bool bInactiveSpec { get; set; }
+
+	public OperatorType Operator
+	{
+		get
+		{
+			return _operator;
+		}
+		set
+		{
+			_operator = value;
+		}
+	}
+
+	public string STCASPECTYPE { get; set; }
+
+	public string STCASPECBASIS { get; set; }
+
+	public string STCASPECUNIT { get; set; }
+
+	public string STCASPECVALUE { get; set; }
+
+	public string STCASPECFIRSTCOMP { get; set; }
+
+	public string STCASPECLASTCOMP { get; set; }
+
+	public Specification()
+	{
+	}
+
+	public Specification(string SpecExpress, string BlockName, string ID)
+	{
+		P2SpecExpression = SpecExpress;
+		PrimaryName = BlockName;
+		PrimaryID = ID;
+		if (SpecExpress.StartsWith("CHANGE"))
+		{
+			SpecExpress = SpecExpress.Substring(7).Trim();
+			bInactiveSpec = true;
+		}
+		OperatorName = GetOperator(SpecExpress);
+		bool flag = SpecExpress.Contains(OperatorName + ",");
+		int num = -1;
+		if (!string.IsNullOrEmpty(OperatorName))
+		{
+			num = ((!flag) ? SpecExpress.IndexOf(OperatorName + " ") : SpecExpress.IndexOf(OperatorName + ","));
+			string strExpress = SpecExpress.Substring(0, num - 1);
+			ParsePropertyData(strExpress, bPrimary: true);
+			string text = SpecExpress.Substring(num + 1 + OperatorName.Length);
+			int num2 = text.IndexOf("VALUE=");
+			if (num2.Equals(-1))
+			{
+				num2 = text.IndexOf("VALU=");
+			}
+			string strExpress2 = text.Substring(0, num2).Trim();
+			ParsePropertyData(strExpress2, bPrimary: false);
+			string strExpress3 = text.Substring(num2).Trim();
+			ParseValueAndTol(strExpress3);
+		}
+		else
+		{
+			num = ((!SpecExpress.Contains("VALUE")) ? SpecExpress.IndexOf("VALU=") : SpecExpress.IndexOf("VALUE="));
+			string strExpress4 = SpecExpress.Substring(0, num - 1).Trim();
+			ParsePropertyData(strExpress4, bPrimary: true);
+			string strExpress5 = SpecExpress.Substring(num).Trim();
+			ParseValueAndTol(strExpress5);
+		}
+		SetSpecType();
+		SetAutomaticallyTransferValue();
+	}
+
+	private string GetOperator(string strExpress)
+	{
+		string empty = string.Empty;
+		empty = ((!strExpress.ToUpper().Contains("PLUS,") && !strExpress.ToUpper().Contains("PLUS ")) ? ((!strExpress.ToUpper().Contains("SUM,") && !strExpress.ToUpper().Contains("SUM ")) ? ((!strExpress.ToUpper().Contains("ADD,") && !strExpress.ToUpper().Contains("ADD ")) ? ((!strExpress.ToUpper().Contains("MINUS,") && !strExpress.ToUpper().Contains("MINUS ")) ? ((!strExpress.ToUpper().Contains("MINU,") && !strExpress.ToUpper().Contains("MINU ")) ? ((!strExpress.ToUpper().Contains("DIFF,") && !strExpress.ToUpper().Contains("DIFF ")) ? ((!strExpress.ToUpper().Contains("SUBT,") && !strExpress.ToUpper().Contains("SUBT ")) ? ((!strExpress.ToUpper().Contains("TIMES,") && !strExpress.ToUpper().Contains("TIMES ")) ? ((!strExpress.ToUpper().Contains("TIME,") && !strExpress.ToUpper().Contains("TIME ")) ? ((!strExpress.ToUpper().Contains("MULTIPLY,") && !strExpress.ToUpper().Contains("MULTIPLY ")) ? ((!strExpress.ToUpper().Contains("MULT,") && !strExpress.ToUpper().Contains("MULT ")) ? ((!strExpress.ToUpper().Contains("DIVIDE,") && !strExpress.ToUpper().Contains("DIVIDE ")) ? ((!strExpress.ToUpper().Contains("DIVI,") && !strExpress.ToUpper().Contains("DIVI ")) ? (((strExpress.ToUpper().Contains("RATIO,") || strExpress.ToUpper().Contains("RATIO ")) && !strExpress.ToUpper().Contains("RRATIO")) ? "RATIO" : ((!strExpress.ToUpper().Contains("RATION,") && !strExpress.ToUpper().Contains("RATION ")) ? ((strExpress.ToUpper().Contains("RATI,") && !strExpress.ToUpper().Contains("RRATI,")) ? "RATI" : ((!strExpress.ToUpper().Contains("OVER,") && !strExpress.ToUpper().Contains("OVER ")) ? string.Empty : "OVER")) : "RATION")) : "DIVI") : "DIVIDE") : "MULTIPLY") : "MULTIPLY") : "TIME") : "TIMES") : "SUBT") : "DIFF") : "MINU") : "MINUS") : "ADD") : "SUM") : "PLUS");
+		if (empty.StartsWith("PLUS") || empty.StartsWith("SUM") || empty.StartsWith("ADD"))
+		{
+			Operator = OperatorType.plus;
+		}
+		else if (empty.StartsWith("MINU") || empty.StartsWith("DIFF") || empty.StartsWith("SUBT"))
+		{
+			Operator = OperatorType.minus;
+		}
+		else if (empty.StartsWith("TIME") || empty.StartsWith("MULT"))
+		{
+			Operator = OperatorType.times;
+		}
+		else if (empty.StartsWith("DIVI") || empty.StartsWith("RATI") || empty.StartsWith("OVER"))
+		{
+			Operator = OperatorType.divide;
+		}
+		else
+		{
+			Operator = OperatorType.none;
+		}
+		return empty;
+	}
+
+	private void SetAutomaticallyTransferValue()
+	{
+		if (string.IsNullOrEmpty(ReferenceName) && !string.IsNullOrEmpty(PrimaryName))
+		{
+			ReferenceName = PrimaryName;
+			ReferenceID = PrimaryID;
+		}
+		if (string.IsNullOrEmpty(ReferencePropertyName) && !string.IsNullOrEmpty(PrimaryPropertyName))
+		{
+			ReferencePropertyName = PrimaryPropertyName;
+			if (PrimaryStartComponent > 0 && ReferenceStartComponent == 0)
+			{
+				ReferenceStartComponent = PrimaryStartComponent;
+			}
+			if (PrimaryEndComponent > 0 && ReferenceEndComponent == 0)
+			{
+				ReferenceEndComponent = PrimaryEndComponent;
+			}
+			if (_ReferencePHASE == "T" && _PrimaryPHASE != "T")
+			{
+				_ReferencePHASE = _PrimaryPHASE;
+			}
+			if (_ReferenceBasis == "WET" && _PrimaryBasis != "WET")
+			{
+				_ReferenceBasis = _PrimaryBasis;
+			}
+			if (PrimaryTrayNumber > 0 && ReferenceTrayNumber == 0)
+			{
+				ReferenceTrayNumber = PrimaryTrayNumber;
+			}
+		}
+	}
+
+	public void SetGlobalProperty(string ID, List<string> Feeds, List<string> Products, List<string> SubBlocks, List<string> RealProducts, List<string> subProducts)
+	{
+		if (!string.IsNullOrEmpty(ReferenceName) && !(PrimaryID == ReferenceID))
+		{
+			if (ReferenceName.ToUpper().Trim().StartsWith("REFF"))
+			{
+				bGlobalSpec = false;
+			}
+			else if (ReferenceName.StartsWith("CALC"))
+			{
+				bGlobalSpec = true;
+			}
+			else if (ReferenceID != ID && !Feeds.Contains(ReferenceID) && !Products.Contains(ReferenceID) && !SubBlocks.Contains(ReferenceID) && !RealProducts.Contains(ReferenceID) && !subProducts.Contains(ReferenceID))
+			{
+				bGlobalSpec = true;
+			}
+		}
+	}
+
+	public void SetGlobalProperty(string ID, List<string> Feeds, List<string> Products)
+	{
+		if (!string.IsNullOrEmpty(ReferenceName))
+		{
+			if (ReferenceName.StartsWith("CALC"))
+			{
+				bGlobalSpec = true;
+			}
+			else if (ReferenceID != ID && !Feeds.Contains(ReferenceID) && !Products.Contains(ReferenceID) && !ReferenceName.ToUpper().StartsWith("REFF"))
+			{
+				bGlobalSpec = true;
+			}
+		}
+	}
+
+	private void ParsePropertyData(string strExpress, bool bPrimary)
+	{
+		if (string.IsNullOrEmpty(strExpress))
+		{
+			return;
+		}
+		if (strExpress.Contains("COMP=") || strExpress.Contains("COMPONENT="))
+		{
+			strExpress = RemoveComponentDef(strExpress, bPrimary);
+		}
+		if (string.IsNullOrEmpty(strExpress) && !bPrimary)
+		{
+			ReferenceName = PrimaryName;
+			ReferenceID = PrimaryID;
+			return;
+		}
+		string[] array = ParseUtilty.CutBySpaceOrComma(strExpress.Trim());
+		string empty = string.Empty;
+		for (int i = 0; i < array.Length; i++)
+		{
+			empty = array[i].ToString().Trim();
+			if (empty.Contains("="))
+			{
+				string[] array2 = ParseUtilty.CutByEqual(empty);
+				if (empty.ToUpper().StartsWith("PHASE"))
+				{
+					if (bPrimary)
+					{
+						_PrimaryPHASE = array2[1].ToString().Trim();
+					}
+					else
+					{
+						_ReferencePHASE = array2[1].ToString().Trim();
+					}
+				}
+				else if (empty.ToUpper().StartsWith("TRAY"))
+				{
+					if (bPrimary)
+					{
+						PrimaryTrayNumber = int.Parse(array2[1].ToString().Trim());
+					}
+					else
+					{
+						ReferenceTrayNumber = int.Parse(array2[1].ToString().Trim());
+					}
+				}
+				else if (empty.ToUpper().StartsWith("ID="))
+				{
+					SpecID = array2[1].ToString().Trim();
+				}
+				else if (empty.ToUpper().Trim().StartsWith("REFT"))
+				{
+					if (bPrimary)
+					{
+						PrimPropRefTemp = ParseUtilty.GetStringValue(empty);
+					}
+					else
+					{
+						RefPropRefTemp = ParseUtilty.GetStringValue(empty);
+					}
+				}
+				else if (bPrimary)
+				{
+					PrimaryName = array2[0].ToString().Trim();
+					PrimaryID = array2[1].ToString().Trim();
+				}
+				else
+				{
+					ReferenceName = array2[0].ToString().Trim();
+					ReferenceID = array2[1].ToString().Trim();
+				}
+				continue;
+			}
+			switch (empty)
+			{
+			case "DRY":
+				if (bPrimary)
+				{
+					if (_PrimaryBasis == "WET")
+					{
+						_PrimaryBasis = "DRY";
+					}
+					else
+					{
+						_PrimaryBasis.Replace("WET", "DRY");
+					}
+				}
+				else if (_ReferenceBasis == "WET")
+				{
+					_ReferenceBasis = "DRY";
+				}
+				else
+				{
+					_ReferenceBasis.Replace("WET", "DRY");
+				}
+				continue;
+			case "WET":
+			case "TOTAL":
+				continue;
+			}
+			if (empty.StartsWith("REFF"))
+			{
+				if (!bPrimary)
+				{
+					ReferenceName = empty;
+				}
+			}
+			else if (empty.ToUpper().Trim().StartsWith("REFT"))
+			{
+				if (bPrimary)
+				{
+					PrimPropRefTemp = empty;
+				}
+				else
+				{
+					RefPropRefTemp = empty;
+				}
+			}
+			else if (bPrimary)
+			{
+				PrimaryPropertyName = empty;
+			}
+			else
+			{
+				ReferencePropertyName = empty;
+			}
+		}
+	}
+
+	private void ParseValueAndTol(string strExpress)
+	{
+		if (string.IsNullOrEmpty(strExpress))
+		{
+			return;
+		}
+		string[] array = ParseUtilty.CutByComma(strExpress);
+		if (array.Length == 0)
+		{
+			return;
+		}
+		for (int i = 0; i < array.Length; i++)
+		{
+			string text = array[i].ToString().Trim();
+			string s = text.Substring(text.IndexOf("=") + 1);
+			if (text.ToUpper().StartsWith("VALU"))
+			{
+				double result = 0.0;
+				if (double.TryParse(s, out result))
+				{
+					Value = new DoubleValue("", result);
+				}
+			}
+			else if (text.ToUpper().StartsWith("ATOL"))
+			{
+				double result2 = 0.0;
+				if (double.TryParse(s, out result2))
+				{
+					ATOL = result2;
+				}
+			}
+			else if (text.ToUpper().StartsWith("RTOL"))
+			{
+				double result3 = 0.0;
+				if (double.TryParse(s, out result3))
+				{
+					RTOL = result3;
+				}
+			}
+		}
+	}
+
+	private string RemoveComponentDef(string strExpress, bool bPrimary)
+	{
+		_ = string.Empty;
+		MatchCollection matchCollection = new Regex("COMP\\s*=\\s*(\\d+),\\s*(\\d+)", RegexOptions.IgnoreCase).Matches(strExpress);
+		Match match = null;
+		if (matchCollection.Count == 1)
+		{
+			match = matchCollection[0];
+			return setComponentData(match, strExpress, bPrimary);
+		}
+		matchCollection = new Regex("COMPONENT\\s*=\\s*(\\d+),\\s*(\\d+)", RegexOptions.IgnoreCase).Matches(strExpress);
+		if (matchCollection.Count == 1)
+		{
+			match = matchCollection[0];
+			return setComponentData(match, strExpress, bPrimary);
+		}
+		matchCollection = new Regex("COMP\\s*=\\s*(\\d+)", RegexOptions.IgnoreCase).Matches(strExpress);
+		if (matchCollection.Count == 1)
+		{
+			match = matchCollection[0];
+			return setComponentData(match, strExpress, bPrimary).Trim();
+		}
+		matchCollection = new Regex("COMPONENT\\s*=\\s*(\\d+)", RegexOptions.IgnoreCase).Matches(strExpress);
+		if (matchCollection.Count == 1)
+		{
+			match = matchCollection[0];
+			return setComponentData(match, strExpress, bPrimary);
+		}
+		return strExpress;
+	}
+
+	private string setComponentData(Match match, string strExpress, bool bPrimary)
+	{
+		if (bPrimary)
+		{
+			PrimaryStartComponent = int.Parse(match.Groups[1].Value);
+			if (match.Groups.Count == 3)
+			{
+				PrimaryEndComponent = int.Parse(match.Groups[2].Value);
+			}
+			else if (match.Groups.Count == 2)
+			{
+				PrimaryEndComponent = PrimaryStartComponent;
+			}
+		}
+		else
+		{
+			ReferenceStartComponent = int.Parse(match.Groups[1].Value);
+			if (match.Groups.Count == 3)
+			{
+				ReferenceEndComponent = int.Parse(match.Groups[2].Value);
+			}
+			else if (match.Groups.Count == 2)
+			{
+				ReferenceEndComponent = ReferenceStartComponent;
+			}
+		}
+		int num = strExpress.IndexOf(match.Groups[0].Value);
+		int num2 = num + match.Groups[0].Value.Length;
+		if (num2 < strExpress.Length)
+		{
+			num2++;
+		}
+		return strExpress.Remove(num, num2 - num);
+	}
+
+	private void SetSpecType()
+	{
+		if (PrimaryTrayNumber > 0)
+		{
+			SpecType = SpecificationType.COLUMNINTERNALSTREAM;
+		}
+		else if (PrimaryName.StartsWith(CStream.STREAM))
+		{
+			SpecType = SpecificationType.STREAM;
+		}
+		else
+		{
+			SpecType = SpecificationType.UNITOPERATION;
+		}
+	}
+}
+public enum SpecificationType
+{
+	STREAM,
+	COLUMNINTERNALSTREAM,
+	UNITOPERATION
+}
+public class StringValue
+{
+	public string Name { get; set; }
+
+	public string Value { get; set; }
+
+	public StringValue Clone()
+	{
+		return new StringValue
+		{
+			Name = Name,
+			Value = Value
+		};
+	}
+}
+public class IntValue
+{
+	public string Name { get; set; }
+
+	public int Value { get; set; }
+
+	public IntValue Clone()
+	{
+		return new IntValue
+		{
+			Name = Name,
+			Value = Value
+		};
+	}
+}
+public class UnitValue
+{
+	public string Name { get; set; }
+
+	public double Value { get; set; }
+
+	public string Unit { get; set; }
+
+	public UnitValue()
+	{
+	}
+
+	public UnitValue(string unit, double val)
+	{
+		Unit = unit;
+		Value = val;
+	}
+
+	public UnitValue Clone()
+	{
+		return new UnitValue
+		{
+			Name = Name,
+			Value = Value,
+			Unit = Unit
+		};
+	}
+}
+public class TypeUnitValue
+{
+	public string Name { get; set; }
+
+	public string Type { get; set; }
+
+	public double Value { get; set; }
+
+	public string Unit { get; set; }
+
+	public TypeUnitValue()
+	{
+	}
+
+	public TypeUnitValue(string unit, string type, double val)
+	{
+		Unit = unit;
+		Type = type;
+		Value = val;
+	}
+
+	public TypeUnitValue Clone()
+	{
+		return new TypeUnitValue
+		{
+			Name = Name,
+			Value = Value,
+			Unit = Unit,
+			Type = Type
+		};
+	}
+}
+public class DoubleValues
+{
+	public string Unit { get; set; }
+
+	public double[] Values { get; set; }
+}
+public class DoubleValue
+{
+	public string Unit { get; set; }
+
+	public double Value { get; set; }
+
+	public DoubleValue()
+	{
+	}
+
+	public DoubleValue(string unit, double val)
+	{
+		Unit = unit;
+		Value = val;
+	}
+
+	public DoubleValue Clone()
+	{
+		return new DoubleValue
+		{
+			Value = Value,
+			Unit = Unit
+		};
+	}
+}
+public class TwoUnitsDoubleValue
+{
+	public string FirstUnit { get; set; }
+
+	public string SecondUnit { get; set; }
+
+	public double Value { get; set; }
+
+	public TwoUnitsDoubleValue()
+	{
+	}
+
+	public TwoUnitsDoubleValue(string unit1, string unit2, double val)
+	{
+		FirstUnit = unit1;
+		SecondUnit = unit2;
+		Value = val;
+	}
+
+	public TwoUnitsDoubleValue Clone()
+	{
+		return new TwoUnitsDoubleValue
+		{
+			FirstUnit = FirstUnit,
+			SecondUnit = SecondUnit,
+			Value = Value
+		};
+	}
+}
+public class QualifierValue
+{
+	public string Qualifier { get; set; }
+
+	public string Value { get; set; }
+
+	public QualifierValue()
+	{
+	}
+
+	public QualifierValue(string qual, string val)
+	{
+		Qualifier = qual;
+		Value = val;
+	}
+
+	public QualifierValue Clone()
+	{
+		return new QualifierValue
+		{
+			Qualifier = Qualifier,
+			Value = Value
+		};
+	}
+
+	public double GetValueAsDouble()
+	{
+		if (double.TryParse(Value, out var result))
+		{
+			return result;
+		}
+		throw new Exception("Failed ot parse Value of " + Value + " to double");
+	}
+
+	public int GetValueAsInt()
+	{
+		if (int.TryParse(Value, out var result))
+		{
+			return result;
+		}
+		throw new Exception("Failed ot parse Value of " + Value + " to integer");
+	}
+}
+public class PETROLEUM
+{
+	public int nIndex { get; set; }
+
+	public string Name { get; set; }
+
+	public double MW { get; set; }
+
+	public DoubleValue StdLiqDensity { get; set; }
+
+	public DoubleValue NBP { get; set; }
+}
+public class RangeValue
+{
+	public string Name { get; set; }
+
+	public string StartValue { get; set; }
+
+	public string EndValue { get; set; }
+
+	public string Qualifier { get; set; }
+
+	public int QualifierToInt => GetQualifierAsInt();
+
+	public RangeValue()
+	{
+	}
+
+	public RangeValue(string qual, string start, string end)
+	{
+		Qualifier = qual;
+		StartValue = start;
+		EndValue = end;
+	}
+
+	public void GetValueAsDouble(ref double start, ref double end)
+	{
+		if (!double.TryParse(StartValue, out start) || !double.TryParse(EndValue, out end))
+		{
+			throw new Exception("Failed ot parse Value of " + StartValue + "or" + EndValue + " to double");
+		}
+	}
+
+	public void GetValueAsInt(ref int start, ref int end)
+	{
+		if (!int.TryParse(StartValue, out start) || !int.TryParse(EndValue, out end))
+		{
+			throw new Exception("Failed ot parse Value of " + StartValue + "or" + EndValue + " to integer");
+		}
+	}
+
+	private int GetQualifierAsInt()
+	{
+		if (int.TryParse(Qualifier, out var result))
+		{
+			return result;
+		}
+		throw new Exception("Failed ot parse Value of " + Qualifier + " to integer");
+	}
+}
+public enum CompostionBasisTypes
+{
+	MoleFrac,
+	MassFrac,
+	LVFrac,
+	MoleFlow,
+	MassFlow,
+	LVFlow,
+	GVFrac,
+	GVFlow
+}
+public enum RXBasis
+{
+	CONCENTRATION,
+	PARTIALPRESSURE,
+	FUGACITY,
+	ACTIVITY,
+	MOLEFRACTION,
+	MASSFRACTION
+}
+public enum TransferBasisEnum
+{
+	TP,
+	PH,
+	VFT,
+	VFP,
+	DEWP,
+	BUBBLEP,
+	NOSET
+}
+public enum Dimensional
+{
+	English,
+	Metric,
+	SI
+}
+public class Unit
+{
+	public string Symbol { get; set; }
+
+	public string AspenKey { get; set; }
+
+	public string HYSYSKey { get; set; }
+
+	public string Comment { get; set; }
+
+	public double AspenMutiCoef { get; set; }
+
+	public double HYSYSMutiCoef { get; set; }
+
+	public Unit(string strSymbol, string strAspenKey, string strHYSYS, string strComment, double aspenMutiCoef, double hYSYSMutiCoef)
+	{
+		Symbol = strSymbol;
+		AspenKey = strAspenKey;
+		HYSYSKey = strHYSYS;
+		Comment = strComment;
+		AspenMutiCoef = aspenMutiCoef;
+		HYSYSMutiCoef = hYSYSMutiCoef;
+	}
+
+	public override string ToString()
+	{
+		return Symbol;
+	}
+}
+public class UnitType
+{
+	public IDictionary<string, Unit> Units = new Dictionary<string, Unit>();
+
+	public string Name { get; set; }
+
+	public string Key { get; set; }
+
+	public Unit DefaultUnit { get; set; }
+
+	public override string ToString()
+	{
+		return Name;
+	}
+
+	public UnitType()
+	{
+	}
+
+	public UnitType(string strName, string strKey)
+	{
+		Name = strName;
+		Key = strKey;
+	}
+
+	public Unit Get(string strKey)
+	{
+		return Units[strKey];
+	}
+
+	public void SetDefaultUnit(string strUnit)
+	{
+		Unit unit = Units[strUnit.ToUpper()];
+		if (unit != null)
+		{
+			if (DefaultUnit != null)
+			{
+				DefaultUnit = null;
+			}
+			DefaultUnit = unit;
+		}
+		else if (DefaultUnit != null)
+		{
+			DefaultUnit = null;
+		}
+	}
+
+	public IDictionary<string, Unit> GetUnits()
+	{
+		return Units;
+	}
+}
+public class UnitTypes
+{
+	private IDictionary<string, UnitType> EnglishTypes = new Dictionary<string, UnitType>();
+
+	private IDictionary<string, UnitType> MetricTypes = new Dictionary<string, UnitType>();
+
+	private IDictionary<string, UnitType> SITypes = new Dictionary<string, UnitType>();
+
+	public void Add(Dimensional dim, UnitType type)
+	{
+		switch (dim)
+		{
+		case Dimensional.English:
+			EnglishTypes.Add(type.Key.ToUpper(), type);
+			break;
+		case Dimensional.Metric:
+			MetricTypes.Add(type.Key.ToUpper(), type);
+			break;
+		case Dimensional.SI:
+			SITypes.Add(type.Key.ToUpper(), type);
+			break;
+		}
+	}
+
+	public UnitType GetUnitType(Dimensional dim, string strName)
+	{
+		switch (dim)
+		{
+		case Dimensional.English:
+			if (!EnglishTypes.ContainsKey(strName))
+			{
+				return null;
+			}
+			return EnglishTypes[strName];
+		case Dimensional.Metric:
+			if (!MetricTypes.ContainsKey(strName))
+			{
+				return null;
+			}
+			return MetricTypes[strName];
+		case Dimensional.SI:
+			if (!SITypes.ContainsKey(strName))
+			{
+				return null;
+			}
+			return SITypes[strName];
+		default:
+			return null;
+		}
+	}
+}
+public class UOM
+{
+	public UnitTypes _UnitTypes { get; set; }
+
+	public UOM()
+	{
+		_UnitTypes = new UnitTypes();
+	}
+
+	public static string GetUnitClassKey(UnitClassEnum unitClass, string unitClassType)
+	{
+		unitClassType = unitClassType.ToUpper();
+		switch (unitClass)
+		{
+		case UnitClassEnum.Temperature:
+			return "TEMP";
+		case UnitClassEnum.Pressure:
+			return "PRES";
+		case UnitClassEnum.Mass:
+			return "WT";
+		case UnitClassEnum.Time:
+			return "TIME";
+		case UnitClassEnum.Length:
+			return "LENGTH";
+		case UnitClassEnum.FineLength:
+			return "FLENGTH";
+		case UnitClassEnum.Velocity:
+			return "VELO";
+		case UnitClassEnum.Heat:
+			return "ENERGY";
+		case UnitClassEnum.Enthalpy:
+			return "ENTH";
+		case UnitClassEnum.Work:
+			return "WORK";
+		case UnitClassEnum.Duty:
+			return "DUTY";
+		case UnitClassEnum.HeatCapacity:
+			return "CP";
+		case UnitClassEnum.HeatTransferCoefficient:
+			return "HTCOEF";
+		case UnitClassEnum.ThermalConductivity:
+			return "CONDUCT";
+		case UnitClassEnum.Viscosity:
+			return "VISCOSITY";
+		case UnitClassEnum.KinematicViscosity:
+			return "KVIS";
+		case UnitClassEnum.SurfaceTension:
+			return "SURFACE";
+		case UnitClassEnum.LiquidVolume:
+			return "LIQVOL";
+		case UnitClassEnum.VaporVolume:
+			return "VAPVOL";
+		case UnitClassEnum.MoleLiquidVolume:
+			return "SPVOL";
+		case UnitClassEnum.MoleVaporVolume:
+			return "SPVVOL";
+		case UnitClassEnum.LiquidDensity:
+			return "LDENSITY";
+		case UnitClassEnum.VaporDensity:
+			return "VDENSITY";
+		case UnitClassEnum.PetroDensity:
+			return "XDENSITY";
+		case UnitClassEnum.DropTemperature:
+			return "TEMP";
+		case UnitClassEnum.DropPressure:
+			return "DPRES";
+		case UnitClassEnum.Area:
+			return "AREA";
+		case UnitClassEnum.Rate:
+			switch (unitClassType)
+			{
+			case "M":
+				return "MRATE";
+			case "WT":
+			case "W":
+				return "WRATE";
+			case "L":
+			case "LV":
+			case "GV":
+			case "V":
+			case "G":
+				return "VRATE";
+			}
+			break;
+		case UnitClassEnum.Dipolemoment:
+			return "DIPO";
+		case UnitClassEnum.Fraction:
+			return "FRACTION";
+		case UnitClassEnum.UA:
+			return "HXCFG";
+		case UnitClassEnum.VolumEnthalpy:
+			return "HVAL";
+		case UnitClassEnum.FoulingCoefficient:
+			return "FOUL";
+		case UnitClassEnum.HYSYS_ACT_GAS_VFLOW:
+			return "HYSYS_ACT_GAS_VFLOW";
+		case UnitClassEnum.HYSYS_VOL_TO_STD_GAS_VFLOW:
+			return "HYSYS_VOL_TO_STD_GAS_VFLOW";
+		case UnitClassEnum.MolarEnthalpy:
+			return "MOLARENTHALPY";
+		}
+		return string.Empty;
+	}
+}
+public enum UnitClassEnum
+{
+	Temperature = 1,
+	Pressure,
+	Mass,
+	Time,
+	Length,
+	FineLength,
+	Velocity,
+	Heat,
+	Enthalpy,
+	Work,
+	Duty,
+	HeatCapacity,
+	HeatTransferCoefficient,
+	ThermalConductivity,
+	Viscosity,
+	KinematicViscosity,
+	SurfaceTension,
+	LiquidVolume,
+	VaporVolume,
+	MoleLiquidVolume,
+	MoleVaporVolume,
+	LiquidDensity,
+	VaporDensity,
+	PetroDensity,
+	DropTemperature,
+	DropPressure,
+	Area,
+	Rate,
+	Dipolemoment,
+	Fraction,
+	FoulingCoefficient,
+	UA,
+	VolumEnthalpy,
+	HYSYS_ACT_GAS_VFLOW,
+	HYSYS_VOL_TO_STD_GAS_VFLOW,
+	MolarEnthalpy
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

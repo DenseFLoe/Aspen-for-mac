@@ -1,0 +1,3349 @@
+using System;
+using System.CodeDom.Compiler;
+using System.Collections;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Drawing;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Resources;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Text;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Markup;
+using AspenTech.AspenPlus.Happ;
+using AspenTech.AspenPlus.Infrastructure;
+using AspenTech.AspenPlus.Localization.WpfPlotWizards;
+using AspenTech.WpfControls.Engineering;
+using WpfPLControls;
+using WpfPlotWizardsHelper;
+using WpfPlotwizard;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyFileVersion("41.0.0.614")]
+[assembly: AssemblyTitle("Data")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("Aspen Technology, Inc.")]
+[assembly: AssemblyProduct("Data")]
+[assembly: AssemblyCopyright("Copyright © Aspen Technology 2011 - 2024")]
+[assembly: AssemblyTrademark("")]
+[assembly: ComVisible(false)]
+[assembly: NeutralResourcesLanguage("en-US", UltimateResourceFallbackLocation.Satellite)]
+[assembly: ThemeInfo(ResourceDictionaryLocation.None, ResourceDictionaryLocation.SourceAssembly)]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.614")]
+namespace WpfPLData
+{
+	[ProgId("WpfPLData.Comp")]
+	public class Comp : IRibbonPlotWizardType
+	{
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private PLDataHelper _help = new PLDataHelper("PlotWiz.hlp", 108L);
+
+		private string _propertyId;
+
+		private string _componentId;
+
+		private bool _showProperty = true;
+
+		private bool _showComponent = true;
+
+		private string _uniqueId = "Data_Comp";
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgIcon;
+
+		private bool _bHasInputDialog;
+
+		private string _type = "";
+
+		private string[] VarNames;
+
+		private int[] DataElement;
+
+		private string MoleType = "";
+
+		private int TempElement;
+
+		private string TempUnit = "";
+
+		private int Temp2Element;
+
+		private string Temp2Unit = "";
+
+		private int PresElement;
+
+		private string PresUnit = "";
+
+		private string TempAmt = "";
+
+		private string PresAmt = "";
+
+		private int PlotType;
+
+		private List<string> ComponentList = new List<string>();
+
+		private List<string> XPropName = new List<string>();
+
+		private List<string> XPropUnit = new List<string>();
+
+		private List<int> XPropc = new List<int>();
+
+		private int[] Xc;
+
+		private int[] X2c;
+
+		private int[] Yc;
+
+		private bool _bCheckDataOnly;
+
+		string IRibbonPlotWizardType.TooltipContentForRibbonItem
+		{
+			get
+			{
+				if (_wizardPlot == null)
+				{
+					return null;
+				}
+				string result = null;
+				switch (_wizardPlot.basis)
+				{
+				case 1:
+					result = WpfPLDataResources.TooltipContentForRibbonItem_TXY;
+					break;
+				case 2:
+					result = WpfPLDataResources.TooltipContentForRibbonItem_PXY;
+					break;
+				case 3:
+					result = WpfPLDataResources.TooltipContentForRibbonItem_TX;
+					break;
+				case 4:
+					result = WpfPLDataResources.TooltipContentForRibbonItem_PX;
+					break;
+				case 5:
+					result = WpfPLDataResources.TooltipContentForRibbonItem_YX;
+					break;
+				case 6:
+					result = WpfPLDataResources.TooltipContentForRibbonItem_TXX;
+					break;
+				case 7:
+					result = WpfPLDataResources.TooltipContentForRibbonItem_PXX;
+					break;
+				case 8:
+					result = WpfPLDataResources.TooltipContentForRibbonItem_PropX;
+					break;
+				case 9:
+				case 29:
+					result = WpfPLDataResources.TooltipContentForRibbonItem_PropT;
+					break;
+				case 30:
+					result = WpfPLDataResources.TooltipContentForRibbonItem_PropP;
+					break;
+				}
+				return result;
+			}
+		}
+
+		string IRibbonPlotWizardType.TooltipHeaderForRibbonItem
+		{
+			get
+			{
+				if (_wizardPlot == null)
+				{
+					return null;
+				}
+				string result = null;
+				switch (_wizardPlot.basis)
+				{
+				case 1:
+					result = "T-xy";
+					break;
+				case 2:
+					result = "P-xy";
+					break;
+				case 3:
+					result = "T-x";
+					break;
+				case 4:
+					result = "P-x";
+					break;
+				case 5:
+					result = "y-x";
+					break;
+				case 6:
+					result = "T-xx";
+					break;
+				case 7:
+					result = "P-xx";
+					break;
+				case 8:
+					result = WpfPLDataResources.TooltipHeaderForRibbonItem_PropX;
+					break;
+				case 9:
+				case 29:
+					result = WpfPLDataResources.TooltipHeaderForRibbonItem_PropT;
+					break;
+				case 30:
+					result = WpfPLDataResources.TooltipHeaderForRibbonItem_PropP;
+					break;
+				}
+				return result;
+			}
+		}
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgIcon;
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => ((PlotwizardHelper)_help).GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => ((PlotwizardHelper)_help).GetHelpID();
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields
+		{
+			get
+			{
+				List<string> list = new List<string>();
+				if (_showProperty)
+				{
+					list.Add(WpfPLDataResources.Property_Title);
+				}
+				if (_showComponent)
+				{
+					list.Add(WpfPLDataResources.Component_Title);
+				}
+				return list;
+			}
+		}
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string>();
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		public Comp(string type)
+		{
+			_bHasInputDialog = false;
+			_type = type;
+			if (_imgIcon == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream(_help.GetIconResource(_type));
+				_imgIcon = new Bitmap(manifestResourceStream);
+			}
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(WpfPLDataResources.Property_Title) == 0)
+			{
+				return XPropName;
+			}
+			if (sFieldName.CompareTo(WpfPLDataResources.Component_Title) == 0)
+			{
+				return ComponentList;
+			}
+			return null;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(WpfPLDataResources.Component_Title) == 0)
+			{
+				sCurrentVal = _componentId;
+			}
+			if (sFieldName.CompareTo(WpfPLDataResources.Property_Title) == 0)
+			{
+				sCurrentVal = _propertyId;
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(WpfPLDataResources.Property_Title) == 0)
+			{
+				_propertyId = sValue;
+			}
+			if (sFieldName.CompareTo(WpfPLDataResources.Component_Title) == 0)
+			{
+				_componentId = sValue;
+			}
+			if (false)
+			{
+				UpdateWizardData();
+			}
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sField)
+		{
+			if (sField.CompareTo(WpfPLDataResources.Property_Title) != 0)
+			{
+				if (sField.CompareTo(WpfPLDataResources.Component_Title) != 0)
+				{
+					return (RibbonControlType)0;
+				}
+				return (RibbonControlType)1;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.Context(object HNode, ref object HWizardPlot, ref int ierror)
+		{
+			if (HWizardPlot == null || HNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			_context = HNode as IHNode;
+			_wizardPlot = HWizardPlot as IHWizardPlot;
+			string text = (dynamic)_context.FindNode("Input/STATESPEC").get_Value(Type.Missing);
+			if (!string.IsNullOrEmpty(text) && text.Contains("GEN-"))
+			{
+				ierror = 1;
+				return;
+			}
+			VarNames = new string[3] { "Input/CIDS", "Input/USE", "Input/VALUE" };
+			if (!Build_CandidateList())
+			{
+				ierror = 1;
+				return;
+			}
+			if (string.IsNullOrEmpty(_componentId) && ComponentList.Count > 0)
+			{
+				_componentId = ComponentList[0];
+			}
+			if (string.IsNullOrEmpty(_propertyId) && XPropName.Count > 0)
+			{
+				if (_wizardPlot.basis == 29)
+				{
+					if (XPropName.Count > 1)
+					{
+						_propertyId = XPropName[1];
+					}
+					else
+					{
+						_propertyId = XPropName[0];
+					}
+				}
+				else
+				{
+					_propertyId = XPropName[0];
+				}
+			}
+			if (_wizardPlot.basis != 29 || _wizardPlot.basis != 30)
+			{
+				_help.DetermineMoleType(_context, out MoleType);
+			}
+			Build_Node_Lookup();
+			SetWindowTitle();
+			SetAxisTitles();
+		}
+
+		public void UpdateWizardData()
+		{
+			IHNode iHNode = _context.FindNode(VarNames[2]);
+			int num = -1;
+			List<int> list = new List<int>();
+			int index = -1;
+			switch (_wizardPlot.basis)
+			{
+			case 1:
+			case 2:
+			case 3:
+			case 4:
+			case 5:
+			case 6:
+			case 7:
+				if (ComponentList.Count != 0)
+				{
+					num = ComponentList.IndexOf(_componentId);
+				}
+				break;
+			case 8:
+			case 9:
+				if (ComponentList.Count != 0)
+				{
+					num = ComponentList.IndexOf(_componentId);
+				}
+				list = XPropPtrArray(_propertyId);
+				break;
+			case 29:
+			case 30:
+				index = XPropName.IndexOf(_propertyId);
+				break;
+			}
+			int num2 = 0;
+			int nPoints = 0;
+			switch (_wizardPlot.basis)
+			{
+			case 1:
+				if (TempElement != -1 || TempAmt != "")
+				{
+					if (Yc[num] != -1)
+					{
+						num2++;
+						nPoints = DataElement.Length;
+					}
+					if (Xc[num] != -1)
+					{
+						num2++;
+						nPoints = DataElement.Length;
+					}
+				}
+				break;
+			case 2:
+				if (PresElement != -1 || PresAmt != "")
+				{
+					if (Yc[num] != -1)
+					{
+						num2++;
+						nPoints = DataElement.Length;
+					}
+					if (Xc[num] != -1)
+					{
+						num2++;
+						nPoints = DataElement.Length;
+					}
+				}
+				break;
+			case 3:
+				if ((TempElement != -1 || TempAmt != "") && Xc[num] != -1)
+				{
+					num2++;
+					nPoints = DataElement.Length;
+				}
+				break;
+			case 4:
+				if ((PresElement != -1 || PresAmt != "") && Xc[num] != -1)
+				{
+					num2++;
+					nPoints = DataElement.Length;
+				}
+				break;
+			case 5:
+				if (Yc[num] != -1 && Xc[num] != -1)
+				{
+					num2++;
+					nPoints = DataElement.Length;
+				}
+				break;
+			case 6:
+				if ((TempElement != -1 || TempAmt != "") && Xc[num] != -1 && X2c[num] != -1)
+				{
+					num2 += 2;
+					nPoints = DataElement.Length;
+				}
+				break;
+			case 7:
+				if ((PresElement != -1 || PresAmt != "") && Xc[num] != -1 && X2c[num] != -1)
+				{
+					num2 += 2;
+					nPoints = DataElement.Length;
+				}
+				break;
+			case 8:
+				if (Xc[num] != -1 && list.Count > 0)
+				{
+					num2 += list.Count;
+					nPoints = DataElement.Length;
+				}
+				break;
+			case 9:
+				if ((TempElement != -1 || TempAmt != "" || Temp2Element != -1) && list.Count > 0)
+				{
+					num2 += list.Count;
+					nPoints = DataElement.Length;
+				}
+				break;
+			case 29:
+				if ((TempElement != -1 || TempAmt != "") && XPropc[index] != -1)
+				{
+					num2++;
+					nPoints = DataElement.Length;
+				}
+				break;
+			case 30:
+				if ((PresElement != -1 || PresAmt != "") && XPropc[index] != -1)
+				{
+					num2++;
+					nPoints = DataElement.Length;
+				}
+				break;
+			}
+			_wizardPlot.RemoveAllDependentVariable();
+			_wizardPlot.PlotVal.NVariables = num2;
+			_wizardPlot.PlotVal.NXVariables = num2;
+			_wizardPlot.PlotVal.NPoints = nPoints;
+			int num3 = 0;
+			bool[] array = new bool[num2];
+			for (int i = 0; i < num2; i++)
+			{
+				array[i] = false;
+			}
+			switch (_wizardPlot.basis)
+			{
+			case 1:
+			case 3:
+			{
+				_wizardPlot.PlotVal.XAxisTitle = MoleType + _componentId;
+				if (_wizardPlot.basis == 1 && (TempElement != -1 || TempAmt != "") && Yc[num] != -1)
+				{
+					for (int num13 = 0; num13 < DataElement.Length; num13++)
+					{
+						int num14 = num13;
+						if (!array[num3])
+						{
+							string arg3 = "";
+							if (PresElement != -1)
+							{
+								arg3 = " (" + (dynamic)iHNode.Elements[DataElement[0], PresElement, PresElement, Type.Missing, Type.Missing].get_Value(Type.Missing) + " " + PresUnit + ")";
+							}
+							string label2 = string.Format(WpfPLDataResources.Exp_Y_ID, arg3);
+							((IHPlotVal)_wizardPlot.PlotVal).set_Label(num3, label2);
+							((IHPlotVal)_wizardPlot.PlotVal).set_CurveStyle(num3, 15);
+							array[num3] = true;
+						}
+						((IHPlotVal)_wizardPlot.PlotVal).set_XData(num3, num14, (short)1, (object)iHNode.Elements[DataElement[num14], Yc[num], Yc[num], Type.Missing, Type.Missing]);
+						if (TempElement != -1)
+						{
+							((IHPlotVal)_wizardPlot.PlotVal).set_YData(num3, num14, (short)1, (object)iHNode.Elements[DataElement[num14], TempElement, TempElement, Type.Missing, Type.Missing]);
+						}
+						else
+						{
+							((IHPlotVal)_wizardPlot.PlotVal).set_YData(num3, num14, (short)0, (object)TempAmt);
+						}
+					}
+					num3++;
+				}
+				if ((TempElement == -1 && !(TempAmt != "")) || Xc[num] == -1)
+				{
+					break;
+				}
+				for (int num15 = 0; num15 < DataElement.Length; num15++)
+				{
+					int num16 = num15;
+					if (!array[num3])
+					{
+						string arg4 = "";
+						if (PresElement != -1)
+						{
+							arg4 = " (" + (dynamic)iHNode.Elements[DataElement[0], PresElement, PresElement, Type.Missing, Type.Missing].get_Value(Type.Missing) + " " + PresUnit + ")";
+						}
+						string text5 = "";
+						text5 = ((_wizardPlot.basis != 1) ? string.Format(WpfPLDataResources.Exp_ID_Format, arg4) : string.Format(WpfPLDataResources.Exp_X_ID, arg4));
+						((IHPlotVal)_wizardPlot.PlotVal).set_Label(num3, text5);
+						((IHPlotVal)_wizardPlot.PlotVal).set_CurveStyle(num3, 15);
+						array[num3] = true;
+					}
+					((IHPlotVal)_wizardPlot.PlotVal).set_XData(num3, num16, (short)1, (object)iHNode.Elements[DataElement[num16], Xc[num], Xc[num], Type.Missing, Type.Missing]);
+					if (TempElement != -1)
+					{
+						((IHPlotVal)_wizardPlot.PlotVal).set_YData(num3, num16, (short)1, (object)iHNode.Elements[DataElement[num16], TempElement, TempElement, Type.Missing, Type.Missing]);
+					}
+					else
+					{
+						((IHPlotVal)_wizardPlot.PlotVal).set_YData(num3, num16, (short)0, (object)TempAmt);
+					}
+				}
+				num3++;
+				break;
+			}
+			case 2:
+			case 4:
+			{
+				_wizardPlot.PlotVal.XAxisTitle = MoleType + _componentId;
+				if (_wizardPlot.basis == 2 && (PresElement != -1 || PresAmt != "") && Yc[num] != -1)
+				{
+					for (int k = 0; k < DataElement.Length; k++)
+					{
+						int num5 = k;
+						if (!array[num3])
+						{
+							string arg = "";
+							if (TempElement != -1)
+							{
+								arg = " (" + (dynamic)iHNode.Elements[DataElement[0], TempElement, TempElement, Type.Missing, Type.Missing].get_Value(Type.Missing) + " " + TempUnit + ")";
+							}
+							string label = string.Format(WpfPLDataResources.Exp_Y_ID, arg);
+							((IHPlotVal)_wizardPlot.PlotVal).set_Label(num3, label);
+							((IHPlotVal)_wizardPlot.PlotVal).set_CurveStyle(num3, 15);
+							array[num3] = true;
+						}
+						((IHPlotVal)_wizardPlot.PlotVal).set_XData(num3, num5, (short)1, (object)iHNode.Elements[DataElement[num5], Yc[num], Yc[num], Type.Missing, Type.Missing]);
+						if (PresElement != -1)
+						{
+							((IHPlotVal)_wizardPlot.PlotVal).set_YData(num3, num5, (short)1, (object)iHNode.Elements[DataElement[num5], PresElement, PresElement, Type.Missing, Type.Missing]);
+						}
+						else
+						{
+							((IHPlotVal)_wizardPlot.PlotVal).set_YData(num3, num5, (short)0, (object)PresAmt);
+						}
+					}
+					num3++;
+				}
+				if ((PresElement == -1 && !(PresAmt != "")) || Xc[num] == -1)
+				{
+					break;
+				}
+				for (int l = 0; l < DataElement.Length; l++)
+				{
+					int num6 = l;
+					if (!array[num3])
+					{
+						string arg2 = "";
+						if (TempElement != -1)
+						{
+							arg2 = " (" + (dynamic)iHNode.Elements[DataElement[0], TempElement, TempElement, Type.Missing, Type.Missing].get_Value(Type.Missing) + " " + TempUnit + ")";
+						}
+						string text2 = "";
+						text2 = ((_wizardPlot.basis != 2) ? string.Format(WpfPLDataResources.Exp_ID_Format, arg2) : string.Format(WpfPLDataResources.Exp_X_ID, arg2));
+						((IHPlotVal)_wizardPlot.PlotVal).set_Label(num3, text2);
+						((IHPlotVal)_wizardPlot.PlotVal).set_CurveStyle(num3, 15);
+						array[num3] = true;
+					}
+					((IHPlotVal)_wizardPlot.PlotVal).set_XData(num3, num6, (short)1, (object)iHNode.Elements[DataElement[num6], Xc[num], Xc[num], Type.Missing, Type.Missing]);
+					if (PresElement != -1)
+					{
+						((IHPlotVal)_wizardPlot.PlotVal).set_YData(num3, num6, (short)1, (object)iHNode.Elements[DataElement[num6], PresElement, PresElement, Type.Missing, Type.Missing]);
+					}
+					else
+					{
+						((IHPlotVal)_wizardPlot.PlotVal).set_YData(num3, num6, (short)0, (object)PresAmt);
+					}
+				}
+				num3++;
+				break;
+			}
+			case 5:
+			{
+				_wizardPlot.PlotVal.XAxisTitle = MoleType + _componentId;
+				((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle(Type.Missing, MoleType + _componentId);
+				if (Yc[num] == -1 || Xc[num] == -1)
+				{
+					break;
+				}
+				for (int m = 0; m < DataElement.Length; m++)
+				{
+					int num7 = m;
+					if (!array[num3])
+					{
+						((IHPlotVal)_wizardPlot.PlotVal).set_Label(num3, WpfPLDataResources.Exp_ID);
+						((IHPlotVal)_wizardPlot.PlotVal).set_CurveStyle(num3, 15);
+						array[num3] = true;
+					}
+					((IHPlotVal)_wizardPlot.PlotVal).set_XData(num3, num7, (short)1, (object)iHNode.Elements[DataElement[num7], Xc[num], Xc[num], Type.Missing, Type.Missing]);
+					((IHPlotVal)_wizardPlot.PlotVal).set_YData(num3, num7, (short)1, (object)iHNode.Elements[DataElement[num7], Yc[num], Yc[num], Type.Missing, Type.Missing]);
+				}
+				num3++;
+				break;
+			}
+			case 6:
+			{
+				if ((TempElement != -1 || TempAmt != "") && X2c[num] != -1)
+				{
+					for (int num17 = 0; num17 < DataElement.Length; num17++)
+					{
+						int num18 = num17;
+						if (!array[num3])
+						{
+							((IHPlotVal)_wizardPlot.PlotVal).set_Label(num3, WpfPLDataResources.Exp_X2_ID);
+							((IHPlotVal)_wizardPlot.PlotVal).set_CurveStyle(num3, 15);
+							array[num3] = true;
+						}
+						((IHPlotVal)_wizardPlot.PlotVal).set_XData(num3, num18, (short)1, (object)iHNode.Elements[DataElement[num18], X2c[num], X2c[num], Type.Missing, Type.Missing]);
+						if (TempElement != -1)
+						{
+							((IHPlotVal)_wizardPlot.PlotVal).set_YData(num3, num18, (short)1, (object)iHNode.Elements[DataElement[num18], TempElement, TempElement, Type.Missing, Type.Missing]);
+						}
+						else
+						{
+							((IHPlotVal)_wizardPlot.PlotVal).set_YData(num3, num18, (short)0, (object)TempAmt);
+						}
+					}
+					num3++;
+				}
+				if ((TempElement == -1 && !(TempAmt != "")) || Xc[num] == -1)
+				{
+					break;
+				}
+				for (int num19 = 0; num19 < DataElement.Length; num19++)
+				{
+					int num20 = num19;
+					if (!array[num3])
+					{
+						((IHPlotVal)_wizardPlot.PlotVal).set_Label(num3, WpfPLDataResources.Exp_X1_ID);
+						((IHPlotVal)_wizardPlot.PlotVal).set_CurveStyle(num3, 15);
+						array[num3] = true;
+					}
+					((IHPlotVal)_wizardPlot.PlotVal).set_XData(num3, num20, (short)1, (object)iHNode.Elements[DataElement[num20], Xc[num], Xc[num], Type.Missing, Type.Missing]);
+					if (TempElement != -1)
+					{
+						((IHPlotVal)_wizardPlot.PlotVal).set_YData(num3, num20, (short)1, (object)iHNode.Elements[DataElement[num20], TempElement, TempElement, Type.Missing, Type.Missing]);
+					}
+					else
+					{
+						((IHPlotVal)_wizardPlot.PlotVal).set_YData(num3, num20, (short)0, (object)TempAmt);
+					}
+				}
+				num3++;
+				break;
+			}
+			case 7:
+			{
+				if ((PresElement != -1 || PresAmt != "") && X2c[num] != -1)
+				{
+					for (int num23 = 0; num23 < DataElement.Length; num23++)
+					{
+						int num24 = num23;
+						if (!array[num3])
+						{
+							((IHPlotVal)_wizardPlot.PlotVal).set_Label(num3, WpfPLDataResources.Exp_X2_ID);
+							((IHPlotVal)_wizardPlot.PlotVal).set_CurveStyle(num3, 15);
+							array[num3] = true;
+						}
+						((IHPlotVal)_wizardPlot.PlotVal).set_XData(num3, num24, (short)1, (object)iHNode.Elements[DataElement[num24], X2c[num], X2c[num], Type.Missing, Type.Missing]);
+						if (PresElement != -1)
+						{
+							((IHPlotVal)_wizardPlot.PlotVal).set_YData(num3, num24, (short)1, (object)iHNode.Elements[DataElement[num24], PresElement, PresElement, Type.Missing, Type.Missing]);
+						}
+						else
+						{
+							((IHPlotVal)_wizardPlot.PlotVal).set_YData(num3, num24, (short)0, (object)PresAmt);
+						}
+					}
+					num3++;
+				}
+				if ((PresElement == -1 && !(PresAmt != "")) || Xc[num] == -1)
+				{
+					break;
+				}
+				for (int num25 = 0; num25 < DataElement.Length; num25++)
+				{
+					int num26 = num25;
+					if (!array[num3])
+					{
+						((IHPlotVal)_wizardPlot.PlotVal).set_Label(num3, WpfPLDataResources.Exp_X1_ID);
+						((IHPlotVal)_wizardPlot.PlotVal).set_CurveStyle(num3, 15);
+						array[num3] = true;
+					}
+					((IHPlotVal)_wizardPlot.PlotVal).set_XData(num3, num26, (short)1, (object)iHNode.Elements[DataElement[num26], Xc[num], Xc[num], Type.Missing, Type.Missing]);
+					if (PresElement != -1)
+					{
+						((IHPlotVal)_wizardPlot.PlotVal).set_YData(num3, num26, (short)1, (object)iHNode.Elements[DataElement[num26], PresElement, PresElement, Type.Missing, Type.Missing]);
+					}
+					else
+					{
+						((IHPlotVal)_wizardPlot.PlotVal).set_YData(num3, num26, (short)0, (object)PresAmt);
+					}
+				}
+				num3++;
+				break;
+			}
+			case 8:
+			{
+				if (Xc[num] == -1 || list.Count <= 0)
+				{
+					break;
+				}
+				((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle(Type.Missing, XPropName[list[0]] + ", " + XPropUnit[list[0]]);
+				for (int num27 = 0; num27 < list.Count; num27++)
+				{
+					for (int num28 = 0; num28 < DataElement.Length; num28++)
+					{
+						int num29 = num28;
+						if (!array[num3])
+						{
+							((IHPlotVal)_wizardPlot.PlotVal).set_Label(num3, string.Format(WpfPLDataResources.Exp_Format_ID, XPropUnit[list[num27]]));
+							((IHPlotVal)_wizardPlot.PlotVal).set_CurveStyle(num3, 15);
+							array[num3] = true;
+						}
+						((IHPlotVal)_wizardPlot.PlotVal).set_XData(num3, num29, (short)1, (object)iHNode.Elements[DataElement[num29], Xc[num], Xc[num], Type.Missing, Type.Missing]);
+						((IHPlotVal)_wizardPlot.PlotVal).set_YData(num3, num29, (short)1, (object)iHNode.Elements[DataElement[num28], XPropc[list[num27]], XPropc[list[num27]], Type.Missing, Type.Missing]);
+					}
+					num3++;
+				}
+				break;
+			}
+			case 9:
+			{
+				if ((TempElement == -1 && !(TempAmt != "") && Temp2Element == -1) || list.Count <= 0)
+				{
+					break;
+				}
+				if (XPropName[list[0]] == "GAMINF1" || XPropName[list[0]] == "GAMINF2")
+				{
+					((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle(Type.Missing, string.Format(WpfPLDataResources.Infinite_DilutionActivityCoefficient, XPropUnit[list[0]]));
+					for (int n = 0; n < list.Count; n++)
+					{
+						for (int num8 = 0; num8 < DataElement.Length; num8++)
+						{
+							int num9 = num8;
+							if (!array[num3])
+							{
+								string text3 = "";
+								if (PresElement != -1)
+								{
+									text3 = " (" + (dynamic)iHNode.Elements[DataElement[0], PresElement, PresElement, Type.Missing, Type.Missing].get_Value(Type.Missing) + " " + PresUnit + ")";
+								}
+								else
+								{
+									text3 = PressureAmtUnits();
+									if (!string.IsNullOrEmpty(text3))
+									{
+										text3 = " (" + text3 + ")";
+									}
+								}
+								((IHPlotVal)_wizardPlot.PlotVal).set_Label(num3, string.Format(WpfPLDataResources.Exp_Format_ID_Format, XPropUnit[list[n]], text3));
+								((IHPlotVal)_wizardPlot.PlotVal).set_CurveStyle(num3, 15);
+								array[num3] = true;
+							}
+							if ((TempElement != -1 || TempAmt != "") && XPropName[list[0]] == "GAMINF1")
+							{
+								if (TempElement != -1)
+								{
+									((IHPlotVal)_wizardPlot.PlotVal).set_XData(num3, num9, (short)1, (object)iHNode.Elements[DataElement[num9], TempElement, TempElement, Type.Missing, Type.Missing]);
+								}
+								else
+								{
+									((IHPlotVal)_wizardPlot.PlotVal).set_XData(num3, num9, (short)0, (object)TempAmt);
+								}
+								((IHPlotVal)_wizardPlot.PlotVal).set_YData(num3, num9, (short)1, (object)iHNode.Elements[DataElement[num9], XPropc[list[n]], XPropc[list[n]], Type.Missing, Type.Missing]);
+							}
+							if (Temp2Element != -1 && XPropName[list[0]] == "GAMINF2")
+							{
+								if (Temp2Element != -1)
+								{
+									((IHPlotVal)_wizardPlot.PlotVal).set_XData(num3, num9, (short)1, (object)iHNode.Elements[DataElement[num9], Temp2Element, Temp2Element, Type.Missing, Type.Missing]);
+								}
+								else
+								{
+									((IHPlotVal)_wizardPlot.PlotVal).set_XData(num3, num9, (short)0, (object)"");
+								}
+								((IHPlotVal)_wizardPlot.PlotVal).set_YData(num3, num9, (short)1, (object)iHNode.Elements[DataElement[num9], XPropc[list[n]], XPropc[list[n]], Type.Missing, Type.Missing]);
+							}
+						}
+						num3++;
+					}
+					break;
+				}
+				((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle(Type.Missing, XPropName[list[0]] + ", " + XPropUnit[list[0]]);
+				for (int num10 = 0; num10 < list.Count; num10++)
+				{
+					for (int num11 = 0; num11 < DataElement.Length; num11++)
+					{
+						int num12 = num11;
+						if (!array[num3])
+						{
+							string text4 = "";
+							if (PresElement != -1)
+							{
+								text4 = " (" + (dynamic)iHNode.Elements[DataElement[0], PresElement, PresElement, Type.Missing, Type.Missing].get_Value(Type.Missing) + " " + PresUnit + ")";
+							}
+							else
+							{
+								text4 = PressureAmtUnits();
+								if (!string.IsNullOrEmpty(text4))
+								{
+									text4 = " (" + text4 + ")";
+								}
+							}
+							((IHPlotVal)_wizardPlot.PlotVal).set_Label(num3, string.Format(WpfPLDataResources.Exp_Format_ID_Format, XPropUnit[list[num10]], text4));
+							((IHPlotVal)_wizardPlot.PlotVal).set_CurveStyle(num3, 15);
+							array[num3] = true;
+						}
+						if (TempElement != -1)
+						{
+							((IHPlotVal)_wizardPlot.PlotVal).set_XData(num3, num11, (short)1, (object)iHNode.Elements[DataElement[num12], TempElement, TempElement, Type.Missing, Type.Missing]);
+						}
+						else
+						{
+							((IHPlotVal)_wizardPlot.PlotVal).set_XData(num3, num11, (short)0, (object)TempAmt);
+						}
+						((IHPlotVal)_wizardPlot.PlotVal).set_YData(num3, num11, (short)1, (object)iHNode.Elements[DataElement[num11], XPropc[list[num10]], XPropc[list[num10]], Type.Missing, Type.Missing]);
+					}
+					num3++;
+				}
+				break;
+			}
+			case 29:
+			{
+				if ((TempElement == -1 && !(TempAmt != "")) || XPropc[index] == -1)
+				{
+					break;
+				}
+				((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle(Type.Missing, XPropName[index] + ", " + XPropUnit[index]);
+				if (XPropName[index] == "PL" || XPropName[index] == "PS" || XPropName[index] == "PRESSURE")
+				{
+					if (_wizardPlot.PlotVal.NXVariables == 1 && (TempUnit.Trim() == "K" || TempUnit.Trim() == "R"))
+					{
+						((IHPlotVal)_wizardPlot.PlotVal).set_AxisScale(1, 1);
+						((IHPlotVal)_wizardPlot.PlotVal).set_AxisScale(0, 2);
+					}
+					else
+					{
+						((IHPlotVal)_wizardPlot.PlotVal).set_AxisScale(1, 0);
+						((IHPlotVal)_wizardPlot.PlotVal).set_AxisScale(0, 0);
+					}
+				}
+				for (int num21 = 0; num21 < DataElement.Length; num21++)
+				{
+					int num22 = num21;
+					if (!array[num3])
+					{
+						string text6 = "";
+						if (PresElement != -1)
+						{
+							text6 = " (" + (dynamic)iHNode.Elements[DataElement[0], PresElement, PresElement, Type.Missing, Type.Missing].get_Value(Type.Missing) + " " + PresUnit + ")";
+						}
+						else
+						{
+							text6 = PressureAmtUnits();
+							if (!string.IsNullOrEmpty(text6))
+							{
+								text6 = " (" + text6 + ")";
+							}
+						}
+						((IHPlotVal)_wizardPlot.PlotVal).set_Label(num3, string.Format(WpfPLDataResources.Exp_ID, text6));
+						((IHPlotVal)_wizardPlot.PlotVal).set_CurveStyle(num3, 15);
+						array[num3] = true;
+					}
+					if (TempElement != -1)
+					{
+						((IHPlotVal)_wizardPlot.PlotVal).set_XData(num3, num22, (short)1, (object)iHNode.Elements[DataElement[num22], TempElement, TempElement, Type.Missing, Type.Missing]);
+					}
+					else
+					{
+						((IHPlotVal)_wizardPlot.PlotVal).set_XData(num3, num22, (short)0, (object)TempAmt);
+					}
+					((IHPlotVal)_wizardPlot.PlotVal).set_YData(num3, num22, (short)1, (object)iHNode.Elements[DataElement[num22], XPropc[index], XPropc[index], Type.Missing, Type.Missing]);
+				}
+				num3++;
+				break;
+			}
+			case 30:
+			{
+				if ((PresElement == -1 && !(PresAmt != "")) || XPropc[index] == -1)
+				{
+					break;
+				}
+				((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle(Type.Missing, XPropName[index] + ", " + XPropUnit[index]);
+				for (int j = 0; j < DataElement.Length; j++)
+				{
+					int num4 = j;
+					if (!array[num3])
+					{
+						string text = "";
+						if (PresElement != -1)
+						{
+							text = " (" + (dynamic)iHNode.Elements[DataElement[0], PresElement, PresElement, Type.Missing, Type.Missing].get_Value(Type.Missing) + " " + PresUnit + ")";
+						}
+						else
+						{
+							text = PressureAmtUnits();
+							if (!string.IsNullOrEmpty(text))
+							{
+								text = " (" + text + ")";
+							}
+						}
+						((IHPlotVal)_wizardPlot.PlotVal).set_Label(num3, string.Format(WpfPLDataResources.Exp_ID, text));
+						((IHPlotVal)_wizardPlot.PlotVal).set_CurveStyle(num3, 15);
+						array[num3] = true;
+					}
+					if (PresElement != -1)
+					{
+						((IHPlotVal)_wizardPlot.PlotVal).set_XData(num3, num4, (short)1, (object)iHNode.Elements[DataElement[num4], PresElement, PresElement, Type.Missing, Type.Missing]);
+					}
+					else
+					{
+						((IHPlotVal)_wizardPlot.PlotVal).set_XData(num3, num4, (short)0, (object)PresAmt);
+					}
+					((IHPlotVal)_wizardPlot.PlotVal).set_YData(num3, num4, (short)1, (object)iHNode.Elements[DataElement[num4], XPropc[index], XPropc[index], Type.Missing, Type.Missing]);
+				}
+				num3++;
+				break;
+			}
+			}
+			SetWindowTitle();
+			SetAxisTitles();
+			if (_wizardPlot.basis == 5)
+			{
+				_wizardPlot.PlotVal.SquarePlot = true;
+				_wizardPlot.PlotVal.ShowDiagonalLine = true;
+			}
+		}
+
+		private int CountFor(string sName)
+		{
+			int element = 0;
+			string unit = string.Empty;
+			return sName switch
+			{
+				"TEMPERATURE" => _help.GetElementCount(_context, VarNames[2], sName, out TempElement, out TempUnit), 
+				"TEMP1" => _help.GetElementCount(_context, VarNames[2], sName, out TempElement, out TempUnit), 
+				"TEMP2" => _help.GetElementCount(_context, VarNames[2], sName, out Temp2Element, out Temp2Unit), 
+				"PRESSURE" => _help.GetElementCount(_context, VarNames[2], sName, out PresElement, out PresUnit), 
+				_ => _help.GetElementCount(_context, VarNames[2], sName, out element, out unit), 
+			};
+		}
+
+		private bool IsMixture()
+		{
+			return _help.IsMixture(_context, VarNames[0]);
+		}
+
+		private bool Build_CandidateList()
+		{
+			TempUnit = "";
+			TempElement = -1;
+			Temp2Unit = "";
+			Temp2Element = -1;
+			PresUnit = "";
+			PresElement = -1;
+			DataElement = _help.GetDataElementsArray(_context, VarNames[1]);
+			if (DataElement.Length == 0)
+			{
+				return false;
+			}
+			PlotType = _wizardPlot.basis;
+			switch (PlotType)
+			{
+			case 1:
+			case 2:
+			case 3:
+			case 4:
+			case 5:
+			case 6:
+			case 7:
+				ComponentList = _help.GetComponentList(_context, VarNames[0]);
+				_showProperty = false;
+				_showComponent = true;
+				break;
+			case 8:
+				ComponentList = _help.GetComponentList(_context, VarNames[0]);
+				_showProperty = true;
+				_showComponent = true;
+				break;
+			case 9:
+			case 29:
+			case 30:
+				_showProperty = true;
+				_showComponent = false;
+				break;
+			}
+			bool flag = true;
+			return PlotType switch
+			{
+				1 => IsTempPresent() && IsXPresent() && IsYPresent(), 
+				2 => IsPresPresent() && IsXPresent() && IsYPresent(), 
+				3 => IsTempPresent() && IsXPresent(), 
+				4 => IsPresPresent() && IsXPresent(), 
+				5 => IsYPresent() && IsXPresent(), 
+				6 => IsTempPresent() && CountFor("X1") == 2 && CountFor("X2") == 2, 
+				7 => IsPresPresent() && CountFor("X1") == 2 && CountFor("X2") == 2, 
+				8 => IsXPresent() && IsPropertyPresent(), 
+				9 => IsTempPresent() && IsPropertyPresent() && IsMixture(), 
+				29 => IsTempPresent() && IsPropertyPresent() && !IsMixture(), 
+				30 => IsPresPresent2() && IsPropertyPresent() && !IsMixture(), 
+				_ => false, 
+			};
+		}
+
+		private void Build_Node_Lookup()
+		{
+			int basis = _wizardPlot.basis;
+			if ((uint)(basis - 1) <= 7u)
+			{
+				int count = ComponentList.Count;
+				Xc = new int[count];
+				X2c = new int[count];
+				Yc = new int[count];
+				for (int i = 0; i < count; i++)
+				{
+					Xc[i] = -1;
+					X2c[i] = -1;
+					Yc[i] = -1;
+				}
+			}
+			IHNode iHNode = _context.FindNode(VarNames[2]);
+			if (iHNode == null)
+			{
+				return;
+			}
+			int num = iHNode.Elements.get_RowCount(1);
+			for (int j = 0; j < num; j++)
+			{
+				string text = iHNode.Elements.get_Label(1, j, Type.Missing);
+				string text2 = iHNode.Elements.get_Label(2, j, Type.Missing);
+				int num2 = -1;
+				switch (text)
+				{
+				case "TEMPERATURE":
+					if (TempElement == -1)
+					{
+						TempUnit = text2;
+						TempElement = j;
+					}
+					break;
+				case "TEMP1":
+					if (TempElement == -1)
+					{
+						TempUnit = text2;
+						TempElement = j;
+					}
+					break;
+				case "TEMP2":
+					if (Temp2Element == -1)
+					{
+						Temp2Unit = text2;
+						Temp2Element = j;
+					}
+					break;
+				case "PRESSURE":
+					if (PresElement == -1)
+					{
+						PresUnit = text2;
+						PresElement = j;
+					}
+					break;
+				case "X":
+				case "X1":
+					num2 = ComponentList.IndexOf(text2);
+					if (num2 >= 0)
+					{
+						Xc[num2] = j;
+					}
+					break;
+				case "X2":
+					num2 = ComponentList.IndexOf(text2);
+					if (num2 >= 0)
+					{
+						X2c[num2] = j;
+					}
+					break;
+				case "Y":
+					num2 = ComponentList.IndexOf(text2);
+					if (num2 >= 0)
+					{
+						Yc[num2] = j;
+					}
+					break;
+				}
+			}
+		}
+
+		private bool IsPropertyPresent()
+		{
+			bool result = false;
+			IHNode iHNode = _context.FindNode(VarNames[2]);
+			int num = iHNode.Elements.get_RowCount(1);
+			int num2 = 0;
+			XPropName.Clear();
+			XPropUnit.Clear();
+			XPropc.Clear();
+			for (int i = 0; i < num; i++)
+			{
+				string text = iHNode.Elements.get_Label(1, i, Type.Missing);
+				string item = iHNode.Elements.get_Label(2, i, Type.Missing);
+				if (text != null)
+				{
+					switch (text.Length)
+					{
+					case 5:
+						switch (text[4])
+						{
+						case '1':
+							if (text == "TEMP1")
+							{
+								continue;
+							}
+							break;
+						case '2':
+							if (text == "TEMP2")
+							{
+								continue;
+							}
+							break;
+						}
+						break;
+					case 1:
+					{
+						char c = text[0];
+						if (c == 'X' || c == 'Y')
+						{
+							continue;
+						}
+						break;
+					}
+					case 2:
+						switch (text[1])
+						{
+						case '1':
+							if (text == "X1")
+							{
+								continue;
+							}
+							break;
+						case '2':
+							if (text == "X2")
+							{
+								continue;
+							}
+							break;
+						}
+						break;
+					case 11:
+						if (text == "TEMPERATURE")
+						{
+							continue;
+						}
+						break;
+					case 8:
+						if (!(text == "PRESSURE"))
+						{
+							break;
+						}
+						if (_wizardPlot.basis != 9 && _wizardPlot.basis != 8 && _wizardPlot.basis != 30)
+						{
+							num2++;
+							if (!XPropName.Contains(text))
+							{
+								XPropName.Add(text);
+							}
+							if (!XPropName.Contains(item))
+							{
+								XPropUnit.Add(item);
+							}
+							if (!XPropc.Contains(i))
+							{
+								XPropc.Add(i);
+							}
+						}
+						continue;
+					}
+				}
+				num2++;
+				if (!XPropName.Contains(text))
+				{
+					XPropName.Add(text);
+				}
+				if (!XPropName.Contains(item))
+				{
+					XPropUnit.Add(item);
+				}
+				if (!XPropc.Contains(i))
+				{
+					XPropc.Add(i);
+				}
+			}
+			if (num2 > 0)
+			{
+				result = true;
+			}
+			return result;
+		}
+
+		private bool IsTempPresent()
+		{
+			bool result = false;
+			if (CountFor("TEMPERATURE") > 0 || CountFor("TEMP1") > 0 || CountFor("TEMP2") > 0)
+			{
+				result = true;
+			}
+			return result;
+		}
+
+		private bool IsPresPresent2()
+		{
+			bool result = false;
+			if (CountFor("PRESSURE") > 0 || CountFor("PRES") > 0)
+			{
+				result = true;
+			}
+			return result;
+		}
+
+		private bool IsPresPresent()
+		{
+			bool flag = false;
+			if (CountFor("PRESSURE") > 0)
+			{
+				return true;
+			}
+			IHNode iHNode = _context.FindNode("Input/PRES");
+			bool flag2 = iHNode == null;
+			if (flag2 || ((flag2 | ((dynamic)iHNode.get_Value(Type.Missing) == null)) ? true : false))
+			{
+				PresAmt = string.Empty;
+			}
+			else
+			{
+				PresAmt = ((dynamic)iHNode.get_Value(Type.Missing)).ToString();
+			}
+			if (!string.IsNullOrEmpty(PresAmt))
+			{
+				return true;
+			}
+			return false;
+		}
+
+		private bool IsXPresent()
+		{
+			return CountFor("X") > 0;
+		}
+
+		private bool IsX1Present()
+		{
+			return CountFor("X1") > 0;
+		}
+
+		private bool IsX2Present()
+		{
+			return CountFor("X2") > 0;
+		}
+
+		private bool IsYPresent()
+		{
+			return CountFor("Y") > 0;
+		}
+
+		private void SetWindowTitle()
+		{
+			switch (_wizardPlot.basis)
+			{
+			case 1:
+				_wizardPlot.PlotVal.Title = string.Format(WpfPLDataResources.TXYTitle, _help.Join(ComponentList, "/", bTrail: false));
+				break;
+			case 2:
+				_wizardPlot.PlotVal.Title = string.Format(WpfPLDataResources.PXYTitle, _help.Join(ComponentList, "/", bTrail: false));
+				break;
+			case 3:
+				_wizardPlot.PlotVal.Title = string.Format(WpfPLDataResources.TXTitle, _help.Join(ComponentList, "/", bTrail: false));
+				break;
+			case 4:
+				_wizardPlot.PlotVal.Title = string.Format(WpfPLDataResources.PXTitle, _help.Join(ComponentList, "/", bTrail: false));
+				break;
+			case 5:
+				_wizardPlot.PlotVal.Title = string.Format(WpfPLDataResources.YXTitle, _help.Join(ComponentList, "/", bTrail: false));
+				break;
+			case 6:
+				_wizardPlot.PlotVal.Title = string.Format(WpfPLDataResources.TXXTitle, _help.Join(ComponentList, "/", bTrail: false));
+				break;
+			case 7:
+				_wizardPlot.PlotVal.Title = string.Format(WpfPLDataResources.PXXTitle, _help.Join(ComponentList, "/", bTrail: false));
+				break;
+			case 8:
+				_wizardPlot.PlotVal.Title = WpfPLDataResources.PropCompTitle;
+				break;
+			case 9:
+			case 29:
+				_wizardPlot.PlotVal.Title = WpfPLDataResources.PropTempTitle;
+				break;
+			case 30:
+				_wizardPlot.PlotVal.Title = WpfPLDataResources.PropPresTitle;
+				break;
+			}
+		}
+
+		private void SetAxisTitles()
+		{
+			switch (_wizardPlot.basis)
+			{
+			case 1:
+			case 3:
+			case 6:
+				((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle(Type.Missing, WpfPLDataResources.Temperature + TempUnit);
+				_wizardPlot.PlotVal.XAxisTitle = MoleType + _componentId;
+				break;
+			case 2:
+			case 4:
+			case 7:
+				((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle(Type.Missing, WpfPLDataResources.Pressure + PresUnit);
+				_wizardPlot.PlotVal.XAxisTitle = MoleType + _componentId;
+				break;
+			case 8:
+				_wizardPlot.PlotVal.XAxisTitle = MoleType + _componentId;
+				break;
+			case 9:
+				_wizardPlot.PlotVal.XAxisTitle = WpfPLDataResources.Temperature + TempUnit;
+				break;
+			case 29:
+				_wizardPlot.PlotVal.XAxisTitle = WpfPLDataResources.Temperature + TempUnit;
+				break;
+			case 30:
+				_wizardPlot.PlotVal.XAxisTitle = WpfPLDataResources.Pressure + PresUnit;
+				break;
+			}
+		}
+
+		private string PressureAmtUnits()
+		{
+			IHNode iHNode = _context.FindNode("Input/PRES");
+			string text = string.Empty;
+			if (iHNode != null && (dynamic)iHNode.get_Value(Type.Missing) != null)
+			{
+				text = ((dynamic)iHNode.get_Value(Type.Missing)).ToString();
+			}
+			string text2 = string.Empty;
+			if (iHNode != null)
+			{
+				try
+				{
+					if (iHNode.Dimension != 0)
+					{
+						text2 = iHNode.Elements.get_Label(0, -7, Type.Missing);
+					}
+				}
+				catch (COMException)
+				{
+				}
+			}
+			if (!string.IsNullOrEmpty(text))
+			{
+				if (!string.IsNullOrEmpty(text2))
+				{
+					text = text + " " + text2;
+				}
+			}
+			else if (!string.IsNullOrEmpty(text2))
+			{
+				text = text2;
+			}
+			return text;
+		}
+
+		public List<int> XPropPtrArray(string PropID)
+		{
+			List<int> list = new List<int>();
+			for (int i = 0; i < XPropName.Count; i++)
+			{
+				if (XPropName[i] == PropID)
+				{
+					list.Add(i);
+				}
+			}
+			return list;
+		}
+	}
+	[ProgId("WpfPLData.RibbonPlotWizardMgr")]
+	public class RibbonPlotWizardMgr : IRibbonPlotWizardMgr
+	{
+		private static string[] supportedTypes = new string[13]
+		{
+			"T-xy", "P-xy", "T-x", "P-x", "y-x", "T-xx", "P-xx", "Prop-x", "Prop-T", "Triangular",
+			"Property-T", "Property-P", "Data Curve"
+		};
+
+		private IHNode _hnode;
+
+		private IHWizardPlot _wizardPlot;
+
+		private static List<PWRPlotType> _lspwrTypes = new List<PWRPlotType>();
+
+		private PWRParser _pwrParser = new PWRParser();
+
+		private Assembly _asm;
+
+		private Dictionary<string, IRibbonPlotWizardType> _dicTagIdToPlotType;
+
+		public RibbonPlotWizardMgr()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			Initialize();
+		}
+
+		long IRibbonPlotWizardMgr.SupportedPlotTypes(ref List<string> lsTagIds)
+		{
+			lsTagIds.Clear();
+			for (int i = 0; i < _lspwrTypes.Count; i++)
+			{
+				PWRPlotType val = _lspwrTypes[i];
+				IRibbonPlotWizardType iplotType = null;
+				IHWizardPlot iWizardPlot = (CHWizardPlot)Activator.CreateInstance(Marshal.GetTypeFromCLSID(new Guid("9E14C11F-6706-4067-8112-35CE9468F3A5")));
+				_pwrParser.FillDefaultPlotVal(val, ref _hnode, ref iWizardPlot);
+				if (DoesPlotTypeHaveData(val.TagId, ref iplotType, ref iWizardPlot) && !lsTagIds.Contains(val.TagId))
+				{
+					lsTagIds.Add(val.TagId);
+				}
+			}
+			return _lspwrTypes.Count;
+		}
+
+		long IRibbonPlotWizardMgr.GetPlotType(string sTagId, ref IRibbonPlotWizardType plwType)
+		{
+			if (_dicTagIdToPlotType.ContainsKey(sTagId))
+			{
+				plwType = _dicTagIdToPlotType[sTagId];
+				if (plwType == null)
+				{
+					return 0L;
+				}
+				PWRPlotType val = null;
+				_pwrParser.FindPlotType(sTagId, ref _lspwrTypes, ref val);
+				_pwrParser.FillDefaultPlotVal(val, ref _hnode, ref _wizardPlot);
+			}
+			return 0L;
+		}
+
+		void IRibbonPlotWizardMgr.SetContext(object oNode, ref object oWizard)
+		{
+			_hnode = oNode as IHNode;
+			_wizardPlot = oWizard as IHWizardPlot;
+		}
+
+		void IRibbonPlotWizardMgr.ShowInputDialog(string sPlotName)
+		{
+		}
+
+		private void InitializeWizardPlot()
+		{
+		}
+
+		private void Initialize()
+		{
+			_asm = Assembly.GetExecutingAssembly();
+			StreamReader streamReader = new StreamReader(Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLData.Text.Datapwr.txt"));
+			_lspwrTypes.Clear();
+			_pwrParser.ParsePwrFile(streamReader, ref _lspwrTypes);
+			_dicTagIdToPlotType = new Dictionary<string, IRibbonPlotWizardType>();
+			string[] array = supportedTypes;
+			foreach (string text in array)
+			{
+				if (text == supportedTypes[0])
+				{
+					IRibbonPlotWizardType value = (IRibbonPlotWizardType)(object)new Comp("T-xy");
+					_dicTagIdToPlotType.Add(text, value);
+				}
+				else if (text == supportedTypes[1])
+				{
+					IRibbonPlotWizardType value2 = (IRibbonPlotWizardType)(object)new Comp("P-xy");
+					_dicTagIdToPlotType.Add(text, value2);
+				}
+				else if (text == supportedTypes[2])
+				{
+					IRibbonPlotWizardType value3 = (IRibbonPlotWizardType)(object)new Comp("T-x");
+					_dicTagIdToPlotType.Add(text, value3);
+				}
+				else if (text == supportedTypes[3])
+				{
+					IRibbonPlotWizardType value4 = (IRibbonPlotWizardType)(object)new Comp("P-x");
+					_dicTagIdToPlotType.Add(text, value4);
+				}
+				else if (text == supportedTypes[4])
+				{
+					IRibbonPlotWizardType value5 = (IRibbonPlotWizardType)(object)new Comp("y-x");
+					_dicTagIdToPlotType.Add(text, value5);
+				}
+				else if (text == supportedTypes[5])
+				{
+					IRibbonPlotWizardType value6 = (IRibbonPlotWizardType)(object)new Comp("T-xx");
+					_dicTagIdToPlotType.Add(text, value6);
+				}
+				else if (text == supportedTypes[6])
+				{
+					IRibbonPlotWizardType value7 = (IRibbonPlotWizardType)(object)new Comp("P-xx");
+					_dicTagIdToPlotType.Add(text, value7);
+				}
+				else if (text == supportedTypes[7])
+				{
+					IRibbonPlotWizardType value8 = (IRibbonPlotWizardType)(object)new Comp("Prop-x");
+					_dicTagIdToPlotType.Add(text, value8);
+				}
+				else if (text == supportedTypes[8])
+				{
+					IRibbonPlotWizardType value9 = (IRibbonPlotWizardType)(object)new Comp("Prop-T");
+					_dicTagIdToPlotType.Add(text, value9);
+				}
+				else if (text == supportedTypes[9])
+				{
+					IRibbonPlotWizardType value10 = (IRibbonPlotWizardType)(object)new Triangle();
+					_dicTagIdToPlotType.Add(text, value10);
+				}
+				else if (text == supportedTypes[10])
+				{
+					IRibbonPlotWizardType value11 = (IRibbonPlotWizardType)(object)new Comp("Property-T");
+					_dicTagIdToPlotType.Add(text, value11);
+				}
+				else if (text == supportedTypes[11])
+				{
+					IRibbonPlotWizardType value12 = (IRibbonPlotWizardType)(object)new Comp("Property-P");
+					_dicTagIdToPlotType.Add(text, value12);
+				}
+				else if (text == supportedTypes[12])
+				{
+					IRibbonPlotWizardType value13 = (IRibbonPlotWizardType)(object)new DataCurve();
+					_dicTagIdToPlotType.Add(text, value13);
+				}
+			}
+		}
+
+		private bool DoesPlotTypeHaveData(string sTagId, ref IRibbonPlotWizardType iplotType, ref IHWizardPlot iWizardPlot)
+		{
+			int num = 0;
+			if (_dicTagIdToPlotType.ContainsKey(sTagId))
+			{
+				iplotType = _dicTagIdToPlotType[sTagId];
+				if (iplotType == null)
+				{
+					return false;
+				}
+				object obj = iWizardPlot;
+				iplotType.Context((object)_hnode, ref obj, ref num);
+				if (num == 0)
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+	}
+	[ProgId("WpfPLData.DataCurve")]
+	public class DataCurve : UserControl, IRibbonPlotWizardType, IPlotWizardTemplate, IComponentConnector
+	{
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private PLDataHelper _help = new PLDataHelper("PlotWiz.hlp", 108L);
+
+		private string _uniqueId = WpfPLSensitivityResources.DataSet_ID;
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgBitmap;
+
+		private bool _bHasInputDialog;
+
+		private string _currentConfigValue = string.Empty;
+
+		private string[] VarNames;
+
+		private int[] DataNum;
+
+		public static RoutedCommand OKCommand = new RoutedCommand();
+
+		public static RoutedCommand CancelCommand = new RoutedCommand();
+
+		public static RoutedCommand ClearCommand = new RoutedCommand();
+
+		private bool _bCheckDataOnly;
+
+		internal GroupBox groupBoxOption;
+
+		internal AesLabel lblXAxis;
+
+		internal ComboBox ComboBoxXAxis;
+
+		internal CheckBox chkParaVar;
+
+		internal AesLabel lblParaVar;
+
+		internal ComboBox ComboBoxParaVar;
+
+		internal CurvesSelectorControl CurveList;
+
+		internal AesCmdButton btnClear;
+
+		private bool _contentLoaded;
+
+		public string TooltipContentForRibbonItem => WpfPLSensitivityResources.TooltipContentForRibbonItem_Sensitivity;
+
+		public string TooltipHeaderForRibbonItem => WpfPLDataResources.DataCurve_Title;
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgBitmap;
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => ((PlotwizardHelper)_help).GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => ((PlotwizardHelper)_help).GetHelpID();
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string>();
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string>();
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		public DataCurve()
+		{
+			InitializeComponent();
+			_bHasInputDialog = true;
+			if (_imgBitmap == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLData.Images.DataPropt.ico");
+				_imgBitmap = System.Drawing.Image.FromStream(manifestResourceStream);
+			}
+			CommandBinding commandBinding = new CommandBinding(OKCommand, ExecuteOKCommand, CanExecuteOKCommand);
+			CommandBinding commandBinding2 = new CommandBinding(CancelCommand, ExecuteCancelCommand);
+			CommandBinding commandBinding3 = new CommandBinding(ClearCommand, ExecuteClearCommand);
+			base.CommandBindings.Add(commandBinding);
+			base.CommandBindings.Add(commandBinding2);
+			base.CommandBindings.Add(commandBinding3);
+		}
+
+		public void SetCaption(ref string caption)
+		{
+			caption = WpfPLSensitivityResources.DataSet_Window_Title;
+		}
+
+		public void SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 380.0;
+		}
+
+		public void SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 450.0;
+		}
+
+		public void SetMinHeight(ref double minHeight)
+		{
+			minHeight = 380.0;
+		}
+
+		public void SetMinWidth(ref double minWidth)
+		{
+			minWidth = 450.0;
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			return null;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sField)
+		{
+			return (RibbonControlType)0;
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+			sConfigValue = _currentConfigValue;
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+			_currentConfigValue = sValue;
+		}
+
+		void IRibbonPlotWizardType.Context(object HNode, ref object HWizardPlot, ref int ierror)
+		{
+			if (HWizardPlot == null || HNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			_context = HNode as IHNode;
+			_wizardPlot = HWizardPlot as IHWizardPlot;
+			string text = (dynamic)_context.FindNode("Input/STATESPEC").get_Value(Type.Missing);
+			if (!string.IsNullOrEmpty(text) && text.Contains("GEN-"))
+			{
+				ierror = 1;
+				return;
+			}
+			VarNames = new string[3] { "Input/CIDS", "Input/USE", "Input/VALUE" };
+			DataNum = _help.GetDataElementsArray(_context, VarNames[1]);
+			if (DataNum.Length == 0)
+			{
+				ierror = 1;
+				return;
+			}
+			IHNode iHNode = _context.FindNode(VarNames[2]);
+			List<string> list = new List<string>();
+			if (iHNode != null)
+			{
+				int num = iHNode.Elements.get_RowCount(1);
+				for (int i = 0; i < num; i++)
+				{
+					string text2 = iHNode.Elements.get_Label(1, i, Type.Missing);
+					string text3 = iHNode.Elements.get_Label(2, i, Type.Missing);
+					list.Add(text2 + " " + text3);
+				}
+			}
+			ComboBoxXAxis.Items.Clear();
+			ComboBoxParaVar.Items.Clear();
+			List<string> list2 = new List<string>();
+			CurveList.IsCheckAll = false;
+			for (int j = 0; j < list.Count; j++)
+			{
+				ComboBoxXAxis.Items.Add(list[j]);
+				ComboBoxParaVar.Items.Add(list[j]);
+				list2.Add(list[j]);
+				CurveList.SetCurves(list2.ToArray());
+			}
+			chkParaVar.IsChecked = false;
+			if (string.IsNullOrEmpty(_currentConfigValue))
+			{
+				ComboBoxXAxis.Text = ComboBoxXAxis.Items[0].ToString();
+			}
+			if (!string.IsNullOrEmpty(_currentConfigValue))
+			{
+				RestoreConfigValue(_currentConfigValue);
+			}
+		}
+
+		public void UpdateWizardData()
+		{
+			_wizardPlot.RemoveAllDependentVariable();
+			int num = DataNum.Length;
+			List<string> list = new List<string>(CurveList.GetSelectedCurves());
+			int count = list.Count;
+			_wizardPlot.PlotVal.NVariables = count;
+			_wizardPlot.PlotVal.NXVariables = 1;
+			_wizardPlot.PlotVal.NPoints = num;
+			IHNode iHNode = _context.FindNode("Input/VALUE");
+			if (iHNode == null)
+			{
+				return;
+			}
+			int selectedIndex = ComboBoxXAxis.SelectedIndex;
+			for (int i = 0; i < num; i++)
+			{
+				try
+				{
+					((IHPlotVal)_wizardPlot.PlotVal).set_XData(0, i, (short)1, (object)iHNode.Elements[DataNum[i], 0, selectedIndex, Type.Missing, Type.Missing]);
+				}
+				catch
+				{
+				}
+			}
+			_wizardPlot.PlotVal.Parametric = false;
+			if (chkParaVar.IsChecked == true)
+			{
+				_wizardPlot.PlotVal.Parametric = true;
+				int selectedIndex2 = ComboBoxParaVar.SelectedIndex;
+				for (int j = 0; j < num; j++)
+				{
+					try
+					{
+						((IHPlotVal)_wizardPlot.PlotVal).set_YData(0, j, (short)1, (object)iHNode.Elements[DataNum[j], 0, selectedIndex2, Type.Missing, Type.Missing]);
+					}
+					catch
+					{
+					}
+				}
+			}
+			if (chkParaVar.IsChecked == true)
+			{
+				_wizardPlot.PlotVal.NVariables = count + 1;
+			}
+			for (int k = 0; k < count; k++)
+			{
+				string text = list[k];
+				int selectedCurveIndex = CurveList.GetSelectedCurveIndex(text);
+				int index = k;
+				string label = text;
+				if (chkParaVar.IsChecked == true)
+				{
+					index = k + 1;
+					label = ComboBoxParaVar.Text + " = %param%";
+				}
+				for (int l = 0; l < num; l++)
+				{
+					try
+					{
+						((IHPlotVal)_wizardPlot.PlotVal).set_YData(index, l, (short)1, (object)iHNode.Elements[DataNum[l], 0, selectedCurveIndex, Type.Missing, Type.Missing]);
+					}
+					catch
+					{
+					}
+				}
+				((IHPlotVal)_wizardPlot.PlotVal).set_AxisMap(k, k);
+				((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle((object)k, text);
+				((IHPlotVal)_wizardPlot.PlotVal).set_Label(index, label);
+			}
+			_wizardPlot.PlotVal.Title = WpfPLDataResources.DataCurve_Title;
+			_wizardPlot.PlotVal.XAxisTitle = ComboBoxXAxis.Text;
+			_wizardPlot.PlotVal.LineStyle = 1;
+			_currentConfigValue = SaveConfigValue();
+		}
+
+		private void chkParaVar_Click(object sender, RoutedEventArgs e)
+		{
+			if (chkParaVar.IsChecked == true)
+			{
+				_wizardPlot.PlotVal.Parametric = true;
+			}
+			else
+			{
+				_wizardPlot.PlotVal.Parametric = false;
+			}
+		}
+
+		private void ExecuteOKCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			UpdateWizardData();
+			((PlotwizardHelper)_help).CloseForm((UserControl)this, (bool?)true);
+		}
+
+		private void CanExecuteOKCommand(object sender, CanExecuteRoutedEventArgs e)
+		{
+			int selectedIndex = ComboBoxXAxis.SelectedIndex;
+			int num = CurveList.GetSelectedCurves().Count();
+			if (num == CurveList.Curves.Count)
+			{
+				CurveList.IsCheckAll = true;
+			}
+			else
+			{
+				string[] selectedCurves = CurveList.GetSelectedCurves();
+				CurveList.IsCheckAll = false;
+				CurveList.SetSelectedCurves(selectedCurves);
+			}
+			if (selectedIndex >= 0 && num > 0)
+			{
+				e.CanExecute = true;
+			}
+			else
+			{
+				e.CanExecute = false;
+			}
+		}
+
+		private void ExecuteCancelCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			((PlotwizardHelper)_help).CloseForm((UserControl)this, (bool?)false);
+		}
+
+		private void ExecuteClearCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			ComboBoxXAxis.Text = "";
+			ComboBoxParaVar.Text = "";
+			chkParaVar.IsChecked = false;
+			CurveList.IsCheckAll = false;
+			int count = new List<string>(CurveList.GetSelectedCurves()).Count;
+			for (int i = 0; i < count; i++)
+			{
+				CurveList.SetItemsIsChecked(isChecked: false);
+			}
+		}
+
+		private string SaveConfigValue()
+		{
+			_ = string.Empty;
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.Append("X-Axis=");
+			stringBuilder.Append(ComboBoxXAxis.Text.ToString());
+			stringBuilder.Append(";");
+			stringBuilder.Append("ParamatricChecked=");
+			if (chkParaVar.IsChecked == true)
+			{
+				stringBuilder.Append(1);
+			}
+			else
+			{
+				stringBuilder.Append(0);
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("Parametric=");
+			stringBuilder.Append(ComboBoxParaVar.Text.ToString());
+			stringBuilder.Append(";");
+			stringBuilder.Append("CurveSelection=");
+			List<string> list = new List<string>(CurveList.GetSelectedCurves());
+			int count = list.Count;
+			for (int i = 0; i < count; i++)
+			{
+				if (i > 0)
+				{
+					stringBuilder.Append(",");
+				}
+				string value = list[i];
+				stringBuilder.Append(value);
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("CheckAll=");
+			stringBuilder.Append(CurveList.IsCheckAll);
+			stringBuilder.Append(";");
+			return stringBuilder.ToString();
+		}
+
+		private void RestoreConfigValue(string ConfigString)
+		{
+			string[] array = ConfigString.Split(';');
+			int num = 0;
+			string text = array[num].Substring(array[num].IndexOf('=') + 1);
+			ComboBoxXAxis.Text = text;
+			num++;
+			text = array[num].Substring(array[num].IndexOf('=') + 1);
+			if (Convert.ToInt16(text) == 1)
+			{
+				chkParaVar.IsChecked = true;
+			}
+			else
+			{
+				chkParaVar.IsChecked = false;
+			}
+			num++;
+			text = array[num].Substring(array[num].IndexOf('=') + 1);
+			ComboBoxParaVar.Text = text;
+			num++;
+			text = array[num].Substring(array[num].IndexOf('=') + 1);
+			string[] array2 = text.Split(',');
+			List<string> list = new List<string>();
+			string[] array3 = array2;
+			foreach (string item in array3)
+			{
+				list.Add(item);
+			}
+			CurveList.SetSelectedCurves(list.ToArray());
+			num++;
+			text = array[num].Substring(array[num].IndexOf('=') + 1);
+			CurveList.IsCheckAll = Convert.ToBoolean(text);
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLData;component/datacurve.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			//IL_0039: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0043: Expected O, but got Unknown
+			//IL_0077: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0081: Expected O, but got Unknown
+			//IL_009e: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00a8: Expected O, but got Unknown
+			switch (connectionId)
+			{
+			case 1:
+				groupBoxOption = (GroupBox)target;
+				break;
+			case 2:
+				lblXAxis = (AesLabel)target;
+				break;
+			case 3:
+				ComboBoxXAxis = (ComboBox)target;
+				break;
+			case 4:
+				chkParaVar = (CheckBox)target;
+				chkParaVar.Click += chkParaVar_Click;
+				break;
+			case 5:
+				lblParaVar = (AesLabel)target;
+				break;
+			case 6:
+				ComboBoxParaVar = (ComboBox)target;
+				break;
+			case 7:
+				CurveList = (CurvesSelectorControl)target;
+				break;
+			case 8:
+				btnClear = (AesCmdButton)target;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+	public class PLDataHelper : PlotwizardHelper
+	{
+		public PLDataHelper(string HelpFileName, long HelpFileId)
+			: base(HelpFileName, HelpFileId)
+		{
+		}
+
+		public PLDataHelper()
+		{
+		}
+
+		public string GetIconResource(string type)
+		{
+			switch (type)
+			{
+			case "T-xy":
+				return "WpfPLData.Images.DataTXY.ico";
+			case "P-xy":
+				return "WpfPLData.Images.DataPxy.ico";
+			case "T-x":
+				return "WpfPLData.Images.DataTX.ico";
+			case "P-x":
+				return "WpfPLData.Images.DataPx.ico";
+			case "y-x":
+				return "WpfPLData.Images.DataYX.ico";
+			case "P-xx":
+			case "T-xx":
+				return "WpfPLData.Images.DataXX.ico";
+			case "Prop-x":
+				return "WpfPLData.Images.DataPropx.ico";
+			case "Prop-T":
+				return "WpfPLData.Images.DataPropt.ico";
+			case "Triangular":
+				return "WpfPLData.Images.DataTri.ico";
+			case "Property-T":
+				return "WpfPLData.Images.DataPropt.ico";
+			case "Property-P":
+				return "WpfPLData.Images.DataPropt.ico";
+			default:
+				return "WpfPLData.Images.DataTri.ico";
+			}
+		}
+
+		public int GetElementCount(IHNode Context, string varName, string elemName, out int element, out string unit)
+		{
+			element = 0;
+			unit = string.Empty;
+			if (Context == null)
+			{
+				return 0;
+			}
+			IHNode iHNode = Context.FindNode(varName);
+			if (iHNode == null)
+			{
+				return 0;
+			}
+			IHNodeCol elements = iHNode.Elements;
+			int num = elements.get_RowCount(1);
+			int num2 = 0;
+			for (int i = 0; i < num; i++)
+			{
+				string text = elements.get_Label(1, i, Type.Missing);
+				if (text == elemName)
+				{
+					num2++;
+					switch (text)
+					{
+					case "TEMPERATURE":
+					case "PRESSURE":
+					case "TEMP1":
+					case "TEMP2":
+						break;
+					default:
+						continue;
+					}
+					element = i;
+					unit = elements.get_Label(2, i, Type.Missing);
+					break;
+				}
+			}
+			return num2;
+		}
+
+		public bool IsMixture(IHNode Context, string varName)
+		{
+			bool result = false;
+			IHNode iHNode = Context.FindNode(varName);
+			if (iHNode != null && iHNode.Elements.Count > 0)
+			{
+				result = true;
+			}
+			return result;
+		}
+
+		public int[] GetDataElementsArray(IHNode Context, string varName)
+		{
+			List<int> list = new List<int>();
+			IHNode iHNode = Context.FindNode(varName);
+			if (iHNode != null)
+			{
+				int count = iHNode.Elements.Count;
+				for (int i = 0; i < count; i++)
+				{
+					if ((dynamic)iHNode.Elements[i, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing) == "DATA")
+					{
+						list.Add(i);
+					}
+				}
+			}
+			return list.ToArray();
+		}
+
+		public List<string> GetComponentList(IHNode Context, string varName)
+		{
+			List<string> list = new List<string>();
+			IHNode iHNode = Context.FindNode(varName);
+			if (iHNode != null)
+			{
+				int count = iHNode.Elements.Count;
+				for (int i = 0; i < count; i++)
+				{
+					string item = (dynamic)iHNode.Elements[i, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+					if (!list.Contains(item))
+					{
+						list.Add(item);
+					}
+				}
+			}
+			return list;
+		}
+
+		public void DetermineMoleType(IHNode Context, out string moleType)
+		{
+			moleType = "";
+			IHNode iHNode = Context.FindNode("Input/COMPOSITION");
+			if (iHNode != null)
+			{
+				switch ((dynamic)iHNode.get_Value(Type.Missing))
+				{
+				case "MOLE-FRAC":
+					moleType = WpfPLDataResources.MoleFraction;
+					break;
+				case "MASS-FRAC":
+					moleType = WpfPLDataResources.MassFraction;
+					break;
+				case "MOLE-PCT":
+					moleType = WpfPLDataResources.MolePercent;
+					break;
+				case "MASS-PCT":
+					moleType = WpfPLDataResources.MassPercent;
+					break;
+				}
+			}
+		}
+
+		public string Join(List<string> xW, string sFill, bool bTrail)
+		{
+			string text = "";
+			for (int i = 0; i < xW.Count; i++)
+			{
+				if (!string.IsNullOrEmpty(xW[i]))
+				{
+					text += xW[i].ToUpper();
+					if (i != xW.Count - 1 || bTrail)
+					{
+						text += sFill;
+					}
+				}
+				else if (i == xW.Count - 1 && bTrail && text.Length == 0)
+				{
+					text = sFill;
+				}
+			}
+			return text;
+		}
+	}
+	[RibbonPlotWizardMgr("WpfPLDATA.RibbonPlotWizardMgr", typeof(RibbonPlotWizardMgr))]
+	public class DataPlotWizardModule : PlotModuleBase
+	{
+	}
+	[ProgId("WpfPLData.Triangle")]
+	public class Triangle : IRibbonPlotWizardType
+	{
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private PLDataHelper _help = new PLDataHelper("PlotWiz.hlp", 108L);
+
+		private string _uniqueId = "Data_Triangle";
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgIcon;
+
+		private bool _bHasInputDialog;
+
+		private string _component1;
+
+		private string _component2;
+
+		private string _component3;
+
+		private string[] VarNames;
+
+		private int[] DataElement;
+
+		private string MoleMass;
+
+		private string MoleType;
+
+		private int TempElement;
+
+		private string TempUnit;
+
+		private int PresElement;
+
+		private string PresUnit;
+
+		private int PlotType;
+
+		private List<string> ComponentList;
+
+		private int[] Xc;
+
+		private int[] X2c;
+
+		private int[] Yc;
+
+		private bool _bCheckDataOnly;
+
+		string IRibbonPlotWizardType.TooltipContentForRibbonItem => WpfPLDataResources.TooltipContentForRibbonItem_Triangular;
+
+		string IRibbonPlotWizardType.TooltipHeaderForRibbonItem => WpfPLDataResources.TooltipHeaderForRibbonItem_Triangular;
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgIcon;
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => ((PlotwizardHelper)_help).GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => ((PlotwizardHelper)_help).GetHelpID();
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string>();
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string>
+		{
+			WpfPLDataResources.Component1_Title,
+			WpfPLDataResources.Component2_Title,
+			WpfPLDataResources.Component3_Title
+		};
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		public Triangle()
+		{
+			_bHasInputDialog = false;
+			if (_imgIcon == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream(_help.GetIconResource(""));
+				_imgIcon = new Bitmap(manifestResourceStream);
+			}
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			return null;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sField)
+		{
+			if (sField.CompareTo(WpfPLDataResources.Component1_Title) != 0)
+			{
+				if (sField.CompareTo(WpfPLDataResources.Component2_Title) != 0)
+				{
+					if (sField.CompareTo(WpfPLDataResources.Component3_Title) != 0)
+					{
+						return (RibbonControlType)0;
+					}
+					return (RibbonControlType)3;
+				}
+				return (RibbonControlType)3;
+			}
+			return (RibbonControlType)3;
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(WpfPLDataResources.Component1_Title) == 0)
+			{
+				sCurrentVal = _component1;
+			}
+			if (sFieldName.CompareTo(WpfPLDataResources.Component2_Title) == 0)
+			{
+				sCurrentVal = _component2;
+			}
+			if (sFieldName.CompareTo(WpfPLDataResources.Component3_Title) == 0)
+			{
+				sCurrentVal = _component3;
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(WpfPLDataResources.Component1_Title) == 0)
+			{
+				_component1 = sValue;
+			}
+			if (sFieldName.CompareTo(WpfPLDataResources.Component2_Title) == 0)
+			{
+				_component2 = sValue;
+			}
+			if (sFieldName.CompareTo(WpfPLDataResources.Component3_Title) == 0)
+			{
+				_component3 = sValue;
+			}
+			if (false)
+			{
+				UpdateWizardData();
+			}
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.Context(object HNode, ref object HWizardPlot, ref int ierror)
+		{
+			if (HWizardPlot == null || HNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			_context = HNode as IHNode;
+			_wizardPlot = HWizardPlot as IHWizardPlot;
+			VarNames = new string[3] { "Input/CIDS", "Input/USE", "Input/VALUE" };
+			if (!Build_CandidateList())
+			{
+				ierror = 1;
+				return;
+			}
+			if (IsMixture())
+			{
+				DetermineMoleType(_context, out MoleMass, out MoleType);
+			}
+			Build_Node_Lookup();
+			_context.Elements.get_Label(0, 0, Type.Missing);
+			string text = "";
+			foreach (string component in ComponentList)
+			{
+				if (!string.IsNullOrEmpty(component))
+				{
+					text = text + component + " ";
+				}
+			}
+			_wizardPlot.PlotVal.Title = string.Format(WpfPLDataResources.TriangularTitle, text);
+			_component1 = MoleType + ComponentList[0];
+			_component2 = ComponentList[1];
+			_component3 = ComponentList[2];
+		}
+
+		public void UpdateWizardData()
+		{
+			IHNode iHNode = _context.FindNode(VarNames[2]);
+			if (iHNode == null)
+			{
+				return;
+			}
+			int num = 0;
+			int nPoints = 0;
+			if (Xc[0] != -1)
+			{
+				num++;
+				nPoints = DataElement.Length;
+			}
+			if (X2c[0] != -1)
+			{
+				num++;
+				nPoints = DataElement.Length;
+			}
+			_wizardPlot.RemoveAllDependentVariable();
+			_wizardPlot.PlotVal.NVariables = num;
+			_wizardPlot.PlotVal.NXVariables = num;
+			_wizardPlot.PlotVal.NPoints = nPoints;
+			_wizardPlot.PlotVal.PlotType = 2;
+			int num2 = 0;
+			bool[] array = new bool[num];
+			for (int i = 0; i < num; i++)
+			{
+				array[i] = false;
+			}
+			if (Xc[0] != -1)
+			{
+				if (!array[num2])
+				{
+					((IHPlotVal)_wizardPlot.PlotVal).set_Label(num2, WpfPLDataResources.Exp_X1);
+					((IHPlotVal)_wizardPlot.PlotVal).set_CurveStyle(num2, 15);
+					array[num2] = true;
+				}
+				for (int j = 0; j < DataElement.Length; j++)
+				{
+					int num3 = j;
+					try
+					{
+						if (MoleMass == "fraction")
+						{
+							IHNode iHNode2 = iHNode.Elements[DataElement[num3], Xc[0], Xc[0], Type.Missing, Type.Missing];
+							if (iHNode2 != null)
+							{
+								double num4 = double.Parse((dynamic)iHNode2.get_Value(Type.Missing), CultureInfo.InvariantCulture);
+								((IHPlotVal)_wizardPlot.PlotVal).set_XData(num2, num3, (short)0, (object)num4);
+							}
+							iHNode2 = iHNode.Elements[DataElement[num3], Xc[1], Xc[1], Type.Missing, Type.Missing];
+							if (iHNode2 != null)
+							{
+								double num5 = double.Parse((dynamic)iHNode2.get_Value(Type.Missing), CultureInfo.InvariantCulture);
+								((IHPlotVal)_wizardPlot.PlotVal).set_YData(num2, num3, (short)0, (object)num5);
+							}
+							iHNode2 = iHNode.Elements[DataElement[num3], Xc[2], Xc[2], Type.Missing, Type.Missing];
+							if (iHNode2 != null)
+							{
+								double num6 = double.Parse((dynamic)iHNode2.get_Value(Type.Missing), CultureInfo.InvariantCulture);
+								((IHPlotVal)_wizardPlot.PlotVal).set_YData(num2 + 1, num3, (short)0, (object)num6);
+							}
+						}
+						else
+						{
+							IHNode iHNode3 = iHNode.Elements[DataElement[num3], Xc[0], Xc[0], Type.Missing, Type.Missing];
+							if (iHNode3 != null)
+							{
+								double num7 = double.Parse((dynamic)iHNode3.get_Value(Type.Missing), CultureInfo.InvariantCulture) / 100;
+								((IHPlotVal)_wizardPlot.PlotVal).set_XData(num2, num3, (short)0, (object)num7);
+							}
+							iHNode3 = iHNode.Elements[DataElement[num3], Xc[1], Xc[1], Type.Missing, Type.Missing];
+							if (iHNode3 != null)
+							{
+								double num8 = double.Parse((dynamic)iHNode3.get_Value(Type.Missing), CultureInfo.InvariantCulture) / 100;
+								((IHPlotVal)_wizardPlot.PlotVal).set_YData(num2, num3, (short)0, (object)num8);
+							}
+							iHNode3 = iHNode.Elements[DataElement[num3], Xc[2], Xc[2], Type.Missing, Type.Missing];
+							if (iHNode3 != null)
+							{
+								double num9 = double.Parse((dynamic)iHNode3.get_Value(Type.Missing), CultureInfo.InvariantCulture) / 100;
+								((IHPlotVal)_wizardPlot.PlotVal).set_YData(num2 + 1, num3, (short)0, (object)num9);
+							}
+						}
+					}
+					catch
+					{
+					}
+				}
+				num2++;
+			}
+			if (X2c[0] != -1)
+			{
+				if (!array[num2])
+				{
+					((IHPlotVal)_wizardPlot.PlotVal).set_Label(num2, WpfPLDataResources.Exp_X2);
+					((IHPlotVal)_wizardPlot.PlotVal).set_CurveStyle(num2, 15);
+					array[num2] = true;
+				}
+				for (int k = 0; k < DataElement.Length; k++)
+				{
+					int num10 = k;
+					try
+					{
+						if (MoleMass == "fraction")
+						{
+							IHNode iHNode4 = iHNode.Elements[DataElement[num10], X2c[0], X2c[0], Type.Missing, Type.Missing];
+							if (iHNode4 != null)
+							{
+								double num11 = double.Parse((dynamic)iHNode4.get_Value(Type.Missing), CultureInfo.InvariantCulture);
+								((IHPlotVal)_wizardPlot.PlotVal).set_XData(num2, num10, (short)0, (object)num11);
+							}
+							iHNode4 = iHNode.Elements[DataElement[num10], X2c[1], X2c[1], Type.Missing, Type.Missing];
+							if (iHNode4 != null)
+							{
+								double num12 = double.Parse((dynamic)iHNode4.get_Value(Type.Missing), CultureInfo.InvariantCulture);
+								((IHPlotVal)_wizardPlot.PlotVal).set_YData(num2, num10, (short)0, (object)num12);
+							}
+							iHNode4 = iHNode.Elements[DataElement[num10], X2c[2], X2c[2], Type.Missing, Type.Missing];
+							if (iHNode4 != null)
+							{
+								double num13 = double.Parse((dynamic)iHNode4.get_Value(Type.Missing), CultureInfo.InvariantCulture);
+								((IHPlotVal)_wizardPlot.PlotVal).set_YData(num2 + 1, num10, (short)0, (object)num13);
+							}
+						}
+						else
+						{
+							IHNode iHNode5 = iHNode.Elements[DataElement[num10], X2c[0], X2c[0], Type.Missing, Type.Missing];
+							if (iHNode5 != null)
+							{
+								double num14 = double.Parse((dynamic)iHNode5.get_Value(Type.Missing), CultureInfo.InvariantCulture) / 100;
+								((IHPlotVal)_wizardPlot.PlotVal).set_XData(num2, num10, (short)0, (object)num14);
+							}
+							iHNode5 = iHNode.Elements[DataElement[num10], X2c[1], X2c[1], Type.Missing, Type.Missing];
+							if (iHNode5 != null)
+							{
+								double num15 = double.Parse((dynamic)iHNode5.get_Value(Type.Missing), CultureInfo.InvariantCulture) / 100;
+								((IHPlotVal)_wizardPlot.PlotVal).set_YData(num2, num10, (short)0, (object)num15);
+							}
+							iHNode5 = iHNode.Elements[DataElement[num10], X2c[2], X2c[2], Type.Missing, Type.Missing];
+							if (iHNode5 != null)
+							{
+								double num16 = double.Parse((dynamic)iHNode5.get_Value(Type.Missing), CultureInfo.InvariantCulture) / 100;
+								((IHPlotVal)_wizardPlot.PlotVal).set_YData(num2 + 1, num10, (short)0, (object)num16);
+							}
+						}
+					}
+					catch
+					{
+					}
+				}
+				num2++;
+			}
+			_wizardPlot.PlotVal.XAxisTitle = _component1;
+			((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle((object)1, _component2);
+			((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle((object)0, _component3);
+		}
+
+		private int CountFor(string sName)
+		{
+			int element = 0;
+			string unit = string.Empty;
+			if (sName == "TEMPERATURE")
+			{
+				return _help.GetElementCount(_context, VarNames[2], sName, out TempElement, out TempUnit);
+			}
+			if (sName == "PRESSURE")
+			{
+				return _help.GetElementCount(_context, VarNames[2], sName, out PresElement, out PresUnit);
+			}
+			return _help.GetElementCount(_context, VarNames[2], sName, out element, out unit);
+		}
+
+		private bool IsMixture()
+		{
+			return _help.IsMixture(_context, VarNames[0]);
+		}
+
+		private bool Build_CandidateList()
+		{
+			TempUnit = "";
+			TempElement = -1;
+			PresUnit = "";
+			PresElement = -1;
+			DataElement = _help.GetDataElementsArray(_context, VarNames[1]);
+			if (DataElement.Length == 0)
+			{
+				return false;
+			}
+			PlotType = _wizardPlot.basis;
+			ComponentList = _help.GetComponentList(_context, VarNames[0]);
+			bool flag = true;
+			if (CountFor("X1") == 3 && CountFor("X2") == 3)
+			{
+				return true;
+			}
+			return false;
+		}
+
+		private void Build_Node_Lookup()
+		{
+			int count = ComponentList.Count;
+			Xc = new int[count];
+			X2c = new int[count];
+			Yc = new int[count];
+			for (int i = 0; i < count; i++)
+			{
+				Xc[i] = -1;
+				X2c[i] = -1;
+				Yc[i] = -1;
+			}
+			IHNode iHNode = _context.FindNode(VarNames[2]);
+			if (iHNode == null)
+			{
+				return;
+			}
+			int num = iHNode.Elements.get_RowCount(1);
+			for (int j = 0; j < num; j++)
+			{
+				string text = iHNode.Elements.get_Label(1, j, Type.Missing);
+				string text2 = iHNode.Elements.get_Label(2, j, Type.Missing);
+				int num2 = -1;
+				switch (text)
+				{
+				case "TEMPERATURE":
+					if (TempElement == -1)
+					{
+						TempUnit = text2;
+						TempElement = j;
+					}
+					break;
+				case "PRESSURE":
+					if (PresElement == -1)
+					{
+						PresUnit = text2;
+						PresElement = j;
+					}
+					break;
+				case "X":
+				case "X1":
+					num2 = ComponentList.IndexOf(text2);
+					if (num2 >= 0)
+					{
+						Xc[num2] = j;
+					}
+					break;
+				case "X2":
+					num2 = ComponentList.IndexOf(text2);
+					if (num2 >= 0)
+					{
+						X2c[num2] = j;
+					}
+					break;
+				case "Y":
+					num2 = ComponentList.IndexOf(text2);
+					if (num2 >= 0)
+					{
+						Yc[num2] = j;
+					}
+					break;
+				}
+			}
+		}
+
+		private void DetermineMoleType(IHNode Context, out string moleMass, out string moleType)
+		{
+			moleMass = "";
+			moleType = "";
+			IHNode iHNode = Context.FindNode("Input/COMPOSITION");
+			if (iHNode != null)
+			{
+				switch ((dynamic)iHNode.get_Value(Type.Missing))
+				{
+				case "MOLE-FRAC":
+					moleType = WpfPLDataResources.MoleFraction;
+					moleMass = "fraction";
+					break;
+				case "MASS-FRAC":
+					moleType = WpfPLDataResources.MassFraction;
+					moleMass = "fraction";
+					break;
+				case "MOLE-PCT":
+					moleType = WpfPLDataResources.MoleFraction;
+					moleMass = "";
+					break;
+				case "MASS-PCT":
+					moleType = WpfPLDataResources.MassFraction;
+					moleMass = "";
+					break;
+				}
+			}
+		}
+	}
+}
+namespace AspenTech.AspenPlus.Happ
+{
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("11677780-B72B-11D0-A943-0000C0A118DB")]
+	[CoClass(typeof(object))]
+	[TypeIdentifier]
+	public interface CHPlotVal : IHPlotVal
+	{
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("8008C730-1A3E-11D1-8A4D-0000C0237DF9")]
+	[CoClass(typeof(object))]
+	[TypeIdentifier]
+	public interface CHWizardPlot : IHWizardPlot
+	{
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("8E567522-F9BA-11CF-90B2-0000C0A810C4")]
+	[TypeIdentifier]
+	public interface IHNode
+	{
+		void _VtblGap1_4();
+
+		[DispId(1610743812)]
+		int Dimension
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743812)]
+			get;
+		}
+
+		void _VtblGap2_1();
+
+		[DispId(1610743814)]
+		object Value
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743814)]
+			[return: MarshalAs(UnmanagedType.Struct)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743814)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.Struct)]
+			set;
+		}
+
+		void _VtblGap3_10();
+
+		[DispId(1610743826)]
+		IHNodeCol Elements
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743826)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+
+		void _VtblGap4_8();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743835)]
+		[return: MarshalAs(UnmanagedType.Interface)]
+		IHNode FindNode([In][MarshalAs(UnmanagedType.BStr)] string path);
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("89E81F60-019A-11D0-9BE7-0000C05375D5")]
+	[TypeIdentifier]
+	public interface IHNodeCol : IEnumerable
+	{
+		void _VtblGap1_2();
+
+		[DispId(1610743810)]
+		int Count
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743810)]
+			get;
+		}
+
+		[DispId(1610743811)]
+		int RowCount
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743811)]
+			get;
+		}
+
+		void _VtblGap2_2();
+
+		[DispId(0)]
+		IHNode this[[In][MarshalAs(UnmanagedType.Struct)] object loc_or_name, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name2, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name3, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name4, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name5]
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(0)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+
+		void _VtblGap3_2();
+
+		[DispId(1610743817)]
+		string Label
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743817)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743817)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.BStr)]
+			set;
+		}
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("11677780-B72B-11D0-A943-0000C0A118DB")]
+	[TypeIdentifier]
+	public interface IHPlotVal
+	{
+		void _VtblGap1_2();
+
+		[DispId(1610743810)]
+		string Title
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743810)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743810)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.BStr)]
+			set;
+		}
+
+		void _VtblGap2_1();
+
+		[DispId(1610743813)]
+		string XAxisTitle
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743813)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743813)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.BStr)]
+			set;
+		}
+
+		void _VtblGap3_1();
+
+		[DispId(1610743816)]
+		string YAxisTitle
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743816)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743816)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.BStr)]
+			set;
+		}
+
+		void _VtblGap4_1();
+
+		[DispId(1610743819)]
+		string Label
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743819)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743819)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.BStr)]
+			set;
+		}
+
+		void _VtblGap5_1();
+
+		[DispId(1610743822)]
+		int NPoints
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743822)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743822)]
+			[param: In]
+			set;
+		}
+
+		[DispId(1610743824)]
+		int NVariables
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743824)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743824)]
+			[param: In]
+			set;
+		}
+
+		[DispId(1610743826)]
+		int NXVariables
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743826)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743826)]
+			[param: In]
+			set;
+		}
+
+		void _VtblGap6_1();
+
+		[DispId(1610743829)]
+		object XData
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743829)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.Struct)]
+			set;
+		}
+
+		void _VtblGap7_1();
+
+		[DispId(1610743831)]
+		object YData
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743831)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.Struct)]
+			set;
+		}
+
+		void _VtblGap8_11();
+
+		[DispId(1610743843)]
+		int PlotType
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743843)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743843)]
+			[param: In]
+			set;
+		}
+
+		[DispId(1610743845)]
+		bool Parametric
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743845)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743845)]
+			[param: In]
+			set;
+		}
+
+		void _VtblGap9_12();
+
+		[DispId(1610743859)]
+		bool ShowDiagonalLine
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743859)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743859)]
+			[param: In]
+			set;
+		}
+
+		[DispId(1610743861)]
+		short LineStyle
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743861)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743861)]
+			[param: In]
+			set;
+		}
+
+		void _VtblGap10_3();
+
+		[DispId(1610743866)]
+		int AxisMap
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743866)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743866)]
+			[param: In]
+			set;
+		}
+
+		[DispId(1610743868)]
+		int CurveStyle
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743868)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743868)]
+			[param: In]
+			set;
+		}
+
+		void _VtblGap11_1();
+
+		[DispId(1610743871)]
+		bool SquarePlot
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743871)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743871)]
+			[param: In]
+			set;
+		}
+
+		void _VtblGap12_2();
+
+		[DispId(1610743875)]
+		int AxisScale
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743875)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743875)]
+			[param: In]
+			set;
+		}
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("8008C730-1A3E-11D1-8A4D-0000C0237DF9")]
+	[TypeIdentifier]
+	public interface IHWizardPlot
+	{
+		[DispId(1610743808)]
+		CHPlotVal PlotVal
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743808)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+
+		[DispId(1610743809)]
+		int basis
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743809)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743809)]
+			[param: In]
+			set;
+		}
+
+		void _VtblGap1_7();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743818)]
+		void RemoveAllDependentVariable();
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

@@ -1,0 +1,2058 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Text;
+using APVCOMLib;
+using AspenTech.AspenCxs.CxsViewModel;
+using AspenTech.EquipmentAnalysis.Infrastructure;
+using PSVSizingEngine;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyFileVersion("41.0.0.83")]
+[assembly: AssemblyCompany("AspenTech Corporation")]
+[assembly: AssemblyProduct("Aspen Safety Analysis Environment")]
+[assembly: AssemblyCopyright("Copyright © AspenTech Corporation 2024")]
+[assembly: AssemblyTitle("AspenTech.EquipmentAnalysis.Properties.AspenPlus")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyTrademark("")]
+[assembly: ComVisible(false)]
+[assembly: Guid("2542077d-dda8-4b8b-b4b0-7538a42e922a")]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.0")]
+namespace AspenTech.EquipmentAnalysis.Properties.AspenPlus
+{
+	public class APlusProperties : IPPPFluid, IDisposable, IPSVCXSModel
+	{
+		private enum _PhasePropertyBasis
+		{
+			Pure,
+			Wet,
+			Dry
+		}
+
+		private APVPropSystem _propSystem;
+
+		private APVPhaseCollection _phaseCollection;
+
+		private APVPhase _aprOverall;
+
+		private APVPhase _aprLiquid;
+
+		private APVPhase _aprVapor;
+
+		private const int AT_IMISS = 99999999;
+
+		private const double AT_RMISS = 1E+35;
+
+		private const int S_OK = 0;
+
+		private bool _lastFlashSucceeded;
+
+		private bool _isLastFlashSaturated;
+
+		private bool _isValidVapor;
+
+		private bool _isValidLiquid;
+
+		private double? _storedEntropy;
+
+		private double? _initTemp;
+
+		private double? _initPress;
+
+		private int? _initNumComp;
+
+		private double[] _initComp;
+
+		private int? _fireNumComp;
+
+		private double[] _fireComp;
+
+		private int? _storedNumComp;
+
+		private double[] _storedComp;
+
+		private double[] _compMolWt;
+
+		private int? _lastNumComp;
+
+		private double[] _lastComposition;
+
+		private string[] _lastComponentNames;
+
+		private readonly Dictionary<APVPhase, double[]> _lastPhaseCompositions = new Dictionary<APVPhase, double[]>();
+
+		private string _path;
+
+		private cDIAGTYPE[] _diagtypes;
+
+		private cDIAGLEVEL[] _diaglevels;
+
+		private double? _hvap;
+
+		private double? _overallMassEnthalpy;
+
+		private double? _overallMassEntropy;
+
+		private double? _overallmolwt;
+
+		private double? _pressure;
+
+		private double? _temperature;
+
+		private double? _vaporFraction;
+
+		private double? _liquidmasscp;
+
+		private double? _liquidmolwt;
+
+		private const double R = 8314.4621;
+
+		private double? _vapormasscp;
+
+		private double? _vapormolwt;
+
+		private bool disposedValue;
+
+		public double[] VaporComposition
+		{
+			get
+			{
+				if (!_lastFlashSucceeded)
+				{
+					return null;
+				}
+				if (_aprVapor == null)
+				{
+					return null;
+				}
+				return _GetPhaseComposition(_aprVapor);
+			}
+		}
+
+		public bool HasFireFractions => _fireComp != null;
+
+		string IPSVCXSModel.CXSDataPath
+		{
+			get
+			{
+				return _path;
+			}
+			set
+			{
+				_ReleaseAll();
+				_Initialize(value);
+			}
+		}
+
+		public APlusProperties(string path)
+		{
+			_Initialize(path);
+		}
+
+		private void _Initialize(string path)
+		{
+			_path = path;
+			_lastNumComp = null;
+			_lastComposition = null;
+			_lastComponentNames = null;
+			_lastPhaseCompositions.Clear();
+			string text = "GetPropSystem";
+			CxvActionResult val = CxsCaseHelper.MyDataProvider.InvokeAction(path, "SendMessage", false, new object[1] { text });
+			_propSystem = (APVPropSystem)val.Result;
+			_GetDiagnosticLevels();
+			text = "GetPhaseCollection";
+			val = CxsCaseHelper.MyDataProvider.InvokeAction(path, "SendMessage", false, new object[1] { text });
+			_propSystem.SetHBase(cHBASE.chbElement);
+			if (!val.Succeeded)
+			{
+				_initComp = null;
+				_initNumComp = 0;
+				_compMolWt = null;
+				return;
+			}
+			_phaseCollection = (APVPhaseCollection)val.Result;
+			_aprOverall = _phaseCollection.GetPhaseReference(cPHASELABEL.cplOverall);
+			_aprLiquid = _phaseCollection.GetPhaseReference(cPHASELABEL.cplLiquid);
+			_aprVapor = _phaseCollection.GetPhaseReference(cPHASELABEL.cplVapor);
+			double[] array = new double[1];
+			_aprOverall.GetRealPhaseVariable(cPHASEVARIABLE.cpvTemperature, array, 1);
+			if (array[0] != 1E+35)
+			{
+				_initTemp = array[0];
+			}
+			_aprOverall.GetRealPhaseVariable(cPHASEVARIABLE.cpvPressure, array, 1);
+			if (array[0] != 1E+35)
+			{
+				_initPress = array[0];
+			}
+			int[] array2 = new int[1];
+			_aprOverall.GetIntegerPhaseVariable(cPHASEVARIABLE.cpvNumComp, array2, 1);
+			if (array2[0] != 99999999)
+			{
+				_initNumComp = array2[0];
+				_initComp = new double[array2[0]];
+				_aprOverall.GetRealPhaseVariable(cPHASEVARIABLE.cpvMoleFracs, _initComp, array2[0]);
+				_ = new int[array2[0]];
+				_compMolWt = new double[array2[0]];
+				for (int i = 0; i < _compMolWt.Length; i++)
+				{
+					_compMolWt[i] = double.NaN;
+				}
+				(IList<double> composition, IList<int> index) tuple = _GetCompactComposition(_initComp);
+				IList<double> item = tuple.composition;
+				IList<int> item2 = tuple.index;
+				double[] array3 = new double[item.Count];
+				string s = "MW".PadRight(8);
+				sbyte[] propname = (from b in Encoding.ASCII.GetBytes(s)
+					select (sbyte)b).ToArray();
+				_propSystem.GetPropSetProperty(propname, _initTemp.GetValueOrDefault(), _initPress.GetValueOrDefault(), item.Count, item.ToArray(), item2.ToArray(), cVALIDPHASE.cvpVaporLiquid, 0, 5, array3);
+				for (int num = 0; num < item.Count; num++)
+				{
+					_compMolWt[item2[num] - 1] = array3[num];
+				}
+			}
+		}
+
+		private bool _ExecFlash(cFLASHTYPE flashType)
+		{
+			_lastFlashSucceeded = false;
+			_storedEntropy = null;
+			_lastNumComp = null;
+			_lastComposition = null;
+			_lastComponentNames = null;
+			_ClearCachedData();
+			int num = _propSystem.CalcPhaseEquilibrium1(_phaseCollection, flashType, cVALIDPHASE.cvpVaporLiquid, 99999999, 1E+35);
+			if (num != 0)
+			{
+				if (num < 0)
+				{
+					Marshal.ThrowExceptionForHR(num);
+				}
+				return false;
+			}
+			_lastFlashSucceeded = true;
+			double[] array = new double[1];
+			_aprOverall.GetRealPhaseVariable(cPHASEVARIABLE.cpvEntropy, array, 1);
+			if (array[0] != 1E+35)
+			{
+				_storedEntropy = array[0];
+			}
+			int[] array2 = new int[1];
+			_aprOverall.GetIntegerPhaseVariable(cPHASEVARIABLE.cpvNumComp, array2, 1);
+			if (array2[0] != 99999999)
+			{
+				_lastNumComp = array2[0];
+				_lastComposition = new double[array2[0]];
+				_aprOverall.GetRealPhaseVariable(cPHASEVARIABLE.cpvMoleFracs, _lastComposition, array2[0]);
+			}
+			if (_isLastFlashSaturated)
+			{
+				_isValidLiquid = true;
+				_isValidVapor = true;
+			}
+			else
+			{
+				if (VaporFraction() < 1.0)
+				{
+					_isValidLiquid = true;
+				}
+				if (VaporFraction() > 0.0)
+				{
+					_isValidVapor = true;
+				}
+			}
+			return true;
+		}
+
+		private double _GetPhasePropertyByName(APVPhase phaseObject, FluidPhaseRegime phaseValue, string propertyName, _PhasePropertyBasis propertyBasis = _PhasePropertyBasis.Wet)
+		{
+			if (!_lastNumComp.HasValue)
+			{
+				return double.NaN;
+			}
+			if (_lastComposition == null || _lastComposition.Length != _lastNumComp.GetValueOrDefault())
+			{
+				return double.NaN;
+			}
+			if (phaseObject == null)
+			{
+				return double.NaN;
+			}
+			int num = -1;
+			cVALIDPHASE cVALIDPHASE = (cVALIDPHASE)(-1);
+			double[] fullComposition = ((phaseValue == FluidPhaseRegime.TwoPhase) ? _lastComposition : _GetPhaseComposition(phaseObject));
+			try
+			{
+				switch (phaseValue)
+				{
+				case FluidPhaseRegime.Liquid:
+					num = 2;
+					cVALIDPHASE = cVALIDPHASE.cvpLiquidOnly;
+					break;
+				case FluidPhaseRegime.Vapor:
+				case FluidPhaseRegime.Supercritical:
+					num = 1;
+					cVALIDPHASE = cVALIDPHASE.cvpVaporOnly;
+					break;
+				case FluidPhaseRegime.TwoPhase:
+					num = 5;
+					cVALIDPHASE = cVALIDPHASE.cvpVaporLiquid;
+					break;
+				default:
+					return double.NaN;
+				}
+				sbyte[] propname = (from b in Encoding.ASCII.GetBytes(propertyName.PadRight(8))
+					select (sbyte)b).ToArray();
+				double num2 = Temperature() + 273.15;
+				double num3 = Pressure() * 1000.0;
+				if (double.IsNaN(num2))
+				{
+					return double.NaN;
+				}
+				if (double.IsNaN(num3))
+				{
+					return double.NaN;
+				}
+				(IList<double> composition, IList<int> index) tuple = _GetCompactComposition(fullComposition);
+				IList<double> item = tuple.composition;
+				IList<int> item2 = tuple.index;
+				double[] array = new double[item.Count];
+				int propSetProperty = _propSystem.GetPropSetProperty(propname, num2, num3, item.Count, item.ToArray(), item2.ToArray(), cVALIDPHASE, (int)propertyBasis, num, array);
+				if (propSetProperty != 0)
+				{
+					if (propSetProperty >= 0)
+					{
+						return double.NaN;
+					}
+					Marshal.ThrowExceptionForHR(propSetProperty);
+				}
+				if (array[0] == 1E+35)
+				{
+					return double.NaN;
+				}
+				return array[0];
+			}
+			catch
+			{
+				return double.NaN;
+			}
+		}
+
+		private void _GetDiagnosticLevels()
+		{
+			if (_diagtypes == null)
+			{
+				_diagtypes = (cDIAGTYPE[])Enum.GetValues(typeof(cDIAGTYPE));
+				_diaglevels = new cDIAGLEVEL[_diagtypes.Length];
+			}
+			for (int i = 0; i < _diagtypes.Length; i++)
+			{
+				_diaglevels[i] = _propSystem.GetDiagLevel(_diagtypes[i]);
+			}
+		}
+
+		private void _SetDiagnosticLevels()
+		{
+			for (int i = 0; i < _diagtypes.Length; i++)
+			{
+				_diaglevels[i] = _propSystem.GetDiagLevel(_diagtypes[i]);
+				_propSystem.SetDiagLevel(_diagtypes[i], cDIAGLEVEL.cdlTerminal_Error);
+			}
+		}
+
+		private void _RestoreDiagnosticLevels()
+		{
+			for (int i = 0; i < _diagtypes.Length; i++)
+			{
+				_propSystem.SetDiagLevel(_diagtypes[i], _diaglevels[i]);
+			}
+		}
+
+		private (IList<double> composition, IList<int> index) _GetCompactComposition(double[] fullComposition)
+		{
+			List<double> list = new List<double>();
+			List<int> list2 = new List<int>();
+			for (int i = 0; i < fullComposition.Length; i++)
+			{
+				if (fullComposition[i] > 0.0)
+				{
+					list.Add(fullComposition[i]);
+					list2.Add(i + 1);
+				}
+			}
+			return (composition: list, index: list2);
+		}
+
+		private bool _SetCompositionByPhase(APVPhase sourcePhase)
+		{
+			if (_aprOverall == null)
+			{
+				return false;
+			}
+			if (sourcePhase == null)
+			{
+				return false;
+			}
+			try
+			{
+				int[] array = new int[1];
+				int[] array2 = new int[1];
+				_aprOverall.GetIntegerPhaseVariable(cPHASEVARIABLE.cpvNumComp, array2, 1);
+				if (array2[0] == 99999999)
+				{
+					return false;
+				}
+				sourcePhase.GetIntegerPhaseVariable(cPHASEVARIABLE.cpvNumComp, array, 1);
+				if (array[0] == 99999999)
+				{
+					return false;
+				}
+				if (array2[0] != array[0])
+				{
+					return false;
+				}
+				double[] values = new double[array[0]];
+				sourcePhase.GetRealPhaseVariable(cPHASEVARIABLE.cpvMoleFracs, values, array[0]);
+				_aprOverall.SetRealPhaseVariable(cPHASEVARIABLE.cpvMoleFracs, values, array2[0]);
+			}
+			catch
+			{
+				return false;
+			}
+			return true;
+		}
+
+		private double[] _GetPhaseComposition(APVPhase sourcePhase)
+		{
+			if (_lastPhaseCompositions.TryGetValue(sourcePhase, out var value))
+			{
+				return value;
+			}
+			int[] array = new int[1];
+			sourcePhase.GetIntegerPhaseVariable(cPHASEVARIABLE.cpvNumComp, array, 1);
+			if (array[0] == 99999999)
+			{
+				return null;
+			}
+			value = new double[array[0]];
+			sourcePhase.GetRealPhaseVariable(cPHASEVARIABLE.cpvMoleFracs, value, array[0]);
+			_lastPhaseCompositions.Add(sourcePhase, value);
+			return value;
+		}
+
+		private void _ClearCachedData()
+		{
+			_overallmolwt = null;
+			_liquidmolwt = null;
+			_vapormolwt = null;
+			_liquidmasscp = null;
+			_vapormasscp = null;
+			_overallMassEnthalpy = null;
+			_overallMassEntropy = null;
+			_pressure = null;
+			_temperature = null;
+			_vaporFraction = null;
+			_hvap = null;
+			_lastPhaseCompositions.Clear();
+			_isValidLiquid = false;
+			_isValidVapor = false;
+		}
+
+		public bool IsFluidReady()
+		{
+			return true;
+		}
+
+		public void BatchRetrieveProperties()
+		{
+		}
+
+		public double CriticalPressure(int Pos)
+		{
+			throw new NotImplementedException();
+		}
+
+		public double CriticalTemperature(int Pos)
+		{
+			throw new NotImplementedException();
+		}
+
+		public double get_ComponentMolecularWeight(int Pos)
+		{
+			if (_compMolWt == null)
+			{
+				return double.NaN;
+			}
+			return _compMolWt[Pos];
+		}
+
+		private void _GetComponentNames()
+		{
+			_lastComponentNames = new string[_lastNumComp.GetValueOrDefault()];
+			int num = _propSystem.TotalComp();
+			sbyte[] array = new sbyte[9 * num];
+			sbyte[] aliases = new sbyte[13 * num];
+			sbyte[] cnames = new sbyte[33 * num];
+			sbyte[] casnums = new sbyte[17 * num];
+			_propSystem.GetPackageComponents(_propSystem.TotalComp(), array, aliases, cnames, casnums);
+			for (int i = 0; i < num; i++)
+			{
+				byte[] bytes = (from b in array.Skip(9 * i).TakeWhile((sbyte b) => b != 0)
+					select (byte)b).ToArray();
+				_lastComponentNames[i] = Encoding.ASCII.GetString(bytes);
+			}
+		}
+
+		public string get_ComponentName(int Pos)
+		{
+			if (_lastComposition == null)
+			{
+				return null;
+			}
+			if (_lastComponentNames == null)
+			{
+				_GetComponentNames();
+			}
+			return _lastComponentNames[Pos];
+		}
+
+		public double get_Composition(int Pos)
+		{
+			if (_lastComposition == null)
+			{
+				return double.NaN;
+			}
+			return _lastComposition[Pos];
+		}
+
+		public double get_StoredComposition(int Pos)
+		{
+			if (_fireComp == null)
+			{
+				return double.NaN;
+			}
+			return _fireComp[Pos];
+		}
+
+		public double HeatOfVaporization()
+		{
+			if (_aprOverall == null)
+			{
+				return double.NaN;
+			}
+			if (!(VaporFraction() < 1.0))
+			{
+				return double.NaN;
+			}
+			if (!_lastNumComp.HasValue)
+			{
+				return double.NaN;
+			}
+			if (_hvap.HasValue)
+			{
+				return _hvap.GetValueOrDefault();
+			}
+			if (_lastNumComp == 1 || _lastComposition.Count((double x) => x > 0.0) == 1)
+			{
+				try
+				{
+					double num = _GetPhasePropertyByName(_aprOverall, FluidPhaseRegime.TwoPhase, "TCMX");
+					if (Temperature() > num)
+					{
+						return double.NaN;
+					}
+					return _GetPhasePropertyByName(_aprLiquid, FluidPhaseRegime.Liquid, "DHVL", _PhasePropertyBasis.Pure);
+				}
+				catch
+				{
+					return double.NaN;
+				}
+			}
+			double[] values = new double[1];
+			double[] array = new double[1];
+			double[] array2 = new double[1];
+			try
+			{
+				_aprOverall.GetRealPhaseVariable(cPHASEVARIABLE.cpvTemperature, values, 1);
+				_aprOverall.GetRealPhaseVariable(cPHASEVARIABLE.cpvPressure, array, 1);
+				_aprOverall.GetRealPhaseVariable(cPHASEVARIABLE.cpvEnthalpy, array2, 1);
+				if (array[0] == 1E+35 || array2[0] == 1E+35)
+				{
+					return double.NaN;
+				}
+			}
+			catch
+			{
+				return double.NaN;
+			}
+			try
+			{
+				double num2 = array2[0];
+				double num3 = Math.Min(VaporFraction() + 0.01, 1.0);
+				_aprOverall.SetRealPhaseVariable(cPHASEVARIABLE.cpvPressure, array, 1);
+				_aprOverall.SetRealPhaseVariable(cPHASEVARIABLE.cpvVfrac, new double[1] { num3 }, 1);
+				_propSystem.CalcPhaseEquilibrium1(_phaseCollection, cFLASHTYPE.cftPV, cVALIDPHASE.cvpVaporLiquid, 99999999, 1E+35);
+				double[] array3 = new double[1];
+				double[] values2 = new double[1];
+				_aprOverall.GetRealPhaseVariable(cPHASEVARIABLE.cpvEnthalpy, array3, 1);
+				_aprOverall.GetRealPhaseVariable(cPHASEVARIABLE.cpvTemperature, values2, 1);
+				_SetCompositionByPhase(_aprLiquid);
+				_aprOverall.SetRealPhaseVariable(cPHASEVARIABLE.cpvPressure, array, 1);
+				_aprOverall.SetRealPhaseVariable(cPHASEVARIABLE.cpvTemperature, values2, 1);
+				_propSystem.CalcPhaseEquilibrium1(_phaseCollection, cFLASHTYPE.cftTP, cVALIDPHASE.cvpVaporLiquid, 99999999, 1E+35);
+				double[] array4 = new double[1];
+				double[] values3 = new double[1];
+				_aprOverall.GetRealPhaseVariable(cPHASEVARIABLE.cpvEnthalpy, array4, 1);
+				_aprOverall.GetRealPhaseVariable(cPHASEVARIABLE.cpvVfrac, values3, 1);
+				_aprOverall.SetRealPhaseVariable(cPHASEVARIABLE.cpvPressure, array, 1);
+				_aprOverall.SetRealPhaseVariable(cPHASEVARIABLE.cpvTemperature, values, 1);
+				_propSystem.CalcPhaseEquilibrium1(_phaseCollection, cFLASHTYPE.cftTP, cVALIDPHASE.cvpVaporLiquid, 99999999, 1E+35);
+				double[] array5 = new double[1];
+				double[] values4 = new double[1];
+				_aprOverall.GetRealPhaseVariable(cPHASEVARIABLE.cpvEnthalpy, array5, 1);
+				_aprOverall.GetRealPhaseVariable(cPHASEVARIABLE.cpvVfrac, values4, 1);
+				double num4 = array3[0] - num2;
+				double num5 = (array5[0] - array4[0]) * (1.0 - num3);
+				double num6 = (num4 + num5) / 1000.0;
+				_hvap = num6;
+				return num6;
+			}
+			catch
+			{
+				return double.NaN;
+			}
+			finally
+			{
+				_aprOverall.SetRealPhaseVariable(cPHASEVARIABLE.cpvMoleFracs, _lastComposition, _lastNumComp.GetValueOrDefault());
+				_aprOverall.SetRealPhaseVariable(cPHASEVARIABLE.cpvPressure, array, 1);
+				_aprOverall.SetRealPhaseVariable(cPHASEVARIABLE.cpvEnthalpy, array2, 1);
+				_propSystem.CalcPhaseEquilibrium1(_phaseCollection, cFLASHTYPE.cftPQ, cVALIDPHASE.cvpVaporLiquid, 99999999, 1E+35);
+			}
+		}
+
+		public int NumberOfComponents()
+		{
+			return _lastNumComp.GetValueOrDefault();
+		}
+
+		public double OverallCriticalPressure(out bool usedRigorousMethod, bool forceRigorous = false)
+		{
+			usedRigorousMethod = forceRigorous;
+			if (forceRigorous)
+			{
+				return double.NaN;
+			}
+			return OverallPseudoCriticalPressure();
+		}
+
+		public double OverallCriticalPressure()
+		{
+			bool usedRigorousMethod;
+			return OverallCriticalPressure(out usedRigorousMethod);
+		}
+
+		public double OverallDensity()
+		{
+			if (!_lastFlashSucceeded)
+			{
+				return double.NaN;
+			}
+			if (_aprOverall == null)
+			{
+				return double.NaN;
+			}
+			double num = OverallMolecularWeight();
+			if (double.IsNaN(num))
+			{
+				return double.NaN;
+			}
+			double[] array = new double[1];
+			_aprOverall.GetRealPhaseVariable(cPHASEVARIABLE.cpvMolarVolume, array, 1);
+			if (array[0] == 1E+35)
+			{
+				return double.NaN;
+			}
+			return num / array[0];
+		}
+
+		public double OverallMassEnthalpy()
+		{
+			if (!_lastFlashSucceeded)
+			{
+				return double.NaN;
+			}
+			if (_aprOverall == null)
+			{
+				return double.NaN;
+			}
+			if (_overallMassEnthalpy.HasValue)
+			{
+				return _overallMassEnthalpy.GetValueOrDefault();
+			}
+			double num = OverallMolecularWeight();
+			if (double.IsNaN(num))
+			{
+				return double.NaN;
+			}
+			double[] array = new double[1];
+			_aprOverall.GetRealPhaseVariable(cPHASEVARIABLE.cpvEnthalpy, array, 1);
+			if (array[0] == 1E+35)
+			{
+				_overallMassEnthalpy = null;
+				return double.NaN;
+			}
+			double num2 = array[0] / num / 1000.0;
+			_overallMassEnthalpy = num2;
+			return num2;
+		}
+
+		public double OverallMassEntropy()
+		{
+			if (!_lastFlashSucceeded)
+			{
+				return double.NaN;
+			}
+			if (_aprOverall == null)
+			{
+				return double.NaN;
+			}
+			if (_overallMassEntropy.HasValue)
+			{
+				return _overallMassEntropy.GetValueOrDefault();
+			}
+			double num = OverallMolecularWeight();
+			if (double.IsNaN(num))
+			{
+				return double.NaN;
+			}
+			double[] array = new double[1];
+			_aprOverall.GetRealPhaseVariable(cPHASEVARIABLE.cpvEntropy, array, 1);
+			if (array[0] == 1E+35)
+			{
+				_overallMassEntropy = null;
+				return double.NaN;
+			}
+			double num2 = array[0] / num / 1000.0;
+			_overallMassEntropy = num2;
+			return num2;
+		}
+
+		public double OverallMassHeatCapacity()
+		{
+			double num = VaporMolecularWeight();
+			double num2 = LiquidMolecularWeight();
+			double num3 = VaporFraction();
+			double num4 = VaporMassHeatCapacity();
+			double num5 = LiquidMassHeatCapacity();
+			double num6 = OverallMolecularWeight();
+			if (num3 >= 1.0)
+			{
+				return num4;
+			}
+			if (num3 <= 0.0)
+			{
+				return num5;
+			}
+			return (num3 * num4 * num + (1.0 - num3) * num5 * num2) / num6;
+		}
+
+		public double OverallMolecularWeight()
+		{
+			if (!_lastFlashSucceeded)
+			{
+				return double.NaN;
+			}
+			if (_aprOverall == null)
+			{
+				return double.NaN;
+			}
+			if (_overallmolwt.HasValue)
+			{
+				return _overallmolwt.GetValueOrDefault();
+			}
+			double[] array = new double[1];
+			_aprOverall.GetRealPhaseVariable(cPHASEVARIABLE.cpvAMW, array, 1);
+			if (array[0] == 1E+35)
+			{
+				_overallmolwt = null;
+				return double.NaN;
+			}
+			_overallmolwt = array[0];
+			return array[0];
+		}
+
+		public double OverallPseudoCriticalPressure()
+		{
+			return _GetPhasePropertyByName(_aprOverall, FluidPhaseRegime.TwoPhase, "PCMX") / 1000.0;
+		}
+
+		public double OverallTrueCriticalPressure()
+		{
+			return double.NaN;
+		}
+
+		public double Pressure()
+		{
+			if (!_lastFlashSucceeded)
+			{
+				return double.NaN;
+			}
+			if (_aprOverall == null)
+			{
+				return double.NaN;
+			}
+			if (_pressure.HasValue)
+			{
+				return _pressure.GetValueOrDefault();
+			}
+			double[] array = new double[1];
+			_aprOverall.GetRealPhaseVariable(cPHASEVARIABLE.cpvPressure, array, 1);
+			if (array[0] == 1E+35)
+			{
+				_pressure = null;
+				return double.NaN;
+			}
+			_pressure = array[0] / 1000.0;
+			return array[0] / 1000.0;
+		}
+
+		public double SaturationPressure()
+		{
+			throw new NotImplementedException();
+		}
+
+		public double Temperature()
+		{
+			if (!_lastFlashSucceeded)
+			{
+				return double.NaN;
+			}
+			if (_aprOverall == null)
+			{
+				return double.NaN;
+			}
+			if (_temperature.HasValue)
+			{
+				return _temperature.GetValueOrDefault();
+			}
+			double[] array = new double[1];
+			_aprOverall.GetRealPhaseVariable(cPHASEVARIABLE.cpvTemperature, array, 1);
+			if (array[0] == 1E+35)
+			{
+				_temperature = null;
+				return double.NaN;
+			}
+			_temperature = array[0] - 273.15;
+			return array[0] - 273.15;
+		}
+
+		public double VaporFraction()
+		{
+			if (!_lastFlashSucceeded)
+			{
+				return double.NaN;
+			}
+			if (_aprOverall == null)
+			{
+				return double.NaN;
+			}
+			if (_vaporFraction.HasValue)
+			{
+				return _vaporFraction.GetValueOrDefault();
+			}
+			double[] array = new double[1];
+			_aprOverall.GetRealPhaseVariable(cPHASEVARIABLE.cpvVfrac, array, 1);
+			if (array[0] == 1E+35)
+			{
+				_vaporFraction = null;
+				return double.NaN;
+			}
+			_vaporFraction = array[0];
+			return array[0];
+		}
+
+		public double VaporMassFraction()
+		{
+			if (!_isValidVapor)
+			{
+				if (_isValidLiquid)
+				{
+					return 0.0;
+				}
+				return double.NaN;
+			}
+			double num = VaporFraction();
+			double num2 = VaporMolecularWeight();
+			double num3 = OverallMolecularWeight();
+			return num * num2 / num3;
+		}
+
+		public double LiquidCriticalPressure()
+		{
+			bool usedRigorousMethod;
+			return LiquidCriticalPressure(out usedRigorousMethod);
+		}
+
+		public double LiquidCriticalPressure(out bool usedRigorousMethod, bool forceRigorous = false)
+		{
+			usedRigorousMethod = forceRigorous;
+			if (!_isValidLiquid)
+			{
+				return double.NaN;
+			}
+			if (forceRigorous)
+			{
+				return double.NaN;
+			}
+			return LiquidPseudoCriticalPressure();
+		}
+
+		public double LiquidMassDensity()
+		{
+			if (!_lastFlashSucceeded)
+			{
+				return double.NaN;
+			}
+			if (_aprLiquid == null)
+			{
+				return double.NaN;
+			}
+			if (!_isValidLiquid)
+			{
+				return double.NaN;
+			}
+			double num = LiquidMolecularWeight();
+			if (double.IsNaN(num))
+			{
+				return double.NaN;
+			}
+			double[] array = new double[1];
+			_aprLiquid.GetRealPhaseVariable(cPHASEVARIABLE.cpvMolarVolume, array, 1);
+			if (array[0] == 1E+35 || array[0] == 0.0)
+			{
+				return double.NaN;
+			}
+			return num / array[0];
+		}
+
+		public double LiquidMassEnthalpy()
+		{
+			if (!_lastFlashSucceeded)
+			{
+				return double.NaN;
+			}
+			if (_aprLiquid == null)
+			{
+				return double.NaN;
+			}
+			if (!_isValidLiquid)
+			{
+				return double.NaN;
+			}
+			double num = LiquidMolecularWeight();
+			if (double.IsNaN(num))
+			{
+				return double.NaN;
+			}
+			double[] array = new double[1];
+			_aprLiquid.GetRealPhaseVariable(cPHASEVARIABLE.cpvEnthalpy, array, 1);
+			if (array[0] == 1E+35)
+			{
+				return double.NaN;
+			}
+			return array[0] / num / 1000.0;
+		}
+
+		public double LiquidMassEntropy()
+		{
+			if (!_lastFlashSucceeded)
+			{
+				return double.NaN;
+			}
+			if (_aprLiquid == null)
+			{
+				return double.NaN;
+			}
+			if (!_isValidLiquid)
+			{
+				return double.NaN;
+			}
+			double num = LiquidMolecularWeight();
+			if (double.IsNaN(num))
+			{
+				return double.NaN;
+			}
+			double[] array = new double[1];
+			_aprLiquid.GetRealPhaseVariable(cPHASEVARIABLE.cpvEntropy, array, 1);
+			if (array[0] == 1E+35)
+			{
+				return double.NaN;
+			}
+			return array[0] / num / 1000.0;
+		}
+
+		public double LiquidMassHeatCapacity()
+		{
+			if (!_isValidLiquid)
+			{
+				return double.NaN;
+			}
+			if (_liquidmasscp.HasValue)
+			{
+				return _liquidmasscp.GetValueOrDefault();
+			}
+			double num = _GetPhasePropertyByName(_aprLiquid, FluidPhaseRegime.Liquid, "CPMX-M") / 1000.0;
+			if (!double.IsNaN(num))
+			{
+				_liquidmasscp = num;
+			}
+			return num;
+		}
+
+		public double LiquidMolecularWeight()
+		{
+			if (!_lastFlashSucceeded)
+			{
+				return double.NaN;
+			}
+			if (_aprLiquid == null)
+			{
+				return double.NaN;
+			}
+			if (!_isValidLiquid)
+			{
+				return double.NaN;
+			}
+			if (_liquidmolwt.HasValue)
+			{
+				return _liquidmolwt.GetValueOrDefault();
+			}
+			double[] array = new double[1];
+			_aprLiquid.GetRealPhaseVariable(cPHASEVARIABLE.cpvAMW, array, 1);
+			if (array[0] == 1E+35)
+			{
+				_liquidmolwt = null;
+				return double.NaN;
+			}
+			_liquidmolwt = array[0];
+			return array[0];
+		}
+
+		public double LiquidPseudoCriticalPressure()
+		{
+			if (!_isValidLiquid)
+			{
+				return double.NaN;
+			}
+			return _GetPhasePropertyByName(_aprLiquid, FluidPhaseRegime.Liquid, "PCMX") / 1000.0;
+		}
+
+		public double LiquidSurfaceTension()
+		{
+			if (!_isValidLiquid)
+			{
+				return double.NaN;
+			}
+			return _GetPhasePropertyByName(_aprLiquid, FluidPhaseRegime.Liquid, "SIGMAMX") * 1000.0;
+		}
+
+		public double LiquidTrueCriticalPressure()
+		{
+			return double.NaN;
+		}
+
+		public double LiquidViscosity()
+		{
+			if (!_isValidLiquid)
+			{
+				return double.NaN;
+			}
+			return _GetPhasePropertyByName(_aprLiquid, FluidPhaseRegime.Liquid, "MUMX") * 1000.0;
+		}
+
+		public double Cp_Cv_Ideal()
+		{
+			if (!_isValidVapor)
+			{
+				return double.NaN;
+			}
+			double num = _GetPhasePropertyByName(_aprVapor, FluidPhaseRegime.Vapor, "CPIGMX");
+			return num / (num - 8314.4621);
+		}
+
+		public double Cp_Cv_Rigorous()
+		{
+			if (!_isValidVapor)
+			{
+				return double.NaN;
+			}
+			return _GetPhasePropertyByName(_aprVapor, FluidPhaseRegime.Vapor, "CPCVMX");
+		}
+
+		public double Cp_Cv_SemiIdeal()
+		{
+			if (!_isValidVapor)
+			{
+				return double.NaN;
+			}
+			double num = _GetPhasePropertyByName(_aprVapor, FluidPhaseRegime.Vapor, "CPMX");
+			return num / (num - 8314.4621);
+		}
+
+		public double VaporCriticalPressure(out bool usedRigorousMethod, bool forceRigorous = false)
+		{
+			usedRigorousMethod = forceRigorous;
+			if (!_isValidVapor)
+			{
+				return double.NaN;
+			}
+			if (forceRigorous)
+			{
+				return double.NaN;
+			}
+			return VaporPseudoCriticalPressure();
+		}
+
+		public double VaporCriticalPressure()
+		{
+			bool usedRigorousMethod;
+			return VaporCriticalPressure(out usedRigorousMethod);
+		}
+
+		public double VaporMassDensity()
+		{
+			if (!_lastFlashSucceeded)
+			{
+				return double.NaN;
+			}
+			if (_aprVapor == null)
+			{
+				return double.NaN;
+			}
+			if (!_isValidVapor)
+			{
+				return double.NaN;
+			}
+			double num = VaporMolecularWeight();
+			if (double.IsNaN(num))
+			{
+				return double.NaN;
+			}
+			double[] array = new double[1];
+			_aprVapor.GetRealPhaseVariable(cPHASEVARIABLE.cpvMolarVolume, array, 1);
+			if (array[0] == 1E+35 || array[0] == 0.0)
+			{
+				return double.NaN;
+			}
+			return num / array[0];
+		}
+
+		public double VaporMassEnthalpy()
+		{
+			if (!_lastFlashSucceeded)
+			{
+				return double.NaN;
+			}
+			if (_aprVapor == null)
+			{
+				return double.NaN;
+			}
+			if (!_isValidVapor)
+			{
+				return double.NaN;
+			}
+			double num = VaporMolecularWeight();
+			if (double.IsNaN(num))
+			{
+				return double.NaN;
+			}
+			double[] array = new double[1];
+			_aprVapor.GetRealPhaseVariable(cPHASEVARIABLE.cpvEnthalpy, array, 1);
+			if (array[0] == 1E+35)
+			{
+				return double.NaN;
+			}
+			return array[0] / num / 1000.0;
+		}
+
+		public double VaporMassEntropy()
+		{
+			if (!_lastFlashSucceeded)
+			{
+				return double.NaN;
+			}
+			if (_aprVapor == null)
+			{
+				return double.NaN;
+			}
+			if (!_isValidVapor)
+			{
+				return double.NaN;
+			}
+			double num = VaporMolecularWeight();
+			if (double.IsNaN(num))
+			{
+				return double.NaN;
+			}
+			double[] array = new double[1];
+			_aprVapor.GetRealPhaseVariable(cPHASEVARIABLE.cpvEntropy, array, 1);
+			if (array[0] == 1E+35)
+			{
+				return double.NaN;
+			}
+			return array[0] / num / 1000.0;
+		}
+
+		public double VaporMassHeatCapacity()
+		{
+			if (!_isValidVapor)
+			{
+				return double.NaN;
+			}
+			if (_vapormasscp.HasValue)
+			{
+				return _vapormasscp.GetValueOrDefault();
+			}
+			double num = _GetPhasePropertyByName(_aprVapor, FluidPhaseRegime.Vapor, "CPMX-M") / 1000.0;
+			if (!double.IsNaN(num))
+			{
+				_vapormasscp = num;
+			}
+			return num;
+		}
+
+		public double VaporMolecularWeight()
+		{
+			if (!_lastFlashSucceeded)
+			{
+				return double.NaN;
+			}
+			if (_aprVapor == null)
+			{
+				return double.NaN;
+			}
+			if (!_isValidVapor)
+			{
+				return double.NaN;
+			}
+			if (_vapormolwt.HasValue)
+			{
+				return _vapormolwt.GetValueOrDefault();
+			}
+			double[] array = new double[1];
+			_aprVapor.GetRealPhaseVariable(cPHASEVARIABLE.cpvAMW, array, 1);
+			if (array[0] == 1E+35)
+			{
+				_vapormolwt = null;
+				return double.NaN;
+			}
+			_vapormolwt = array[0];
+			return array[0];
+		}
+
+		public double VaporPseudoCriticalPressure()
+		{
+			if (!_isValidVapor)
+			{
+				return double.NaN;
+			}
+			return _GetPhasePropertyByName(_aprVapor, FluidPhaseRegime.Vapor, "PCMX") / 1000.0;
+		}
+
+		public double VaporTrueCriticalPressure()
+		{
+			return double.NaN;
+		}
+
+		public double VaporViscosity()
+		{
+			if (!_isValidVapor)
+			{
+				return double.NaN;
+			}
+			return _GetPhasePropertyByName(_aprVapor, FluidPhaseRegime.Vapor, "MUMX") * 1000.0;
+		}
+
+		public double VaporZFactor()
+		{
+			if (!_isValidVapor)
+			{
+				return double.NaN;
+			}
+			return _GetPhasePropertyByName(_aprVapor, FluidPhaseRegime.Vapor, "ZMX");
+		}
+
+		public bool ResetFluid()
+		{
+			if (_aprOverall == null)
+			{
+				return false;
+			}
+			if (double.IsNaN(_initTemp ?? double.NaN))
+			{
+				return false;
+			}
+			if (double.IsNaN(_initPress ?? double.NaN))
+			{
+				return false;
+			}
+			if (!_initNumComp.HasValue)
+			{
+				return false;
+			}
+			if (_initComp == null || _initComp.Length != _initNumComp.GetValueOrDefault())
+			{
+				return false;
+			}
+			_aprOverall.SetRealPhaseVariable(cPHASEVARIABLE.cpvMoleFracs, _initComp, _initNumComp.GetValueOrDefault());
+			return TPFlash(_initTemp.GetValueOrDefault() - 273.15, _initPress.GetValueOrDefault() / 1000.0);
+		}
+
+		public void ReinitializeFluid()
+		{
+			_ReleaseAll();
+			_Initialize(_path);
+			ResetFluid();
+		}
+
+		public bool SetLiquidVaporRatio(double VF, double T, double P)
+		{
+			if (!TPFlashOverall(T, P))
+			{
+				return false;
+			}
+			return SetLiquidVaporRatio(VF);
+		}
+
+		public bool SetLiquidVaporRatio(double VF)
+		{
+			if (_aprOverall == null)
+			{
+				return false;
+			}
+			if (_aprVapor == null)
+			{
+				return false;
+			}
+			if (_aprLiquid == null)
+			{
+				return false;
+			}
+			int[] array = new int[1];
+			int[] array2 = new int[1];
+			int[] array3 = new int[1];
+			try
+			{
+				_aprOverall.GetIntegerPhaseVariable(cPHASEVARIABLE.cpvNumComp, array, 1);
+				if (array[0] == 99999999)
+				{
+					return false;
+				}
+				_aprVapor.GetIntegerPhaseVariable(cPHASEVARIABLE.cpvNumComp, array3, 1);
+				if (array3[0] == 99999999)
+				{
+					return false;
+				}
+				_aprLiquid.GetIntegerPhaseVariable(cPHASEVARIABLE.cpvNumComp, array2, 1);
+				if (array2[0] == 99999999)
+				{
+					return false;
+				}
+				if (array[0] != array3[0] || array[0] != array2[0])
+				{
+					return false;
+				}
+				double[] array4 = new double[array3[0]];
+				double[] array5 = new double[array2[0]];
+				_aprVapor.GetRealPhaseVariable(cPHASEVARIABLE.cpvMoleFracs, array4, array3[0]);
+				_aprLiquid.GetRealPhaseVariable(cPHASEVARIABLE.cpvMoleFracs, array5, array2[0]);
+				switch (PSVDictionaries.GetPhaseFromVaporFraction(VF))
+				{
+				case FluidPhaseRegime.Vapor:
+					_aprOverall.SetRealPhaseVariable(cPHASEVARIABLE.cpvMoleFracs, array4, array3[0]);
+					break;
+				case FluidPhaseRegime.Liquid:
+					_aprOverall.SetRealPhaseVariable(cPHASEVARIABLE.cpvMoleFracs, array5, array2[0]);
+					break;
+				default:
+				{
+					double[] array6 = new double[array[0]];
+					for (int i = 0; i < array[0]; i++)
+					{
+						array6[i] = array4[i] * VF + array5[i] * (1.0 - VF);
+					}
+					_aprOverall.SetRealPhaseVariable(cPHASEVARIABLE.cpvMoleFracs, array6, array[0]);
+					break;
+				}
+				}
+			}
+			catch
+			{
+				return false;
+			}
+			return true;
+		}
+
+		public bool StoreFireFractions(FluidPhaseSelection selectedPhase = FluidPhaseSelection.Vapor)
+		{
+			APVPhase aPVPhase = null;
+			switch (selectedPhase)
+			{
+			case FluidPhaseSelection.Vapor:
+				aPVPhase = _aprVapor;
+				break;
+			case FluidPhaseSelection.MixedLiquid:
+				aPVPhase = _aprLiquid;
+				break;
+			case FluidPhaseSelection.Overall:
+				aPVPhase = _aprOverall;
+				break;
+			}
+			if (aPVPhase == null)
+			{
+				return false;
+			}
+			try
+			{
+				int[] array = new int[1];
+				aPVPhase.GetIntegerPhaseVariable(cPHASEVARIABLE.cpvNumComp, array, 1);
+				if (array[0] == 99999999)
+				{
+					return false;
+				}
+				_fireNumComp = array[0];
+				_fireComp = new double[array[0]];
+				aPVPhase.GetRealPhaseVariable(cPHASEVARIABLE.cpvMoleFracs, _fireComp, array[0]);
+				double[] array2 = new double[1];
+				aPVPhase.GetRealPhaseVariable(cPHASEVARIABLE.cpvEntropy, array2, 1);
+				if (array2[0] != 1E+35)
+				{
+					_storedEntropy = array2[0];
+				}
+				else
+				{
+					_storedEntropy = null;
+				}
+			}
+			catch
+			{
+				return false;
+			}
+			return true;
+		}
+
+		private bool _LoadFireFractions()
+		{
+			if (_aprOverall == null)
+			{
+				return false;
+			}
+			if (_fireNumComp.GetValueOrDefault() <= 0)
+			{
+				return false;
+			}
+			if (_fireComp == null || _fireComp.Length != _fireNumComp.GetValueOrDefault())
+			{
+				return false;
+			}
+			try
+			{
+				_aprOverall.SetRealPhaseVariable(cPHASEVARIABLE.cpvMoleFracs, _fireComp, _fireNumComp.GetValueOrDefault());
+			}
+			catch
+			{
+				return false;
+			}
+			return true;
+		}
+
+		public bool StoreOverallFractions()
+		{
+			if (_aprOverall == null)
+			{
+				return false;
+			}
+			try
+			{
+				int[] array = new int[1];
+				_aprOverall.GetIntegerPhaseVariable(cPHASEVARIABLE.cpvNumComp, array, 1);
+				if (array[0] == 99999999)
+				{
+					return false;
+				}
+				_storedNumComp = array[0];
+				_storedComp = new double[array[0]];
+				_aprOverall.GetRealPhaseVariable(cPHASEVARIABLE.cpvMoleFracs, _storedComp, array[0]);
+			}
+			catch
+			{
+				return false;
+			}
+			return true;
+		}
+
+		public bool RevertOverallFractions()
+		{
+			if (_aprOverall == null)
+			{
+				return false;
+			}
+			if (_storedNumComp.GetValueOrDefault() <= 0)
+			{
+				return false;
+			}
+			if (_storedComp == null || _storedComp.Length != _storedNumComp.GetValueOrDefault())
+			{
+				return false;
+			}
+			try
+			{
+				_aprOverall.SetRealPhaseVariable(cPHASEVARIABLE.cpvMoleFracs, _storedComp, _storedNumComp.GetValueOrDefault());
+			}
+			catch
+			{
+				return false;
+			}
+			return true;
+		}
+
+		public bool ClearFireFractions()
+		{
+			if (_aprOverall == null)
+			{
+				return false;
+			}
+			if (_fireComp == null)
+			{
+				return false;
+			}
+			_fireComp = null;
+			return true;
+		}
+
+		public bool IsenthalpicFlash(double pout)
+		{
+			if (double.IsNaN(pout) || double.IsInfinity(pout))
+			{
+				return false;
+			}
+			if (_lastFlashSucceeded && _pressure.HasValue && _pressure.GetValueOrDefault() == pout)
+			{
+				return true;
+			}
+			_isLastFlashSaturated = false;
+			try
+			{
+				cFLASHTYPE flashType = cFLASHTYPE.cftPQ;
+				cPHASEVARIABLE variable = cPHASEVARIABLE.cpvPressure;
+				pout *= 1000.0;
+				_aprOverall.SetRealPhaseVariable(variable, new double[1] { pout }, 1);
+				return _ExecFlash(flashType);
+			}
+			catch
+			{
+				return false;
+			}
+		}
+
+		public bool IsentropicFlash(double pout)
+		{
+			if (double.IsNaN(pout) || double.IsInfinity(pout))
+			{
+				return false;
+			}
+			if (double.IsNaN(_storedEntropy ?? double.NaN))
+			{
+				return false;
+			}
+			if (_lastFlashSucceeded && _pressure.HasValue && _pressure.GetValueOrDefault() == pout)
+			{
+				return true;
+			}
+			_isLastFlashSaturated = false;
+			try
+			{
+				cFLASHTYPE flashType = cFLASHTYPE.cftPS;
+				cPHASEVARIABLE variable = cPHASEVARIABLE.cpvPressure;
+				pout *= 1000.0;
+				_aprOverall.SetRealPhaseVariable(variable, new double[1] { pout }, 1);
+				return _ExecFlash(flashType);
+			}
+			catch
+			{
+				return false;
+			}
+		}
+
+		public bool IsentropicFlashFire(double pout)
+		{
+			return IsentropicFlash(pout);
+		}
+
+		public bool PSFlash(double pout, double s)
+		{
+			_isLastFlashSaturated = false;
+			try
+			{
+				cFLASHTYPE flashType = cFLASHTYPE.cftPS;
+				cPHASEVARIABLE variable = cPHASEVARIABLE.cpvPressure;
+				cPHASEVARIABLE variable2 = cPHASEVARIABLE.cpvEntropy;
+				pout *= 1000.0;
+				s *= 1000.0;
+				_aprOverall.SetRealPhaseVariable(variable, new double[1] { pout }, 1);
+				_aprOverall.SetRealPhaseVariable(variable2, new double[1] { s }, 1);
+				return _ExecFlash(flashType);
+			}
+			catch
+			{
+				return false;
+			}
+		}
+
+		public bool PSFlashOverall(double P, double S)
+		{
+			return PSFlash(P, S);
+		}
+
+		public bool PVFlash(double P, double Vf)
+		{
+			_isLastFlashSaturated = true;
+			try
+			{
+				cFLASHTYPE flashType = cFLASHTYPE.cftPV;
+				cPHASEVARIABLE variable = cPHASEVARIABLE.cpvPressure;
+				cPHASEVARIABLE variable2 = cPHASEVARIABLE.cpvVfrac;
+				P *= 1000.0;
+				_aprOverall.SetRealPhaseVariable(variable, new double[1] { P }, 1);
+				_aprOverall.SetRealPhaseVariable(variable2, new double[1] { Vf }, 1);
+				return _ExecFlash(flashType);
+			}
+			catch
+			{
+				return false;
+			}
+		}
+
+		public bool PVFlashFire(double P, double VF)
+		{
+			if (!_LoadFireFractions())
+			{
+				return false;
+			}
+			return PVFlash(P, VF);
+		}
+
+		public bool PVFlashLiquid(double P, double VF)
+		{
+			if (!_SetCompositionByPhase(_aprLiquid))
+			{
+				return false;
+			}
+			return PVFlash(P, VF);
+		}
+
+		public bool PVFlashOverall(double P, double VF)
+		{
+			return PVFlash(P, VF);
+		}
+
+		public bool PVFlashVapor(double P, double VF)
+		{
+			if (!_SetCompositionByPhase(_aprVapor))
+			{
+				return false;
+			}
+			return PVFlash(P, VF);
+		}
+
+		public bool PHFlash(double pout, double h)
+		{
+			if (double.IsNaN(pout) || double.IsInfinity(pout))
+			{
+				return false;
+			}
+			if (double.IsNaN(h) || double.IsInfinity(h))
+			{
+				return false;
+			}
+			_isLastFlashSaturated = false;
+			try
+			{
+				cFLASHTYPE flashType = cFLASHTYPE.cftPQ;
+				cPHASEVARIABLE variable = cPHASEVARIABLE.cpvPressure;
+				cPHASEVARIABLE variable2 = cPHASEVARIABLE.cpvEnthalpy;
+				pout *= 1000.0;
+				h *= 1000.0;
+				_aprOverall = _phaseCollection.GetPhaseReference(cPHASELABEL.cplOverall);
+				_aprOverall.SetRealPhaseVariable(variable, new double[1] { pout }, 1);
+				_aprOverall.SetRealPhaseVariable(variable2, new double[1] { h }, 1);
+				return _ExecFlash(flashType);
+			}
+			catch
+			{
+				return false;
+			}
+		}
+
+		public bool PHFlashLiquid(double P, double H)
+		{
+			if (!_SetCompositionByPhase(_aprLiquid))
+			{
+				return false;
+			}
+			return PHFlash(P, H);
+		}
+
+		public bool PHFlashOverall(double P, double H)
+		{
+			return PHFlash(P, H);
+		}
+
+		public bool TPFlash(double t, double p)
+		{
+			if (_aprOverall == null)
+			{
+				return false;
+			}
+			_isLastFlashSaturated = false;
+			try
+			{
+				cFLASHTYPE flashType = cFLASHTYPE.cftTP;
+				cPHASEVARIABLE variable = cPHASEVARIABLE.cpvTemperature;
+				cPHASEVARIABLE variable2 = cPHASEVARIABLE.cpvPressure;
+				t += 273.15;
+				p *= 1000.0;
+				_aprOverall.SetRealPhaseVariable(variable, new double[1] { t }, 1);
+				_aprOverall.SetRealPhaseVariable(variable2, new double[1] { p }, 1);
+				return _ExecFlash(flashType);
+			}
+			catch
+			{
+				return false;
+			}
+		}
+
+		public bool TPFlashFire(double t, double p)
+		{
+			if (!_LoadFireFractions())
+			{
+				return false;
+			}
+			return TPFlash(t, p);
+		}
+
+		public bool TPFlashLiquid(double T, double P)
+		{
+			if (!_SetCompositionByPhase(_aprLiquid))
+			{
+				return false;
+			}
+			return TPFlash(T, P);
+		}
+
+		public bool TPFlashOverall(double T, double P)
+		{
+			return TPFlash(T, P);
+		}
+
+		public bool TPFlashVapor(double T, double P)
+		{
+			if (!_SetCompositionByPhase(_aprVapor))
+			{
+				return false;
+			}
+			return TPFlash(T, P);
+		}
+
+		public bool TVFlash(double t, double Vf)
+		{
+			_isLastFlashSaturated = true;
+			try
+			{
+				cFLASHTYPE flashType = cFLASHTYPE.cftTV;
+				cPHASEVARIABLE variable = cPHASEVARIABLE.cpvTemperature;
+				cPHASEVARIABLE variable2 = cPHASEVARIABLE.cpvVfrac;
+				t += 273.15;
+				_aprOverall.SetRealPhaseVariable(variable, new double[1] { t }, 1);
+				_aprOverall.SetRealPhaseVariable(variable2, new double[1] { Vf }, 1);
+				_ExecFlash(flashType);
+			}
+			catch
+			{
+				return false;
+			}
+			return true;
+		}
+
+		public bool TVFlashOverall(double T, double VF)
+		{
+			return TVFlash(T, VF);
+		}
+
+		private void _ReleaseAll()
+		{
+			if (_aprLiquid != null)
+			{
+				Marshal.ReleaseComObject(_aprLiquid);
+			}
+			if (_aprVapor != null)
+			{
+				Marshal.ReleaseComObject(_aprVapor);
+			}
+			if (_aprOverall != null)
+			{
+				Marshal.ReleaseComObject(_aprOverall);
+			}
+			if (_phaseCollection != null)
+			{
+				Marshal.ReleaseComObject(_phaseCollection);
+			}
+			if (_propSystem != null)
+			{
+				Marshal.ReleaseComObject(_propSystem);
+			}
+			_aprLiquid = null;
+			_aprVapor = null;
+			_aprOverall = null;
+			_phaseCollection = null;
+			_propSystem = null;
+			disposedValue = true;
+		}
+
+		protected virtual void Dispose(bool disposing)
+		{
+			if (!disposedValue)
+			{
+				_ReleaseAll();
+			}
+		}
+
+		~APlusProperties()
+		{
+			Dispose(disposing: false);
+		}
+
+		public void Dispose()
+		{
+			Dispose(disposing: true);
+			GC.SuppressFinalize(this);
+		}
+	}
+}
+namespace APVCOMLib
+{
+	[ComImport]
+	[CompilerGenerated]
+	[CoClass(typeof(object))]
+	[Guid("1A234221-1B19-4D87-8AF9-169771F54DFC")]
+	[TypeIdentifier]
+	public interface APVPhase : IAPVPhase
+	{
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[CoClass(typeof(object))]
+	[Guid("CF7CCCF1-E337-434C-BBCC-AD8F505CADEC")]
+	[TypeIdentifier]
+	public interface APVPhaseCollection : IAPVPhaseCollection
+	{
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("7B6F9721-4BA4-4548-9CC7-5E6095BAD72E")]
+	[CoClass(typeof(object))]
+	[TypeIdentifier]
+	public interface APVPropSystem : IAPVPropSystem
+	{
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+	[Guid("1A234221-1B19-4D87-8AF9-169771F54DFC")]
+	[TypeIdentifier]
+	public interface IAPVPhase
+	{
+		void _VtblGap1_2();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		void GetIntegerPhaseVariable([In] cPHASEVARIABLE variable, [Out][MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)] int[] values, [In] int bufferSize);
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		void GetRealPhaseVariable([In] cPHASEVARIABLE variable, [Out][MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)] double[] values, [In] int bufferSize);
+
+		void _VtblGap2_1();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		void SetRealPhaseVariable([In] cPHASEVARIABLE variable, [In][MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)] double[] values, [In] int bufferSize);
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("CF7CCCF1-E337-434C-BBCC-AD8F505CADEC")]
+	[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+	[TypeIdentifier]
+	public interface IAPVPhaseCollection
+	{
+		void _VtblGap1_1();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[return: MarshalAs(UnmanagedType.Interface)]
+		APVPhase GetPhaseReference([In] cPHASELABEL type);
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+	[Guid("7B6F9721-4BA4-4548-9CC7-5E6095BAD72E")]
+	[TypeIdentifier]
+	public interface IAPVPropSystem
+	{
+		void _VtblGap1_14();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		int TotalComp();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		void GetPackageComponents([In] int nc, [Out][MarshalAs(UnmanagedType.LPArray)] sbyte[] cids, [Out][MarshalAs(UnmanagedType.LPArray)] sbyte[] aliases, [Out][MarshalAs(UnmanagedType.LPArray)] sbyte[] cnames, [Out][MarshalAs(UnmanagedType.LPArray)] sbyte[] casnums);
+
+		void _VtblGap2_15();
+
+		[MethodImpl(MethodImplOptions.PreserveSig | MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[return: MarshalAs(UnmanagedType.Error)]
+		int CalcPhaseEquilibrium1([In][MarshalAs(UnmanagedType.Interface)] APVPhaseCollection pPhases, [In] cFLASHTYPE flashType, [In] cVALIDPHASE validPhases, [In] int maxIterations, [In] double tolerance);
+
+		void _VtblGap3_11();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		void SetHBase([In] cHBASE hBase);
+
+		void _VtblGap4_16();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		cDIAGLEVEL GetDiagLevel([In] cDIAGTYPE diagType);
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		void SetDiagLevel([In] cDIAGTYPE diagType, [In] cDIAGLEVEL diagLevel);
+
+		void _VtblGap5_21();
+
+		[MethodImpl(MethodImplOptions.PreserveSig | MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[return: MarshalAs(UnmanagedType.Error)]
+		int GetPropSetProperty([In][MarshalAs(UnmanagedType.LPArray, SizeConst = 9)] sbyte[] propname, [In] double temp, [In] double pres, [In] int nComp, [In][MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 3)] double[] xComp, [In][MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 3)] int[] idxComp, [In] cVALIDPHASE validPhases, [In] int basis, [In] int iPhase, [Out][MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 3)] double[] PropValues);
+	}
+	[CompilerGenerated]
+	[TypeIdentifier("7BEB6E40-D9EA-4A55-9EA7-1ABB1AA20762", "APVCOMLib.cDIAGLEVEL")]
+	public enum cDIAGLEVEL
+	{
+		cdlTerminal_Error = 0,
+		cdlSevere_Error = 1,
+		cdlError = 2,
+		cdlWarning = 3,
+		cdlInformation = 4,
+		cdlDetailed = 8
+	}
+	[CompilerGenerated]
+	[TypeIdentifier("7BEB6E40-D9EA-4A55-9EA7-1ABB1AA20762", "APVCOMLib.cDIAGTYPE")]
+	public enum cDIAGTYPE
+	{
+		cdtSystem,
+		cdtSimulation,
+		cdtProperties,
+		cdtComponents,
+		cdtHistorySystem,
+		cdtHistorySimulation,
+		cdtHistoryProperties,
+		cdtHistoryComponents
+	}
+	[CompilerGenerated]
+	[TypeIdentifier("7BEB6E40-D9EA-4A55-9EA7-1ABB1AA20762", "APVCOMLib.cFLASHTYPE")]
+	public enum cFLASHTYPE
+	{
+		cftPQ = 1,
+		cftTP,
+		cftPV,
+		cftTQ,
+		cftTV,
+		cftPS,
+		cftPU
+	}
+	[CompilerGenerated]
+	[TypeIdentifier("7BEB6E40-D9EA-4A55-9EA7-1ABB1AA20762", "APVCOMLib.cHBASE")]
+	public enum cHBASE
+	{
+		chbComponent,
+		chbElement
+	}
+	[CompilerGenerated]
+	[TypeIdentifier("7BEB6E40-D9EA-4A55-9EA7-1ABB1AA20762", "APVCOMLib.cPHASELABEL")]
+	public enum cPHASELABEL
+	{
+		cplVapor = 1,
+		cplLiquid,
+		cplSolid,
+		cplLiquid2,
+		cplOverall,
+		cplOrganic,
+		cplAqueous,
+		cplUnknown
+	}
+	[CompilerGenerated]
+	[TypeIdentifier("7BEB6E40-D9EA-4A55-9EA7-1ABB1AA20762", "APVCOMLib.cPHASEVARIABLE")]
+	public enum cPHASEVARIABLE
+	{
+		cpvTemperature,
+		cpvPressure,
+		cpvNumComp,
+		cpvCompIndex,
+		cpvMoleFracs,
+		cpvPhaseState,
+		cpvPhaseLabel,
+		cpvPhaseStatus,
+		cpvVfrac,
+		cpvBeta,
+		cpvEnthalpy,
+		cpvEntropy,
+		cpvGibbsEnergy,
+		cpvMolarVolume,
+		cpvKVL,
+		cpvKVL2,
+		cpvAMW,
+		cpvFlowRatio,
+		cpvTrueComps,
+		cpvSolIndex,
+		cpvAqVol,
+		cpvPH,
+		cpvOsmoticP,
+		cpvIONSM,
+		cpvTrueVisc,
+		cpvTrueSCmp,
+		cpvTrueVfrac,
+		cpvTrueBeta,
+		cpvTrueSfrac,
+		cpvTrueAqCmp,
+		cpvTrueSCp
+	}
+	[CompilerGenerated]
+	[TypeIdentifier("7BEB6E40-D9EA-4A55-9EA7-1ABB1AA20762", "APVCOMLib.cVALIDPHASE")]
+	public enum cVALIDPHASE
+	{
+		cvpVaporOnly = 1,
+		cvpLiquidOnly,
+		cvpSolidOnly,
+		cvpVaporLiquid,
+		cvpVaporLiquidLiquid,
+		cvpVaporLiquidFreeWater,
+		cvpLiquidFreeWater,
+		cvpLiquidDirtyWater,
+		cvpVaporLiquidDirtyWater
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

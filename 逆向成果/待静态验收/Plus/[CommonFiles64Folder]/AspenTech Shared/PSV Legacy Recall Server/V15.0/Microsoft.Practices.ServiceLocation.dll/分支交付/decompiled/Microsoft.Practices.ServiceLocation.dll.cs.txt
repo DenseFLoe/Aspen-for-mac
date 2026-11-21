@@ -1,0 +1,205 @@
+using System;
+using System.CodeDom.Compiler;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Globalization;
+using System.Reflection;
+using System.Resources;
+using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
+using System.Security;
+using Microsoft.Practices.ServiceLocation.Properties;
+
+[assembly: AssemblyTitle("Microsoft.Practices.ServiceLocation")]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: AssemblyCompany("Microsoft")]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyProduct("Microsoft.Practices.ServiceLocation")]
+[assembly: AssemblyFileVersion("1.2.0.0")]
+[assembly: TargetFramework(".NETPortable,Version=v4.0,Profile=Profile136", FrameworkDisplayName = ".NET Portable Subset")]
+[assembly: AssemblyDescription("A simple facade that provides insulation from specific IoC containers.")]
+[assembly: AssemblyConfiguration("Release")]
+[assembly: CompilationRelaxations(8)]
+[assembly: AssemblyCopyright("Copyright © Microsoft 2008")]
+[assembly: AssemblyTrademark("")]
+[assembly: NeutralResourcesLanguage("en-US")]
+[assembly: CLSCompliant(true)]
+[assembly: SecurityTransparent]
+[assembly: AssemblyVersion("1.2.0.0")]
+namespace Microsoft.Practices.ServiceLocation
+{
+	public class ActivationException : Exception
+	{
+		public ActivationException()
+		{
+		}
+
+		public ActivationException(string message)
+			: base(message)
+		{
+		}
+
+		public ActivationException(string message, Exception innerException)
+			: base(message, innerException)
+		{
+		}
+	}
+	public interface IServiceLocator : IServiceProvider
+	{
+		object GetInstance(Type serviceType);
+
+		object GetInstance(Type serviceType, string key);
+
+		IEnumerable<object> GetAllInstances(Type serviceType);
+
+		TService GetInstance<TService>();
+
+		TService GetInstance<TService>(string key);
+
+		IEnumerable<TService> GetAllInstances<TService>();
+	}
+	public static class ServiceLocator
+	{
+		private static ServiceLocatorProvider currentProvider;
+
+		public static IServiceLocator Current
+		{
+			get
+			{
+				if (!IsLocationProviderSet)
+				{
+					throw new InvalidOperationException(Resources.ServiceLocationProviderNotSetMessage);
+				}
+				return currentProvider();
+			}
+		}
+
+		public static bool IsLocationProviderSet => currentProvider != null;
+
+		public static void SetLocatorProvider(ServiceLocatorProvider newProvider)
+		{
+			currentProvider = newProvider;
+		}
+	}
+	public abstract class ServiceLocatorImplBase : IServiceLocator, IServiceProvider
+	{
+		public virtual object GetService(Type serviceType)
+		{
+			return GetInstance(serviceType, null);
+		}
+
+		public virtual object GetInstance(Type serviceType)
+		{
+			return GetInstance(serviceType, null);
+		}
+
+		public virtual object GetInstance(Type serviceType, string key)
+		{
+			try
+			{
+				return DoGetInstance(serviceType, key);
+			}
+			catch (Exception ex)
+			{
+				throw new ActivationException(FormatActivationExceptionMessage(ex, serviceType, key), ex);
+			}
+		}
+
+		public virtual IEnumerable<object> GetAllInstances(Type serviceType)
+		{
+			try
+			{
+				return DoGetAllInstances(serviceType);
+			}
+			catch (Exception ex)
+			{
+				throw new ActivationException(FormatActivateAllExceptionMessage(ex, serviceType), ex);
+			}
+		}
+
+		public virtual TService GetInstance<TService>()
+		{
+			return (TService)GetInstance(typeof(TService), null);
+		}
+
+		public virtual TService GetInstance<TService>(string key)
+		{
+			return (TService)GetInstance(typeof(TService), key);
+		}
+
+		public virtual IEnumerable<TService> GetAllInstances<TService>()
+		{
+			foreach (object item in GetAllInstances(typeof(TService)))
+			{
+				yield return (TService)item;
+			}
+		}
+
+		protected abstract object DoGetInstance(Type serviceType, string key);
+
+		protected abstract IEnumerable<object> DoGetAllInstances(Type serviceType);
+
+		protected virtual string FormatActivationExceptionMessage(Exception actualException, Type serviceType, string key)
+		{
+			return string.Format(CultureInfo.CurrentUICulture, Resources.ActivationExceptionMessage, new object[2] { serviceType.Name, key });
+		}
+
+		protected virtual string FormatActivateAllExceptionMessage(Exception actualException, Type serviceType)
+		{
+			return string.Format(CultureInfo.CurrentUICulture, Resources.ActivateAllExceptionMessage, new object[1] { serviceType.Name });
+		}
+	}
+	public delegate IServiceLocator ServiceLocatorProvider();
+}
+namespace Microsoft.Practices.ServiceLocation.Properties
+{
+	[GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
+	[DebuggerNonUserCode]
+	[CompilerGenerated]
+	internal class Resources
+	{
+		private static ResourceManager resourceMan;
+
+		private static CultureInfo resourceCulture;
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		internal static ResourceManager ResourceManager
+		{
+			get
+			{
+				if (object.ReferenceEquals(resourceMan, null))
+				{
+					ResourceManager resourceManager = new ResourceManager("Microsoft.Practices.ServiceLocation.Properties.Resources", typeof(Resources).Assembly);
+					resourceMan = resourceManager;
+				}
+				return resourceMan;
+			}
+		}
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		internal static CultureInfo Culture
+		{
+			get
+			{
+				return resourceCulture;
+			}
+			set
+			{
+				resourceCulture = value;
+			}
+		}
+
+		internal static string ActivateAllExceptionMessage => ResourceManager.GetString("ActivateAllExceptionMessage", resourceCulture);
+
+		internal static string ActivationExceptionMessage => ResourceManager.GetString("ActivationExceptionMessage", resourceCulture);
+
+		internal static string ServiceLocationProviderNotSetMessage => ResourceManager.GetString("ServiceLocationProviderNotSetMessage", resourceCulture);
+
+		internal Resources()
+		{
+		}
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

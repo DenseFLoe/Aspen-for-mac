@@ -1,0 +1,3479 @@
+using System;
+using System.CodeDom.Compiler;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Resources;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Text;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Markup;
+using AspenTech.Adb.AdsAccessor;
+using AspenTech.Adb.Interfaces;
+using AspenTech.AspenCxs;
+using AspenTech.AspenCxs.CxsViewModel;
+using AspenTech.AspenPlus.Happ;
+using AspenTech.AspenPlus.Infrastructure;
+using AspenTech.AspenPlus.Localization.WpfPlotWizards;
+using AspenTech.AspenPlus.MMControls;
+using AspenTech.AspenPlus.MMControls.Plotting;
+using AspenTech.WpfControls.Engineering;
+using Microsoft.Practices.Unity;
+using WpfPLControls;
+using WpfPlotWizardsHelper;
+using WpfPlotwizard;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyFileVersion("41.0.0.614")]
+[assembly: AssemblyTitle("WpfPLDryerBatch")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("Aspen Technology, Inc.")]
+[assembly: AssemblyProduct("WpfPLBatchSep")]
+[assembly: AssemblyCopyright("Copyright © Aspen Technology, Inc. 2010 - 2024")]
+[assembly: AssemblyTrademark("")]
+[assembly: ComVisible(false)]
+[assembly: NeutralResourcesLanguage("en-US", UltimateResourceFallbackLocation.Satellite)]
+[assembly: ThemeInfo(ResourceDictionaryLocation.None, ResourceDictionaryLocation.SourceAssembly)]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.614")]
+namespace WpfPLDryerBatch
+{
+	[ProgId("WpfPLDryerBatch.ComponentDryingRate")]
+	public class ComponentDryingRate : UserControl, IRibbonPlotWizardType, IPlotWizardTemplate, IComponentConnector
+	{
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private PlotwizardHelper _help = new PlotwizardHelper();
+
+		private string _currentTempUnit = string.Empty;
+
+		private string _currentConfigValue = string.Empty;
+
+		private dynamic _mvarControlContext;
+
+		private string sProfilePlot = "TimePlot";
+
+		private string _sTitle = string.Empty;
+
+		private string _sYAxisName = string.Empty;
+
+		private string _BlockId;
+
+		private string _BlockPath;
+
+		private string _uniqueId = WpfPLDryerResources.ComponentDryingRate_ID;
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgBitmap;
+
+		private bool _bHasInputDialog;
+
+		private readonly string _tempUnitFieldId = WpfPLDryerResources.ComponentDryingRate;
+
+		private readonly string _stageOnFieldId = WpfPLDryerResources.Stage_number_on;
+
+		private readonly string _stageOrderFieldId = WpfPLDryerResources.Stage_numbering_order;
+
+		private readonly string _yAxis = WpfPLDryerResources.Y_axis;
+
+		private readonly string _xAxis = WpfPLDryerResources.X_axis;
+
+		private readonly string _ascending = WpfPLDryerResources.Ascending;
+
+		private readonly string _descending = WpfPLDryerResources.Descending;
+
+		private string _VarNames;
+
+		public static RoutedCommand OKCommand = new RoutedCommand();
+
+		public static RoutedCommand CancelCommand = new RoutedCommand();
+
+		private bool _bCheckDataOnly;
+
+		internal CurvesSelectorControl CurveList;
+
+		private bool _contentLoaded;
+
+		public string TooltipContentForRibbonItem => WpfPLDryerResources.TooltipContentForRibbonItem_ComponentDryingRate;
+
+		public string TooltipHeaderForRibbonItem => WpfPLDryerResources.TooltipHeaderForRibbonItem_ComponentDryingRate;
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgBitmap;
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => _help.GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => _help.GetHelpID();
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string> { _tempUnitFieldId };
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string> { _stageOrderFieldId, _stageOnFieldId };
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		public ComponentDryingRate()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			InitializeComponent();
+			_currentConfigValue = string.Empty;
+			if (_imgBitmap == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLDryerBatch.Images.temp.ico");
+				_imgBitmap = new Bitmap(manifestResourceStream);
+			}
+			SetVariables();
+			CommandBinding commandBinding = new CommandBinding(OKCommand, ExecuteOKCommand, CanExecuteOKCommand);
+			CommandBinding commandBinding2 = new CommandBinding(CancelCommand, ExecuteCancelCommand);
+			base.CommandBindings.Add(commandBinding);
+			base.CommandBindings.Add(commandBinding2);
+			CurveList.Header = WpfPLDryerResources.Select_Comp;
+		}
+
+		public void SetCaption(ref string caption)
+		{
+			caption = WpfPLDryerResources.ComponentDryingRate;
+		}
+
+		public void SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 250.0;
+		}
+
+		public void SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 300.0;
+		}
+
+		public void SetMinHeight(ref double minHeight)
+		{
+			minHeight = 250.0;
+		}
+
+		public void SetMinWidth(ref double minWidth)
+		{
+			minWidth = 300.0;
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(_tempUnitFieldId) == 0)
+			{
+				List<string> list = new List<string>();
+				if (_mvarControlContext != null)
+				{
+					dynamic val = _mvarControlContext.Pot.T.ValidValues("units");
+					{
+						foreach (object item2 in val)
+						{
+							string item = (string)(dynamic)item2;
+							list.Add(item);
+						}
+						return list;
+					}
+				}
+				return null;
+			}
+			if (sFieldName.CompareTo(_stageOrderFieldId) == 0)
+			{
+				return new List<string> { _ascending, _descending };
+			}
+			if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				return new List<string> { _xAxis, _yAxis };
+			}
+			return null;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(_tempUnitFieldId) == 0)
+			{
+				if (_mvarControlContext != null)
+				{
+					sCurrentVal = _mvarControlContext.Pot.T.Units("CurrentUnits");
+				}
+				else
+				{
+					sCurrentVal = "";
+				}
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(_tempUnitFieldId) == 0)
+			{
+				_currentTempUnit = sValue;
+			}
+		}
+
+		private string GetBlockID()
+		{
+			string result = "";
+			object nodeCxs = _nodeCxs;
+			CxsNode val = (CxsNode)((nodeCxs is CxsNode) ? nodeCxs : null);
+			if (val != null)
+			{
+				_ = val.Case;
+				string path = val.Path;
+				path = path.TrimEnd('.');
+				try
+				{
+					foreach (string item in new List<string> { "Top.appModelV8.", "Blocks.", "Data.", "Controllers." })
+					{
+						path = path.Replace(item, "");
+					}
+					result = path;
+				}
+				catch
+				{
+				}
+			}
+			return result;
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+			//IL_000b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0011: Expected O, but got Unknown
+			_currentConfigValue = string.Empty;
+			PlotWizardTemplate val = new PlotWizardTemplate();
+			((ContentControl)(object)val).Content = this;
+			MMHelp.SetHelpFile((DependencyObject)(object)val, _help.GetHelpFileName());
+			MMHelp.SetHelpId((DependencyObject)(object)val, (int?)(int)_help.GetHelpID());
+			((FrameworkElement)(object)val).Cursor = Cursors.Arrow;
+			((Window)(object)val).WindowStartupLocation = WindowStartupLocation.CenterScreen;
+			try
+			{
+				((Window)(object)val).ShowDialog();
+			}
+			catch (Exception)
+			{
+				((Window)(object)val).Close();
+			}
+			((ContentControl)(object)val).Content = null;
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sField)
+		{
+			if (sField.CompareTo(_tempUnitFieldId) != 0 && sField.CompareTo(_stageOrderFieldId) != 0 && sField.CompareTo(_stageOnFieldId) != 0)
+			{
+				return (RibbonControlType)0;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+		}
+
+		private string GetConfigString(List<string> componentIDList)
+		{
+			string blockID = GetBlockID();
+			_currentConfigValue = string.Empty;
+			_sTitle = WpfPLDryerResources.BlockTitle + " " + WpfPLDryerResources.ComponentDryingRate;
+			_sTitle = _sTitle.Replace("%ID%", blockID);
+			string sTitle = _sTitle;
+			int num = sTitle.IndexOf(':');
+			sTitle = sTitle.Substring(num + 1);
+			string text = "";
+			text = text + "Type:$" + sProfilePlot;
+			foreach (string componentID in componentIDList)
+			{
+				text = text + "!VarPaths:$" + _VarNames + componentID;
+				text = text + "!YAxisNames:$" + componentID;
+			}
+			text = text + "!PlotTitle:$" + sTitle;
+			text = text + "!BlockPath:$" + blockID;
+			text = text + "!TabTitle:$" + _sTitle;
+			text += "!PlotSettings:$<Scpc ShowMultipleYAxes=\"true\">\r\n\t                    <OtherSettings>\r\n\t\t                    <ShowTitle>true</ShowTitle>\r\n\t\t                    <ShowLegend>false</ShowLegend>\r\n\t                    </OtherSettings>\r\n                    </Scpc>";
+			_currentConfigValue = text;
+			return _currentConfigValue;
+		}
+
+		private void ExecuteOKCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			UpdateWizardData();
+			List<string> list = new List<string>();
+			foreach (AesCheckListBoxItem curf in CurveList.Curves)
+			{
+				if (curf.IsChecked)
+				{
+					list.Add(curf.Text);
+				}
+				curf.IsChecked = false;
+			}
+			_currentConfigValue = GetConfigString(list);
+			_help.CloseForm((UserControl)this, (bool?)true);
+		}
+
+		private void CanExecuteOKCommand(object sender, CanExecuteRoutedEventArgs e)
+		{
+			int num = CurveList.GetSelectedCurves().Count();
+			if (num == CurveList.Curves.Count)
+			{
+				CurveList.IsCheckAll = true;
+			}
+			else
+			{
+				string[] selectedCurves = CurveList.GetSelectedCurves();
+				CurveList.IsCheckAll = false;
+				CurveList.SetSelectedCurves(selectedCurves);
+			}
+			e.CanExecute = num != 0;
+		}
+
+		private void ExecuteCancelCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			_currentConfigValue = string.Empty;
+			_sYAxisName = string.Empty;
+			_sTitle = string.Empty;
+			_help.CloseForm((UserControl)this, (bool?)false);
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+			sConfigValue = _currentConfigValue;
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+			_currentConfigValue = sValue;
+		}
+
+		void IRibbonPlotWizardType.Context(object HNode, ref object HWizardPlot, ref int ierror)
+		{
+			ierror = 1;
+			if (HWizardPlot == null || HNode == null)
+			{
+				return;
+			}
+			ierror = 2;
+			_context = HNode as IHNode;
+			_wizardPlot = HWizardPlot as IHWizardPlot;
+			if (_context == null || _wizardPlot == null)
+			{
+				return;
+			}
+			ierror = 3;
+			object nodeCxs = _nodeCxs;
+			CxsNode val = (CxsNode)((nodeCxs is CxsNode) ? nodeCxs : null);
+			if (val == null)
+			{
+				return;
+			}
+			ierror = 4;
+			if (val.Case != null)
+			{
+				string path = val.Path;
+				List<string> adsProfileNodeChildren = GetAdsProfileNodeChildren(path);
+				if (adsProfileNodeChildren.Count >= 1)
+				{
+					CurveList.SetCurves(adsProfileNodeChildren.ToArray());
+					_bHasInputDialog = true;
+					ierror = 0;
+				}
+			}
+		}
+
+		private List<string> GetAdsProfileNodeChildren(string nodePath)
+		{
+			//IL_011b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0120: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0128: Unknown result type (might be due to invalid IL or missing references)
+			List<string> list = new List<string>();
+			List<string> list2 = (from x in nodePath.Replace("Top.appModelV8.", "").Replace("Blocks.", "").Replace("Data.", "")
+					.Split('.')
+				where !string.IsNullOrWhiteSpace(x)
+				select x).ToList();
+			if (list2.Count > 0)
+			{
+				StringBuilder stringBuilder = new StringBuilder("Flowsheet");
+				if (list2.Count == 1)
+				{
+					stringBuilder.Append(".Blocks.").Append(list2[0]);
+				}
+				else
+				{
+					for (int num = 0; num < list2.Count; num++)
+					{
+						if (num != list2.Count - 1)
+						{
+							stringBuilder.Append(".Blocks.").Append(list2[num]);
+							stringBuilder.Append(".SubFlowsheets.Simulation");
+						}
+						else
+						{
+							stringBuilder.Append(".Blocks.").Append(list2[num]);
+						}
+					}
+				}
+				stringBuilder.Append(".VarListTimeProfile.profileList.#0.VarList");
+				IAdbTop activeDocAdbTop = SystemEnvironment.GetActiveDocAdbTop();
+				Accessor val = new Accessor();
+				((IAccessor)val).Attach(activeDocAdbTop);
+				AccessorElement val2 = ((IAccessor)val).ObjectAtPath((AccessorElement)null, stringBuilder.ToString());
+				foreach (AccessorElement item2 in ((IAccessor)val).Children(val2))
+				{
+					if (item2.attribute.Contains(_VarNames))
+					{
+						string item = item2.attribute.Replace(_VarNames, "");
+						list.Add(item);
+					}
+				}
+			}
+			return list;
+		}
+
+		private string GetParentBlockPath(string cxsPath)
+		{
+			string empty = string.Empty;
+			int num = cxsPath.LastIndexOf("Blocks");
+			if (num < 0)
+			{
+				return empty;
+			}
+			if (cxsPath.Length < num + 7)
+			{
+				return empty;
+			}
+			int num2 = cxsPath.IndexOf(".", num + 7);
+			if (num2 < 0)
+			{
+				return empty;
+			}
+			return cxsPath.Substring(0, num2);
+		}
+
+		public void UpdateWizardData()
+		{
+		}
+
+		private void SetVariables()
+		{
+			_VarNames = "COMDRYRATE_";
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLDryerBatch;component/componentdryingrate.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			if (connectionId == 1)
+			{
+				CurveList = (CurvesSelectorControl)target;
+			}
+			else
+			{
+				_contentLoaded = true;
+			}
+		}
+	}
+	[ProgId("WpfPLDryerBatch.RibbonPlotWizardMgr")]
+	public class RibbonPlotWizardMgr : IRibbonPlotWizardMgr
+	{
+		private static string[] supportedTypes = new string[8] { "Custom Time Profile", "Vapor Temperature", "Solid Temperature", "Vapor Moisture", "Solid Moisture", "Total Evaporation Rate", "Drying Curve", "Component Drying Rate" };
+
+		private IHNode _hnode;
+
+		private IHWizardPlot _wizardPlot;
+
+		private static List<PWRPlotType> _lspwrTypes = new List<PWRPlotType>();
+
+		private PWRParser _pwrParser = new PWRParser();
+
+		private Assembly _asm;
+
+		private Dictionary<string, IRibbonPlotWizardType> _dicTagIdToPlotType;
+
+		private IHWizardPlot _tempWizard = (CHWizardPlot)Activator.CreateInstance(Marshal.GetTypeFromCLSID(new Guid("9E14C11F-6706-4067-8112-35CE9468F3A5")));
+
+		public RibbonPlotWizardMgr()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			Initialize();
+		}
+
+		long IRibbonPlotWizardMgr.SupportedPlotTypes(ref List<string> lsTagIds)
+		{
+			lsTagIds.Clear();
+			for (int i = 0; i < _lspwrTypes.Count; i++)
+			{
+				PWRPlotType val = _lspwrTypes[i];
+				IRibbonPlotWizardType iplotType = null;
+				_tempWizard.Clear();
+				_pwrParser.FillDefaultPlotVal(val, ref _hnode, ref _tempWizard);
+				if (DoesPlotTypeHaveData(val.TagId, ref iplotType, ref _tempWizard))
+				{
+					lsTagIds.Add(val.TagId);
+				}
+			}
+			return _lspwrTypes.Count;
+		}
+
+		long IRibbonPlotWizardMgr.GetPlotType(string sTagId, ref IRibbonPlotWizardType plwType)
+		{
+			if (_dicTagIdToPlotType.ContainsKey(sTagId))
+			{
+				plwType = _dicTagIdToPlotType[sTagId];
+				if (plwType == null)
+				{
+					return 0L;
+				}
+				PWRPlotType val = null;
+				_pwrParser.FindPlotType(sTagId, ref _lspwrTypes, ref val);
+				_pwrParser.FillDefaultPlotVal(val, ref _hnode, ref _wizardPlot);
+			}
+			return 0L;
+		}
+
+		void IRibbonPlotWizardMgr.SetContext(object oNode, ref object oWizard)
+		{
+			_hnode = oNode as IHNode;
+			_wizardPlot = oWizard as IHWizardPlot;
+		}
+
+		void IRibbonPlotWizardMgr.ShowInputDialog(string sPlotName)
+		{
+		}
+
+		private void InitializeWizardPlot()
+		{
+		}
+
+		private void Initialize()
+		{
+			_asm = Assembly.GetExecutingAssembly();
+			StreamReader streamReader = new StreamReader(Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLDryerBatch.Text.DryerBatchpwr.txt"));
+			_lspwrTypes.Clear();
+			_pwrParser.ParsePwrFile(streamReader, ref _lspwrTypes);
+			_dicTagIdToPlotType = new Dictionary<string, IRibbonPlotWizardType>();
+			for (int i = 0; i < _lspwrTypes.Count; i++)
+			{
+				string tagId = _lspwrTypes[i].TagId;
+				if (tagId == supportedTypes[0])
+				{
+					IRibbonPlotWizardType value = (IRibbonPlotWizardType)(object)new CustomTimeProfile();
+					_dicTagIdToPlotType.Add(tagId, value);
+				}
+				else if (tagId == supportedTypes[1])
+				{
+					IRibbonPlotWizardType value = (IRibbonPlotWizardType)(object)new VaporTemperature();
+					_dicTagIdToPlotType.Add(tagId, value);
+				}
+				else if (tagId == supportedTypes[2])
+				{
+					IRibbonPlotWizardType value = (IRibbonPlotWizardType)(object)new SolidTemperature();
+					_dicTagIdToPlotType.Add(tagId, value);
+				}
+				else if (tagId == supportedTypes[3])
+				{
+					IRibbonPlotWizardType value = (IRibbonPlotWizardType)(object)new VaporMoisture();
+					_dicTagIdToPlotType.Add(tagId, value);
+				}
+				else if (tagId == supportedTypes[4])
+				{
+					IRibbonPlotWizardType value = (IRibbonPlotWizardType)(object)new SolidMoisture();
+					_dicTagIdToPlotType.Add(tagId, value);
+				}
+				else if (tagId == supportedTypes[5])
+				{
+					IRibbonPlotWizardType value = (IRibbonPlotWizardType)(object)new TotalEvaporationRate();
+					_dicTagIdToPlotType.Add(tagId, value);
+				}
+				else if (tagId == supportedTypes[6])
+				{
+					IRibbonPlotWizardType value = (IRibbonPlotWizardType)(object)new DryingCurve();
+					_dicTagIdToPlotType.Add(tagId, value);
+				}
+				else if (tagId == supportedTypes[7])
+				{
+					IRibbonPlotWizardType value = (IRibbonPlotWizardType)(object)new ComponentDryingRate();
+					_dicTagIdToPlotType.Add(tagId, value);
+				}
+			}
+		}
+
+		private bool DoesPlotTypeHaveData(string sTagId, ref IRibbonPlotWizardType iplotType, ref IHWizardPlot iWizardPlot)
+		{
+			int num = 0;
+			if (_dicTagIdToPlotType.ContainsKey(sTagId))
+			{
+				iplotType = _dicTagIdToPlotType[sTagId];
+				if (iplotType == null)
+				{
+					return false;
+				}
+				object obj = iWizardPlot;
+				iplotType.Context((object)_hnode, ref obj, ref num);
+				if (num == 0)
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+	}
+	[ProgId("WpfPLDryerBatch.CustomTimeProfile")]
+	public class CustomTimeProfile : UserControl, IRibbonPlotWizardType, IPlotWizardTemplate, IComponentConnector
+	{
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private PlotwizardHelper _help = new PlotwizardHelper("plotwiz.chm", 11L);
+
+		private string _currentConfigValue = string.Empty;
+
+		private dynamic _mvarControlContext;
+
+		private string sProfilePlot = "TimePlot";
+
+		private string _sProfileConfig = string.Empty;
+
+		private string _VarName = string.Empty;
+
+		private string _sTitle = string.Empty;
+
+		private string _sTitleID = string.Empty;
+
+		private string _sYAxisName = string.Empty;
+
+		private string _BlockId;
+
+		private string _BlockPath;
+
+		private List<string> _selectedCurves = new List<string>();
+
+		private dynamic _host;
+
+		private dynamic _varProfService;
+
+		private string _uniqueId = "CustomTimePlot";
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgBitmap;
+
+		private bool _bHasInputDialog;
+
+		private readonly string _stageOnFieldId = WpfPLDryerResources.Stage_number_on;
+
+		private readonly string _stageOrderFieldId = WpfPLDryerResources.Stage_numbering_order;
+
+		private readonly string _yAxis = WpfPLDryerResources.Y_axis;
+
+		private readonly string _xAxis = WpfPLDryerResources.X_axis;
+
+		private readonly string _ascending = WpfPLDryerResources.Ascending;
+
+		private readonly string _descending = WpfPLDryerResources.Descending;
+
+		public static RoutedCommand OKCommand = new RoutedCommand();
+
+		public static RoutedCommand CancelCommand = new RoutedCommand();
+
+		private bool _bCheckDataOnly;
+
+		private Dictionary<string, string> DryerBlockAdsVariableDisplayDic = new Dictionary<string, string>
+		{
+			{
+				"TSOLOUT",
+				WpfPLDryerResources.SolidTemperature
+			},
+			{
+				"TGASOUT",
+				WpfPLDryerResources.VaporTemperature
+			},
+			{
+				"MOISOLOUT",
+				WpfPLDryerResources.SolidMoisture
+			},
+			{
+				"MOIGASOUT",
+				WpfPLDryerResources.VaporMoisture
+			},
+			{
+				"TOTEVARATE",
+				WpfPLDryerResources.UnitField
+			},
+			{
+				"TOTALEVARATETRUE",
+				WpfPLDryerResources.TotalEvaporationRate
+			},
+			{
+				"MOICONTCHANGERATE",
+				WpfPLDryerResources.MoiContentChangeRate
+			}
+		};
+
+		internal CurvesSelectorControl CurveList;
+
+		private bool _contentLoaded;
+
+		public string TooltipContentForRibbonItem => WpfPLDryerResources.TooltipContentForRibbonItem_CustomPlot;
+
+		public string TooltipHeaderForRibbonItem => WpfPLDryerResources.TooltipHeaderForRibbonItem_CustomPlot;
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgBitmap;
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => _help.GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => _help.GetHelpID();
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string>();
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string> { _stageOrderFieldId, _stageOnFieldId };
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		public CustomTimeProfile()
+		{
+			//IL_0009: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0013: Expected O, but got Unknown
+			InitializeComponent();
+			_bHasInputDialog = true;
+			if (_imgBitmap == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLDryerBatch.Images.Custom1Plot.ico");
+				_imgBitmap = System.Drawing.Image.FromStream(manifestResourceStream);
+			}
+			CommandBinding commandBinding = new CommandBinding(OKCommand, ExecuteOKCommand, CanExecuteOKCommand);
+			CommandBinding commandBinding2 = new CommandBinding(CancelCommand, ExecuteCancelCommand);
+			base.CommandBindings.Add(commandBinding);
+			base.CommandBindings.Add(commandBinding2);
+			CurveList.Header = WpfPLDryerResources.Sel_Var;
+		}
+
+		public void SetCaption(ref string caption)
+		{
+			caption = WpfPLDryerResources.CustomTimeProfile;
+		}
+
+		public void SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 200.0;
+		}
+
+		public void SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 300.0;
+		}
+
+		public void SetMinHeight(ref double minHeight)
+		{
+			minHeight = 200.0;
+		}
+
+		public void SetMinWidth(ref double minWidth)
+		{
+			minWidth = 300.0;
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(_stageOrderFieldId) == 0)
+			{
+				return new List<string> { _ascending, _descending };
+			}
+			if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				return new List<string> { _xAxis, _yAxis };
+			}
+			return null;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+		}
+
+		private string GetBlockID()
+		{
+			string result = "";
+			object nodeCxs = _nodeCxs;
+			CxsNode val = (CxsNode)((nodeCxs is CxsNode) ? nodeCxs : null);
+			if (val != null)
+			{
+				_ = val.Case;
+				string path = val.Path;
+				path = path.TrimEnd('.');
+				try
+				{
+					foreach (string item in new List<string> { "Top.appModelV8.", "Blocks.", "Data.", "Controllers." })
+					{
+						path = path.Replace(item, "");
+					}
+					result = path;
+				}
+				catch
+				{
+				}
+			}
+			return result;
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+			//IL_000b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0011: Expected O, but got Unknown
+			_currentConfigValue = string.Empty;
+			PlotWizardTemplate val = new PlotWizardTemplate();
+			((ContentControl)(object)val).Content = this;
+			MMHelp.SetHelpFile((DependencyObject)(object)val, _help.GetHelpFileName());
+			MMHelp.SetHelpId((DependencyObject)(object)val, (int?)(int)_help.GetHelpID());
+			((FrameworkElement)(object)val).Cursor = Cursors.Arrow;
+			((Window)(object)val).WindowStartupLocation = WindowStartupLocation.CenterScreen;
+			try
+			{
+				((Window)(object)val).ShowDialog();
+			}
+			catch (Exception)
+			{
+				((Window)(object)val).Close();
+			}
+			((ContentControl)(object)val).Content = null;
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sField)
+		{
+			if (sField.CompareTo(_stageOrderFieldId) != 0 && sField.CompareTo(_stageOnFieldId) != 0)
+			{
+				return (RibbonControlType)0;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(_stageOrderFieldId) == 0)
+			{
+				if (_wizardPlot.PlotVal.ReverseXAxis)
+				{
+					sCurrentVal = _descending;
+				}
+				else
+				{
+					sCurrentVal = _ascending;
+				}
+			}
+			else if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				if (_wizardPlot.PlotVal.SwapAxises)
+				{
+					sCurrentVal = _yAxis;
+				}
+				else
+				{
+					sCurrentVal = _xAxis;
+				}
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(_stageOrderFieldId) == 0)
+			{
+				if (sValue.CompareTo(_ascending) == 0)
+				{
+					_wizardPlot.PlotVal.ReverseXAxis = false;
+				}
+				else
+				{
+					_wizardPlot.PlotVal.ReverseXAxis = true;
+				}
+			}
+			else if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				if (sValue.CompareTo(_yAxis) == 0)
+				{
+					_wizardPlot.PlotVal.SwapAxises = true;
+				}
+				else
+				{
+					_wizardPlot.PlotVal.SwapAxises = false;
+				}
+			}
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+			sConfigValue = _currentConfigValue;
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+			_currentConfigValue = sValue;
+		}
+
+		void IRibbonPlotWizardType.Context(object HNode, ref object HWizardPlot, ref int ierror)
+		{
+			ierror = 1;
+			if (HWizardPlot == null || HNode == null)
+			{
+				return;
+			}
+			ierror = 2;
+			_context = HNode as IHNode;
+			_wizardPlot = HWizardPlot as IHWizardPlot;
+			if (_context == null || _wizardPlot == null)
+			{
+				return;
+			}
+			ierror = 3;
+			object nodeCxs = _nodeCxs;
+			CxsNode val = (CxsNode)((nodeCxs is CxsNode) ? nodeCxs : null);
+			if (val == null)
+			{
+				return;
+			}
+			string path = val.Path;
+			List<string> adsProfileNodeChildren = GetAdsProfileNodeChildren(path);
+			SetDicForDryer(adsProfileNodeChildren);
+			ierror = 4;
+			List<string> list = new List<string>();
+			if (adsProfileNodeChildren.Count == 0)
+			{
+				list = DryerBlockAdsVariableDisplayDic.Values.ToList();
+			}
+			else
+			{
+				foreach (string item in adsProfileNodeChildren)
+				{
+					if (DryerBlockAdsVariableDisplayDic.Keys.Contains(item))
+					{
+						list.Add(DryerBlockAdsVariableDisplayDic[item]);
+					}
+					else
+					{
+						list.Add(item);
+					}
+				}
+			}
+			CurveList.SetCurves(list.ToArray());
+			_bHasInputDialog = true;
+			ierror = 0;
+		}
+
+		private void SetDicForDryer(List<string> varList)
+		{
+			foreach (string var in varList)
+			{
+				if (var.StartsWith("COMDRYRATE_"))
+				{
+					string arg = var.Replace("COMDRYRATE_", "");
+					string value = $"{WpfPLDryerResources.ComponentDryingRate} ({arg})";
+					if (!DryerBlockAdsVariableDisplayDic.Keys.Contains(var))
+					{
+						DryerBlockAdsVariableDisplayDic.Add(var, value);
+					}
+				}
+			}
+		}
+
+		private List<string> GetAdsProfileNodeChildren(string nodePath)
+		{
+			//IL_011b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0120: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0128: Unknown result type (might be due to invalid IL or missing references)
+			List<string> list = new List<string>();
+			List<string> list2 = (from x in nodePath.Replace("Top.appModelV8.", "").Replace("Blocks.", "").Replace("Data.", "")
+					.Split('.')
+				where !string.IsNullOrWhiteSpace(x)
+				select x).ToList();
+			if (list2.Count > 0)
+			{
+				StringBuilder stringBuilder = new StringBuilder("Flowsheet");
+				if (list2.Count == 1)
+				{
+					stringBuilder.Append(".Blocks.").Append(list2[0]);
+				}
+				else
+				{
+					for (int num = 0; num < list2.Count; num++)
+					{
+						if (num != list2.Count - 1)
+						{
+							stringBuilder.Append(".Blocks.").Append(list2[num]);
+							stringBuilder.Append(".SubFlowsheets.Simulation");
+						}
+						else
+						{
+							stringBuilder.Append(".Blocks.").Append(list2[num]);
+						}
+					}
+				}
+				stringBuilder.Append(".VarListTimeProfile.profileList.#0.VarList");
+				IAdbTop activeDocAdbTop = SystemEnvironment.GetActiveDocAdbTop();
+				Accessor val = new Accessor();
+				((IAccessor)val).Attach(activeDocAdbTop);
+				AccessorElement val2 = ((IAccessor)val).ObjectAtPath((AccessorElement)null, stringBuilder.ToString());
+				foreach (AccessorElement item in ((IAccessor)val).Children(val2))
+				{
+					list.Add(item.attribute);
+				}
+			}
+			return list;
+		}
+
+		private string GetConfigString(List<string> componentIDList)
+		{
+			string blockID = GetBlockID();
+			_currentConfigValue = string.Empty;
+			_sTitle = WpfPLDryerResources.BlockTitle + " " + WpfPLDryerResources.CustomTimeProfile;
+			_sTitle = _sTitle.Replace("%ID%", blockID);
+			string sTitle = _sTitle;
+			int num = sTitle.IndexOf(':');
+			sTitle = sTitle.Substring(num + 1);
+			string text = "";
+			text = text + "Type:$" + sProfilePlot;
+			foreach (string displayItem in componentIDList)
+			{
+				KeyValuePair<string, string> keyValuePair = DryerBlockAdsVariableDisplayDic.FirstOrDefault((KeyValuePair<string, string> p) => p.Value.Equals(displayItem));
+				if (!string.IsNullOrEmpty(keyValuePair.Key))
+				{
+					text = text + "!VarPaths:$" + keyValuePair.Key;
+					text = text + "!YAxisNames:$" + keyValuePair.Value;
+					text = text + "!YAxisGroup:$" + keyValuePair.Value;
+				}
+				else
+				{
+					text = text + "!VarPaths:$" + displayItem;
+					text = text + "!YAxisNames:$" + displayItem;
+					text = text + "!YAxisGroup:$" + displayItem;
+				}
+			}
+			text = text + "!PlotTitle:$" + sTitle;
+			text = text + "!BlockPath:$" + blockID;
+			text = text + "!TabTitle:$" + _sTitle;
+			text += "!PlotSettings:$<Scpc ShowMultipleYAxes=\"true\">\r\n\t                    <OtherSettings>\r\n\t\t                    <ShowTitle>true</ShowTitle>\r\n\t\t                    <ShowLegend>true</ShowLegend>\r\n\t                    </OtherSettings>\r\n                    </Scpc>";
+			_currentConfigValue = text;
+			return _currentConfigValue;
+		}
+
+		public void UpdateWizardData()
+		{
+		}
+
+		private void ExecuteOKCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			List<string> list = new List<string>();
+			foreach (AesCheckListBoxItem curf in CurveList.Curves)
+			{
+				if (curf.IsChecked)
+				{
+					list.Add(curf.Text);
+				}
+				curf.IsChecked = false;
+			}
+			_currentConfigValue = GetConfigString(list);
+			_help.CloseForm((UserControl)this, (bool?)true);
+		}
+
+		private void CanExecuteOKCommand(object sender, CanExecuteRoutedEventArgs e)
+		{
+			int num = CurveList.GetSelectedCurves().Count();
+			if (num == CurveList.Curves.Count)
+			{
+				CurveList.IsCheckAll = true;
+			}
+			else
+			{
+				string[] selectedCurves = CurveList.GetSelectedCurves();
+				CurveList.IsCheckAll = false;
+				CurveList.SetSelectedCurves(selectedCurves);
+			}
+			e.CanExecute = num != 0;
+		}
+
+		private void ExecuteCancelCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			_currentConfigValue = string.Empty;
+			_sYAxisName = string.Empty;
+			_sTitle = string.Empty;
+			_help.CloseForm((UserControl)this, (bool?)false);
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLDryerBatch;component/customtimeprofile.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			if (connectionId == 1)
+			{
+				CurveList = (CurvesSelectorControl)target;
+			}
+			else
+			{
+				_contentLoaded = true;
+			}
+		}
+	}
+	[ProgId("WpfPLDryerBatch.DryingCurve")]
+	public class DryingCurve : UserControl, IRibbonPlotWizardType, IComponentConnector
+	{
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		public AdhocPlot PlotValues;
+
+		private PlotwizardHelper _help = new PlotwizardHelper();
+
+		private string sProfilePlot = "Traditional";
+
+		private string _uniqueId = "DryingCurve";
+
+		private string _plotName = WpfPLDryerResources.DryingCurve;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgBitmap;
+
+		private bool _bHasInputDialog;
+
+		private readonly string _tempUnitFieldId = WpfPLDryerResources.DryingCurve;
+
+		private string[] _VarNames;
+
+		private IUnityContainer _unityContainer;
+
+		private IAdbTop adbTop;
+
+		private IAccessor accessorTop;
+
+		private IAdbUnitsProvider adbUnitsProvider;
+
+		private Dictionary<string, string> varDic;
+
+		private bool _bCheckDataOnly;
+
+		private bool _contentLoaded;
+
+		public string TooltipContentForRibbonItem => WpfPLDryerResources.TooltipContentForRibbonItem_DryingCurve;
+
+		public string TooltipHeaderForRibbonItem => WpfPLDryerResources.TooltipHeaderForRibbonItem_DryingCurve;
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgBitmap;
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => _help.GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => _help.GetHelpID();
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string>();
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string>();
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		public DryingCurve()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			InitializeComponent();
+			_bHasInputDialog = false;
+			if (_imgBitmap == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLDryerBatch.Images.temp.ico");
+				_imgBitmap = new Bitmap(manifestResourceStream);
+			}
+		}
+
+		private void ConfigAsdAccessor()
+		{
+			//IL_000c: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0016: Expected O, but got Unknown
+			adbTop = SystemEnvironment.GetActiveDocAdbTop();
+			accessorTop = (IAccessor)new Accessor();
+			accessorTop.Attach(adbTop);
+			adbUnitsProvider = UnityContainerExtensions.Resolve<IAdbUnitsProvider>(_unityContainer, Array.Empty<ResolverOverride>());
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			return new List<string>();
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sField)
+		{
+			return (RibbonControlType)0;
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+			sConfigValue = sProfilePlot;
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.Context(object HNode, ref object HWizardPlot, ref int ierror)
+		{
+			if (HNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			if (HWizardPlot == null)
+			{
+				ierror = 2;
+				return;
+			}
+			if (_nodeCxs != null)
+			{
+				object obj = HWizardPlot;
+				AdhocPlot val = (AdhocPlot)((obj is AdhocPlot) ? obj : null);
+				if (val == null || val.UnityContainer == null)
+				{
+					return;
+				}
+				_unityContainer = val.UnityContainer;
+				ConfigAsdAccessor();
+				if (val != null)
+				{
+					Updata(val);
+				}
+				HWizardPlot = val;
+			}
+			ierror = 0;
+		}
+
+		private void Updata(AdhocPlot PlotValues)
+		{
+			PlotValues.isAdsPlot = true;
+			List<PlotVariableDescriptor> list = new List<PlotVariableDescriptor>();
+			PlotVariablesFromSelection(list, "MOISOLOUT", WpfPLDryerResources.SolidMoisture);
+			PlotValues.SetIndependentVariable((IEnumerable<object>)list, WpfPLDryerResources.SolidMoisture);
+			List<List<PlotVariableDescriptor>> list2 = new List<List<PlotVariableDescriptor>>();
+			List<PlotVariableDescriptor> list3 = new List<PlotVariableDescriptor>();
+			PlotVariablesFromSelection(list3, "TOTEVARATE", WpfPLDryerResources.UnitField);
+			list2.Add(list3);
+			PlotValues.SetDependentVariable((IEnumerable<object>)list2, new List<string> { "TOTEVARATE" });
+		}
+
+		private void PlotVariablesFromSelection(List<PlotVariableDescriptor> selection, string key, string name)
+		{
+			//IL_00a0: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00a5: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00ac: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00b3: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00bc: Expected O, but got Unknown
+			//IL_00c1: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00c6: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00d3: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00e0: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00e7: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00ee: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00f6: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00fe: Unknown result type (might be due to invalid IL or missing references)
+			//IL_010b: Expected O, but got Unknown
+			object nodeCxs = _nodeCxs;
+			CxsNode val = (CxsNode)((nodeCxs is CxsNode) ? nodeCxs : null);
+			string parentBlockPath = GetParentBlockPath(val.Path);
+			string empty = string.Empty;
+			empty = (string.IsNullOrEmpty(parentBlockPath) ? GetAdsProfilePath(val.Path) : GetAdsProfilePath(parentBlockPath));
+			AccessorElement val2 = accessorTop.ObjectAtPath((AccessorElement)null, empty);
+			int num = accessorTop.NumberOfChildren(val2);
+			for (int i = 1; i <= num; i++)
+			{
+				string text = $"{empty}.{i}.VarList.{key}.VarValue";
+				AccessorElement val3 = accessorTop.ObjectAtPath((AccessorElement)null, text);
+				string defaultDisplayUnits = adbUnitsProvider.GetDefaultDisplayUnits((object)val3.unitrow);
+				AdsPlotVariableTag tag = new AdsPlotVariableTag
+				{
+					ProfilePath = empty,
+					AxisName = name,
+					KeyName = key
+				};
+				if (val3 != null)
+				{
+					selection.Add(new PlotVariableDescriptor
+					{
+						Path = val3.cxsPath,
+						CurrentValue = val3.value,
+						ExposeAs = (CxvVariableTypeCode)1,
+						Column = -1,
+						Location = i,
+						Units = defaultDisplayUnits,
+						Tag = tag
+					});
+				}
+			}
+		}
+
+		private string GetParentBlockPath(string cxsPath)
+		{
+			string empty = string.Empty;
+			int num = cxsPath.LastIndexOf("Blocks");
+			if (num < 0)
+			{
+				return empty;
+			}
+			if (cxsPath.Length < num + 7)
+			{
+				return empty;
+			}
+			int num2 = cxsPath.IndexOf(".", num + 7);
+			if (num2 < 0)
+			{
+				return empty;
+			}
+			return cxsPath.Substring(0, num2);
+		}
+
+		private string GetAdsProfilePath(string nodePath)
+		{
+			List<string> list = (from x in nodePath.Replace("Top.appModelV8.", "").Replace("Blocks.", "").Replace("Data.", "")
+					.Split('.')
+				where !string.IsNullOrWhiteSpace(x)
+				select x).ToList();
+			StringBuilder stringBuilder = new StringBuilder("Flowsheet");
+			if (list.Count > 0)
+			{
+				if (list.Count == 1)
+				{
+					stringBuilder.Append(".Blocks.").Append(list[0]);
+				}
+				else
+				{
+					for (int num = 0; num < list.Count; num++)
+					{
+						if (num != list.Count - 1)
+						{
+							stringBuilder.Append(".Blocks.").Append(list[num]);
+							stringBuilder.Append(".SubFlowsheets.Simulation");
+						}
+						else
+						{
+							stringBuilder.Append(".Blocks.").Append(list[num]);
+						}
+					}
+				}
+				stringBuilder.Append(".VarListTimeProfile.profileList");
+			}
+			return stringBuilder.ToString();
+		}
+
+		public void UpdateWizardData()
+		{
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLDryerBatch;component/dryingcurve.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			_contentLoaded = true;
+		}
+	}
+	[RibbonPlotWizardMgr("WpfPLDryerBatch.RibbonPlotWizardMgr", typeof(RibbonPlotWizardMgr))]
+	public class BatchSepPlotWizardModule : PlotModuleBase
+	{
+	}
+	[ProgId("WpfPLDryerBatch.VaporTemperature")]
+	public class SolidMoisture : UserControl, IRibbonPlotWizardType, IPlotWizardTemplate, IComponentConnector
+	{
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private PlotwizardHelper _help = new PlotwizardHelper();
+
+		private string _currentTempUnit = string.Empty;
+
+		private string _currentConfigValue = string.Empty;
+
+		private dynamic _mvarControlContext;
+
+		private string sProfilePlot = "TimePlot";
+
+		private string _sTitle = string.Empty;
+
+		private string _sYAxisName = string.Empty;
+
+		private string _uniqueId = WpfPLDryerResources.SolidMoisture_ID;
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgBitmap;
+
+		private bool _bHasInputDialog;
+
+		private readonly string _tempUnitFieldId = WpfPLDryerResources.SolidMoisture;
+
+		private readonly string _stageOnFieldId = WpfPLDryerResources.Stage_number_on;
+
+		private readonly string _stageOrderFieldId = WpfPLDryerResources.Stage_numbering_order;
+
+		private readonly string _yAxis = WpfPLDryerResources.Y_axis;
+
+		private readonly string _xAxis = WpfPLDryerResources.X_axis;
+
+		private readonly string _ascending = WpfPLDryerResources.Ascending;
+
+		private readonly string _descending = WpfPLDryerResources.Descending;
+
+		private string _VarNames;
+
+		private bool _bCheckDataOnly;
+
+		private bool _contentLoaded;
+
+		public string TooltipContentForRibbonItem => WpfPLDryerResources.TooltipContentForRibbonItem_SolidMoisture;
+
+		public string TooltipHeaderForRibbonItem => WpfPLDryerResources.TooltipHeaderForRibbonItem_SolidMoisture;
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgBitmap;
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => _help.GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => _help.GetHelpID();
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string> { _tempUnitFieldId };
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string> { _stageOrderFieldId, _stageOnFieldId };
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		public SolidMoisture()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			InitializeComponent();
+			_currentConfigValue = string.Empty;
+			_bHasInputDialog = false;
+			if (_imgBitmap == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLDryerBatch.Images.temp.ico");
+				_imgBitmap = new Bitmap(manifestResourceStream);
+			}
+			SetVariables();
+		}
+
+		public void SetCaption(ref string caption)
+		{
+			caption = WpfPLBatchSepResources.Temperature;
+		}
+
+		public void SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 380.0;
+		}
+
+		public void SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 300.0;
+		}
+
+		public void SetMinHeight(ref double minHeight)
+		{
+			minHeight = 380.0;
+		}
+
+		public void SetMinWidth(ref double minWidth)
+		{
+			minWidth = 300.0;
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(_tempUnitFieldId) == 0)
+			{
+				List<string> list = new List<string>();
+				if (_mvarControlContext != null)
+				{
+					dynamic val = _mvarControlContext.Pot.T.ValidValues("units");
+					{
+						foreach (object item2 in val)
+						{
+							string item = (string)(dynamic)item2;
+							list.Add(item);
+						}
+						return list;
+					}
+				}
+				return null;
+			}
+			if (sFieldName.CompareTo(_stageOrderFieldId) == 0)
+			{
+				return new List<string> { _ascending, _descending };
+			}
+			if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				return new List<string> { _xAxis, _yAxis };
+			}
+			return null;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(_tempUnitFieldId) == 0)
+			{
+				if (_mvarControlContext != null)
+				{
+					sCurrentVal = _mvarControlContext.Pot.T.Units("CurrentUnits");
+				}
+				else
+				{
+					sCurrentVal = "";
+				}
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(_tempUnitFieldId) == 0)
+			{
+				_currentTempUnit = sValue;
+			}
+		}
+
+		private string GetBlockID()
+		{
+			string result = "";
+			object nodeCxs = _nodeCxs;
+			CxsNode val = (CxsNode)((nodeCxs is CxsNode) ? nodeCxs : null);
+			if (val != null)
+			{
+				_ = val.Case;
+				string path = val.Path;
+				path = path.TrimEnd('.');
+				try
+				{
+					foreach (string item in new List<string> { "Top.appModelV8.", "Blocks.", "Data.", "Controllers." })
+					{
+						path = path.Replace(item, "");
+					}
+					result = path;
+				}
+				catch
+				{
+				}
+			}
+			return result;
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sField)
+		{
+			if (sField.CompareTo(_tempUnitFieldId) != 0 && sField.CompareTo(_stageOrderFieldId) != 0 && sField.CompareTo(_stageOnFieldId) != 0)
+			{
+				return (RibbonControlType)0;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+		}
+
+		private void GetConfigString()
+		{
+			string blockID = GetBlockID();
+			_currentConfigValue = string.Empty;
+			_sYAxisName = WpfPLDryerResources.SolidMoisture;
+			_sTitle = WpfPLDryerResources.BlockTitle + " " + WpfPLDryerResources.SolidMoisture;
+			_sTitle = _sTitle.Replace("%ID%", blockID);
+			string sTitle = _sTitle;
+			int num = sTitle.IndexOf(':');
+			sTitle = sTitle.Substring(num + 1);
+			string text = "";
+			text = text + "Type:$" + sProfilePlot;
+			text = text + "!VarPaths:$" + _VarNames;
+			text = text + "!PlotTitle:$" + sTitle;
+			text = text + "!YAxisNames:$" + _sYAxisName;
+			text = text + "!BlockPath:$" + blockID;
+			text = text + "!TabTitle:$" + _sTitle;
+			text += "!PlotSettings:$<Scpc ShowMultipleYAxes=\"true\">\r\n\t                    <OtherSettings>\r\n\t\t                    <ShowTitle>true</ShowTitle>\r\n\t\t                    <ShowLegend>false</ShowLegend>\r\n\t                    </OtherSettings>\r\n                    </Scpc>";
+			_currentConfigValue = text;
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+			sConfigValue = _currentConfigValue;
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+			_currentConfigValue = sValue;
+		}
+
+		void IRibbonPlotWizardType.Context(object HNode, ref object HWizardPlot, ref int ierror)
+		{
+			if (HWizardPlot == null || HNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			ierror = 2;
+			_context = HNode as IHNode;
+			if (_context != null)
+			{
+				ierror = 3;
+				_wizardPlot = HWizardPlot as IHWizardPlot;
+				if (_wizardPlot != null)
+				{
+					GetConfigString();
+					ierror = 0;
+				}
+			}
+		}
+
+		public void UpdateWizardData()
+		{
+		}
+
+		private void SetVariables()
+		{
+			_VarNames = "MOISOLOUT";
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLDryerBatch;component/solidmoisture.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			_contentLoaded = true;
+		}
+	}
+	[ProgId("WpfPLDryerBatch.SolidTemperature")]
+	public class SolidTemperature : UserControl, IRibbonPlotWizardType, IPlotWizardTemplate, IComponentConnector
+	{
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private PlotwizardHelper _help = new PlotwizardHelper();
+
+		private string _currentTempUnit = string.Empty;
+
+		private string _currentConfigValue = string.Empty;
+
+		private dynamic _mvarControlContext;
+
+		private string sProfilePlot = "TimePlot";
+
+		private string _sTitle = string.Empty;
+
+		private string _sYAxisName = string.Empty;
+
+		private string _uniqueId = WpfPLDryerResources.SolidTemperature_ID;
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgBitmap;
+
+		private bool _bHasInputDialog;
+
+		private readonly string _tempUnitFieldId = WpfPLDryerResources.SolidTemperature;
+
+		private readonly string _stageOnFieldId = WpfPLDryerResources.Stage_number_on;
+
+		private readonly string _stageOrderFieldId = WpfPLDryerResources.Stage_numbering_order;
+
+		private readonly string _yAxis = WpfPLDryerResources.Y_axis;
+
+		private readonly string _xAxis = WpfPLDryerResources.X_axis;
+
+		private readonly string _ascending = WpfPLDryerResources.Ascending;
+
+		private readonly string _descending = WpfPLDryerResources.Descending;
+
+		private string _VarNames;
+
+		private bool _bCheckDataOnly;
+
+		private bool _contentLoaded;
+
+		public string TooltipContentForRibbonItem => WpfPLDryerResources.TooltipContentForRibbonItem_SolidTemperature;
+
+		public string TooltipHeaderForRibbonItem => WpfPLDryerResources.TooltipHeaderForRibbonItem_SolidTemperature;
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgBitmap;
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => _help.GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => _help.GetHelpID();
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string> { _tempUnitFieldId };
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string> { _stageOrderFieldId, _stageOnFieldId };
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		public SolidTemperature()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			InitializeComponent();
+			_currentConfigValue = string.Empty;
+			_bHasInputDialog = false;
+			if (_imgBitmap == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLDryerBatch.Images.temp.ico");
+				_imgBitmap = new Bitmap(manifestResourceStream);
+			}
+			SetVariables();
+		}
+
+		public void SetCaption(ref string caption)
+		{
+			caption = WpfPLBatchSepResources.Temperature;
+		}
+
+		public void SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 380.0;
+		}
+
+		public void SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 300.0;
+		}
+
+		public void SetMinHeight(ref double minHeight)
+		{
+			minHeight = 380.0;
+		}
+
+		public void SetMinWidth(ref double minWidth)
+		{
+			minWidth = 300.0;
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(_tempUnitFieldId) == 0)
+			{
+				List<string> list = new List<string>();
+				if (_mvarControlContext != null)
+				{
+					dynamic val = _mvarControlContext.Pot.T.ValidValues("units");
+					{
+						foreach (object item2 in val)
+						{
+							string item = (string)(dynamic)item2;
+							list.Add(item);
+						}
+						return list;
+					}
+				}
+				return null;
+			}
+			if (sFieldName.CompareTo(_stageOrderFieldId) == 0)
+			{
+				return new List<string> { _ascending, _descending };
+			}
+			if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				return new List<string> { _xAxis, _yAxis };
+			}
+			return null;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(_tempUnitFieldId) == 0)
+			{
+				if (_mvarControlContext != null)
+				{
+					sCurrentVal = _mvarControlContext.Pot.T.Units("CurrentUnits");
+				}
+				else
+				{
+					sCurrentVal = "";
+				}
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(_tempUnitFieldId) == 0)
+			{
+				_currentTempUnit = sValue;
+			}
+		}
+
+		private string GetBlockID()
+		{
+			string result = "";
+			object nodeCxs = _nodeCxs;
+			CxsNode val = (CxsNode)((nodeCxs is CxsNode) ? nodeCxs : null);
+			if (val != null)
+			{
+				_ = val.Case;
+				string path = val.Path;
+				path = path.TrimEnd('.');
+				try
+				{
+					foreach (string item in new List<string> { "Top.appModelV8.", "Blocks.", "Data.", "Controllers." })
+					{
+						path = path.Replace(item, "");
+					}
+					result = path;
+				}
+				catch
+				{
+				}
+			}
+			return result;
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sField)
+		{
+			if (sField.CompareTo(_tempUnitFieldId) != 0 && sField.CompareTo(_stageOrderFieldId) != 0 && sField.CompareTo(_stageOnFieldId) != 0)
+			{
+				return (RibbonControlType)0;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+		}
+
+		private void GetConfigString()
+		{
+			string blockID = GetBlockID();
+			_currentConfigValue = string.Empty;
+			_sYAxisName = WpfPLDryerResources.SolidTemperature;
+			_sTitle = WpfPLDryerResources.BlockTitle + " " + WpfPLDryerResources.SolidTemperature;
+			_sTitle = _sTitle.Replace("%ID%", blockID);
+			string sTitle = _sTitle;
+			int num = sTitle.IndexOf(':');
+			sTitle = sTitle.Substring(num + 1);
+			string text = "";
+			text = text + "Type:$" + sProfilePlot;
+			text = text + "!VarPaths:$" + _VarNames;
+			text = text + "!PlotTitle:$" + sTitle;
+			text = text + "!YAxisNames:$" + _sYAxisName;
+			text = text + "!BlockPath:$" + blockID;
+			text = text + "!TabTitle:$" + _sTitle;
+			text += "!PlotSettings:$<Scpc ShowMultipleYAxes=\"true\">\r\n\t                    <OtherSettings>\r\n\t\t                    <ShowTitle>true</ShowTitle>\r\n\t\t                    <ShowLegend>false</ShowLegend>\r\n\t                    </OtherSettings>\r\n                    </Scpc>";
+			_currentConfigValue = text;
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+			sConfigValue = _currentConfigValue;
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+			_currentConfigValue = sValue;
+		}
+
+		void IRibbonPlotWizardType.Context(object HNode, ref object HWizardPlot, ref int ierror)
+		{
+			if (HWizardPlot == null || HNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			ierror = 2;
+			_context = HNode as IHNode;
+			if (_context != null)
+			{
+				ierror = 3;
+				_wizardPlot = HWizardPlot as IHWizardPlot;
+				if (_wizardPlot != null)
+				{
+					GetConfigString();
+					ierror = 0;
+				}
+			}
+		}
+
+		public void UpdateWizardData()
+		{
+		}
+
+		private void SetVariables()
+		{
+			_VarNames = "TSOLOUT";
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLDryerBatch;component/solidtemperature.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			_contentLoaded = true;
+		}
+	}
+	[ProgId("WpfPLDryerBatch.TotalEvaporationRate")]
+	public class TotalEvaporationRate : UserControl, IRibbonPlotWizardType, IPlotWizardTemplate, IComponentConnector
+	{
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private PlotwizardHelper _help = new PlotwizardHelper();
+
+		private string _currentTempUnit = string.Empty;
+
+		private string _currentConfigValue = string.Empty;
+
+		private dynamic _mvarControlContext;
+
+		private string sProfilePlot = "TimePlot";
+
+		private string _sTitle = string.Empty;
+
+		private string _sYAxisName = string.Empty;
+
+		private string _uniqueId = WpfPLDryerResources.TotalEvaporationRate_ID;
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgBitmap;
+
+		private bool _bHasInputDialog;
+
+		private readonly string _tempUnitFieldId = WpfPLDryerResources.TotalEvaporationRate;
+
+		private readonly string _stageOnFieldId = WpfPLDryerResources.Stage_number_on;
+
+		private readonly string _stageOrderFieldId = WpfPLDryerResources.Stage_numbering_order;
+
+		private readonly string _yAxis = WpfPLDryerResources.Y_axis;
+
+		private readonly string _xAxis = WpfPLDryerResources.X_axis;
+
+		private readonly string _ascending = WpfPLDryerResources.Ascending;
+
+		private readonly string _descending = WpfPLDryerResources.Descending;
+
+		private string _VarNames;
+
+		private bool _bCheckDataOnly;
+
+		private bool _contentLoaded;
+
+		public string TooltipContentForRibbonItem => WpfPLDryerResources.TooltipContentForRibbonItem_TotalEvaporationRate;
+
+		public string TooltipHeaderForRibbonItem => WpfPLDryerResources.TooltipHeaderForRibbonItem_TotalEvaporationRate;
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgBitmap;
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => _help.GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => _help.GetHelpID();
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string> { _tempUnitFieldId };
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string> { _stageOrderFieldId, _stageOnFieldId };
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		public TotalEvaporationRate()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			InitializeComponent();
+			_currentConfigValue = string.Empty;
+			_bHasInputDialog = false;
+			if (_imgBitmap == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLDryerBatch.Images.temp.ico");
+				_imgBitmap = new Bitmap(manifestResourceStream);
+			}
+			SetVariables();
+		}
+
+		public void SetCaption(ref string caption)
+		{
+			caption = WpfPLBatchSepResources.Temperature;
+		}
+
+		public void SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 380.0;
+		}
+
+		public void SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 300.0;
+		}
+
+		public void SetMinHeight(ref double minHeight)
+		{
+			minHeight = 380.0;
+		}
+
+		public void SetMinWidth(ref double minWidth)
+		{
+			minWidth = 300.0;
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(_tempUnitFieldId) == 0)
+			{
+				List<string> list = new List<string>();
+				if (_mvarControlContext != null)
+				{
+					dynamic val = _mvarControlContext.Pot.T.ValidValues("units");
+					{
+						foreach (object item2 in val)
+						{
+							string item = (string)(dynamic)item2;
+							list.Add(item);
+						}
+						return list;
+					}
+				}
+				return null;
+			}
+			if (sFieldName.CompareTo(_stageOrderFieldId) == 0)
+			{
+				return new List<string> { _ascending, _descending };
+			}
+			if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				return new List<string> { _xAxis, _yAxis };
+			}
+			return null;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(_tempUnitFieldId) == 0)
+			{
+				if (_mvarControlContext != null)
+				{
+					sCurrentVal = _mvarControlContext.Pot.T.Units("CurrentUnits");
+				}
+				else
+				{
+					sCurrentVal = "";
+				}
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(_tempUnitFieldId) == 0)
+			{
+				_currentTempUnit = sValue;
+			}
+		}
+
+		private string GetBlockID()
+		{
+			string result = "";
+			object nodeCxs = _nodeCxs;
+			CxsNode val = (CxsNode)((nodeCxs is CxsNode) ? nodeCxs : null);
+			if (val != null)
+			{
+				_ = val.Case;
+				string path = val.Path;
+				path = path.TrimEnd('.');
+				try
+				{
+					foreach (string item in new List<string> { "Top.appModelV8.", "Blocks.", "Data.", "Controllers." })
+					{
+						path = path.Replace(item, "");
+					}
+					result = path;
+				}
+				catch
+				{
+				}
+			}
+			return result;
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sField)
+		{
+			if (sField.CompareTo(_tempUnitFieldId) != 0 && sField.CompareTo(_stageOrderFieldId) != 0 && sField.CompareTo(_stageOnFieldId) != 0)
+			{
+				return (RibbonControlType)0;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+		}
+
+		private void GetConfigString()
+		{
+			string blockID = GetBlockID();
+			_currentConfigValue = string.Empty;
+			_sYAxisName = WpfPLDryerResources.TotalEvaporationRate;
+			_sTitle = WpfPLDryerResources.BlockTitle + " " + WpfPLDryerResources.TotalEvaporationRate;
+			_sTitle = _sTitle.Replace("%ID%", blockID);
+			string sTitle = _sTitle;
+			int num = sTitle.IndexOf(':');
+			sTitle = sTitle.Substring(num + 1);
+			string text = "";
+			text = text + "Type:$" + sProfilePlot;
+			text = text + "!VarPaths:$" + _VarNames;
+			text = text + "!PlotTitle:$" + sTitle;
+			text = text + "!YAxisNames:$" + _sYAxisName;
+			text = text + "!BlockPath:$" + blockID;
+			text = text + "!TabTitle:$" + _sTitle;
+			text += "!PlotSettings:$<Scpc ShowMultipleYAxes=\"true\">\r\n\t                    <OtherSettings>\r\n\t\t                    <ShowTitle>true</ShowTitle>\r\n\t\t                    <ShowLegend>false</ShowLegend>\r\n\t                    </OtherSettings>\r\n                    </Scpc>";
+			_currentConfigValue = text;
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+			sConfigValue = _currentConfigValue;
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+			_currentConfigValue = sValue;
+		}
+
+		void IRibbonPlotWizardType.Context(object HNode, ref object HWizardPlot, ref int ierror)
+		{
+			if (HWizardPlot == null || HNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			ierror = 2;
+			_context = HNode as IHNode;
+			if (_context != null)
+			{
+				ierror = 3;
+				_wizardPlot = HWizardPlot as IHWizardPlot;
+				if (_wizardPlot != null)
+				{
+					GetConfigString();
+					ierror = 0;
+				}
+			}
+		}
+
+		public void UpdateWizardData()
+		{
+		}
+
+		private void SetVariables()
+		{
+			_VarNames = "TOTALEVARATETRUE";
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLDryerBatch;component/totalevaporation.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			_contentLoaded = true;
+		}
+	}
+	[ProgId("WpfPLDryerBatch.VaporTemperature")]
+	public class VaporMoisture : UserControl, IRibbonPlotWizardType, IPlotWizardTemplate, IComponentConnector
+	{
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private PlotwizardHelper _help = new PlotwizardHelper();
+
+		private string _currentTempUnit = string.Empty;
+
+		private string _currentConfigValue = string.Empty;
+
+		private dynamic _mvarControlContext;
+
+		private string sProfilePlot = "TimePlot";
+
+		private string _sTitle = string.Empty;
+
+		private string _sYAxisName = string.Empty;
+
+		private string _uniqueId = WpfPLDryerResources.VaporMoisture_ID;
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgBitmap;
+
+		private bool _bHasInputDialog;
+
+		private readonly string _tempUnitFieldId = WpfPLDryerResources.VaporMoisture;
+
+		private readonly string _stageOnFieldId = WpfPLDryerResources.Stage_number_on;
+
+		private readonly string _stageOrderFieldId = WpfPLDryerResources.Stage_numbering_order;
+
+		private readonly string _yAxis = WpfPLDryerResources.Y_axis;
+
+		private readonly string _xAxis = WpfPLDryerResources.X_axis;
+
+		private readonly string _ascending = WpfPLDryerResources.Ascending;
+
+		private readonly string _descending = WpfPLDryerResources.Descending;
+
+		private string _VarNames;
+
+		private bool _bCheckDataOnly;
+
+		private bool _contentLoaded;
+
+		public string TooltipContentForRibbonItem => WpfPLDryerResources.TooltipContentForRibbonItem_VaporMoisture;
+
+		public string TooltipHeaderForRibbonItem => WpfPLDryerResources.TooltipHeaderForRibbonItem_VaporMoisture;
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgBitmap;
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => _help.GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => _help.GetHelpID();
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string> { _tempUnitFieldId };
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string> { _stageOrderFieldId, _stageOnFieldId };
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		public VaporMoisture()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			InitializeComponent();
+			_currentConfigValue = string.Empty;
+			_bHasInputDialog = false;
+			if (_imgBitmap == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLDryerBatch.Images.temp.ico");
+				_imgBitmap = new Bitmap(manifestResourceStream);
+			}
+			SetVariables();
+		}
+
+		public void SetCaption(ref string caption)
+		{
+			caption = WpfPLBatchSepResources.Temperature;
+		}
+
+		public void SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 380.0;
+		}
+
+		public void SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 300.0;
+		}
+
+		public void SetMinHeight(ref double minHeight)
+		{
+			minHeight = 380.0;
+		}
+
+		public void SetMinWidth(ref double minWidth)
+		{
+			minWidth = 300.0;
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(_tempUnitFieldId) == 0)
+			{
+				List<string> list = new List<string>();
+				if (_mvarControlContext != null)
+				{
+					dynamic val = _mvarControlContext.Pot.T.ValidValues("units");
+					{
+						foreach (object item2 in val)
+						{
+							string item = (string)(dynamic)item2;
+							list.Add(item);
+						}
+						return list;
+					}
+				}
+				return null;
+			}
+			if (sFieldName.CompareTo(_stageOrderFieldId) == 0)
+			{
+				return new List<string> { _ascending, _descending };
+			}
+			if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				return new List<string> { _xAxis, _yAxis };
+			}
+			return null;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(_tempUnitFieldId) == 0)
+			{
+				if (_mvarControlContext != null)
+				{
+					sCurrentVal = _mvarControlContext.Pot.T.Units("CurrentUnits");
+				}
+				else
+				{
+					sCurrentVal = "";
+				}
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(_tempUnitFieldId) == 0)
+			{
+				_currentTempUnit = sValue;
+			}
+		}
+
+		private string GetBlockID()
+		{
+			string result = "";
+			object nodeCxs = _nodeCxs;
+			CxsNode val = (CxsNode)((nodeCxs is CxsNode) ? nodeCxs : null);
+			if (val != null)
+			{
+				_ = val.Case;
+				string path = val.Path;
+				path = path.TrimEnd('.');
+				try
+				{
+					foreach (string item in new List<string> { "Top.appModelV8.", "Blocks.", "Data.", "Controllers." })
+					{
+						path = path.Replace(item, "");
+					}
+					result = path;
+				}
+				catch
+				{
+				}
+			}
+			return result;
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sField)
+		{
+			if (sField.CompareTo(_tempUnitFieldId) != 0 && sField.CompareTo(_stageOrderFieldId) != 0 && sField.CompareTo(_stageOnFieldId) != 0)
+			{
+				return (RibbonControlType)0;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+		}
+
+		private void GetConfigString()
+		{
+			string blockID = GetBlockID();
+			_currentConfigValue = string.Empty;
+			_sYAxisName = WpfPLDryerResources.VaporMoisture;
+			_sTitle = WpfPLDryerResources.BlockTitle + " " + WpfPLDryerResources.VaporMoisture;
+			_sTitle = _sTitle.Replace("%ID%", blockID);
+			string sTitle = _sTitle;
+			int num = sTitle.IndexOf(':');
+			sTitle = sTitle.Substring(num + 1);
+			string text = "";
+			text = text + "Type:$" + sProfilePlot;
+			text = text + "!VarPaths:$" + _VarNames;
+			text = text + "!PlotTitle:$" + sTitle;
+			text = text + "!YAxisNames:$" + _sYAxisName;
+			text = text + "!BlockPath:$" + blockID;
+			text = text + "!TabTitle:$" + _sTitle;
+			text += "!PlotSettings:$<Scpc ShowMultipleYAxes=\"true\">\r\n\t                    <OtherSettings>\r\n\t\t                    <ShowTitle>true</ShowTitle>\r\n\t\t                    <ShowLegend>false</ShowLegend>\r\n\t                    </OtherSettings>\r\n                    </Scpc>";
+			_currentConfigValue = text;
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+			sConfigValue = _currentConfigValue;
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+			_currentConfigValue = sValue;
+		}
+
+		void IRibbonPlotWizardType.Context(object HNode, ref object HWizardPlot, ref int ierror)
+		{
+			if (HWizardPlot == null || HNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			ierror = 2;
+			_context = HNode as IHNode;
+			if (_context != null)
+			{
+				ierror = 3;
+				_wizardPlot = HWizardPlot as IHWizardPlot;
+				if (_wizardPlot != null)
+				{
+					GetConfigString();
+					ierror = 0;
+				}
+			}
+		}
+
+		public void UpdateWizardData()
+		{
+		}
+
+		private void SetVariables()
+		{
+			_VarNames = "MOIGASOUT";
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLDryerBatch;component/vapormoisture.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			_contentLoaded = true;
+		}
+	}
+	[ProgId("WpfPLDryerBatch.VaporTemperature")]
+	public class VaporTemperature : UserControl, IRibbonPlotWizardType, IPlotWizardTemplate, IComponentConnector
+	{
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private PlotwizardHelper _help = new PlotwizardHelper();
+
+		private string _currentTempUnit = string.Empty;
+
+		private string _currentConfigValue = string.Empty;
+
+		private dynamic _mvarControlContext;
+
+		private string sProfilePlot = "TimePlot";
+
+		private string _sTitle = string.Empty;
+
+		private string _sYAxisName = string.Empty;
+
+		private string _uniqueId = WpfPLDryerResources.VaporTemperature_ID;
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgBitmap;
+
+		private bool _bHasInputDialog;
+
+		private readonly string _tempUnitFieldId = WpfPLDryerResources.VaporTemperature;
+
+		private readonly string _stageOnFieldId = WpfPLDryerResources.Stage_number_on;
+
+		private readonly string _stageOrderFieldId = WpfPLDryerResources.Stage_numbering_order;
+
+		private readonly string _yAxis = WpfPLDryerResources.Y_axis;
+
+		private readonly string _xAxis = WpfPLDryerResources.X_axis;
+
+		private readonly string _ascending = WpfPLDryerResources.Ascending;
+
+		private readonly string _descending = WpfPLDryerResources.Descending;
+
+		private string _VarNames;
+
+		private bool _bCheckDataOnly;
+
+		private bool _contentLoaded;
+
+		public string TooltipContentForRibbonItem => WpfPLDryerResources.TooltipContentForRibbonItem_VaporTemperature;
+
+		public string TooltipHeaderForRibbonItem => WpfPLDryerResources.TooltipHeaderForRibbonItem_VaporTemperature;
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgBitmap;
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => _help.GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => _help.GetHelpID();
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string> { _tempUnitFieldId };
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string> { _stageOrderFieldId, _stageOnFieldId };
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		public VaporTemperature()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			InitializeComponent();
+			_currentConfigValue = string.Empty;
+			_bHasInputDialog = false;
+			if (_imgBitmap == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLDryerBatch.Images.temp.ico");
+				_imgBitmap = new Bitmap(manifestResourceStream);
+			}
+			SetVariables();
+		}
+
+		public void SetCaption(ref string caption)
+		{
+			caption = WpfPLBatchSepResources.Temperature;
+		}
+
+		public void SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 380.0;
+		}
+
+		public void SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 300.0;
+		}
+
+		public void SetMinHeight(ref double minHeight)
+		{
+			minHeight = 380.0;
+		}
+
+		public void SetMinWidth(ref double minWidth)
+		{
+			minWidth = 300.0;
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(_tempUnitFieldId) == 0)
+			{
+				List<string> list = new List<string>();
+				if (_mvarControlContext != null)
+				{
+					dynamic val = _mvarControlContext.Pot.T.ValidValues("units");
+					{
+						foreach (object item2 in val)
+						{
+							string item = (string)(dynamic)item2;
+							list.Add(item);
+						}
+						return list;
+					}
+				}
+				return null;
+			}
+			if (sFieldName.CompareTo(_stageOrderFieldId) == 0)
+			{
+				return new List<string> { _ascending, _descending };
+			}
+			if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				return new List<string> { _xAxis, _yAxis };
+			}
+			return null;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(_tempUnitFieldId) == 0)
+			{
+				if (_mvarControlContext != null)
+				{
+					sCurrentVal = _mvarControlContext.Pot.T.Units("CurrentUnits");
+				}
+				else
+				{
+					sCurrentVal = "";
+				}
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(_tempUnitFieldId) == 0)
+			{
+				_currentTempUnit = sValue;
+			}
+		}
+
+		private int GetNStage()
+		{
+			int result = 0;
+			object nodeCxs = _nodeCxs;
+			CxsNode val = (CxsNode)((nodeCxs is CxsNode) ? nodeCxs : null);
+			if (val != null)
+			{
+				CxsCase val2 = val.Case;
+				string text = val.Path + ".Input.NSTAGE";
+				if (val2.BatchGet(text, "value") != null)
+				{
+					result = (int)val2.BatchGet(text, "value");
+				}
+			}
+			return result;
+		}
+
+		private string GetBlockID()
+		{
+			string result = "";
+			object nodeCxs = _nodeCxs;
+			CxsNode val = (CxsNode)((nodeCxs is CxsNode) ? nodeCxs : null);
+			if (val != null)
+			{
+				_ = val.Case;
+				string path = val.Path;
+				path = path.TrimEnd('.');
+				try
+				{
+					foreach (string item in new List<string> { "Top.appModelV8.", "Blocks.", "Data.", "Controllers." })
+					{
+						path = path.Replace(item, "");
+					}
+					result = path;
+				}
+				catch
+				{
+				}
+			}
+			return result;
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sField)
+		{
+			if (sField.CompareTo(_tempUnitFieldId) != 0 && sField.CompareTo(_stageOrderFieldId) != 0 && sField.CompareTo(_stageOnFieldId) != 0)
+			{
+				return (RibbonControlType)0;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+		}
+
+		private void GetConfigString()
+		{
+			int nStage = GetNStage();
+			string blockID = GetBlockID();
+			_currentConfigValue = string.Empty;
+			_sYAxisName = WpfPLDryerResources.VaporTemperature;
+			_sTitle = WpfPLDryerResources.BlockTitle + " " + WpfPLDryerResources.VaporTemperature;
+			_sTitle = _sTitle.Replace("%ID%", blockID);
+			string sTitle = _sTitle;
+			int num = sTitle.IndexOf(':');
+			sTitle = sTitle.Substring(num + 1);
+			string text = "";
+			text = text + "Type:$" + sProfilePlot;
+			text = text + "!VarPaths:$" + _VarNames;
+			text = text + "!nStage:$" + nStage;
+			text = text + "!PlotTitle:$" + sTitle;
+			text = text + "!YAxisNames:$" + _sYAxisName;
+			text = text + "!BlockPath:$" + blockID;
+			text = text + "!TabTitle:$" + _sTitle;
+			text += "!PlotSettings:$<Scpc ShowMultipleYAxes=\"true\">\r\n\t                    <OtherSettings>\r\n\t\t                    <ShowTitle>true</ShowTitle>\r\n\t\t                    <ShowLegend>false</ShowLegend>\r\n\t                    </OtherSettings>\r\n                    </Scpc>";
+			_currentConfigValue = text;
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+			sConfigValue = _currentConfigValue;
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+			_currentConfigValue = sValue;
+		}
+
+		void IRibbonPlotWizardType.Context(object HNode, ref object HWizardPlot, ref int ierror)
+		{
+			if (HWizardPlot == null || HNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			ierror = 2;
+			_context = HNode as IHNode;
+			if (_context != null)
+			{
+				ierror = 3;
+				_wizardPlot = HWizardPlot as IHWizardPlot;
+				if (_wizardPlot != null)
+				{
+					GetConfigString();
+					ierror = 0;
+				}
+			}
+		}
+
+		public void UpdateWizardData()
+		{
+		}
+
+		private void SetVariables()
+		{
+			_VarNames = "TGASOUT";
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLDryerBatch;component/vaportemperature.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			_contentLoaded = true;
+		}
+	}
+}
+namespace AspenTech.AspenPlus.Happ
+{
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("11677780-B72B-11D0-A943-0000C0A118DB")]
+	[CoClass(typeof(object))]
+	[TypeIdentifier]
+	public interface CHPlotVal : IHPlotVal
+	{
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("8008C730-1A3E-11D1-8A4D-0000C0237DF9")]
+	[CoClass(typeof(object))]
+	[TypeIdentifier]
+	public interface CHWizardPlot : IHWizardPlot
+	{
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("8E567522-F9BA-11CF-90B2-0000C0A810C4")]
+	[TypeIdentifier]
+	public interface IHNode
+	{
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("11677780-B72B-11D0-A943-0000C0A118DB")]
+	[TypeIdentifier]
+	public interface IHPlotVal
+	{
+		void _VtblGap1_27();
+
+		[DispId(1610743835)]
+		bool SwapAxises
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743835)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743835)]
+			[param: In]
+			set;
+		}
+
+		[DispId(1610743837)]
+		bool ReverseXAxis
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743837)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743837)]
+			[param: In]
+			set;
+		}
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("8008C730-1A3E-11D1-8A4D-0000C0237DF9")]
+	[TypeIdentifier]
+	public interface IHWizardPlot
+	{
+		[DispId(1610743808)]
+		CHPlotVal PlotVal
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743808)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+
+		void _VtblGap1_14();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743823)]
+		void Clear();
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

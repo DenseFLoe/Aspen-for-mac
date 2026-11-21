@@ -1,0 +1,1166 @@
+using System;
+using System.CodeDom.Compiler;
+using System.Collections;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Configuration;
+using System.Diagnostics;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Windows;
+using System.Windows.Controls;
+using System.Xml.Linq;
+using AspenTech.AspenCxs;
+using AspenTech.AspenCxs.CxsViewModel;
+using AspenTech.AspenCxs.CxsViewModel.ViewData;
+using AspenTech.AspenPlus.Happ;
+using AspenTech.AspenPlus.Infrastructure;
+using AspenTech.AspenPlus.MMControls;
+using AspenTech.AspenPlus.MMForms.GridForms.Controls;
+using AspenTech.AspenPlus.UnmanagedWrapper;
+using AspenTech.Engineering.GridControls;
+using AspenTech.Engineering.GridControls.Bindings;
+using AspenTech.Visualisation.CommonShell;
+using AspenTech.WpfControls.Engineering;
+using Infragistics.Windows;
+using Infragistics.Windows.DataPresenter;
+using Microsoft.Practices.Composite.Modularity;
+using Microsoft.Practices.Unity;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyFileVersion("41.0.0.614")]
+[assembly: AssemblyTitle("AspenTech.AspenPlus.EOVariableList")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("Aspen Technology, Inc.")]
+[assembly: AssemblyProduct("AspenTech.AspenPlus.EOVariableList")]
+[assembly: AssemblyCopyright("Copyright © Aspen Technology 2011 - 2024")]
+[assembly: AssemblyTrademark("")]
+[assembly: ComVisible(false)]
+[assembly: ThemeInfo(ResourceDictionaryLocation.None, ResourceDictionaryLocation.SourceAssembly)]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.614")]
+namespace AspenTech.AspenPlus.EOVariableList
+{
+	internal class EOVariableListDataProvider
+	{
+		private class EOVLDataSource : VLDataSource
+		{
+			private readonly EOVariableListDataProvider _provider;
+
+			public EOVLDataSource(EOVariableListDataProvider provider, VLDataNode rootNode)
+				: base(rootNode, provider._columns)
+			{
+				_provider = provider;
+			}
+
+			protected override void OnDataCellValueRequesting(VLDataCellValueRequestingEventArgs e)
+			{
+				IList<EOVariableCellValue> list = ((DataRow)(object)e.Row).Tag as IList<EOVariableCellValue>;
+				if (list == null)
+				{
+					list = _provider._wrapper.GetRecordAt(e.Row.GeneralIndex, e.Row.Header);
+				}
+				if (list != null)
+				{
+					int num = ((VLDataSource)this).Columns.ToList().IndexOf(e.Column);
+					if (list.Count > num)
+					{
+						e.Value = CreateCellData(list[num], e.Column, num);
+					}
+				}
+				((VLDataSource)this).OnDataCellValueRequesting(e);
+			}
+
+			private IDataCell CreateCellData(EOVariableCellValue cellValue, VLDataColumn column, int columnIndex)
+			{
+				if (((DataColumn)(object)column).DefaultDataType == typeof(bool) && !(cellValue.Value is bool))
+				{
+					if (cellValue.Value is int)
+					{
+						cellValue.Value = (int)cellValue.Value > 0;
+					}
+					else if (object.Equals(cellValue.Value, "0"))
+					{
+						cellValue.Value = false;
+					}
+					else if (object.Equals(cellValue.Value, "1"))
+					{
+						cellValue.Value = true;
+					}
+				}
+				if (columnIndex == 0)
+				{
+					return DataRow.CreateDataCell($"(x) {cellValue.Value}", isReadOnly: false, null, CellUIType.Unknown, cellValue);
+				}
+				return DataRow.CreateDataCell(cellValue.Value, isReadOnly: false, null, CellUIType.Unknown, cellValue);
+			}
+		}
+
+		private readonly EOVariableListWrapper _wrapper;
+
+		private readonly IEnumerable<VLDataColumn> _columns;
+
+		private readonly IList<VLDataRow> _rows = new List<VLDataRow>();
+
+		public EOVariableListDataProvider(EOVariableListWrapper wrapper, IEnumerable<VLDataColumn> columns)
+		{
+			if (wrapper == null)
+			{
+				throw new ArgumentNullException("wrapper");
+			}
+			if (columns == null)
+			{
+				throw new ArgumentNullException("columns");
+			}
+			_wrapper = wrapper;
+			_columns = columns;
+		}
+
+		public VLDataSource CreateDataSource()
+		{
+			//IL_0018: Unknown result type (might be due to invalid IL or missing references)
+			//IL_001d: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0025: Expected O, but got Unknown
+			EnsureData();
+			string initialPath = _wrapper.InitialPath;
+			Dictionary<string, VLDataNode> dataDict = new Dictionary<string, VLDataNode>();
+			VLDataNode val = new VLDataNode
+			{
+				Header = initialPath
+			};
+			AppendChildren(val, dataDict, initialPath);
+			foreach (VLDataRow row in _rows)
+			{
+				VLDataNode val2 = FindVariableNode(row, dataDict, initialPath);
+				if (val2 != null)
+				{
+					val2.Items.Add(row);
+				}
+				else
+				{
+					val.Items.Add(row);
+				}
+			}
+			return (VLDataSource)(object)new EOVLDataSource(this, val);
+		}
+
+		public void InvalidateData()
+		{
+			_rows.Clear();
+		}
+
+		private VLDataNode FindVariableNode(VLDataRow item, Dictionary<string, VLDataNode> dataDict, string rootPath)
+		{
+			string text = rootPath + "." + item.Header;
+			string text2 = text.Substring(0, text.LastIndexOf('.'));
+			while (text2.Contains('.'))
+			{
+				if (dataDict.ContainsKey(text2))
+				{
+					return dataDict[text2];
+				}
+				text2 = text2.Substring(0, text2.LastIndexOf('.'));
+			}
+			return null;
+		}
+
+		private void AppendChildren(VLDataNode data, Dictionary<string, VLDataNode> dataDict, string rootPath)
+		{
+			//IL_0047: Unknown result type (might be due to invalid IL or missing references)
+			//IL_004c: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0054: Expected O, but got Unknown
+			dataDict[data.Path] = data;
+			string text = ((data.Parent == null) ? null : data.Path.Substring(rootPath.Length + 1));
+			foreach (string subDirectory in _wrapper.GetSubDirectories(text))
+			{
+				VLDataNode val = new VLDataNode
+				{
+					Header = subDirectory
+				};
+				data.Nodes.Add(val);
+				AppendChildren(val, dataDict, rootPath);
+			}
+		}
+
+		private void EnsureData()
+		{
+			//IL_0023: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0029: Expected O, but got Unknown
+			if (_rows.Count == 0)
+			{
+				int recordsCount = _wrapper.GetRecordsCount();
+				for (int i = 0; i < recordsCount; i++)
+				{
+					VLDataRow val = new VLDataRow(_columns);
+					val.Header = _wrapper.GetRecordHeaderAt(i);
+					val.GeneralIndex = i;
+					_rows.Add(val);
+				}
+			}
+		}
+
+		private static string GetParentScope(string variableName)
+		{
+			if (!string.IsNullOrWhiteSpace(variableName))
+			{
+				int num = variableName.LastIndexOf('.');
+				if (num > 0)
+				{
+					return variableName.Substring(0, num);
+				}
+			}
+			return null;
+		}
+
+		private static string GetLocalScope(string scope)
+		{
+			if (!string.IsNullOrWhiteSpace(scope))
+			{
+				int num = scope.LastIndexOf('.');
+				if (num > 0)
+				{
+					return scope.Substring(num + 1);
+				}
+				return scope;
+			}
+			return null;
+		}
+	}
+	internal class EOVariableListDialogManager
+	{
+		private readonly EOVariableListExecuteManager _executeManager;
+
+		private EOVariableListWrapper _wrapper;
+
+		private EOVariableListDataProvider _dataProvider;
+
+		public EOVariableListDialogManager(EOVariableListExecuteManager executeManager)
+		{
+			if (executeManager == null)
+			{
+				throw new ArgumentNullException("executeManager");
+			}
+			_executeManager = executeManager;
+			Initialize();
+		}
+
+		private void Initialize()
+		{
+			//IL_0021: Unknown result type (might be due to invalid IL or missing references)
+			//IL_002b: Expected O, but got Unknown
+			IHNode currentNode = _executeManager.CurrentNode;
+			object configObject = _executeManager.GetConfigObject();
+			if (currentNode != null && configObject != null)
+			{
+				_wrapper = new EOVariableListWrapper((object)currentNode, configObject);
+				_wrapper.MultiSelect = _executeManager.SelectionMode != SelectionMode.Single;
+			}
+		}
+
+		public bool? OpenDialog()
+		{
+			//IL_0010: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0015: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0026: Expected O, but got Unknown
+			//IL_0026: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0059: Expected O, but got Unknown
+			//IL_0059: Unknown result type (might be due to invalid IL or missing references)
+			//IL_006a: Unknown result type (might be due to invalid IL or missing references)
+			//IL_007b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_008d: Expected O, but got Unknown
+			if (_wrapper != null)
+			{
+				EOVariableListDialogSettings.InitializeSettings();
+				VariableListDialog val = new VariableListDialog();
+				((Window)val).Title = _wrapper.DialogTitle;
+				MMViewModel sourceViewModel = _executeManager.SourceViewModel;
+				object obj;
+				if (sourceViewModel == null)
+				{
+					obj = null;
+				}
+				else
+				{
+					IUnityContainer unityContainer = ((CxvViewModel)sourceViewModel).UnityContainer;
+					obj = ((unityContainer != null) ? CxvUnityContainerExtensions.TryResolve<IShellApplication>(unityContainer).ActiveWindow : null);
+				}
+				((Window)val).Owner = obj as Window;
+				val.SelectionMode = _executeManager.SelectionMode;
+				val.CanQuery = _wrapper.CanQuery;
+				val.QueryString = _wrapper.QueryString;
+				VariableListDialog val2 = val;
+				MMHelp.SetHelpFile((DependencyObject)(object)val2, "eoconf.chm");
+				MMHelp.SetHelpId((DependencyObject)(object)val2, (int?)165);
+				val2.QueryStringChanged += dialog_QueryStringChanged;
+				((FrameworkElement)(object)val2).Loaded += dialog_Loaded;
+				bool? result = ((Window)(object)val2).ShowDialog();
+				_wrapper.QueryString = val2.QueryString;
+				_wrapper.SaveProperties();
+				if (result.HasValue && result.Value && val2.SelectedItems != null)
+				{
+					SaveSelection(val2.SelectedItems);
+				}
+				SaveDialogSettings(val2);
+				return result;
+			}
+			return false;
+		}
+
+		private static void SaveDialogSettings(VariableListDialog dialog)
+		{
+			EOVariableListDialogSettings.UpdateVisibleColumns(from x in dialog.DataSource.Columns
+				where ((DataColumn)(object)x).Visibility == Visibility.Visible
+				select x.EngineName);
+			EOVariableListDialogSettings.SaveSettings();
+		}
+
+		private void dialog_Loaded(object sender, RoutedEventArgs e)
+		{
+			object obj = ((sender is VariableListDialog) ? sender : null);
+			_dataProvider = new EOVariableListDataProvider(columns: CreateColumns(_wrapper).ToList(), wrapper: _wrapper);
+			((VariableListDialog)obj).DataSource = _dataProvider.CreateDataSource();
+		}
+
+		private void SaveSelection(IEnumerable<VLDataRow> selectedItems)
+		{
+			if (selectedItems != null)
+			{
+				List<string> selectedVariables = selectedItems.Select((VLDataRow x) => x.Header).ToList();
+				List<string> physicalTypes = selectedItems.Select((VLDataRow x) => ((DataRow)(object)x)[4].ValueAsString).ToList();
+				List<string> units = selectedItems.Select((VLDataRow x) => ((DataRow)(object)x)[2].ValueAsString).ToList();
+				_executeManager.SaveSelectedVariables(selectedVariables, physicalTypes, units);
+			}
+		}
+
+		private void dialog_QueryStringChanged(object sender, RoutedPropertyChangedEventArgs<string> e)
+		{
+			_wrapper.UpdateDataByQueryString(e.NewValue);
+			_dataProvider.InvalidateData();
+			((VariableListDialog)((sender is VariableListDialog) ? sender : null)).DataSource = _dataProvider.CreateDataSource();
+		}
+
+		private IEnumerable<VLDataColumn> CreateColumns(EOVariableListWrapper wrapper)
+		{
+			//IL_0032: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0037: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0043: Expected O, but got Unknown
+			//IL_0043: Unknown result type (might be due to invalid IL or missing references)
+			//IL_004f: Unknown result type (might be due to invalid IL or missing references)
+			//IL_005b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0062: Expected O, but got Unknown
+			//IL_0062: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0069: Expected O, but got Unknown
+			//IL_0069: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0070: Expected O, but got Unknown
+			//IL_0070: Unknown result type (might be due to invalid IL or missing references)
+			//IL_007c: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0088: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0094: Expected O, but got Unknown
+			//IL_0094: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00a0: Expected O, but got Unknown
+			//IL_00a0: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00ac: Expected O, but got Unknown
+			//IL_00ac: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00da: Expected O, but got Unknown
+			//IL_00da: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00e1: Expected O, but got Unknown
+			//IL_00e3: Expected O, but got Unknown
+			List<VLDataColumn> list = new List<VLDataColumn>();
+			IList<EOVariableField> columnHeaders = wrapper.GetColumnHeaders();
+			if (columnHeaders != null && columnHeaders.Count > 0)
+			{
+				foreach (EOVariableField item in columnHeaders)
+				{
+					VLDataColumn val = new VLDataColumn();
+					((DataColumn)val).Header = item.Header;
+					val.EngineName = item.EngineName;
+					val.IsKeyField = item.IsKeyField;
+					((DataColumn)val).IsReadOnly = true;
+					((DataColumn)val).Visibility = Visibility.Visible;
+					((DataColumn)val).CanChangeVisibility = true;
+					val.CanModify = item.CanModify;
+					val.CanQuery = item.CanQuery;
+					((DataColumn)val).IsFrozen = item.IsFrozen;
+					((DataColumn)val).CellsItemsSource = item.ItemsSource;
+					((DataColumn)val).DefaultDataType = item.DataType;
+					((DataColumn)val).Width = ((item.InitialWidth > 0.0) ? new double?(item.InitialWidth) : ((double?)null));
+					((DataColumn)val).Tag = item;
+					VLDataColumn val2 = val;
+					if (EOVariableListDialogSettings.MustColumnEngineNames.Contains(item.EngineName))
+					{
+						((DataColumn)(object)val2).CanChangeVisibility = false;
+					}
+					else if (!EOVariableListDialogSettings.AdditionalColumnEngineNames.Contains(item.EngineName))
+					{
+						((DataColumn)(object)val2).Visibility = Visibility.Collapsed;
+					}
+					list.Add(val2);
+				}
+			}
+			return list;
+		}
+	}
+	public static class EOVariableListDialogSettings
+	{
+		private static List<string> _additionalColumnEngineNamesList;
+
+		public static readonly IEnumerable<string> MustColumnEngineNames;
+
+		public static ReadOnlyCollection<string> AdditionalColumnEngineNames { get; private set; }
+
+		static EOVariableListDialogSettings()
+		{
+			_additionalColumnEngineNamesList = new List<string> { "UOM", "PHYSICAL_TYPE", "SPEC" };
+			MustColumnEngineNames = new string[2] { "NAME", "VALUE" };
+			AdditionalColumnEngineNames = new ReadOnlyCollection<string>(_additionalColumnEngineNamesList);
+		}
+
+		public static void InitializeSettings()
+		{
+			string eOSearchDialogSettings = CaseFileSettings.Default.EOSearchDialogSettings;
+			if (!string.IsNullOrEmpty(eOSearchDialogSettings))
+			{
+				XElement xElement = null;
+				try
+				{
+					xElement = XElement.Parse(eOSearchDialogSettings);
+				}
+				catch
+				{
+				}
+				if (xElement != null)
+				{
+					InitializeColumnEngineNames(xElement);
+				}
+			}
+		}
+
+		public static void SaveSettings()
+		{
+			string text = CaseFileSettings.Default.EOSearchDialogSettings;
+			if (string.IsNullOrEmpty(text))
+			{
+				text = "<settings/>";
+			}
+			XElement xElement = null;
+			try
+			{
+				xElement = XElement.Parse(text);
+			}
+			catch
+			{
+			}
+			if (xElement == null)
+			{
+				xElement = new XElement("settings");
+			}
+			SaveColumnEngineNames(xElement);
+			CaseFileSettings.Default.EOSearchDialogSettings = xElement.ToString();
+		}
+
+		public static void UpdateVisibleColumns(IEnumerable<string> columnEngineNames)
+		{
+			if (columnEngineNames == null)
+			{
+				throw new ArgumentNullException("columnEngineNames");
+			}
+			_additionalColumnEngineNamesList.Clear();
+			foreach (string columnEngineName in columnEngineNames)
+			{
+				TryAppendAdditionalColumn(columnEngineName);
+			}
+		}
+
+		private static void InitializeColumnEngineNames(XElement root)
+		{
+			_additionalColumnEngineNamesList.Clear();
+			XElement xElement = root.Element("Columns");
+			if (xElement == null)
+			{
+				return;
+			}
+			foreach (XElement item in xElement.Elements("Column"))
+			{
+				TryAppendAdditionalColumn(item.Value);
+			}
+		}
+
+		private static void SaveColumnEngineNames(XElement root)
+		{
+			XElement xElement = root.Element("Columns");
+			if (xElement == null)
+			{
+				xElement = new XElement("Columns");
+				root.Add(xElement);
+			}
+			xElement.RemoveNodes();
+			foreach (string additionalColumnEngineNames in _additionalColumnEngineNamesList)
+			{
+				xElement.Add(new XElement("Column", additionalColumnEngineNames));
+			}
+		}
+
+		private static void TryAppendAdditionalColumn(string columnEngineName)
+		{
+			if (!string.IsNullOrEmpty(columnEngineName) && !MustColumnEngineNames.Contains(columnEngineName) && !_additionalColumnEngineNamesList.Contains(columnEngineName))
+			{
+				_additionalColumnEngineNamesList.Add(columnEngineName);
+			}
+		}
+	}
+	public class EOVariableListExecuteManager
+	{
+		private const int AR_EOSYNC = 16384;
+
+		private const int A_COMPSTATUS = 12;
+
+		private const int HAP_ENABLED = 8192;
+
+		private const int HAP_DISABLED = 4096;
+
+		private IHNode _eoNode;
+
+		private IHNode _currentNode;
+
+		private int? _defaultObjectType;
+
+		public IApwnApplication Application { get; private set; }
+
+		public AesXamValueEdit SourceEditor { get; private set; }
+
+		public MMScrollArea SourceScrollArea { get; private set; }
+
+		public MMScrollAreaMS SourceScrollAreaMS { get; private set; }
+
+		public MMTabPage SourcePage { get; private set; }
+
+		public MMViewModel SourceViewModel
+		{
+			get
+			{
+				MMTabPage sourcePage = SourcePage;
+				CxvViewModel obj = ((sourcePage != null) ? ((MMViewModelContainer)sourcePage).ViewModel : null);
+				return (MMViewModel)(object)((obj is MMViewModel) ? obj : null);
+			}
+		}
+
+		public CxvVariableData SourceVariable { get; private set; }
+
+		public CxsCase CurrentCxsCase
+		{
+			get
+			{
+				if (Application.ActiveDocument != null)
+				{
+					return Application.ActiveDocument.Case;
+				}
+				return null;
+			}
+		}
+
+		private IHNode EONode
+		{
+			get
+			{
+				if (_eoNode == null)
+				{
+					CxsCase currentCxsCase = CurrentCxsCase;
+					_eoNode = ((currentCxsCase != null) ? currentCxsCase.InvokeAction("Top.appModelV8.Custom Actions", "HappNode", new object[1] { "Top.appModelV8.EO Configuration" }) : null) as IHNode;
+				}
+				return _eoNode;
+			}
+		}
+
+		public IHNode CurrentNode
+		{
+			get
+			{
+				if (_currentNode == null && SourceViewModel != null && CurrentCxsCase != null)
+				{
+					if (SourceEditor.Variable != null)
+					{
+						object variable = SourceEditor.Variable;
+						CxvVariableData val = (CxvVariableData)((variable is CxvVariableData) ? variable : null);
+						if (val != null && !string.IsNullOrEmpty(val.DataPath))
+						{
+							string parentNodePath = GetParentNodePath(val.DataPath);
+							_currentNode = CurrentCxsCase.InvokeAction("Top.appModelV8.Custom Actions", "HappNode", new object[1] { parentNodePath }) as IHNode;
+						}
+					}
+					else if (SourceVariable != null && !string.IsNullOrEmpty(SourceVariable.DataPath))
+					{
+						string parentNodePath2 = GetParentNodePath(SourceVariable.DataPath);
+						_currentNode = CurrentCxsCase.InvokeAction("Top.appModelV8.Custom Actions", "HappNode", new object[1] { parentNodePath2 }) as IHNode;
+					}
+				}
+				return _currentNode;
+			}
+		}
+
+		public int DefaultObjectType
+		{
+			get
+			{
+				if (!_defaultObjectType.HasValue && SourceViewModel != null && CurrentCxsCase != null)
+				{
+					if (SourceEditor.Variable != null)
+					{
+						object variable = SourceEditor.Variable;
+						CxvVariableData val = (CxvVariableData)((variable is CxvVariableData) ? variable : null);
+						if (val != null && !string.IsNullOrEmpty(val.DataPath))
+						{
+							IHNode iHNode = CurrentCxsCase.InvokeAction("Top.appModelV8.Custom Actions", "HappNode", new object[1] { val.DataPath }) as IHNode;
+							short attrnumber = 80;
+							if (iHNode != null)
+							{
+								_defaultObjectType = iHNode.get_AttributeType(attrnumber);
+							}
+						}
+					}
+					else if (SourceVariable != null && !string.IsNullOrEmpty(SourceVariable.DataPath))
+					{
+						IHNode iHNode2 = CurrentCxsCase.InvokeAction("Top.appModelV8.Custom Actions", "HappNode", new object[1] { SourceVariable.DataPath }) as IHNode;
+						short attrnumber2 = 80;
+						if (iHNode2 != null)
+						{
+							_defaultObjectType = iHNode2.get_AttributeType(attrnumber2);
+						}
+					}
+				}
+				if (_defaultObjectType.HasValue)
+				{
+					return _defaultObjectType.Value;
+				}
+				return 0;
+			}
+		}
+
+		public SelectionMode SelectionMode
+		{
+			get
+			{
+				if (SourceEditor.IsInScrollArea)
+				{
+					return SelectionMode.Extended;
+				}
+				return SelectionMode.Single;
+			}
+		}
+
+		public EOVariableListExecuteManager(IApwnApplication application, AesXamValueEdit sourceEditor)
+		{
+			Application = application ?? throw new ArgumentNullException("application");
+			SourceEditor = sourceEditor ?? throw new ArgumentNullException("sourceEditor");
+			object variable = sourceEditor.Variable;
+			SourceVariable = (CxvVariableData)((variable is CxvVariableData) ? variable : null);
+			if (SourceEditor.IsInScrollArea)
+			{
+				DependencyObject ancestorFromType = Utilities.GetAncestorFromType((DependencyObject)(object)SourceEditor, typeof(MMScrollArea), allowSubclassOfType: true);
+				SourceScrollArea = (MMScrollArea)(object)((ancestorFromType is MMScrollArea) ? ancestorFromType : null);
+				if (SourceScrollArea == null)
+				{
+					DependencyObject ancestorFromType2 = Utilities.GetAncestorFromType((DependencyObject)(object)SourceEditor, typeof(MMScrollAreaMS), allowSubclassOfType: true);
+					SourceScrollAreaMS = (MMScrollAreaMS)(object)((ancestorFromType2 is MMScrollAreaMS) ? ancestorFromType2 : null);
+				}
+			}
+			SourcePage = GetAncestorTabPage(sourceEditor);
+		}
+
+		public void RefreshDefaultObjectType()
+		{
+			_defaultObjectType = null;
+		}
+
+		public bool CanExecuteListVariables()
+		{
+			if (SourceEditor.Variable == null)
+			{
+				return false;
+			}
+			if (SourcePage == null)
+			{
+				return false;
+			}
+			if (SourceViewModel == null)
+			{
+				return false;
+			}
+			if (HelperFuncs.MMHierClrflag() == 3)
+			{
+				return false;
+			}
+			if (!GetIsBlockActive())
+			{
+				return false;
+			}
+			if (GetConfigObject() == null)
+			{
+				return false;
+			}
+			if (!EoVariableIOHelp.CanEoVariableIO())
+			{
+				return DefaultObjectType == 6;
+			}
+			return true;
+		}
+
+		private bool GetIsBlockActive()
+		{
+			int? num = CxsConverter.ValueToInt32(((CxvViewModel)SourceViewModel).ExpandDataPathAndGet("@main", "status_code"));
+			if (num.HasValue && (num.Value & 0x1000) != 0)
+			{
+				return false;
+			}
+			return true;
+		}
+
+		public bool? ExecuteListVariables()
+		{
+			return new EOVariableListDialogManager(this).OpenDialog();
+		}
+
+		public void SaveSelectedVariables(List<string> selectedVariables, List<string> physicalTypes, List<string> units)
+		{
+			//IL_015b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0162: Expected O, but got Unknown
+			if (selectedVariables == null || selectedVariables.Count == 0)
+			{
+				return;
+			}
+			object variable = SourceEditor.Variable;
+			CxvVariableData val = (CxvVariableData)((variable is CxvVariableData) ? variable : null);
+			if (val == null)
+			{
+				val = SourceVariable;
+			}
+			CxvPropertyBase property = ((CxvPropertyData)val).Property;
+			string dataAttributeResolved = ((CxvVariableProperty)((property is CxvVariableProperty) ? property : null)).DataAttributeResolved;
+			string dataPath = val.DataPath;
+			string text = dataPath.Replace("VARIABLE", "PHYS_QTY");
+			string text2 = dataPath.Replace("VARIABLE", "UOM");
+			if (selectedVariables.Count == 1)
+			{
+				((CxvViewModel)SourceViewModel).ExpandDataPathAndSet(dataPath, dataAttributeResolved, (object)selectedVariables[0]);
+				if (!(text != dataPath) || !(text2 != dataPath))
+				{
+					return;
+				}
+				if (!string.IsNullOrEmpty(physicalTypes[0]) && physicalTypes[0] != "UNTYPED")
+				{
+					if (((CxvViewModel)SourceViewModel).ExpandDataPathAndSet(text, "value", (object)physicalTypes[0]))
+					{
+						((CxvViewModel)SourceViewModel).ExpandDataPathAndSet(text2, "value", (object)units[0]);
+					}
+				}
+				else if (((CxvViewModel)SourceViewModel).ExpandDataPathAndSet(text, "value", (object)""))
+				{
+					((CxvViewModel)SourceViewModel).ExpandDataPathAndSet(text2, "value", (object)"");
+				}
+				return;
+			}
+			CxvVectorPropertyData parentVectorData = GetParentVectorData();
+			if (parentVectorData == null)
+			{
+				return;
+			}
+			string parentNodePath = GetParentNodePath(dataPath);
+			int currentNodeIndex = GetCurrentNodeIndex(parentVectorData, dataPath);
+			((CxvViewModel)SourceViewModel).ExpandDataPathAndSet(dataPath, dataAttributeResolved, (object)selectedVariables[0]);
+			int num = 1;
+			CxvPropertyWatch val2 = new CxvPropertyWatch();
+			for (int i = currentNodeIndex + 1; i < parentVectorData.Count; i++)
+			{
+				if (num < selectedVariables.Count)
+				{
+					object indexSubstitution = parentVectorData.IndexBasis.GetIndexSubstitution(i, val2);
+					string text3 = selectedVariables[num];
+					string text4 = $"{parentNodePath}.{indexSubstitution}";
+					((CxvViewModel)SourceViewModel).ExpandDataPathAndSet(text4, dataAttributeResolved, (object)text3);
+					num++;
+				}
+			}
+			for (int j = num; j < selectedVariables.Count; j++)
+			{
+				int num2 = parentVectorData.Count - 1 + j;
+				SourceViewModel.AddChild(parentNodePath, num2);
+				string text5 = $"{parentNodePath}.#{num2}";
+				((CxvViewModel)SourceViewModel).ExpandDataPathAndSet(text5, dataAttributeResolved, (object)selectedVariables[j]);
+			}
+		}
+
+		public object GetConfigObject()
+		{
+			if (CurrentNode == null)
+			{
+				return null;
+			}
+			try
+			{
+				short num = 80;
+				object obj = CurrentNode.get_AttributeValue(num, Type.Missing);
+				if (obj == null && DefaultObjectType == 6)
+				{
+					object variable = SourceEditor.Variable;
+					CxvVariableData val = (CxvVariableData)((variable is CxvVariableData) ? variable : null);
+					if (val != null && !string.IsNullOrEmpty(val.DataPath))
+					{
+						if (CurrentCxsCase.InvokeAction("Top.appModelV8.Custom Actions", "HappNode", new object[1] { val.DataPath }) is IHNode iHNode)
+						{
+							obj = iHNode.get_AttributeValue(num, Type.Missing);
+						}
+					}
+					else if (SourceVariable != null && !string.IsNullOrEmpty(SourceVariable.DataPath) && CurrentCxsCase.InvokeAction("Top.appModelV8.Custom Actions", "HappNode", new object[1] { SourceVariable.DataPath }) is IHNode iHNode2)
+					{
+						obj = iHNode2.get_AttributeValue(num, Type.Missing);
+					}
+				}
+				if (obj == null)
+				{
+					IHNodeCol elements = CurrentNode.Elements;
+					if (elements != null)
+					{
+						int location = -1;
+						int dimension = 0;
+						object force = true;
+						elements.get_RowCount(dimension);
+						obj = elements.get_LabelAttribute(dimension, location, num, force);
+					}
+				}
+				return obj;
+			}
+			catch (Exception)
+			{
+				return null;
+			}
+		}
+
+		private CxvVectorPropertyData GetParentVectorData()
+		{
+			if (SourceScrollArea != null && ((MMScrollAreaBase)SourceScrollArea).DataGrid != null)
+			{
+				IEnumerable dataSource = ((DataPresenterBase)((MMScrollAreaBase)SourceScrollArea).DataGrid).DataSource;
+				return (CxvVectorPropertyData)((dataSource is CxvVectorPropertyData) ? dataSource : null);
+			}
+			if (SourceScrollAreaMS != null && SourceScrollAreaMS.DataGrid != null && SourceScrollAreaMS.DataGrid.DataSource is BindingDataTable bindingDataTable)
+			{
+				IEnumerable itemsSource = bindingDataTable.ItemsSource;
+				return (CxvVectorPropertyData)((itemsSource is CxvVectorPropertyData) ? itemsSource : null);
+			}
+			return null;
+		}
+
+		private static string GetParentNodePath(string path)
+		{
+			if (!string.IsNullOrEmpty(path))
+			{
+				int num = path.LastIndexOf('#');
+				if (num > 0)
+				{
+					return path.Substring(0, num - 1);
+				}
+				int num2 = path.LastIndexOf('"');
+				if (num2 > 1)
+				{
+					string text = path.Substring(0, num2);
+					int num3 = text.LastIndexOf('"');
+					if (num3 > 1)
+					{
+						return text.Substring(0, num3 - 1);
+					}
+				}
+				int num4 = path.LastIndexOf('.');
+				if (num4 > 0)
+				{
+					return path.Substring(0, num4);
+				}
+			}
+			return null;
+		}
+
+		private static int GetCurrentNodeIndex(CxvVectorPropertyData parentVector, string path)
+		{
+			string currentNodeKey = GetCurrentNodeKey(path);
+			for (int i = 0; i < parentVector.Count; i++)
+			{
+				object indexSubstitution = parentVector.IndexBasis.GetIndexSubstitution(i, (CxvPropertyWatch)null);
+				if (object.Equals(currentNodeKey, indexSubstitution))
+				{
+					return i;
+				}
+			}
+			return -1;
+		}
+
+		private static string GetCurrentNodeKey(string path)
+		{
+			if (!string.IsNullOrEmpty(path))
+			{
+				int num = path.LastIndexOf('#');
+				if (num > 0)
+				{
+					return path.Substring(num);
+				}
+				int num2 = path.LastIndexOf('"');
+				if (num2 > 1)
+				{
+					int num3 = path.Substring(0, num2).LastIndexOf('"');
+					if (num3 > 1)
+					{
+						return path.Substring(num3, num2 - num3 + 1);
+					}
+				}
+				int num4 = path.LastIndexOf('.');
+				if (num4 > 0)
+				{
+					return path.Substring(num4 + 1);
+				}
+			}
+			return null;
+		}
+
+		private bool HasEOVariables(int eoFlag)
+		{
+			if (SourceViewModel != null)
+			{
+				if (eoFlag == 2)
+				{
+					int? num = (CurrentCxsCase.InvokeAction("Top.appModelV8.Custom Actions", "HappNode", new object[1] { ((CxvViewModel)SourceViewModel).ExpandDataPath("@main") }) as IHNode).get_AttributeValue((short)12, Type.Missing) as int?;
+					if (num.HasValue)
+					{
+						return (num.Value & 0x4000) == 16384;
+					}
+				}
+				else
+				{
+					int? num2 = ((CxvViewModel)SourceViewModel).ExpandDataPathAndGet("Top.appModelV8.EO Flowsheet", "has_children") as int?;
+					if (num2.HasValue)
+					{
+						return num2.Value == 1;
+					}
+				}
+			}
+			return false;
+		}
+
+		private static MMTabPage GetAncestorTabPage(AesXamValueEdit sourceEditor)
+		{
+			DependencyObject ancestorFromType = Utilities.GetAncestorFromType((DependencyObject)(object)sourceEditor, typeof(MMTabPage), allowSubclassOfType: true);
+			return (MMTabPage)(object)((ancestorFromType is MMTabPage) ? ancestorFromType : null);
+		}
+
+		private int IsAnEOVariable()
+		{
+			object obj = null;
+			int result = 0;
+			if (CurrentNode != null)
+			{
+				short num = 71;
+				IHNodeCol elements = CurrentNode.Elements;
+				if (elements != null)
+				{
+					int location = -1;
+					int dimension = 0;
+					object force = true;
+					elements.get_RowCount(dimension);
+					obj = elements.get_LabelAttribute(dimension, location, num, force);
+					if (obj == null || Convert.ToInt32(obj) == 0)
+					{
+						obj = CurrentNode.get_AttributeValue(num, Type.Missing);
+					}
+				}
+				else
+				{
+					obj = CurrentNode.get_AttributeValue(num, Type.Missing);
+				}
+			}
+			if (obj != null && obj.GetType() == typeof(int))
+			{
+				result = Convert.ToInt32(obj);
+			}
+			return result;
+		}
+	}
+	public class EOVariableListModule : IModule
+	{
+		private readonly IUnityContainer _unityContainer;
+
+		public EOVariableListModule(IUnityContainer unityContainer)
+		{
+			if (unityContainer == null)
+			{
+				throw new ArgumentNullException("unityContainer");
+			}
+			_unityContainer = unityContainer;
+		}
+
+		public void Initialize()
+		{
+			//IL_0006: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0015: Expected O, but got Unknown
+			UnityContainerExtensions.RegisterType<IEOVariableListPresenter, EOVariableListPresenter>(_unityContainer, (LifetimeManager)new ContainerControlledLifetimeManager(), Array.Empty<InjectionMember>());
+		}
+	}
+	public class EOVariableListPresenter : DependencyObject, IEOVariableListPresenter
+	{
+		public static readonly DependencyProperty VariableListManagerProperty = DependencyProperty.RegisterAttached("VariableListManager", typeof(EOVariableListExecuteManager), typeof(EOVariableListPresenter));
+
+		private readonly IApwnApplication _application;
+
+		public static EOVariableListExecuteManager GetVariableListManager(AesXamValueEdit editor)
+		{
+			if (editor == null)
+			{
+				throw new ArgumentNullException("editor");
+			}
+			return (EOVariableListExecuteManager)((DependencyObject)(object)editor).GetValue(VariableListManagerProperty);
+		}
+
+		public static void SetVariableListManager(AesXamValueEdit editor, EOVariableListExecuteManager value)
+		{
+			if (editor == null)
+			{
+				throw new ArgumentNullException("editor");
+			}
+			((DependencyObject)(object)editor).SetValue(VariableListManagerProperty, (object)value);
+		}
+
+		public EOVariableListPresenter(IApwnApplication application)
+		{
+			if (application == null)
+			{
+				throw new ArgumentNullException("application");
+			}
+			_application = application;
+		}
+
+		public bool CanExecuteListVariables(UIElement inputElement, bool isUpdateRequired = false)
+		{
+			if (inputElement is AesXamValueEdit editor)
+			{
+				EOVariableListExecuteManager eOVariableListExecuteManager = ResolveVarListManager(editor);
+				if (isUpdateRequired)
+				{
+					eOVariableListExecuteManager.RefreshDefaultObjectType();
+				}
+				return eOVariableListExecuteManager.CanExecuteListVariables();
+			}
+			return false;
+		}
+
+		public bool? ExecuteListVariables(UIElement inputElement)
+		{
+			if (inputElement is AesXamValueEdit editor)
+			{
+				return ResolveVarListManager(editor).ExecuteListVariables();
+			}
+			return false;
+		}
+
+		private EOVariableListExecuteManager ResolveVarListManager(AesXamValueEdit editor)
+		{
+			EOVariableListExecuteManager eOVariableListExecuteManager = GetVariableListManager(editor);
+			if (eOVariableListExecuteManager == null)
+			{
+				eOVariableListExecuteManager = new EOVariableListExecuteManager(_application, editor);
+				SetVariableListManager(editor, eOVariableListExecuteManager);
+			}
+			return eOVariableListExecuteManager;
+		}
+	}
+}
+namespace AspenTech.AspenPlus.EOVariableList.Properties
+{
+	[CompilerGenerated]
+	[GeneratedCode("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "16.10.0.0")]
+	internal sealed class Settings : ApplicationSettingsBase
+	{
+		private static Settings defaultInstance = (Settings)SettingsBase.Synchronized(new Settings());
+
+		public static Settings Default => defaultInstance;
+	}
+}
+namespace AspenTech.AspenPlus.Happ
+{
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("8E567522-F9BA-11CF-90B2-0000C0A810C4")]
+	[TypeIdentifier]
+	public interface IHNode
+	{
+		void _VtblGap1_11();
+
+		[DispId(1610743819)]
+		short AttributeType
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743819)]
+			get;
+		}
+
+		[DispId(1610743820)]
+		object AttributeValue
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743820)]
+			[return: MarshalAs(UnmanagedType.Struct)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743820)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.Struct)]
+			set;
+		}
+
+		void _VtblGap2_4();
+
+		[DispId(1610743826)]
+		IHNodeCol Elements
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743826)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("89E81F60-019A-11D0-9BE7-0000C05375D5")]
+	[DefaultMember("Item")]
+	[TypeIdentifier]
+	public interface IHNodeCol : IEnumerable
+	{
+		void _VtblGap1_3();
+
+		[DispId(1610743811)]
+		int RowCount
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743811)]
+			get;
+		}
+
+		void _VtblGap2_9();
+
+		[DispId(1610743821)]
+		object LabelAttribute
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743821)]
+			[return: MarshalAs(UnmanagedType.Struct)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743821)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.Struct)]
+			set;
+		}
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

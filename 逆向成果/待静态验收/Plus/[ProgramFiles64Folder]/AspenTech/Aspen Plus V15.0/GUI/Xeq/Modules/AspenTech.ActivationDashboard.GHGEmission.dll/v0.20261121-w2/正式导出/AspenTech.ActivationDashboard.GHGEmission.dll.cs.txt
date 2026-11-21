@@ -1,0 +1,410 @@
+using System;
+using System.CodeDom.Compiler;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Globalization;
+using System.Reflection;
+using System.Resources;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Windows;
+using System.Windows.Data;
+using System.Windows.Markup;
+using System.Xml.Linq;
+using AspenTech.ActivationDashboard.GHGEmission.Properties;
+using AspenTech.ActivationDashboard.Infrastructure;
+using AspenTech.ActivationDashboard.Infrastructure.Contracts;
+using AspenTech.ActivationDashboard.Infrastructure.DashboardItems;
+using Microsoft.Practices.Composite.Modularity;
+using Microsoft.Practices.Unity;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyTitle("AspenTech.ActivationDashboard.GHGEmission")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("Aspen Technology, Inc")]
+[assembly: AssemblyProduct("AspenTech.ActivationDashboard.GHGEmission")]
+[assembly: AssemblyCopyright("Copyright © Aspen Technology, 2022 - 2024")]
+[assembly: AssemblyTrademark("")]
+[assembly: ComVisible(false)]
+[assembly: Guid("cb59656d-e7a9-4239-8782-fba8114e0d5b")]
+[assembly: AssemblyFileVersion("41.0.0.19")]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.19")]
+namespace AspenTech.ActivationDashboard.GHGEmission
+{
+	[Module(ModuleName = "AspenTech.ActivationDashboard.GHGEmission.Module")]
+	[ModuleDependency("AspenTech.ActivationDashboard.Infrastructure.Module")]
+	public class Module : DashboardItemModule
+	{
+		public Module(IUnityContainer container)
+			: base(container)
+		{
+		}
+
+		protected override void OnInitialized()
+		{
+			((DashboardItemModule)this).OnInitialized();
+		}
+
+		protected override void RegisterDashboardItem(IDashboardItemFactory factory)
+		{
+			factory.Register<DashboardItem>(300);
+		}
+	}
+	public class DashboardItem : ContentDashboardItem, INotifyPropertyChanged, IComponentConnector
+	{
+		public static readonly DependencyProperty OnOffStateDisplayProperty = DependencyProperty.Register("OnOffStateDisplay", typeof(bool), typeof(DashboardItem), new FrameworkPropertyMetadata(true, OnOffStateDisplayChanged));
+
+		private readonly IUnityContainer _container;
+
+		private IGHGEmissionAgent _agent;
+
+		private double? _co2Scope1;
+
+		private double? _co2Scope2;
+
+		private double? _carbonTax;
+
+		private string _co2Scope1Unit;
+
+		private string _co2Scope2Unit;
+
+		private string _carbonTaxUnit;
+
+		private string _onOffButtonControlToolTip = Resources.GHGE_DashBoard_ONOFFButton_ON;
+
+		internal DashboardItem DBItem;
+
+		private bool _contentLoaded;
+
+		public bool OnOffStateDisplay
+		{
+			get
+			{
+				return (bool)((DependencyObject)this).GetValue(OnOffStateDisplayProperty);
+			}
+			set
+			{
+				((DependencyObject)this).SetValue(OnOffStateDisplayProperty, (object)value);
+			}
+		}
+
+		public double? CO2Scope1
+		{
+			get
+			{
+				return _co2Scope1;
+			}
+			set
+			{
+				_co2Scope1 = value;
+				NotifyPropertyChanged("CO2Scope1");
+			}
+		}
+
+		public double? CO2Scope2
+		{
+			get
+			{
+				return _co2Scope2;
+			}
+			set
+			{
+				_co2Scope2 = value;
+				NotifyPropertyChanged("CO2Scope2");
+			}
+		}
+
+		public double? CarbonTax
+		{
+			get
+			{
+				return _carbonTax;
+			}
+			set
+			{
+				_carbonTax = value;
+				NotifyPropertyChanged("CarbonTax");
+			}
+		}
+
+		public string CO2Scope1Unit
+		{
+			get
+			{
+				return _co2Scope1Unit;
+			}
+			set
+			{
+				_co2Scope1Unit = value;
+				NotifyPropertyChanged("CO2Scope1Unit");
+			}
+		}
+
+		public string CO2Scope2Unit
+		{
+			get
+			{
+				return _co2Scope2Unit;
+			}
+			set
+			{
+				_co2Scope2Unit = value;
+				NotifyPropertyChanged("CO2Scope2Unit");
+			}
+		}
+
+		public string CarbonTaxUnit
+		{
+			get
+			{
+				return _carbonTaxUnit;
+			}
+			set
+			{
+				_carbonTaxUnit = value;
+				NotifyPropertyChanged("CarbonTaxUnit");
+			}
+		}
+
+		public string OnOffButtonControlToolTip
+		{
+			get
+			{
+				return _onOffButtonControlToolTip;
+			}
+			set
+			{
+				_onOffButtonControlToolTip = value;
+				NotifyPropertyChanged("OnOffButtonControlToolTip");
+			}
+		}
+
+		public event PropertyChangedEventHandler PropertyChanged;
+
+		private static void OnOffStateDisplayChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			(d as DashboardItem).RefreshUIDisplay();
+		}
+
+		private void RefreshUIDisplay()
+		{
+			UpdateOnOffButtonStatusAndDoRelatedActions();
+		}
+
+		protected void NotifyPropertyChanged(string propertyName)
+		{
+			this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+		}
+
+		public DashboardItem(IUnityContainer container)
+		{
+			_container = container;
+			InitializeComponent();
+			_agent = UnityContainerExtensions.Resolve<IGHGEmissionAgent>(_container, Array.Empty<ResolverOverride>());
+			_agent.UpdateDataEvent += RefreshDataEventHandler;
+			_agent.ResetDashboardEvent += ResetDashboardEvent;
+			SetPropertyBinding();
+		}
+
+		private void SetPropertyBinding()
+		{
+			((FrameworkElement)this).SetBinding(OnOffStateDisplayProperty, (BindingBase)new Binding("IsActive")
+			{
+				Source = _agent,
+				Mode = BindingMode.TwoWay
+			});
+		}
+
+		private void ResetDashboardEvent(object sender, EventArgs e)
+		{
+			OnOffStateDisplay = true;
+		}
+
+		private void RefreshDataEventHandler(object sender, EventArgs e)
+		{
+			if (OnOffStateDisplay)
+			{
+				GetEngineValuesForUIDisplay();
+			}
+		}
+
+		private void GetEngineValuesForUIDisplay()
+		{
+			CO2Scope1 = _agent.GetNetStreamCO2();
+			CO2Scope2 = _agent.GetUtilityCO2();
+			CarbonTax = _agent.GetCarbonTax();
+			CO2Scope1Unit = _agent.GetNetStreamCO2Unit();
+			CO2Scope2Unit = _agent.GetUtilityCO2Unit();
+			CarbonTaxUnit = _agent.GetCarbonTaxUnit();
+		}
+
+		protected override void OnClicked(object originalSource)
+		{
+			_agent.ShowCO2EmissionScreen();
+			((ContentDashboardItem)this).OnClicked(originalSource);
+		}
+
+		private void UpdateOnOffButtonStatusAndDoRelatedActions()
+		{
+			if (OnOffStateDisplay)
+			{
+				OnOffButtonControlToolTip = Resources.GHGE_DashBoard_ONOFFButton_ON;
+				GetEngineValuesForUIDisplay();
+			}
+			else
+			{
+				OnOffButtonControlToolTip = Resources.GHGE_DashBoard_ONOFFButton_OFF;
+				ClearUIDisplay();
+			}
+		}
+
+		private void ClearUIDisplay()
+		{
+			CO2Scope1 = null;
+			CO2Scope2 = null;
+			CarbonTax = null;
+			CO2Scope1Unit = string.Empty;
+			CO2Scope2Unit = string.Empty;
+			CarbonTaxUnit = string.Empty;
+		}
+
+		protected override string SaveStateOverride()
+		{
+			return new XDocument(new XComment("This is the current state of GHGEmission Dashboard"), new XElement("Root", new XElement("OnOffState", new XAttribute("Value", OnOffStateDisplay)))).ToString();
+		}
+
+		protected override void RestoreStateOverride(string state)
+		{
+			if (string.IsNullOrEmpty(state))
+			{
+				_agent.IsActive = true;
+				((ContentDashboardItem)this).RestoreStateOverride(state);
+				return;
+			}
+			XDocument xDocument = XDocument.Parse(state);
+			if (xDocument != null && UnityContainerExtensions.Resolve<IDashboardPanelAgent>(_container, Array.Empty<ResolverOverride>()) != null)
+			{
+				XElement xElement = xDocument.Root.Element("OnOffState");
+				if (xElement != null)
+				{
+					XAttribute xAttribute = xElement.Attribute("Value");
+					if (string.Equals(xAttribute.Value, "true", StringComparison.InvariantCultureIgnoreCase) || string.Equals(xAttribute.Value, "On", StringComparison.InvariantCultureIgnoreCase))
+					{
+						OnOffStateDisplay = true;
+					}
+					else
+					{
+						OnOffStateDisplay = false;
+					}
+				}
+			}
+			((ContentDashboardItem)this).RestoreStateOverride(state);
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/AspenTech.ActivationDashboard.GHGEmission;component/dashboarditem.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			if (connectionId == 1)
+			{
+				DBItem = (DashboardItem)target;
+			}
+			else
+			{
+				_contentLoaded = true;
+			}
+		}
+	}
+}
+namespace AspenTech.ActivationDashboard.GHGEmission.Properties
+{
+	[GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
+	[DebuggerNonUserCode]
+	[CompilerGenerated]
+	public class Resources
+	{
+		private static ResourceManager resourceMan;
+
+		private static CultureInfo resourceCulture;
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		public static ResourceManager ResourceManager
+		{
+			get
+			{
+				if (resourceMan == null)
+				{
+					resourceMan = new ResourceManager("AspenTech.ActivationDashboard.GHGEmission.Properties.Resources", typeof(Resources).Assembly);
+				}
+				return resourceMan;
+			}
+		}
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		public static CultureInfo Culture
+		{
+			get
+			{
+				return resourceCulture;
+			}
+			set
+			{
+				resourceCulture = value;
+			}
+		}
+
+		public static string DashboardItem_CarbonTax_ToolTip => ResourceManager.GetString("DashboardItem_CarbonTax_ToolTip", resourceCulture);
+
+		public static string DashboardItem_CO2eScope1_Teaser_State_Tooltip => ResourceManager.GetString("DashboardItem_CO2eScope1_Teaser_State_Tooltip", resourceCulture);
+
+		public static string DashboardItem_CO2eScope1_Tooltip => ResourceManager.GetString("DashboardItem_CO2eScope1_Tooltip", resourceCulture);
+
+		public static string DashboardItem_CO2eScope2_Teaser_State_Tooltip => ResourceManager.GetString("DashboardItem_CO2eScope2_Teaser_State_Tooltip", resourceCulture);
+
+		public static string DashboardItem_CO2eScope2_Tooltip => ResourceManager.GetString("DashboardItem_CO2eScope2_Tooltip", resourceCulture);
+
+		public static string DashboardItem_Collapsed_CO2eScope1 => ResourceManager.GetString("DashboardItem_Collapsed_CO2eScope1", resourceCulture);
+
+		public static string DashboardItem_Collapsed_Scope2 => ResourceManager.GetString("DashboardItem_Collapsed_Scope2", resourceCulture);
+
+		public static string DashboardItem_Expanded_CarbonTax => ResourceManager.GetString("DashboardItem_Expanded_CarbonTax", resourceCulture);
+
+		public static string DashboardItem_Expanded_CO2eScope1 => ResourceManager.GetString("DashboardItem_Expanded_CO2eScope1", resourceCulture);
+
+		public static string DashboardItem_Expanded_CO2eScope2 => ResourceManager.GetString("DashboardItem_Expanded_CO2eScope2", resourceCulture);
+
+		public static string DashboardItem_MainPanel_Tooltip => ResourceManager.GetString("DashboardItem_MainPanel_Tooltip", resourceCulture);
+
+		public static string DashboardItem_Title => ResourceManager.GetString("DashboardItem_Title", resourceCulture);
+
+		public static string DashboardItem_TotalCarbonTax_Teaser_State_Tooltip => ResourceManager.GetString("DashboardItem_TotalCarbonTax_Teaser_State_Tooltip", resourceCulture);
+
+		public static string GHGE_DashBoard_ONOFFButton_OFF => ResourceManager.GetString("GHGE_DashBoard_ONOFFButton_OFF", resourceCulture);
+
+		public static string GHGE_DashBoard_ONOFFButton_ON => ResourceManager.GetString("GHGE_DashBoard_ONOFFButton_ON", resourceCulture);
+
+		internal Resources()
+		{
+		}
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

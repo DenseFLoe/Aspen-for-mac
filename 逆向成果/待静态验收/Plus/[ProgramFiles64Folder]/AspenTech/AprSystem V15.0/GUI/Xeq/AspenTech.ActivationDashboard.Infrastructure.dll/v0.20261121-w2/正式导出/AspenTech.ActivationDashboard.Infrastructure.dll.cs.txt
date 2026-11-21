@@ -1,0 +1,4863 @@
+using System;
+using System.CodeDom.Compiler;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Configuration;
+using System.Diagnostics;
+using System.Globalization;
+using System.Linq;
+using System.Reflection;
+using System.Resources;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Text;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
+using System.Windows.Input;
+using System.Windows.Markup;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
+using System.Windows.Shapes;
+using System.Windows.Threading;
+using System.Xml;
+using System.Xml.Linq;
+using ATVInterfacesVB;
+using AspenTech.ActivationDashboard.Infrastructure.Compatibility;
+using AspenTech.ActivationDashboard.Infrastructure.Contracts;
+using AspenTech.ActivationDashboard.Infrastructure.Controls;
+using AspenTech.ActivationDashboard.Infrastructure.Properties;
+using AspenTech.Engineering.CommonShellExtensions.Compability;
+using AspenTech.Visualisation.CommonShell;
+using AspenTech.Visualisation.Controls.Support.Commands;
+using Infragistics.Windows.Ribbon;
+using Microsoft.Practices.Composite.Logging;
+using Microsoft.Practices.Composite.Modularity;
+using Microsoft.Practices.Composite.UnityExtensions;
+using Microsoft.Practices.Unity;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyTitle("AspenTech.ActivationDashboard.Infrastructure")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("Aspen Technology, Inc.")]
+[assembly: AssemblyProduct("AspenTech.ActivationDashboard.Infrastructure")]
+[assembly: AssemblyCopyright("Copyright © Aspen Technology, Inc. 2013 - 2024")]
+[assembly: AssemblyTrademark("")]
+[assembly: ComVisible(false)]
+[assembly: ThemeInfo(ResourceDictionaryLocation.None, ResourceDictionaryLocation.SourceAssembly)]
+[assembly: AssemblyFileVersion("41.0.0.19")]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.19")]
+namespace AspenTech.ActivationDashboard.Infrastructure
+{
+	internal class DashboardItemFactory : IDashboardItemFactory
+	{
+		private class RegisteredItem
+		{
+			public Type Type { get; private set; }
+
+			public int Sequence { get; private set; }
+
+			public RegisteredItem(Type type, int sequence)
+			{
+				Type = type;
+				Sequence = sequence;
+			}
+		}
+
+		private readonly IUnityContainer _unityContainer;
+
+		private readonly List<RegisteredItem> _registeredTypes = new List<RegisteredItem>();
+
+		public DashboardItemFactory(IUnityContainer unityContainer)
+		{
+			if (unityContainer == null)
+			{
+				throw new ArgumentNullException("unityContainer");
+			}
+			_unityContainer = unityContainer;
+		}
+
+		public void Register<T>(int sequence = 0) where T : UIElement, IDashboardItem
+		{
+			Type dit = typeof(T);
+			if (!_registeredTypes.Any((RegisteredItem x) => x.Type == dit))
+			{
+				_registeredTypes.Add(new RegisteredItem(dit, sequence));
+			}
+		}
+
+		public IEnumerable<IDashboardItem> CreateItems()
+		{
+			if (_registeredTypes.Count <= 0)
+			{
+				yield break;
+			}
+			IOrderedEnumerable<RegisteredItem> orderedEnumerable = _registeredTypes.OrderBy((RegisteredItem x) => x.Sequence);
+			foreach (RegisteredItem item in orderedEnumerable)
+			{
+				IDashboardItem dashboardItem = null;
+				try
+				{
+					dashboardItem = UnityContainerExtensions.Resolve(_unityContainer, item.Type, Array.Empty<ResolverOverride>()) as IDashboardItem;
+				}
+				catch (Exception ex)
+				{
+					UnityContainerExtensions.Resolve<ILoggerFacade>(_unityContainer, Array.Empty<ResolverOverride>())?.Log(ex.ToString(), Category.Exception, Priority.High);
+				}
+				if (dashboardItem != null)
+				{
+					yield return dashboardItem;
+				}
+			}
+		}
+	}
+	public abstract class DashboardItemModule : IModule
+	{
+		protected IUnityContainer Container { get; private set; }
+
+		protected DashboardItemModule(IUnityContainer container)
+		{
+			if (container == null)
+			{
+				throw new ArgumentNullException("container");
+			}
+			Container = container;
+		}
+
+		public void Initialize()
+		{
+			IDashboardItemFactory factory = UnityContainerExtensions.Resolve<IDashboardItemFactory>(Container, Array.Empty<ResolverOverride>());
+			RegisterDashboardItem(factory);
+			OnInitialized();
+		}
+
+		protected virtual void OnInitialized()
+		{
+		}
+
+		protected abstract void RegisterDashboardItem(IDashboardItemFactory factory);
+	}
+	public class DashboardPanel : UserControl, IWorkspacePersist, IComponentConnector
+	{
+		private readonly IUnityContainer _unityContainer;
+
+		public static readonly DependencyProperty IsExpandedProperty = DependencyProperty.Register("IsExpanded", typeof(bool), typeof(DashboardPanel), new FrameworkPropertyMetadata(true, OnIsExpandedPropertyChanged));
+
+		public static readonly DependencyProperty IsTurnedOffProperty = DependencyProperty.Register("IsTurnedOff", typeof(bool), typeof(DashboardPanel), new FrameworkPropertyMetadata(false, OnIsTurnedOffPropertyChanged));
+
+		public static readonly DependencyProperty IsApplicableProperty = DependencyProperty.Register("IsApplicable", typeof(bool), typeof(DashboardPanel), new FrameworkPropertyMetadata(true, OnIsApplicablePropertyChanged));
+
+		private ICommand _closeCommnad;
+
+		private EventHandler requerySuggested;
+
+		internal Border blankAreaBorder;
+
+		internal Border blankAreaButtonTool;
+
+		internal StackPanel thePanel;
+
+		internal BooleanButtonTool buttonExpandOrCollapse;
+
+		internal ButtonTool buttonClose;
+
+		private bool _contentLoaded;
+
+		public bool IsExpanded
+		{
+			get
+			{
+				return (bool)GetValue(IsExpandedProperty);
+			}
+			set
+			{
+				SetValue(IsExpandedProperty, value);
+			}
+		}
+
+		public bool IsTurnedOff
+		{
+			get
+			{
+				return (bool)GetValue(IsTurnedOffProperty);
+			}
+			set
+			{
+				SetValue(IsTurnedOffProperty, value);
+			}
+		}
+
+		public bool IsApplicable
+		{
+			get
+			{
+				return (bool)GetValue(IsApplicableProperty);
+			}
+			set
+			{
+				SetValue(IsApplicableProperty, value);
+			}
+		}
+
+		public IEnumerable<IDashboardItem> Items
+		{
+			get
+			{
+				foreach (object child in thePanel.Children)
+				{
+					if (child is IDashboardItem)
+					{
+						yield return child as IDashboardItem;
+					}
+				}
+			}
+		}
+
+		public IDashboardPanelAgent Agent => _unityContainer.TryResolve<IDashboardPanelAgent>();
+
+		public ICommand CloseCommand
+		{
+			get
+			{
+				if (_closeCommnad == null)
+				{
+					_closeCommnad = new RelayActionCommand(CloseCommand_Executed);
+				}
+				return _closeCommnad;
+			}
+		}
+
+		private void CloseCommand_Executed()
+		{
+			IsTurnedOff = true;
+		}
+
+		public DashboardPanel(IUnityContainer unityContainer)
+		{
+			if (unityContainer == null)
+			{
+				throw new ArgumentNullException("unityContainer");
+			}
+			_unityContainer = unityContainer;
+			InitializeComponent();
+			BuildItems();
+			UpdateItemsState();
+			UpdateVisibility();
+			SubscribeEvents();
+			requerySuggested = CommandManager_RequerySuggested;
+		}
+
+		private void BuildItems()
+		{
+			foreach (IDashboardItem item in UnityContainerExtensions.Resolve<IDashboardItemFactory>(_unityContainer, Array.Empty<ResolverOverride>()).CreateItems())
+			{
+				if (item is UIElement element)
+				{
+					thePanel.Children.Add(element);
+				}
+			}
+		}
+
+		private void UpdateItemsState()
+		{
+			foreach (IDashboardItem item in Items)
+			{
+				item.IsExpanded = IsExpanded;
+			}
+			buttonExpandOrCollapse.ToolTip = (IsExpanded ? AspenTech.ActivationDashboard.Infrastructure.Properties.Resources.Panel_RightButton_ExpandedTooltip : AspenTech.ActivationDashboard.Infrastructure.Properties.Resources.Panel_RightButton_CollapsedTooltip);
+		}
+
+		private void UpdateVisibility()
+		{
+			if (IsApplicable && !IsTurnedOff)
+			{
+				base.Visibility = Visibility.Visible;
+			}
+			else
+			{
+				base.Visibility = Visibility.Collapsed;
+			}
+		}
+
+		private void SubscribeEvents()
+		{
+			IDashboardPanelAgent agent = Agent;
+			if (agent != null)
+			{
+				agent.SimulatorInputChanged += agent_SimulatorInputChanged;
+				agent.SimulatorRunCompleted += agent_SimulatorRunCompleted;
+				agent.SimulatorCaseOpened += agent_SimulatorCaseOpened;
+				agent.SimulatorCaseClosed += agent_SimulatorCaseClosed;
+			}
+			base.Loaded += DashboardPanel_Loaded;
+			base.Unloaded += DashboardPanel_Unloaded;
+		}
+
+		private void DashboardPanel_Loaded(object sender, RoutedEventArgs e)
+		{
+			CommandManager.RequerySuggested += requerySuggested;
+		}
+
+		private void DashboardPanel_Unloaded(object sender, RoutedEventArgs e)
+		{
+			CommandManager.RequerySuggested -= requerySuggested;
+		}
+
+		private void agent_SimulatorInputChanged(object sender, EventArgs e)
+		{
+			foreach (IDashboardItem item in Items)
+			{
+				item.OnSimulatorInputChanged();
+			}
+		}
+
+		private void agent_SimulatorRunCompleted(object sender, EventArgs e)
+		{
+			foreach (IDashboardItem item in Items)
+			{
+				item.OnSimulatorRunCompleted();
+			}
+		}
+
+		private void agent_SimulatorCaseOpened(object sender, EventArgs e)
+		{
+			foreach (IDashboardItem item in Items)
+			{
+				item.OnSimulatorCaseOpened();
+			}
+		}
+
+		private void agent_SimulatorCaseClosed(object sender, EventArgs e)
+		{
+			foreach (IDashboardItem item in Items)
+			{
+				item.OnSimulatorCaseClosed();
+			}
+		}
+
+		private void blankAreaButtonTool_MouseDown(object sender, MouseButtonEventArgs e)
+		{
+			if (!IsExpanded)
+			{
+				IsExpanded = true;
+			}
+		}
+
+		private void CommandManager_RequerySuggested(object sender, EventArgs e)
+		{
+			foreach (IDashboardItem item in Items)
+			{
+				item.OnCommandManagerRequerySuggested();
+			}
+		}
+
+		void IWorkspacePersist.Restore(object obj)
+		{
+			string text = obj as string;
+			if (string.IsNullOrEmpty(text))
+			{
+				return;
+			}
+			try
+			{
+				XElement xElement = XElement.Parse(text);
+				IsExpanded = XmlConvert.ToBoolean(xElement.Attribute("IsExpanded").Value);
+				XAttribute xAttribute = xElement.Attribute("IsTurnedOff");
+				if (xAttribute == null || string.Equals(xAttribute.Value, "False", StringComparison.CurrentCultureIgnoreCase))
+				{
+					IsTurnedOff = false;
+				}
+				else
+				{
+					IsTurnedOff = true;
+				}
+				int? num = null;
+				XAttribute xAttribute2 = xElement.Attribute("Version");
+				if (xAttribute2 != null)
+				{
+					num = XmlConvert.ToInt16(xAttribute2.Value);
+				}
+				foreach (XElement item in xElement.Elements("Item"))
+				{
+					if (string.IsNullOrEmpty(item.Value))
+					{
+						continue;
+					}
+					string type = item.Attribute("Type").Value;
+					IDashboardItem dashboardItem = Items.FirstOrDefault((IDashboardItem x) => string.Equals(x.GetType().FullName, type, StringComparison.InvariantCulture));
+					if (dashboardItem == null)
+					{
+						continue;
+					}
+					if (num.HasValue)
+					{
+						string text2 = DashboardItemStateManager.Convert(dashboardItem, item.Value, num.Value);
+						if (!string.IsNullOrEmpty(text2))
+						{
+							dashboardItem.RestoreState(text2);
+						}
+					}
+					else
+					{
+						dashboardItem.RestoreState(item.Value);
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+				Log(ex);
+			}
+		}
+
+		object IWorkspacePersist.Save()
+		{
+			IDashboardPanelAgent agent = Agent;
+			if (agent == null)
+			{
+				return null;
+			}
+			if (!agent.ShouldPersistState)
+			{
+				return null;
+			}
+			XElement xElement = new XElement("DashboardPanel");
+			xElement.SetAttributeValue("IsExpanded", IsExpanded);
+			xElement.SetAttributeValue("IsTurnedOff", IsTurnedOff);
+			int? currentAppVersion = GetCurrentAppVersion();
+			if (currentAppVersion.HasValue)
+			{
+				xElement.SetAttributeValue("Version", currentAppVersion.Value);
+			}
+			foreach (IDashboardItem item in Items)
+			{
+				XElement xElement2 = new XElement("Item");
+				xElement2.SetAttributeValue("Type", item.GetType().FullName);
+				string value = item.SaveState();
+				if (!string.IsNullOrEmpty(value))
+				{
+					xElement2.SetValue(value);
+				}
+				xElement.Add(xElement2);
+			}
+			return xElement.ToString();
+		}
+
+		private int? GetCurrentAppVersion()
+		{
+			return Agent?.CurrentApplicationVersion;
+		}
+
+		protected void Log(Exception ex)
+		{
+			if (ex != null)
+			{
+				Log(ex.Message + "\n" + ex.StackTrace);
+			}
+		}
+
+		protected void Log(string message)
+		{
+			if (!string.IsNullOrEmpty(message) && _unityContainer != null)
+			{
+				UnityContainerExtensions.Resolve<ILoggerFacade>(_unityContainer, Array.Empty<ResolverOverride>())?.Log(message, Category.Exception, Priority.High);
+			}
+		}
+
+		private static void OnIsExpandedPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			(d as DashboardPanel).UpdateItemsState();
+		}
+
+		private static void OnIsTurnedOffPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			(d as DashboardPanel).UpdateVisibility();
+		}
+
+		private static void OnIsApplicablePropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			(d as DashboardPanel).UpdateVisibility();
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/AspenTech.ActivationDashboard.Infrastructure;component/dashboardpanel.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		internal Delegate _CreateDelegate(Type delegateType, string handler)
+		{
+			return Delegate.CreateDelegate(delegateType, this, handler);
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			switch (connectionId)
+			{
+			case 1:
+				blankAreaBorder = (Border)target;
+				break;
+			case 2:
+				blankAreaButtonTool = (Border)target;
+				blankAreaButtonTool.MouseDown += blankAreaButtonTool_MouseDown;
+				break;
+			case 3:
+				thePanel = (StackPanel)target;
+				break;
+			case 4:
+				buttonExpandOrCollapse = (BooleanButtonTool)target;
+				break;
+			case 5:
+				buttonClose = (ButtonTool)target;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+	[Module(ModuleName = "AspenTech.ActivationDashboard.Infrastructure.Module")]
+	public class Module : IModule
+	{
+		public const string ModuleName = "AspenTech.ActivationDashboard.Infrastructure.Module";
+
+		private readonly IUnityContainer _unityContainer;
+
+		public Module(IUnityContainer unityContainer)
+		{
+			if (unityContainer == null)
+			{
+				throw new ArgumentNullException("unityContainer");
+			}
+			_unityContainer = unityContainer;
+		}
+
+		public void Initialize()
+		{
+			//IL_0006: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0015: Expected O, but got Unknown
+			UnityContainerExtensions.RegisterType<IDashboardItemFactory, DashboardItemFactory>(_unityContainer, (LifetimeManager)new ContainerControlledLifetimeManager(), Array.Empty<InjectionMember>());
+			UnityContainerExtensions.Resolve<IScreenConverterCatalog>(_unityContainer, Array.Empty<ResolverOverride>()).Register<DashboardScreenDataConverterV30>();
+			UnityContainerExtensions.Resolve<IScreenConverterCatalog>(_unityContainer, Array.Empty<ResolverOverride>()).Register<DashboardScreenDataConverterV34>();
+		}
+	}
+}
+namespace AspenTech.ActivationDashboard.Infrastructure.Properties
+{
+	[GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
+	[DebuggerNonUserCode]
+	[CompilerGenerated]
+	public class Resources
+	{
+		private static ResourceManager resourceMan;
+
+		private static CultureInfo resourceCulture;
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		public static ResourceManager ResourceManager
+		{
+			get
+			{
+				if (resourceMan == null)
+				{
+					resourceMan = new ResourceManager("AspenTech.ActivationDashboard.Infrastructure.Properties.Resources", typeof(Resources).Assembly);
+				}
+				return resourceMan;
+			}
+		}
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		public static CultureInfo Culture
+		{
+			get
+			{
+				return resourceCulture;
+			}
+			set
+			{
+				resourceCulture = value;
+			}
+		}
+
+		public static string EmptyGraySpace_Tooltip => ResourceManager.GetString("EmptyGraySpace_Tooltip", resourceCulture);
+
+		public static string OnOffButtonControl_DisabledText => ResourceManager.GetString("OnOffButtonControl_DisabledText", resourceCulture);
+
+		public static string OnOffButtonControl_OffText => ResourceManager.GetString("OnOffButtonControl_OffText", resourceCulture);
+
+		public static string OnOffButtonControl_OnText => ResourceManager.GetString("OnOffButtonControl_OnText", resourceCulture);
+
+		public static string Panel_CollapsedLabel => ResourceManager.GetString("Panel_CollapsedLabel", resourceCulture);
+
+		public static string Panel_RightButton_CloseTooltip => ResourceManager.GetString("Panel_RightButton_CloseTooltip", resourceCulture);
+
+		public static string Panel_RightButton_CollapsedTooltip => ResourceManager.GetString("Panel_RightButton_CollapsedTooltip", resourceCulture);
+
+		public static string Panel_RightButton_ExpandedTooltip => ResourceManager.GetString("Panel_RightButton_ExpandedTooltip", resourceCulture);
+
+		internal Resources()
+		{
+		}
+	}
+	[CompilerGenerated]
+	[GeneratedCode("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "16.10.0.0")]
+	internal sealed class Settings : ApplicationSettingsBase
+	{
+		private static Settings defaultInstance = (Settings)SettingsBase.Synchronized(new Settings());
+
+		public static Settings Default => defaultInstance;
+	}
+}
+namespace AspenTech.ActivationDashboard.Infrastructure.DashboardItems
+{
+	public class ContentDashboardItem : Control, IDashboardItem
+	{
+		public static readonly DependencyProperty IsExpandedProperty;
+
+		public static readonly DependencyProperty IsReadyProperty;
+
+		public static readonly DependencyProperty TitleProperty;
+
+		public static readonly DependencyProperty CollapsedContentProperty;
+
+		public static readonly DependencyProperty CollapsedContentTemplateProperty;
+
+		public static readonly DependencyProperty ExpandedContentProperty;
+
+		public static readonly DependencyProperty ExpandedContentTemplateProperty;
+
+		public static readonly DependencyProperty ExpandedContentBackgroundProperty;
+
+		public static readonly DependencyProperty CollapsedContentBackgroundProperty;
+
+		public static readonly DependencyProperty ExpandedContentFontSizeIncrementProperty;
+
+		private Point? _downPos;
+
+		private List<IDashboardItemStateConverter> _converterList;
+
+		public bool IsExpanded
+		{
+			get
+			{
+				return (bool)GetValue(IsExpandedProperty);
+			}
+			set
+			{
+				SetValue(IsExpandedProperty, value);
+			}
+		}
+
+		public bool IsReady
+		{
+			get
+			{
+				return (bool)GetValue(IsReadyProperty);
+			}
+			set
+			{
+				SetValue(IsReadyProperty, value);
+			}
+		}
+
+		public string Title
+		{
+			get
+			{
+				return (string)GetValue(TitleProperty);
+			}
+			set
+			{
+				SetValue(TitleProperty, value);
+			}
+		}
+
+		public object CollapsedContent
+		{
+			get
+			{
+				return GetValue(CollapsedContentProperty);
+			}
+			set
+			{
+				SetValue(CollapsedContentProperty, value);
+			}
+		}
+
+		public DataTemplate CollapsedContentTemplate
+		{
+			get
+			{
+				return (DataTemplate)GetValue(CollapsedContentTemplateProperty);
+			}
+			set
+			{
+				SetValue(CollapsedContentTemplateProperty, value);
+			}
+		}
+
+		public object ExpandedContent
+		{
+			get
+			{
+				return GetValue(ExpandedContentProperty);
+			}
+			set
+			{
+				SetValue(ExpandedContentProperty, value);
+			}
+		}
+
+		public DataTemplate ExpandedContentTemplate
+		{
+			get
+			{
+				return (DataTemplate)GetValue(ExpandedContentTemplateProperty);
+			}
+			set
+			{
+				SetValue(ExpandedContentTemplateProperty, value);
+			}
+		}
+
+		public Brush ExpandedContentBackground
+		{
+			get
+			{
+				return (Brush)GetValue(ExpandedContentBackgroundProperty);
+			}
+			set
+			{
+				SetValue(ExpandedContentBackgroundProperty, value);
+			}
+		}
+
+		public Brush CollapsedContentBackground
+		{
+			get
+			{
+				return (Brush)GetValue(CollapsedContentBackgroundProperty);
+			}
+			set
+			{
+				SetValue(CollapsedContentBackgroundProperty, value);
+			}
+		}
+
+		public double ExpandedContentFontSizeIncrement
+		{
+			get
+			{
+				return (double)GetValue(ExpandedContentFontSizeIncrementProperty);
+			}
+			set
+			{
+				SetValue(ExpandedContentFontSizeIncrementProperty, value);
+			}
+		}
+
+		bool IDashboardItem.IsExpanded
+		{
+			get
+			{
+				return IsExpanded;
+			}
+			set
+			{
+				IsExpanded = value;
+			}
+		}
+
+		IEnumerable<IDashboardItemStateConverter> IDashboardItem.Converters
+		{
+			get
+			{
+				if (_converterList == null)
+				{
+					_converterList = new List<IDashboardItemStateConverter>();
+					IEnumerable<IDashboardItemStateConverter> stateConverters = GetStateConverters();
+					if (stateConverters != null)
+					{
+						_converterList.AddRange(stateConverters);
+					}
+				}
+				return _converterList;
+			}
+		}
+
+		static ContentDashboardItem()
+		{
+			IsExpandedProperty = DependencyProperty.Register("IsExpanded", typeof(bool), typeof(ContentDashboardItem), new FrameworkPropertyMetadata(OnIsExpandedPropertyChanged));
+			IsReadyProperty = DependencyProperty.Register("IsReady", typeof(bool), typeof(ContentDashboardItem), new FrameworkPropertyMetadata(false, OnIsReadyPropertyChanged));
+			TitleProperty = DependencyProperty.Register("Title", typeof(string), typeof(ContentDashboardItem));
+			CollapsedContentProperty = DependencyProperty.Register("CollapsedContent", typeof(object), typeof(ContentDashboardItem));
+			CollapsedContentTemplateProperty = DependencyProperty.Register("CollapsedContentTemplate", typeof(DataTemplate), typeof(ContentDashboardItem));
+			ExpandedContentProperty = DependencyProperty.Register("ExpandedContent", typeof(object), typeof(ContentDashboardItem));
+			ExpandedContentTemplateProperty = DependencyProperty.Register("ExpandedContentTemplate", typeof(DataTemplate), typeof(ContentDashboardItem));
+			ExpandedContentBackgroundProperty = DependencyProperty.Register("ExpandedContentBackground", typeof(Brush), typeof(ContentDashboardItem));
+			CollapsedContentBackgroundProperty = DependencyProperty.Register("CollapsedContentBackground", typeof(Brush), typeof(ContentDashboardItem));
+			ExpandedContentFontSizeIncrementProperty = DependencyProperty.Register("ExpandedContentFontSizeIncrement", typeof(double), typeof(ContentDashboardItem));
+			FrameworkElement.DefaultStyleKeyProperty.OverrideMetadata(typeof(ContentDashboardItem), new FrameworkPropertyMetadata(typeof(ContentDashboardItem)));
+		}
+
+		protected virtual void OnSimulatorInputChanged()
+		{
+		}
+
+		protected virtual void OnSimulatorRunCompleted()
+		{
+		}
+
+		protected virtual void OnSimulatorCaseOpened()
+		{
+		}
+
+		protected virtual void OnSimulatorCaseClosed()
+		{
+		}
+
+		protected virtual string SaveStateOverride()
+		{
+			return null;
+		}
+
+		protected virtual void RestoreStateOverride(string state)
+		{
+		}
+
+		protected virtual IEnumerable<IDashboardItemStateConverter> GetStateConverters()
+		{
+			yield return null;
+		}
+
+		protected virtual void OnIsExpandedChanged(bool oldValue, bool newValue)
+		{
+		}
+
+		protected virtual void OnIsReadyChanged(bool oldValue, bool newValue)
+		{
+		}
+
+		protected virtual void OnCommandManagerRequerySuggested()
+		{
+			bool flag = IsReady_RequerySuggested();
+			if (IsReady != flag)
+			{
+				IsReady = flag;
+			}
+		}
+
+		protected virtual bool IsReady_RequerySuggested()
+		{
+			return IsReady;
+		}
+
+		protected override void OnPreviewMouseLeftButtonDown(MouseButtonEventArgs e)
+		{
+			_downPos = e.GetPosition(this);
+			base.OnPreviewMouseLeftButtonDown(e);
+		}
+
+		protected override void OnPreviewMouseLeftButtonUp(MouseButtonEventArgs e)
+		{
+			if (_downPos.HasValue && (e.GetPosition(this) - _downPos.Value).Length <= 2.0 && !SkipInvokingClick(e.OriginalSource))
+			{
+				OnClicked(e.OriginalSource);
+			}
+			_downPos = null;
+			base.OnPreviewMouseLeftButtonUp(e);
+		}
+
+		private bool SkipInvokingClick(object originalSource)
+		{
+			if (originalSource == null)
+			{
+				return true;
+			}
+			if (originalSource is ButtonBase)
+			{
+				return true;
+			}
+			DependencyObject dependencyObject = originalSource as DependencyObject;
+			while (dependencyObject != null && dependencyObject != this)
+			{
+				if (dependencyObject is OnOffControlBase)
+				{
+					return true;
+				}
+				if (dependencyObject is ButtonBase)
+				{
+					return true;
+				}
+				dependencyObject = VisualTreeHelper.GetParent(dependencyObject);
+			}
+			return false;
+		}
+
+		protected virtual void OnClicked(object originalSource)
+		{
+		}
+
+		public static void ShowOrActivateScreen(IUnityContainer container, string screenFactoryKey)
+		{
+			if (container == null)
+			{
+				throw new ArgumentNullException("container");
+			}
+			if (string.IsNullOrEmpty(screenFactoryKey))
+			{
+				throw new ArgumentException("Parameter screenFactoryKey cannot be null or empty.");
+			}
+			IShellApplication shellApplication = UnityContainerExtensions.Resolve<IShellApplication>(container, Array.Empty<ResolverOverride>());
+			if (shellApplication != null && shellApplication.ActiveWindow != null)
+			{
+				ScreenContentControl screenContentControl = shellApplication.ActiveWindow.FindScreen((ScreenContentControl x) => string.Equals(x.ScreenFactoryKey, screenFactoryKey, StringComparison.InvariantCulture));
+				if (screenContentControl != null)
+				{
+					screenContentControl.Activate();
+					return;
+				}
+				shellApplication.ActiveWindow.ShowScreen(new ShowScreenEventArgs
+				{
+					ScreenFactoryKey = screenFactoryKey,
+					CreateNewTab = true
+				});
+			}
+		}
+
+		private static void OnIsExpandedPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			(d as ContentDashboardItem).OnIsExpandedChanged((bool)e.OldValue, (bool)e.NewValue);
+		}
+
+		private static void OnIsReadyPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			(d as ContentDashboardItem).OnIsReadyChanged((bool)e.OldValue, (bool)e.NewValue);
+		}
+
+		void IDashboardItem.OnSimulatorInputChanged()
+		{
+			OnSimulatorInputChanged();
+		}
+
+		void IDashboardItem.OnSimulatorRunCompleted()
+		{
+			OnSimulatorRunCompleted();
+		}
+
+		void IDashboardItem.OnSimulatorCaseOpened()
+		{
+			OnSimulatorCaseOpened();
+		}
+
+		void IDashboardItem.OnSimulatorCaseClosed()
+		{
+			OnSimulatorCaseClosed();
+		}
+
+		void IDashboardItem.OnCommandManagerRequerySuggested()
+		{
+			OnCommandManagerRequerySuggested();
+		}
+
+		string IDashboardItem.SaveState()
+		{
+			return SaveStateOverride();
+		}
+
+		void IDashboardItem.RestoreState(string state)
+		{
+			RestoreStateOverride(state);
+		}
+	}
+}
+namespace AspenTech.ActivationDashboard.Infrastructure.Events
+{
+	public class EARuningStatusEventArgs : EventArgs
+	{
+		public bool CanGenerate { get; set; }
+	}
+	public class EARuningStatusEvent : RoutedCompositePresentationEvent<EARuningStatusEventArgs>
+	{
+	}
+	public class PrepareForCheckpointEvent : RoutedCompositePresentationEvent<PrepareForCheckpointEventArgs>
+	{
+	}
+	public class PrepareForCheckpointEventArgs : EventArgs
+	{
+	}
+	public class ShowOrHideDashboardEvent : RoutedCompositePresentationEvent<ShowOrHideDashboardEventArgs>
+	{
+	}
+	public class ShowOrHideDashboardEventArgs : EventArgs
+	{
+		public bool IsShow { get; set; }
+
+		public ShowOrHideDashboardEventArgs(bool isShow)
+		{
+			IsShow = isShow;
+		}
+	}
+}
+namespace AspenTech.ActivationDashboard.Infrastructure.Converters
+{
+	public class DoubleValueSumConverter : IMultiValueConverter
+	{
+		public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+		{
+			if (values != null)
+			{
+				double num = 0.0;
+				foreach (object obj in values)
+				{
+					if (obj is double)
+					{
+						num += (double)obj;
+					}
+				}
+				return num;
+			}
+			return 0.0;
+		}
+
+		public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+		{
+			throw new NotImplementedException();
+		}
+	}
+	[ValueConversion(typeof(bool), typeof(Visibility))]
+	public class BooleanToVisibilityInverseConverter : IValueConverter
+	{
+		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			if (value != null && value != DependencyProperty.UnsetValue && value is bool)
+			{
+				return ((bool)value) ? Visibility.Collapsed : Visibility.Visible;
+			}
+			return Visibility.Collapsed;
+		}
+
+		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			throw new NotImplementedException();
+		}
+	}
+	public class EDRActivateUnitConverter
+	{
+		private class EDRActivateUnitConversionFactor
+		{
+			internal double Factor { get; private set; }
+
+			internal double Offset { get; private set; }
+
+			internal EDRActivateUnitConversionFactor(double factor, double offset)
+			{
+				Factor = factor;
+				Offset = offset;
+			}
+		}
+
+		private class EDRActivateUnitData
+		{
+			private static Dictionary<EDRActivateQuantityType, Dictionary<string, EDRActivateUnitConversionFactor>> _AspenPlusUnitTable;
+
+			private static Dictionary<EDRActivateQuantityType, string> _AspenPlusCalculationUnitDic;
+
+			static EDRActivateUnitData()
+			{
+				InitializeAspenPlusUOM();
+			}
+
+			internal static string GetCalculationUnit(EDRActivateSimulatorType siumlatorType, EDRActivateQuantityType qtID)
+			{
+				string result = null;
+				if (siumlatorType == EDRActivateSimulatorType.AspenPlus)
+				{
+					if (!_AspenPlusCalculationUnitDic.ContainsKey(qtID))
+					{
+						throw new KeyNotFoundException($"\"{qtID}\" is not included in unit converter system.");
+					}
+					result = _AspenPlusCalculationUnitDic[qtID];
+				}
+				return result;
+			}
+
+			internal static List<string> GetUnitNameList(EDRActivateSimulatorType siumlatorType, EDRActivateQuantityType qtID)
+			{
+				if (qtID == EDRActivateQuantityType.None)
+				{
+					return new List<string>();
+				}
+				List<string> result = null;
+				if (siumlatorType == EDRActivateSimulatorType.AspenPlus)
+				{
+					if (!_AspenPlusUnitTable.ContainsKey(qtID))
+					{
+						throw new KeyNotFoundException($"\"{qtID}\" is not included in unit converter system.");
+					}
+					result = _AspenPlusUnitTable[qtID].Keys.ToList();
+				}
+				return result;
+			}
+
+			internal static Dictionary<string, EDRActivateUnitConversionFactor> GetUnitFactorList(EDRActivateSimulatorType siumlatorType, EDRActivateQuantityType qtID)
+			{
+				Dictionary<string, EDRActivateUnitConversionFactor> result = null;
+				if (siumlatorType == EDRActivateSimulatorType.AspenPlus)
+				{
+					if (!_AspenPlusUnitTable.ContainsKey(qtID))
+					{
+						throw new KeyNotFoundException($"\"{qtID}\" is not included in unit converter system.");
+					}
+					result = _AspenPlusUnitTable[qtID];
+				}
+				return result;
+			}
+
+			private static void InitializeAspenPlusUOM()
+			{
+				_AspenPlusUnitTable = new Dictionary<EDRActivateQuantityType, Dictionary<string, EDRActivateUnitConversionFactor>>();
+				_AspenPlusCalculationUnitDic = new Dictionary<EDRActivateQuantityType, string>();
+				_AspenPlusCalculationUnitDic.Add(EDRActivateQuantityType.Temperature, "K");
+				_AspenPlusCalculationUnitDic.Add(EDRActivateQuantityType.Pressure, "N/sqm");
+				_AspenPlusCalculationUnitDic.Add(EDRActivateQuantityType.MassFlow, "kg/sec");
+				_AspenPlusCalculationUnitDic.Add(EDRActivateQuantityType.MoleFlow, "kmol/sec");
+				_AspenPlusCalculationUnitDic.Add(EDRActivateQuantityType.VolumFlow, "cum/sec");
+				_AspenPlusCalculationUnitDic.Add(EDRActivateQuantityType.MoleEnthalpy, "J/kmol");
+				_AspenPlusCalculationUnitDic.Add(EDRActivateQuantityType.Time, "sec");
+				_AspenPlusCalculationUnitDic.Add(EDRActivateQuantityType.MassEnthalpy, "J/kg");
+				_AspenPlusCalculationUnitDic.Add(EDRActivateQuantityType.DeltaTemperature, "K");
+				_AspenPlusCalculationUnitDic.Add(EDRActivateQuantityType.DeltaPressure, "N/sqm");
+				_AspenPlusCalculationUnitDic.Add(EDRActivateQuantityType.Area, "sqm");
+				_AspenPlusCalculationUnitDic.Add(EDRActivateQuantityType.HeatLoad, "Watt");
+				Dictionary<string, EDRActivateUnitConversionFactor> dictionary = new Dictionary<string, EDRActivateUnitConversionFactor>();
+				dictionary.Add("sqm", new EDRActivateUnitConversionFactor(1.0, 0.0));
+				dictionary.Add("sqft", new EDRActivateUnitConversionFactor(0.09290304, 0.0));
+				dictionary.Add("sqcm", new EDRActivateUnitConversionFactor(0.0001, 0.0));
+				dictionary.Add("sqin", new EDRActivateUnitConversionFactor(0.00064516, 0.0));
+				dictionary.Add("sqmile", new EDRActivateUnitConversionFactor(2589988.110336, 0.0));
+				dictionary.Add("sqmm", new EDRActivateUnitConversionFactor(1E-06, 0.0));
+				_AspenPlusUnitTable.Add(EDRActivateQuantityType.Area, dictionary);
+				Dictionary<string, EDRActivateUnitConversionFactor> dictionary2 = new Dictionary<string, EDRActivateUnitConversionFactor>();
+				dictionary2.Add("Watt", new EDRActivateUnitConversionFactor(1.0, 0.0));
+				dictionary2.Add("Btu/hr", new EDRActivateUnitConversionFactor(0.293071070172222, 0.0));
+				dictionary2.Add("cal/sec", new EDRActivateUnitConversionFactor(4.1868, 0.0));
+				dictionary2.Add("J/sec", new EDRActivateUnitConversionFactor(1.0, 0.0));
+				dictionary2.Add("GJ/hr", new EDRActivateUnitConversionFactor(277777.777777778, 0.0));
+				dictionary2.Add("kcal/hr", new EDRActivateUnitConversionFactor(1.163, 0.0));
+				dictionary2.Add("MMkcal/hr", new EDRActivateUnitConversionFactor(1163000.0, 0.0));
+				dictionary2.Add("MMBtu/hr", new EDRActivateUnitConversionFactor(293071.070172222, 0.0));
+				dictionary2.Add("MMkcal/day", new EDRActivateUnitConversionFactor(48458.3333333333, 0.0));
+				dictionary2.Add("MMBtu/day", new EDRActivateUnitConversionFactor(12211.2945905093, 0.0));
+				dictionary2.Add("Pcu/hr", new EDRActivateUnitConversionFactor(0.527527949444444, 0.0));
+				dictionary2.Add("MMPcu/hr", new EDRActivateUnitConversionFactor(527527.949444445, 0.0));
+				dictionary2.Add("kJ/sec", new EDRActivateUnitConversionFactor(1000.0, 0.0));
+				dictionary2.Add("kW", new EDRActivateUnitConversionFactor(1000.0, 0.0));
+				dictionary2.Add("MW", new EDRActivateUnitConversionFactor(1000000.0, 0.0));
+				dictionary2.Add("GW", new EDRActivateUnitConversionFactor(1000000000.0, 0.0));
+				dictionary2.Add("MJ/hr", new EDRActivateUnitConversionFactor(277.777777777778, 0.0));
+				dictionary2.Add("Gcal/hr", new EDRActivateUnitConversionFactor(1163000.0, 0.0));
+				dictionary2.Add("MBtu/hr", new EDRActivateUnitConversionFactor(293.071070172222, 0.0));
+				dictionary2.Add("Gcal/day", new EDRActivateUnitConversionFactor(48458.3333333333, 0.0));
+				dictionary2.Add("Mcal/hr", new EDRActivateUnitConversionFactor(1163.0, 0.0));
+				dictionary2.Add("kJ/hr", new EDRActivateUnitConversionFactor(0.277777777777778, 0.0));
+				_AspenPlusUnitTable.Add(EDRActivateQuantityType.HeatLoad, dictionary2);
+				Dictionary<string, EDRActivateUnitConversionFactor> dictionary3 = new Dictionary<string, EDRActivateUnitConversionFactor>();
+				dictionary3.Add("K", new EDRActivateUnitConversionFactor(1.0, 0.0));
+				dictionary3.Add("F", new EDRActivateUnitConversionFactor(0.555555555555556, 255.372222222222));
+				dictionary3.Add("C", new EDRActivateUnitConversionFactor(1.0, 273.15));
+				dictionary3.Add("R", new EDRActivateUnitConversionFactor(0.555555555555556, 0.0));
+				_AspenPlusUnitTable.Add(EDRActivateQuantityType.Temperature, dictionary3);
+				Dictionary<string, EDRActivateUnitConversionFactor> dictionary4 = new Dictionary<string, EDRActivateUnitConversionFactor>();
+				dictionary4.Add("N/sqm", new EDRActivateUnitConversionFactor(1.0, 0.0));
+				dictionary4.Add("psia", new EDRActivateUnitConversionFactor(6894.75729316836, 0.0));
+				dictionary4.Add("atm", new EDRActivateUnitConversionFactor(101325.0, 0.0));
+				dictionary4.Add("lbf/sqft", new EDRActivateUnitConversionFactor(47.8802589803359, 0.0));
+				dictionary4.Add("bar", new EDRActivateUnitConversionFactor(100000.0, 0.0));
+				dictionary4.Add("torr", new EDRActivateUnitConversionFactor(133.322368421053, 0.0));
+				dictionary4.Add("in-water", new EDRActivateUnitConversionFactor(249.0889, 0.0));
+				dictionary4.Add("kg/sqcm", new EDRActivateUnitConversionFactor(98066.5, 0.0));
+				dictionary4.Add("mmHg", new EDRActivateUnitConversionFactor(133.322368421053, 0.0));
+				dictionary4.Add("kPa", new EDRActivateUnitConversionFactor(1000.0, 0.0));
+				dictionary4.Add("mm-water", new EDRActivateUnitConversionFactor(9.80665, 0.0));
+				dictionary4.Add("mbar", new EDRActivateUnitConversionFactor(100.0, 0.0));
+				dictionary4.Add("psig", new EDRActivateUnitConversionFactor(6894.75729316836, -99999.0));
+				dictionary4.Add("atmg", new EDRActivateUnitConversionFactor(101325.0, -99999.0));
+				dictionary4.Add("barg", new EDRActivateUnitConversionFactor(100000.0, -99999.0));
+				dictionary4.Add("kg/sqcmg", new EDRActivateUnitConversionFactor(98066.5, -99999.0));
+				dictionary4.Add("lb/ft-sqsec", new EDRActivateUnitConversionFactor(1.48816394356955, 0.0));
+				dictionary4.Add("kg/m-sqsec", new EDRActivateUnitConversionFactor(1.0, 0.0));
+				dictionary4.Add("Pa", new EDRActivateUnitConversionFactor(1.0, 0.0));
+				dictionary4.Add("MPa", new EDRActivateUnitConversionFactor(1000000.0, 0.0));
+				dictionary4.Add("Pag", new EDRActivateUnitConversionFactor(1.0, -99999.0));
+				dictionary4.Add("kPag", new EDRActivateUnitConversionFactor(1000.0, -99999.0));
+				dictionary4.Add("MPag", new EDRActivateUnitConversionFactor(1000000.0, -99999.0));
+				dictionary4.Add("Mbarg", new EDRActivateUnitConversionFactor(100.0, -99999.0));
+				dictionary4.Add("in-Hg", new EDRActivateUnitConversionFactor(3386.38815789474, 0.0));
+				dictionary4.Add("mmHg-vac", new EDRActivateUnitConversionFactor(-133.322368421053, -99999.0));
+				dictionary4.Add("in-Hg-vac", new EDRActivateUnitConversionFactor(-3386.38815789474, -99999.0));
+				dictionary4.Add("in-water-60F", new EDRActivateUnitConversionFactor(248.84, 0.0));
+				dictionary4.Add("in-water-vac", new EDRActivateUnitConversionFactor(-249.0889, -99999.0));
+				dictionary4.Add("in-water-60F-vac", new EDRActivateUnitConversionFactor(-248.84, -99999.0));
+				dictionary4.Add("in-water-g", new EDRActivateUnitConversionFactor(249.0889, -99999.0));
+				dictionary4.Add("in-water-60F-g", new EDRActivateUnitConversionFactor(248.84, -99999.0));
+				dictionary4.Add("mm-water-g", new EDRActivateUnitConversionFactor(9.80665, -99999.0));
+				dictionary4.Add("mm-water-60F-g", new EDRActivateUnitConversionFactor(9.79685039370079, -99999.0));
+				dictionary4.Add("psi", new EDRActivateUnitConversionFactor(6894.75729316836, 0.0));
+				dictionary4.Add("mm-water-60F", new EDRActivateUnitConversionFactor(9.79685039370079, 0.0));
+				dictionary4.Add("bara", new EDRActivateUnitConversionFactor(100000.0, 0.0));
+				_AspenPlusUnitTable.Add(EDRActivateQuantityType.Pressure, dictionary4);
+				Dictionary<string, EDRActivateUnitConversionFactor> dictionary5 = new Dictionary<string, EDRActivateUnitConversionFactor>();
+				dictionary5.Add("kg/sec", new EDRActivateUnitConversionFactor(1.0, 0.0));
+				dictionary5.Add("lb/hr", new EDRActivateUnitConversionFactor(0.000125997880555556, 0.0));
+				dictionary5.Add("kg/hr", new EDRActivateUnitConversionFactor(0.000277777777777778, 0.0));
+				dictionary5.Add("lb/sec", new EDRActivateUnitConversionFactor(0.45359237, 0.0));
+				dictionary5.Add("Mlb/hr", new EDRActivateUnitConversionFactor(0.125997880555556, 0.0));
+				dictionary5.Add("tons/day", new EDRActivateUnitConversionFactor(0.0104998233796296, 0.0));
+				dictionary5.Add("gm/sec", new EDRActivateUnitConversionFactor(0.001, 0.0));
+				dictionary5.Add("tonne/hr", new EDRActivateUnitConversionFactor(0.277777777777778, 0.0));
+				dictionary5.Add("lb/day", new EDRActivateUnitConversionFactor(5.24991168981482E-06, 0.0));
+				dictionary5.Add("kg/day", new EDRActivateUnitConversionFactor(1.15740740740741E-05, 0.0));
+				dictionary5.Add("tons/year", new EDRActivateUnitConversionFactor(2.8746949704667E-05, 0.0));
+				dictionary5.Add("tons/hr", new EDRActivateUnitConversionFactor(0.251995761111111, 0.0));
+				dictionary5.Add("tonne/day", new EDRActivateUnitConversionFactor(0.0115740740740741, 0.0));
+				dictionary5.Add("tonne/year", new EDRActivateUnitConversionFactor(3.16880878140289E-05, 0.0));
+				dictionary5.Add("kg/min", new EDRActivateUnitConversionFactor(0.0166666666666667, 0.0));
+				dictionary5.Add("kg/year", new EDRActivateUnitConversionFactor(3.16880878140289E-08, 0.0));
+				dictionary5.Add("gm/min", new EDRActivateUnitConversionFactor(1.66666666666667E-05, 0.0));
+				dictionary5.Add("gm/hr", new EDRActivateUnitConversionFactor(2.77777777777778E-07, 0.0));
+				dictionary5.Add("gm/day", new EDRActivateUnitConversionFactor(1.15740740740741E-08, 0.0));
+				dictionary5.Add("Mgm/hr", new EDRActivateUnitConversionFactor(0.277777777777778, 0.0));
+				dictionary5.Add("Ggm/hr", new EDRActivateUnitConversionFactor(277.777777777778, 0.0));
+				dictionary5.Add("Mgm/day", new EDRActivateUnitConversionFactor(0.0115740740740741, 0.0));
+				dictionary5.Add("Ggm/day", new EDRActivateUnitConversionFactor(11.5740740740741, 0.0));
+				dictionary5.Add("lb/min", new EDRActivateUnitConversionFactor(0.00755987283333333, 0.0));
+				dictionary5.Add("MMlb/hr", new EDRActivateUnitConversionFactor(125.997880555556, 0.0));
+				dictionary5.Add("Mlb/day", new EDRActivateUnitConversionFactor(0.00524991168981481, 0.0));
+				dictionary5.Add("MMlb/day", new EDRActivateUnitConversionFactor(5.24991168981482, 0.0));
+				dictionary5.Add("lb/year", new EDRActivateUnitConversionFactor(1.43734748523335E-08, 0.0));
+				dictionary5.Add("Mlb/year", new EDRActivateUnitConversionFactor(1.43734748523335E-05, 0.0));
+				dictionary5.Add("MMlb/year", new EDRActivateUnitConversionFactor(0.0143734748523335, 0.0));
+				dictionary5.Add("tons/min", new EDRActivateUnitConversionFactor(15.1197456666667, 0.0));
+				dictionary5.Add("Mtons/year", new EDRActivateUnitConversionFactor(0.028746949704667, 0.0));
+				dictionary5.Add("MMtons/year", new EDRActivateUnitConversionFactor(28.746949704667, 0.0));
+				dictionary5.Add("L-tons/min", new EDRActivateUnitConversionFactor(16.9341151466667, 0.0));
+				dictionary5.Add("L-tons/hr", new EDRActivateUnitConversionFactor(0.282235252444444, 0.0));
+				dictionary5.Add("L-tons/day", new EDRActivateUnitConversionFactor(0.0117598021851852, 0.0));
+				dictionary5.Add("ML-tons/year", new EDRActivateUnitConversionFactor(0.0321965836692271, 0.0));
+				dictionary5.Add("MML-tons/year", new EDRActivateUnitConversionFactor(32.1965836692271, 0.0));
+				dictionary5.Add("ktonne/year", new EDRActivateUnitConversionFactor(0.031688087814029, 0.0));
+				dictionary5.Add("tons/oper-year", new EDRActivateUnitConversionFactor(2.8746949704667E-05, -99999.0));
+				dictionary5.Add("tonne/oper-year", new EDRActivateUnitConversionFactor(3.16880878140289E-05, -99999.0));
+				dictionary5.Add("kg/oper-year", new EDRActivateUnitConversionFactor(3.16880878140289E-08, -99999.0));
+				dictionary5.Add("lb/oper-year", new EDRActivateUnitConversionFactor(1.43734748523335E-08, -99999.0));
+				dictionary5.Add("Mlb/oper-year", new EDRActivateUnitConversionFactor(1.43734748523335E-05, -99999.0));
+				dictionary5.Add("MMlb/oper-year", new EDRActivateUnitConversionFactor(0.0143734748523335, -99999.0));
+				dictionary5.Add("Mtons/oper-year", new EDRActivateUnitConversionFactor(0.028746949704667, -99999.0));
+				dictionary5.Add("MMtons/oper-year", new EDRActivateUnitConversionFactor(28.746949704667, -99999.0));
+				dictionary5.Add("ML-tons/oper-year", new EDRActivateUnitConversionFactor(0.0321965836692271, -99999.0));
+				dictionary5.Add("MML-tons/oper-year", new EDRActivateUnitConversionFactor(32.1965836692271, -99999.0));
+				dictionary5.Add("ktonne/oper-year", new EDRActivateUnitConversionFactor(0.031688087814029, -99999.0));
+				_AspenPlusUnitTable.Add(EDRActivateQuantityType.MassFlow, dictionary5);
+				Dictionary<string, EDRActivateUnitConversionFactor> dictionary6 = new Dictionary<string, EDRActivateUnitConversionFactor>();
+				dictionary6.Add("kmol/sec", new EDRActivateUnitConversionFactor(1.0, 0.0));
+				dictionary6.Add("lbmol/hr", new EDRActivateUnitConversionFactor(0.000125997880555556, 0.0));
+				dictionary6.Add("kmol/hr", new EDRActivateUnitConversionFactor(0.000277777777777778, 0.0));
+				dictionary6.Add("MMscfh", new EDRActivateUnitConversionFactor(0.33202532796316, 0.0));
+				dictionary6.Add("MMscmh", new EDRActivateUnitConversionFactor(12.3930656071826, 0.0));
+				dictionary6.Add("mol/sec", new EDRActivateUnitConversionFactor(0.001, 0.0));
+				dictionary6.Add("lbmol/sec", new EDRActivateUnitConversionFactor(0.45359237, 0.0));
+				dictionary6.Add("scmh", new EDRActivateUnitConversionFactor(1.23930656071826E-05, 0.0));
+				dictionary6.Add("lbmol/day", new EDRActivateUnitConversionFactor(5.24991168981482E-06, 0.0));
+				dictionary6.Add("kmol/day", new EDRActivateUnitConversionFactor(1.15740740740741E-05, 0.0));
+				dictionary6.Add("MMscfd", new EDRActivateUnitConversionFactor(0.0138343886651317, 0.0));
+				dictionary6.Add("Mscfd", new EDRActivateUnitConversionFactor(1.38343886651317E-05, 0.0));
+				dictionary6.Add("scfm", new EDRActivateUnitConversionFactor(1.99215196777896E-05, 0.0));
+				dictionary6.Add("mol/min", new EDRActivateUnitConversionFactor(1.66666666666667E-05, 0.0));
+				dictionary6.Add("kmol/khr", new EDRActivateUnitConversionFactor(2.77777777777778E-07, 0.0));
+				dictionary6.Add("kmol/Mhr", new EDRActivateUnitConversionFactor(2.77777777777778E-10, 0.0));
+				dictionary6.Add("mol/hr", new EDRActivateUnitConversionFactor(2.77777777777778E-07, 0.0));
+				dictionary6.Add("Mmol/hr", new EDRActivateUnitConversionFactor(0.277777777777778, 0.0));
+				dictionary6.Add("Mlbmol/hr", new EDRActivateUnitConversionFactor(0.125997880555556, 0.0));
+				dictionary6.Add("lbmol/Mhr", new EDRActivateUnitConversionFactor(1.25997880555556E-07, 0.0));
+				dictionary6.Add("lbmol/MMhr", new EDRActivateUnitConversionFactor(1.25997880555556E-10, 0.0));
+				dictionary6.Add("Mscfm", new EDRActivateUnitConversionFactor(0.0199215196777896, 0.0));
+				dictionary6.Add("scfh", new EDRActivateUnitConversionFactor(3.3202532796316E-07, 0.0));
+				dictionary6.Add("Mscfh", new EDRActivateUnitConversionFactor(0.00033202532796316, 0.0));
+				dictionary6.Add("scfd", new EDRActivateUnitConversionFactor(1.38343886651317E-08, 0.0));
+				dictionary6.Add("ncmh", new EDRActivateUnitConversionFactor(1.23930656071826E-05, 0.0));
+				dictionary6.Add("ncmd", new EDRActivateUnitConversionFactor(5.1637773363261E-07, 0.0));
+				dictionary6.Add("kmol/min", new EDRActivateUnitConversionFactor(0.0166666666666667, 0.0));
+				dictionary6.Add("kmol/week", new EDRActivateUnitConversionFactor(1.65343915343915E-06, 0.0));
+				dictionary6.Add("kmol/month", new EDRActivateUnitConversionFactor(3.80257053768347E-07, 0.0));
+				dictionary6.Add("kmol/year", new EDRActivateUnitConversionFactor(3.16880878140289E-08, 0.0));
+				dictionary6.Add("kmol/oper-year", new EDRActivateUnitConversionFactor(3.16880878140289E-08, -99999.0));
+				_AspenPlusUnitTable.Add(EDRActivateQuantityType.MoleFlow, dictionary6);
+				Dictionary<string, EDRActivateUnitConversionFactor> dictionary7 = new Dictionary<string, EDRActivateUnitConversionFactor>();
+				dictionary7.Add("cum/sec", new EDRActivateUnitConversionFactor(1.0, 0.0));
+				dictionary7.Add("cuft/hr", new EDRActivateUnitConversionFactor(7.86579072E-06, 0.0));
+				dictionary7.Add("l/min", new EDRActivateUnitConversionFactor(1.66666666666667E-05, 0.0));
+				dictionary7.Add("gal/min", new EDRActivateUnitConversionFactor(6.30901964E-05, 0.0));
+				dictionary7.Add("gal/hr", new EDRActivateUnitConversionFactor(1.05150327333333E-06, 0.0));
+				dictionary7.Add("bbl/day", new EDRActivateUnitConversionFactor(1.84013072833333E-06, 0.0));
+				dictionary7.Add("cum/hr", new EDRActivateUnitConversionFactor(0.000277777777777778, 0.0));
+				dictionary7.Add("cuft/min", new EDRActivateUnitConversionFactor(0.0004719474432, 0.0));
+				dictionary7.Add("bbl/hr", new EDRActivateUnitConversionFactor(4.416313748E-05, 0.0));
+				dictionary7.Add("cuft/sec", new EDRActivateUnitConversionFactor(0.028316846592, 0.0));
+				dictionary7.Add("cum/day", new EDRActivateUnitConversionFactor(1.15740740740741E-05, 0.0));
+				dictionary7.Add("cum/year", new EDRActivateUnitConversionFactor(3.16880878140289E-08, 0.0));
+				dictionary7.Add("l/hr", new EDRActivateUnitConversionFactor(2.77777777777778E-07, 0.0));
+				dictionary7.Add("kbbl/day", new EDRActivateUnitConversionFactor(0.00184013072833333, 0.0));
+				dictionary7.Add("MMcuft/hr", new EDRActivateUnitConversionFactor(7.86579072, 0.0));
+				dictionary7.Add("MMcuft/day", new EDRActivateUnitConversionFactor(0.32774128, 0.0));
+				dictionary7.Add("Mcuft/day", new EDRActivateUnitConversionFactor(0.00032774128, 0.0));
+				dictionary7.Add("l/sec", new EDRActivateUnitConversionFactor(0.001, 0.0));
+				dictionary7.Add("l/day", new EDRActivateUnitConversionFactor(1.15740740740741E-08, 0.0));
+				dictionary7.Add("cum/min", new EDRActivateUnitConversionFactor(0.0166666666666667, 0.0));
+				dictionary7.Add("kcum/sec", new EDRActivateUnitConversionFactor(1000.0, 0.0));
+				dictionary7.Add("kcum/hr", new EDRActivateUnitConversionFactor(0.277777777777778, 0.0));
+				dictionary7.Add("kcum/day", new EDRActivateUnitConversionFactor(0.0115740740740741, 0.0));
+				dictionary7.Add("Mcum/sec", new EDRActivateUnitConversionFactor(1000000.0, 0.0));
+				dictionary7.Add("Mcum/hr", new EDRActivateUnitConversionFactor(277.777777777778, 0.0));
+				dictionary7.Add("Mcum/day", new EDRActivateUnitConversionFactor(11.5740740740741, 0.0));
+				dictionary7.Add("ACFM", new EDRActivateUnitConversionFactor(0.0004719474432, 0.0));
+				dictionary7.Add("cuft/day", new EDRActivateUnitConversionFactor(3.2774128E-07, 0.0));
+				dictionary7.Add("Mcuft/min", new EDRActivateUnitConversionFactor(0.4719474432, 0.0));
+				dictionary7.Add("Mcuft/hr", new EDRActivateUnitConversionFactor(0.00786579072, 0.0));
+				dictionary7.Add("Mgal/min", new EDRActivateUnitConversionFactor(0.0630901964, 0.0));
+				dictionary7.Add("MMgal/min", new EDRActivateUnitConversionFactor(63.0901964, 0.0));
+				dictionary7.Add("Mgal/hr", new EDRActivateUnitConversionFactor(0.00105150327333333, 0.0));
+				dictionary7.Add("MMgal/hr", new EDRActivateUnitConversionFactor(1.05150327333333, 0.0));
+				dictionary7.Add("Mbbl/hr", new EDRActivateUnitConversionFactor(0.04416313748, 0.0));
+				dictionary7.Add("MMbbl/hr", new EDRActivateUnitConversionFactor(44.16313748, 0.0));
+				dictionary7.Add("Mbbl/day", new EDRActivateUnitConversionFactor(0.00184013072833333, 0.0));
+				dictionary7.Add("MMbbl/day", new EDRActivateUnitConversionFactor(1.84013072833333, 0.0));
+				dictionary7.Add("cum/oper-year", new EDRActivateUnitConversionFactor(3.16880878140289E-08, -99999.0));
+				_AspenPlusUnitTable.Add(EDRActivateQuantityType.VolumFlow, dictionary7);
+				Dictionary<string, EDRActivateUnitConversionFactor> dictionary8 = new Dictionary<string, EDRActivateUnitConversionFactor>();
+				dictionary8.Add("J/kmol", new EDRActivateUnitConversionFactor(1.0, 0.0));
+				dictionary8.Add("Btu/lbmol", new EDRActivateUnitConversionFactor(2326.0, 0.0));
+				dictionary8.Add("cal/mol", new EDRActivateUnitConversionFactor(4186.8, 0.0));
+				dictionary8.Add("kcal/mol", new EDRActivateUnitConversionFactor(4186800.0, 0.0));
+				dictionary8.Add("tcal/mol", new EDRActivateUnitConversionFactor(4184.0, 0.0));
+				dictionary8.Add("MMkcal/mol", new EDRActivateUnitConversionFactor(4186800000000.0, 0.0));
+				dictionary8.Add("MMBtu/lbmol", new EDRActivateUnitConversionFactor(2326000000.0, 0.0));
+				dictionary8.Add("Pcu/lbmol", new EDRActivateUnitConversionFactor(4186.80018360979, 0.0));
+				dictionary8.Add("MMPcu/lbmol", new EDRActivateUnitConversionFactor(4186800183.60979, 0.0));
+				dictionary8.Add("kJ/kmol", new EDRActivateUnitConversionFactor(1000.0, 0.0));
+				dictionary8.Add("GJ/kmol", new EDRActivateUnitConversionFactor(1000000000.0, 0.0));
+				dictionary8.Add("MJ/kmol", new EDRActivateUnitConversionFactor(1000000.0, 0.0));
+				dictionary8.Add("kcal/kmol", new EDRActivateUnitConversionFactor(4186.8, 0.0));
+				dictionary8.Add("Gcal/kmol", new EDRActivateUnitConversionFactor(4186800000.0, 0.0));
+				dictionary8.Add("MBtu/lbmol", new EDRActivateUnitConversionFactor(2326000.0, 0.0));
+				dictionary8.Add("Btu/scf", new EDRActivateUnitConversionFactor(882676.848691313, 0.0));
+				dictionary8.Add("Gcal/mol", new EDRActivateUnitConversionFactor(4186800000000.0, 0.0));
+				_AspenPlusUnitTable.Add(EDRActivateQuantityType.MoleEnthalpy, dictionary8);
+				Dictionary<string, EDRActivateUnitConversionFactor> dictionary9 = new Dictionary<string, EDRActivateUnitConversionFactor>();
+				dictionary9.Add("J/kg", new EDRActivateUnitConversionFactor(1.0, 0.0));
+				dictionary9.Add("Btu/lb", new EDRActivateUnitConversionFactor(2326.0, 0.0));
+				dictionary9.Add("cal/gm", new EDRActivateUnitConversionFactor(4186.8, 0.0));
+				dictionary9.Add("kcal/kg", new EDRActivateUnitConversionFactor(4186.8, 0.0));
+				dictionary9.Add("MMkcal/kg", new EDRActivateUnitConversionFactor(4186800000.0, 0.0));
+				dictionary9.Add("MMBtu/lb", new EDRActivateUnitConversionFactor(2326000000.0, 0.0));
+				dictionary9.Add("Pcu/lb", new EDRActivateUnitConversionFactor(4186.80018360979, 0.0));
+				dictionary9.Add("MMPcu/lb", new EDRActivateUnitConversionFactor(4186800183.60979, 0.0));
+				dictionary9.Add("kJ/kg", new EDRActivateUnitConversionFactor(1000.0, 0.0));
+				dictionary9.Add("MJ/kg", new EDRActivateUnitConversionFactor(1000000.0, 0.0));
+				dictionary9.Add("Gcal/kg", new EDRActivateUnitConversionFactor(4186800000.0, 0.0));
+				dictionary9.Add("MBtu/lb", new EDRActivateUnitConversionFactor(2326000.0, 0.0));
+				_AspenPlusUnitTable.Add(EDRActivateQuantityType.MassEnthalpy, dictionary9);
+				Dictionary<string, EDRActivateUnitConversionFactor> dictionary10 = new Dictionary<string, EDRActivateUnitConversionFactor>();
+				foreach (KeyValuePair<string, EDRActivateUnitConversionFactor> item in dictionary3)
+				{
+					dictionary10.Add(item.Key, new EDRActivateUnitConversionFactor(item.Value.Factor, 0.0));
+				}
+				_AspenPlusUnitTable.Add(EDRActivateQuantityType.DeltaTemperature, dictionary10);
+				Dictionary<string, EDRActivateUnitConversionFactor> dictionary11 = new Dictionary<string, EDRActivateUnitConversionFactor>();
+				foreach (KeyValuePair<string, EDRActivateUnitConversionFactor> item2 in dictionary4)
+				{
+					dictionary11.Add(item2.Key, new EDRActivateUnitConversionFactor(item2.Value.Factor, 0.0));
+				}
+				_AspenPlusUnitTable.Add(EDRActivateQuantityType.DeltaPressure, dictionary11);
+			}
+		}
+
+		public static Dictionary<string, string> EDRSIToAspenPlusMap = new Dictionary<string, string>
+		{
+			{ "kW", "kW" },
+			{ "m2", "sqm" }
+		};
+
+		public static Dictionary<string, string> EDRSIToAspenHYSYSMap = new Dictionary<string, string>
+		{
+			{ "kW", "kJ/s" },
+			{ "m2", "m2" }
+		};
+
+		private static double _plusUserOffset = -99999.0;
+
+		private static string _vacumStr = "vac";
+
+		private static string _operYear = "oper-year";
+
+		private static Dictionary<EDRActivateQuantityType, short> _aspenPlusDimentionRowMap = new Dictionary<EDRActivateQuantityType, short>
+		{
+			{
+				EDRActivateQuantityType.MassEnthalpy,
+				40
+			},
+			{
+				EDRActivateQuantityType.MassFlow,
+				10
+			},
+			{
+				EDRActivateQuantityType.MoleEnthalpy,
+				39
+			},
+			{
+				EDRActivateQuantityType.MoleFlow,
+				11
+			},
+			{
+				EDRActivateQuantityType.Pressure,
+				20
+			},
+			{
+				EDRActivateQuantityType.Temperature,
+				22
+			},
+			{
+				EDRActivateQuantityType.Time,
+				24
+			},
+			{
+				EDRActivateQuantityType.VolumFlow,
+				12
+			},
+			{
+				EDRActivateQuantityType.DeltaPressure,
+				75
+			},
+			{
+				EDRActivateQuantityType.Area,
+				1
+			},
+			{
+				EDRActivateQuantityType.HeatLoad,
+				13
+			}
+		};
+
+		public static double ConvertHYSYSUOM(EDRActivateVariable sourceVarialbe, string trgtUnitID)
+		{
+			double num = double.NaN;
+			if (double.IsNaN(sourceVarialbe.Value) || sourceVarialbe.QuantityType == EDRActivateQuantityType.None)
+			{
+				return sourceVarialbe.Value;
+			}
+			return ConvertUOM(EDRActivateSimulatorType.HYSYS, sourceVarialbe.QuantityType, sourceVarialbe.Value, sourceVarialbe.Unit, trgtUnitID, null);
+		}
+
+		public static void AddAspenPlusUserDefinedUnits(EDRActivateQuantityType qt, string newUomName, string baseUOM, double multiply, double offset)
+		{
+			Dictionary<string, EDRActivateUnitConversionFactor> unitFactorList = EDRActivateUnitData.GetUnitFactorList(EDRActivateSimulatorType.AspenPlus, qt);
+			if (!unitFactorList.ContainsKey(baseUOM))
+			{
+				throw new KeyNotFoundException($"\"{baseUOM}\" is not a valid unit of {qt.ToString()} for {EDRActivateSimulatorType.AspenPlus.ToString()}.");
+			}
+			if (unitFactorList.ContainsKey(newUomName))
+			{
+				unitFactorList.Remove(newUomName);
+			}
+			EDRActivateUnitConversionFactor eDRActivateUnitConversionFactor = unitFactorList[baseUOM];
+			EDRActivateUnitConversionFactor value = new EDRActivateUnitConversionFactor(eDRActivateUnitConversionFactor.Factor / multiply, offset + eDRActivateUnitConversionFactor.Offset);
+			unitFactorList.Add(newUomName, value);
+		}
+
+		public static double ConvertAspenPlusUOM(EDRActivateVariable sourceVarialbe, string trgtUnitID, EDRActivateGlobalUnitSetting globalUnitSetting)
+		{
+			double num = double.NaN;
+			if (double.IsNaN(sourceVarialbe.Value) || sourceVarialbe.QuantityType == EDRActivateQuantityType.None)
+			{
+				return sourceVarialbe.Value;
+			}
+			return ConvertUOM(EDRActivateSimulatorType.AspenPlus, sourceVarialbe.QuantityType, sourceVarialbe.Value, sourceVarialbe.Unit, trgtUnitID, globalUnitSetting);
+		}
+
+		private static double ConvertUOM(EDRActivateSimulatorType siumlatorType, EDRActivateQuantityType rType, double srcValue, string srcUnitID, string trgtUnitID, EDRActivateGlobalUnitSetting globalUnitSetting)
+		{
+			if (double.IsNaN(srcValue))
+			{
+				return double.NaN;
+			}
+			double num = double.NaN;
+			Dictionary<string, EDRActivateUnitConversionFactor> unitFactorList = EDRActivateUnitData.GetUnitFactorList(siumlatorType, rType);
+			if (!unitFactorList.ContainsKey(srcUnitID))
+			{
+				throw new KeyNotFoundException($"\"{srcUnitID}\" is not a valid unit of {rType.ToString()} for {siumlatorType.ToString()}.");
+			}
+			if (!unitFactorList.ContainsKey(trgtUnitID))
+			{
+				throw new KeyNotFoundException($"\"{trgtUnitID}\" is not a valid unit of {rType.ToString()} for {siumlatorType.ToString()}.");
+			}
+			_ = unitFactorList[srcUnitID];
+			EDRActivateUnitConversionFactor eDRActivateUnitConversionFactor = unitFactorList[trgtUnitID];
+			string calculationUnit = EDRActivateUnitData.GetCalculationUnit(siumlatorType, rType);
+			_ = unitFactorList[calculationUnit];
+			num = ConvertToBaseUnit(siumlatorType, rType, srcValue, srcUnitID, globalUnitSetting);
+			switch (siumlatorType)
+			{
+			case EDRActivateSimulatorType.HYSYS:
+				if (trgtUnitID != calculationUnit)
+				{
+					num = num * eDRActivateUnitConversionFactor.Factor + eDRActivateUnitConversionFactor.Offset;
+				}
+				break;
+			case EDRActivateSimulatorType.AspenPlus:
+				if (eDRActivateUnitConversionFactor.Offset != _plusUserOffset)
+				{
+					num = (num - eDRActivateUnitConversionFactor.Offset) / eDRActivateUnitConversionFactor.Factor;
+					break;
+				}
+				switch (rType)
+				{
+				case EDRActivateQuantityType.Pressure:
+					num -= globalUnitSetting.AmbientPressure;
+					num /= eDRActivateUnitConversionFactor.Factor;
+					break;
+				case EDRActivateQuantityType.MoleFlow:
+				case EDRActivateQuantityType.MassFlow:
+				case EDRActivateQuantityType.VolumFlow:
+					if (trgtUnitID.EndsWith(_operYear))
+					{
+						num /= eDRActivateUnitConversionFactor.Factor * 365.25 * 24.0 * 3600.0 / globalUnitSetting.OperationalYear;
+					}
+					break;
+				}
+				break;
+			}
+			return num;
+		}
+
+		private static double ConvertToBaseUnit(EDRActivateSimulatorType siumlatorType, EDRActivateQuantityType rType, double srcValue, string srcUnitID, EDRActivateGlobalUnitSetting globalUnitSetting)
+		{
+			double result = double.NaN;
+			EDRActivateUnitConversionFactor eDRActivateUnitConversionFactor = EDRActivateUnitData.GetUnitFactorList(siumlatorType, rType)[srcUnitID];
+			switch (siumlatorType)
+			{
+			case EDRActivateSimulatorType.HYSYS:
+				result = (srcValue - eDRActivateUnitConversionFactor.Offset) / eDRActivateUnitConversionFactor.Factor;
+				break;
+			case EDRActivateSimulatorType.AspenPlus:
+				if (eDRActivateUnitConversionFactor.Offset != _plusUserOffset)
+				{
+					result = srcValue * eDRActivateUnitConversionFactor.Factor + eDRActivateUnitConversionFactor.Offset;
+					break;
+				}
+				switch (rType)
+				{
+				case EDRActivateQuantityType.Pressure:
+					result = srcValue * eDRActivateUnitConversionFactor.Factor;
+					result += globalUnitSetting.AmbientPressure;
+					break;
+				case EDRActivateQuantityType.MoleFlow:
+				case EDRActivateQuantityType.MassFlow:
+				case EDRActivateQuantityType.VolumFlow:
+					if (srcUnitID.EndsWith(_operYear))
+					{
+						result = srcValue * eDRActivateUnitConversionFactor.Factor * 365.25 * 24.0 * 3600.0 / globalUnitSetting.OperationalYear;
+					}
+					break;
+				}
+				break;
+			}
+			return result;
+		}
+
+		public static List<string> GetUnitNameList(EDRActivateSimulatorType siumlatorType, EDRActivateQuantityType qtID)
+		{
+			return EDRActivateUnitData.GetUnitNameList(siumlatorType, qtID);
+		}
+
+		public static string GetCalculationUnit(EDRActivateSimulatorType siumlatorType, EDRActivateQuantityType qtID)
+		{
+			return EDRActivateUnitData.GetCalculationUnit(siumlatorType, qtID);
+		}
+
+		public static short GetAspenPlusUnitRow(EDRActivateQuantityType qt)
+		{
+			short result = 0;
+			if (_aspenPlusDimentionRowMap.ContainsKey(qt))
+			{
+				result = _aspenPlusDimentionRowMap[qt];
+			}
+			return result;
+		}
+	}
+	public enum EDRActivateSimulatorType
+	{
+		AspenPlus,
+		HYSYS
+	}
+	public class EDRActivateGlobalUnitSetting
+	{
+		private double _ambientPressure = 101325.0;
+
+		private double _operationalYear = 31557600.0;
+
+		public double AmbientPressure
+		{
+			get
+			{
+				return _ambientPressure;
+			}
+			set
+			{
+				_ambientPressure = value;
+			}
+		}
+
+		public double OperationalYear
+		{
+			get
+			{
+				return _operationalYear;
+			}
+			set
+			{
+				_operationalYear = value;
+			}
+		}
+	}
+	[ValueConversion(typeof(bool), typeof(bool))]
+	public class InverseBooleanConverter : IValueConverter
+	{
+		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			if (targetType != typeof(bool))
+			{
+				throw new InvalidOperationException("The target type must be boolean.");
+			}
+			return !(bool)value;
+		}
+
+		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			throw new NotImplementedException();
+		}
+	}
+	[ValueConversion(typeof(bool), typeof(bool))]
+	public class AndBooleanConverter : IMultiValueConverter
+	{
+		public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+		{
+			for (int i = 0; i < values.Length; i++)
+			{
+				if (!(bool)values[i])
+				{
+					return false;
+				}
+			}
+			return true;
+		}
+
+		public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+		{
+			throw new NotImplementedException();
+		}
+	}
+	public class KpiTrendImageConverter : IMultiValueConverter
+	{
+		public ImageSource DefaultImage { get; set; }
+
+		public ImageSource AscendingImage { get; set; }
+
+		public ImageSource DescendingImage { get; set; }
+
+		public ImageSource NoChangeImage { get; set; }
+
+		public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+		{
+			if (values != null && values.Length == 2)
+			{
+				double? num = values[0] as double?;
+				double? num2 = values[1] as double?;
+				if (num.HasValue && num2.HasValue)
+				{
+					if (num2.Value < num.Value)
+					{
+						return DescendingImage;
+					}
+					if (num2.Value > num.Value)
+					{
+						return AscendingImage;
+					}
+					return NoChangeImage;
+				}
+			}
+			return DefaultImage;
+		}
+
+		public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+		{
+			throw new NotImplementedException();
+		}
+	}
+	public class DoubleToThicknessConverter : IValueConverter
+	{
+		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			if (value != DependencyProperty.UnsetValue && value != null)
+			{
+				double? num = ParseDouble(value);
+				if (num.HasValue)
+				{
+					return new Thickness(0.0, num.Value, 0.0, num.Value);
+				}
+			}
+			return default(Thickness);
+		}
+
+		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			throw new NotImplementedException();
+		}
+
+		private double? ParseDouble(object value)
+		{
+			if (value != null)
+			{
+				if (value is double)
+				{
+					return (double)value;
+				}
+				if (value is int)
+				{
+					return (int)value;
+				}
+				value.ToString();
+				double result = 0.0;
+				if (double.TryParse((string)value, out result))
+				{
+					return result;
+				}
+			}
+			return null;
+		}
+	}
+	public class OnOffImageSourceConverter : IMultiValueConverter
+	{
+		public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+		{
+			if (values != null && values.Length == 6 && values[0] is bool && values[1] is OnOffState && values[2] is ImageSource && values[3] is ImageSource && values[4] is ImageSource && values[5] is ImageSource)
+			{
+				bool num = (bool)values[0];
+				OnOffState onOffState = (OnOffState)values[1];
+				ImageSource imageSource = values[2] as ImageSource;
+				ImageSource imageSource2 = values[3] as ImageSource;
+				ImageSource imageSource3 = values[4] as ImageSource;
+				ImageSource imageSource4 = values[5] as ImageSource;
+				if (!num)
+				{
+					return imageSource3 ?? imageSource4;
+				}
+				return onOffState switch
+				{
+					OnOffState.On => imageSource ?? imageSource4, 
+					OnOffState.Off => imageSource2 ?? imageSource4, 
+					_ => imageSource4, 
+				};
+			}
+			return null;
+		}
+
+		public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+		{
+			throw new NotImplementedException();
+		}
+	}
+	public class OnOffStateToBoolConverter : IValueConverter
+	{
+		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			if (!(bool)value)
+			{
+				return OnOffState.Off;
+			}
+			return OnOffState.On;
+		}
+
+		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			return (OnOffState)value == OnOffState.On;
+		}
+	}
+	public class ValueParameterEqualConverter : IValueConverter
+	{
+		public string SubProperty { get; set; }
+
+		public object TrueResult { get; set; }
+
+		public object FalseResult { get; set; }
+
+		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			if (value != DependencyProperty.UnsetValue)
+			{
+				if (string.IsNullOrEmpty(SubProperty))
+				{
+					return GetReturnValue(IsEqual(value, parameter));
+				}
+				return GetReturnValue(IsEqual(value, SubProperty, parameter));
+			}
+			return FalseResult;
+		}
+
+		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			throw new NotImplementedException();
+		}
+
+		private bool IsEqual(object value, object parameter)
+		{
+			if (value == null)
+			{
+				return parameter == null;
+			}
+			if (parameter == null)
+			{
+				return false;
+			}
+			if (value.GetType() == parameter.GetType())
+			{
+				return object.Equals(value, parameter);
+			}
+			return string.Equals(value.ToString(), parameter.ToString(), StringComparison.InvariantCultureIgnoreCase);
+		}
+
+		private bool IsEqual(object value, string subProperty, object parameter)
+		{
+			if (string.Equals(subProperty, "HasValue", StringComparison.InvariantCultureIgnoreCase))
+			{
+				if (value == null)
+				{
+					return IsEqual("False", parameter);
+				}
+				return IsEqual("True", parameter);
+			}
+			if (value != null)
+			{
+				PropertyInfo propertyInfo = value.GetType().GetProperties().FirstOrDefault((PropertyInfo x) => string.Equals(x.Name, subProperty, StringComparison.InvariantCultureIgnoreCase));
+				if (propertyInfo != null)
+				{
+					object value2 = propertyInfo.GetValue(value, null);
+					return IsEqual(value2, parameter);
+				}
+			}
+			return false;
+		}
+
+		private object GetReturnValue(bool condition)
+		{
+			if (!condition)
+			{
+				return FalseResult;
+			}
+			return TrueResult;
+		}
+	}
+	public class ValueToDisplayTextConverter : IValueConverter
+	{
+		private const double OneBillion = 10000000000.0;
+
+		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			if (value != null && value != DependencyProperty.UnsetValue)
+			{
+				if (value is double)
+				{
+					return FormatDouble((double)value, culture);
+				}
+				if (value is int num)
+				{
+					return FormatDouble(num, culture);
+				}
+				string text = value.ToString();
+				double result = 0.0;
+				if (double.TryParse(text, out result))
+				{
+					return FormatDouble(result, culture);
+				}
+				return text;
+			}
+			return null;
+		}
+
+		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			throw new NotImplementedException();
+		}
+
+		private object FormatDouble(double value, CultureInfo culture)
+		{
+			if (value < 10000000000.0)
+			{
+				if (value % 1.0 == 0.0)
+				{
+					return value.ToString("N0", culture);
+				}
+				return value.ToString("N4", culture);
+			}
+			return value.ToString("E5", culture);
+		}
+	}
+}
+namespace AspenTech.ActivationDashboard.Infrastructure.Controls
+{
+	public class EllipseBorder : Border
+	{
+		static EllipseBorder()
+		{
+			UIElement.ClipToBoundsProperty.OverrideMetadata(typeof(EllipseBorder), new FrameworkPropertyMetadata(true));
+		}
+
+		protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
+		{
+			base.Clip = new EllipseGeometry(new Rect(sizeInfo.NewSize));
+			base.OnRenderSizeChanged(sizeInfo);
+		}
+	}
+	public class QuadrantControl : TickerBasedControl
+	{
+		public static readonly DependencyProperty ActiveIndexProperty;
+
+		private static readonly DependencyPropertyKey Visibility1PropertyKey;
+
+		private static readonly DependencyPropertyKey Visibility2PropertyKey;
+
+		private static readonly DependencyPropertyKey Visibility3PropertyKey;
+
+		private static readonly DependencyPropertyKey Visibility4PropertyKey;
+
+		public static readonly DependencyProperty Visibility1Property;
+
+		public static readonly DependencyProperty Visibility2Property;
+
+		public static readonly DependencyProperty Visibility3Property;
+
+		public static readonly DependencyProperty Visibility4Property;
+
+		public Visibility Visibility1
+		{
+			get
+			{
+				return (Visibility)GetValue(Visibility1Property);
+			}
+			private set
+			{
+				SetValue(Visibility1PropertyKey, value);
+			}
+		}
+
+		public Visibility Visibility2
+		{
+			get
+			{
+				return (Visibility)GetValue(Visibility2Property);
+			}
+			private set
+			{
+				SetValue(Visibility2PropertyKey, value);
+			}
+		}
+
+		public Visibility Visibility3
+		{
+			get
+			{
+				return (Visibility)GetValue(Visibility3Property);
+			}
+			private set
+			{
+				SetValue(Visibility3PropertyKey, value);
+			}
+		}
+
+		public Visibility Visibility4
+		{
+			get
+			{
+				return (Visibility)GetValue(Visibility4Property);
+			}
+			private set
+			{
+				SetValue(Visibility4PropertyKey, value);
+			}
+		}
+
+		public QuadrantIndex ActiveIndex
+		{
+			get
+			{
+				return (QuadrantIndex)GetValue(ActiveIndexProperty);
+			}
+			set
+			{
+				SetValue(ActiveIndexProperty, value);
+			}
+		}
+
+		static QuadrantControl()
+		{
+			ActiveIndexProperty = DependencyProperty.Register("ActiveIndex", typeof(QuadrantIndex), typeof(QuadrantControl), new FrameworkPropertyMetadata(QuadrantIndex.Two, OnActiveIndexPropertyChanged));
+			Visibility1PropertyKey = DependencyProperty.RegisterReadOnly("Visibility1", typeof(Visibility), typeof(QuadrantControl), new FrameworkPropertyMetadata(Visibility.Collapsed));
+			Visibility2PropertyKey = DependencyProperty.RegisterReadOnly("Visibility2", typeof(Visibility), typeof(QuadrantControl), new FrameworkPropertyMetadata(Visibility.Visible));
+			Visibility3PropertyKey = DependencyProperty.RegisterReadOnly("Visibility3", typeof(Visibility), typeof(QuadrantControl), new FrameworkPropertyMetadata(Visibility.Collapsed));
+			Visibility4PropertyKey = DependencyProperty.RegisterReadOnly("Visibility4", typeof(Visibility), typeof(QuadrantControl), new FrameworkPropertyMetadata(Visibility.Collapsed));
+			Visibility1Property = Visibility1PropertyKey.DependencyProperty;
+			Visibility2Property = Visibility2PropertyKey.DependencyProperty;
+			Visibility3Property = Visibility3PropertyKey.DependencyProperty;
+			Visibility4Property = Visibility4PropertyKey.DependencyProperty;
+			FrameworkElement.DefaultStyleKeyProperty.OverrideMetadata(typeof(QuadrantControl), new FrameworkPropertyMetadata(typeof(QuadrantControl)));
+		}
+
+		protected override void OnTick()
+		{
+			switch (ActiveIndex)
+			{
+			case QuadrantIndex.One:
+				ActiveIndex = QuadrantIndex.Four;
+				break;
+			case QuadrantIndex.Two:
+				ActiveIndex = QuadrantIndex.One;
+				break;
+			case QuadrantIndex.Three:
+				ActiveIndex = QuadrantIndex.Two;
+				break;
+			case QuadrantIndex.Four:
+				ActiveIndex = QuadrantIndex.Three;
+				break;
+			}
+			base.OnTick();
+		}
+
+		private static void OnActiveIndexPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			QuadrantControl quadrantControl = d as QuadrantControl;
+			Visibility visibility = (quadrantControl.Visibility4 = Visibility.Collapsed);
+			Visibility visibility3 = (quadrantControl.Visibility3 = visibility);
+			Visibility visibility5 = (quadrantControl.Visibility2 = visibility3);
+			quadrantControl.Visibility1 = visibility5;
+			switch (quadrantControl.ActiveIndex)
+			{
+			case QuadrantIndex.One:
+				quadrantControl.Visibility1 = Visibility.Visible;
+				break;
+			case QuadrantIndex.Two:
+				quadrantControl.Visibility2 = Visibility.Visible;
+				break;
+			case QuadrantIndex.Three:
+				quadrantControl.Visibility3 = Visibility.Visible;
+				break;
+			case QuadrantIndex.Four:
+				quadrantControl.Visibility4 = Visibility.Visible;
+				break;
+			}
+		}
+	}
+	public enum QuadrantIndex
+	{
+		One,
+		Two,
+		Three,
+		Four
+	}
+	public class ThreeDotsControl : TickerBasedControl
+	{
+		public static readonly DependencyProperty NormalBackgroundProperty;
+
+		public static readonly DependencyProperty TickBackgroundProperty;
+
+		private static readonly DependencyPropertyKey EllipseFill1PropertyKey;
+
+		public static readonly DependencyProperty EllipseFill1Property;
+
+		private static readonly DependencyPropertyKey EllipseFill2PropertyKey;
+
+		public static readonly DependencyProperty EllipseFill2Property;
+
+		private static readonly DependencyPropertyKey EllipseFill3PropertyKey;
+
+		public static readonly DependencyProperty EllipseFill3Property;
+
+		private int _currentIndex;
+
+		public Brush NormalBackground
+		{
+			get
+			{
+				return (Brush)GetValue(NormalBackgroundProperty);
+			}
+			set
+			{
+				SetValue(NormalBackgroundProperty, value);
+			}
+		}
+
+		public Brush TickBackground
+		{
+			get
+			{
+				return (Brush)GetValue(TickBackgroundProperty);
+			}
+			set
+			{
+				SetValue(TickBackgroundProperty, value);
+			}
+		}
+
+		public Brush EllipseFill1
+		{
+			get
+			{
+				return (Brush)GetValue(EllipseFill1Property);
+			}
+			private set
+			{
+				SetValue(EllipseFill1PropertyKey, value);
+			}
+		}
+
+		public Brush EllipseFill2
+		{
+			get
+			{
+				return (Brush)GetValue(EllipseFill2Property);
+			}
+			private set
+			{
+				SetValue(EllipseFill2PropertyKey, value);
+			}
+		}
+
+		public Brush EllipseFill3
+		{
+			get
+			{
+				return (Brush)GetValue(EllipseFill3Property);
+			}
+			private set
+			{
+				SetValue(EllipseFill3PropertyKey, value);
+			}
+		}
+
+		static ThreeDotsControl()
+		{
+			NormalBackgroundProperty = DependencyProperty.Register("NormalBackground", typeof(Brush), typeof(ThreeDotsControl));
+			TickBackgroundProperty = DependencyProperty.Register("TickBackground", typeof(Brush), typeof(ThreeDotsControl));
+			EllipseFill1PropertyKey = DependencyProperty.RegisterReadOnly("EllipseFill1", typeof(Brush), typeof(TickerBasedControl), null);
+			EllipseFill1Property = EllipseFill1PropertyKey.DependencyProperty;
+			EllipseFill2PropertyKey = DependencyProperty.RegisterReadOnly("EllipseFill2", typeof(Brush), typeof(TickerBasedControl), null);
+			EllipseFill2Property = EllipseFill2PropertyKey.DependencyProperty;
+			EllipseFill3PropertyKey = DependencyProperty.RegisterReadOnly("EllipseFill3", typeof(Brush), typeof(TickerBasedControl), null);
+			EllipseFill3Property = EllipseFill3PropertyKey.DependencyProperty;
+			FrameworkElement.DefaultStyleKeyProperty.OverrideMetadata(typeof(ThreeDotsControl), new FrameworkPropertyMetadata(typeof(ThreeDotsControl)));
+		}
+
+		protected override void OnTick()
+		{
+			_currentIndex = (_currentIndex + 1) % 3;
+			Brush brush = (EllipseFill3 = NormalBackground);
+			Brush ellipseFill = (EllipseFill2 = brush);
+			EllipseFill1 = ellipseFill;
+			switch (_currentIndex)
+			{
+			case 0:
+				EllipseFill1 = TickBackground;
+				break;
+			case 1:
+				EllipseFill2 = TickBackground;
+				break;
+			case 2:
+				EllipseFill3 = TickBackground;
+				break;
+			}
+			base.OnTick();
+		}
+	}
+	public class TickerBasedControl : Control
+	{
+		public static readonly DependencyProperty IsRunningProperty = DependencyProperty.Register("IsRunning", typeof(bool), typeof(TickerBasedControl), new FrameworkPropertyMetadata(true, OnIsRunningPropertyChanged));
+
+		public static readonly DependencyProperty IntervalProperty = DependencyProperty.Register("Interval", typeof(double), typeof(TickerBasedControl), new FrameworkPropertyMetadata(250.0, OnIntervalPropertyChanged));
+
+		private readonly DispatcherTimer _timer;
+
+		public bool IsRunning
+		{
+			get
+			{
+				return (bool)GetValue(IsRunningProperty);
+			}
+			set
+			{
+				SetValue(IsRunningProperty, value);
+			}
+		}
+
+		public double Interval
+		{
+			get
+			{
+				return (double)GetValue(IntervalProperty);
+			}
+			set
+			{
+				SetValue(IntervalProperty, value);
+			}
+		}
+
+		public TickerBasedControl()
+		{
+			_timer = new DispatcherTimer(TimeSpan.FromMilliseconds(Interval), DispatcherPriority.Normal, _timer_tick, base.Dispatcher)
+			{
+				IsEnabled = false
+			};
+			base.Loaded += TickerBasedControl_Loaded;
+			base.Unloaded += TickerBasedControl_Unloaded;
+			base.IsVisibleChanged += TickerBasedControl_IsVisibleChanged;
+		}
+
+		private void TickerBasedControl_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+		{
+			UpdateTimerStatus();
+		}
+
+		private void TickerBasedControl_Loaded(object sender, RoutedEventArgs e)
+		{
+			UpdateTimerStatus();
+		}
+
+		private void TickerBasedControl_Unloaded(object sender, RoutedEventArgs e)
+		{
+			UpdateTimerStatus();
+		}
+
+		private void _timer_tick(object sender, EventArgs e)
+		{
+			OnTick();
+		}
+
+		private void UpdateTimerStatus()
+		{
+			_timer.IsEnabled = base.IsLoaded && IsRunning && base.IsVisible;
+		}
+
+		protected virtual void OnTick()
+		{
+		}
+
+		protected virtual void OnIsRunningChanged(bool oldValue, bool newValue)
+		{
+			UpdateTimerStatus();
+		}
+
+		protected virtual void OnIntervalChanged(double oldValue, double newValue)
+		{
+			_timer.Stop();
+			_timer.Interval = TimeSpan.FromMilliseconds(newValue);
+			_timer.Start();
+		}
+
+		private static void OnIsRunningPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			(d as TickerBasedControl).OnIsRunningChanged((bool)e.OldValue, (bool)e.NewValue);
+		}
+
+		private static void OnIntervalPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			(d as TickerBasedControl).OnIntervalChanged((double)e.OldValue, (double)e.NewValue);
+		}
+	}
+	[TemplatePart(Name = "PART_ContentBorder", Type = typeof(Border))]
+	public class HorizontalScrollViewer : ContentControl
+	{
+		private const string PART_ContentBorder = "PART_ContentBorder";
+
+		private static readonly DependencyPropertyKey LeftScrollButtonVisibilityPropertyKey;
+
+		public static readonly DependencyProperty LeftScrollButtonVisibilityProperty;
+
+		private static readonly DependencyPropertyKey RightScrollButtonVisibilityPropertyKey;
+
+		public static readonly DependencyProperty RightScrollButtonVisibilityProperty;
+
+		private static readonly DependencyPropertyKey ComputedContentMarginPropertyKey;
+
+		public static readonly DependencyProperty ComputedContentMarginProperty;
+
+		public static readonly DependencyProperty HorizontalOffsetProperty;
+
+		private ICommand _leftScrollButtonCommand;
+
+		private ICommand _rightScrollButtonCommand;
+
+		private ContentPresenter _contentPresenter;
+
+		private Border _contentBorder;
+
+		public Visibility LeftScrollButtonVisibility
+		{
+			get
+			{
+				return (Visibility)GetValue(LeftScrollButtonVisibilityProperty);
+			}
+			private set
+			{
+				SetValue(LeftScrollButtonVisibilityPropertyKey, value);
+			}
+		}
+
+		public Visibility RightScrollButtonVisibility
+		{
+			get
+			{
+				return (Visibility)GetValue(RightScrollButtonVisibilityProperty);
+			}
+			private set
+			{
+				SetValue(RightScrollButtonVisibilityPropertyKey, value);
+			}
+		}
+
+		public Thickness ComputedContentMargin
+		{
+			get
+			{
+				return (Thickness)GetValue(ComputedContentMarginProperty);
+			}
+			private set
+			{
+				SetValue(ComputedContentMarginPropertyKey, value);
+			}
+		}
+
+		public double HorizontalOffset
+		{
+			get
+			{
+				return (double)GetValue(HorizontalOffsetProperty);
+			}
+			set
+			{
+				SetValue(HorizontalOffsetProperty, value);
+			}
+		}
+
+		public ICommand LeftScrollButtonCommand
+		{
+			get
+			{
+				if (_leftScrollButtonCommand == null)
+				{
+					_leftScrollButtonCommand = new RelayActionCommand(LeftScrollButtonCommand_Execute, LeftScrollButtonCommand_CanExecute);
+				}
+				return _leftScrollButtonCommand;
+			}
+		}
+
+		public ICommand RightScrollButtonCommand
+		{
+			get
+			{
+				if (_rightScrollButtonCommand == null)
+				{
+					_rightScrollButtonCommand = new RelayActionCommand(RightScrollButtonCommand_Execute, RightScrollButtonCommand_CanExecute);
+				}
+				return _rightScrollButtonCommand;
+			}
+		}
+
+		private ContentPresenter ContentPresenter
+		{
+			get
+			{
+				if (_contentPresenter == null)
+				{
+					_contentPresenter = new ContentPresenter();
+					_contentPresenter.SetBinding(FrameworkElement.MarginProperty, new Binding("ComputedContentMargin")
+					{
+						Source = this,
+						Mode = BindingMode.OneWay
+					});
+					_contentPresenter.SetBinding(ContentControl.ContentProperty, new Binding("Content")
+					{
+						Source = this,
+						Mode = BindingMode.OneWay
+					});
+				}
+				return _contentPresenter;
+			}
+		}
+
+		static HorizontalScrollViewer()
+		{
+			LeftScrollButtonVisibilityPropertyKey = DependencyProperty.RegisterReadOnly("LeftScrollButtonVisibility", typeof(Visibility), typeof(HorizontalScrollViewer), new FrameworkPropertyMetadata(Visibility.Collapsed));
+			LeftScrollButtonVisibilityProperty = LeftScrollButtonVisibilityPropertyKey.DependencyProperty;
+			RightScrollButtonVisibilityPropertyKey = DependencyProperty.RegisterReadOnly("RightScrollButtonVisibility", typeof(Visibility), typeof(HorizontalScrollViewer), new FrameworkPropertyMetadata(Visibility.Collapsed));
+			RightScrollButtonVisibilityProperty = RightScrollButtonVisibilityPropertyKey.DependencyProperty;
+			ComputedContentMarginPropertyKey = DependencyProperty.RegisterReadOnly("ComputedContentMargin", typeof(Thickness), typeof(HorizontalScrollViewer), new FrameworkPropertyMetadata(OnComputedContentMarginPropertyChanged));
+			ComputedContentMarginProperty = ComputedContentMarginPropertyKey.DependencyProperty;
+			HorizontalOffsetProperty = DependencyProperty.Register("HorizontalOffset", typeof(double), typeof(HorizontalScrollViewer), new FrameworkPropertyMetadata(OnHorizontalOffsetPropertyChanged, OnHorizontalOffsetPropertyCoerced));
+			FrameworkElement.DefaultStyleKeyProperty.OverrideMetadata(typeof(HorizontalScrollViewer), new FrameworkPropertyMetadata(typeof(HorizontalScrollViewer)));
+		}
+
+		public override void OnApplyTemplate()
+		{
+			_contentBorder = GetTemplateChild("PART_ContentBorder") as Border;
+			if (_contentBorder != null)
+			{
+				_contentBorder.Child = new StackPanel
+				{
+					Children = { (UIElement)ContentPresenter },
+					Orientation = Orientation.Horizontal
+				};
+				_contentBorder.SizeChanged += ContentBorder_SizeChanged;
+			}
+			base.OnApplyTemplate();
+		}
+
+		protected virtual void OnHorizontalOffsetChanged(double oldValue, double newValue)
+		{
+			ComputedContentMargin = new Thickness(HorizontalOffset, 0.0, 0.0, 0.0);
+		}
+
+		protected virtual void OnComputedContentMarginChanged(Thickness oldValue, Thickness newValue)
+		{
+			UpdateScrollButtonVisibilities();
+		}
+
+		private void ContentBorder_SizeChanged(object sender, SizeChangedEventArgs e)
+		{
+			HorizontalOffset = SuggestHorizontalOffset(HorizontalOffset);
+			UpdateScrollButtonVisibilities();
+		}
+
+		private bool LeftScrollButtonCommand_CanExecute()
+		{
+			return true;
+		}
+
+		private void LeftScrollButtonCommand_Execute()
+		{
+			if (_contentBorder != null)
+			{
+				HorizontalOffset += _contentBorder.ActualWidth;
+			}
+		}
+
+		private bool RightScrollButtonCommand_CanExecute()
+		{
+			return true;
+		}
+
+		private void RightScrollButtonCommand_Execute()
+		{
+			if (_contentBorder != null)
+			{
+				HorizontalOffset -= _contentBorder.ActualWidth;
+			}
+		}
+
+		private double SuggestHorizontalOffset(double value)
+		{
+			if (value >= 0.0)
+			{
+				return 0.0;
+			}
+			if (_contentBorder == null)
+			{
+				return 0.0;
+			}
+			double widthTolerance = GetWidthTolerance();
+			if (widthTolerance >= 0.0)
+			{
+				return 0.0;
+			}
+			if (value < widthTolerance)
+			{
+				return widthTolerance;
+			}
+			return value;
+		}
+
+		private double GetWidthTolerance()
+		{
+			if (_contentBorder == null)
+			{
+				return 0.0;
+			}
+			return _contentBorder.ActualWidth - ContentPresenter.ActualWidth;
+		}
+
+		private void UpdateScrollButtonVisibilities()
+		{
+			bool flag = ComputedContentMargin.Left < 0.0;
+			bool flag2 = false;
+			if (_contentBorder != null && ComputedContentMargin.Left > GetWidthTolerance())
+			{
+				flag2 = true;
+			}
+			LeftScrollButtonVisibility = ((!flag) ? Visibility.Collapsed : Visibility.Visible);
+			RightScrollButtonVisibility = ((!flag2) ? Visibility.Collapsed : Visibility.Visible);
+		}
+
+		private static void OnComputedContentMarginPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			(d as HorizontalScrollViewer).OnComputedContentMarginChanged((Thickness)e.OldValue, (Thickness)e.NewValue);
+		}
+
+		private static void OnHorizontalOffsetPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			(d as HorizontalScrollViewer).OnHorizontalOffsetChanged((double)e.OldValue, (double)e.NewValue);
+		}
+
+		private static object OnHorizontalOffsetPropertyCoerced(DependencyObject d, object value)
+		{
+			return (d as HorizontalScrollViewer).SuggestHorizontalOffset((double)value);
+		}
+	}
+	public class RevolvingLamp : Control
+	{
+		public static readonly DependencyProperty RevolvingTextProperty;
+
+		private static readonly DependencyPropertyKey ComputedDisplayTextPropertyKey;
+
+		public static readonly DependencyProperty ComputedDisplayTextProperty;
+
+		public static readonly DependencyProperty IsRunningProperty;
+
+		public static readonly DependencyProperty TextAlignmentProperty;
+
+		public static readonly DependencyProperty ComputedBandMarginProperty;
+
+		public static readonly DependencyProperty UseMovingColorBandProperty;
+
+		public static readonly DependencyProperty MovingBandBrushProperty;
+
+		private static readonly DependencyPropertyKey ThreeDotsVisibilityPropertyKey;
+
+		public static readonly DependencyProperty ThreeDotsVisibilityProperty;
+
+		private readonly DispatcherTimer _timer;
+
+		private int _currentIndex = -1;
+
+		private Storyboard _movingBandStoryboard;
+
+		public string RevolvingText
+		{
+			get
+			{
+				return (string)GetValue(RevolvingTextProperty);
+			}
+			set
+			{
+				SetValue(RevolvingTextProperty, value);
+			}
+		}
+
+		public string ComputedDisplayText
+		{
+			get
+			{
+				return (string)GetValue(ComputedDisplayTextProperty);
+			}
+			private set
+			{
+				SetValue(ComputedDisplayTextPropertyKey, value);
+			}
+		}
+
+		public bool IsRunning
+		{
+			get
+			{
+				return (bool)GetValue(IsRunningProperty);
+			}
+			set
+			{
+				SetValue(IsRunningProperty, value);
+			}
+		}
+
+		public TextAlignment TextAlignment
+		{
+			get
+			{
+				return (TextAlignment)GetValue(TextAlignmentProperty);
+			}
+			set
+			{
+				SetValue(TextAlignmentProperty, value);
+			}
+		}
+
+		public Thickness ComputedBandMargin
+		{
+			get
+			{
+				return (Thickness)GetValue(ComputedBandMarginProperty);
+			}
+			private set
+			{
+				SetValue(ComputedBandMarginProperty, value);
+			}
+		}
+
+		public bool UseMovingColorBand
+		{
+			get
+			{
+				return (bool)GetValue(UseMovingColorBandProperty);
+			}
+			set
+			{
+				SetValue(UseMovingColorBandProperty, value);
+			}
+		}
+
+		public Brush MovingBandBrush
+		{
+			get
+			{
+				return (Brush)GetValue(MovingBandBrushProperty);
+			}
+			set
+			{
+				SetValue(MovingBandBrushProperty, value);
+			}
+		}
+
+		public Visibility ThreeDotsVisibility
+		{
+			get
+			{
+				return (Visibility)GetValue(ThreeDotsVisibilityProperty);
+			}
+			private set
+			{
+				SetValue(ThreeDotsVisibilityPropertyKey, value);
+			}
+		}
+
+		static RevolvingLamp()
+		{
+			RevolvingTextProperty = DependencyProperty.Register("RevolvingText", typeof(string), typeof(RevolvingLamp), new FrameworkPropertyMetadata(OnRevolvingTextPropertyChanged));
+			ComputedDisplayTextPropertyKey = DependencyProperty.RegisterReadOnly("ComputedDisplayText", typeof(string), typeof(RevolvingLamp), null);
+			ComputedDisplayTextProperty = ComputedDisplayTextPropertyKey.DependencyProperty;
+			IsRunningProperty = DependencyProperty.Register("IsRunning", typeof(bool), typeof(RevolvingLamp), new FrameworkPropertyMetadata(true, OnIsRunningPropertyChanged));
+			TextAlignmentProperty = DependencyProperty.Register("TextAlignment", typeof(TextAlignment), typeof(RevolvingLamp));
+			ComputedBandMarginProperty = DependencyProperty.Register("ComputedBandMargin", typeof(Thickness), typeof(RevolvingLamp), new FrameworkPropertyMetadata(new Thickness(-6.0, 0.0, 0.0, 0.0)));
+			UseMovingColorBandProperty = DependencyProperty.Register("UseMovingColorBand", typeof(bool), typeof(RevolvingLamp), new FrameworkPropertyMetadata(false, OnUseMovingColorBandPropertyChanged));
+			MovingBandBrushProperty = DependencyProperty.Register("MovingBandBrush", typeof(Brush), typeof(RevolvingLamp));
+			ThreeDotsVisibilityPropertyKey = DependencyProperty.RegisterReadOnly("ThreeDotsVisibility", typeof(Visibility), typeof(RevolvingLamp), null);
+			ThreeDotsVisibilityProperty = ThreeDotsVisibilityPropertyKey.DependencyProperty;
+			FrameworkElement.DefaultStyleKeyProperty.OverrideMetadata(typeof(RevolvingLamp), new FrameworkPropertyMetadata(typeof(RevolvingLamp)));
+		}
+
+		public RevolvingLamp()
+		{
+			_timer = new DispatcherTimer(new TimeSpan(0, 0, 0, 0, 300), DispatcherPriority.Normal, _timer_tick, base.Dispatcher)
+			{
+				IsEnabled = false
+			};
+			base.Loaded += RevolvingLamp_Loaded;
+			base.Unloaded += RevolvingLamp_Unloaded;
+			base.IsVisibleChanged += RevolvingLamp_IsVisibleChanged;
+		}
+
+		private void RevolvingLamp_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+		{
+			UpdateStoryboardForMovingBand();
+		}
+
+		private void RevolvingLamp_Loaded(object sender, RoutedEventArgs e)
+		{
+			UpdateTimerStatus();
+			UpdateStoryboardForMovingBand();
+		}
+
+		private void RevolvingLamp_Unloaded(object sender, RoutedEventArgs e)
+		{
+			UpdateTimerStatus();
+			UpdateStoryboardForMovingBand();
+		}
+
+		protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
+		{
+			UpdateStoryboardForMovingBand();
+			base.OnRenderSizeChanged(sizeInfo);
+		}
+
+		private void _timer_tick(object sender, EventArgs e)
+		{
+			if (!string.IsNullOrEmpty(RevolvingText))
+			{
+				string[] array = RevolvingText.Split(',');
+				if (array.Length != 0)
+				{
+					_currentIndex++;
+					_currentIndex %= array.Length * 4;
+					int num = _currentIndex / 4;
+					int repeatCount = _currentIndex % 4;
+					StringBuilder stringBuilder = new StringBuilder();
+					stringBuilder.Append(array[num]);
+					stringBuilder.Append('.', repeatCount);
+					ComputedDisplayText = stringBuilder.ToString();
+				}
+			}
+		}
+
+		protected virtual void OnIsRunningChanged(bool oldValue, bool newValue)
+		{
+			UpdateTimerStatus();
+		}
+
+		private void OnRevolvingTextChanged(string oldValue, string newValue)
+		{
+			UpdateTimerStatus();
+		}
+
+		private void UpdateTimerStatus()
+		{
+			_timer.IsEnabled = base.IsLoaded && IsRunning;
+			if (string.IsNullOrEmpty(RevolvingText))
+			{
+				ComputedDisplayText = null;
+			}
+			else
+			{
+				ComputedDisplayText = RevolvingText;
+			}
+			ThreeDotsVisibility = ((!string.IsNullOrEmpty(RevolvingText)) ? Visibility.Collapsed : Visibility.Visible);
+		}
+
+		private void UpdateStoryboardForMovingBand()
+		{
+			if (UseMovingColorBand && base.IsLoaded && base.IsVisible)
+			{
+				StartStoryboard();
+			}
+			else
+			{
+				EndStoryboard();
+			}
+		}
+
+		private void StartStoryboard()
+		{
+			if (_movingBandStoryboard == null)
+			{
+				ThicknessAnimation thicknessAnimation = new ThicknessAnimation
+				{
+					From = new Thickness(-6.0, 0.0, 0.0, 0.0),
+					To = new Thickness(base.ActualWidth, 0.0, 0.0, 0.0),
+					RepeatBehavior = RepeatBehavior.Forever,
+					Duration = new Duration(TimeSpan.FromSeconds(1.0))
+				};
+				Storyboard.SetTarget(thicknessAnimation, this);
+				Storyboard.SetTargetProperty(thicknessAnimation, new PropertyPath(ComputedBandMarginProperty));
+				_movingBandStoryboard = new Storyboard();
+				_movingBandStoryboard.Children.Add(thicknessAnimation);
+			}
+			else if (_movingBandStoryboard.Children.FirstOrDefault() is ThicknessAnimation thicknessAnimation2)
+			{
+				thicknessAnimation2.To = new Thickness(base.ActualWidth, 0.0, 0.0, 0.0);
+			}
+			_movingBandStoryboard.Begin();
+		}
+
+		private void EndStoryboard()
+		{
+			if (_movingBandStoryboard != null)
+			{
+				_movingBandStoryboard.Stop();
+			}
+		}
+
+		private static void OnIsRunningPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			(d as RevolvingLamp).OnIsRunningChanged((bool)e.OldValue, (bool)e.NewValue);
+		}
+
+		private static void OnRevolvingTextPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			(d as RevolvingLamp).OnRevolvingTextChanged((string)e.OldValue, (string)e.NewValue);
+		}
+
+		private static void OnUseMovingColorBandPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			(d as RevolvingLamp).UpdateStoryboardForMovingBand();
+		}
+	}
+	public class SelectableTextBlock : Control
+	{
+		public static readonly DependencyProperty TextProperty;
+
+		public string Text
+		{
+			get
+			{
+				return (string)GetValue(TextProperty);
+			}
+			set
+			{
+				SetValue(TextProperty, value);
+			}
+		}
+
+		static SelectableTextBlock()
+		{
+			TextProperty = DependencyProperty.Register("Text", typeof(string), typeof(SelectableTextBlock), new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsMeasure));
+			FrameworkElement.DefaultStyleKeyProperty.OverrideMetadata(typeof(SelectableTextBlock), new FrameworkPropertyMetadata(typeof(SelectableTextBlock)));
+		}
+
+		protected override Size MeasureOverride(Size constraint)
+		{
+			if (string.IsNullOrEmpty(Text))
+			{
+				return new Size(0.0, 0.0);
+			}
+			return base.MeasureOverride(constraint);
+		}
+	}
+	public class TextImageStatusControl : Control
+	{
+		public static readonly DependencyProperty DisplayModeProperty;
+
+		public static readonly DependencyProperty RevolvingTextInTextModeProperty;
+
+		public static readonly DependencyProperty MovingBandBrushOnRevolvingTextProperty;
+
+		private QuadrantControl _quadrantControl;
+
+		public StatusControlDisplayMode DisplayMode
+		{
+			get
+			{
+				return (StatusControlDisplayMode)GetValue(DisplayModeProperty);
+			}
+			set
+			{
+				SetValue(DisplayModeProperty, value);
+			}
+		}
+
+		public string RevolvingTextInTextMode
+		{
+			get
+			{
+				return (string)GetValue(RevolvingTextInTextModeProperty);
+			}
+			set
+			{
+				SetValue(RevolvingTextInTextModeProperty, value);
+			}
+		}
+
+		public Brush MovingBandBrushOnRevolvingText
+		{
+			get
+			{
+				return (Brush)GetValue(MovingBandBrushOnRevolvingTextProperty);
+			}
+			set
+			{
+				SetValue(MovingBandBrushOnRevolvingTextProperty, value);
+			}
+		}
+
+		static TextImageStatusControl()
+		{
+			DisplayModeProperty = DependencyProperty.Register("DisplayMode", typeof(StatusControlDisplayMode), typeof(TextImageStatusControl), new FrameworkPropertyMetadata(StatusControlDisplayMode.None));
+			RevolvingTextInTextModeProperty = DependencyProperty.Register("RevolvingTextInTextMode", typeof(string), typeof(TextImageStatusControl));
+			MovingBandBrushOnRevolvingTextProperty = DependencyProperty.Register("MovingBandBrushOnRevolvingText", typeof(Brush), typeof(TextImageStatusControl));
+			FrameworkElement.DefaultStyleKeyProperty.OverrideMetadata(typeof(TextImageStatusControl), new FrameworkPropertyMetadata(typeof(TextImageStatusControl)));
+		}
+
+		public override void OnApplyTemplate()
+		{
+			_quadrantControl = GetTemplateChild("PART_QuadrantControl") as QuadrantControl;
+			base.OnApplyTemplate();
+		}
+
+		public void UpdateAnimationQuadrant(bool isRunning, QuadrantIndex? index = null)
+		{
+			if (_quadrantControl != null)
+			{
+				if (index.HasValue)
+				{
+					_quadrantControl.ActiveIndex = index.Value;
+				}
+				_quadrantControl.IsRunning = isRunning;
+			}
+		}
+	}
+	public enum StatusControlDisplayMode
+	{
+		None,
+		NotReady,
+		Done,
+		DonewithError,
+		Text,
+		TextWithWarning,
+		TextWithCheckmark,
+		StaticText
+	}
+	public class OnOffButtonControl : OnOffControlBase
+	{
+		public static readonly DependencyProperty OnTextProperty;
+
+		public static readonly DependencyProperty OffTextProperty;
+
+		public static readonly DependencyProperty DisabledTextProperty;
+
+		public static readonly DependencyProperty OnTextBackgroundProperty;
+
+		public static readonly DependencyProperty OffTextBackgroundProperty;
+
+		private Ellipse _ellipseOff;
+
+		private Ellipse _ellipseOffDrag;
+
+		private Ellipse _ellipseOn;
+
+		private Ellipse _ellipseOnDrag;
+
+		private double _mouseDownPosition;
+
+		private Ellipse _draggingEllipse;
+
+		private Ellipse _maskEllipse;
+
+		private bool _offDragging;
+
+		private bool _everDragged;
+
+		private const double MinorDistance = 3.0;
+
+		public string OnText
+		{
+			get
+			{
+				return (string)GetValue(OnTextProperty);
+			}
+			set
+			{
+				SetValue(OnTextProperty, value);
+			}
+		}
+
+		public string OffText
+		{
+			get
+			{
+				return (string)GetValue(OffTextProperty);
+			}
+			set
+			{
+				SetValue(OffTextProperty, value);
+			}
+		}
+
+		public string DisabledText
+		{
+			get
+			{
+				return (string)GetValue(DisabledTextProperty);
+			}
+			set
+			{
+				SetValue(DisabledTextProperty, value);
+			}
+		}
+
+		public Brush OnTextBackground
+		{
+			get
+			{
+				return (Brush)GetValue(OnTextBackgroundProperty);
+			}
+			set
+			{
+				SetValue(OnTextBackgroundProperty, value);
+			}
+		}
+
+		public Brush OffTextBackground
+		{
+			get
+			{
+				return (Brush)GetValue(OffTextBackgroundProperty);
+			}
+			set
+			{
+				SetValue(OffTextBackgroundProperty, value);
+			}
+		}
+
+		static OnOffButtonControl()
+		{
+			OnTextProperty = DependencyProperty.Register("OnText", typeof(string), typeof(OnOffButtonControl), new FrameworkPropertyMetadata(AspenTech.ActivationDashboard.Infrastructure.Properties.Resources.OnOffButtonControl_OnText));
+			OffTextProperty = DependencyProperty.Register("OffText", typeof(string), typeof(OnOffButtonControl), new FrameworkPropertyMetadata(AspenTech.ActivationDashboard.Infrastructure.Properties.Resources.OnOffButtonControl_OffText));
+			DisabledTextProperty = DependencyProperty.Register("DisabledText", typeof(string), typeof(OnOffButtonControl), new FrameworkPropertyMetadata(AspenTech.ActivationDashboard.Infrastructure.Properties.Resources.OnOffButtonControl_DisabledText));
+			OnTextBackgroundProperty = DependencyProperty.Register("OnTextBackground", typeof(Brush), typeof(OnOffButtonControl));
+			OffTextBackgroundProperty = DependencyProperty.Register("OffTextBackground", typeof(Brush), typeof(OnOffButtonControl));
+			FrameworkElement.DefaultStyleKeyProperty.OverrideMetadata(typeof(OnOffButtonControl), new FrameworkPropertyMetadata(typeof(OnOffButtonControl)));
+		}
+
+		public override void OnApplyTemplate()
+		{
+			_ellipseOff = GetTemplateChild("PART_OffEllipse") as Ellipse;
+			_ellipseOffDrag = GetTemplateChild("PART_OffDragEllipse") as Ellipse;
+			_ellipseOn = GetTemplateChild("PART_OnEllipse") as Ellipse;
+			_ellipseOnDrag = GetTemplateChild("PART_OnDragEllipse") as Ellipse;
+			base.OnApplyTemplate();
+		}
+
+		protected override void OnPreviewMouseLeftButtonDown(MouseButtonEventArgs e)
+		{
+			if (e.OriginalSource is Ellipse)
+			{
+				InitializeDragging(e);
+			}
+			else
+			{
+				CaptureMouse();
+			}
+			e.Handled = true;
+			base.OnPreviewMouseLeftButtonDown(e);
+		}
+
+		protected override void OnPreviewMouseMove(MouseEventArgs e)
+		{
+			if (e.OriginalSource is Ellipse)
+			{
+				ProcessDragging(e);
+			}
+			base.OnPreviewMouseMove(e);
+		}
+
+		protected override void OnPreviewMouseLeftButtonUp(MouseButtonEventArgs e)
+		{
+			if (e.OriginalSource is Ellipse)
+			{
+				EndDragging(e);
+			}
+			else if (Mouse.Captured == this)
+			{
+				ReleaseMouseCapture();
+				DispathcerInvokeClicked();
+			}
+			e.Handled = true;
+			base.OnPreviewMouseLeftButtonUp(e);
+		}
+
+		private void InitializeDragging(MouseButtonEventArgs e)
+		{
+			_draggingEllipse = e.OriginalSource as Ellipse;
+			_offDragging = _draggingEllipse == _ellipseOff;
+			_maskEllipse = (_offDragging ? _ellipseOffDrag : _ellipseOnDrag);
+			_mouseDownPosition = e.GetPosition(_draggingEllipse.Parent as FrameworkElement).X;
+			_everDragged = false;
+			_draggingEllipse.CaptureMouse();
+		}
+
+		private void ProcessDragging(MouseEventArgs e)
+		{
+			if (_draggingEllipse == null || _maskEllipse == null || Mouse.Captured != _draggingEllipse)
+			{
+				return;
+			}
+			double num = e.GetPosition(_draggingEllipse.Parent as FrameworkElement).X - _mouseDownPosition;
+			if ((_offDragging && num >= 3.0) || (!_offDragging && num <= -3.0))
+			{
+				_draggingEllipse.Opacity = 0.5;
+				_maskEllipse.Visibility = Visibility.Visible;
+				_everDragged = true;
+				double actualWidth = (_draggingEllipse.Parent as FrameworkElement).ActualWidth;
+				if (_offDragging)
+				{
+					_maskEllipse.Margin = new Thickness(Math.Min(num + 2.0, actualWidth - 14.0), 2.0, 0.0, 2.0);
+				}
+				else
+				{
+					_maskEllipse.Margin = new Thickness(0.0, 2.0, Math.Min(actualWidth - 14.0, 2.0 - num), 2.0);
+				}
+			}
+			else
+			{
+				_draggingEllipse.Opacity = 1.0;
+				_maskEllipse.Visibility = Visibility.Collapsed;
+				_maskEllipse.Margin = new Thickness(2.0);
+			}
+		}
+
+		private void EndDragging(MouseButtonEventArgs e)
+		{
+			if (_draggingEllipse != null && _maskEllipse != null && Mouse.Captured == _draggingEllipse)
+			{
+				double num = e.GetPosition(_draggingEllipse.Parent as FrameworkElement).X - _mouseDownPosition;
+				_maskEllipse.Margin = new Thickness(2.0);
+				_maskEllipse.Visibility = Visibility.Collapsed;
+				_draggingEllipse.ReleaseMouseCapture();
+				_draggingEllipse.Opacity = 1.0;
+				_draggingEllipse = null;
+				if ((_offDragging && num >= 3.0) || (!_offDragging && num <= -3.0))
+				{
+					DispathcerInvokeClicked();
+				}
+				else if (!_everDragged)
+				{
+					DispathcerInvokeClicked();
+				}
+			}
+		}
+
+		private void DispathcerInvokeClicked()
+		{
+			base.Dispatcher.BeginInvoke(new Action(OnClicked), DispatcherPriority.Loaded);
+		}
+	}
+	public enum OnOffState
+	{
+		Off,
+		On
+	}
+	public abstract class OnOffControlBase : Control
+	{
+		public static readonly DependencyProperty StateProperty = DependencyProperty.Register("State", typeof(OnOffState), typeof(OnOffControlBase), new FrameworkPropertyMetadata(OnOffState.Off, OnStatePropertyChanged));
+
+		public static readonly RoutedEvent StateChangingEvent = EventManager.RegisterRoutedEvent("StateChanging", RoutingStrategy.Bubble, typeof(EventHandler<PropertyChangingRoutedEventArgs<OnOffState>>), typeof(OnOffControlBase));
+
+		public static readonly RoutedEvent StateChangedEvent = EventManager.RegisterRoutedEvent("StateChanged", RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(OnOffControlBase));
+
+		public static readonly RoutedEvent ClickedEvent = EventManager.RegisterRoutedEvent("Clicked", RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(OnOffControlBase));
+
+		public OnOffState State
+		{
+			get
+			{
+				return (OnOffState)GetValue(StateProperty);
+			}
+			set
+			{
+				SetValue(StateProperty, value);
+			}
+		}
+
+		public event EventHandler<PropertyChangingRoutedEventArgs<OnOffState>> StateChanging
+		{
+			add
+			{
+				AddHandler(StateChangingEvent, value);
+			}
+			remove
+			{
+				RemoveHandler(StateChangingEvent, value);
+			}
+		}
+
+		public event RoutedEventHandler StateChanged
+		{
+			add
+			{
+				AddHandler(StateChangedEvent, value);
+			}
+			remove
+			{
+				RemoveHandler(StateChangedEvent, value);
+			}
+		}
+
+		public event RoutedEventHandler Clicked
+		{
+			add
+			{
+				AddHandler(ClickedEvent, value);
+			}
+			remove
+			{
+				RemoveHandler(ClickedEvent, value);
+			}
+		}
+
+		protected virtual void OnStateChanging(PropertyChangingRoutedEventArgs<OnOffState> args)
+		{
+			RaiseEvent(args);
+		}
+
+		protected virtual void OnStateChanged(OnOffState oldValue, OnOffState newValue)
+		{
+			RaiseEvent(new RoutedEventArgs(StateChangedEvent, this));
+		}
+
+		protected virtual void OnClicked()
+		{
+			OnOffState state = State;
+			OnOffState onOffState = ((state == OnOffState.Off) ? OnOffState.On : OnOffState.Off);
+			PropertyChangingRoutedEventArgs<OnOffState> e = new PropertyChangingRoutedEventArgs<OnOffState>(this, StateChangingEvent, state, onOffState);
+			OnStateChanging(e);
+			if (!e.Cancel)
+			{
+				State = onOffState;
+			}
+			RaiseEvent(new RoutedEventArgs(ClickedEvent, this));
+		}
+
+		private static void OnStatePropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			(d as OnOffControlBase).OnStateChanged((OnOffState)e.OldValue, (OnOffState)e.NewValue);
+		}
+	}
+	public class PropertyChangingRoutedEventArgs<T> : RoutedEventArgs
+	{
+		public T OldValue { get; private set; }
+
+		public T NewValue { get; private set; }
+
+		public bool Cancel { get; set; }
+
+		public PropertyChangingRoutedEventArgs(object sender, RoutedEvent routedEvent, T oldValue, T newValue)
+			: base(routedEvent, sender)
+		{
+			OldValue = oldValue;
+			NewValue = newValue;
+		}
+	}
+	public class OnOffImageControl : OnOffControlBase
+	{
+		public static readonly DependencyProperty ImageProperty;
+
+		public static readonly DependencyProperty OnImageProperty;
+
+		public static readonly DependencyProperty OffImageProperty;
+
+		public static readonly DependencyProperty DisabledImageProperty;
+
+		public ImageSource Image
+		{
+			get
+			{
+				return (ImageSource)GetValue(ImageProperty);
+			}
+			set
+			{
+				SetValue(ImageProperty, value);
+			}
+		}
+
+		public ImageSource OnImage
+		{
+			get
+			{
+				return (ImageSource)GetValue(OnImageProperty);
+			}
+			set
+			{
+				SetValue(OnImageProperty, value);
+			}
+		}
+
+		public ImageSource OffImage
+		{
+			get
+			{
+				return (ImageSource)GetValue(OffImageProperty);
+			}
+			set
+			{
+				SetValue(OffImageProperty, value);
+			}
+		}
+
+		public ImageSource DisabledImage
+		{
+			get
+			{
+				return (ImageSource)GetValue(DisabledImageProperty);
+			}
+			set
+			{
+				SetValue(DisabledImageProperty, value);
+			}
+		}
+
+		static OnOffImageControl()
+		{
+			ImageProperty = DependencyProperty.Register("Image", typeof(ImageSource), typeof(OnOffImageControl));
+			OnImageProperty = DependencyProperty.Register("OnImage", typeof(ImageSource), typeof(OnOffImageControl));
+			OffImageProperty = DependencyProperty.Register("OffImage", typeof(ImageSource), typeof(OnOffImageControl));
+			DisabledImageProperty = DependencyProperty.Register("DisabledImage", typeof(ImageSource), typeof(OnOffImageControl));
+			FrameworkElement.DefaultStyleKeyProperty.OverrideMetadata(typeof(OnOffImageControl), new FrameworkPropertyMetadata(typeof(OnOffImageControl)));
+		}
+
+		public override void OnApplyTemplate()
+		{
+			if (GetTemplateChild("PART_Button") is Button button)
+			{
+				button.Click += buttonTool_Click;
+			}
+			base.OnApplyTemplate();
+		}
+
+		private void buttonTool_Click(object sender, RoutedEventArgs e)
+		{
+			OnClicked();
+		}
+	}
+	public class BooleanButtonTool : ButtonTool
+	{
+		private class ButtonToolImageConverter : IMultiValueConverter
+		{
+			public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+			{
+				if (values != null && values.Length == 5 && values[0] is bool && values[1] is bool)
+				{
+					if (!(bool)values[1])
+					{
+						return values[4];
+					}
+					if ((bool)values[0])
+					{
+						return values[2];
+					}
+					return values[3];
+				}
+				return null;
+			}
+
+			public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+			{
+				throw new NotImplementedException();
+			}
+		}
+
+		public static readonly DependencyProperty ValueProperty = DependencyProperty.Register("Value", typeof(bool), typeof(BooleanButtonTool));
+
+		public static readonly DependencyProperty FalseImageProperty = DependencyProperty.Register("FalseImage", typeof(ImageSource), typeof(BooleanButtonTool));
+
+		public static readonly DependencyProperty TrueImageProperty = DependencyProperty.Register("TrueImage", typeof(ImageSource), typeof(BooleanButtonTool));
+
+		public static readonly DependencyProperty DisabledImageProperty = DependencyProperty.Register("DisabledImage", typeof(ImageSource), typeof(BooleanButtonTool));
+
+		public bool Value
+		{
+			get
+			{
+				return (bool)GetValue(ValueProperty);
+			}
+			set
+			{
+				SetValue(ValueProperty, value);
+			}
+		}
+
+		public ImageSource FalseImage
+		{
+			get
+			{
+				return (ImageSource)GetValue(FalseImageProperty);
+			}
+			set
+			{
+				SetValue(FalseImageProperty, value);
+			}
+		}
+
+		public ImageSource TrueImage
+		{
+			get
+			{
+				return (ImageSource)GetValue(TrueImageProperty);
+			}
+			set
+			{
+				SetValue(TrueImageProperty, value);
+			}
+		}
+
+		public ImageSource DisabledImage
+		{
+			get
+			{
+				return (ImageSource)GetValue(DisabledImageProperty);
+			}
+			set
+			{
+				SetValue(DisabledImageProperty, value);
+			}
+		}
+
+		protected override void OnClick()
+		{
+			Value = !Value;
+			base.OnClick();
+		}
+
+		protected override void OnInitialized(EventArgs e)
+		{
+			SetImageBindings();
+			base.OnInitialized(e);
+		}
+
+		private void SetImageBindings()
+		{
+			MultiBinding binding = new MultiBinding
+			{
+				Bindings = 
+				{
+					(BindingBase)new Binding
+					{
+						Source = this,
+						Path = new PropertyPath(ValueProperty)
+					},
+					(BindingBase)new Binding
+					{
+						Source = this,
+						Path = new PropertyPath(UIElement.IsEnabledProperty)
+					},
+					(BindingBase)new Binding
+					{
+						Source = this,
+						Path = new PropertyPath(TrueImageProperty)
+					},
+					(BindingBase)new Binding
+					{
+						Source = this,
+						Path = new PropertyPath(FalseImageProperty)
+					},
+					(BindingBase)new Binding
+					{
+						Source = this,
+						Path = new PropertyPath(DisabledImageProperty)
+					}
+				},
+				Converter = new ButtonToolImageConverter(),
+				Mode = BindingMode.OneWay
+			};
+			SetBinding(ButtonTool.LargeImageProperty, binding);
+			SetBinding(ButtonTool.SmallImageProperty, binding);
+		}
+	}
+	public class KpiControl : Control
+	{
+		public static readonly DependencyProperty OrientationProperty;
+
+		public static readonly DependencyProperty TitleProperty;
+
+		public static readonly DependencyProperty BaselineProperty;
+
+		public static readonly DependencyProperty ValueProperty;
+
+		public static readonly DependencyProperty UnitsProperty;
+
+		private static readonly DependencyPropertyKey ComputedDisplayTextPropertyKey;
+
+		public static readonly DependencyProperty ComputedDisplayTextProperty;
+
+		public static readonly DependencyProperty TeaserProperty;
+
+		public static readonly DependencyProperty TitleTooltipProperty;
+
+		public static readonly DependencyProperty TeaserTooltipProperty;
+
+		public static readonly DependencyProperty ValueTooltipProperty;
+
+		public static readonly DependencyProperty UnitsTooltipProperty;
+
+		public static readonly DependencyProperty ValueFontSizeIncrementProperty;
+
+		public static readonly DependencyProperty DisplayFormatDividingPointProperty;
+
+		public static readonly DependencyProperty DisplayFormatAboveDividingPointProperty;
+
+		public static readonly DependencyProperty DisplayFormatBelowDividingPointProperty;
+
+		public static readonly RoutedEvent TeaserClickedEvent;
+
+		public Orientation Orientation
+		{
+			get
+			{
+				return (Orientation)GetValue(OrientationProperty);
+			}
+			set
+			{
+				SetValue(OrientationProperty, value);
+			}
+		}
+
+		public string Title
+		{
+			get
+			{
+				return (string)GetValue(TitleProperty);
+			}
+			set
+			{
+				SetValue(TitleProperty, value);
+			}
+		}
+
+		public double? Baseline
+		{
+			get
+			{
+				return (double?)GetValue(BaselineProperty);
+			}
+			set
+			{
+				SetValue(BaselineProperty, value);
+			}
+		}
+
+		public double? Value
+		{
+			get
+			{
+				return (double?)GetValue(ValueProperty);
+			}
+			set
+			{
+				SetValue(ValueProperty, value);
+			}
+		}
+
+		public string Units
+		{
+			get
+			{
+				return (string)GetValue(UnitsProperty);
+			}
+			set
+			{
+				SetValue(UnitsProperty, value);
+			}
+		}
+
+		public string ComputedDisplayText
+		{
+			get
+			{
+				return (string)GetValue(ComputedDisplayTextProperty);
+			}
+			private set
+			{
+				SetValue(ComputedDisplayTextPropertyKey, value);
+			}
+		}
+
+		public object Teaser
+		{
+			get
+			{
+				return GetValue(TeaserProperty);
+			}
+			set
+			{
+				SetValue(TeaserProperty, value);
+			}
+		}
+
+		public object TitleTooltip
+		{
+			get
+			{
+				return GetValue(TitleTooltipProperty);
+			}
+			set
+			{
+				SetValue(TitleTooltipProperty, value);
+			}
+		}
+
+		public object TeaserTooltip
+		{
+			get
+			{
+				return GetValue(TeaserTooltipProperty);
+			}
+			set
+			{
+				SetValue(TeaserTooltipProperty, value);
+			}
+		}
+
+		public object ValueTooltip
+		{
+			get
+			{
+				return GetValue(ValueTooltipProperty);
+			}
+			set
+			{
+				SetValue(ValueTooltipProperty, value);
+			}
+		}
+
+		public object UnitsTooltip
+		{
+			get
+			{
+				return GetValue(UnitsTooltipProperty);
+			}
+			set
+			{
+				SetValue(UnitsTooltipProperty, value);
+			}
+		}
+
+		public double ValueFontSizeIncrement
+		{
+			get
+			{
+				return (double)GetValue(ValueFontSizeIncrementProperty);
+			}
+			set
+			{
+				SetValue(ValueFontSizeIncrementProperty, value);
+			}
+		}
+
+		public double DisplayFormatDividingPoint
+		{
+			get
+			{
+				return (double)GetValue(DisplayFormatDividingPointProperty);
+			}
+			set
+			{
+				SetValue(DisplayFormatDividingPointProperty, value);
+			}
+		}
+
+		public string DisplayFormatAboveDividingPoint
+		{
+			get
+			{
+				return (string)GetValue(DisplayFormatAboveDividingPointProperty);
+			}
+			set
+			{
+				SetValue(DisplayFormatAboveDividingPointProperty, value);
+			}
+		}
+
+		public string DisplayFormatBelowDividingPoint
+		{
+			get
+			{
+				return (string)GetValue(DisplayFormatBelowDividingPointProperty);
+			}
+			set
+			{
+				SetValue(DisplayFormatBelowDividingPointProperty, value);
+			}
+		}
+
+		public event RoutedEventHandler TeaserClicked
+		{
+			add
+			{
+				AddHandler(TeaserClickedEvent, value);
+			}
+			remove
+			{
+				RemoveHandler(TeaserClickedEvent, value);
+			}
+		}
+
+		static KpiControl()
+		{
+			OrientationProperty = DependencyProperty.Register("Orientation", typeof(Orientation), typeof(KpiControl), new FrameworkPropertyMetadata(Orientation.Vertical));
+			TitleProperty = DependencyProperty.Register("Title", typeof(string), typeof(KpiControl));
+			BaselineProperty = DependencyProperty.Register("Baseline", typeof(double?), typeof(KpiControl));
+			ValueProperty = DependencyProperty.Register("Value", typeof(double?), typeof(KpiControl), new FrameworkPropertyMetadata(OnValuePropertyChanged));
+			UnitsProperty = DependencyProperty.Register("Units", typeof(string), typeof(KpiControl));
+			ComputedDisplayTextPropertyKey = DependencyProperty.RegisterReadOnly("ComputedDisplayText", typeof(string), typeof(KpiControl), null);
+			ComputedDisplayTextProperty = ComputedDisplayTextPropertyKey.DependencyProperty;
+			TeaserProperty = DependencyProperty.Register("Teaser", typeof(object), typeof(KpiControl));
+			TitleTooltipProperty = DependencyProperty.Register("TitleTooltip", typeof(object), typeof(KpiControl));
+			TeaserTooltipProperty = DependencyProperty.Register("TeaserTooltip", typeof(object), typeof(KpiControl));
+			ValueTooltipProperty = DependencyProperty.Register("ValueTooltip", typeof(object), typeof(KpiControl));
+			UnitsTooltipProperty = DependencyProperty.Register("UnitsTooltip", typeof(object), typeof(KpiControl));
+			ValueFontSizeIncrementProperty = DependencyProperty.Register("ValueFontSizeIncrement", typeof(double), typeof(KpiControl));
+			DisplayFormatDividingPointProperty = DependencyProperty.Register("DisplayFormatDividingPoint", typeof(double), typeof(KpiControl), new FrameworkPropertyMetadata(1000000000.0, OnDisplayFormatDividingPointPropertyChanged));
+			DisplayFormatAboveDividingPointProperty = DependencyProperty.Register("DisplayFormatAboveDividingPoint", typeof(string), typeof(KpiControl), new FrameworkPropertyMetadata("0.###E0", OnDisplayFormatAboveDividingPointPropertyChanged));
+			DisplayFormatBelowDividingPointProperty = DependencyProperty.Register("DisplayFormatBelowDividingPoint", typeof(string), typeof(KpiControl), new FrameworkPropertyMetadata("N0", OnDisplayFormatBelowDividingPointPropertyChanged));
+			TeaserClickedEvent = EventManager.RegisterRoutedEvent("TeaserClicked", RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(KpiControl));
+			FrameworkElement.DefaultStyleKeyProperty.OverrideMetadata(typeof(KpiControl), new FrameworkPropertyMetadata(typeof(KpiControl)));
+		}
+
+		public override void OnApplyTemplate()
+		{
+			if (GetTemplateChild("PART_HorizontalTeaser") is ButtonBase buttonBase)
+			{
+				buttonBase.Click += tool_Click;
+			}
+			if (GetTemplateChild("PART_VerticalTeaser") is ButtonBase buttonBase2)
+			{
+				buttonBase2.Click += tool_Click;
+			}
+			base.OnApplyTemplate();
+		}
+
+		protected virtual void OnValueChanged(double? oldValue, double? newValue)
+		{
+			ComputedDisplayText = CalculateDisplayText();
+		}
+
+		protected virtual void OnDisplayFormatDividingPointyChanged(double oldValue, double newValue)
+		{
+			ComputedDisplayText = CalculateDisplayText();
+		}
+
+		protected virtual void OnDisplayFormatAboveDividingPointChanged(string oldValue, string newValue)
+		{
+			ComputedDisplayText = CalculateDisplayText();
+		}
+
+		protected virtual void OnDisplayFormatBelowDividingPointChanged(string oldValue, string newValue)
+		{
+			ComputedDisplayText = CalculateDisplayText();
+		}
+
+		private string CalculateDisplayText()
+		{
+			if (Value.HasValue)
+			{
+				double value = Value.Value;
+				if (value >= DisplayFormatDividingPoint && !string.IsNullOrEmpty(DisplayFormatAboveDividingPoint))
+				{
+					return value.ToString(DisplayFormatAboveDividingPoint);
+				}
+				if (value < DisplayFormatDividingPoint && !string.IsNullOrEmpty(DisplayFormatBelowDividingPoint))
+				{
+					return value.ToString(DisplayFormatBelowDividingPoint);
+				}
+				return value.ToString();
+			}
+			return null;
+		}
+
+		protected virtual void OnTeaserClicked()
+		{
+			RaiseEvent(new RoutedEventArgs(TeaserClickedEvent, this));
+		}
+
+		private void tool_Click(object sender, RoutedEventArgs e)
+		{
+			OnTeaserClicked();
+		}
+
+		private static void OnValuePropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			(d as KpiControl).OnValueChanged((double?)e.OldValue, (double?)e.NewValue);
+		}
+
+		private static void OnDisplayFormatDividingPointPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			(d as KpiControl).OnDisplayFormatDividingPointyChanged((double)e.OldValue, (double)e.NewValue);
+		}
+
+		private static void OnDisplayFormatAboveDividingPointPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			(d as KpiControl).OnDisplayFormatAboveDividingPointChanged((string)e.OldValue, (string)e.NewValue);
+		}
+
+		private static void OnDisplayFormatBelowDividingPointPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			(d as KpiControl).OnDisplayFormatBelowDividingPointChanged((string)e.OldValue, (string)e.NewValue);
+		}
+	}
+}
+namespace AspenTech.ActivationDashboard.Infrastructure.Contracts
+{
+	public interface IAuxiliaryFilesProvider
+	{
+		string[] CreateRecoveryFiles(string casepath, string recoverycasepath);
+
+		void DeleteRecoveryFiles(string casepath, string recoverycasepath);
+
+		string[] RestoreRecoveryFiles(string casepath, string recoverycasepath);
+
+		void DeleteRecoveredFiles(string casepath);
+
+		void OnSave(string casepath);
+
+		void OnSaveAs(string casepath, string newcasepath);
+
+		void OnQuit(string casepath);
+
+		void CascadeBackups(string casepath, int number_to_save);
+	}
+	public enum AuxFileAction
+	{
+		CREATE_RECOVERY = 1,
+		DELETE_RECOVERY,
+		RESTORE_RECOVERY,
+		ON_SAVE,
+		ON_SAVE_AS,
+		ON_QUIT,
+		DELETE_RECOVERED,
+		CASCADE_BACKUPS
+	}
+	public interface IAuxiliaryFileManager
+	{
+		int RegisterHandler(IAuxiliaryFilesProvider provider);
+
+		void Unregisterhandler(int cookie);
+
+		object DoFileAction(AuxFileAction action, string arg1, string arg2);
+	}
+	public interface IDashboardItem
+	{
+		bool IsExpanded { get; set; }
+
+		IEnumerable<IDashboardItemStateConverter> Converters { get; }
+
+		void OnSimulatorInputChanged();
+
+		void OnSimulatorRunCompleted();
+
+		void OnSimulatorCaseOpened();
+
+		void OnSimulatorCaseClosed();
+
+		void OnCommandManagerRequerySuggested();
+
+		string SaveState();
+
+		void RestoreState(string state);
+	}
+	public interface IDashboardItemFactory
+	{
+		void Register<T>(int sequence = 0) where T : UIElement, IDashboardItem;
+
+		IEnumerable<IDashboardItem> CreateItems();
+	}
+	public interface IDashboardItemStateConverter
+	{
+		int TargetVersion { get; }
+
+		string Convert(string sourceState);
+	}
+	public interface IDashboardPanelAgent
+	{
+		int? CurrentApplicationVersion { get; }
+
+		bool ShouldPersistState { get; }
+
+		ApplicationType ApplicationType { get; }
+
+		event EventHandler SimulatorInputChanged;
+
+		event EventHandler SimulatorRunCompleted;
+
+		event EventHandler SimulatorCaseOpened;
+
+		event EventHandler SimulatorCaseClosed;
+	}
+	public enum ApplicationType
+	{
+		AspenPlus,
+		AspenHYSYS
+	}
+	public interface IEconomicAnalysisAgent
+	{
+		bool IsReady { get; }
+
+		bool IsInstalled { get; }
+
+		bool IsEconomicsAnalysisRunning { get; }
+
+		bool IsEconomisAnalysisActivated { get; }
+
+		bool IsEconomisAnalysisAutoRun { get; }
+
+		bool IsInputComplete { get; }
+
+		bool IsStopEconomicAnalysisOnMidRun { get; set; }
+
+		bool IsEconomicEvaluationBusy { get; set; }
+
+		bool IsPartialFlowsheetCosting { get; set; }
+
+		bool IsPartialFlowsheetCostingCompleted { get; set; }
+
+		bool IsPartialFlowsheetCostingCompletedOnce { get; set; }
+
+		event EventHandler<RunningEventArgs> RefreshDashboardEvent;
+
+		event EventHandler ActiveDocumentChangedEvent;
+
+		event EventHandler CloseDashboardEvent;
+
+		event EventHandler DocumentCloseEvent;
+
+		event EventHandler ResetDashboardEvent;
+
+		event EventHandler ResetDashboardButLeaveDashboardOnEvent;
+
+		event EventHandler<SynchronizeApplicationAndDashboardEventArgs> SynchronizeApplicationAndDashboardEvent;
+
+		event EventHandler<UpdateDashboardStatusTextEventArgs> UpdateDashboardStatusTextEvent;
+
+		event EventHandler<DashboardStateEventArgs> ChangeDashboardStateEvent;
+
+		event EventHandler EconomicStartRunning;
+
+		event EventHandler EconomicStopRunning;
+
+		void OnDashboardRunning();
+
+		void OnDashboardActivating(CancelEventArgs args);
+
+		void OnDashboardNavigationCommand(string parameter = "Default");
+
+		void RefreshDashboard(bool isRunning, string statusMessage, int statusCode);
+
+		void SetDashboardStateWithoutAction(DashboardState dashboardState);
+
+		void ResetDashboard();
+
+		void ResetDashboardButLeaveDashboardOn();
+
+		IEnumerable<EquipmentUtilCostData> OnDashboardGetEquipmentUtilCostData();
+
+		void OnDashboardGetCapitalAndUtilityValues(out double capitalCostValue, out string capitalCostUnits, out double utilityCostValue, out string utilityCostUnits, out double equipmentCost, out double totalDirectCost);
+
+		IEnumerable<UtilityDataProperty> OnDashboardGetOpCostData();
+
+		bool OnDashboardHasEvaluationErrors();
+
+		void CloseDashboard();
+
+		void OnDashboardDeactivating(CancelEventArgs args);
+
+		void SynchronizeApplicationAndDashboard(SynchronizeApplicationAndDashboardEventArgs args);
+
+		void StopEconomicAnalysisOnMidRun();
+
+		void ShowHelp(HelpType eHelpType);
+
+		UnitForKPIs GetDefaultUnitForKPIs();
+
+		void RaiseEconomicStartRunningEvent();
+
+		void RaiseEconomicStopRunningEvent();
+
+		void ShowIsBusyMessage(string content);
+
+		void InvokeICariusMap(string[] arrayofSelectedBlockIds, string[] arrayofAllBlockIds);
+
+		void InvokeICariusUnMap(string[] arrayofSelectedBlockIds, string[] arrayofAllBlockIds);
+
+		bool UpdatePartialCostSummaryGrid();
+
+		bool RunPartialFlowsheetCost(string lstofBlockIds);
+	}
+	public class RunningEventArgs : EventArgs
+	{
+		public bool IsRunning { get; set; }
+
+		public string StatusMessage { get; set; }
+
+		public int StatusCode { get; set; }
+	}
+	public class SynchronizeApplicationAndDashboardEventArgs : EventArgs
+	{
+		public bool IsActivateEconomicsChecked { get; set; }
+
+		public bool IsAutoEvaluateEconomicsChecked { get; set; }
+	}
+	public class UpdateDashboardStatusTextEventArgs : EventArgs
+	{
+		public string StatusText { get; set; }
+	}
+	public class EquipmentUtilCostData
+	{
+		public IList<UtilityDataProperty> UtilityDataList { get; set; }
+
+		public EquipmentUtilCostData()
+		{
+			UtilityDataList = new List<UtilityDataProperty>();
+		}
+	}
+	public class UtilityDataProperty
+	{
+		public string Name { get; set; }
+
+		public object Value { get; set; }
+
+		public string Units { get; set; }
+
+		public UtilityDataProperty(string propname, object val)
+		{
+			Name = propname;
+			Value = val;
+		}
+	}
+	public class EquipmentCostItem
+	{
+		public string Handle { get; set; }
+
+		public string Unit { get; set; }
+
+		public string ParentUnitOp { get; set; }
+
+		public string Equipment { get; set; }
+
+		public string EquipmentCost { get; set; }
+
+		public string InstalledCost { get; set; }
+
+		public int ColorFormat { get; set; }
+
+		public double PercentCost { get; set; }
+
+		public string Weight { get; set; }
+
+		public string InstallWeight { get; set; }
+
+		public string OperatingCost { get; set; }
+
+		public string CostUnits { get; set; }
+
+		public string WeightUnits { get; set; }
+
+		public string UtilityCostUnits { get; set; }
+
+		public string SizingError { get; set; }
+
+		public string EvaluationError { get; set; }
+	}
+	public enum DashboardState
+	{
+		Off,
+		On
+	}
+	public enum HelpType
+	{
+		Equipment,
+		Capital,
+		Utility,
+		None
+	}
+	public class DashboardStateEventArgs : EventArgs
+	{
+		public DashboardState DashboardState { get; set; }
+	}
+	public class UnitForKPIs
+	{
+		public string CapitalCost { get; set; }
+
+		public string UtilityCost { get; set; }
+	}
+	public interface IEconomicDashboardItem
+	{
+		bool IsOnOffButtonCanBeUsed { get; }
+
+		event EventHandler IsOnOffButtonCanBeUsedChanged;
+
+		bool StopAnalysisOnMidRun(bool isPartialFlowsheetCosting = false);
+	}
+	public interface IEconomicsOverlay
+	{
+		bool IsOverlaysDisplayChecked { get; set; }
+
+		void SetEENumOverlayItems(int ival);
+
+		void SetEEOverlayCategory(string sval);
+
+		int GetEENumOverlayItems();
+
+		string GetEEOverlayCategory();
+
+		IEnumerable<EquipmentCostItem> OnEEOverlayGetEquipmentCostItems();
+
+		void Load();
+
+		void Unload();
+
+		void DisplayOverlays(bool bDisplay);
+
+		bool Initialize();
+
+		void Uninitialize();
+	}
+	public interface IEdrActivationAgent
+	{
+		bool IsReady { get; }
+
+		string ContainerLabel { get; }
+
+		Simulator SimulatorType { get; }
+
+		bool IsEDRInstalled { get; }
+
+		event BlockAddedEvent BlockAddedEvent;
+
+		event BlockRemovedEvent BlockRemovedEvent;
+
+		event BlockChangedEvent BlockChangedEvent;
+
+		event BlockRenamedEvent BlockRenamedEvent;
+
+		event SimulationSolvedEvent SimulationSolvedEvent;
+
+		event UnitSetChangedEvent UnitSetChangedEvent;
+
+		event ExchangerTypeChangedEvent ExchangerTypeChangedEvent;
+
+		event SimulatorStatusChangedEvent SimulatorStatusChangedEvent;
+
+		event EventHandler ChangedDocumentEvent;
+
+		IList<string> GetExchangerNames();
+
+		IDictionary<string, IEDRActivatedExchanger> ExchangerInformation();
+
+		void SetSummaryViewOpened(bool opened);
+
+		void SetOverlayActive(bool active);
+
+		void Load();
+
+		void Unload();
+
+		void ShowHelp(int topicId);
+	}
+	public enum Simulator
+	{
+		AspenPlus,
+		AspenHysys
+	}
+	public delegate void BlockAddedEvent(object sender, BlockAddedEventArgs e);
+	public class BlockAddedEventArgs : EventArgs
+	{
+		public KeyValuePair<string, IEDRActivatedExchanger> KVP { get; set; }
+
+		public BlockAddedEventArgs(KeyValuePair<string, IEDRActivatedExchanger> kvp)
+		{
+			KVP = kvp;
+		}
+	}
+	public delegate void BlockRemovedEvent(object sender, BlockRemovedEventArgs e);
+	public class BlockRemovedEventArgs : EventArgs
+	{
+		public IList<string> Names { get; set; }
+
+		public BlockRemovedEventArgs(IList<string> names)
+		{
+			Names = names;
+		}
+	}
+	public delegate void BlockChangedEvent(object sender, BlockChangedEventArgs e);
+	public class BlockChangedEventArgs : EventArgs
+	{
+		public KeyValuePair<string, IEDRActivatedExchanger> KVP { get; set; }
+
+		public BlockChangedEventArgs(KeyValuePair<string, IEDRActivatedExchanger> kvp)
+		{
+			KVP = kvp;
+		}
+	}
+	public delegate void BlockRenamedEvent(object sender, BlockRenamedEventArgs e);
+	public class BlockRenamedEventArgs : EventArgs
+	{
+		public string ObjectType { get; set; }
+
+		public string OldName { get; set; }
+
+		public string NewName { get; set; }
+
+		public BlockRenamedEventArgs(string strObjectType, string strOldName, string strNewName)
+		{
+			ObjectType = strObjectType;
+			OldName = strOldName;
+			NewName = strNewName;
+		}
+	}
+	public delegate void SimulationSolvedEvent(object sender, SimulationSolvedEventArgs e);
+	public class SimulationSolvedEventArgs : EventArgs
+	{
+		public string Name { get; set; }
+
+		public SimulationSolvedEventArgs(string name)
+		{
+			Name = name;
+		}
+	}
+	public delegate void UnitSetChangedEvent(object sender, UnitSetChangedEventArgs e);
+	public class UnitSetChangedEventArgs : EventArgs
+	{
+		public string OldUnitSet { get; set; }
+
+		public string NewUnitSet { get; set; }
+
+		public UnitSetChangedEventArgs(string oldUnitSet, string newUnitSet)
+		{
+			OldUnitSet = oldUnitSet;
+			NewUnitSet = newUnitSet;
+		}
+	}
+	public delegate void ExchangerTypeChangedEvent(object sender, ExchangerTypeChangedEventArgs e);
+	public class ExchangerTypeChangedEventArgs : EventArgs
+	{
+		public string Name { get; set; }
+
+		public ExchangerTypeChangedEventArgs(string name)
+		{
+			Name = name;
+		}
+	}
+	public delegate void SimulatorStatusChangedEvent(object sender, SimulatorStatusChangedEventArgs e);
+	public class SimulatorStatusChangedEventArgs : EventArgs
+	{
+		public string Status { get; set; }
+
+		public bool IsResultAvailable { get; set; }
+
+		public SimulatorStatusChangedEventArgs(string status, bool isResultAvailable)
+		{
+			Status = status;
+			IsResultAvailable = isResultAvailable;
+		}
+	}
+	public interface IEDRActivatedExchanger
+	{
+		bool CalcError { get; set; }
+
+		bool IsRigorous { get; }
+
+		bool CanSizeed { get; }
+
+		bool IsContainer { get; }
+
+		IList<string> Contains { get; }
+
+		string ContainerName { get; }
+
+		string ExchangerName { get; }
+
+		string ModelType { get; }
+
+		string SimpleType { get; }
+
+		IATVApp EDRApp { get; }
+
+		IDictionary<string, IEDRBaseLineValue> BaseLineValues { get; }
+
+		IDictionary<string, IEDRBaseLineValue> SimulatorValues { get; }
+
+		IList<IEDRConvertOption> ConvertOptions { get; }
+
+		bool IsEDRActive { get; }
+
+		bool Convert(EDRConvertOptions convertOption);
+
+		void ConvertUnit(EDRActivateVariable sourceVar, out EDRActivateVariable convertedVar);
+
+		void NavigateToExchangerForm();
+
+		string RelativeContainerName(string container);
+	}
+	public interface IEDRActivationParams
+	{
+		bool IsExchangerComponentInstalled { get; }
+
+		string BJacTop();
+
+		string DatabasePath();
+
+		string GetBJacInstalledMessage(string simulatorName, string strEdrNotInstalled, string strVersionIncon);
+
+		void SetBjacVersion(string compatibleVersion);
+	}
+	public struct IEDRBaseLineValue
+	{
+		public double Value;
+
+		public string Uom;
+	}
+	public struct IEDRConvertOption
+	{
+		public int index;
+
+		public string label;
+	}
+	public class EDRActivateVariable
+	{
+		public EDRActivateQuantityType QuantityType { get; set; }
+
+		public string Unit { get; set; }
+
+		public double Value { get; set; }
+
+		public string FormatedStringValue { get; set; }
+
+		public EDRActivateVariable()
+		{
+		}
+
+		public EDRActivateVariable(EDRActivateQuantityType qt)
+		{
+			QuantityType = qt;
+		}
+	}
+	public enum EDRActivateQuantityType
+	{
+		None,
+		Temperature,
+		Pressure,
+		MoleFlow,
+		MassFlow,
+		VolumFlow,
+		MoleEnthalpy,
+		DeltaTemperature,
+		DeltaPressure,
+		Time,
+		MassEnthalpy,
+		Area,
+		HeatLoad
+	}
+	public enum EDRConvertOptions : short
+	{
+		ConvertToSimple = -1,
+		ConvertToRigorous = 1,
+		ConvertToSizeRigorous = 2,
+		ConvertToSpecifyRigorous = 3
+	}
+	public interface IEnergyAnalysisMessenger
+	{
+		bool CanActivate { get; }
+
+		bool IsActivationDone { get; set; }
+
+		bool IsGenerationDone { get; set; }
+
+		event EventHandler<EARefreshEventArgs> DataChanged;
+
+		void BlockFlowsheetUI();
+
+		void UnblockFlowsheetUI();
+
+		bool IsEAEnabled();
+
+		void NotifyDataChanged(bool refreshView = false);
+	}
+	public interface IEnergyAnalysisAgent
+	{
+		bool IsReady { get; }
+
+		bool IsInstalled { get; }
+
+		bool IsInputComplete { get; }
+
+		bool IsUtilitiesWarning { get; set; }
+
+		bool IsExchangerWarning { get; set; }
+
+		int LastOpenedTabIndex { get; set; }
+
+		int NumberAddHXDesigns { get; set; }
+
+		int NumberRelocateHXDesigns { get; set; }
+
+		bool? IsFindingDesignChanges { get; set; }
+
+		bool NeedSaveClose { get; set; }
+
+		bool NeedsEARerun { get; set; }
+
+		bool IsReloading { get; set; }
+
+		int GenerateStep { get; }
+
+		event EventHandler<EAGenerateStateEventArgs> EAGenerateStateReported;
+
+		event EventHandler StartRunningSimulationEvent;
+
+		event EventHandler EndRunningSimulationEvent;
+
+		event EventHandler StartLoadingAnalysisEvent;
+
+		event EventHandler EndLoadingAnalysisEvent;
+
+		event EventHandler StartExtractingDashboardResultsEvent;
+
+		event EventHandler ShowDashboardResultsEvent;
+
+		event EventHandler TurnOnAutoRunModeEvent;
+
+		event EventHandler ResetDashboardEvent;
+
+		event EventHandler<UpdateDashboardStatusArgs> UpdateDashboardStatusEvent;
+
+		event EventHandler AnalysisCompleteEvent;
+
+		event EventHandler<UpdateLandingFormsEnabledStateArgs> UpdateLandingFormsEnabledStateEvent;
+
+		event EventHandler<WarningTypeArgs> ShowWarningFormEvent;
+
+		event EventHandler<AutoRunEventArgs> AutoRunEvent;
+
+		event EventHandler<IsBusyEventArgs> CheckIfBusyEvent;
+
+		event EventHandler<IsAnalysisButtonEnabledEventArgs> RefreshIsAnalysisButtonEnabledEvent;
+
+		void ShowMoreExchangerDetails();
+
+		bool IsAutoRun();
+
+		bool IsBusy();
+
+		void ShowEEIsBusyMessage();
+
+		void OnEAGenerateStateReported(EAGenerateStateEventArgs report);
+
+		void Activate(bool analyze = true);
+
+		ActivationResult RetrieveActivationResult();
+
+		void NavigateToViewUtilities();
+
+		IEditableObject GenerateEditOptionsContent();
+
+		bool CanDoGeneration();
+
+		void DoGeneration();
+
+		void NavigateToGenerateResult(string path);
+
+		void OnDashboardClosed();
+
+		void OnGenerateProgress(double state, double solutionCount);
+
+		bool CancelGenerate();
+
+		int GetSolutionCount(int nStep);
+
+		void SetGenerateUpperLimit(int nAddHX, int nRelocateHX);
+
+		void ResetGenerateStep();
+
+		void InitializeEASettings(bool launchEA);
+
+		void ClearActivationResults();
+
+		void StartRunningSimulation();
+
+		void EndRunningSimulation();
+
+		void StartLoadingAnalysis();
+
+		void EndLoadingAnalysis();
+
+		void StartExtractingDashboardResults();
+
+		void ShowDashboardResults();
+
+		void TurnOnAutoRunMode();
+
+		void ResetDashboard();
+
+		void UpdateDashboardStatus(UpdateDashboardStatusArgs args);
+
+		void RaiseAnalysisComplete(EAOperations eaopt = EAOperations.unKnown);
+
+		void UpdateLandingFormsEnabledState(UpdateLandingFormsEnabledStateArgs args);
+
+		void ShowWarningForm(WarningType type);
+
+		void RefreshIsAnalysisButtonEnabled(bool isEnabled);
+
+		void StartAnalyze(bool runSimulationIfNecessary, bool bAutoRun = false);
+
+		void SaveAndCloseEAFiles();
+
+		void OnShowHelpHtml(int topicId);
+	}
+	public interface IHostApplicationInfoMessenger
+	{
+		ApplicationType HostApplicationType { get; }
+
+		string HostProductName { get; }
+
+		string CompoundDocRootFile { get; }
+
+		string CurrentDocumentPath { get; }
+	}
+	public class EAUpdateEventArgs : EventArgs
+	{
+		public EAOperations opt { get; set; }
+	}
+	public class AutoRunEventArgs : EventArgs
+	{
+		public bool IsAutoRun { get; set; }
+	}
+	public class IsBusyEventArgs : EventArgs
+	{
+		public bool IsBusy { get; set; }
+	}
+	public class IsAnalysisButtonEnabledEventArgs : EventArgs
+	{
+		public bool IsEnabled { get; set; }
+	}
+	public enum EAOperations
+	{
+		unKnown,
+		EAOff,
+		RefreshConfigOnly,
+		RunCompleted,
+		UpdateView
+	}
+	public enum WarningType
+	{
+		None,
+		UtilitiesWarning,
+		ExchangerWarning
+	}
+	public class ActivationResult
+	{
+		public string CapitalCostUnit;
+
+		public string AreaUnit;
+
+		public bool ShowWarning { get; set; }
+
+		public string CoolingCurrentValue { get; set; }
+
+		public string CoolingTotalValue { get; set; }
+
+		public string CoolingUnits { get; set; }
+
+		public string CoolingTotalCost { get; set; }
+
+		public string CoolingCurrentCost { get; set; }
+
+		public string CoolingSavingPotential { get; set; }
+
+		public string CoolingTooltipUnits { get; set; }
+
+		public string HeatingCurrentValue { get; set; }
+
+		public string HeatingTotalValue { get; set; }
+
+		public string HeatingUnits { get; set; }
+
+		public string HeatingTotalCost { get; set; }
+
+		public string HeatingCurrentCost { get; set; }
+
+		public string HeatingSavingPotential { get; set; }
+
+		public string HeatingTooltipUnits { get; set; }
+
+		public string GHGCurrentValue { get; set; }
+
+		public string GHGTotalValue { get; set; }
+
+		public string GHGUnits { get; set; }
+
+		public string GHGTotalCost { get; set; }
+
+		public string GHGCurrentCost { get; set; }
+
+		public string GHGSavingPotential { get; set; }
+
+		public string GHGTooltipUnits { get; set; }
+
+		public string UtilityCostCurrentValue { get; set; }
+
+		public string UtilityCostTotalValue { get; set; }
+
+		public string UtilityCostUnits { get; set; }
+
+		public string UtilityPercent { get; set; }
+
+		public string GHGCostCurrentValue { get; set; }
+
+		public string GHGCostTotalValue { get; set; }
+
+		public string GHGCostUnits { get; set; }
+
+		public string GHGPercent { get; set; }
+
+		public string TotalUnits { get; set; }
+
+		public string TotalCurrentValue { get; set; }
+
+		public string TotalTargetValue { get; set; }
+
+		public string TotalFlowSavingPercent { get; set; }
+
+		public string TotalFlowSavingPercentDB { get; set; }
+
+		public string HeatingFlowSavingPercent { get; set; }
+
+		public string CoolingFlowSavingPercent { get; set; }
+
+		public string GHGFlowSavingPercent { get; set; }
+
+		public string HeatingCostSavingPercent { get; set; }
+
+		public string CoolingCostSavingPercent { get; set; }
+
+		public string TotalFlowDifference { get; set; }
+
+		public string HeatingFlowDifference { get; set; }
+
+		public string CoolingFlowDifference { get; set; }
+
+		public string GHGFlowDifference { get; set; }
+
+		public string TotalCostDifference { get; set; }
+	}
+	public enum EAGenerateOperation
+	{
+		Modify,
+		Add,
+		Relocate
+	}
+	public enum EAGenerateState
+	{
+		NotRun,
+		Running,
+		Succeeded,
+		Failed,
+		Clear
+	}
+	public class EAGenerateResult
+	{
+		public string DesignChange { get; set; }
+
+		public string EnergySaving { get; set; }
+
+		public string Payback { get; set; }
+
+		public string NewArea { get; set; }
+
+		public string CapitalCost { get; set; }
+
+		public string EnergyCost { get; set; }
+
+		public string NavigationPath { get; set; }
+
+		public EAGenerateOperation Operation { get; set; }
+	}
+	public class EAGenerateStateEventArgs : EventArgs
+	{
+		public EAGenerateOperation Operation { get; private set; }
+
+		public EAGenerateState State { get; private set; }
+
+		public EAGenerateResult Result { get; private set; }
+
+		public EAGenerateStateEventArgs(EAGenerateOperation operation, EAGenerateState state, EAGenerateResult result)
+		{
+			Operation = operation;
+			State = state;
+			Result = result;
+		}
+	}
+	public class EAGenerateProgressEventArgs : EventArgs
+	{
+		public double StatusForUI { get; set; }
+
+		public double SolutionSucceedNumber { get; set; }
+
+		public EAGenerateProgressEventArgs(double state, double solutionnum)
+		{
+			StatusForUI = state;
+			SolutionSucceedNumber = solutionnum;
+		}
+	}
+	public class EARefreshEventArgs : EventArgs
+	{
+		public bool refreshView { get; set; }
+
+		public EARefreshEventArgs(bool refresh)
+		{
+			refreshView = refresh;
+		}
+	}
+	public class WarningTypeArgs : EventArgs
+	{
+		public WarningType Type { get; set; }
+	}
+	public class UpdateLandingFormsEnabledStateArgs : EventArgs
+	{
+		public bool HasResult { get; set; }
+	}
+	public class UpdateDashboardStatusArgs : EventArgs
+	{
+		public StatusControlDisplayMode Mode { get; set; }
+
+		public string Hint { get; set; }
+	}
+	public interface IGHGEmissionAgent
+	{
+		bool IsActive { get; set; }
+
+		event EventHandler UpdateDataEvent;
+
+		event EventHandler ResetDashboardEvent;
+
+		double? GetNetStreamCO2();
+
+		double? GetUtilityCO2();
+
+		double? GetCarbonTax();
+
+		string GetNetStreamCO2Unit();
+
+		string GetUtilityCO2Unit();
+
+		string GetCarbonTaxUnit();
+
+		void ShowCO2EmissionScreen();
+
+		void ResetDashboard();
+	}
+}
+namespace AspenTech.ActivationDashboard.Infrastructure.Compatibility
+{
+	public class DashboardScreenDataConverterV30 : CommonScreenConverterBase
+	{
+		public DashboardScreenDataConverterV30()
+			: base("DashBoardScreenFactoryKey", 30, "DashboardScreenFactoryKey")
+		{
+		}
+
+		protected override void ConvertOverride(XElement subject, XElement state)
+		{
+			if (subject != null && subject.Parent != null)
+			{
+				subject.Parent.Remove();
+			}
+			if (state != null && state.Parent != null)
+			{
+				state.Parent.Remove();
+			}
+		}
+	}
+	public class DashboardScreenDataConverterV34 : CommonScreenConverterBase
+	{
+		public override bool IsScreenObsolete => true;
+
+		public DashboardScreenDataConverterV34()
+			: base("DashboardScreenFactoryKey", 34)
+		{
+		}
+
+		protected override void ConvertOverride(XElement subject, XElement state)
+		{
+			if (state == null || state.Parent == null || state.Parent.Parent == null || state.Parent.Parent.Parent == null || state.Parent.Parent.Parent.Parent == null || !(state.FirstNode is XElement xElement))
+			{
+				return;
+			}
+			XElement xElement2 = new XElement("DashboardPanel");
+			xElement2.SetAttributeValue("IsExpanded", true);
+			xElement2.SetAttributeValue("Version", 32);
+			foreach (XElement item in xElement.Elements())
+			{
+				XAttribute xAttribute = item.Attribute("Key");
+				if (xAttribute == null)
+				{
+					continue;
+				}
+				XAttribute xAttribute2 = item.Attribute("State");
+				if (xAttribute2 != null)
+				{
+					string itemTypeText = GetItemTypeText(xAttribute.Value);
+					if (!string.IsNullOrEmpty(itemTypeText))
+					{
+						XElement xElement3 = new XElement("Item");
+						xElement3.SetAttributeValue("Type", itemTypeText);
+						xElement3.SetValue(xAttribute2.Value);
+						xElement2.Add(xElement3);
+					}
+				}
+			}
+			state.Parent.Parent.Parent.Parent.SetAttributeValue("ActivationBarState", xElement2.ToString());
+		}
+
+		private string GetItemTypeText(string key)
+		{
+			if (string.Equals(key, "EconomicsAnalysisDashboardItem", StringComparison.InvariantCultureIgnoreCase))
+			{
+				return "AspenTech.ActivationDashboard.EconomicAnalysis.DashboardItem";
+			}
+			if (string.Equals(key, "EnergyAnalysisDashboardItem", StringComparison.InvariantCultureIgnoreCase))
+			{
+				return "AspenTech.ActivationDashboard.EnergyAnalysis.DashboardItem";
+			}
+			if (string.Equals(key, "EdrActivationDashboardItem", StringComparison.InvariantCultureIgnoreCase))
+			{
+				return "AspenTech.ActivationDashboard.EdrActivation.DashboardItem";
+			}
+			return null;
+		}
+	}
+	internal static class DashboardItemStateManager
+	{
+		public static string Convert(IDashboardItem item, string state, int version)
+		{
+			if (string.IsNullOrEmpty(state))
+			{
+				return null;
+			}
+			IOrderedEnumerable<IDashboardItemStateConverter> orderedEnumerable = from x in item.Converters
+				where x != null && x.TargetVersion > version
+				orderby x.TargetVersion
+				select x;
+			string text = state;
+			foreach (IDashboardItemStateConverter item2 in orderedEnumerable)
+			{
+				text = item2.Convert(text);
+				if (string.IsNullOrEmpty(text))
+				{
+					return null;
+				}
+			}
+			return text;
+		}
+	}
+	public interface IStateConverterV34
+	{
+		string ConvertStateToV34(string state);
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

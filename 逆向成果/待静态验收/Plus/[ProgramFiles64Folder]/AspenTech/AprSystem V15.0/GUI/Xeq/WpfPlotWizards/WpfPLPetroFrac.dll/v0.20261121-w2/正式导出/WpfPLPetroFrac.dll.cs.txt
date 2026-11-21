@@ -1,0 +1,7052 @@
+using System;
+using System.CodeDom.Compiler;
+using System.Collections;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Resources;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Text;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Markup;
+using AspenTech.AspenPlus.Happ;
+using AspenTech.AspenPlus.Infrastructure;
+using AspenTech.AspenPlus.Localization.WpfPlotWizards;
+using WpfPLControls;
+using WpfPlotWizardsHelper;
+using WpfPlotwizard;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyFileVersion("41.0.0.614")]
+[assembly: AssemblyTitle("WpfPLpetroFrac")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("Aspen Technology, Inc.")]
+[assembly: AssemblyProduct("WpfPLpetroFrac")]
+[assembly: AssemblyCopyright("Copyright © Aspen Technology, Inc. 2011 - 2024")]
+[assembly: AssemblyTrademark("")]
+[assembly: ComVisible(false)]
+[assembly: NeutralResourcesLanguage("en-US", UltimateResourceFallbackLocation.Satellite)]
+[assembly: ThemeInfo(ResourceDictionaryLocation.None, ResourceDictionaryLocation.SourceAssembly)]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.614")]
+namespace WpfPLPetroFrac
+{
+	[ProgId("WpfPLPetroFrac.CGCCStgH")]
+	public class CGCCStgH : UserControl, IRibbonPlotWizardType, IPlotWizardTemplate, IComponentConnector
+	{
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private PlotwizardHelper _help = new PlotwizardHelper();
+
+		private PetroFracHelper _petrofracHelp = new PetroFracHelper();
+
+		private string _currentEnthalpyFlowUnit = string.Empty;
+
+		private string _currentConfigValue = string.Empty;
+
+		private string _uniqueId = WpfPLPetroFracResources.CGCCStgH_ID;
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgBitmap;
+
+		private bool _bHasInputDialog;
+
+		private bool _bEnthalpyBox;
+
+		private readonly string _enthalpyFlowUnitFieldId = WpfPLPetroFracResources.Enthalpy_Flow;
+
+		private readonly string _realEnthalpyFieldId = WpfPLPetroFracResources.Add_real_enthalpy_box;
+
+		private readonly string _stageOnFieldId = WpfPLPetroFracResources.Stage_number_on;
+
+		private readonly string _yAxis = WpfPLPetroFracResources.Y_axis;
+
+		private readonly string _xAxis = WpfPLPetroFracResources.X_axis;
+
+		private string[] _colVarNames;
+
+		private string[] _stripperVarNames;
+
+		public static RoutedCommand OKCommand = new RoutedCommand();
+
+		public static RoutedCommand CancelCommand = new RoutedCommand();
+
+		private bool _bCheckDataOnly;
+
+		internal RadioButton radBtnMainColumn;
+
+		internal RadioButton radBtnStripper;
+
+		internal ComboBox comboBoxStripper;
+
+		private bool _contentLoaded;
+
+		public string TooltipContentForRibbonItem => WpfPLPetroFracResources.TooltipContentForRibbonItem_CGCCSH;
+
+		public string TooltipHeaderForRibbonItem => "CGCC(S-H)";
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgBitmap;
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => _help.GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => _help.GetHelpID();
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string> { _enthalpyFlowUnitFieldId, _realEnthalpyFieldId };
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string> { _stageOnFieldId };
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		public CGCCStgH()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			InitializeComponent();
+			SetVariables();
+			_bEnthalpyBox = true;
+			_bHasInputDialog = true;
+			if (_imgBitmap == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLPetroFrac.Images.cgcc2.ico");
+				_imgBitmap = new Bitmap(manifestResourceStream);
+			}
+			CommandBinding commandBinding = new CommandBinding(OKCommand, ExecuteOKCommand, CanExecuteOKCommand);
+			CommandBinding commandBinding2 = new CommandBinding(CancelCommand, ExecuteCancelCommand);
+			base.CommandBindings.Add(commandBinding);
+			base.CommandBindings.Add(commandBinding2);
+		}
+
+		public void SetCaption(ref string caption)
+		{
+			caption = "CGCC(S-H)";
+		}
+
+		public void SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 130.0;
+		}
+
+		public void SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 300.0;
+		}
+
+		public void SetMinHeight(ref double minHeight)
+		{
+			minHeight = 180.0;
+		}
+
+		public void SetMinWidth(ref double minWidth)
+		{
+			minWidth = 300.0;
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(_enthalpyFlowUnitFieldId) == 0)
+			{
+				List<string> list = new List<string>();
+				_help.LoadUnitsList(_context.Application.Tree, _wizardPlot, list);
+				return list;
+			}
+			if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				return new List<string> { _xAxis, _yAxis };
+			}
+			return null;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(_enthalpyFlowUnitFieldId) == 0)
+			{
+				sCurrentVal = _help.GetUnitString(_context.Application.Tree, _wizardPlot);
+			}
+			else if (sFieldName.CompareTo(WpfPLPetroFracResources.Add_real_enthalpy_box) == 0)
+			{
+				sCurrentVal = "true";
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(_enthalpyFlowUnitFieldId) == 0)
+			{
+				_currentEnthalpyFlowUnit = sValue;
+			}
+			else if (sFieldName.CompareTo(_realEnthalpyFieldId) == 0)
+			{
+				if (sValue == "true")
+				{
+					_bEnthalpyBox = true;
+				}
+				else
+				{
+					_bEnthalpyBox = false;
+				}
+			}
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sField)
+		{
+			if (sField.CompareTo(_enthalpyFlowUnitFieldId) != 0 && sField.CompareTo(_stageOnFieldId) != 0)
+			{
+				if (sField.CompareTo(_realEnthalpyFieldId) != 0)
+				{
+					return (RibbonControlType)0;
+				}
+				return (RibbonControlType)2;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				if (_wizardPlot.PlotVal.SwapAxises)
+				{
+					sCurrentVal = _yAxis;
+				}
+				else
+				{
+					sCurrentVal = _xAxis;
+				}
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				if (sValue.CompareTo(_yAxis) == 0)
+				{
+					_wizardPlot.PlotVal.SwapAxises = true;
+				}
+				else
+				{
+					_wizardPlot.PlotVal.SwapAxises = false;
+				}
+			}
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+			sConfigValue = _currentConfigValue;
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+			_currentConfigValue = sValue;
+		}
+
+		void IRibbonPlotWizardType.Context(object HNode, ref object HWizardPlot, ref int ierror)
+		{
+			if (HWizardPlot == null || HNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			_context = HNode as IHNode;
+			_wizardPlot = HWizardPlot as IHWizardPlot;
+			IHNode iHNode = _context.FindNode(_colVarNames[0]);
+			if (iHNode == null || iHNode.Elements.Count <= 0)
+			{
+				ierror = 1;
+				return;
+			}
+			_wizardPlot.RemoveAllDependentVariable();
+			_wizardPlot.AddDependentVariable(_context, _colVarNames[0]);
+			if (_bEnthalpyBox)
+			{
+				_wizardPlot.AddDependentVariable(_context, _colVarNames[1]);
+			}
+			_wizardPlot.PlotVal.SwapAxises = true;
+			iHNode = _context.FindNode(_stripperVarNames[0]);
+			_petrofracHelp.LoadColumn(iHNode, comboBoxStripper, radBtnStripper);
+			if (comboBoxStripper.Items.Count <= 0)
+			{
+				_bHasInputDialog = false;
+			}
+			if (string.IsNullOrEmpty(_currentConfigValue))
+			{
+				radBtnMainColumn.IsChecked = true;
+			}
+			else
+			{
+				RestoreConfigValue(_currentConfigValue);
+			}
+		}
+
+		public void UpdateWizardData()
+		{
+			string text = "";
+			string depvar = "";
+			string text2 = "";
+			_wizardPlot.RemoveAllDependentVariable();
+			if (radBtnMainColumn.IsChecked == true)
+			{
+				text = _colVarNames[0];
+				text2 = WpfPLPetroFracResources.Title_MainCol;
+				if (_bEnthalpyBox)
+				{
+					depvar = _colVarNames[1];
+				}
+			}
+			else
+			{
+				string text3 = comboBoxStripper.Text.Trim();
+				text = _stripperVarNames[0] + "/" + text3;
+				text2 = WpfPLPetroFracResources.Title_Stripper + " " + text3;
+				if (_bEnthalpyBox)
+				{
+					depvar = _stripperVarNames[1] + "/" + text3;
+				}
+			}
+			_wizardPlot.SetIndependentVariable(_context, text + "!Label");
+			_wizardPlot.AddDependentVariable(_context, text);
+			((IHPlotVal)_wizardPlot.PlotVal).set_Label(0, WpfPLPetroFracResources.CGCCstgH_Legends0);
+			_wizardPlot.PlotVal.Title = WpfPLPetroFracResources.CGCCStgH_Title + " " + text2;
+			if (_bEnthalpyBox)
+			{
+				_wizardPlot.AddDependentVariable(_context, depvar);
+				((IHPlotVal)_wizardPlot.PlotVal).set_Label(1, WpfPLPetroFracResources.CGCCstgH_Legends1);
+			}
+			_help.SaveUnitsComboText(_context.Application.Tree, _wizardPlot, _currentEnthalpyFlowUnit);
+			_currentConfigValue = SaveConfigValue();
+		}
+
+		private void radBtn_Click(object sender, RoutedEventArgs e)
+		{
+			_petrofracHelp.SelecColumn(radBtnMainColumn, comboBoxStripper);
+		}
+
+		private void ExecuteOKCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			UpdateWizardData();
+			_help.CloseForm((UserControl)this, (bool?)true);
+		}
+
+		private void CanExecuteOKCommand(object sender, CanExecuteRoutedEventArgs e)
+		{
+			e.CanExecute = true;
+		}
+
+		private void ExecuteCancelCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			_help.CloseForm((UserControl)this, (bool?)false);
+		}
+
+		private void SetVariables()
+		{
+			_colVarNames = new string[2] { "Output/ENTHCOL", "Output/THBOXCOL" };
+			_stripperVarNames = new string[2] { "Output/ENTHSTR", "Output/THBOXSTR" };
+		}
+
+		private string SaveConfigValue()
+		{
+			_ = string.Empty;
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.Append("ColumnOption=");
+			stringBuilder.Append(radBtnMainColumn.IsChecked);
+			stringBuilder.Append(";");
+			stringBuilder.Append("StripperEnabled=");
+			stringBuilder.Append(comboBoxStripper.IsEnabled);
+			stringBuilder.Append(";");
+			stringBuilder.Append("Stripper=");
+			stringBuilder.Append(comboBoxStripper.Text);
+			stringBuilder.Append(";");
+			return stringBuilder.ToString();
+		}
+
+		private void RestoreConfigValue(string ConfigString)
+		{
+			string[] array = ConfigString.Split(';');
+			int num = 0;
+			string value = array[num].Substring(array[num].IndexOf('=') + 1);
+			radBtnMainColumn.IsChecked = Convert.ToBoolean(value);
+			radBtnStripper.IsChecked = !radBtnMainColumn.IsChecked;
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			comboBoxStripper.IsEnabled = Convert.ToBoolean(value);
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			comboBoxStripper.Text = value;
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLPetroFrac;component/cgccstgh.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			switch (connectionId)
+			{
+			case 1:
+				radBtnMainColumn = (RadioButton)target;
+				radBtnMainColumn.Click += radBtn_Click;
+				break;
+			case 2:
+				radBtnStripper = (RadioButton)target;
+				radBtnStripper.Click += radBtn_Click;
+				break;
+			case 3:
+				comboBoxStripper = (ComboBox)target;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+	[ProgId("WpfPLPetroFrac.CGCCTH")]
+	public class CGCCTH : UserControl, IRibbonPlotWizardType, IPlotWizardTemplate, IComponentConnector
+	{
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private PlotwizardHelper _help = new PlotwizardHelper();
+
+		private PetroFracHelper _petrofracHelp = new PetroFracHelper();
+
+		private string _currentEnthalpyFlowUnit = string.Empty;
+
+		private string _currentTempUnit = string.Empty;
+
+		private string _currentConfigValue = string.Empty;
+
+		private string _uniqueId = WpfPLPetroFracResources.CGCCTH_ID;
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgBitmap;
+
+		private bool _bHasInputDialog;
+
+		private bool _bEnthalpyBox;
+
+		private readonly string _tempUnitFieldId = WpfPLPetroFracResources.Temperature;
+
+		private readonly string _enthalpyFlowUnitFieldId = WpfPLPetroFracResources.Enthalpy_Flow;
+
+		private readonly string _realEnthalpyFieldId = WpfPLPetroFracResources.Add_real_enthalpy_box;
+
+		private string _colIndepVarName;
+
+		private string[] _colDepVarNames;
+
+		private string _stripperIndepVarName;
+
+		private string[] _stripperDepVarNames;
+
+		public static RoutedCommand OKCommand = new RoutedCommand();
+
+		public static RoutedCommand CancelCommand = new RoutedCommand();
+
+		private bool _bCheckDataOnly;
+
+		internal RadioButton radBtnMainColumn;
+
+		internal RadioButton radBtnStripper;
+
+		internal ComboBox comboBoxStripper;
+
+		private bool _contentLoaded;
+
+		public string TooltipContentForRibbonItem => WpfPLPetroFracResources.TooltipContentForRibbonItem_CGCCTH;
+
+		public string TooltipHeaderForRibbonItem => "CGCC(T-H)";
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgBitmap;
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => _help.GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => _help.GetHelpID();
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string> { _tempUnitFieldId, _enthalpyFlowUnitFieldId, _realEnthalpyFieldId };
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string>();
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		public CGCCTH()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			InitializeComponent();
+			_bEnthalpyBox = true;
+			_bHasInputDialog = true;
+			if (_imgBitmap == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLPetroFrac.Images.cgcc1.ico");
+				_imgBitmap = new Bitmap(manifestResourceStream);
+			}
+			CommandBinding commandBinding = new CommandBinding(OKCommand, ExecuteOKCommand, CanExecuteOKCommand);
+			CommandBinding commandBinding2 = new CommandBinding(CancelCommand, ExecuteCancelCommand);
+			base.CommandBindings.Add(commandBinding);
+			base.CommandBindings.Add(commandBinding2);
+		}
+
+		public void SetCaption(ref string caption)
+		{
+			caption = "CGCC(T-H)";
+		}
+
+		public void SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 130.0;
+		}
+
+		public void SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 300.0;
+		}
+
+		public void SetMinHeight(ref double minHeight)
+		{
+			minHeight = 180.0;
+		}
+
+		public void SetMinWidth(ref double minWidth)
+		{
+			minWidth = 300.0;
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(_tempUnitFieldId) == 0)
+			{
+				List<string> list = new List<string>();
+				_help.LoadUnitsList(_context.Application.Tree, _wizardPlot, list);
+				return list;
+			}
+			if (sFieldName.CompareTo(_enthalpyFlowUnitFieldId) == 0)
+			{
+				List<string> list2 = new List<string>();
+				_help.LoadXUnitsList(_context.Application.Tree, _wizardPlot, list2);
+				return list2;
+			}
+			return null;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(_tempUnitFieldId) == 0)
+			{
+				sCurrentVal = _help.GetUnitString(_context.Application.Tree, _wizardPlot);
+			}
+			if (sFieldName.CompareTo(_enthalpyFlowUnitFieldId) == 0)
+			{
+				sCurrentVal = _help.GetXUnitString(_context.Application.Tree, _wizardPlot);
+			}
+			else if (sFieldName.CompareTo(WpfPLPetroFracResources.Add_real_enthalpy_box) == 0)
+			{
+				sCurrentVal = "true";
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(_tempUnitFieldId) == 0)
+			{
+				_currentTempUnit = sValue;
+			}
+			else if (sFieldName.CompareTo(_enthalpyFlowUnitFieldId) == 0)
+			{
+				_currentEnthalpyFlowUnit = sValue;
+			}
+			else if (sFieldName.CompareTo(_realEnthalpyFieldId) == 0)
+			{
+				if (sValue == "true")
+				{
+					_bEnthalpyBox = true;
+				}
+				else
+				{
+					_bEnthalpyBox = false;
+				}
+			}
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sField)
+		{
+			if (sField.CompareTo(_tempUnitFieldId) != 0 && sField.CompareTo(_enthalpyFlowUnitFieldId) != 0)
+			{
+				if (sField.CompareTo(_realEnthalpyFieldId) != 0)
+				{
+					return (RibbonControlType)0;
+				}
+				return (RibbonControlType)2;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+			sConfigValue = _currentConfigValue;
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+			_currentConfigValue = sValue;
+		}
+
+		void IRibbonPlotWizardType.Context(object HNode, ref object HWizardPlot, ref int ierror)
+		{
+			if (HWizardPlot == null || HNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			_context = HNode as IHNode;
+			_wizardPlot = HWizardPlot as IHWizardPlot;
+			SetVariables();
+			IHNode iHNode = _context.FindNode(_colDepVarNames[0]);
+			if (iHNode == null || iHNode.Elements.Count <= 0)
+			{
+				ierror = 1;
+				return;
+			}
+			_wizardPlot.RemoveAllDependentVariable();
+			_wizardPlot.SetIndependentVariable(_context, _colIndepVarName);
+			_wizardPlot.AddDependentVariable(_context, _colDepVarNames[0]);
+			if (_bEnthalpyBox)
+			{
+				_wizardPlot.AddDependentVariable(_context, _colDepVarNames[1]);
+			}
+			_wizardPlot.PlotVal.SwapAxises = true;
+			iHNode = _context.FindNode(_stripperDepVarNames[0]);
+			_petrofracHelp.LoadColumn(iHNode, comboBoxStripper, radBtnStripper);
+			if (comboBoxStripper.Items.Count <= 0)
+			{
+				_bHasInputDialog = false;
+			}
+			if (string.IsNullOrEmpty(_currentConfigValue))
+			{
+				radBtnMainColumn.IsChecked = true;
+			}
+			else
+			{
+				RestoreConfigValue(_currentConfigValue);
+			}
+		}
+
+		public void UpdateWizardData()
+		{
+			string text = "";
+			string text2 = "";
+			string depvar = "";
+			string text3 = "";
+			_wizardPlot.RemoveAllDependentVariable();
+			if (radBtnMainColumn.IsChecked == true)
+			{
+				text = _colIndepVarName;
+				text2 = _colDepVarNames[0];
+				text3 = WpfPLPetroFracResources.Title_MainCol;
+				if (_bEnthalpyBox)
+				{
+					depvar = _colDepVarNames[1];
+				}
+			}
+			else
+			{
+				string text4 = comboBoxStripper.Text.Trim();
+				text = _stripperIndepVarName + "/" + text4;
+				text2 = _stripperDepVarNames[0] + "/" + text4;
+				text3 = WpfPLPetroFracResources.Title_Stripper + " " + text4;
+				if (_bEnthalpyBox)
+				{
+					depvar = _stripperDepVarNames[1] + "/" + text4;
+				}
+			}
+			_wizardPlot.SetIndependentVariable(_context, text);
+			_wizardPlot.AddDependentVariable(_context, text2);
+			((IHPlotVal)_wizardPlot.PlotVal).set_Label(0, WpfPLPetroFracResources.CGCCstgH_Legends0);
+			_wizardPlot.PlotVal.Title = WpfPLPetroFracResources.CGCCTH_Title + " " + text3;
+			if (_bEnthalpyBox)
+			{
+				_wizardPlot.AddDependentVariable(_context, depvar);
+				((IHPlotVal)_wizardPlot.PlotVal).set_Label(1, WpfPLPetroFracResources.CGCCstgH_Legends1);
+			}
+			_help.SaveUnitsComboText(_context.Application.Tree, _wizardPlot, _currentTempUnit);
+			_help.SaveXUnitsComboText(_context.Application.Tree, _wizardPlot, _currentEnthalpyFlowUnit);
+			_currentConfigValue = SaveConfigValue();
+		}
+
+		private void radBtn_Click(object sender, RoutedEventArgs e)
+		{
+			_petrofracHelp.SelecColumn(radBtnMainColumn, comboBoxStripper);
+		}
+
+		private void ExecuteOKCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			UpdateWizardData();
+			_help.CloseForm((UserControl)this, (bool?)true);
+		}
+
+		private void CanExecuteOKCommand(object sender, CanExecuteRoutedEventArgs e)
+		{
+			e.CanExecute = true;
+		}
+
+		private void ExecuteCancelCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			_help.CloseForm((UserControl)this, (bool?)false);
+		}
+
+		private void SetVariables()
+		{
+			_colIndepVarName = "Output/B_TEMPTM";
+			_stripperIndepVarName = "Output/B_TEMPTS";
+			_colDepVarNames = new string[2] { "Output/ENTHCOL", "Output/THBOXCOL" };
+			_stripperDepVarNames = new string[2] { "Output/ENTHSTR", "Output/THBOXSTR" };
+		}
+
+		private string SaveConfigValue()
+		{
+			_ = string.Empty;
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.Append("ColumnOption=");
+			stringBuilder.Append(radBtnMainColumn.IsChecked);
+			stringBuilder.Append(";");
+			stringBuilder.Append("StripperEnabled=");
+			stringBuilder.Append(comboBoxStripper.IsEnabled);
+			stringBuilder.Append(";");
+			stringBuilder.Append("Stripper=");
+			stringBuilder.Append(comboBoxStripper.Text);
+			stringBuilder.Append(";");
+			return stringBuilder.ToString();
+		}
+
+		private void RestoreConfigValue(string ConfigString)
+		{
+			string[] array = ConfigString.Split(';');
+			int num = 0;
+			string value = array[num].Substring(array[num].IndexOf('=') + 1);
+			radBtnMainColumn.IsChecked = Convert.ToBoolean(value);
+			radBtnStripper.IsChecked = !radBtnMainColumn.IsChecked;
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			comboBoxStripper.IsEnabled = Convert.ToBoolean(value);
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			comboBoxStripper.Text = value;
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLPetroFrac;component/cgccth.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			switch (connectionId)
+			{
+			case 1:
+				radBtnMainColumn = (RadioButton)target;
+				radBtnMainColumn.Click += radBtn_Click;
+				break;
+			case 2:
+				radBtnStripper = (RadioButton)target;
+				radBtnStripper.Click += radBtn_Click;
+				break;
+			case 3:
+				comboBoxStripper = (ComboBox)target;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+	[ProgId("WpfPLPetroFrac.Composition")]
+	public class Composition : UserControl, IRibbonPlotWizardType, IPlotWizardTemplate, IComponentConnector
+	{
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private PlotwizardHelper _help = new PlotwizardHelper();
+
+		private PetroFracHelper _petrofracHelp = new PetroFracHelper();
+
+		private string _currentConfigValue = string.Empty;
+
+		private string _uniqueId = WpfPLPetroFracResources.Composition_ID;
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgBitmap;
+
+		private bool _bHasInputDialog;
+
+		private readonly string _stageOnFieldId = WpfPLPetroFracResources.Stage_number_on;
+
+		private readonly string _stageOrderFieldId = WpfPLPetroFracResources.Stage_numbering_order;
+
+		private readonly string _yAxis = WpfPLPetroFracResources.Y_axis;
+
+		private readonly string _xAxis = WpfPLPetroFracResources.X_axis;
+
+		private readonly string _ascending = WpfPLPetroFracResources.Ascending;
+
+		private readonly string _descending = WpfPLPetroFracResources.Descending;
+
+		private string[] _colVarNames;
+
+		private string[] _stripperVarNames;
+
+		private string[] _strTitle;
+
+		private string[] _strYTitle;
+
+		private List<RadioButton> _phaseRadBtnList;
+
+		public static RoutedCommand OKCommand = new RoutedCommand();
+
+		public static RoutedCommand CancelCommand = new RoutedCommand();
+
+		private bool _bCheckDataOnly;
+
+		internal RadioButton radBtnMainColumn;
+
+		internal RadioButton radBtnStripper;
+
+		internal ComboBox comboBoxStripper;
+
+		internal RadioButton radBtnVapor;
+
+		internal RadioButton radBtnOrganic;
+
+		internal RadioButton radBtnLiquid;
+
+		internal CurvesSelectorControl CurveList;
+
+		private bool _contentLoaded;
+
+		public string TooltipContentForRibbonItem => WpfPLPetroFracResources.TooltipContentForRibbonItem_Comp;
+
+		public string TooltipHeaderForRibbonItem => WpfPLPetroFracResources.TooltipHeaderForRibbonItem_Comp;
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgBitmap;
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => _help.GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => _help.GetHelpID();
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string>();
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string> { _stageOrderFieldId, _stageOnFieldId };
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		public Composition()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			InitializeComponent();
+			SetVariables();
+			SetControls();
+			_bHasInputDialog = true;
+			if (_imgBitmap == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLPetroFrac.Images.composition.ico");
+				_imgBitmap = System.Drawing.Image.FromStream(manifestResourceStream);
+			}
+			CommandBinding commandBinding = new CommandBinding(OKCommand, ExecuteOKCommand, CanExecuteOKCommand);
+			CommandBinding commandBinding2 = new CommandBinding(CancelCommand, ExecuteCancelCommand);
+			base.CommandBindings.Add(commandBinding);
+			base.CommandBindings.Add(commandBinding2);
+		}
+
+		public void SetCaption(ref string caption)
+		{
+			caption = WpfPLPetroFracResources.Composition_Name;
+		}
+
+		public void SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 450.0;
+		}
+
+		public void SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 300.0;
+		}
+
+		public void SetMinHeight(ref double minHeight)
+		{
+			minHeight = 380.0;
+		}
+
+		public void SetMinWidth(ref double minWidth)
+		{
+			minWidth = 330.0;
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(_stageOrderFieldId) == 0)
+			{
+				return new List<string> { _ascending, _descending };
+			}
+			if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				return new List<string> { _xAxis, _yAxis };
+			}
+			return null;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sField)
+		{
+			if (sField.CompareTo(_stageOrderFieldId) != 0 && sField.CompareTo(_stageOnFieldId) != 0)
+			{
+				return (RibbonControlType)0;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(_stageOrderFieldId) == 0)
+			{
+				if (_wizardPlot.PlotVal.ReverseXAxis)
+				{
+					sCurrentVal = _descending;
+				}
+				else
+				{
+					sCurrentVal = _ascending;
+				}
+			}
+			else if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				if (_wizardPlot.PlotVal.SwapAxises)
+				{
+					sCurrentVal = _yAxis;
+				}
+				else
+				{
+					sCurrentVal = _xAxis;
+				}
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(_stageOrderFieldId) == 0)
+			{
+				if (sValue.CompareTo(_ascending) == 0)
+				{
+					_wizardPlot.PlotVal.ReverseXAxis = false;
+				}
+				else
+				{
+					_wizardPlot.PlotVal.ReverseXAxis = true;
+				}
+			}
+			else if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				if (sValue.CompareTo(_yAxis) == 0)
+				{
+					_wizardPlot.PlotVal.SwapAxises = true;
+				}
+				else
+				{
+					_wizardPlot.PlotVal.SwapAxises = false;
+				}
+			}
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+			sConfigValue = _currentConfigValue;
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+			_currentConfigValue = sValue;
+		}
+
+		void IRibbonPlotWizardType.Context(object HNode, ref object HWizardPlot, ref int ierror)
+		{
+			if (HWizardPlot == null || HNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			_context = HNode as IHNode;
+			_wizardPlot = HWizardPlot as IHWizardPlot;
+			IHNode iHNode = null;
+			bool flag = false;
+			for (int i = 0; i < _colVarNames.Count(); i++)
+			{
+				iHNode = _context.FindNode(_colVarNames[i]);
+				if (iHNode != null && iHNode.Elements.Count > 0)
+				{
+					flag = true;
+					break;
+				}
+			}
+			if (!flag)
+			{
+				ierror = 1;
+				return;
+			}
+			List<string> list = new List<string>();
+			CurveList.IsCheckAll = false;
+			if (iHNode != null && iHNode.Elements.Count > 0)
+			{
+				IHNodeCol elements = iHNode.Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements;
+				if (elements != null && elements.Count > 0)
+				{
+					for (int j = 0; j < elements.Count; j++)
+					{
+						string item = elements.get_Label(0, j, (object)null);
+						list.Add(item);
+					}
+					CurveList.SetCurves(list.ToArray());
+					CurveList.Header = WpfPLPetroFracResources.Comp_Header;
+				}
+			}
+			iHNode = _context.FindNode(_stripperVarNames[0]);
+			_petrofracHelp.LoadColumn(iHNode, comboBoxStripper, radBtnStripper);
+			if (string.IsNullOrEmpty(_currentConfigValue))
+			{
+				radBtnMainColumn.IsChecked = true;
+				for (int k = 0; k < _colVarNames.Count(); k++)
+				{
+					iHNode = _context.FindNode(_colVarNames[k]);
+					if (iHNode != null && iHNode.Elements.Count > 0)
+					{
+						_phaseRadBtnList[k].IsEnabled = true;
+					}
+				}
+				for (int l = 0; l < _phaseRadBtnList.Count(); l++)
+				{
+					if (_phaseRadBtnList[l].IsEnabled)
+					{
+						_phaseRadBtnList[l].IsChecked = true;
+						iHNode = _context.FindNode(_colVarNames[l]);
+						break;
+					}
+				}
+			}
+			else
+			{
+				RestoreConfigValue(_currentConfigValue);
+			}
+		}
+
+		public void UpdateWizardData()
+		{
+			int num = -1;
+			string text = "";
+			string ytitle = "";
+			for (int i = 0; i < _phaseRadBtnList.Count; i++)
+			{
+				if (_phaseRadBtnList[i].IsChecked == true)
+				{
+					num = i;
+					text = _strTitle[i];
+					ytitle = _strYTitle[i];
+					break;
+				}
+			}
+			_wizardPlot.RemoveAllDependentVariable();
+			IHNode iHNode = null;
+			string text2 = "";
+			if (radBtnMainColumn.IsChecked == true)
+			{
+				text2 = _colVarNames[num];
+				iHNode = _context.FindNode(text2);
+				text += WpfPLPetroFracResources.Title_MainCol;
+			}
+			else
+			{
+				string text3 = comboBoxStripper.Text.Trim();
+				text2 = _stripperVarNames[num] + "/" + text3;
+				iHNode = _context.FindNode(text2);
+				text = text + WpfPLPetroFracResources.Title_Stripper + " " + text3;
+			}
+			_wizardPlot.SetIndependentVariable(_context, text2 + "!Label");
+			if (iHNode != null)
+			{
+				List<string> list = new List<string>(CurveList.GetSelectedCurves());
+				int count = list.Count;
+				int count2 = iHNode.Elements.Count;
+				_wizardPlot.PlotVal.NVariables = count;
+				for (int j = 0; j < count; j++)
+				{
+					string text4 = list[j];
+					((IHPlotVal)_wizardPlot.PlotVal).set_Label(j, text4);
+					for (int k = 0; k < count2; k++)
+					{
+						((IHPlotVal)_wizardPlot.PlotVal).set_YData(j, k, (short)1, (object)iHNode.Elements[k, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[text4, Type.Missing, Type.Missing, Type.Missing, Type.Missing]);
+					}
+				}
+			}
+			_wizardPlot.PlotVal.Title = text;
+			((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle((object)null, ytitle);
+			_currentConfigValue = SaveConfigValue();
+			_currentConfigValue = SaveConfigValue();
+		}
+
+		private void radBtn_Click(object sender, RoutedEventArgs e)
+		{
+			_petrofracHelp.SelecColumn(radBtnMainColumn, comboBoxStripper);
+		}
+
+		private void ExecuteOKCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			UpdateWizardData();
+			_help.CloseForm((UserControl)this, (bool?)true);
+		}
+
+		private void CanExecuteOKCommand(object sender, CanExecuteRoutedEventArgs e)
+		{
+			int num = CurveList.GetSelectedCurves().Count();
+			if (num == CurveList.Curves.Count)
+			{
+				CurveList.IsCheckAll = true;
+			}
+			else
+			{
+				string[] selectedCurves = CurveList.GetSelectedCurves();
+				CurveList.IsCheckAll = false;
+				CurveList.SetSelectedCurves(selectedCurves);
+			}
+			e.CanExecute = num != 0;
+		}
+
+		private void ExecuteCancelCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			_help.CloseForm((UserControl)this, (bool?)false);
+		}
+
+		private void SetVariables()
+		{
+			_colVarNames = new string[3] { "Output/Y3", "Output/X3", "Output/X1" };
+			_stripperVarNames = new string[3] { "Output/Y4", "Output/X4", "Output/X5" };
+			_strTitle = new string[3]
+			{
+				WpfPLPetroFracResources.Composition_Title_Vapor,
+				WpfPLPetroFracResources.Composition_Title_Liquid,
+				WpfPLPetroFracResources.Composition_Title_Organic
+			};
+			_strYTitle = new string[3]
+			{
+				WpfPLPetroFracResources.Comp_Y,
+				WpfPLPetroFracResources.Comp_X,
+				WpfPLPetroFracResources.Comp_X1
+			};
+		}
+
+		private void SetControls()
+		{
+			_phaseRadBtnList = new List<RadioButton>();
+			_phaseRadBtnList.Add(radBtnVapor);
+			_phaseRadBtnList.Add(radBtnLiquid);
+			_phaseRadBtnList.Add(radBtnOrganic);
+			for (int i = 0; i < _phaseRadBtnList.Count; i++)
+			{
+				_phaseRadBtnList[i].IsEnabled = false;
+				_phaseRadBtnList[i].IsChecked = false;
+			}
+		}
+
+		private string SaveConfigValue()
+		{
+			_ = string.Empty;
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.Append("ColumnOption=");
+			stringBuilder.Append(radBtnMainColumn.IsChecked);
+			stringBuilder.Append(";");
+			stringBuilder.Append("StripperEnabled=");
+			stringBuilder.Append(comboBoxStripper.IsEnabled);
+			stringBuilder.Append(";");
+			stringBuilder.Append("Stripper=");
+			stringBuilder.Append(comboBoxStripper.Text);
+			stringBuilder.Append(";");
+			stringBuilder.Append("PhaseOption=");
+			for (int i = 0; i < _phaseRadBtnList.Count; i++)
+			{
+				if (_phaseRadBtnList[i].IsChecked == true)
+				{
+					stringBuilder.Append(i.ToString());
+					break;
+				}
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("PhaseEnable=");
+			int num = 0;
+			for (int j = 0; j < _phaseRadBtnList.Count; j++)
+			{
+				if (_phaseRadBtnList[j].IsEnabled)
+				{
+					if (num > 0)
+					{
+						stringBuilder.Append(",");
+					}
+					stringBuilder.Append(j.ToString());
+					num++;
+				}
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("CompSelection=");
+			List<string> list = new List<string>(CurveList.GetSelectedCurves());
+			int count = list.Count;
+			for (int k = 0; k < count; k++)
+			{
+				if (k > 0)
+				{
+					stringBuilder.Append(",");
+				}
+				stringBuilder.Append(list[k]);
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("CheckAll=");
+			stringBuilder.Append(CurveList.IsCheckAll);
+			stringBuilder.Append(";");
+			return stringBuilder.ToString();
+		}
+
+		private void RestoreConfigValue(string ConfigString)
+		{
+			string[] array = ConfigString.Split(';');
+			int num = 0;
+			string value = array[num].Substring(array[num].IndexOf('=') + 1);
+			radBtnMainColumn.IsChecked = Convert.ToBoolean(value);
+			radBtnStripper.IsChecked = !radBtnMainColumn.IsChecked;
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			comboBoxStripper.IsEnabled = Convert.ToBoolean(value);
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			comboBoxStripper.Text = value;
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			_phaseRadBtnList[Convert.ToInt16(value)].IsChecked = true;
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			string[] array2 = value.Split(',');
+			foreach (string value2 in array2)
+			{
+				_phaseRadBtnList[Convert.ToInt16(value2)].IsEnabled = true;
+			}
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			string[] array3 = value.Split(',');
+			List<string> list = new List<string>();
+			array2 = array3;
+			foreach (string item in array2)
+			{
+				list.Add(item);
+			}
+			CurveList.SetSelectedCurves(list.ToArray());
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			CurveList.IsCheckAll = Convert.ToBoolean(value);
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLPetroFrac;component/composition.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			switch (connectionId)
+			{
+			case 1:
+				radBtnMainColumn = (RadioButton)target;
+				radBtnMainColumn.Click += radBtn_Click;
+				break;
+			case 2:
+				radBtnStripper = (RadioButton)target;
+				radBtnStripper.Click += radBtn_Click;
+				break;
+			case 3:
+				comboBoxStripper = (ComboBox)target;
+				break;
+			case 4:
+				radBtnVapor = (RadioButton)target;
+				break;
+			case 5:
+				radBtnOrganic = (RadioButton)target;
+				break;
+			case 6:
+				radBtnLiquid = (RadioButton)target;
+				break;
+			case 7:
+				CurveList = (CurvesSelectorControl)target;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+	[ProgId("WpfPLPetroFrac.RibbonPlotWizardMgr")]
+	public class RibbonPlotWizardMgr : IRibbonPlotWizardMgr
+	{
+		private static string[] supportedTypes = new string[11]
+		{
+			"Temp", "Comp", "Flow Rate", "Pressure", "K-Values", "Rel Vol", "Flow Ratio", "CGCC(T-H)", "CGCC(S-H)", "Hydraulics",
+			"Exergy"
+		};
+
+		private IHNode _hnode;
+
+		private IHWizardPlot _wizardPlot;
+
+		private static List<PWRPlotType> _lspwrTypes = new List<PWRPlotType>();
+
+		private PWRParser _pwrParser = new PWRParser();
+
+		private Assembly _asm;
+
+		private Dictionary<string, IRibbonPlotWizardType> _dicTagIdToPlotType;
+
+		private IHWizardPlot _tempWizard = (CHWizardPlot)Activator.CreateInstance(Marshal.GetTypeFromCLSID(new Guid("9E14C11F-6706-4067-8112-35CE9468F3A5")));
+
+		public RibbonPlotWizardMgr()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			Initialize();
+		}
+
+		long IRibbonPlotWizardMgr.SupportedPlotTypes(ref List<string> lsTagIds)
+		{
+			lsTagIds.Clear();
+			for (int i = 0; i < _lspwrTypes.Count; i++)
+			{
+				PWRPlotType val = _lspwrTypes[i];
+				IRibbonPlotWizardType iplotType = null;
+				_tempWizard.Clear();
+				_pwrParser.FillDefaultPlotVal(val, ref _hnode, ref _tempWizard);
+				if (DoesPlotTypeHaveData(val.TagId, ref iplotType, ref _tempWizard))
+				{
+					lsTagIds.Add(val.TagId);
+				}
+			}
+			return _lspwrTypes.Count;
+		}
+
+		long IRibbonPlotWizardMgr.GetPlotType(string sTagId, ref IRibbonPlotWizardType plwType)
+		{
+			if (_dicTagIdToPlotType.ContainsKey(sTagId))
+			{
+				plwType = _dicTagIdToPlotType[sTagId];
+				if (plwType == null)
+				{
+					return 0L;
+				}
+				PWRPlotType val = null;
+				_pwrParser.FindPlotType(sTagId, ref _lspwrTypes, ref val);
+				_pwrParser.FillDefaultPlotVal(val, ref _hnode, ref _wizardPlot);
+			}
+			return 0L;
+		}
+
+		void IRibbonPlotWizardMgr.SetContext(object oNode, ref object oWizard)
+		{
+			_hnode = oNode as IHNode;
+			_wizardPlot = oWizard as IHWizardPlot;
+		}
+
+		void IRibbonPlotWizardMgr.ShowInputDialog(string sPlotName)
+		{
+		}
+
+		private void InitializeWizardPlot()
+		{
+		}
+
+		private void Initialize()
+		{
+			_asm = Assembly.GetExecutingAssembly();
+			StreamReader streamReader = new StreamReader(Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLPetroFrac.Text.Petrofracpwr.txt"));
+			_lspwrTypes.Clear();
+			_pwrParser.ParsePwrFile(streamReader, ref _lspwrTypes);
+			_dicTagIdToPlotType = new Dictionary<string, IRibbonPlotWizardType>();
+			string[] array = supportedTypes;
+			foreach (string text in array)
+			{
+				if (text == supportedTypes[0])
+				{
+					IRibbonPlotWizardType value = (IRibbonPlotWizardType)(object)new Temperature();
+					_dicTagIdToPlotType.Add(text, value);
+				}
+				else if (text == supportedTypes[1])
+				{
+					IRibbonPlotWizardType value2 = (IRibbonPlotWizardType)(object)new Composition();
+					_dicTagIdToPlotType.Add(text, value2);
+				}
+				else if (text == supportedTypes[2])
+				{
+					IRibbonPlotWizardType value3 = (IRibbonPlotWizardType)(object)new Flowrate();
+					_dicTagIdToPlotType.Add(text, value3);
+				}
+				else if (text == supportedTypes[3])
+				{
+					IRibbonPlotWizardType value4 = (IRibbonPlotWizardType)(object)new Pressure();
+					_dicTagIdToPlotType.Add(text, value4);
+				}
+				else if (text == supportedTypes[4])
+				{
+					IRibbonPlotWizardType value5 = (IRibbonPlotWizardType)(object)new KValues();
+					_dicTagIdToPlotType.Add(text, value5);
+				}
+				else if (text == supportedTypes[5])
+				{
+					IRibbonPlotWizardType value6 = (IRibbonPlotWizardType)(object)new KVRatio();
+					_dicTagIdToPlotType.Add(text, value6);
+				}
+				else if (text == supportedTypes[6])
+				{
+					IRibbonPlotWizardType value7 = (IRibbonPlotWizardType)(object)new flowratio();
+					_dicTagIdToPlotType.Add(text, value7);
+				}
+				else if (text == supportedTypes[7])
+				{
+					IRibbonPlotWizardType value8 = (IRibbonPlotWizardType)(object)new CGCCTH();
+					_dicTagIdToPlotType.Add(text, value8);
+				}
+				else if (text == supportedTypes[8])
+				{
+					IRibbonPlotWizardType value9 = (IRibbonPlotWizardType)(object)new CGCCStgH();
+					_dicTagIdToPlotType.Add(text, value9);
+				}
+				else if (text == supportedTypes[9])
+				{
+					IRibbonPlotWizardType value10 = (IRibbonPlotWizardType)(object)new Hydraulic();
+					_dicTagIdToPlotType.Add(text, value10);
+				}
+				else if (text == supportedTypes[10])
+				{
+					IRibbonPlotWizardType value11 = (IRibbonPlotWizardType)(object)new Exergy();
+					_dicTagIdToPlotType.Add(text, value11);
+				}
+			}
+		}
+
+		private bool DoesPlotTypeHaveData(string sTagId, ref IRibbonPlotWizardType iplotType, ref IHWizardPlot iWizardPlot)
+		{
+			int num = 0;
+			if (_dicTagIdToPlotType.ContainsKey(sTagId))
+			{
+				iplotType = _dicTagIdToPlotType[sTagId];
+				if (iplotType == null)
+				{
+					return false;
+				}
+				object obj = iWizardPlot;
+				iplotType.Context((object)_hnode, ref obj, ref num);
+				if (num == 0)
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+	}
+	[ProgId("WpfPLPetroFrac.Exergy")]
+	public class Exergy : UserControl, IRibbonPlotWizardType, IPlotWizardTemplate, IComponentConnector
+	{
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private PlotwizardHelper _help = new PlotwizardHelper();
+
+		private PetroFracHelper _petrofracHelp = new PetroFracHelper();
+
+		private string _currentExergyUnit = string.Empty;
+
+		private string _currentConfigValue = string.Empty;
+
+		private string _uniqueId = WpfPLPetroFracResources.Temperature_ID;
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgBitmap;
+
+		private bool _bHasInputDialog;
+
+		private readonly string _exergyUnitFieldId = WpfPLPetroFracResources.Exergy;
+
+		private string _colIndepVarName;
+
+		private string _stripIndepVarName;
+
+		private string[] _colDepVarNames;
+
+		private string[] _stripDepVarNames;
+
+		private string[] _strTitle;
+
+		private string[] _strYTitle;
+
+		private List<RadioButton> _profileRadBtnList;
+
+		public static RoutedCommand OKCommand = new RoutedCommand();
+
+		public static RoutedCommand CancelCommand = new RoutedCommand();
+
+		private bool _bCheckDataOnly;
+
+		internal RadioButton radBtnMainColumn;
+
+		internal RadioButton radBtnStripper;
+
+		internal ComboBox comboBoxStripper;
+
+		internal RadioButton radBtnStage;
+
+		internal RadioButton radBtnTemperature;
+
+		internal RadioButton radBtnCFactor;
+
+		internal GroupBox GroupBoxSelectUnits;
+
+		internal Label labTemperature;
+
+		internal ComboBox comboBoxTemperature;
+
+		private bool _contentLoaded;
+
+		public string TooltipContentForRibbonItem => WpfPLPetroFracResources.TooltipContentForRibbonItem_Exergy;
+
+		public string TooltipHeaderForRibbonItem => WpfPLPetroFracResources.TooltipHeaderForRibbonItem_Exergy;
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgBitmap;
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => _help.GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => _help.GetHelpID();
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string> { _exergyUnitFieldId };
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string>();
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		public Exergy()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			InitializeComponent();
+			SetVariables();
+			_bHasInputDialog = true;
+			if (_imgBitmap == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLPetroFrac.Images.exergy.ico");
+				_imgBitmap = new Bitmap(manifestResourceStream);
+			}
+			CommandBinding commandBinding = new CommandBinding(OKCommand, ExecuteOKCommand, CanExecuteOKCommand);
+			CommandBinding commandBinding2 = new CommandBinding(CancelCommand, ExecuteCancelCommand);
+			base.CommandBindings.Add(commandBinding);
+			base.CommandBindings.Add(commandBinding2);
+		}
+
+		public void SetCaption(ref string caption)
+		{
+			caption = WpfPLPetroFracResources.Exergy_Name;
+		}
+
+		public void SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 300.0;
+		}
+
+		public void SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 300.0;
+		}
+
+		public void SetMinHeight(ref double minHeight)
+		{
+			minHeight = 300.0;
+		}
+
+		public void SetMinWidth(ref double minWidth)
+		{
+			minWidth = 300.0;
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(_exergyUnitFieldId) == 0)
+			{
+				List<string> list = new List<string>();
+				_help.LoadXUnitsList(_context.Application.Tree, _wizardPlot, list);
+				return list;
+			}
+			return null;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(_exergyUnitFieldId) == 0)
+			{
+				sCurrentVal = _help.GetXUnitString(_context.Application.Tree, _wizardPlot);
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(_exergyUnitFieldId) == 0)
+			{
+				_currentExergyUnit = sValue;
+			}
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sField)
+		{
+			if (sField.CompareTo(_exergyUnitFieldId) != 0)
+			{
+				return (RibbonControlType)0;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+			sConfigValue = _currentConfigValue;
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+			_currentConfigValue = sValue;
+		}
+
+		void IRibbonPlotWizardType.Context(object HNode, ref object HWizardPlot, ref int ierror)
+		{
+			if (HWizardPlot == null || HNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			_context = HNode as IHNode;
+			_wizardPlot = HWizardPlot as IHWizardPlot;
+			IHNode iHNode = _context.FindNode(_colDepVarNames[0]);
+			if (iHNode == null || iHNode.Elements.Count <= 0)
+			{
+				ierror = 1;
+				return;
+			}
+			iHNode = _context.FindNode(_stripDepVarNames[0]);
+			_petrofracHelp.LoadColumn(iHNode, comboBoxStripper, radBtnStripper);
+			_wizardPlot.RemoveAllDependentVariable();
+			_wizardPlot.SetIndependentVariable(_context, _colIndepVarName);
+			_wizardPlot.AddDependentVariable(_context, _colDepVarNames[0] + "!Label");
+			if (string.IsNullOrEmpty(_currentConfigValue))
+			{
+				radBtnMainColumn.IsChecked = true;
+				_profileRadBtnList[0].IsChecked = true;
+				labTemperature.IsEnabled = false;
+				comboBoxTemperature.IsEnabled = false;
+			}
+			else
+			{
+				RestoreConfigValue(_currentConfigValue);
+			}
+		}
+
+		public void UpdateWizardData()
+		{
+			string text = comboBoxStripper.Text.Trim();
+			_wizardPlot.RemoveAllDependentVariable();
+			string text2 = "";
+			string depvar = "";
+			string ytitle = "";
+			string title = "";
+			if (radBtnMainColumn.IsChecked == true)
+			{
+				text2 = _colIndepVarName;
+				for (int i = 0; i < _profileRadBtnList.Count(); i++)
+				{
+					if (_profileRadBtnList[i].IsChecked == true)
+					{
+						switch (i)
+						{
+						case 0:
+							depvar = _colDepVarNames[0] + "!Label";
+							break;
+						case 1:
+							depvar = _colDepVarNames[0];
+							_help.SaveUnitsCombo(_context.Application.Tree, _wizardPlot, comboBoxTemperature);
+							break;
+						default:
+							depvar = _colDepVarNames[1];
+							break;
+						}
+						ytitle = _strYTitle[i];
+						title = _strTitle[i] + WpfPLPetroFracResources.Title_MainCol;
+					}
+				}
+			}
+			else
+			{
+				text2 = _stripIndepVarName + "/" + text;
+				for (int j = 0; j < _profileRadBtnList.Count(); j++)
+				{
+					if (_profileRadBtnList[j].IsChecked == true)
+					{
+						switch (j)
+						{
+						case 0:
+							depvar = _stripDepVarNames[0] + "/" + text + "!Label";
+							break;
+						case 1:
+							depvar = _stripDepVarNames[0] + "/" + text;
+							_help.SaveUnitsCombo(_context.Application.Tree, _wizardPlot, comboBoxTemperature);
+							break;
+						default:
+							depvar = _stripDepVarNames[1] + "/" + text;
+							break;
+						}
+						ytitle = _strYTitle[j];
+						title = _strTitle[j] + WpfPLPetroFracResources.Title_Stripper + " " + text;
+					}
+				}
+			}
+			_wizardPlot.SetIndependentVariable(_context, text2);
+			_wizardPlot.AddDependentVariable(_context, depvar);
+			((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle(Type.Missing, ytitle);
+			_wizardPlot.PlotVal.Title = title;
+			_help.SaveUnitsCombo(_context.Application.Tree, _wizardPlot, comboBoxTemperature);
+			_help.SaveXUnitsComboText(_context.Application.Tree, _wizardPlot, _currentExergyUnit);
+			_currentConfigValue = SaveConfigValue();
+		}
+
+		private void radBtn_Click(object sender, RoutedEventArgs e)
+		{
+			_petrofracHelp.SelecColumn(radBtnMainColumn, comboBoxStripper);
+		}
+
+		private void radBtnProfile_Click(object sender, RoutedEventArgs e)
+		{
+			SetUnit();
+		}
+
+		private void ExecuteOKCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			UpdateWizardData();
+			_help.CloseForm((UserControl)this, (bool?)true);
+		}
+
+		private void CanExecuteOKCommand(object sender, CanExecuteRoutedEventArgs e)
+		{
+			e.CanExecute = true;
+		}
+
+		private void ExecuteCancelCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			_help.CloseForm((UserControl)this, (bool?)false);
+		}
+
+		private void SetVariables()
+		{
+			_colIndepVarName = "Output/EXRGCOL";
+			_stripIndepVarName = "Output/EXRGSTR";
+			_colDepVarNames = new string[2] { "Output/B_TEMPTM", "Output/CARFCOL" };
+			_stripDepVarNames = new string[2] { "Output/B_TEMPTS", "Output/CARFSTR" };
+			_strTitle = new string[3]
+			{
+				WpfPLPetroFracResources.Exergy_Title_Stage,
+				WpfPLPetroFracResources.Exergy_Title_Temperature,
+				WpfPLPetroFracResources.Exergy_Title_CFactor
+			};
+			_strYTitle = new string[3]
+			{
+				WpfPLPetroFracResources.Exergy_YTitle_Stage,
+				WpfPLPetroFracResources.Exergy_YTitle_Temperature,
+				WpfPLPetroFracResources.Exergy_YTitle_CFactor
+			};
+			_profileRadBtnList = new List<RadioButton>();
+			_profileRadBtnList.Add(radBtnStage);
+			_profileRadBtnList.Add(radBtnTemperature);
+			_profileRadBtnList.Add(radBtnCFactor);
+		}
+
+		private void SetUnit()
+		{
+			for (int i = 0; i < _profileRadBtnList.Count(); i++)
+			{
+				if (_profileRadBtnList[i].IsChecked != true)
+				{
+					continue;
+				}
+				if (i == 1)
+				{
+					labTemperature.IsEnabled = true;
+					comboBoxTemperature.IsEnabled = true;
+					_wizardPlot.RemoveAllDependentVariable();
+					if (radBtnMainColumn.IsChecked == true)
+					{
+						_wizardPlot.AddDependentVariable(_context, _colDepVarNames[0]);
+					}
+					else
+					{
+						string text = comboBoxStripper.Text.Trim();
+						_wizardPlot.AddDependentVariable(_context, _stripDepVarNames[0] + "/" + text);
+					}
+					_help.LoadUnitsCombo(_context.Application.Tree, _wizardPlot, comboBoxTemperature);
+				}
+				else
+				{
+					labTemperature.IsEnabled = false;
+					comboBoxTemperature.IsEnabled = false;
+				}
+			}
+		}
+
+		private string SaveConfigValue()
+		{
+			_ = string.Empty;
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.Append("ColumnOption=");
+			stringBuilder.Append(radBtnMainColumn.IsChecked);
+			stringBuilder.Append(";");
+			stringBuilder.Append("StripperEnabled=");
+			stringBuilder.Append(comboBoxStripper.IsEnabled);
+			stringBuilder.Append(";");
+			stringBuilder.Append("Stripper=");
+			stringBuilder.Append(comboBoxStripper.Text);
+			stringBuilder.Append(";");
+			stringBuilder.Append("ProfileOption=");
+			for (int i = 0; i < _profileRadBtnList.Count; i++)
+			{
+				if (_profileRadBtnList[i].IsChecked == true)
+				{
+					stringBuilder.Append(i.ToString());
+					break;
+				}
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("ProfileEnable=");
+			int num = 0;
+			for (int j = 0; j < _profileRadBtnList.Count; j++)
+			{
+				if (_profileRadBtnList[j].IsEnabled)
+				{
+					if (num > 0)
+					{
+						stringBuilder.Append(",");
+					}
+					stringBuilder.Append(j.ToString());
+					num++;
+				}
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("Unit=");
+			stringBuilder.Append(comboBoxTemperature.Text);
+			stringBuilder.Append(";");
+			stringBuilder.Append("UnitEnabel=");
+			stringBuilder.Append(comboBoxTemperature.IsEnabled);
+			stringBuilder.Append(";");
+			return stringBuilder.ToString();
+		}
+
+		private void RestoreConfigValue(string ConfigString)
+		{
+			string[] array = ConfigString.Split(';');
+			int num = 0;
+			string value = array[num].Substring(array[num].IndexOf('=') + 1);
+			radBtnMainColumn.IsChecked = Convert.ToBoolean(value);
+			radBtnStripper.IsChecked = !radBtnMainColumn.IsChecked;
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			comboBoxStripper.IsEnabled = Convert.ToBoolean(value);
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			comboBoxStripper.Text = value;
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			_profileRadBtnList[Convert.ToInt16(value)].IsChecked = true;
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			string[] array2 = value.Split(',');
+			foreach (string value2 in array2)
+			{
+				_profileRadBtnList[Convert.ToInt16(value2)].IsEnabled = true;
+			}
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			SetUnit();
+			comboBoxTemperature.Text = value;
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			comboBoxTemperature.IsEnabled = Convert.ToBoolean(value);
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLPetroFrac;component/exergy.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			switch (connectionId)
+			{
+			case 1:
+				radBtnMainColumn = (RadioButton)target;
+				radBtnMainColumn.Click += radBtn_Click;
+				break;
+			case 2:
+				radBtnStripper = (RadioButton)target;
+				radBtnStripper.Click += radBtn_Click;
+				break;
+			case 3:
+				comboBoxStripper = (ComboBox)target;
+				break;
+			case 4:
+				radBtnStage = (RadioButton)target;
+				radBtnStage.Click += radBtnProfile_Click;
+				break;
+			case 5:
+				radBtnTemperature = (RadioButton)target;
+				radBtnTemperature.Click += radBtnProfile_Click;
+				break;
+			case 6:
+				radBtnCFactor = (RadioButton)target;
+				radBtnCFactor.Click += radBtnProfile_Click;
+				break;
+			case 7:
+				GroupBoxSelectUnits = (GroupBox)target;
+				break;
+			case 8:
+				labTemperature = (Label)target;
+				break;
+			case 9:
+				comboBoxTemperature = (ComboBox)target;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+	[ProgId("WpfPLPetroFrac.Flowrate")]
+	public class Flowrate : UserControl, IRibbonPlotWizardType, IPlotWizardTemplate, IComponentConnector
+	{
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private PlotwizardHelper _help = new PlotwizardHelper();
+
+		private PetroFracHelper _petrofracHelp = new PetroFracHelper();
+
+		private string _currentConfigValue = string.Empty;
+
+		private string _uniqueId = WpfPLPetroFracResources.Flowrate_ID;
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgBitmap;
+
+		private bool _bHasInputDialog;
+
+		private readonly string _stageOnFieldId = WpfPLPetroFracResources.Stage_number_on;
+
+		private readonly string _stageOrderFieldId = WpfPLPetroFracResources.Stage_numbering_order;
+
+		private readonly string _yAxis = WpfPLPetroFracResources.Y_axis;
+
+		private readonly string _xAxis = WpfPLPetroFracResources.X_axis;
+
+		private readonly string _ascending = WpfPLPetroFracResources.Ascending;
+
+		private readonly string _descending = WpfPLPetroFracResources.Descending;
+
+		private string _varName;
+
+		private string[,] _colVarNames;
+
+		private string[,] _stripperVarNames;
+
+		private List<CheckBox> _flowCheckList;
+
+		private List<RadioButton> _columnradBtnList;
+
+		private List<RadioButton> _basisradBtnList;
+
+		public static RoutedCommand OKCommand = new RoutedCommand();
+
+		public static RoutedCommand CancelCommand = new RoutedCommand();
+
+		private bool _bCheckDataOnly;
+
+		internal RadioButton radBtnMainColumn;
+
+		internal RadioButton radBtnStripper;
+
+		internal ComboBox comboBoxStripper;
+
+		internal RadioButton radBtnMole;
+
+		internal RadioButton radBtnMass;
+
+		internal RadioButton radBtnStdVol;
+
+		internal ComboBox comboBoxUnits;
+
+		internal CheckBox checkBoxVaporFlow;
+
+		internal CheckBox checkBoxLiquidFlow;
+
+		internal CheckBox checkBoxOrganicFlow;
+
+		internal CheckBox checkBoxFreeWaterFlow;
+
+		private bool _contentLoaded;
+
+		public string TooltipContentForRibbonItem => WpfPLPetroFracResources.TooltipContentForRibbonItem_FlowRate;
+
+		public string TooltipHeaderForRibbonItem => WpfPLPetroFracResources.TooltipHeaderForRibbonItem_FlowRate;
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgBitmap;
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => _help.GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => _help.GetHelpID();
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string>();
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string> { _stageOrderFieldId, _stageOnFieldId };
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		public Flowrate()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			InitializeComponent();
+			SetVariables();
+			SetVControls();
+			_bHasInputDialog = true;
+			if (_imgBitmap == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLPetroFrac.Images.flow.ico");
+				_imgBitmap = new Bitmap(manifestResourceStream);
+			}
+			CommandBinding commandBinding = new CommandBinding(OKCommand, ExecuteOKCommand, CanExecuteOKCommand);
+			CommandBinding commandBinding2 = new CommandBinding(CancelCommand, ExecuteCancelCommand);
+			base.CommandBindings.Add(commandBinding);
+			base.CommandBindings.Add(commandBinding2);
+		}
+
+		public void SetCaption(ref string caption)
+		{
+			caption = WpfPLPetroFracResources.Flowrate_Name;
+		}
+
+		public void SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 400.0;
+		}
+
+		public void SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 300.0;
+		}
+
+		public void SetMinHeight(ref double minHeight)
+		{
+			minHeight = 400.0;
+		}
+
+		public void SetMinWidth(ref double minWidth)
+		{
+			minWidth = 300.0;
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(_stageOrderFieldId) == 0)
+			{
+				return new List<string> { _ascending, _descending };
+			}
+			if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				return new List<string> { _xAxis, _yAxis };
+			}
+			return null;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sField)
+		{
+			if (sField.CompareTo(_stageOrderFieldId) != 0 && sField.CompareTo(_stageOnFieldId) != 0)
+			{
+				return (RibbonControlType)0;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(_stageOrderFieldId) == 0)
+			{
+				if (_wizardPlot.PlotVal.ReverseXAxis)
+				{
+					sCurrentVal = _descending;
+				}
+				else
+				{
+					sCurrentVal = _ascending;
+				}
+			}
+			else if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				if (_wizardPlot.PlotVal.SwapAxises)
+				{
+					sCurrentVal = _yAxis;
+				}
+				else
+				{
+					sCurrentVal = _xAxis;
+				}
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(_stageOrderFieldId) == 0)
+			{
+				if (sValue.CompareTo(_ascending) == 0)
+				{
+					_wizardPlot.PlotVal.ReverseXAxis = false;
+				}
+				else
+				{
+					_wizardPlot.PlotVal.ReverseXAxis = true;
+				}
+			}
+			else if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				if (sValue.CompareTo(_yAxis) == 0)
+				{
+					_wizardPlot.PlotVal.SwapAxises = true;
+				}
+				else
+				{
+					_wizardPlot.PlotVal.SwapAxises = false;
+				}
+			}
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+			sConfigValue = _currentConfigValue;
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+			_currentConfigValue = sValue;
+		}
+
+		void IRibbonPlotWizardType.Context(object HNode, ref object HWizardPlot, ref int ierror)
+		{
+			if (HWizardPlot == null || HNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			_context = HNode as IHNode;
+			_wizardPlot = HWizardPlot as IHWizardPlot;
+			IHNode iHNode = null;
+			bool flag = false;
+			for (int i = 0; i < _colVarNames.GetLength(0); i++)
+			{
+				for (int j = 0; j < _colVarNames.GetLength(1); j++)
+				{
+					iHNode = _context.FindNode(_colVarNames[i, j]);
+					if (iHNode != null && iHNode.Elements.Count > 0)
+					{
+						_flowCheckList[j].IsEnabled = true;
+						_flowCheckList[j].IsChecked = true;
+						_basisradBtnList[i].IsEnabled = true;
+						flag = true;
+					}
+				}
+			}
+			if (!flag)
+			{
+				ierror = 1;
+				return;
+			}
+			iHNode = _context.FindNode(_varName);
+			_petrofracHelp.LoadColumn(iHNode, comboBoxStripper, _columnradBtnList[1]);
+			if (comboBoxStripper.Items.Count > 0)
+			{
+				_columnradBtnList[1].IsEnabled = true;
+			}
+			_wizardPlot.SetIndependentVariable(_context, _colVarNames[0, 0] + "!Label");
+			_wizardPlot.RemoveAllDependentVariable();
+			_wizardPlot.AddDependentVariable(_context, _colVarNames[0, 0]);
+			_wizardPlot.basis = 1;
+			_help.LoadUnitsCombo(_context.Application.Tree, _wizardPlot, comboBoxUnits);
+			if (string.IsNullOrEmpty(_currentConfigValue))
+			{
+				_columnradBtnList[0].IsEnabled = true;
+				_columnradBtnList[0].IsChecked = true;
+				_basisradBtnList[0].IsEnabled = true;
+				_basisradBtnList[0].IsChecked = true;
+				return;
+			}
+			_columnradBtnList[0].IsChecked = false;
+			for (int k = 0; k < _flowCheckList.Count(); k++)
+			{
+				_flowCheckList[k].IsChecked = false;
+			}
+			RestoreConfigValue(_currentConfigValue);
+		}
+
+		public void UpdateWizardData()
+		{
+			string text = "";
+			int basis = _wizardPlot.basis;
+			text = basis switch
+			{
+				1 => WpfPLPetroFracResources.Molar, 
+				2 => WpfPLPetroFracResources.Mass, 
+				_ => WpfPLPetroFracResources.StdVol, 
+			};
+			string text2 = comboBoxStripper.Text.Trim();
+			int num = 0;
+			string text3 = (text3 = WpfPLPetroFracResources.Flowrate_Title);
+			_wizardPlot.RemoveAllDependentVariable();
+			if (_columnradBtnList[0].IsChecked == true)
+			{
+				_wizardPlot.PlotVal.Title = text3 + " " + WpfPLPetroFracResources.Title_MainCol;
+				_wizardPlot.SetIndependentVariable(_context, _colVarNames[0, 1] + "!Label");
+				for (int i = 0; i < _flowCheckList.Count; i++)
+				{
+					if (_flowCheckList[i].IsEnabled && _flowCheckList[i].IsChecked == true)
+					{
+						string depvar = _colVarNames[basis - 1, i];
+						_wizardPlot.AddDependentVariable(_context, depvar);
+						((IHPlotVal)_wizardPlot.PlotVal).set_Label(num, _flowCheckList[i].Content.ToString() + " " + text);
+						num++;
+					}
+				}
+			}
+			else
+			{
+				_wizardPlot.PlotVal.Title = text3 + " " + WpfPLPetroFracResources.Title_Stripper + " " + text2;
+				_wizardPlot.SetIndependentVariable(_context, _stripperVarNames[0, 1] + "/" + text2 + "!Label");
+				for (int j = 0; j < _flowCheckList.Count; j++)
+				{
+					if (_flowCheckList[j].IsEnabled && _flowCheckList[j].IsChecked == true)
+					{
+						string depvar2 = _stripperVarNames[basis - 1, j] + "/" + text2;
+						_wizardPlot.AddDependentVariable(_context, depvar2);
+						((IHPlotVal)_wizardPlot.PlotVal).set_Label(num, _flowCheckList[j].Content.ToString() + " " + text);
+						num++;
+					}
+				}
+			}
+			_help.SaveUnitsCombo(_context.Application.Tree, _wizardPlot, comboBoxUnits);
+			_currentConfigValue = SaveConfigValue();
+		}
+
+		private void radBtn_Click(object sender, RoutedEventArgs e)
+		{
+			_petrofracHelp.SelecColumn(_columnradBtnList[0], comboBoxStripper);
+			SetUnit(_wizardPlot.basis);
+		}
+
+		private void radBtnBasis_Click(object sender, RoutedEventArgs e)
+		{
+			RadioButton radioButton = sender as RadioButton;
+			for (int i = 0; i < _basisradBtnList.Count(); i++)
+			{
+				if (radioButton.Name.ToLower() == _basisradBtnList[i].Name.ToLower())
+				{
+					SetUnit(i + 1);
+					break;
+				}
+			}
+		}
+
+		private void ExecuteOKCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			UpdateWizardData();
+			_help.CloseForm((UserControl)this, (bool?)true);
+		}
+
+		private void CanExecuteOKCommand(object sender, CanExecuteRoutedEventArgs e)
+		{
+			int num = 0;
+			for (int i = 0; i < _flowCheckList.Count(); i++)
+			{
+				if (_flowCheckList[i].IsEnabled && _flowCheckList[i].IsChecked == true)
+				{
+					num++;
+					break;
+				}
+			}
+			e.CanExecute = num != 0;
+		}
+
+		private void ExecuteCancelCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			_help.CloseForm((UserControl)this, (bool?)false);
+		}
+
+		private void SetUnit(int index)
+		{
+			int num = 0;
+			string text = comboBoxStripper.Text.Trim();
+			_wizardPlot.basis = index;
+			_wizardPlot.RemoveAllDependentVariable();
+			if (_columnradBtnList[0].IsChecked == true)
+			{
+				for (int i = 0; i < _flowCheckList.Count; i++)
+				{
+					if (_flowCheckList[i].IsEnabled && _flowCheckList[i].IsChecked == true)
+					{
+						string depvar = _colVarNames[index - 1, i];
+						_wizardPlot.AddDependentVariable(_context, depvar);
+						num++;
+					}
+				}
+			}
+			else
+			{
+				for (int j = 0; j < _flowCheckList.Count; j++)
+				{
+					string depvar2 = _stripperVarNames[index - 1, j] + "/" + text;
+					_wizardPlot.AddDependentVariable(_context, depvar2);
+					num++;
+				}
+			}
+			_help.LoadUnitsCombo(_context.Application.Tree, _wizardPlot, comboBoxUnits);
+		}
+
+		private void SetVariables()
+		{
+			_varName = "Output/VAP_FLOW";
+			_colVarNames = new string[3, 4]
+			{
+				{ "Output/VAP_FLOW3", "Output/LIQ_FLOW5", "Output/L1_FLOW2", "Output/L2_FLOW2" },
+				{ "Output/VAP_FLOW5", "Output/LIQ_FLOW7", "Output/VAP_FLOW_MS3", "Output/LIQ_FLOW_MS3" },
+				{ "Output/VAP_FLOW7", "Output/LIQ_FLOW9", "Output/VAP_FLOW_VL3", "Output/LIQ_FLOW_VL3" }
+			};
+			_stripperVarNames = new string[3, 4]
+			{
+				{ "Output/VAP_FLOW", "Output/LIQ_FLOW3", "Output/L1_FLOW", "Output/L2_FLOW" },
+				{ "Output/VAP_FLOW4", "Output/LIQ_FLOW6", "Output/VAP_FLOW_MS2", "Output/LIQ_FLOW_MS2" },
+				{ "Output/VAP_FLOW6", "Output/LIQ_FLOW8", "Output/VAP_FLOW_VL2", "Output/LIQ_FLOW_VL2" }
+			};
+		}
+
+		private void SetVControls()
+		{
+			_columnradBtnList = new List<RadioButton>();
+			_columnradBtnList.Add(radBtnMainColumn);
+			_columnradBtnList.Add(radBtnStripper);
+			_flowCheckList = new List<CheckBox>();
+			_flowCheckList.Add(checkBoxVaporFlow);
+			_flowCheckList.Add(checkBoxLiquidFlow);
+			_flowCheckList.Add(checkBoxOrganicFlow);
+			_flowCheckList.Add(checkBoxFreeWaterFlow);
+			for (int i = 0; i < _flowCheckList.Count; i++)
+			{
+				_flowCheckList[i].IsEnabled = false;
+				_flowCheckList[i].IsChecked = false;
+			}
+			_basisradBtnList = new List<RadioButton>();
+			_basisradBtnList.Add(radBtnMole);
+			_basisradBtnList.Add(radBtnMass);
+			_basisradBtnList.Add(radBtnStdVol);
+			for (int j = 0; j < _basisradBtnList.Count; j++)
+			{
+				_basisradBtnList[j].IsEnabled = false;
+				_basisradBtnList[j].IsChecked = false;
+			}
+		}
+
+		private string SaveConfigValue()
+		{
+			_ = string.Empty;
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.Append("ColumnOption=");
+			stringBuilder.Append(radBtnMainColumn.IsChecked);
+			stringBuilder.Append(";");
+			stringBuilder.Append("StripperEnabled=");
+			stringBuilder.Append(comboBoxStripper.IsEnabled);
+			stringBuilder.Append(";");
+			stringBuilder.Append("Stripper=");
+			stringBuilder.Append(comboBoxStripper.Text);
+			stringBuilder.Append(";");
+			stringBuilder.Append("BasisOption=");
+			for (int i = 0; i < _basisradBtnList.Count; i++)
+			{
+				if (_basisradBtnList[i].IsChecked == true)
+				{
+					stringBuilder.Append(i.ToString());
+					break;
+				}
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("BasisEnable=");
+			int num = 0;
+			for (int j = 0; j < _basisradBtnList.Count; j++)
+			{
+				if (_basisradBtnList[j].IsEnabled)
+				{
+					if (num > 0)
+					{
+						stringBuilder.Append(",");
+					}
+					stringBuilder.Append(j.ToString());
+					num++;
+				}
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("FlowEnable=");
+			num = 0;
+			for (int k = 0; k < _flowCheckList.Count; k++)
+			{
+				if (_flowCheckList[k].IsEnabled)
+				{
+					if (num > 0)
+					{
+						stringBuilder.Append(",");
+					}
+					stringBuilder.Append(k.ToString());
+					num++;
+				}
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("FlowOption=");
+			num = 0;
+			for (int l = 0; l < _flowCheckList.Count; l++)
+			{
+				if (_flowCheckList[l].IsChecked == true)
+				{
+					if (num > 0)
+					{
+						stringBuilder.Append(",");
+					}
+					stringBuilder.Append(l.ToString());
+					num++;
+				}
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("Unit=");
+			stringBuilder.Append(comboBoxUnits.Text);
+			stringBuilder.Append(";");
+			stringBuilder.Append("UnitEnabel=");
+			stringBuilder.Append(comboBoxUnits.IsEnabled);
+			stringBuilder.Append(";");
+			return stringBuilder.ToString();
+		}
+
+		private void RestoreConfigValue(string ConfigString)
+		{
+			string[] array = ConfigString.Split(';');
+			int num = 0;
+			string value = array[num].Substring(array[num].IndexOf('=') + 1);
+			radBtnMainColumn.IsChecked = Convert.ToBoolean(value);
+			radBtnStripper.IsChecked = !radBtnMainColumn.IsChecked;
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			comboBoxStripper.IsEnabled = Convert.ToBoolean(value);
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			comboBoxStripper.Text = value;
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			int num2 = Convert.ToInt16(value);
+			_basisradBtnList[num2].IsChecked = true;
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			string[] array2 = value.Split(',');
+			foreach (string value2 in array2)
+			{
+				_basisradBtnList[Convert.ToInt16(value2)].IsEnabled = true;
+			}
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			array2 = value.Split(',');
+			foreach (string value3 in array2)
+			{
+				_flowCheckList[Convert.ToInt16(value3)].IsEnabled = true;
+			}
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			array2 = value.Split(',');
+			foreach (string value4 in array2)
+			{
+				_flowCheckList[Convert.ToInt16(value4)].IsChecked = true;
+			}
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			SetUnit(num2 + 1);
+			comboBoxUnits.Text = value;
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			comboBoxUnits.IsEnabled = Convert.ToBoolean(value);
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLPetroFrac;component/flowrate.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			switch (connectionId)
+			{
+			case 1:
+				radBtnMainColumn = (RadioButton)target;
+				radBtnMainColumn.Click += radBtn_Click;
+				break;
+			case 2:
+				radBtnStripper = (RadioButton)target;
+				radBtnStripper.Click += radBtn_Click;
+				break;
+			case 3:
+				comboBoxStripper = (ComboBox)target;
+				break;
+			case 4:
+				radBtnMole = (RadioButton)target;
+				radBtnMole.Click += radBtnBasis_Click;
+				break;
+			case 5:
+				radBtnMass = (RadioButton)target;
+				radBtnMass.Click += radBtnBasis_Click;
+				break;
+			case 6:
+				radBtnStdVol = (RadioButton)target;
+				radBtnStdVol.Click += radBtnBasis_Click;
+				break;
+			case 7:
+				comboBoxUnits = (ComboBox)target;
+				break;
+			case 8:
+				checkBoxVaporFlow = (CheckBox)target;
+				break;
+			case 9:
+				checkBoxLiquidFlow = (CheckBox)target;
+				break;
+			case 10:
+				checkBoxOrganicFlow = (CheckBox)target;
+				break;
+			case 11:
+				checkBoxFreeWaterFlow = (CheckBox)target;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+	[ProgId("WpfPLPetroFrac.flowratio")]
+	public class flowratio : UserControl, IRibbonPlotWizardType, IPlotWizardTemplate, IComponentConnector
+	{
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private PlotwizardHelper _help = new PlotwizardHelper();
+
+		private PetroFracHelper _petrofracHelp = new PetroFracHelper();
+
+		private string _currentConfigValue = string.Empty;
+
+		private string _uniqueId = WpfPLPetroFracResources.FlowRatio_ID;
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgBitmap;
+
+		private bool _bHasInputDialog;
+
+		private readonly string _stageOnFieldId = WpfPLPetroFracResources.Stage_number_on;
+
+		private readonly string _stageOrderFieldId = WpfPLPetroFracResources.Stage_numbering_order;
+
+		private readonly string _yAxis = WpfPLPetroFracResources.Y_axis;
+
+		private readonly string _xAxis = WpfPLPetroFracResources.X_axis;
+
+		private readonly string _ascending = WpfPLPetroFracResources.Ascending;
+
+		private readonly string _descending = WpfPLPetroFracResources.Descending;
+
+		private string _varName;
+
+		private string[,] _colVarNames;
+
+		private string[,] _stripperVarNames;
+
+		private string[] _strTitle;
+
+		private string[] _strLabel;
+
+		private List<CheckBox> _flowCheckList;
+
+		private List<RadioButton> _columnradBtnList;
+
+		private List<RadioButton> _basisRadBtnList;
+
+		public static RoutedCommand OKCommand = new RoutedCommand();
+
+		public static RoutedCommand CancelCommand = new RoutedCommand();
+
+		private bool _bCheckDataOnly;
+
+		internal RadioButton radBtnMainColumn;
+
+		internal RadioButton radBtnStripper;
+
+		internal ComboBox comboBoxStripper;
+
+		internal RadioButton radBtnMole;
+
+		internal RadioButton radBtnMass;
+
+		internal RadioButton radBtnStdVol;
+
+		internal CheckBox checkBoxVaportoLiquid;
+
+		internal CheckBox checkBoxOrganitoFW;
+
+		private bool _contentLoaded;
+
+		public string TooltipContentForRibbonItem => WpfPLPetroFracResources.TooltipContentForRibbonItem_FlowRatio;
+
+		public string TooltipHeaderForRibbonItem => WpfPLPetroFracResources.TooltipHeaderForRibbonItem_FlowRatio;
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgBitmap;
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => _help.GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => _help.GetHelpID();
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string>();
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string> { _stageOrderFieldId, _stageOnFieldId };
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		public flowratio()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			InitializeComponent();
+			SetVariables();
+			SetVControls();
+			_bHasInputDialog = true;
+			if (_imgBitmap == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLPetroFrac.Images.flwratio.ico");
+				_imgBitmap = new Bitmap(manifestResourceStream);
+			}
+			CommandBinding commandBinding = new CommandBinding(OKCommand, ExecuteOKCommand, CanExecuteOKCommand);
+			CommandBinding commandBinding2 = new CommandBinding(CancelCommand, ExecuteCancelCommand);
+			base.CommandBindings.Add(commandBinding);
+			base.CommandBindings.Add(commandBinding2);
+		}
+
+		public void SetCaption(ref string caption)
+		{
+			caption = WpfPLPetroFracResources.FlowRatio;
+		}
+
+		public void SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 380.0;
+		}
+
+		public void SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 300.0;
+		}
+
+		public void SetMinHeight(ref double minHeight)
+		{
+			minHeight = 380.0;
+		}
+
+		public void SetMinWidth(ref double minWidth)
+		{
+			minWidth = 300.0;
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(_stageOrderFieldId) == 0)
+			{
+				return new List<string> { _ascending, _descending };
+			}
+			if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				return new List<string> { _xAxis, _yAxis };
+			}
+			return null;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sField)
+		{
+			if (sField.CompareTo(_stageOrderFieldId) != 0 && sField.CompareTo(_stageOnFieldId) != 0)
+			{
+				return (RibbonControlType)0;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(_stageOrderFieldId) == 0)
+			{
+				if (_wizardPlot.PlotVal.ReverseXAxis)
+				{
+					sCurrentVal = _descending;
+				}
+				else
+				{
+					sCurrentVal = _ascending;
+				}
+			}
+			else if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				if (_wizardPlot.PlotVal.SwapAxises)
+				{
+					sCurrentVal = _yAxis;
+				}
+				else
+				{
+					sCurrentVal = _xAxis;
+				}
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(_stageOrderFieldId) == 0)
+			{
+				if (sValue.CompareTo(_ascending) == 0)
+				{
+					_wizardPlot.PlotVal.ReverseXAxis = false;
+				}
+				else
+				{
+					_wizardPlot.PlotVal.ReverseXAxis = true;
+				}
+			}
+			else if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				if (sValue.CompareTo(_yAxis) == 0)
+				{
+					_wizardPlot.PlotVal.SwapAxises = true;
+				}
+				else
+				{
+					_wizardPlot.PlotVal.SwapAxises = false;
+				}
+			}
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+			sConfigValue = _currentConfigValue;
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+			_currentConfigValue = sValue;
+		}
+
+		void IRibbonPlotWizardType.Context(object HNode, ref object HWizardPlot, ref int ierror)
+		{
+			if (HWizardPlot == null || HNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			_context = HNode as IHNode;
+			_wizardPlot = HWizardPlot as IHWizardPlot;
+			IHNode iHNode = null;
+			bool flag = false;
+			for (int i = 0; i < _colVarNames.GetLength(0); i++)
+			{
+				flag = false;
+				for (int j = 0; j < _colVarNames.GetLength(1); j++)
+				{
+					iHNode = _context.FindNode(_colVarNames[i, j]);
+					if (iHNode != null && iHNode.Elements.Count > 0)
+					{
+						_basisRadBtnList[i].IsEnabled = true;
+						flag = true;
+					}
+				}
+			}
+			if (!flag)
+			{
+				ierror = 1;
+				return;
+			}
+			iHNode = _context.FindNode(_varName);
+			_petrofracHelp.LoadColumn(iHNode, comboBoxStripper, _columnradBtnList[1]);
+			if (string.IsNullOrEmpty(_currentConfigValue))
+			{
+				_columnradBtnList[0].IsEnabled = true;
+				_columnradBtnList[0].IsChecked = true;
+				_basisRadBtnList[0].IsEnabled = true;
+				_basisRadBtnList[0].IsChecked = true;
+				_flowCheckList[0].IsEnabled = true;
+				_flowCheckList[0].IsChecked = true;
+				for (int k = 0; k < _basisRadBtnList.Count; k++)
+				{
+					if (_basisRadBtnList[k].IsEnabled)
+					{
+						_basisRadBtnList[k].IsChecked = true;
+						break;
+					}
+				}
+				if (comboBoxStripper.Items.Count > 0)
+				{
+					_columnradBtnList[1].IsEnabled = true;
+				}
+				iHNode = _context.FindNode("Input/NO_PHASE");
+				if ((dynamic)iHNode.get_Value(Type.Missing) == 3)
+				{
+					_flowCheckList[1].IsEnabled = true;
+				}
+				else
+				{
+					_flowCheckList[1].IsEnabled = false;
+				}
+			}
+			else
+			{
+				for (int l = 0; l < _flowCheckList.Count; l++)
+				{
+					_flowCheckList[0].IsChecked = false;
+				}
+				RestoreConfigValue(_currentConfigValue);
+			}
+			_wizardPlot.basis = 1;
+		}
+
+		public void UpdateWizardData()
+		{
+			string text = "";
+			string text2 = "";
+			int num = 0;
+			for (int i = 0; i < _basisRadBtnList.Count; i++)
+			{
+				if (_basisRadBtnList[i].IsChecked == true)
+				{
+					num = i;
+					text2 = _strTitle[i];
+					text = _strLabel[i];
+					break;
+				}
+			}
+			_wizardPlot.basis = num + 1;
+			int index = 0;
+			_wizardPlot.RemoveAllDependentVariable();
+			_wizardPlot.PlotVal.NVariables = 0;
+			((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle(Type.Missing, WpfPLPetroFracResources.FlowRatio + text);
+			IHNode iHNode = null;
+			IHNode iHNode2 = null;
+			int num2 = -1;
+			if (_columnradBtnList[0].IsChecked == true)
+			{
+				for (int j = 0; j < _colVarNames.GetLength(1); j += 2)
+				{
+					num2++;
+					if (!_flowCheckList[num2].IsEnabled || _flowCheckList[num2].IsChecked != true)
+					{
+						continue;
+					}
+					iHNode = _context.FindNode(_colVarNames[num, j]);
+					iHNode2 = _context.FindNode(_colVarNames[num, j + 1]);
+					_wizardPlot.PlotVal.Title = text2 + " " + WpfPLPetroFracResources.Title_MainCol;
+					_wizardPlot.SetIndependentVariable(_context, _colVarNames[num, 0] + "!Label");
+					if (iHNode == null || iHNode2 == null)
+					{
+						continue;
+					}
+					_wizardPlot.PlotVal.NVariables = _wizardPlot.PlotVal.NVariables + 1;
+					for (int k = 0; k < iHNode.Elements.Count; k++)
+					{
+						double num3 = ((double?)(dynamic)iHNode2.Elements[k, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing)) ?? 0.0;
+						if (num3 != 0.0)
+						{
+							double num4 = ((double?)(dynamic)iHNode.Elements[k, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing)) ?? 0.0;
+							((IHPlotVal)_wizardPlot.PlotVal).set_YData(index, k, (short)0, (object)(num4 / num3));
+						}
+					}
+					((IHPlotVal)_wizardPlot.PlotVal).set_Label(index++, _flowCheckList[num2].Content.ToString() + " " + text);
+				}
+			}
+			else
+			{
+				num2 = -1;
+				for (int l = 0; l < _stripperVarNames.GetLength(1); l += 2)
+				{
+					num2++;
+					if (!_flowCheckList[num2].IsEnabled || _flowCheckList[num2].IsChecked != true)
+					{
+						continue;
+					}
+					string text3 = comboBoxStripper.Text.Trim();
+					iHNode = _context.FindNode(_stripperVarNames[num, l] + "/" + text3);
+					iHNode2 = _context.FindNode(_stripperVarNames[num, l + 1] + "/" + text3);
+					_wizardPlot.PlotVal.Title = text2 + " " + WpfPLPetroFracResources.Title_Stripper + " " + text3;
+					_wizardPlot.SetIndependentVariable(_context, _stripperVarNames[num, 0] + "/" + text3 + "!Label");
+					if (iHNode == null || iHNode2 == null)
+					{
+						continue;
+					}
+					_wizardPlot.PlotVal.NVariables = _wizardPlot.PlotVal.NVariables + 1;
+					for (int m = 0; m < iHNode.Elements.Count; m++)
+					{
+						double num5 = ((double?)(dynamic)iHNode2.Elements[m, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing)) ?? 0.0;
+						if (num5 != 0.0)
+						{
+							double num6 = ((double?)(dynamic)iHNode.Elements[m, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing)) ?? 0.0;
+							((IHPlotVal)_wizardPlot.PlotVal).set_YData(index, m, (short)0, (object)(num6 / num5));
+						}
+					}
+					((IHPlotVal)_wizardPlot.PlotVal).set_Label(index++, _flowCheckList[num2].Content.ToString() + " " + text);
+				}
+			}
+			_currentConfigValue = SaveConfigValue();
+		}
+
+		private void radBtn_Click(object sender, RoutedEventArgs e)
+		{
+			_petrofracHelp.SelecColumn(_columnradBtnList[0], comboBoxStripper);
+		}
+
+		private void ExecuteOKCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			UpdateWizardData();
+			_help.CloseForm((UserControl)this, (bool?)true);
+		}
+
+		private void CanExecuteOKCommand(object sender, CanExecuteRoutedEventArgs e)
+		{
+			int num = 0;
+			for (int i = 0; i < _flowCheckList.Count(); i++)
+			{
+				if (_flowCheckList[i].IsEnabled && _flowCheckList[i].IsChecked == true)
+				{
+					num++;
+					break;
+				}
+			}
+			e.CanExecute = num != 0;
+		}
+
+		private void ExecuteCancelCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			_help.CloseForm((UserControl)this, (bool?)false);
+		}
+
+		private void SetVariables()
+		{
+			_varName = "Output/VAP_FLOW";
+			_colVarNames = new string[3, 4]
+			{
+				{ "Output/VAP_FLOW3", "Output/LIQ_FLOW5", "Output/L1_FLOW2", "Output/L2_FLOW2" },
+				{ "Output/VAP_FLOW5", "Output/LIQ_FLOW7", "Output/VAP_FLOW_MS3", "Output/LIQ_FLOW_MS3" },
+				{ "Output/VAP_FLOW7", "Output/LIQ_FLOW9", "Output/VAP_FLOW_VL3", "Output/LIQ_FLOW_VL3" }
+			};
+			_stripperVarNames = new string[3, 4]
+			{
+				{ "Output/VAP_FLOW", "Output/LIQ_FLOW3", "Output/L1_FLOW", "Output/L2_FLOW" },
+				{ "Output/VAP_FLOW4", "Output/LIQ_FLOW6", "Output/VAP_FLOW_MS2", "Output/LIQ_FLOW_MS2" },
+				{ "Output/VAP_FLOW6", "Output/LIQ_FLOW8", "Output/VAP_FLOW_VL2", "Output/LIQ_FLOW_VL2" }
+			};
+			_strTitle = new string[3]
+			{
+				WpfPLPetroFracResources.FlowRatio_Title_Mole,
+				WpfPLPetroFracResources.FlowRatio_Title_Mass,
+				WpfPLPetroFracResources.Flowrate_Title_StdVol
+			};
+			_strLabel = new string[3]
+			{
+				WpfPLPetroFracResources.Molar,
+				WpfPLPetroFracResources.Mass,
+				WpfPLPetroFracResources.StdVol
+			};
+		}
+
+		private void SetVControls()
+		{
+			_columnradBtnList = new List<RadioButton>();
+			_columnradBtnList.Add(radBtnMainColumn);
+			_columnradBtnList.Add(radBtnStripper);
+			_flowCheckList = new List<CheckBox>();
+			_flowCheckList.Add(checkBoxVaportoLiquid);
+			_flowCheckList.Add(checkBoxOrganitoFW);
+			_basisRadBtnList = new List<RadioButton>();
+			_basisRadBtnList.Add(radBtnMole);
+			_basisRadBtnList.Add(radBtnMass);
+			_basisRadBtnList.Add(radBtnStdVol);
+			for (int i = 0; i < _basisRadBtnList.Count; i++)
+			{
+				_basisRadBtnList[i].IsEnabled = false;
+				_basisRadBtnList[i].IsChecked = false;
+			}
+		}
+
+		private string SaveConfigValue()
+		{
+			_ = string.Empty;
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.Append("ColumnOption=");
+			stringBuilder.Append(radBtnMainColumn.IsChecked);
+			stringBuilder.Append(";");
+			stringBuilder.Append("StripperEnabled=");
+			stringBuilder.Append(comboBoxStripper.IsEnabled);
+			stringBuilder.Append(";");
+			stringBuilder.Append("Stripper=");
+			stringBuilder.Append(comboBoxStripper.Text);
+			stringBuilder.Append(";");
+			stringBuilder.Append("BasisOption=");
+			for (int i = 0; i < _basisRadBtnList.Count; i++)
+			{
+				if (_basisRadBtnList[i].IsChecked == true)
+				{
+					stringBuilder.Append(i.ToString());
+					break;
+				}
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("BasisEnable=");
+			int num = 0;
+			for (int j = 0; j < _basisRadBtnList.Count; j++)
+			{
+				if (_basisRadBtnList[j].IsEnabled)
+				{
+					if (num > 0)
+					{
+						stringBuilder.Append(",");
+					}
+					stringBuilder.Append(j.ToString());
+					num++;
+				}
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("FlowOption=");
+			num = 0;
+			for (int k = 0; k < _flowCheckList.Count; k++)
+			{
+				if (_flowCheckList[k].IsChecked == true)
+				{
+					if (num > 0)
+					{
+						stringBuilder.Append(",");
+					}
+					stringBuilder.Append(k.ToString());
+					num++;
+				}
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("FlowEnable=");
+			num = 0;
+			for (int l = 0; l < _flowCheckList.Count; l++)
+			{
+				if (_flowCheckList[l].IsEnabled)
+				{
+					if (num > 0)
+					{
+						stringBuilder.Append(",");
+					}
+					stringBuilder.Append(l.ToString());
+					num++;
+				}
+			}
+			stringBuilder.Append(";");
+			return stringBuilder.ToString();
+		}
+
+		private void RestoreConfigValue(string ConfigString)
+		{
+			string[] array = ConfigString.Split(';');
+			int num = 0;
+			string value = array[num].Substring(array[num].IndexOf('=') + 1);
+			radBtnMainColumn.IsChecked = Convert.ToBoolean(value);
+			radBtnStripper.IsChecked = !radBtnMainColumn.IsChecked;
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			comboBoxStripper.IsEnabled = Convert.ToBoolean(value);
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			comboBoxStripper.Text = value;
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			_basisRadBtnList[Convert.ToInt16(value)].IsChecked = true;
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			string[] array2 = value.Split(',');
+			foreach (string value2 in array2)
+			{
+				_basisRadBtnList[Convert.ToInt16(value2)].IsEnabled = true;
+			}
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			array2 = value.Split(',');
+			foreach (string value3 in array2)
+			{
+				_flowCheckList[Convert.ToInt16(value3)].IsChecked = true;
+			}
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			array2 = value.Split(',');
+			foreach (string value4 in array2)
+			{
+				_flowCheckList[Convert.ToInt16(value4)].IsEnabled = true;
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLPetroFrac;component/flowratio.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			switch (connectionId)
+			{
+			case 1:
+				radBtnMainColumn = (RadioButton)target;
+				radBtnMainColumn.Click += radBtn_Click;
+				break;
+			case 2:
+				radBtnStripper = (RadioButton)target;
+				radBtnStripper.Click += radBtn_Click;
+				break;
+			case 3:
+				comboBoxStripper = (ComboBox)target;
+				break;
+			case 4:
+				radBtnMole = (RadioButton)target;
+				break;
+			case 5:
+				radBtnMass = (RadioButton)target;
+				break;
+			case 6:
+				radBtnStdVol = (RadioButton)target;
+				break;
+			case 7:
+				checkBoxVaportoLiquid = (CheckBox)target;
+				break;
+			case 8:
+				checkBoxOrganitoFW = (CheckBox)target;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+	[ProgId("WpfPLPetroFrac.Hydraulic")]
+	public class Hydraulic : UserControl, IRibbonPlotWizardType, IPlotWizardTemplate, IComponentConnector
+	{
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private PlotwizardHelper _help = new PlotwizardHelper();
+
+		private PetroFracHelper _petrofracHelp = new PetroFracHelper();
+
+		private string _currentConfigValue = string.Empty;
+
+		private string _uniqueId = WpfPLPetroFracResources.Temperature_ID;
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgBitmap;
+
+		private bool _bHasInputDialog;
+
+		private readonly string _stageOnFieldId = WpfPLPetroFracResources.Stage_number_on;
+
+		private readonly string _stageOrderFieldId = WpfPLPetroFracResources.Stage_numbering_order;
+
+		private readonly string _yAxis = WpfPLPetroFracResources.Y_axis;
+
+		private readonly string _xAxis = WpfPLPetroFracResources.X_axis;
+
+		private readonly string _ascending = WpfPLPetroFracResources.Ascending;
+
+		private readonly string _descending = WpfPLPetroFracResources.Descending;
+
+		private string _varName;
+
+		private string[,] _colVarNames;
+
+		private string[,] _stripperVarNames;
+
+		private string[,] _XColVarNames;
+
+		private string[,] _YColVarNames;
+
+		private string[,] _XStripperVarNames;
+
+		private string[,] _YStripperVarNames;
+
+		private List<CheckBox> _flowCheckList;
+
+		private List<RadioButton> _columnradBtnList;
+
+		private List<RadioButton> _phaseList;
+
+		private List<RadioButton> _basisradBtnList;
+
+		public static RoutedCommand OKCommand = new RoutedCommand();
+
+		public static RoutedCommand CancelCommand = new RoutedCommand();
+
+		private bool _bCheckDataOnly;
+
+		internal RadioButton radBtnMainColumn;
+
+		internal RadioButton radBtnStripper;
+
+		internal ComboBox comboBoxStripper;
+
+		internal RadioButton radBtnVapor;
+
+		internal RadioButton radBtnLiquid;
+
+		internal RadioButton radBtnMole;
+
+		internal RadioButton radBtnMass;
+
+		internal RadioButton radBtnStdVol;
+
+		internal ComboBox comboBoxUnits;
+
+		internal CheckBox checkBoxThermFlow;
+
+		internal CheckBox checkBoxActualFlow;
+
+		internal CheckBox checkBoxHydrFlow;
+
+		private bool _contentLoaded;
+
+		public string TooltipContentForRibbonItem => WpfPLPetroFracResources.TooltipContentForRibbonItem_Hydraulics;
+
+		public string TooltipHeaderForRibbonItem => WpfPLPetroFracResources.TooltipHeaderForRibbonItem_Hydraulics;
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgBitmap;
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => _help.GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => _help.GetHelpID();
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string>();
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string> { _stageOrderFieldId, _stageOnFieldId };
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		public Hydraulic()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			InitializeComponent();
+			SetVariables();
+			SetControls();
+			_bHasInputDialog = true;
+			if (_imgBitmap == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLPetroFrac.Images.hydraulics.ico");
+				_imgBitmap = new Bitmap(manifestResourceStream);
+			}
+			CommandBinding commandBinding = new CommandBinding(OKCommand, ExecuteOKCommand, CanExecuteOKCommand);
+			CommandBinding commandBinding2 = new CommandBinding(CancelCommand, ExecuteCancelCommand);
+			base.CommandBindings.Add(commandBinding);
+			base.CommandBindings.Add(commandBinding2);
+		}
+
+		public void SetCaption(ref string caption)
+		{
+			caption = WpfPLPetroFracResources.Hydraulic_Name;
+		}
+
+		public void SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 380.0;
+		}
+
+		public void SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 400.0;
+		}
+
+		public void SetMinHeight(ref double minHeight)
+		{
+			minHeight = 420.0;
+		}
+
+		public void SetMinWidth(ref double minWidth)
+		{
+			minWidth = 400.0;
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(_stageOrderFieldId) == 0)
+			{
+				return new List<string> { _ascending, _descending };
+			}
+			if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				return new List<string> { _xAxis, _yAxis };
+			}
+			return null;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sField)
+		{
+			if (sField.CompareTo(_stageOrderFieldId) != 0 && sField.CompareTo(_stageOnFieldId) != 0)
+			{
+				return (RibbonControlType)0;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(_stageOrderFieldId) == 0)
+			{
+				if (_wizardPlot.PlotVal.ReverseXAxis)
+				{
+					sCurrentVal = _descending;
+				}
+				else
+				{
+					sCurrentVal = _ascending;
+				}
+			}
+			else if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				if (_wizardPlot.PlotVal.SwapAxises)
+				{
+					sCurrentVal = _yAxis;
+				}
+				else
+				{
+					sCurrentVal = _xAxis;
+				}
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(_stageOrderFieldId) == 0)
+			{
+				if (sValue.CompareTo(_ascending) == 0)
+				{
+					_wizardPlot.PlotVal.ReverseXAxis = false;
+				}
+				else
+				{
+					_wizardPlot.PlotVal.ReverseXAxis = true;
+				}
+			}
+			else if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				if (sValue.CompareTo(_yAxis) == 0)
+				{
+					_wizardPlot.PlotVal.SwapAxises = true;
+				}
+				else
+				{
+					_wizardPlot.PlotVal.SwapAxises = false;
+				}
+			}
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+			sConfigValue = _currentConfigValue;
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+			_currentConfigValue = sValue;
+		}
+
+		void IRibbonPlotWizardType.Context(object HNode, ref object HWizardPlot, ref int ierror)
+		{
+			if (HWizardPlot == null || HNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			_context = HNode as IHNode;
+			_wizardPlot = HWizardPlot as IHWizardPlot;
+			_context.FindNode(_YColVarNames[0, 0]);
+			_context.FindNode(_XColVarNames[0, 0]);
+			IHNode iHNode = null;
+			bool flag = false;
+			bool flag2 = false;
+			for (int i = 0; i < _YColVarNames.GetLength(1); i++)
+			{
+				for (int j = 0; j < _YColVarNames.GetLength(0); j++)
+				{
+					iHNode = _context.FindNode(_YColVarNames[i, j]);
+					if (iHNode != null && iHNode.Elements.Count > 0)
+					{
+						_flowCheckList[j].IsEnabled = true;
+						_flowCheckList[j].IsChecked = true;
+						_basisradBtnList[i].IsEnabled = true;
+						_phaseList[0].IsEnabled = true;
+						_phaseList[0].IsChecked = true;
+						flag = true;
+					}
+				}
+			}
+			for (int k = 0; k < _XColVarNames.GetLength(1); k++)
+			{
+				for (int l = 0; l < _XColVarNames.GetLength(0); l++)
+				{
+					iHNode = _context.FindNode(_XColVarNames[k, l]);
+					if (iHNode != null && iHNode.Elements.Count > 0)
+					{
+						_flowCheckList[l].IsEnabled = true;
+						_flowCheckList[l].IsChecked = true;
+						_basisradBtnList[k].IsEnabled = true;
+						_phaseList[1].IsEnabled = true;
+						if (!flag)
+						{
+							_phaseList[1].IsChecked = true;
+						}
+						flag2 = true;
+					}
+				}
+			}
+			if (!flag && !flag2)
+			{
+				ierror = 1;
+				return;
+			}
+			iHNode = _context.FindNode(_varName);
+			_petrofracHelp.LoadColumn(iHNode, comboBoxStripper, radBtnStripper);
+			_wizardPlot.SetIndependentVariable(_context, _YColVarNames[0, 1] + "!Label");
+			_wizardPlot.RemoveAllDependentVariable();
+			_wizardPlot.AddDependentVariable(_context, _YColVarNames[0, 1]);
+			_wizardPlot.basis = 1;
+			_help.LoadUnitsCombo(_context.Application.Tree, _wizardPlot, comboBoxUnits);
+			if (string.IsNullOrEmpty(_currentConfigValue))
+			{
+				_columnradBtnList[0].IsEnabled = true;
+				_columnradBtnList[0].IsChecked = true;
+				for (int m = 0; m < _basisradBtnList.Count(); m++)
+				{
+					if (_basisradBtnList[m].IsEnabled)
+					{
+						_basisradBtnList[m].IsChecked = true;
+						break;
+					}
+				}
+			}
+			else
+			{
+				for (int n = 0; n < _flowCheckList.Count(); n++)
+				{
+					_flowCheckList[n].IsChecked = false;
+				}
+				RestoreConfigValue(_currentConfigValue);
+			}
+		}
+
+		public void UpdateWizardData()
+		{
+			string text = "";
+			int basis = _wizardPlot.basis;
+			text = basis switch
+			{
+				1 => WpfPLPetroFracResources.Hydraulic_Title_Mole, 
+				2 => WpfPLPetroFracResources.Hydraulic_Title_Mass, 
+				_ => WpfPLPetroFracResources.Hydraulic_Title_StdVol, 
+			};
+			string text2 = comboBoxStripper.Text.Trim();
+			if (radBtnVapor.IsChecked == true)
+			{
+				_colVarNames = _YColVarNames;
+				_stripperVarNames = _YStripperVarNames;
+				((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle(Type.Missing, WpfPLPetroFracResources.Hydraulic_YAxisTitle_Vapor);
+			}
+			else
+			{
+				_colVarNames = _XColVarNames;
+				_stripperVarNames = _XStripperVarNames;
+				((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle(Type.Missing, WpfPLPetroFracResources.Hydraulic_YAxisTitle_Liquid);
+			}
+			int num = 0;
+			_wizardPlot.RemoveAllDependentVariable();
+			string text3 = "";
+			string text4 = "";
+			if (radBtnMainColumn.IsChecked == true)
+			{
+				text3 = WpfPLPetroFracResources.Title_MainCol;
+				text4 = _colVarNames[basis - 1, 1] + "!Label";
+				_wizardPlot.SetIndependentVariable(_context, text4);
+				for (int i = 0; i < _flowCheckList.Count; i++)
+				{
+					if (_flowCheckList[i].IsEnabled && _flowCheckList[i].IsChecked == true)
+					{
+						string depvar = _colVarNames[basis - 1, i];
+						_wizardPlot.AddDependentVariable(_context, depvar);
+						((IHPlotVal)_wizardPlot.PlotVal).set_Label(num, _flowCheckList[i].Content.ToString());
+						num++;
+					}
+				}
+			}
+			else
+			{
+				text3 = WpfPLPetroFracResources.Title_Stripper + " " + text2;
+				text4 = _stripperVarNames[basis - 1, 1] + "/" + text2 + "!Label";
+				_wizardPlot.SetIndependentVariable(_context, text4);
+				for (int j = 0; j < _flowCheckList.Count; j++)
+				{
+					if (_flowCheckList[j].IsEnabled && _flowCheckList[j].IsChecked == true)
+					{
+						string depvar2 = _stripperVarNames[basis - 1, j] + "/" + text2;
+						_wizardPlot.AddDependentVariable(_context, depvar2);
+						((IHPlotVal)_wizardPlot.PlotVal).set_Label(num, _flowCheckList[j].Content.ToString());
+						num++;
+					}
+				}
+			}
+			_wizardPlot.PlotVal.Title = text + " " + text3;
+			_help.SaveUnitsCombo(_context.Application.Tree, _wizardPlot, comboBoxUnits);
+			_currentConfigValue = SaveConfigValue();
+		}
+
+		private void radBtn_Click(object sender, RoutedEventArgs e)
+		{
+			_petrofracHelp.SelecColumn(radBtnMainColumn, comboBoxStripper);
+			SetUnit(_wizardPlot.basis);
+		}
+
+		private void radBtnBasis_Click(object sender, RoutedEventArgs e)
+		{
+			RadioButton radioButton = sender as RadioButton;
+			for (int i = 0; i < _basisradBtnList.Count(); i++)
+			{
+				if (radioButton.Name.ToLower() == _basisradBtnList[i].Name.ToLower())
+				{
+					SetUnit(i + 1);
+					break;
+				}
+			}
+		}
+
+		private void ExecuteOKCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			UpdateWizardData();
+			_help.CloseForm((UserControl)this, (bool?)true);
+		}
+
+		private void CanExecuteOKCommand(object sender, CanExecuteRoutedEventArgs e)
+		{
+			int num = 0;
+			for (int i = 0; i < _flowCheckList.Count(); i++)
+			{
+				if (_flowCheckList[i].IsEnabled && _flowCheckList[i].IsChecked == true)
+				{
+					num++;
+					break;
+				}
+			}
+			e.CanExecute = num != 0;
+		}
+
+		private void ExecuteCancelCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			_help.CloseForm((UserControl)this, (bool?)false);
+		}
+
+		private void SetUnit(int index)
+		{
+			int num = 0;
+			string text = comboBoxStripper.Text.Trim();
+			if (radBtnVapor.IsChecked == true)
+			{
+				_colVarNames = _YColVarNames;
+				_stripperVarNames = _YStripperVarNames;
+			}
+			else
+			{
+				_colVarNames = _XColVarNames;
+				_stripperVarNames = _XStripperVarNames;
+			}
+			_wizardPlot.basis = index;
+			_wizardPlot.RemoveAllDependentVariable();
+			if (radBtnMainColumn.IsChecked == true)
+			{
+				for (int i = 0; i < _flowCheckList.Count; i++)
+				{
+					if (_flowCheckList[i].IsEnabled && _flowCheckList[i].IsChecked == true)
+					{
+						string depvar = _colVarNames[index - 1, 0];
+						_wizardPlot.AddDependentVariable(_context, depvar);
+						num++;
+					}
+				}
+			}
+			else
+			{
+				for (int j = 0; j < _flowCheckList.Count; j++)
+				{
+					if (_flowCheckList[j].IsEnabled && _flowCheckList[j].IsChecked == true)
+					{
+						string depvar2 = _stripperVarNames[index - 1, 0] + "/" + text;
+						_wizardPlot.AddDependentVariable(_context, depvar2);
+						num++;
+					}
+				}
+			}
+			_help.LoadUnitsCombo(_context.Application.Tree, _wizardPlot, comboBoxUnits);
+		}
+
+		private void SetVariables()
+		{
+			_varName = "Output/VSTR_ACT";
+			_XColVarNames = new string[3, 3]
+			{
+				{ "Output/LCOL_MIN", "Output/LCOL_ACT", "Output/LCOL_MAX" },
+				{ "Output/LCOL_MIN_MS", "Output/LCOL_ACT_MS", "Output/LCOL_MAX_MS" },
+				{ "Output/LCOL_MIN_VOL", "Output/LCOL_ACT_VOL", "Output/LCOL_MAX_VOL" }
+			};
+			_YColVarNames = new string[3, 3]
+			{
+				{ "Output/VCOL_MIN", "Output/VCOL_ACT", "Output/VCOL_MAX" },
+				{ "Output/VCOL_MIN_MS", "Output/VCOL_ACT_MS", "Output/VCOL_MAX_MS" },
+				{ "Output/VCOL_MIN_VOL", "Output/VCOL_ACT_VOL", "Output/VCOL_MAX_VOL" }
+			};
+			_XStripperVarNames = new string[3, 3]
+			{
+				{ "Output/LSTR_MIN", "Output/LSTR_ACT", "Output/LSTR_MAX" },
+				{ "Output/LSTR_MIN_MS", "Output/LSTR_ACT_MS", "Output/LSTR_MAX_MS" },
+				{ "Output/LSTR_MIN_VOL", "Output/LSTR_ACT_VOL", "Output/LSTR_MAX_VOL" }
+			};
+			_YStripperVarNames = new string[3, 3]
+			{
+				{ "Output/VSTR_MIN", "Output/VSTR_ACT", "Output/VSTR_MAX" },
+				{ "Output/VSTR_MIN_MS", "Output/VSTR_ACT_MS", "Output/VSTR_MAX_MS" },
+				{ "Output/VSTR_MIN_VOL", "Output/VSTR_ACT_VOL", "Output/VSTR_MAX_VOL" }
+			};
+		}
+
+		private void SetControls()
+		{
+			_columnradBtnList = new List<RadioButton>();
+			_columnradBtnList.Add(radBtnMainColumn);
+			_columnradBtnList.Add(radBtnStripper);
+			_phaseList = new List<RadioButton>();
+			_phaseList.Add(radBtnVapor);
+			_phaseList.Add(radBtnLiquid);
+			for (int i = 0; i < _phaseList.Count; i++)
+			{
+				_phaseList[i].IsEnabled = false;
+				_phaseList[i].IsChecked = false;
+			}
+			_flowCheckList = new List<CheckBox>();
+			_flowCheckList.Add(checkBoxThermFlow);
+			_flowCheckList.Add(checkBoxActualFlow);
+			_flowCheckList.Add(checkBoxHydrFlow);
+			for (int j = 0; j < _flowCheckList.Count; j++)
+			{
+				_flowCheckList[j].IsEnabled = false;
+				_flowCheckList[j].IsChecked = false;
+			}
+			_basisradBtnList = new List<RadioButton>();
+			_basisradBtnList.Add(radBtnMole);
+			_basisradBtnList.Add(radBtnMass);
+			_basisradBtnList.Add(radBtnStdVol);
+			for (int k = 0; k < _basisradBtnList.Count; k++)
+			{
+				_basisradBtnList[k].IsEnabled = false;
+				_basisradBtnList[k].IsChecked = false;
+			}
+		}
+
+		private string SaveConfigValue()
+		{
+			_ = string.Empty;
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.Append("ColumnOption=");
+			stringBuilder.Append(radBtnMainColumn.IsChecked);
+			stringBuilder.Append(";");
+			stringBuilder.Append("StripperEnabled=");
+			stringBuilder.Append(comboBoxStripper.IsEnabled);
+			stringBuilder.Append(";");
+			stringBuilder.Append("Stripper=");
+			stringBuilder.Append(comboBoxStripper.Text);
+			stringBuilder.Append(";");
+			stringBuilder.Append("BasisOption=");
+			for (int i = 0; i < _basisradBtnList.Count; i++)
+			{
+				if (_basisradBtnList[i].IsChecked == true)
+				{
+					stringBuilder.Append(i.ToString());
+					break;
+				}
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("BasisEnable=");
+			int num = 0;
+			for (int j = 0; j < _basisradBtnList.Count; j++)
+			{
+				if (_basisradBtnList[j].IsEnabled)
+				{
+					if (num > 0)
+					{
+						stringBuilder.Append(",");
+					}
+					stringBuilder.Append(j.ToString());
+					num++;
+				}
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("PhaseOption=");
+			for (int k = 0; k < _phaseList.Count; k++)
+			{
+				if (_phaseList[k].IsChecked == true)
+				{
+					stringBuilder.Append(k.ToString());
+					break;
+				}
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("PhaseEnable=");
+			num = 0;
+			for (int l = 0; l < _phaseList.Count; l++)
+			{
+				if (_phaseList[l].IsEnabled)
+				{
+					if (num > 0)
+					{
+						stringBuilder.Append(",");
+					}
+					stringBuilder.Append(l.ToString());
+					num++;
+				}
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("FlowOption=");
+			num = 0;
+			for (int m = 0; m < _flowCheckList.Count; m++)
+			{
+				if (_flowCheckList[m].IsChecked == true)
+				{
+					if (num > 0)
+					{
+						stringBuilder.Append(",");
+					}
+					stringBuilder.Append(m.ToString());
+					num++;
+				}
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("FlowEnable=");
+			num = 0;
+			for (int n = 0; n < _flowCheckList.Count; n++)
+			{
+				if (_flowCheckList[n].IsEnabled)
+				{
+					if (num > 0)
+					{
+						stringBuilder.Append(",");
+					}
+					stringBuilder.Append(n.ToString());
+					num++;
+				}
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("Unit=");
+			stringBuilder.Append(comboBoxUnits.Text);
+			stringBuilder.Append(";");
+			stringBuilder.Append("UnitEnabel=");
+			stringBuilder.Append(comboBoxUnits.IsEnabled);
+			stringBuilder.Append(";");
+			return stringBuilder.ToString();
+		}
+
+		private void RestoreConfigValue(string ConfigString)
+		{
+			string[] array = ConfigString.Split(';');
+			int num = 0;
+			string value = array[num].Substring(array[num].IndexOf('=') + 1);
+			radBtnMainColumn.IsChecked = Convert.ToBoolean(value);
+			radBtnStripper.IsChecked = !radBtnMainColumn.IsChecked;
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			comboBoxStripper.IsEnabled = Convert.ToBoolean(value);
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			comboBoxStripper.Text = value;
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			int num2 = Convert.ToInt16(value);
+			_basisradBtnList[num2].IsChecked = true;
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			string[] array2 = value.Split(',');
+			foreach (string value2 in array2)
+			{
+				_basisradBtnList[Convert.ToInt16(value2)].IsEnabled = true;
+			}
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			_phaseList[Convert.ToInt16(value)].IsChecked = true;
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			array2 = value.Split(',');
+			foreach (string value3 in array2)
+			{
+				_phaseList[Convert.ToInt16(value3)].IsEnabled = true;
+			}
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			array2 = value.Split(',');
+			foreach (string value4 in array2)
+			{
+				_flowCheckList[Convert.ToInt16(value4)].IsChecked = true;
+			}
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			array2 = value.Split(',');
+			foreach (string value5 in array2)
+			{
+				_flowCheckList[Convert.ToInt16(value5)].IsEnabled = true;
+			}
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			SetUnit(num2 + 1);
+			comboBoxUnits.Text = value;
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			comboBoxUnits.IsEnabled = Convert.ToBoolean(value);
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLPetroFrac;component/hydraulic.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			switch (connectionId)
+			{
+			case 1:
+				radBtnMainColumn = (RadioButton)target;
+				radBtnMainColumn.Click += radBtn_Click;
+				break;
+			case 2:
+				radBtnStripper = (RadioButton)target;
+				radBtnStripper.Click += radBtn_Click;
+				break;
+			case 3:
+				comboBoxStripper = (ComboBox)target;
+				break;
+			case 4:
+				radBtnVapor = (RadioButton)target;
+				break;
+			case 5:
+				radBtnLiquid = (RadioButton)target;
+				break;
+			case 6:
+				radBtnMole = (RadioButton)target;
+				radBtnMole.Click += radBtnBasis_Click;
+				break;
+			case 7:
+				radBtnMass = (RadioButton)target;
+				radBtnMass.Click += radBtnBasis_Click;
+				break;
+			case 8:
+				radBtnStdVol = (RadioButton)target;
+				radBtnStdVol.Click += radBtnBasis_Click;
+				break;
+			case 9:
+				comboBoxUnits = (ComboBox)target;
+				break;
+			case 10:
+				checkBoxThermFlow = (CheckBox)target;
+				break;
+			case 11:
+				checkBoxActualFlow = (CheckBox)target;
+				break;
+			case 12:
+				checkBoxHydrFlow = (CheckBox)target;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+	[ProgId("WpfPLPetroFrac.KValues")]
+	public class KValues : UserControl, IRibbonPlotWizardType, IPlotWizardTemplate, IComponentConnector
+	{
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private PlotwizardHelper _help = new PlotwizardHelper();
+
+		private PetroFracHelper _petrofracHelp = new PetroFracHelper();
+
+		private string _currentConfigValue = string.Empty;
+
+		private string _uniqueId = WpfPLPetroFracResources.KValues_ID;
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgBitmap;
+
+		private bool _bHasInputDialog;
+
+		private readonly string _stageOnFieldId = WpfPLPetroFracResources.Stage_number_on;
+
+		private readonly string _stageOrderFieldId = WpfPLPetroFracResources.Stage_numbering_order;
+
+		private readonly string _yAxis = WpfPLPetroFracResources.Y_axis;
+
+		private readonly string _xAxis = WpfPLPetroFracResources.X_axis;
+
+		private readonly string _ascending = WpfPLPetroFracResources.Ascending;
+
+		private readonly string _descending = WpfPLPetroFracResources.Descending;
+
+		private string[] _colVarNames;
+
+		private string[] _stripperVarNames;
+
+		private string[] _strTitle;
+
+		private List<RadioButton> _phaseRadBtnList;
+
+		public static RoutedCommand OKCommand = new RoutedCommand();
+
+		public static RoutedCommand CancelCommand = new RoutedCommand();
+
+		private bool _bCheckDataOnly;
+
+		internal RadioButton radBtnMainColumn;
+
+		internal RadioButton radBtnStripper;
+
+		internal ComboBox comboBoxStripper;
+
+		internal RadioButton radBtnVL;
+
+		internal RadioButton radBtnVO;
+
+		internal RadioButton radBtnVW;
+
+		internal RadioButton radBtnOW;
+
+		internal CurvesSelectorControl CurveList;
+
+		private bool _contentLoaded;
+
+		public string TooltipContentForRibbonItem => WpfPLPetroFracResources.TooltipContentForRibbonItem_KValues;
+
+		public string TooltipHeaderForRibbonItem => WpfPLPetroFracResources.TooltipHeaderForRibbonItem_KValues;
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgBitmap;
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => _help.GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => _help.GetHelpID();
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string>();
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string> { _stageOrderFieldId, _stageOnFieldId };
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		public KValues()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			InitializeComponent();
+			SetVariables();
+			SetControls();
+			_bHasInputDialog = true;
+			if (_imgBitmap == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLPetroFrac.Images.kvalues.ico");
+				_imgBitmap = new Bitmap(manifestResourceStream);
+			}
+			CommandBinding commandBinding = new CommandBinding(OKCommand, ExecuteOKCommand, CanExecuteOKCommand);
+			CommandBinding commandBinding2 = new CommandBinding(CancelCommand, ExecuteCancelCommand);
+			base.CommandBindings.Add(commandBinding);
+			base.CommandBindings.Add(commandBinding2);
+		}
+
+		public void SetCaption(ref string caption)
+		{
+			caption = WpfPLPetroFracResources.KValues_Name;
+		}
+
+		public void SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 450.0;
+		}
+
+		public void SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 300.0;
+		}
+
+		public void SetMinHeight(ref double minHeight)
+		{
+			minHeight = 380.0;
+		}
+
+		public void SetMinWidth(ref double minWidth)
+		{
+			minWidth = 300.0;
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(_stageOrderFieldId) == 0)
+			{
+				return new List<string> { _ascending, _descending };
+			}
+			if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				return new List<string> { _xAxis, _yAxis };
+			}
+			return null;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sField)
+		{
+			if (sField.CompareTo(_stageOrderFieldId) != 0 && sField.CompareTo(_stageOnFieldId) != 0)
+			{
+				return (RibbonControlType)0;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(_stageOrderFieldId) == 0)
+			{
+				if (_wizardPlot.PlotVal.ReverseXAxis)
+				{
+					sCurrentVal = _descending;
+				}
+				else
+				{
+					sCurrentVal = _ascending;
+				}
+			}
+			else if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				if (_wizardPlot.PlotVal.SwapAxises)
+				{
+					sCurrentVal = _yAxis;
+				}
+				else
+				{
+					sCurrentVal = _xAxis;
+				}
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(_stageOrderFieldId) == 0)
+			{
+				if (sValue.CompareTo(_ascending) == 0)
+				{
+					_wizardPlot.PlotVal.ReverseXAxis = false;
+				}
+				else
+				{
+					_wizardPlot.PlotVal.ReverseXAxis = true;
+				}
+			}
+			else if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				if (sValue.CompareTo(_yAxis) == 0)
+				{
+					_wizardPlot.PlotVal.SwapAxises = true;
+				}
+				else
+				{
+					_wizardPlot.PlotVal.SwapAxises = false;
+				}
+			}
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+			sConfigValue = _currentConfigValue;
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+			_currentConfigValue = sValue;
+		}
+
+		void IRibbonPlotWizardType.Context(object HNode, ref object HWizardPlot, ref int ierror)
+		{
+			if (HWizardPlot == null || HNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			_context = HNode as IHNode;
+			_wizardPlot = HWizardPlot as IHWizardPlot;
+			IHNode iHNode = null;
+			bool flag = false;
+			for (int i = 0; i < _colVarNames.Count(); i++)
+			{
+				iHNode = _context.FindNode(_colVarNames[i]);
+				if (iHNode != null && iHNode.Elements.Count > 0)
+				{
+					flag = true;
+					break;
+				}
+			}
+			if (!flag)
+			{
+				ierror = 1;
+				return;
+			}
+			List<string> list = new List<string>();
+			CurveList.IsCheckAll = false;
+			if (iHNode != null && iHNode.Elements.Count > 0)
+			{
+				IHNodeCol elements = iHNode.Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements;
+				if (elements != null && elements.Count > 0)
+				{
+					for (int j = 0; j < elements.Count; j++)
+					{
+						string item = elements.get_Label(0, j, (object)null);
+						list.Add(item);
+					}
+					CurveList.SetCurves(list.ToArray());
+					CurveList.Header = WpfPLPetroFracResources.Comp_Header;
+				}
+			}
+			iHNode = _context.FindNode(_stripperVarNames[0]);
+			_petrofracHelp.LoadColumn(iHNode, comboBoxStripper, radBtnStripper);
+			if (string.IsNullOrEmpty(_currentConfigValue))
+			{
+				radBtnMainColumn.IsChecked = true;
+				for (int k = 0; k < _colVarNames.Count(); k++)
+				{
+					iHNode = _context.FindNode(_colVarNames[k]);
+					if (iHNode != null && iHNode.Elements.Count > 0)
+					{
+						_phaseRadBtnList[k].IsEnabled = true;
+					}
+				}
+				for (int l = 0; l < _phaseRadBtnList.Count(); l++)
+				{
+					if (_phaseRadBtnList[l].IsEnabled)
+					{
+						_phaseRadBtnList[l].IsChecked = true;
+						iHNode = _context.FindNode(_colVarNames[l]);
+						break;
+					}
+				}
+			}
+			else
+			{
+				RestoreConfigValue(_currentConfigValue);
+			}
+		}
+
+		public void UpdateWizardData()
+		{
+			string text = "";
+			int num = -1;
+			for (int i = 0; i < _phaseRadBtnList.Count(); i++)
+			{
+				if (_phaseRadBtnList[i].IsEnabled && _phaseRadBtnList[i].IsChecked == true)
+				{
+					num = i;
+					text = _strTitle[i];
+					break;
+				}
+			}
+			_wizardPlot.RemoveAllDependentVariable();
+			IHNode iHNode = null;
+			if (radBtnMainColumn.IsChecked == true)
+			{
+				iHNode = _context.FindNode(_colVarNames[num]);
+				text += WpfPLPetroFracResources.Title_MainCol;
+				_wizardPlot.SetIndependentVariable(_context, _colVarNames[num] + "!Label");
+			}
+			else
+			{
+				string text2 = comboBoxStripper.Text.Trim();
+				iHNode = _context.FindNode(_stripperVarNames[num] + "/" + text2);
+				text = text + WpfPLPetroFracResources.Title_Stripper + " " + text2;
+				_wizardPlot.SetIndependentVariable(_context, _stripperVarNames[num] + "/" + text2 + "!Label");
+			}
+			if (iHNode != null)
+			{
+				List<string> list = new List<string>(CurveList.GetSelectedCurves());
+				int count = list.Count;
+				int count2 = iHNode.Elements.Count;
+				_wizardPlot.PlotVal.NVariables = count;
+				for (int j = 0; j < count; j++)
+				{
+					string text3 = list[j];
+					((IHPlotVal)_wizardPlot.PlotVal).set_Label(j, text3);
+					for (int k = 0; k < count2; k++)
+					{
+						((IHPlotVal)_wizardPlot.PlotVal).set_YData(j, k, (short)1, (object)iHNode.Elements[k, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[text3, Type.Missing, Type.Missing, Type.Missing, Type.Missing]);
+					}
+				}
+			}
+			_wizardPlot.PlotVal.Title = text;
+			((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle((object)null, WpfPLPetroFracResources.KValues_YAxisTitle);
+			_currentConfigValue = SaveConfigValue();
+		}
+
+		private void radBtn_Click(object sender, RoutedEventArgs e)
+		{
+			_petrofracHelp.SelecColumn(radBtnMainColumn, comboBoxStripper);
+		}
+
+		private void ExecuteOKCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			UpdateWizardData();
+			_help.CloseForm((UserControl)this, (bool?)true);
+		}
+
+		private void CanExecuteOKCommand(object sender, CanExecuteRoutedEventArgs e)
+		{
+			int num = CurveList.GetSelectedCurves().Count();
+			if (num == CurveList.Curves.Count)
+			{
+				CurveList.IsCheckAll = true;
+			}
+			else
+			{
+				string[] selectedCurves = CurveList.GetSelectedCurves();
+				CurveList.IsCheckAll = false;
+				CurveList.SetSelectedCurves(selectedCurves);
+			}
+			e.CanExecute = num != 0;
+		}
+
+		private void ExecuteCancelCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			_help.CloseForm((UserControl)this, (bool?)false);
+		}
+
+		private void SetVariables()
+		{
+			_colVarNames = new string[4] { "Output/B_K3", "Output/K1", "Output/K3", "Output/KLL2" };
+			_stripperVarNames = new string[4] { "Output/B_K4", "Output/K2", "Output/K4", "Output/KLL3" };
+			_strTitle = new string[4]
+			{
+				WpfPLPetroFracResources.KValues_Title_VL,
+				WpfPLPetroFracResources.KValues_Title_VO,
+				WpfPLPetroFracResources.KValues_Title_VW,
+				WpfPLPetroFracResources.KValues_Title_OW
+			};
+		}
+
+		private void SetControls()
+		{
+			_phaseRadBtnList = new List<RadioButton>();
+			_phaseRadBtnList.Add(radBtnVL);
+			_phaseRadBtnList.Add(radBtnVO);
+			_phaseRadBtnList.Add(radBtnVW);
+			_phaseRadBtnList.Add(radBtnOW);
+			for (int i = 0; i < _phaseRadBtnList.Count; i++)
+			{
+				_phaseRadBtnList[i].IsEnabled = false;
+				_phaseRadBtnList[i].IsChecked = false;
+			}
+		}
+
+		private string SaveConfigValue()
+		{
+			_ = string.Empty;
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.Append("ColumnOption=");
+			stringBuilder.Append(radBtnMainColumn.IsChecked);
+			stringBuilder.Append(";");
+			stringBuilder.Append("StripperEnabled=");
+			stringBuilder.Append(comboBoxStripper.IsEnabled);
+			stringBuilder.Append(";");
+			stringBuilder.Append("Stripper=");
+			stringBuilder.Append(comboBoxStripper.Text);
+			stringBuilder.Append(";");
+			stringBuilder.Append("BasisOption=");
+			for (int i = 0; i < _phaseRadBtnList.Count; i++)
+			{
+				if (_phaseRadBtnList[i].IsChecked == true)
+				{
+					stringBuilder.Append(i.ToString());
+					break;
+				}
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("BasisEnable=");
+			int num = 0;
+			for (int j = 0; j < _phaseRadBtnList.Count; j++)
+			{
+				if (_phaseRadBtnList[j].IsEnabled)
+				{
+					if (num > 0)
+					{
+						stringBuilder.Append(",");
+					}
+					stringBuilder.Append(j.ToString());
+					num++;
+				}
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("CurveSelection=");
+			List<string> list = new List<string>(CurveList.GetSelectedCurves());
+			int count = list.Count;
+			for (int k = 0; k < count; k++)
+			{
+				if (k > 0)
+				{
+					stringBuilder.Append(",");
+				}
+				stringBuilder.Append(list[k]);
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("CheckAll=");
+			stringBuilder.Append(CurveList.IsCheckAll);
+			stringBuilder.Append(";");
+			return stringBuilder.ToString();
+		}
+
+		private void RestoreConfigValue(string ConfigString)
+		{
+			string[] array = ConfigString.Split(';');
+			int num = 0;
+			string value = array[num].Substring(array[num].IndexOf('=') + 1);
+			radBtnMainColumn.IsChecked = Convert.ToBoolean(value);
+			radBtnStripper.IsChecked = !radBtnMainColumn.IsChecked;
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			comboBoxStripper.IsEnabled = Convert.ToBoolean(value);
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			comboBoxStripper.Text = value;
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			_phaseRadBtnList[Convert.ToInt16(value)].IsChecked = true;
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			string[] array2 = value.Split(',');
+			foreach (string value2 in array2)
+			{
+				_phaseRadBtnList[Convert.ToInt16(value2)].IsEnabled = true;
+			}
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			string[] array3 = value.Split(',');
+			List<string> list = new List<string>();
+			array2 = array3;
+			foreach (string item in array2)
+			{
+				list.Add(item);
+			}
+			CurveList.SetSelectedCurves(list.ToArray());
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			CurveList.IsCheckAll = Convert.ToBoolean(value);
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLPetroFrac;component/kvalues.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			switch (connectionId)
+			{
+			case 1:
+				radBtnMainColumn = (RadioButton)target;
+				radBtnMainColumn.Click += radBtn_Click;
+				break;
+			case 2:
+				radBtnStripper = (RadioButton)target;
+				radBtnStripper.Click += radBtn_Click;
+				break;
+			case 3:
+				comboBoxStripper = (ComboBox)target;
+				break;
+			case 4:
+				radBtnVL = (RadioButton)target;
+				break;
+			case 5:
+				radBtnVO = (RadioButton)target;
+				break;
+			case 6:
+				radBtnVW = (RadioButton)target;
+				break;
+			case 7:
+				radBtnOW = (RadioButton)target;
+				break;
+			case 8:
+				CurveList = (CurvesSelectorControl)target;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+	[ProgId("WpfPLPetroFrac.KVRatio")]
+	public class KVRatio : UserControl, IRibbonPlotWizardType, IPlotWizardTemplate, IComponentConnector
+	{
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private PlotwizardHelper _help = new PlotwizardHelper();
+
+		private PetroFracHelper _petrofracHelp = new PetroFracHelper();
+
+		private string _currentConfigValue = string.Empty;
+
+		private string _uniqueId = WpfPLPetroFracResources.KVRatio_ID;
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgBitmap;
+
+		private bool _bHasInputDialog;
+
+		private readonly string _stageOnFieldId = WpfPLPetroFracResources.Stage_number_on;
+
+		private readonly string _stageOrderFieldId = WpfPLPetroFracResources.Stage_numbering_order;
+
+		private readonly string _yAxis = WpfPLPetroFracResources.Y_axis;
+
+		private readonly string _xAxis = WpfPLPetroFracResources.X_axis;
+
+		private readonly string _ascending = WpfPLPetroFracResources.Ascending;
+
+		private readonly string _descending = WpfPLPetroFracResources.Descending;
+
+		private string[] _colVarNames;
+
+		private string[] _stripperVarNames;
+
+		public static RoutedCommand OKCommand = new RoutedCommand();
+
+		public static RoutedCommand CancelCommand = new RoutedCommand();
+
+		private bool _bCheckDataOnly;
+
+		internal RadioButton radBtnMainColumn;
+
+		internal RadioButton radBtnStripper;
+
+		internal ComboBox comboBoxStripper;
+
+		internal RadioButton radBtnComponent;
+
+		internal RadioButton radBtnCompGroup;
+
+		internal ComboBox comboBoxComponent;
+
+		internal ComboBox comboBoxCompGroup;
+
+		internal CurvesSelectorControl CompList;
+
+		internal CurvesSelectorControl CompGList;
+
+		private bool _contentLoaded;
+
+		public string TooltipContentForRibbonItem => WpfPLPetroFracResources.TooltipContentForRibbonItem_RelVol;
+
+		public string TooltipHeaderForRibbonItem => WpfPLPetroFracResources.TooltipHeaderForRibbonItem_RelVol;
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgBitmap;
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => _help.GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => _help.GetHelpID();
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string>();
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string> { _stageOrderFieldId, _stageOnFieldId };
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		public KVRatio()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			InitializeComponent();
+			SetVariables();
+			_bHasInputDialog = true;
+			if (_imgBitmap == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLPetroFrac.Images.relvol.ico");
+				_imgBitmap = new Bitmap(manifestResourceStream);
+			}
+			CommandBinding commandBinding = new CommandBinding(OKCommand, ExecuteOKCommand, CanExecuteOKCommand);
+			CommandBinding commandBinding2 = new CommandBinding(CancelCommand, ExecuteCancelCommand);
+			base.CommandBindings.Add(commandBinding);
+			base.CommandBindings.Add(commandBinding2);
+		}
+
+		public void SetCaption(ref string caption)
+		{
+			caption = WpfPLPetroFracResources.RelVol_Name;
+		}
+
+		public void SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 520.0;
+		}
+
+		public void SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 400.0;
+		}
+
+		public void SetMinHeight(ref double minHeight)
+		{
+			minHeight = 470.0;
+		}
+
+		public void SetMinWidth(ref double minWidth)
+		{
+			minWidth = 400.0;
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(_stageOrderFieldId) == 0)
+			{
+				return new List<string> { _ascending, _descending };
+			}
+			if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				return new List<string> { _xAxis, _yAxis };
+			}
+			return null;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sField)
+		{
+			if (sField.CompareTo(_stageOrderFieldId) != 0 && sField.CompareTo(_stageOnFieldId) != 0)
+			{
+				return (RibbonControlType)0;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(_stageOrderFieldId) == 0)
+			{
+				if (_wizardPlot.PlotVal.ReverseXAxis)
+				{
+					sCurrentVal = _descending;
+				}
+				else
+				{
+					sCurrentVal = _ascending;
+				}
+			}
+			else if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				if (_wizardPlot.PlotVal.SwapAxises)
+				{
+					sCurrentVal = _yAxis;
+				}
+				else
+				{
+					sCurrentVal = _xAxis;
+				}
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(_stageOrderFieldId) == 0)
+			{
+				if (sValue.CompareTo(_ascending) == 0)
+				{
+					_wizardPlot.PlotVal.ReverseXAxis = false;
+				}
+				else
+				{
+					_wizardPlot.PlotVal.ReverseXAxis = true;
+				}
+			}
+			else if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				if (sValue.CompareTo(_yAxis) == 0)
+				{
+					_wizardPlot.PlotVal.SwapAxises = true;
+				}
+				else
+				{
+					_wizardPlot.PlotVal.SwapAxises = false;
+				}
+			}
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+			sConfigValue = _currentConfigValue;
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+			_currentConfigValue = sValue;
+		}
+
+		void IRibbonPlotWizardType.Context(object HNode, ref object HWizardPlot, ref int ierror)
+		{
+			if (HWizardPlot == null || HNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			_context = HNode as IHNode;
+			_wizardPlot = HWizardPlot as IHWizardPlot;
+			comboBoxComponent.Items.Clear();
+			IHNode iHNode = _context.FindNode(_colVarNames[0]);
+			if (iHNode != null && iHNode.Elements.Count > 0)
+			{
+				List<string> list = new List<string>();
+				IHNodeCol elements = iHNode.Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements;
+				if (elements != null && elements.Count > 0)
+				{
+					for (int i = 0; i < elements.Count; i++)
+					{
+						string text = elements.get_Label(0, i, (object)null);
+						comboBoxComponent.Items.Add(text);
+						list.Add(text);
+					}
+					comboBoxComponent.SelectedIndex = 0;
+					CompList.IsCheckAll = false;
+					CompList.SetCurves(list.ToArray());
+					CompList.Header = WpfPLPetroFracResources.Comp_Header;
+				}
+			}
+			if (comboBoxComponent.Items.Count <= 0)
+			{
+				ierror = 1;
+				return;
+			}
+			comboBoxCompGroup.Items.Clear();
+			iHNode = _context.Application.Tree.FindNode("Data/Components/Comp-Groups");
+			if (iHNode != null && iHNode.Elements.Count > 0)
+			{
+				List<string> list2 = new List<string>();
+				for (int j = 0; j < iHNode.Elements.Count; j++)
+				{
+					string text2 = iHNode.Elements.get_Label(0, j, (object)null);
+					comboBoxCompGroup.Items.Add(text2);
+					list2.Add(text2);
+				}
+				comboBoxCompGroup.SelectedIndex = 0;
+				CompGList.SetCurves(list2.ToArray());
+				CompGList.Header = WpfPLPetroFracResources.CompG_Header;
+			}
+			if (comboBoxCompGroup.Items.Count == 0)
+			{
+				radBtnCompGroup.IsEnabled = false;
+				CompGList.IsCheckAll = false;
+				CompGList.IsEnabled = false;
+			}
+			if (comboBoxCompGroup.Items.Count > 0)
+			{
+				radBtnCompGroup.IsEnabled = true;
+				CompGList.IsEnabled = true;
+				CompGList.IsCheckAll = true;
+			}
+			iHNode = _context.FindNode(_stripperVarNames[0]);
+			_petrofracHelp.LoadColumn(iHNode, comboBoxStripper, radBtnStripper);
+			radBtnComponent.IsEnabled = true;
+			if (string.IsNullOrEmpty(_currentConfigValue))
+			{
+				radBtnComponent.IsChecked = true;
+				radBtnMainColumn.IsChecked = true;
+			}
+			else
+			{
+				RestoreConfigValue(_currentConfigValue);
+			}
+		}
+
+		public void UpdateWizardData()
+		{
+			_wizardPlot.RemoveAllDependentVariable();
+			IHNode iHNode = null;
+			IHNode iHNode2 = null;
+			string kVRatio = WpfPLPetroFracResources.KVRatio;
+			if (radBtnMainColumn.IsChecked == true)
+			{
+				iHNode = _context.FindNode(_colVarNames[0]);
+				iHNode2 = _context.FindNode(_colVarNames[1]);
+				kVRatio += WpfPLPetroFracResources.Title_MainCol;
+				_wizardPlot.SetIndependentVariable(_context, _colVarNames[0] + "!Label");
+			}
+			else
+			{
+				string text = comboBoxStripper.Text.Trim();
+				iHNode = _context.FindNode(_stripperVarNames[0] + "/" + text);
+				iHNode2 = _context.FindNode(_stripperVarNames[1] + "/" + text);
+				kVRatio = kVRatio + WpfPLPetroFracResources.Title_Stripper + " " + text;
+				_wizardPlot.SetIndependentVariable(_context, _stripperVarNames[0] + "/" + text + "!Label");
+			}
+			string text2 = "";
+			if (iHNode != null && iHNode2 != null)
+			{
+				List<string> list = new List<string>(CompList.GetSelectedCurves());
+				List<string> list2 = new List<string>(CompGList.GetSelectedCurves());
+				int count = list.Count;
+				int count2 = list2.Count;
+				_wizardPlot.PlotVal.NVariables = count + count2;
+				ArrayList arrayList = new ArrayList();
+				for (int i = 0; i < count; i++)
+				{
+					arrayList.Add(list[i]);
+				}
+				for (int j = 0; j < count2; j++)
+				{
+					arrayList.Add(list2[j]);
+				}
+				for (int k = 0; k < arrayList.Count; k++)
+				{
+					try
+					{
+						string text3 = arrayList[k].ToString();
+						((IHPlotVal)_wizardPlot.PlotVal).set_Label(k, text3);
+						int count3 = iHNode.Elements.Count;
+						for (int l = 0; l < count3; l++)
+						{
+							double num = 0.0;
+							double num2 = 0.0;
+							double num3 = 0.0;
+							double num4 = 0.0;
+							try
+							{
+								if (k < count)
+								{
+									if (iHNode.Elements[l, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode.Elements[l, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[text3, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null)
+									{
+										num = ((double?)(dynamic)iHNode.Elements[l, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[text3, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing)) ?? 0.0;
+									}
+									if (iHNode2.Elements[l, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode2.Elements[l, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[text3, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null)
+									{
+										num2 = ((double?)(dynamic)iHNode2.Elements[l, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[text3, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing)) ?? 0.0;
+									}
+								}
+								else
+								{
+									string path = "Data/Components/Comp-Groups/" + text3 + "/Input/L1/MIXED";
+									IHNode iHNode3 = _context.Application.Tree.FindNode(path);
+									if (iHNode3 != null && iHNode3.Elements.Count > 0)
+									{
+										for (int m = 0; m < iHNode3.Elements.Count; m++)
+										{
+											IHNode iHNode4 = iHNode3.Elements[m, Type.Missing, Type.Missing, Type.Missing, Type.Missing];
+											string loc_or_name = (dynamic)iHNode4.get_Value(Type.Missing);
+											if (iHNode.Elements[l, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode.Elements[l, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[loc_or_name, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null)
+											{
+												num += ((double?)(dynamic)iHNode.Elements[l, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[loc_or_name, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing)) ?? 0.0;
+											}
+											if (iHNode2.Elements[l, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode2.Elements[l, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[loc_or_name, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null)
+											{
+												num2 += ((double?)(dynamic)iHNode2.Elements[l, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[loc_or_name, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing)) ?? 0.0;
+											}
+										}
+									}
+								}
+								if (radBtnComponent.IsChecked == true)
+								{
+									text2 = comboBoxComponent.SelectedItem.ToString();
+									if (iHNode.Elements[l, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode.Elements[l, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[text2, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null)
+									{
+										num3 = ((double?)(dynamic)iHNode.Elements[l, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[text2, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing)) ?? 0.0;
+									}
+									if (iHNode2.Elements[l, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode2.Elements[l, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[text2, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null)
+									{
+										num4 = ((double?)(dynamic)iHNode2.Elements[l, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[text2, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing)) ?? 0.0;
+									}
+								}
+								else
+								{
+									text2 = comboBoxCompGroup.SelectedItem.ToString();
+									string path2 = "Data/Components/Comp-Groups/" + text2 + "/Input/L1/MIXED";
+									IHNode iHNode5 = _context.Application.Tree.FindNode(path2);
+									if (iHNode5 != null && iHNode5.Elements.Count > 0)
+									{
+										for (int n = 0; n < iHNode5.Elements.Count; n++)
+										{
+											IHNode iHNode6 = iHNode5.Elements[n, Type.Missing, Type.Missing, Type.Missing, Type.Missing];
+											string loc_or_name2 = (dynamic)iHNode6.get_Value(Type.Missing);
+											if (iHNode.Elements[l, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode.Elements[l, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[loc_or_name2, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null)
+											{
+												num3 += ((double?)(dynamic)iHNode.Elements[l, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[loc_or_name2, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing)) ?? 0.0;
+											}
+											if (iHNode2.Elements[l, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode2.Elements[l, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[loc_or_name2, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null)
+											{
+												num4 += ((double?)(dynamic)iHNode2.Elements[l, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[loc_or_name2, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing)) ?? 0.0;
+											}
+										}
+									}
+								}
+								if (num2 != 0.0 && num4 != 0.0)
+								{
+									double num5 = num / num2 / (num3 / num4);
+									((IHPlotVal)_wizardPlot.PlotVal).set_YData(k, l, (short)0, (object)num5);
+								}
+							}
+							catch
+							{
+							}
+						}
+					}
+					catch
+					{
+					}
+				}
+			}
+			_wizardPlot.PlotVal.Title = kVRatio;
+			((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle((object)0, WpfPLPetroFracResources.KVRatio_YAxisTitle + text2);
+			_currentConfigValue = SaveConfigValue();
+		}
+
+		private void radBtn_Click(object sender, RoutedEventArgs e)
+		{
+			_petrofracHelp.SelecColumn(radBtnMainColumn, comboBoxStripper);
+		}
+
+		private void ExecuteOKCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			UpdateWizardData();
+			_help.CloseForm((UserControl)this, (bool?)true);
+		}
+
+		private void CanExecuteOKCommand(object sender, CanExecuteRoutedEventArgs e)
+		{
+			int num = CompList.GetSelectedCurves().Count();
+			if (num > 0 && num == CompList.Curves.Count)
+			{
+				CompList.IsCheckAll = true;
+			}
+			else
+			{
+				string[] selectedCurves = CompList.GetSelectedCurves();
+				CompList.IsCheckAll = false;
+				CompList.SetSelectedCurves(selectedCurves);
+			}
+			int num2 = CompGList.GetSelectedCurves().Count();
+			if (num2 > 0 && num2 == CompGList.Curves.Count)
+			{
+				CompGList.IsCheckAll = true;
+			}
+			else
+			{
+				string[] selectedCurves2 = CompGList.GetSelectedCurves();
+				CompGList.IsCheckAll = false;
+				CompGList.SetSelectedCurves(selectedCurves2);
+			}
+			e.CanExecute = ((num != 0 || num2 != 0) ? true : false);
+		}
+
+		private void ExecuteCancelCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			_help.CloseForm((UserControl)this, (bool?)false);
+		}
+
+		private void SetVariables()
+		{
+			_colVarNames = new string[2] { "Output/Y3", "Output/X3" };
+			_stripperVarNames = new string[2] { "Output/Y4", "Output/X4" };
+		}
+
+		private string SaveConfigValue()
+		{
+			_ = string.Empty;
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.Append("ColumnOption=");
+			stringBuilder.Append(radBtnMainColumn.IsChecked);
+			stringBuilder.Append(";");
+			stringBuilder.Append("StripperEnabled=");
+			stringBuilder.Append(comboBoxStripper.IsEnabled);
+			stringBuilder.Append(";");
+			stringBuilder.Append("Stripper=");
+			stringBuilder.Append(comboBoxStripper.Text);
+			stringBuilder.Append(";");
+			stringBuilder.Append("CompOption=");
+			stringBuilder.Append(radBtnComponent.IsChecked);
+			stringBuilder.Append(";");
+			stringBuilder.Append("CompSelection=");
+			stringBuilder.Append(comboBoxComponent.Text);
+			stringBuilder.Append(";");
+			stringBuilder.Append("CGroupEnable=");
+			stringBuilder.Append(radBtnCompGroup.IsEnabled);
+			stringBuilder.Append(";");
+			stringBuilder.Append("CompGroupSelection=");
+			stringBuilder.Append(comboBoxCompGroup.Text);
+			stringBuilder.Append(";");
+			stringBuilder.Append("CompSelection=");
+			List<string> list = new List<string>(CompList.GetSelectedCurves());
+			int count = list.Count;
+			for (int i = 0; i < count; i++)
+			{
+				if (i > 0)
+				{
+					stringBuilder.Append(",");
+				}
+				stringBuilder.Append(list[i]);
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("CompCheckAll=");
+			stringBuilder.Append(CompList.IsCheckAll);
+			stringBuilder.Append(";");
+			stringBuilder.Append("CompGSelection=");
+			List<string> list2 = new List<string>(CompGList.GetSelectedCurves());
+			count = list2.Count;
+			for (int j = 0; j < count; j++)
+			{
+				if (j > 0)
+				{
+					stringBuilder.Append(",");
+				}
+				stringBuilder.Append(list2[j]);
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("CompGCheckAll=");
+			stringBuilder.Append(CompGList.IsCheckAll);
+			stringBuilder.Append(";");
+			return stringBuilder.ToString();
+		}
+
+		private void RestoreConfigValue(string ConfigString)
+		{
+			string[] array = ConfigString.Split(';');
+			int num = 0;
+			string value = array[num].Substring(array[num].IndexOf('=') + 1);
+			radBtnMainColumn.IsChecked = Convert.ToBoolean(value);
+			radBtnStripper.IsChecked = !radBtnMainColumn.IsChecked;
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			comboBoxStripper.IsEnabled = Convert.ToBoolean(value);
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			comboBoxStripper.Text = value;
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			radBtnComponent.IsChecked = Convert.ToBoolean(value);
+			radBtnCompGroup.IsChecked = !radBtnComponent.IsChecked;
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			comboBoxComponent.Text = value;
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			radBtnCompGroup.IsEnabled = Convert.ToBoolean(value);
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			comboBoxCompGroup.Text = value;
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			string[] array2 = value.Split(',');
+			List<string> list = new List<string>();
+			string[] array3 = array2;
+			foreach (string item in array3)
+			{
+				list.Add(item);
+			}
+			CompList.SetSelectedCurves(list.ToArray());
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			CompList.IsCheckAll = Convert.ToBoolean(value);
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			string[] array4 = value.Split(',');
+			List<string> list2 = new List<string>();
+			array3 = array4;
+			foreach (string item2 in array3)
+			{
+				list2.Add(item2);
+			}
+			CompGList.SetSelectedCurves(list2.ToArray());
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			CompGList.IsCheckAll = Convert.ToBoolean(value);
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLPetroFrac;component/kvratio.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			switch (connectionId)
+			{
+			case 1:
+				radBtnMainColumn = (RadioButton)target;
+				radBtnMainColumn.Click += radBtn_Click;
+				break;
+			case 2:
+				radBtnStripper = (RadioButton)target;
+				radBtnStripper.Click += radBtn_Click;
+				break;
+			case 3:
+				comboBoxStripper = (ComboBox)target;
+				break;
+			case 4:
+				radBtnComponent = (RadioButton)target;
+				break;
+			case 5:
+				radBtnCompGroup = (RadioButton)target;
+				break;
+			case 6:
+				comboBoxComponent = (ComboBox)target;
+				break;
+			case 7:
+				comboBoxCompGroup = (ComboBox)target;
+				break;
+			case 8:
+				CompList = (CurvesSelectorControl)target;
+				break;
+			case 9:
+				CompGList = (CurvesSelectorControl)target;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+	[ComVisible(false)]
+	public class PetroFracHelper
+	{
+		public void LoadColumn(IHNode iNode, ComboBox comboBoxStripper, RadioButton radBtnStripper)
+		{
+			comboBoxStripper.Items.Clear();
+			radBtnStripper.IsEnabled = false;
+			comboBoxStripper.IsEnabled = false;
+			if (iNode != null && iNode.Elements.Count > 0)
+			{
+				radBtnStripper.IsEnabled = true;
+				for (int i = 0; i < iNode.Elements.Count; i++)
+				{
+					string newItem = iNode.Elements.get_Label(0, i, Type.Missing);
+					comboBoxStripper.Items.Add(newItem);
+				}
+				comboBoxStripper.SelectedIndex = 0;
+			}
+		}
+
+		public void SelecColumn(RadioButton radBtnMainColumn, ComboBox comboBoxStripper)
+		{
+			if (radBtnMainColumn.IsChecked == true)
+			{
+				comboBoxStripper.IsEnabled = false;
+			}
+			else
+			{
+				comboBoxStripper.IsEnabled = true;
+			}
+		}
+	}
+	[RibbonPlotWizardMgr("WpfPLPETROFRAC.RibbonPlotWizardMgr", typeof(RibbonPlotWizardMgr))]
+	public class PetroFracPlotWizardModule : PlotModuleBase
+	{
+	}
+	[ProgId("WpfPLPetroFrac.Pressure")]
+	public class Pressure : UserControl, IRibbonPlotWizardType, IPlotWizardTemplate, IComponentConnector
+	{
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private PlotwizardHelper _help = new PlotwizardHelper();
+
+		private PetroFracHelper _petrofracHelp = new PetroFracHelper();
+
+		private string _currentPresUnit = string.Empty;
+
+		private string _currentConfigValue = string.Empty;
+
+		private string _uniqueId = WpfPLPetroFracResources.Pressure_ID;
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgBitmap;
+
+		private bool _bHasInputDialog;
+
+		private readonly string _presUnitFieldId = WpfPLPetroFracResources.Pressure;
+
+		private readonly string _stageOnFieldId = WpfPLPetroFracResources.Stage_number_on;
+
+		private readonly string _stageOrderFieldId = WpfPLPetroFracResources.Stage_numbering_order;
+
+		private readonly string _yAxis = WpfPLPetroFracResources.Y_axis;
+
+		private readonly string _xAxis = WpfPLPetroFracResources.X_axis;
+
+		private readonly string _ascending = WpfPLPetroFracResources.Ascending;
+
+		private readonly string _descending = WpfPLPetroFracResources.Descending;
+
+		private string _colVarName;
+
+		private string _stripperVarName;
+
+		public static RoutedCommand OKCommand = new RoutedCommand();
+
+		public static RoutedCommand CancelCommand = new RoutedCommand();
+
+		private bool _bCheckDataOnly;
+
+		internal RadioButton radBtnMainColumn;
+
+		internal RadioButton radBtnStripper;
+
+		internal ComboBox comboBoxStripper;
+
+		private bool _contentLoaded;
+
+		public string TooltipContentForRibbonItem => WpfPLPetroFracResources.TooltipContentForRibbonItem_Pressure;
+
+		public string TooltipHeaderForRibbonItem => WpfPLPetroFracResources.TooltipHeaderForRibbonItem_Pressure;
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgBitmap;
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => _help.GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => _help.GetHelpID();
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string> { _presUnitFieldId };
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string> { _stageOrderFieldId, _stageOnFieldId };
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		public Pressure()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			InitializeComponent();
+			SetVariables();
+			_bHasInputDialog = true;
+			if (_imgBitmap == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLPetroFrac.Images.pres.ico");
+				_imgBitmap = new Bitmap(manifestResourceStream);
+			}
+			CommandBinding commandBinding = new CommandBinding(OKCommand, ExecuteOKCommand, CanExecuteOKCommand);
+			CommandBinding commandBinding2 = new CommandBinding(CancelCommand, ExecuteCancelCommand);
+			base.CommandBindings.Add(commandBinding);
+			base.CommandBindings.Add(commandBinding2);
+		}
+
+		public void SetCaption(ref string caption)
+		{
+			caption = WpfPLPetroFracResources.Pressure;
+		}
+
+		public void SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 200.0;
+		}
+
+		public void SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 300.0;
+		}
+
+		public void SetMinHeight(ref double minHeight)
+		{
+			minHeight = 200.0;
+		}
+
+		public void SetMinWidth(ref double minWidth)
+		{
+			minWidth = 300.0;
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(_presUnitFieldId) == 0)
+			{
+				List<string> list = new List<string>();
+				_help.LoadUnitsList(_context.Application.Tree, _wizardPlot, list);
+				return list;
+			}
+			if (sFieldName.CompareTo(_stageOrderFieldId) == 0)
+			{
+				return new List<string> { _ascending, _descending };
+			}
+			if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				return new List<string> { _xAxis, _yAxis };
+			}
+			return null;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(_presUnitFieldId) == 0)
+			{
+				sCurrentVal = _help.GetUnitString(_context.Application.Tree, _wizardPlot);
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(_presUnitFieldId) == 0)
+			{
+				_currentPresUnit = sValue;
+			}
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sField)
+		{
+			if (sField.CompareTo(_presUnitFieldId) != 0 && sField.CompareTo(_stageOrderFieldId) != 0 && sField.CompareTo(_stageOnFieldId) != 0)
+			{
+				return (RibbonControlType)0;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(_stageOrderFieldId) == 0)
+			{
+				if (_wizardPlot.PlotVal.ReverseXAxis)
+				{
+					sCurrentVal = _descending;
+				}
+				else
+				{
+					sCurrentVal = _ascending;
+				}
+			}
+			else if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				if (_wizardPlot.PlotVal.SwapAxises)
+				{
+					sCurrentVal = _yAxis;
+				}
+				else
+				{
+					sCurrentVal = _xAxis;
+				}
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(_stageOrderFieldId) == 0)
+			{
+				if (sValue.CompareTo(_ascending) == 0)
+				{
+					_wizardPlot.PlotVal.ReverseXAxis = false;
+				}
+				else
+				{
+					_wizardPlot.PlotVal.ReverseXAxis = true;
+				}
+			}
+			else if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				if (sValue.CompareTo(_yAxis) == 0)
+				{
+					_wizardPlot.PlotVal.SwapAxises = true;
+				}
+				else
+				{
+					_wizardPlot.PlotVal.SwapAxises = false;
+				}
+			}
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+			sConfigValue = _currentConfigValue;
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+			_currentConfigValue = sValue;
+		}
+
+		void IRibbonPlotWizardType.Context(object HNode, ref object HWizardPlot, ref int ierror)
+		{
+			if (HWizardPlot == null || HNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			_context = HNode as IHNode;
+			_wizardPlot = HWizardPlot as IHWizardPlot;
+			IHNode iHNode = _context.FindNode(_colVarName);
+			if (iHNode == null || iHNode.Elements.Count <= 0)
+			{
+				ierror = 1;
+				return;
+			}
+			_wizardPlot.RemoveAllDependentVariable();
+			_wizardPlot.AddDependentVariable(_context, _colVarName);
+			iHNode = _context.FindNode(_stripperVarName);
+			_petrofracHelp.LoadColumn(iHNode, comboBoxStripper, radBtnStripper);
+			if (comboBoxStripper.Items.Count <= 0)
+			{
+				_bHasInputDialog = false;
+			}
+			if (string.IsNullOrEmpty(_currentConfigValue))
+			{
+				radBtnMainColumn.IsChecked = true;
+			}
+			else
+			{
+				RestoreConfigValue(_currentConfigValue);
+			}
+		}
+
+		public void UpdateWizardData()
+		{
+			string text = "";
+			string text2 = "";
+			_wizardPlot.RemoveAllDependentVariable();
+			if (radBtnMainColumn.IsChecked == true)
+			{
+				text = _colVarName;
+				text2 = WpfPLPetroFracResources.Title_MainCol;
+			}
+			else
+			{
+				string text3 = comboBoxStripper.Text.Trim();
+				text = _stripperVarName + "/" + text3;
+				text2 = WpfPLPetroFracResources.Title_Stripper + " " + text3;
+			}
+			_wizardPlot.SetIndependentVariable(_context, text + "!Label");
+			_wizardPlot.AddDependentVariable(_context, text);
+			_wizardPlot.PlotVal.Title = WpfPLPetroFracResources.Pressure_Title + text2;
+			_help.SaveUnitsComboText(_context.Application.Tree, _wizardPlot, _currentPresUnit);
+			_currentConfigValue = SaveConfigValue();
+		}
+
+		private void radBtn_Click(object sender, RoutedEventArgs e)
+		{
+			_petrofracHelp.SelecColumn(radBtnMainColumn, comboBoxStripper);
+		}
+
+		private void ExecuteOKCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			UpdateWizardData();
+			_help.CloseForm((UserControl)this, (bool?)true);
+		}
+
+		private void CanExecuteOKCommand(object sender, CanExecuteRoutedEventArgs e)
+		{
+			e.CanExecute = true;
+		}
+
+		private void ExecuteCancelCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			_help.CloseForm((UserControl)this, (bool?)false);
+		}
+
+		private void SetVariables()
+		{
+			_colVarName = "Output/B_PRES7";
+			_stripperVarName = "Output/B_PRES5";
+		}
+
+		private string SaveConfigValue()
+		{
+			_ = string.Empty;
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.Append("ColumnOption=");
+			stringBuilder.Append(radBtnMainColumn.IsChecked);
+			stringBuilder.Append(";");
+			stringBuilder.Append("StripperEnabled=");
+			stringBuilder.Append(comboBoxStripper.IsEnabled);
+			stringBuilder.Append(";");
+			stringBuilder.Append("Stripper=");
+			stringBuilder.Append(comboBoxStripper.Text);
+			stringBuilder.Append(";");
+			return stringBuilder.ToString();
+		}
+
+		private void RestoreConfigValue(string ConfigString)
+		{
+			string[] array = ConfigString.Split(';');
+			int num = 0;
+			string value = array[num].Substring(array[num].IndexOf('=') + 1);
+			radBtnMainColumn.IsChecked = Convert.ToBoolean(value);
+			radBtnStripper.IsChecked = !radBtnMainColumn.IsChecked;
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			comboBoxStripper.IsEnabled = Convert.ToBoolean(value);
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			comboBoxStripper.Text = value;
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLPetroFrac;component/pressure.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			switch (connectionId)
+			{
+			case 1:
+				radBtnMainColumn = (RadioButton)target;
+				radBtnMainColumn.Click += radBtn_Click;
+				break;
+			case 2:
+				radBtnStripper = (RadioButton)target;
+				radBtnStripper.Click += radBtn_Click;
+				break;
+			case 3:
+				comboBoxStripper = (ComboBox)target;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+	[ProgId("WpfPLPetroFrac.Temperature")]
+	public class Temperature : UserControl, IRibbonPlotWizardType, IPlotWizardTemplate, IComponentConnector
+	{
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private PlotwizardHelper _help = new PlotwizardHelper();
+
+		private PetroFracHelper _petrofracHelp = new PetroFracHelper();
+
+		private string _currentTempUnit = string.Empty;
+
+		private string _currentConfigValue = string.Empty;
+
+		private string _uniqueId = WpfPLPetroFracResources.Temperature_ID;
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgBitmap;
+
+		private bool _bHasInputDialog;
+
+		private readonly string _tempUnitFieldId = WpfPLPetroFracResources.Temperature;
+
+		private readonly string _stageOnFieldId = WpfPLPetroFracResources.Stage_number_on;
+
+		private readonly string _stageOrderFieldId = WpfPLPetroFracResources.Stage_numbering_order;
+
+		private readonly string _yAxis = WpfPLPetroFracResources.Y_axis;
+
+		private readonly string _xAxis = WpfPLPetroFracResources.X_axis;
+
+		private readonly string _ascending = WpfPLPetroFracResources.Ascending;
+
+		private readonly string _descending = WpfPLPetroFracResources.Descending;
+
+		private string _colVarName;
+
+		private string _stripperVarName;
+
+		public static RoutedCommand OKCommand = new RoutedCommand();
+
+		public static RoutedCommand CancelCommand = new RoutedCommand();
+
+		private bool _bCheckDataOnly;
+
+		internal RadioButton radBtnMainColumn;
+
+		internal RadioButton radBtnStripper;
+
+		internal ComboBox comboBoxStripper;
+
+		private bool _contentLoaded;
+
+		public string TooltipContentForRibbonItem => WpfPLPetroFracResources.TooltipContentForRibbonItem_Temp;
+
+		public string TooltipHeaderForRibbonItem => WpfPLPetroFracResources.TooltipHeaderForRibbonItem_Temp;
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgBitmap;
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => _help.GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => _help.GetHelpID();
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string> { _tempUnitFieldId };
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string> { _stageOrderFieldId, _stageOnFieldId };
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		public Temperature()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			InitializeComponent();
+			SetVariables();
+			_bHasInputDialog = true;
+			if (_imgBitmap == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLPetroFrac.Images.temp.ico");
+				_imgBitmap = new Bitmap(manifestResourceStream);
+			}
+			CommandBinding commandBinding = new CommandBinding(OKCommand, ExecuteOKCommand, CanExecuteOKCommand);
+			CommandBinding commandBinding2 = new CommandBinding(CancelCommand, ExecuteCancelCommand);
+			base.CommandBindings.Add(commandBinding);
+			base.CommandBindings.Add(commandBinding2);
+		}
+
+		public void SetCaption(ref string caption)
+		{
+			caption = WpfPLPetroFracResources.Temperature;
+		}
+
+		public void SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 380.0;
+		}
+
+		public void SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 300.0;
+		}
+
+		public void SetMinHeight(ref double minHeight)
+		{
+			minHeight = 380.0;
+		}
+
+		public void SetMinWidth(ref double minWidth)
+		{
+			minWidth = 300.0;
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(_tempUnitFieldId) == 0)
+			{
+				List<string> list = new List<string>();
+				_help.LoadUnitsList(_context.Application.Tree, _wizardPlot, list);
+				return list;
+			}
+			if (sFieldName.CompareTo(_stageOrderFieldId) == 0)
+			{
+				return new List<string> { _ascending, _descending };
+			}
+			if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				return new List<string> { _xAxis, _yAxis };
+			}
+			return null;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(_tempUnitFieldId) == 0)
+			{
+				sCurrentVal = _help.GetUnitString(_context.Application.Tree, _wizardPlot);
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(_tempUnitFieldId) == 0)
+			{
+				_currentTempUnit = sValue;
+			}
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sField)
+		{
+			if (sField.CompareTo(_tempUnitFieldId) != 0 && sField.CompareTo(_stageOrderFieldId) != 0 && sField.CompareTo(_stageOnFieldId) != 0)
+			{
+				return (RibbonControlType)0;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(_stageOrderFieldId) == 0)
+			{
+				if (_wizardPlot.PlotVal.ReverseXAxis)
+				{
+					sCurrentVal = _descending;
+				}
+				else
+				{
+					sCurrentVal = _ascending;
+				}
+			}
+			else if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				if (_wizardPlot.PlotVal.SwapAxises)
+				{
+					sCurrentVal = _yAxis;
+				}
+				else
+				{
+					sCurrentVal = _xAxis;
+				}
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(_stageOrderFieldId) == 0)
+			{
+				if (sValue.CompareTo(_ascending) == 0)
+				{
+					_wizardPlot.PlotVal.ReverseXAxis = false;
+				}
+				else
+				{
+					_wizardPlot.PlotVal.ReverseXAxis = true;
+				}
+			}
+			else if (sFieldName.CompareTo(_stageOnFieldId) == 0)
+			{
+				if (sValue.CompareTo(_yAxis) == 0)
+				{
+					_wizardPlot.PlotVal.SwapAxises = true;
+				}
+				else
+				{
+					_wizardPlot.PlotVal.SwapAxises = false;
+				}
+			}
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+			sConfigValue = _currentConfigValue;
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+			_currentConfigValue = sValue;
+		}
+
+		void IRibbonPlotWizardType.Context(object HNode, ref object HWizardPlot, ref int ierror)
+		{
+			if (HWizardPlot == null || HNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			_context = HNode as IHNode;
+			_wizardPlot = HWizardPlot as IHWizardPlot;
+			IHNode iHNode = _context.FindNode(_colVarName);
+			if (iHNode == null || iHNode.Elements.Count <= 0)
+			{
+				ierror = 1;
+				return;
+			}
+			_wizardPlot.RemoveAllDependentVariable();
+			_wizardPlot.AddDependentVariable(_context, _colVarName);
+			iHNode = _context.FindNode(_stripperVarName);
+			_petrofracHelp.LoadColumn(iHNode, comboBoxStripper, radBtnStripper);
+			if (comboBoxStripper.Items.Count <= 0)
+			{
+				_bHasInputDialog = false;
+			}
+			if (string.IsNullOrEmpty(_currentConfigValue))
+			{
+				radBtnMainColumn.IsChecked = true;
+			}
+			else
+			{
+				RestoreConfigValue(_currentConfigValue);
+			}
+		}
+
+		public void UpdateWizardData()
+		{
+			string text = "";
+			string text2 = "";
+			_wizardPlot.RemoveAllDependentVariable();
+			if (radBtnMainColumn.IsChecked == true)
+			{
+				text = _colVarName;
+				text2 = WpfPLPetroFracResources.Title_MainCol;
+			}
+			else
+			{
+				string text3 = comboBoxStripper.Text.Trim();
+				text = _stripperVarName + "/" + text3;
+				text2 = WpfPLPetroFracResources.Title_Stripper + " " + text3;
+			}
+			_wizardPlot.SetIndependentVariable(_context, text + "!Label");
+			_wizardPlot.AddDependentVariable(_context, text);
+			_wizardPlot.PlotVal.Title = WpfPLPetroFracResources.Temperature_Title + text2;
+			_help.SaveUnitsComboText(_context.Application.Tree, _wizardPlot, _currentTempUnit);
+			_currentConfigValue = SaveConfigValue();
+		}
+
+		private void radBtn_Click(object sender, RoutedEventArgs e)
+		{
+			_petrofracHelp.SelecColumn(radBtnMainColumn, comboBoxStripper);
+		}
+
+		private void ExecuteOKCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			UpdateWizardData();
+			_help.CloseForm((UserControl)this, (bool?)true);
+		}
+
+		private void CanExecuteOKCommand(object sender, CanExecuteRoutedEventArgs e)
+		{
+			e.CanExecute = true;
+		}
+
+		private void ExecuteCancelCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			_help.CloseForm((UserControl)this, (bool?)false);
+		}
+
+		private void SetVariables()
+		{
+			_colVarName = "Output/B_TEMP5";
+			_stripperVarName = "Output/B_TEMP3";
+		}
+
+		private string SaveConfigValue()
+		{
+			_ = string.Empty;
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.Append("ColumnOption=");
+			stringBuilder.Append(radBtnMainColumn.IsChecked);
+			stringBuilder.Append(";");
+			stringBuilder.Append("StripperEnabled=");
+			stringBuilder.Append(comboBoxStripper.IsEnabled);
+			stringBuilder.Append(";");
+			stringBuilder.Append("Stripper=");
+			stringBuilder.Append(comboBoxStripper.Text);
+			stringBuilder.Append(";");
+			return stringBuilder.ToString();
+		}
+
+		private void RestoreConfigValue(string ConfigString)
+		{
+			string[] array = ConfigString.Split(';');
+			int num = 0;
+			string value = array[num].Substring(array[num].IndexOf('=') + 1);
+			radBtnMainColumn.IsChecked = Convert.ToBoolean(value);
+			radBtnStripper.IsChecked = !radBtnMainColumn.IsChecked;
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			comboBoxStripper.IsEnabled = Convert.ToBoolean(value);
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			comboBoxStripper.Text = value;
+		}
+
+		void IPlotWizardTemplate.SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 200.0;
+		}
+
+		void IPlotWizardTemplate.SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 250.0;
+		}
+
+		void IPlotWizardTemplate.SetMinHeight(ref double minHeight)
+		{
+			minHeight = 200.0;
+		}
+
+		void IPlotWizardTemplate.SetMinWidth(ref double minWidth)
+		{
+			minWidth = 250.0;
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLPetroFrac;component/temperature.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			switch (connectionId)
+			{
+			case 1:
+				radBtnMainColumn = (RadioButton)target;
+				radBtnMainColumn.Click += radBtn_Click;
+				break;
+			case 2:
+				radBtnStripper = (RadioButton)target;
+				radBtnStripper.Click += radBtn_Click;
+				break;
+			case 3:
+				comboBoxStripper = (ComboBox)target;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+}
+namespace AspenTech.AspenPlus.Happ
+{
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("11677780-B72B-11D0-A943-0000C0A118DB")]
+	[CoClass(typeof(object))]
+	[TypeIdentifier]
+	public interface CHPlotVal : IHPlotVal
+	{
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("8008C730-1A3E-11D1-8A4D-0000C0237DF9")]
+	[CoClass(typeof(object))]
+	[TypeIdentifier]
+	public interface CHWizardPlot : IHWizardPlot
+	{
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("8E567522-F9BA-11CF-90B2-0000C0A810C4")]
+	[TypeIdentifier]
+	public interface IHNode
+	{
+		[DispId(1610743808)]
+		IHapp Application
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743808)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+
+		void _VtblGap1_5();
+
+		[DispId(1610743814)]
+		object Value
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743814)]
+			[return: MarshalAs(UnmanagedType.Struct)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743814)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.Struct)]
+			set;
+		}
+
+		void _VtblGap2_10();
+
+		[DispId(1610743826)]
+		IHNodeCol Elements
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743826)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+
+		void _VtblGap3_8();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743835)]
+		[return: MarshalAs(UnmanagedType.Interface)]
+		IHNode FindNode([In][MarshalAs(UnmanagedType.BStr)] string path);
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("89E81F60-019A-11D0-9BE7-0000C05375D5")]
+	[TypeIdentifier]
+	public interface IHNodeCol : IEnumerable
+	{
+		void _VtblGap1_2();
+
+		[DispId(1610743810)]
+		int Count
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743810)]
+			get;
+		}
+
+		void _VtblGap2_3();
+
+		[DispId(0)]
+		IHNode this[[In][MarshalAs(UnmanagedType.Struct)] object loc_or_name, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name2, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name3, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name4, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name5]
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(0)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+
+		void _VtblGap3_2();
+
+		[DispId(1610743817)]
+		string Label
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743817)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743817)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.BStr)]
+			set;
+		}
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("11677780-B72B-11D0-A943-0000C0A118DB")]
+	[TypeIdentifier]
+	public interface IHPlotVal
+	{
+		void _VtblGap1_2();
+
+		[DispId(1610743810)]
+		string Title
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743810)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743810)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.BStr)]
+			set;
+		}
+
+		void _VtblGap2_1();
+
+		void _VtblGap3_3();
+
+		[DispId(1610743816)]
+		string YAxisTitle
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743816)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743816)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.BStr)]
+			set;
+		}
+
+		void _VtblGap4_1();
+
+		[DispId(1610743819)]
+		string Label
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743819)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743819)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.BStr)]
+			set;
+		}
+
+		void _VtblGap5_1();
+
+		void _VtblGap6_2();
+
+		[DispId(1610743824)]
+		int NVariables
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743824)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743824)]
+			[param: In]
+			set;
+		}
+
+		void _VtblGap7_5();
+
+		[DispId(1610743831)]
+		object YData
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743831)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.Struct)]
+			set;
+		}
+
+		void _VtblGap8_3();
+
+		[DispId(1610743835)]
+		bool SwapAxises
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743835)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743835)]
+			[param: In]
+			set;
+		}
+
+		[DispId(1610743837)]
+		bool ReverseXAxis
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743837)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743837)]
+			[param: In]
+			set;
+		}
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("8008C730-1A3E-11D1-8A4D-0000C0237DF9")]
+	[TypeIdentifier]
+	public interface IHWizardPlot
+	{
+		[DispId(1610743808)]
+		CHPlotVal PlotVal
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743808)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+
+		[DispId(1610743809)]
+		int basis
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743809)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743809)]
+			[param: In]
+			set;
+		}
+
+		void _VtblGap1_4();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743815)]
+		void SetIndependentVariable([In][MarshalAs(UnmanagedType.Interface)] IHNode pContext, [In][MarshalAs(UnmanagedType.BStr)] string indepvar);
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743816)]
+		void AddDependentVariable([In][MarshalAs(UnmanagedType.Interface)] IHNode pContext, [In][MarshalAs(UnmanagedType.BStr)] string depvar);
+
+		void _VtblGap2_1();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743818)]
+		void RemoveAllDependentVariable();
+
+		void _VtblGap3_4();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743823)]
+		void Clear();
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[DefaultMember("Name")]
+	[Guid("8E567521-F9BA-11CF-90B2-0000C0A810C4")]
+	[TypeIdentifier]
+	public interface IHapp
+	{
+		void _VtblGap1_3();
+
+		[DispId(0)]
+		string Name
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(0)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+		}
+
+		void _VtblGap2_7();
+
+		[DispId(1610743819)]
+		IHNode Tree
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743819)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

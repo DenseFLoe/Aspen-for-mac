@@ -1,0 +1,86 @@
+<?xml version='1.0' encoding='utf-8'?>
+<UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:atSupport="http://schemas.aspentech.com/xaml/presentation/visualisation/support" xmlns:my="clr-namespace:AspenTech.Visualisation.Controls.StartPage" Name="_root" x:Class="AspenTech.Visualisation.Controls.StartPage.LinkGroupSidebar">
+  <FrameworkElement.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <atSupport:AspenCommonResources />
+        <atSupport:AspenCommonStyles />
+      </ResourceDictionary.MergedDictionaries>
+      <atSupport:EmptyStringToVisibilityConverter x:Key="emptyStringToVisibilityConverter" />
+      <atSupport:NullValueToVisibilityConverter x:Key="nullValueToVisibilityConverter" />
+      <Style x:Key="urlText" TargetType="{x:Type TextBlock}">
+        <Style.Triggers>
+          <Trigger Property="UIElement.IsMouseOver" Value="True">
+            <Setter Property="TextElement.Foreground" Value="#FF483D8B" />
+            <Setter Property="Inline.TextDecorations" Value="Underline" />
+          </Trigger>
+        </Style.Triggers>
+        <Setter Property="TextElement.Foreground" Value="#FF006DFF" />
+        <Setter Property="Inline.TextDecorations">
+          <Setter.Value>
+            <x:Null />
+          </Setter.Value>
+        </Setter>
+        <Setter Property="TextBlock.TextWrapping" Value="Wrap" />
+      </Style>
+      <DataTemplate x:Key="linkItemTemplate" DataType="{x:Type my:LinkItem}">
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="auto" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <Image Margin="5,5,0,0" Grid.Column="0" Height="16">
+            <Image.Source>
+              <Binding Path="ImageSource" />
+            </Image.Source>
+            <UIElement.Visibility>
+              <Binding Path="ImageSource" Converter="{StaticResource nullValueToVisibilityConverter}" />
+            </UIElement.Visibility>
+          </Image>
+          <TextBlock Grid.Column="1" Margin="5,5,0,0">
+            <Hyperlink Click="Hyperlink_Click" TextDecorations="None">
+              <FrameworkContentElement.ToolTip>
+                <Binding Path="ToolTip" />
+              </FrameworkContentElement.ToolTip>
+              <InlineUIContainer>
+                <TextBlock Style="{StaticResource urlText}">
+                  <TextBlock.Text>
+                    <Binding Path="Text" />
+                  </TextBlock.Text>
+                </TextBlock>
+              </InlineUIContainer>
+            </Hyperlink>
+          </TextBlock>
+        </Grid>
+      </DataTemplate>
+    </ResourceDictionary>
+  </FrameworkElement.Resources>
+  <Border DockPanel.Dock="Top" BorderThickness="1" BorderBrush="#FF686464" CornerRadius="0" Margin="0,4,0,4" Background="#FFFFFFFF">
+    <DockPanel>
+      <Border DockPanel.Dock="Top" Margin="5,5,0,0" BorderThickness="1,1,0,1" BorderBrush="#FF767676">
+        <UIElement.Visibility>
+          <Binding ElementName="_root" Path="Title" Converter="{StaticResource emptyStringToVisibilityConverter}" />
+        </UIElement.Visibility>
+        <Border.Background>
+          <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+            <GradientStop Color="#007E7E7E" Offset="0" />
+            <GradientStop Color="#FFD9D9D9" Offset="1" />
+            <GradientStop Color="#007C7C7C" Offset="0.5" />
+          </LinearGradientBrush>
+        </Border.Background>
+        <TextBlock Margin="5,0,0,0" FontSize="16" FontWeight="Bold" Foreground="#FF000000">
+          <TextBlock.Text>
+            <Binding ElementName="_root" Path="Title" />
+          </TextBlock.Text>
+        </TextBlock>
+      </Border>
+      <ScrollViewer Margin="0,0,0,5" VerticalScrollBarVisibility="Auto" CanContentScroll="true">
+        <ItemsControl ItemTemplate="{StaticResource linkItemTemplate}">
+          <ItemsControl.ItemsSource>
+            <Binding ElementName="_root" Path="Links" />
+          </ItemsControl.ItemsSource>
+        </ItemsControl>
+      </ScrollViewer>
+    </DockPanel>
+  </Border>
+</UserControl>

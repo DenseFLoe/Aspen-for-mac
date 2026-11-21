@@ -1,0 +1,333 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Text;
+using System.Xml;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyTitle("AspenTech.FeatureToggle")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("")]
+[assembly: AssemblyProduct("AspenTech.FeatureToggle")]
+[assembly: AssemblyCopyright("Copyright ©  2022")]
+[assembly: AssemblyTrademark("")]
+[assembly: ComVisible(false)]
+[assembly: Guid("9bee7551-fe30-4dab-9a87-5ec8cd4646ea")]
+[assembly: AssemblyFileVersion("41.0.0.3")]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.3")]
+namespace AspenTech.FeatureToggle;
+
+[Guid("82EAC014-1ACD-40D2-A880-3B8E29074FB2")]
+[InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
+[ComVisible(true)]
+public interface IFeatureToggle
+{
+	[DispId(1)]
+	bool IsEnabled(string key, bool parent);
+
+	[DispId(2)]
+	bool TryGet(string key, out bool value, bool parent = false);
+
+	[DispId(3)]
+	bool TryShortKey(string project, string feature);
+
+	[DispId(4)]
+	bool IsShortKeyConfigured(string proejct, string feature);
+}
+internal class FeatureState
+{
+	public bool IsReading { get; set; }
+
+	public bool IsWriting { get; set; }
+
+	public bool IsFilled { get; set; }
+
+	public bool RequestUpdate { get; set; }
+
+	public bool Error { get; set; }
+
+	public string ErrorMessage { get; set; }
+
+	public bool ShortKeyConfigured { get; set; }
+
+	public string CnfProjectFeature { get; set; }
+
+	public bool ValidatePath { get; set; }
+
+	public bool UpdateFullKey { get; set; }
+}
+[Guid("C0F43A43-7A12-4A63-ADAE-075362889A33")]
+[ClassInterface(ClassInterfaceType.None)]
+[ComVisible(true)]
+[ProgId("AspenTech.FeatureToggle.41.0")]
+public class FeatureToggle : IFeatureToggle
+{
+	private const string SimulatorVersion = "V15.0";
+
+	private const string FeatureDataFile = "AspenTech_FeatureToggleData.xml";
+
+	public static FeatureToggle Instance => InstanceLazy.Value;
+
+	private static Lazy<FeatureToggle> InstanceLazy { get; set; } = new Lazy<FeatureToggle>(() => new FeatureToggle());
+
+	private static FeatureState State { get; set; } = new FeatureState();
+
+	private Dictionary<string, bool> StoredFeatures { get; set; } = new Dictionary<string, bool>();
+
+	private bool ValidateEnabled(XmlAttributeCollection attr, ref bool isEnabled)
+	{
+		string value = attr.GetNamedItem("isEnabled").Value;
+		bool result = false;
+		if (value.Length > 0)
+		{
+			if (value.ToLower().Equals("true"))
+			{
+				isEnabled = true;
+				result = true;
+			}
+			else if (value.ToLower().Equals("false"))
+			{
+				result = true;
+				isEnabled = false;
+			}
+		}
+		return result;
+	}
+
+	private void AddChildNodes(XmlNode parentNode, string parentName)
+	{
+		foreach (XmlNode item in parentNode)
+		{
+			if (item.Name.Length > 0)
+			{
+				string name = item.Name;
+				bool isEnabled = false;
+				if (ValidateEnabled(item.Attributes, ref isEnabled))
+				{
+					name = parentName + "." + name;
+					if (!StoredFeatures.ContainsKey(name))
+					{
+						if (!string.Equals(item.Attributes.GetNamedItem("fullKey").Value, name))
+						{
+							item.Attributes.GetNamedItem("fullKey").Value = name;
+							State.UpdateFullKey = true;
+						}
+						StoredFeatures.Add(name, isEnabled);
+						if (item.ChildNodes.Count > 0)
+						{
+							AddChildNodes(item, name);
+						}
+					}
+					else
+					{
+						State.Error = true;
+						FeatureState state = State;
+						state.ErrorMessage = state.ErrorMessage + "\nKey already stored: " + name;
+					}
+				}
+				else
+				{
+					State.Error = true;
+					FeatureState state2 = State;
+					state2.ErrorMessage = state2.ErrorMessage + "\nNot valid format for enable flag at " + name;
+				}
+			}
+			else
+			{
+				State.Error = true;
+				FeatureState state3 = State;
+				state3.ErrorMessage = state3.ErrorMessage + "\nNot valid format for child node at parent: " + parentName;
+			}
+		}
+	}
+
+	private void Populate()
+	{
+		if (State.IsFilled && !State.RequestUpdate)
+		{
+			return;
+		}
+		State.IsReading = true;
+		State.Error = false;
+		State.ErrorMessage = "";
+		State.UpdateFullKey = false;
+		try
+		{
+			string text = Environment.ExpandEnvironmentVariables(Path.Combine("%localappdata%", "AspenTech", "FeatureToggle", "V15.0", "AspenTech_FeatureToggleData.xml"));
+			if (!State.ValidatePath)
+			{
+				string text2 = Environment.ExpandEnvironmentVariables(Path.Combine("%localappdata%"));
+				string[] array = new string[3] { "AspenTech", "FeatureToggle", "V15.0" };
+				foreach (string path in array)
+				{
+					text2 = Path.Combine(text2, path);
+					if (!Directory.Exists(text2))
+					{
+						Directory.CreateDirectory(text2);
+					}
+				}
+				State.ValidatePath = true;
+			}
+			if (!File.Exists(text))
+			{
+				Assembly executingAssembly = Assembly.GetExecutingAssembly();
+				string name = "AspenTech.FeatureToggle.Resources." + "AspenTech_FeatureToggleData.xml";
+				string contents = new StreamReader(executingAssembly.GetManifestResourceStream(name), Encoding.ASCII).ReadToEnd();
+				File.WriteAllText(text, contents, Encoding.ASCII);
+			}
+			XmlDocument xmlDocument = new XmlDocument();
+			xmlDocument.Load(text);
+			StoredFeatures.Clear();
+			XmlNodeList childNodes = xmlDocument.DocumentElement.SelectSingleNode("Content").ChildNodes;
+			string text3 = "";
+			string text4 = "";
+			foreach (XmlNode item in childNodes)
+			{
+				text4 = item.Attributes.GetNamedItem("globalFeature").Value;
+				if (!string.IsNullOrEmpty(text4) && item.Name.Equals("Project"))
+				{
+					text3 = item.Attributes.GetNamedItem("nodeName").Value + "-" + text4;
+					text4 = text3.Split('.')[1];
+					bool isEnabled = false;
+					if (ValidateEnabled(item.Attributes, ref isEnabled))
+					{
+						StoredFeatures.Add(text4, isEnabled);
+						XmlNode xmlNode2 = xmlDocument.DocumentElement.SelectSingleNode(text3);
+						if (xmlNode2 != null)
+						{
+							AddChildNodes(xmlNode2, text4);
+							continue;
+						}
+						FeatureState state = State;
+						state.ErrorMessage = state.ErrorMessage + "\nWarning: Wrong nodeName or it has not subprojects, at" + text3;
+					}
+					else
+					{
+						State.Error = true;
+						FeatureState state2 = State;
+						state2.ErrorMessage = state2.ErrorMessage + "\nNot valid for node: " + text3 + " At key: " + text4;
+					}
+				}
+				else
+				{
+					State.Error = true;
+					FeatureState state3 = State;
+					state3.ErrorMessage = state3.ErrorMessage + "\nNot project type: " + text4;
+				}
+			}
+			if (State.UpdateFullKey)
+			{
+				State.IsWriting = true;
+				xmlDocument.Save(text);
+				State.IsWriting = false;
+			}
+			State.IsFilled = true;
+			State.RequestUpdate = false;
+		}
+		catch (Exception ex)
+		{
+			State.Error = true;
+			FeatureState state2 = State;
+			state2.ErrorMessage = state2.ErrorMessage + "\nException: " + ex.Message + " At: " + ex.Source + "\n";
+		}
+		finally
+		{
+			State.IsReading = false;
+		}
+	}
+
+	public void RequestUpdate()
+	{
+		State.RequestUpdate = true;
+	}
+
+	public bool TrySet(string key, bool value)
+	{
+		Populate();
+		bool num = StoredFeatures.ContainsKey(key);
+		if (num)
+		{
+			StoredFeatures[key] = value;
+		}
+		return num;
+	}
+
+	public bool TryGet(string key, out bool value, bool parent = false)
+	{
+		Populate();
+		value = false;
+		string key2 = key;
+		if (State.ShortKeyConfigured && !key.Contains("-"))
+		{
+			key2 = State.CnfProjectFeature + "." + key;
+		}
+		bool num = StoredFeatures.ContainsKey(key2);
+		if (num)
+		{
+			value = IsEnabled(key, parent);
+		}
+		return num;
+	}
+
+	public bool IsEnabled(string key, bool parent = false)
+	{
+		bool result = false;
+		Populate();
+		if (State.ShortKeyConfigured && !key.Contains("-"))
+		{
+			key = State.CnfProjectFeature + "." + key;
+		}
+		if (StoredFeatures.ContainsKey(key))
+		{
+			result = StoredFeatures[key];
+			if (parent)
+			{
+				string key2 = key.Split('.')[0];
+				if (!StoredFeatures[key2])
+				{
+					result = false;
+				}
+			}
+		}
+		return result;
+	}
+
+	public bool TryShortKey(string project, string feature)
+	{
+		bool flag = false;
+		Populate();
+		if (!string.IsNullOrEmpty(project) && !string.IsNullOrEmpty(feature))
+		{
+			string text = project + "-" + feature;
+			if (StoredFeatures.ContainsKey(text))
+			{
+				State.CnfProjectFeature = text;
+				flag = true;
+			}
+		}
+		State.ShortKeyConfigured = flag;
+		return flag;
+	}
+
+	public bool IsShortKeyConfigured(string project, string feature)
+	{
+		bool result = false;
+		if (State.ShortKeyConfigured && string.IsNullOrEmpty(project) && !string.IsNullOrEmpty(feature))
+		{
+			string b = project + "-" + feature;
+			result = string.Equals(State.CnfProjectFeature, b);
+		}
+		return result;
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

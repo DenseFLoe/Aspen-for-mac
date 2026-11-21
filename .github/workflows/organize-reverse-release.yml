@@ -1,0 +1,36 @@
+name: Unpack and verify the reverse-engineering release
+on:
+  push:
+    branches: ['codex/organize-reverse-20261121']
+    paths: ['项目资料/整理清单/发布包/开始.json']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: organize-aspen-release-w2
+  cancel-in-progress: false
+jobs:
+  unpack:
+    if: github.repository == 'DenseFLoe/Aspen-for-mac' && github.ref == 'refs/heads/codex/organize-reverse-20261121'
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/organize-reverse-20261121
+          sparse-checkout: |
+            tools/archive
+            项目资料/整理清单/发布包
+      - name: Set the identity for the archive commits
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+      - name: Install the reviewed object folders and reports
+        run: python3 tools/archive/prepare_layout.py
+      - name: Unpack and verify the five pinned assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          for part in 1 2 3 4 5; do
+            python3 tools/archive/unpack_release.py --part "$part"
+          done

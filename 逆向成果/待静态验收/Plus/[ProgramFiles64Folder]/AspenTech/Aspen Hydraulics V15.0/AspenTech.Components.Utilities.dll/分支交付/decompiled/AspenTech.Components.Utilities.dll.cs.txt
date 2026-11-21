@@ -1,0 +1,175 @@
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyCompany("Aspen Technology, Inc.")]
+[assembly: AssemblyProduct("Aspen Hydraulics")]
+[assembly: AssemblyCopyright("Copyright © Aspen Technology, Inc. 2024")]
+[assembly: AssemblyTitle("MessageCollection")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyTrademark("")]
+[assembly: ComVisible(false)]
+[assembly: Guid("92c210d5-d843-43ca-83c7-0e4945d4aef9")]
+[assembly: AssemblyDelaySign(false)]
+[assembly: AssemblyKeyFile("..\\..\\..\\EPBU.snk")]
+[assembly: AssemblyKeyName("")]
+[assembly: AssemblyFileVersion("41.0.0.33")]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.0")]
+namespace AspenTech.Components.Utilities;
+
+[Guid("CBF81CA2-7C4D-4f98-B909-22A43B415D75")]
+public enum MessageLogType
+{
+	Begin,
+	End,
+	Note,
+	Warning,
+	Error,
+	Fatal
+}
+[Guid("67923117-CE7D-4ed1-BA6E-1CA689E23FBB")]
+public interface IMessageLog
+{
+	void Add(MessageLogType messageType, string message);
+
+	void Begin(string title);
+
+	void End();
+
+	int GetCount(MessageLogType type);
+
+	int GetCount();
+
+	void Clear();
+}
+[Guid("9272B52E-D123-4400-AC89-21DB4A9BF11F")]
+public interface IMessageLogView : IMessageLog
+{
+	string GetMessage(MessageLogType messageType, int position);
+
+	void GetMessage(int position, out string message, out MessageLogType type);
+}
+[Guid("F8180FB0-719F-424A-8452-5D9AF697F890")]
+public class MessageLogger : IMessageLog
+{
+	public enum StatusLevel
+	{
+		Low = 50,
+		Medium = 100,
+		High = 200,
+		Severe = 500
+	}
+
+	private Dictionary<MessageLogType, List<string>> mMessages;
+
+	private string mStatus;
+
+	private int mHighestLevel;
+
+	public MessageLogger()
+	{
+		mMessages = new Dictionary<MessageLogType, List<string>>();
+		mStatus = null;
+		mHighestLevel = -1;
+	}
+
+	public void Add(MessageLogType messageType, string message)
+	{
+		if (!mMessages.ContainsKey(messageType))
+		{
+			mMessages.Add(messageType, new List<string>());
+		}
+		if (!mMessages[messageType].Contains(message))
+		{
+			mMessages[messageType].Add(message);
+		}
+	}
+
+	public void Begin(string title)
+	{
+		Add(MessageLogType.Begin, title);
+	}
+
+	public void Clear()
+	{
+		mMessages.Clear();
+		mStatus = null;
+		mHighestLevel = -1;
+	}
+
+	public void End()
+	{
+		Add(MessageLogType.End, null);
+	}
+
+	public int GetCount()
+	{
+		int num = 0;
+		foreach (List<string> value in mMessages.Values)
+		{
+			num += value.Count;
+		}
+		return num;
+	}
+
+	public int GetCount(MessageLogType type)
+	{
+		if (!mMessages.Any())
+		{
+			return 0;
+		}
+		if (mMessages.TryGetValue(type, out var value))
+		{
+			return value.Count;
+		}
+		return 0;
+	}
+
+	public string[] GetMessages()
+	{
+		List<string> list = new List<string>();
+		foreach (List<string> value in mMessages.Values)
+		{
+			foreach (string item in value)
+			{
+				list.Add(item);
+			}
+		}
+		return list.ToArray();
+	}
+
+	public string[] GetMessages(MessageLogType type)
+	{
+		return mMessages[type].ToArray();
+	}
+
+	public void AddDiagnostic(string str, int level = 0)
+	{
+		if (level > mHighestLevel)
+		{
+			mHighestLevel = level;
+			mStatus = str;
+		}
+	}
+
+	public string GetDiagnostic()
+	{
+		return mStatus;
+	}
+
+	public int GetDiagnosticLevel()
+	{
+		return mHighestLevel;
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

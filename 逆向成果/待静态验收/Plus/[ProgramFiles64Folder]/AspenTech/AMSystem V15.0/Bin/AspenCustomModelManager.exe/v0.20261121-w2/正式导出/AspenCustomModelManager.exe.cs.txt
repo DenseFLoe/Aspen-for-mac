@@ -1,0 +1,445 @@
+using System;
+using System.CodeDom.Compiler;
+using System.Collections;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Configuration;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Resources;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Markup;
+using AspenTech.Modeler.ACMExpUtilities;
+using Microsoft.Win32;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyTitle("Aspen Custom Model Manager")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("Aspen Technology, Inc.")]
+[assembly: AssemblyProduct("Aspen Custom Model Manager")]
+[assembly: AssemblyCopyright("Copyright © Aspen Technology 2017")]
+[assembly: AssemblyTrademark("")]
+[assembly: ComVisible(false)]
+[assembly: ThemeInfo(ResourceDictionaryLocation.None, ResourceDictionaryLocation.SourceAssembly)]
+[assembly: AssemblyFileVersion("36.0.0.0")]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("1.0.0.0")]
+namespace ModelManagerGUI
+{
+	public class App : Application, IComponentConnector
+	{
+		private bool _contentLoaded;
+
+		[STAThread]
+		private static void Main(string[] args)
+		{
+			ModelManager modelManager = new ModelManager();
+			try
+			{
+				if (args.Length != 0)
+				{
+					if (args[0].ToString() == "/reg-atmlz")
+					{
+						modelManager.RegisterComponents();
+						return;
+					}
+					if (args[0].ToString() == "/unreg-atmlz")
+					{
+						modelManager.UnRegisterComponents();
+						return;
+					}
+				}
+				App app = new App();
+				app.InitializeComponent();
+				app.Run();
+			}
+			catch (Exception)
+			{
+			}
+		}
+
+		protected void OnStartup(object sender, StartupEventArgs e)
+		{
+			UriTypeConverter uriTypeConverter = new UriTypeConverter();
+			base.StartupUri = (Uri)uriTypeConverter.ConvertFrom("MainWindow.xaml");
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			base.StartupUri = new Uri("MainWindow.xaml", UriKind.Relative);
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/AspenCustomModelManager;component/app.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			_contentLoaded = true;
+		}
+	}
+	public class MainWindow : Window, IComponentConnector, IStyleConnector
+	{
+		private string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+
+		private ModelManager mm;
+
+		private string file = "";
+
+		internal Button Install_Button;
+
+		internal Button Uninstall_Button;
+
+		internal DataGrid dataModelList;
+
+		private bool _contentLoaded;
+
+		public MainWindow()
+		{
+			mm = new ModelManager();
+			string[] commandLineArgs = Environment.GetCommandLineArgs();
+			if (commandLineArgs.Length > 1)
+			{
+				string text = commandLineArgs[1].ToLowerInvariant();
+				if (File.Exists(text) && text.Contains(".atmlz"))
+				{
+					file = text;
+				}
+			}
+			InitializeComponent();
+			Uninstall_Button.IsEnabled = false;
+			dataModelList.ItemsSource = mm.GetModelList();
+		}
+
+		protected override void OnContentRendered(EventArgs e)
+		{
+			base.OnContentRendered(e);
+			if (file.Contains(".atmlz"))
+			{
+				mm.Install(file);
+				dataModelList.ItemsSource = mm.GetModelList();
+				file = "";
+			}
+		}
+
+		private void Install_Button_Click(object sender, RoutedEventArgs e)
+		{
+			OpenFileDialog openFileDialog = new OpenFileDialog();
+			openFileDialog.DefaultExt = ".atmlz";
+			openFileDialog.Filter = "ATMLZ Files (*.ATMLZ)|*.ATMLZ";
+			if (openFileDialog.ShowDialog() == true)
+			{
+				mm.Install(openFileDialog.FileName);
+			}
+			dataModelList.ItemsSource = mm.GetModelList();
+		}
+
+		private void Uninstall_Button_Click(object sender, RoutedEventArgs e)
+		{
+			base.Cursor = Cursors.Wait;
+			List<ModelManager.Data> list = new List<ModelManager.Data>();
+			foreach (ModelManager.Data item in (IEnumerable)dataModelList.Items)
+			{
+				if (item.Val)
+				{
+					list.Add(item);
+				}
+			}
+			if (list.Count > 0)
+			{
+				string messageBoxText = ((list.Count <= 1) ? ("Are you sure you want to uninstall " + list[0].Model + " v" + list[0].Version + "?") : ("Are you sure you want to uninstall the " + list.Count + " selected models?"));
+				if (MessageBox.Show(messageBoxText, "Uninstall", MessageBoxButton.YesNo).ToString().Contains("Yes"))
+				{
+					foreach (ModelManager.Data item2 in list)
+					{
+						mm.Uninstall(item2.Model, item2.Version);
+					}
+				}
+			}
+			dataModelList.ItemsSource = mm.GetModelList();
+			DataGridUnChecked(sender, e);
+			base.Cursor = Cursors.Arrow;
+		}
+
+		private void DataGridChecked(object sender, RoutedEventArgs e)
+		{
+			Uninstall_Button.IsEnabled = true;
+		}
+
+		private void DataGridUnChecked(object sender, RoutedEventArgs e)
+		{
+			new List<bool>();
+			foreach (ModelManager.Data item in (IEnumerable)dataModelList.Items)
+			{
+				if (item != null && item.Val)
+				{
+					return;
+				}
+			}
+			Uninstall_Button.IsEnabled = false;
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/AspenCustomModelManager;component/mainwindow.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			switch (connectionId)
+			{
+			case 1:
+				Install_Button = (Button)target;
+				Install_Button.Click += Install_Button_Click;
+				break;
+			case 2:
+				Uninstall_Button = (Button)target;
+				Uninstall_Button.Click += Uninstall_Button_Click;
+				break;
+			case 3:
+				dataModelList = (DataGrid)target;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IStyleConnector.Connect(int connectionId, object target)
+		{
+			if (connectionId == 4)
+			{
+				((CheckBox)target).Checked += DataGridChecked;
+				((CheckBox)target).Unchecked += DataGridUnChecked;
+			}
+		}
+	}
+	public class ModelManager
+	{
+		public class Data
+		{
+			public string Model { get; set; }
+
+			public string Version { get; set; }
+
+			public string TimeStamp { get; set; }
+
+			public string Description { get; set; }
+
+			public bool Val { get; set; }
+		}
+
+		private ModelLibraryManager mlm;
+
+		public ModelManager()
+		{
+			mlm = new ModelLibraryManager();
+		}
+
+		public void RegisterComponents()
+		{
+			RegistryKey registryKey = Registry.ClassesRoot.CreateSubKey("AspenTech.Modeler.LibraryManager");
+			registryKey.SetValue("", "Aspen Exported Custom Model");
+			registryKey.CreateSubKey("exe").SetValue("", Assembly.GetExecutingAssembly().Location);
+			registryKey.CreateSubKey("shell\\Install/Update Custom Model\\command").SetValue("", "\"" + Assembly.GetExecutingAssembly().Location + "\" \"%1\"");
+			RegistryKey registryKey2 = Registry.ClassesRoot.CreateSubKey(".atmlz");
+			registryKey2.SetValue("", "AspenTech.Modeler.LibraryManager");
+			registryKey2.CreateSubKey("DefaultIcon");
+		}
+
+		public void UnRegisterComponents()
+		{
+			Registry.ClassesRoot.DeleteSubKeyTree("AspenTech.Modeler.LibraryManager");
+			Registry.ClassesRoot.DeleteSubKeyTree(".atmlz");
+		}
+
+		public void Install(string filename)
+		{
+			IACMExpModel iACMExpModel = mlm.OpenModelFile(filename);
+			if (iACMExpModel != null)
+			{
+				IACMExpModel iACMExpModel2 = mlm.FindModel(iACMExpModel.Name);
+				if (iACMExpModel2 != null)
+				{
+					if (iACMExpModel2.Version == iACMExpModel.Version)
+					{
+						if (iACMExpModel2.RevisionGuid == iACMExpModel.RevisionGuid)
+						{
+							MessageBox.Show("The model " + iACMExpModel.Name + " v" + iACMExpModel.Version + " is already installed", "Model Already Exists", MessageBoxButton.OK);
+						}
+						else if (MessageBox.Show("Replace the existing model\n\n" + iACMExpModel2.Name + " v" + iACMExpModel2.Version + "\n" + ParseTime(iACMExpModel2.Timestamp) + "\n\nwith this one? \n\n" + iACMExpModel.Name + " v" + iACMExpModel.Version + "\n" + ParseTime(iACMExpModel.Timestamp), "ACMModel already exists...", MessageBoxButton.YesNo).ToString().Contains("Yes") && !mlm.InstallNewLibrary(filename, overwrite: true))
+						{
+							MessageBox.Show("Failed to install the model " + iACMExpModel.Name + " v" + iACMExpModel.Version + " - another revision is in use.", "Install Model", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+						}
+					}
+					else if (MessageBox.Show("The model " + iACMExpModel2.Name + " v" + iACMExpModel2.Version + " is already installed.\nInstall new version v" + iACMExpModel.Version + " alongside?", "ACMModel already exists...", MessageBoxButton.YesNo).ToString().Contains("Yes"))
+					{
+						mlm.InstallNewLibrary(filename, overwrite: true);
+					}
+				}
+				else
+				{
+					decimal result = 0.0m;
+					if (!decimal.TryParse(iACMExpModel.Version, NumberStyles.Any, CultureInfo.InvariantCulture, out result))
+					{
+						MessageBox.Show("Unable to determine " + iACMExpModel.Name + " make sure the model is valid.", "Invalid Model Version.", MessageBoxButton.OK);
+					}
+					else if (result < 37.0m)
+					{
+						MessageBox.Show("The model version: \"" + iACMExpModel.Version + "\" is not supported. The earliest supported model version is \"" + 37.0m + "\". The latest supported version is \"" + mlm.CompatableWith + "\".", "Model Version Not Supported", MessageBoxButton.OK);
+					}
+					else if (MessageBox.Show("Install New Model " + iACMExpModel.Name + " v" + iACMExpModel.Version + "?", "Install Model", MessageBoxButton.YesNo).ToString().Contains("Yes"))
+					{
+						mlm.InstallNewLibrary(filename, overwrite: true);
+					}
+				}
+			}
+			else
+			{
+				MessageBox.Show("The file: " + filename + " is not a valid ATMLZ Model and will not be installed.", "Invalid Files", MessageBoxButton.OK);
+			}
+		}
+
+		public void Uninstall(string name, string version)
+		{
+			if (!mlm.UninstallLibrary(name, version))
+			{
+				MessageBox.Show("Model " + name + " v" + version + " could not be uninstalled - the model may be in use in another application.", "Uninstall", MessageBoxButton.OK);
+			}
+		}
+
+		public List<Data> GetModelList()
+		{
+			List<Data> list = new List<Data>();
+			List<IACMExpModelInfo> list2 = new List<IACMExpModelInfo>();
+			List<string> list3 = mlm.ACMModels.ToList();
+			list3.AddRange(mlm.ACMReactions.ToList());
+			list3.Sort();
+			foreach (string item in list3)
+			{
+				IACMExpModelInfo iACMExpModelInfo = mlm.FindModelInfo(item);
+				if (iACMExpModelInfo != null)
+				{
+					list2.Add(iACMExpModelInfo);
+					continue;
+				}
+				IACMExpModelInfo iACMExpModelInfo2 = mlm.FindReactionInfo(item);
+				if (iACMExpModelInfo2 != null)
+				{
+					list2.Add(iACMExpModelInfo2);
+				}
+			}
+			foreach (IACMExpModelInfo item2 in list2)
+			{
+				double result = 0.0;
+				double.TryParse(item2.Version, out result);
+				string timeStamp = ParseTime(item2.Timestamp);
+				list.Add(new Data
+				{
+					Model = item2.Name,
+					Version = item2.Version,
+					TimeStamp = timeStamp,
+					Description = item2.Description
+				});
+			}
+			return list;
+		}
+
+		private string ParseTime(string tstamp)
+		{
+			string format = "yyyy.M.d.H.m.s";
+			if (tstamp == null || tstamp == "")
+			{
+				return "Timestamp not available.";
+			}
+			if (!DateTime.TryParseExact(tstamp, format, null, DateTimeStyles.AssumeLocal, out var result))
+			{
+				return "Timestamp not available.";
+			}
+			return result.ToString();
+		}
+	}
+}
+namespace ModelManagerGUI.Properties
+{
+	[GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "15.0.0.0")]
+	[DebuggerNonUserCode]
+	[CompilerGenerated]
+	internal class Resources
+	{
+		private static ResourceManager resourceMan;
+
+		private static CultureInfo resourceCulture;
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		internal static ResourceManager ResourceManager
+		{
+			get
+			{
+				if (resourceMan == null)
+				{
+					resourceMan = new ResourceManager("ModelManagerGUI.Properties.Resources", typeof(Resources).Assembly);
+				}
+				return resourceMan;
+			}
+		}
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		internal static CultureInfo Culture
+		{
+			get
+			{
+				return resourceCulture;
+			}
+			set
+			{
+				resourceCulture = value;
+			}
+		}
+
+		internal Resources()
+		{
+		}
+	}
+	[CompilerGenerated]
+	[GeneratedCode("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "15.3.0.0")]
+	internal sealed class Settings : ApplicationSettingsBase
+	{
+		private static Settings defaultInstance = (Settings)SettingsBase.Synchronized(new Settings());
+
+		public static Settings Default => defaultInstance;
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

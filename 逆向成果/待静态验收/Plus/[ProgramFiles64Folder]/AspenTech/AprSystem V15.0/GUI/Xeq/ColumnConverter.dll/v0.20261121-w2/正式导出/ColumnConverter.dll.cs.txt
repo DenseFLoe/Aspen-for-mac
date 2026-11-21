@@ -1,0 +1,1912 @@
+using System;
+using System.CodeDom.Compiler;
+using System.Collections;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Drawing;
+using System.Globalization;
+using System.Linq;
+using System.Reflection;
+using System.Resources;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Windows.Forms;
+using AspenTech.AspenPlus.APConvert;
+using AspenTech.AspenPlus.Happ;
+using AspenTech.AspenPlus.Localization;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyTitle("ColumnConverters")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("Aspen Technology, INC.")]
+[assembly: AssemblyProduct("ColumnConverters")]
+[assembly: AssemblyCopyright("Copyright © Aspen Technology, INC. 2009 - 2024")]
+[assembly: AssemblyTrademark("")]
+[assembly: ComVisible(true)]
+[assembly: Guid("ea51b88f-5de4-4c37-886a-33a2c852c4df")]
+[assembly: AssemblyFileVersion("1.0.0.0")]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("1.0.0.0")]
+namespace ColumnConverters
+{
+	[ComVisible(true)]
+	[Guid("41E5C181-356B-4594-8487-A35101007C73")]
+	[ProgId("Column.ConsepToRadfracConverterCollection.41.0")]
+	[ClassInterface(ClassInterfaceType.None)]
+	public class ConsepToRadfracConverterCollection : ConverterCollection
+	{
+		public ConsepToRadfracConverterCollection()
+			: base("Consep")
+		{
+		}
+	}
+	[ComVisible(true)]
+	[Guid("707B9B61-93C2-4A1B-9677-E7884843B19D")]
+	[ProgId("Column.User2ToConsepConverterCollection.41.0")]
+	[ClassInterface(ClassInterfaceType.None)]
+	public class User2ToConsepConverterCollection : ConverterCollection
+	{
+		public User2ToConsepConverterCollection()
+			: base("User2")
+		{
+		}
+	}
+	[ComVisible(false)]
+	public class ConverterCollection : IAPConverterCollection
+	{
+		private ArrayList convertCollection;
+
+		private ColumnConverter hConvert1;
+
+		private User2toConSep hConvert2;
+
+		public string convertType;
+
+		public object this[int i] => convertCollection[i - 1];
+
+		public int Count => convertCollection.Count;
+
+		public ConverterCollection(string type)
+		{
+			convertType = type;
+			convertCollection = new ArrayList();
+			if (type.ToUpper() == "CONSEP")
+			{
+				hConvert1 = new ColumnConverter(convertType);
+				convertCollection.Add(hConvert1);
+			}
+			else
+			{
+				hConvert2 = new User2toConSep();
+				convertCollection.Add(hConvert2);
+			}
+		}
+
+		public IEnumerator GetEnumerator()
+		{
+			return (this as IEnumerable).GetEnumerator();
+		}
+	}
+	[ComVisible(false)]
+	public class ColumnConverter : IAPBlockConverter2, IAPBlockConverter
+	{
+		private enum CursorName
+		{
+			IDC_ARROW = 32512,
+			IDC_WAIT = 32514
+		}
+
+		private class StreamConnection
+		{
+			public string streamName;
+
+			public string streamPort;
+
+			public string blockName;
+
+			public string blockPort;
+		}
+
+		private class ConvertData
+		{
+			public string varName;
+
+			public object Value;
+
+			public short Units;
+
+			public object force = Missing.Value;
+		}
+
+		private const int HAP_UNITCOL = 3;
+
+		private const int HAP_RESULTS_ERRORS = 32;
+
+		private const int HAP_INPUT_INCOMPLETE = 64;
+
+		private string sBasis = "MOLE";
+
+		private string sRatioType = "RR";
+
+		private int Ntotal = 2;
+
+		private int nPhase = 2;
+
+		private int iDecanter;
+
+		private int itemp;
+
+		private int iTEst = 1;
+
+		private int iXYEst = 1;
+
+		private double[] TEst;
+
+		private double[,] XEst;
+
+		private double[,] YEst;
+
+		private string sComp1 = "";
+
+		private string sComp2 = "";
+
+		private string sComp3 = "";
+
+		private string stemp = "";
+
+		private double dNFeed;
+
+		private IHNode pVar;
+
+		private IHNode pTemNode;
+
+		private IntPtr gHourglassCursor;
+
+		private IntPtr gPrevCursor;
+
+		private ArrayList streamList;
+
+		private ArrayList variableList;
+
+		private ArrayList varWithUnitList;
+
+		private object force;
+
+		private string convertType;
+
+		private string title = WpfMMDialogResources.ConvertTo_Title;
+
+		public string BaseDestinationType => "RADFRAC";
+
+		public string BaseSourceType => convertType.ToUpper();
+
+		public string Description => WpfMMDialogResources.ConvertTo_This + " " + BaseSourceType + " " + WpfMMDialogResources.ConvertTo_ConverTo + " " + BaseDestinationType + " " + WpfMMDialogResources.ConvertTo_Model;
+
+		public string DestLibraryFile => "";
+
+		public string DestLibraryModelType => "";
+
+		public string DestLibraryName => "";
+
+		public string DisplayName => "Aspen RadFrac";
+
+		[DllImport("user32")]
+		private static extern IntPtr SetCursor(IntPtr hCursor);
+
+		[DllImport("user32")]
+		private static extern IntPtr LoadCursor(IntPtr hInstance, CursorName lpCursorName);
+
+		public ColumnConverter(string type)
+		{
+			convertType = type;
+			streamList = new ArrayList();
+			variableList = new ArrayList();
+			varWithUnitList = new ArrayList();
+			force = Missing.Value;
+		}
+
+		public void PreConvert(IHNode pNode)
+		{
+		}
+
+		public int PreConvert2(IHNode pNode)
+		{
+			gHourglassCursor = LoadCursor(IntPtr.Zero, CursorName.IDC_WAIT);
+			gPrevCursor = SetCursor(gHourglassCursor);
+			if (pNode == null)
+			{
+				MessageBox.Show(WpfMMDialogResources.ConvertTo_Node, title);
+				return 1;
+			}
+			itemp = (dynamic)pNode.get_AttributeValue((short)12, Type.Missing);
+			if (itemp == 64)
+			{
+				MessageBox.Show(WpfMMDialogResources.ConvertTo_Input_Incomplete, title);
+				return 1;
+			}
+			if (itemp == 32)
+			{
+				MessageBox.Show(WpfMMDialogResources.ConvertTo_ErrorsArePresent, title);
+				return 1;
+			}
+			pTemNode = pNode.FindNode("Input/IMODE");
+			stemp = (dynamic)pTemNode.get_Value(force);
+			if (stemp.CompareTo("DESIGN") != 0)
+			{
+				MessageBox.Show(WpfMMDialogResources.ConvertTo_Material_Balance_Mode, title);
+				return 1;
+			}
+			stemp = "Output/ACT_STAGES2";
+			pTemNode = pNode.FindNode(stemp);
+			if (pTemNode != null)
+			{
+				double num = Convert.ToDouble((dynamic)pTemNode.get_Value(force));
+				if (num < 2.0 || num > 999.0)
+				{
+					MessageBox.Show(WpfMMDialogResources.ConvertTo_Infeasible_Design, title);
+					return 1;
+				}
+			}
+			pTemNode = pNode.FindNode("Input/SELCOMP1");
+			sComp1 = (dynamic)pTemNode.get_Value(force);
+			pTemNode = pNode.FindNode("Input/SELCOMP2");
+			sComp2 = (dynamic)pTemNode.get_Value(force);
+			pTemNode = pNode.FindNode("Input/SELCOMP3");
+			sComp3 = (dynamic)pTemNode.get_Value(force);
+			pTemNode = pNode.FindNode("Input/ICONFIG");
+			stemp = (dynamic)pTemNode.get_Value(force);
+			if (stemp.CompareTo("DECANTER") == 0)
+			{
+				iDecanter = 1;
+			}
+			else
+			{
+				iDecanter = 0;
+			}
+			try
+			{
+				IHNode iHNode = pNode.FindNode("Connections");
+				IHNodeCol elements = iHNode.Elements;
+				if (elements != null)
+				{
+					string text = pNode.get_Name(force);
+					streamList.Clear();
+					for (int i = 0; i < elements.Count; i++)
+					{
+						string text2 = elements.get_Label(0, i, force);
+						IHNode iHNode2 = pNode.FindNode("../../Streams/" + text2 + "/Connections/" + text);
+						if (iHNode2 != null)
+						{
+							StreamConnection streamConnection = new StreamConnection();
+							IHNode iHNode3 = iHNode.FindNode(text2);
+							streamConnection.streamName = text2;
+							streamConnection.blockName = text;
+							streamConnection.streamPort = (string)(dynamic)iHNode2.get_Value(force);
+							stemp = (string)(dynamic)iHNode3.get_Value(force);
+							if (stemp == "D(OUT)")
+							{
+								stemp = "LD(OUT)";
+							}
+							streamConnection.blockPort = stemp;
+							streamList.Add(streamConnection);
+						}
+					}
+				}
+				variableList.Clear();
+				ConvertData convertData = new ConvertData();
+				stemp = "Output/ACT_STAGES2";
+				pTemNode = pNode.FindNode(stemp);
+				if (pTemNode != null)
+				{
+					double num2 = Convert.ToDouble((dynamic)pTemNode.get_Value(force));
+					int num3 = Convert.ToInt16(num2);
+					if (num2 > Convert.ToDouble(num3))
+					{
+						num3++;
+					}
+					Ntotal = num3;
+					convertData.varName = "NSTAGE";
+					convertData.Value = num3;
+					variableList.Add(convertData);
+				}
+				convertData = new ConvertData();
+				stemp = "Output/FEED_LOCATN2";
+				pTemNode = pNode.FindNode(stemp);
+				if (pTemNode != null)
+				{
+					double num4 = Convert.ToDouble((dynamic)pTemNode.get_Value(force));
+					int num5 = Convert.ToInt16(num4);
+					dNFeed = num4;
+					if (num4 > Convert.ToDouble(num5))
+					{
+						num5++;
+					}
+					convertData.varName = "FEED_STAGE";
+					convertData.Value = num5;
+					variableList.Add(convertData);
+				}
+				convertData = new ConvertData();
+				pTemNode = pNode.FindNode("Input/IBASIS");
+				stemp = (dynamic)pTemNode.get_Value(force);
+				if (stemp.CompareTo("MOLE") == 0)
+				{
+					sBasis = "MOLE";
+					pTemNode = pNode.FindNode("Input/MOLE_RR");
+					if (pTemNode != null && (dynamic)pTemNode.get_Value(force) != null)
+					{
+						sRatioType = "RR";
+						convertData.varName = "MOLE_RR";
+						convertData.Value = pTemNode.get_Value(force);
+						variableList.Add(convertData);
+					}
+					else
+					{
+						sRatioType = "BR";
+						pTemNode = pNode.FindNode("Input/MOLE_BR");
+						if (pTemNode != null && (dynamic)pTemNode.get_Value(force) != null)
+						{
+							convertData.varName = "MOLE_BR";
+							convertData.Value = pTemNode.get_Value(force);
+							variableList.Add(convertData);
+						}
+					}
+				}
+				else
+				{
+					sBasis = "MASS";
+					pTemNode = pNode.FindNode("Input/MASS_RR");
+					if (pTemNode != null && (dynamic)pTemNode.get_Value(force) != null)
+					{
+						sRatioType = "RR";
+						convertData.varName = "MASS_RR";
+						convertData.Value = pTemNode.get_Value(force);
+						variableList.Add(convertData);
+					}
+					else
+					{
+						pTemNode = pNode.FindNode("Input/MASS_BR");
+						if (pTemNode != null && (dynamic)pTemNode.get_Value(force) != null)
+						{
+							sRatioType = "BR";
+							convertData.varName = "MASS_BR";
+							convertData.Value = pTemNode.get_Value(force);
+							variableList.Add(convertData);
+						}
+					}
+				}
+				pTemNode = pNode.FindNode("Input/IPHASE");
+				stemp = (dynamic)pTemNode.get_Value(force);
+				if (stemp.CompareTo("VLL") == 0)
+				{
+					nPhase = 3;
+				}
+				else
+				{
+					nPhase = 2;
+				}
+				pTemNode = pNode.FindNode("Input/ICONFIG");
+				stemp = (dynamic)pTemNode.get_Value(force);
+				if (stemp.CompareTo("DECANTER") == 0)
+				{
+					iDecanter = 1;
+				}
+				else
+				{
+					iDecanter = 0;
+				}
+				varWithUnitList.Clear();
+				convertData = new ConvertData();
+				stemp = "Input/P_SPEC";
+				pTemNode = pNode.FindNode(stemp);
+				if (pTemNode != null)
+				{
+					convertData.varName = "PRES1";
+					convertData.Value = pTemNode.get_Value(force);
+					convertData.Units = Convert.ToInt16((dynamic)pTemNode.get_AttributeValue((short)3, force));
+					varWithUnitList.Add(convertData);
+				}
+				convertData = new ConvertData();
+				stemp = "Output/F2";
+				pTemNode = pNode.FindNode(stemp);
+				if (pTemNode != null)
+				{
+					convertData.varName = "BASIS_D";
+					convertData.Value = pTemNode.get_Value(force);
+					convertData.Units = Convert.ToInt16((dynamic)pTemNode.get_AttributeValue((short)3, force));
+					varWithUnitList.Add(convertData);
+				}
+				Form1 form = new Form1();
+				form.ShowDialog();
+				if (form.gTemp)
+				{
+					iTEst = 1;
+				}
+				else
+				{
+					iTEst = 0;
+				}
+				if (form.gXY)
+				{
+					iXYEst = 1;
+				}
+				else
+				{
+					iXYEst = 0;
+				}
+				if (iTEst == 1)
+				{
+					int num6 = 0;
+					TEst = new double[Ntotal];
+					for (int j = 1; j < Ntotal + 1; j++)
+					{
+						pTemNode = pNode.FindNode("Output/B_TEMP4/" + j);
+						TEst[num6] = Convert.ToDouble((dynamic)pTemNode.get_Value(force));
+						num6++;
+					}
+				}
+				if (iXYEst == 1)
+				{
+					int num7 = 0;
+					XEst = new double[Ntotal, 3];
+					YEst = new double[Ntotal, 3];
+					for (int k = 1; k < Ntotal + 1; k++)
+					{
+						for (int l = 1; l < 4; l++)
+						{
+							pTemNode = pNode.FindNode("Output/X10/" + k + "/" + l);
+							XEst[num7, l - 1] = Convert.ToDouble((dynamic)pTemNode.get_Value(force));
+							pTemNode = pNode.FindNode("Output/Y/" + k + "/" + l);
+							YEst[num7, l - 1] = Convert.ToDouble((dynamic)pTemNode.get_Value(force));
+						}
+						num7++;
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show(WpfMMDialogResources.ConvertTo_CannotBeConverted, title);
+				throw new Exception(ex.Message.ToString());
+			}
+			return 0;
+		}
+
+		public void PostConvert(IHNode pNode)
+		{
+			IHNode iHNode = pNode.FindNode("Ports");
+			IHNodeCol elements = iHNode.Elements;
+			pNode?.HoldNotifies(hold: true);
+			if (elements != null)
+			{
+				for (int i = 0; i < streamList.Count; i++)
+				{
+					StreamConnection streamConnection = streamList[i] as StreamConnection;
+					for (int j = 0; j < elements.Count; j++)
+					{
+						string text = elements.get_Label(0, j, force);
+						if (text.CompareTo(streamConnection.blockPort) == 0)
+						{
+							string streamName = streamConnection.streamName;
+							iHNode.FindNode(text).Elements?.Add(streamName);
+							break;
+						}
+					}
+				}
+			}
+			pVar = pNode.FindNode("Input/CONDENSER");
+			if (pVar != null)
+			{
+				pVar.set_Value(force, (object)"TOTAL");
+			}
+			pVar = pNode.FindNode("Input/NSTAGE");
+			if (pVar != null)
+			{
+				ConvertData convertData = variableList[0] as ConvertData;
+				pVar.set_Value(convertData.force, convertData.Value);
+			}
+			pVar = pNode.FindNode("Input/FEED_STAGE");
+			if (pVar != null)
+			{
+				IHNode iHNode2 = pVar.Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing];
+				ConvertData convertData2 = variableList[1] as ConvertData;
+				iHNode2.set_Value(convertData2.force, convertData2.Value);
+			}
+			pVar = pNode.FindNode("Input/FEED_CONVEN");
+			if (pVar != null)
+			{
+				pVar.Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing].set_Value(force, (object)"ON-STAGE");
+			}
+			pVar = pNode.FindNode("Input/FEED_CONVE2");
+			if (pVar != null)
+			{
+				pVar.Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing].set_Value(force, (object)"ON-STAGE");
+			}
+			if (sRatioType.CompareTo("RR") == 0)
+			{
+				pVar = pNode.FindNode("Input/BASIS_RR");
+			}
+			else
+			{
+				pVar = pNode.FindNode("Input/BASIS_BR");
+			}
+			if (pVar != null)
+			{
+				ConvertData convertData3 = variableList[2] as ConvertData;
+				pVar.set_Value(convertData3.force, convertData3.Value);
+			}
+			if (sRatioType.CompareTo("RR") == 0)
+			{
+				pVar = pNode.FindNode("Input/RR_BASIS");
+			}
+			else
+			{
+				pVar = pNode.FindNode("Input/BR_BASIS");
+			}
+			if (pVar != null)
+			{
+				pVar.set_Value(force, (object)sBasis);
+			}
+			pVar = pNode.FindNode("Input/PRES1");
+			if (pVar != null)
+			{
+				ConvertData convertData4 = varWithUnitList[0] as ConvertData;
+				pVar.SetValueAndUnit(convertData4.Value, convertData4.Units, convertData4.force);
+			}
+			pVar = pNode.FindNode("Input/D_BASIS");
+			if (pVar != null)
+			{
+				pVar.set_Value(force, (object)"MOLE");
+			}
+			pVar = pNode.FindNode("Input/BASIS_D");
+			if (pVar != null)
+			{
+				ConvertData convertData5 = varWithUnitList[1] as ConvertData;
+				pVar.SetValueUnitAndBasis(convertData5.Value, convertData5.Units, "MOLE", convertData5.force);
+			}
+			if (nPhase == 3)
+			{
+				pVar = pNode.FindNode("Input/NO_PHASE");
+				if (pVar != null)
+				{
+					pVar.set_Value(force, (object)nPhase);
+				}
+				pVar = pNode.FindNode("Input/TRAY2");
+				if (pVar != null)
+				{
+					pVar.Elements.InsertRow(0, 0);
+					pVar.Elements.set_Label(0, 0, force, "1");
+					pVar.Elements["1", Type.Missing, Type.Missing, Type.Missing, Type.Missing].set_Value(force, (object)Ntotal);
+				}
+				pVar = pNode.FindNode("Input/COMP_LIST");
+				if (pVar != null)
+				{
+					pVar.Elements.InsertRow(0, 0);
+					IHNode iHNode3 = pNode.FindNode("Input/COMP_LIST/#0");
+					if (iHNode3 != null)
+					{
+						iHNode3.set_Value(force, (object)sComp1);
+					}
+				}
+			}
+			if (iDecanter == 1)
+			{
+				pVar = pNode.FindNode("Subobjects/Decanters");
+				if (pVar != null)
+				{
+					pVar.Elements.InsertRow(0, 0);
+					pVar.Elements.set_Label(0, 0, force, "1");
+					IHNode iHNode4 = pNode.FindNode("Input/L2_SPEC/1");
+					if (iHNode4 != null)
+					{
+						iHNode4.set_Value(force, (object)"0.0");
+					}
+				}
+			}
+			if (iTEst == 1)
+			{
+				for (int k = 1; k < Ntotal + 1; k++)
+				{
+					pVar = null;
+					pVar = pNode.FindNode("Input/TEMP_EST");
+					if (pVar != null)
+					{
+						pVar.Elements.InsertRow(0, k - 1);
+						pVar.Elements.set_Label(0, k - 1, force, k.ToString());
+						IHNode iHNode5 = pNode.FindNode("Input/TEMP_EST/" + k);
+						if (iHNode5 != null && TEst[k - 1] > 0.0)
+						{
+							iHNode5.set_Value(force, (object)TEst[k - 1]);
+						}
+					}
+				}
+			}
+			pNode?.HoldNotifies(hold: false);
+			if (iXYEst == 1)
+			{
+				pVar = pNode.FindNode("Input/X_EST");
+				if (pVar != null)
+				{
+					IHNodeCol elements2 = pVar.Elements;
+					for (int l = 1; l < Ntotal + 1; l++)
+					{
+						stemp = "(" + l + "," + sComp1 + ")";
+						elements2.InsertRow(0, l - 1);
+						elements2.set_Label(0, l - 1, force, l.ToString());
+						if (l == 1)
+						{
+							elements2.InsertRow(1, 0);
+							elements2.set_Label(1, 0, force, sComp1);
+						}
+						IHNode iHNode6 = pNode.FindNode("Input/X_EST/" + stemp);
+						if (iHNode6 != null && XEst[l - 1, 0] > 0.0)
+						{
+							iHNode6.set_Value(force, (object)XEst[l - 1, 0]);
+						}
+						iHNode6 = pNode.FindNode("Input/Y_EST/" + stemp);
+						if (iHNode6 != null && YEst[l - 1, 0] > 0.0)
+						{
+							iHNode6.set_Value(force, (object)YEst[l - 1, 0]);
+						}
+						stemp = "(" + l + "," + sComp2 + ")";
+						if (l == 1)
+						{
+							elements2.InsertRow(1, 1);
+							elements2.set_Label(1, 1, force, sComp2);
+						}
+						iHNode6 = pNode.FindNode("Input/X_EST/" + stemp);
+						if (iHNode6 != null && XEst[l - 1, 1] > 0.0)
+						{
+							iHNode6.set_Value(force, (object)XEst[l - 1, 1]);
+						}
+						iHNode6 = pNode.FindNode("Input/Y_EST/" + stemp);
+						if (iHNode6 != null && YEst[l - 1, 1] > 0.0)
+						{
+							iHNode6.set_Value(force, (object)YEst[l - 1, 1]);
+						}
+						stemp = "(" + l + "," + sComp3 + ")";
+						if (l == 1)
+						{
+							elements2.InsertRow(1, 2);
+							elements2.set_Label(1, 2, force, sComp3);
+						}
+						iHNode6 = pNode.FindNode("Input/X_EST/" + stemp);
+						if (iHNode6 != null && XEst[l - 1, 2] > 0.0)
+						{
+							iHNode6.set_Value(force, (object)XEst[l - 1, 2]);
+						}
+						iHNode6 = pNode.FindNode("Input/Y_EST/" + stemp);
+						if (iHNode6 != null && YEst[l - 1, 2] > 0.0)
+						{
+							iHNode6.set_Value(force, (object)YEst[l - 1, 2]);
+						}
+					}
+				}
+			}
+			SetCursor(gPrevCursor);
+		}
+	}
+	public class Form1 : Form
+	{
+		public bool gTemp;
+
+		public bool gXY;
+
+		private IContainer components;
+
+		private CheckBox checkBox1;
+
+		private CheckBox checkBox2;
+
+		private Button button1;
+
+		public Form1()
+		{
+			InitializeComponent();
+		}
+
+		private void button1_Click(object sender, EventArgs e)
+		{
+			gTemp = checkBox1.Checked;
+			gXY = checkBox2.Checked;
+			Hide();
+		}
+
+		private void Form1_Load(object sender, EventArgs e)
+		{
+			Text = Resource1.Generate_estimates;
+			checkBox1.Text = Resource1.Temperature;
+			checkBox2.Text = Resource1.Compositions;
+			button1.Text = Resource1.OK;
+		}
+
+		protected override void Dispose(bool disposing)
+		{
+			if (disposing && components != null)
+			{
+				components.Dispose();
+			}
+			base.Dispose(disposing);
+		}
+
+		private void InitializeComponent()
+		{
+			this.checkBox1 = new System.Windows.Forms.CheckBox();
+			this.checkBox2 = new System.Windows.Forms.CheckBox();
+			this.button1 = new System.Windows.Forms.Button();
+			base.SuspendLayout();
+			this.checkBox1.AutoSize = true;
+			this.checkBox1.Checked = true;
+			this.checkBox1.CheckState = System.Windows.Forms.CheckState.Checked;
+			this.checkBox1.Location = new System.Drawing.Point(8, 8);
+			this.checkBox1.Margin = new System.Windows.Forms.Padding(2);
+			this.checkBox1.Name = "checkBox1";
+			this.checkBox1.Size = new System.Drawing.Size(86, 17);
+			this.checkBox1.TabIndex = 0;
+			this.checkBox1.Text = "Temperature";
+			this.checkBox1.UseVisualStyleBackColor = true;
+			this.checkBox2.AutoSize = true;
+			this.checkBox2.Checked = true;
+			this.checkBox2.CheckState = System.Windows.Forms.CheckState.Checked;
+			this.checkBox2.Location = new System.Drawing.Point(8, 29);
+			this.checkBox2.Margin = new System.Windows.Forms.Padding(2);
+			this.checkBox2.Name = "checkBox2";
+			this.checkBox2.Size = new System.Drawing.Size(88, 17);
+			this.checkBox2.TabIndex = 1;
+			this.checkBox2.Text = "Compositions";
+			this.checkBox2.UseVisualStyleBackColor = true;
+			this.button1.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
+			this.button1.Location = new System.Drawing.Point(127, 54);
+			this.button1.Margin = new System.Windows.Forms.Padding(2);
+			this.button1.Name = "button1";
+			this.button1.Size = new System.Drawing.Size(80, 20);
+			this.button1.TabIndex = 2;
+			this.button1.Text = "OK";
+			this.button1.UseVisualStyleBackColor = true;
+			this.button1.Click += new System.EventHandler(button1_Click);
+			base.AutoScaleDimensions = new System.Drawing.SizeF(6f, 13f);
+			base.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+			base.ClientSize = new System.Drawing.Size(334, 81);
+			base.Controls.Add(this.checkBox1);
+			base.Controls.Add(this.checkBox2);
+			base.Controls.Add(this.button1);
+			base.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+			base.Margin = new System.Windows.Forms.Padding(2);
+			base.MaximizeBox = false;
+			base.MinimizeBox = false;
+			base.Name = "Form1";
+			base.ShowIcon = false;
+			base.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
+			base.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
+			this.Text = "Generate estimates";
+			base.Load += new System.EventHandler(Form1_Load);
+			base.ResumeLayout(false);
+			base.PerformLayout();
+		}
+	}
+	[GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
+	[DebuggerNonUserCode]
+	[CompilerGenerated]
+	internal class Resource1
+	{
+		private static ResourceManager resourceMan;
+
+		private static CultureInfo resourceCulture;
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		internal static ResourceManager ResourceManager
+		{
+			get
+			{
+				if (resourceMan == null)
+				{
+					resourceMan = new ResourceManager("ColumnConverters.Resource1", typeof(Resource1).Assembly);
+				}
+				return resourceMan;
+			}
+		}
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		internal static CultureInfo Culture
+		{
+			get
+			{
+				return resourceCulture;
+			}
+			set
+			{
+				resourceCulture = value;
+			}
+		}
+
+		internal static string Compositions => ResourceManager.GetString("Compositions", resourceCulture);
+
+		internal static string ConvertModel => ResourceManager.GetString("ConvertModel", resourceCulture);
+
+		internal static string Generate_estimates => ResourceManager.GetString("Generate_estimates", resourceCulture);
+
+		internal static string OK => ResourceManager.GetString("OK", resourceCulture);
+
+		internal static string Temperature => ResourceManager.GetString("Temperature", resourceCulture);
+
+		internal Resource1()
+		{
+		}
+	}
+	[ComVisible(false)]
+	internal class User2toConSep : IAPBlockConverter2, IAPBlockConverter
+	{
+		private class StreamConnection
+		{
+			public string streamName;
+
+			public string streamPort;
+
+			public string blockName;
+
+			public string blockPort;
+		}
+
+		private class ConvertData
+		{
+			public string varName;
+
+			public object Value;
+
+			public short Units;
+		}
+
+		private const int HAP_UNITCOL = 3;
+
+		private const int HAP_RESULTS_ERRORS = 32;
+
+		private const int HAP_INPUT_INCOMPLETE = 64;
+
+		private const int HAP_COMPSTATUS = 12;
+
+		private string _comp1 = "";
+
+		private string _comp2 = "";
+
+		private string _comp3 = "";
+
+		private int _ibasis = 2;
+
+		private int _iconfig = 2;
+
+		private List<string> _compList;
+
+		private List<double> _comp1Map;
+
+		private List<double> _comp2Map;
+
+		private List<double> _comp3Map;
+
+		private List<StreamConnection> streamList;
+
+		private List<ConvertData> _valueList;
+
+		private string title = WpfMMDialogResources.ConvertTo_Title;
+
+		public string BaseDestinationType => "CONSEP";
+
+		public string BaseSourceType => "USER2";
+
+		public string Description => WpfMMDialogResources.ConvertTo_This + " " + BaseSourceType + " " + WpfMMDialogResources.ConvertTo_ConverTo + " " + BaseDestinationType + " " + WpfMMDialogResources.ConvertTo_Model;
+
+		public string DestLibraryFile => "";
+
+		public string DestLibraryModelType => "";
+
+		public string DestLibraryName => "";
+
+		public string DisplayName => "Aspen ConSep";
+
+		public User2toConSep()
+		{
+			streamList = new List<StreamConnection>();
+			_valueList = new List<ConvertData>();
+			_compList = new List<string>();
+			_comp1Map = new List<double>();
+			_comp2Map = new List<double>();
+			_comp3Map = new List<double>();
+		}
+
+		public void PreConvert(IHNode pNode)
+		{
+		}
+
+		public int PreConvert2(IHNode pNode)
+		{
+			if (pNode == null)
+			{
+				MessageBox.Show(WpfMMDialogResources.ConvertTo_Node, title);
+				return 1;
+			}
+			switch ((dynamic)pNode.get_AttributeValue((short)12, Type.Missing))
+			{
+			case 64:
+				MessageBox.Show(WpfMMDialogResources.ConvertTo_Input_Incomplete, title);
+				return 1;
+			case 32:
+				MessageBox.Show(WpfMMDialogResources.ConvertTo_ErrorsArePresent, title);
+				return 1;
+			default:
+				try
+				{
+					IHNode iHNode = pNode.FindNode("Connections");
+					IHNodeCol elements = iHNode.Elements;
+					if (elements != null)
+					{
+						string text = pNode.get_Name(Type.Missing);
+						streamList.Clear();
+						for (int i = 0; i < elements.Count; i++)
+						{
+							string text2 = elements.get_Label(0, i, Type.Missing);
+							IHNode iHNode2 = pNode.FindNode("../../Streams/" + text2 + "/Connections/" + text);
+							if (iHNode2 != null)
+							{
+								StreamConnection streamConnection = new StreamConnection();
+								IHNode iHNode3 = iHNode.FindNode(text2);
+								streamConnection.streamName = text2;
+								streamConnection.blockName = text;
+								streamConnection.streamPort = (string)(dynamic)iHNode2.get_Value(Type.Missing);
+								string text3 = (string)(dynamic)iHNode3.get_Value(Type.Missing);
+								switch (text3)
+								{
+								case "F1(IN)":
+								case "F2(IN)":
+									text3 = "F(IN)";
+									break;
+								case "P1(OUT)":
+									text3 = "D(OUT)";
+									break;
+								case "P2(OUT)":
+									text3 = "B(OUT)";
+									break;
+								}
+								streamConnection.blockPort = text3;
+								streamList.Add(streamConnection);
+							}
+						}
+					}
+					IHNode iHNode4 = pNode.FindNode("Input/User Table");
+					_valueList.Clear();
+					IHNode iHNode5 = iHNode4.FindNode("IBASIS");
+					if (iHNode5 != null)
+					{
+						_ibasis = (dynamic)iHNode5.get_Value(Type.Missing);
+						ConvertData convertData = new ConvertData();
+						convertData.varName = "IBASIS";
+						if ((dynamic)iHNode5.get_Value(Type.Missing) == 1)
+						{
+							convertData.Value = "MASS";
+						}
+						else
+						{
+							convertData.Value = "MOLE";
+						}
+						_valueList.Add(convertData);
+					}
+					iHNode5 = iHNode4.FindNode("IPHASE");
+					if (iHNode5 != null)
+					{
+						ConvertData convertData2 = new ConvertData();
+						convertData2.varName = "IPHASE";
+						if ((dynamic)iHNode5.get_Value(Type.Missing) == 2)
+						{
+							convertData2.Value = "VL";
+						}
+						else
+						{
+							convertData2.Value = "VLL";
+						}
+						_valueList.Add(convertData2);
+					}
+					iHNode5 = iHNode4.FindNode("ICONFIG");
+					if (iHNode5 != null)
+					{
+						ConvertData convertData3 = new ConvertData();
+						convertData3.varName = "ICONFIG";
+						_iconfig = (dynamic)iHNode5.get_Value(Type.Missing);
+						if (_iconfig == 1)
+						{
+							convertData3.Value = "NO-DECANTER";
+						}
+						else
+						{
+							convertData3.Value = "DECANTER";
+						}
+						_valueList.Add(convertData3);
+					}
+					iHNode5 = iHNode4.FindNode("SELCOMP(1)");
+					if (iHNode5 != null)
+					{
+						ConvertData convertData4 = new ConvertData();
+						convertData4.varName = "SELCOMP1";
+						convertData4.Value = (_comp1 = (dynamic)iHNode5.get_Value(Type.Missing));
+						_valueList.Add(convertData4);
+					}
+					iHNode5 = iHNode4.FindNode("SELCOMP(2)");
+					if (iHNode5 != null)
+					{
+						ConvertData convertData5 = new ConvertData();
+						convertData5.varName = "SELCOMP2";
+						convertData5.Value = (_comp2 = (dynamic)iHNode5.get_Value(Type.Missing));
+						_valueList.Add(convertData5);
+					}
+					iHNode5 = iHNode4.FindNode("SELCOMP(3)");
+					if (iHNode5 != null)
+					{
+						ConvertData convertData6 = new ConvertData();
+						convertData6.varName = "SELCOMP3";
+						convertData6.Value = (_comp3 = (dynamic)iHNode5.get_Value(Type.Missing));
+						_valueList.Add(convertData6);
+					}
+					iHNode5 = iHNode4.FindNode("PROPSET");
+					if (iHNode5 != null)
+					{
+						ConvertData convertData7 = new ConvertData();
+						convertData7.varName = "PROPSET";
+						convertData7.Value = iHNode5.get_Value(Type.Missing);
+						_valueList.Add(convertData7);
+					}
+					iHNode5 = iHNode4.FindNode("SPCOMP1(1)");
+					IHNode iHNode6 = iHNode4.FindNode("DISTCOMP(1)");
+					if (iHNode5 != null && (dynamic)iHNode5.get_Value(Type.Missing) == 1 && iHNode6 != null)
+					{
+						ConvertData convertData8 = new ConvertData();
+						if (_ibasis == 1)
+						{
+							convertData8.varName = "DISTC1MA";
+						}
+						else
+						{
+							convertData8.varName = "DISTC1MO";
+						}
+						convertData8.Value = iHNode6.get_Value(Type.Missing);
+						_valueList.Add(convertData8);
+					}
+					iHNode5 = iHNode4.FindNode("SPCOMP2(1)");
+					iHNode6 = iHNode4.FindNode("DISTCOMP(2)");
+					if (iHNode5 != null && (dynamic)iHNode5.get_Value(Type.Missing) == 1 && iHNode6 != null)
+					{
+						ConvertData convertData9 = new ConvertData();
+						if (_ibasis == 1)
+						{
+							convertData9.varName = "DISTC2MA";
+						}
+						else
+						{
+							convertData9.varName = "DISTC2MO";
+						}
+						convertData9.Value = iHNode6.get_Value(Type.Missing);
+						_valueList.Add(convertData9);
+					}
+					iHNode5 = iHNode4.FindNode("SPCOMP3(1)");
+					iHNode6 = iHNode4.FindNode("DISTCOMP(3)");
+					if (iHNode5 != null && (dynamic)iHNode5.get_Value(Type.Missing) == 1 && iHNode6 != null)
+					{
+						ConvertData convertData10 = new ConvertData();
+						if (_ibasis == 1)
+						{
+							convertData10.varName = "DISTC3MA";
+						}
+						else
+						{
+							convertData10.varName = "DISTC3MO";
+						}
+						convertData10.Value = iHNode6.get_Value(Type.Missing);
+						_valueList.Add(convertData10);
+					}
+					iHNode5 = iHNode4.FindNode("SPCOMP1(3)");
+					iHNode6 = iHNode4.FindNode("DISTRECO(1)");
+					if (iHNode5 != null && (dynamic)iHNode5.get_Value(Type.Missing) == 1 && iHNode6 != null)
+					{
+						ConvertData convertData11 = new ConvertData();
+						convertData11.varName = "DISTRECO1";
+						convertData11.Value = iHNode6.get_Value(Type.Missing);
+						_valueList.Add(convertData11);
+					}
+					iHNode5 = iHNode4.FindNode("SPCOMP2(3)");
+					iHNode6 = iHNode4.FindNode("DISTRECO(2)");
+					if (iHNode5 != null && (dynamic)iHNode5.get_Value(Type.Missing) == 1 && iHNode6 != null)
+					{
+						ConvertData convertData12 = new ConvertData();
+						convertData12.varName = "DISTRECO2";
+						convertData12.Value = iHNode6.get_Value(Type.Missing);
+						_valueList.Add(convertData12);
+					}
+					iHNode5 = iHNode4.FindNode("SPCOMP3(3)");
+					iHNode6 = iHNode4.FindNode("DISTRECO(3)");
+					if (iHNode5 != null && (dynamic)iHNode5.get_Value(Type.Missing) == 1 && iHNode6 != null)
+					{
+						ConvertData convertData13 = new ConvertData();
+						convertData13.varName = "DISTRECO3";
+						convertData13.Value = iHNode6.get_Value(Type.Missing);
+						_valueList.Add(convertData13);
+					}
+					iHNode5 = iHNode4.FindNode("SPCOMP1(2)");
+					iHNode6 = iHNode4.FindNode("BOTCOMP(1)");
+					if (iHNode5 != null && (dynamic)iHNode5.get_Value(Type.Missing) == 1 && iHNode6 != null)
+					{
+						ConvertData convertData14 = new ConvertData();
+						if (_ibasis == 1)
+						{
+							convertData14.varName = "BOTC1MA";
+						}
+						else
+						{
+							convertData14.varName = "BOTC1MO";
+						}
+						convertData14.Value = iHNode6.get_Value(Type.Missing);
+						_valueList.Add(convertData14);
+					}
+					iHNode5 = iHNode4.FindNode("SPCOMP2(2)");
+					iHNode6 = iHNode4.FindNode("BOTCOMP(2)");
+					if (iHNode5 != null && (dynamic)iHNode5.get_Value(Type.Missing) == 1 && iHNode6 != null)
+					{
+						ConvertData convertData15 = new ConvertData();
+						if (_ibasis == 1)
+						{
+							convertData15.varName = "BOTC2MA";
+						}
+						else
+						{
+							convertData15.varName = "BOTC2MO";
+						}
+						convertData15.Value = iHNode6.get_Value(Type.Missing);
+						_valueList.Add(convertData15);
+					}
+					iHNode5 = iHNode4.FindNode("SPCOMP3(2)");
+					iHNode6 = iHNode4.FindNode("BOTCOMP(3)");
+					if (iHNode5 != null && (dynamic)iHNode5.get_Value(Type.Missing) == 1 && iHNode6 != null)
+					{
+						ConvertData convertData16 = new ConvertData();
+						if (_ibasis == 1)
+						{
+							convertData16.varName = "BOTC3MA";
+						}
+						else
+						{
+							convertData16.varName = "BOTC3MO";
+						}
+						convertData16.Value = iHNode6.get_Value(Type.Missing);
+						_valueList.Add(convertData16);
+					}
+					iHNode5 = iHNode4.FindNode("SPCOMP1(4)");
+					iHNode6 = iHNode4.FindNode("BOTRECO(1)");
+					if (iHNode5 != null && (dynamic)iHNode5.get_Value(Type.Missing) == 1 && iHNode6 != null)
+					{
+						ConvertData convertData17 = new ConvertData();
+						convertData17.varName = "BOTRECO1";
+						convertData17.Value = iHNode6.get_Value(Type.Missing);
+						_valueList.Add(convertData17);
+					}
+					iHNode5 = iHNode4.FindNode("SPCOMP2(4)");
+					iHNode6 = iHNode4.FindNode("BOTRECO(2)");
+					if (iHNode5 != null && (dynamic)iHNode5.get_Value(Type.Missing) == 1 && iHNode6 != null)
+					{
+						ConvertData convertData18 = new ConvertData();
+						convertData18.varName = "BOTRECO2";
+						convertData18.Value = iHNode6.get_Value(Type.Missing);
+						_valueList.Add(convertData18);
+					}
+					iHNode5 = iHNode4.FindNode("SPCOMP3(4)");
+					iHNode6 = iHNode4.FindNode("BOTRECO(3)");
+					if (iHNode5 != null && (dynamic)iHNode5.get_Value(Type.Missing) == 1 && iHNode6 != null)
+					{
+						ConvertData convertData19 = new ConvertData();
+						convertData19.varName = "BOTRECO3";
+						convertData19.Value = iHNode6.get_Value(Type.Missing);
+						_valueList.Add(convertData19);
+					}
+					iHNode5 = iHNode4.FindNode("REFREB");
+					if (iHNode5 != null)
+					{
+						ConvertData convertData20 = new ConvertData();
+						convertData20.varName = "OPT_RB";
+						if ((dynamic)iHNode5.get_Value(Type.Missing) == 0)
+						{
+							convertData20.Value = "RR";
+						}
+						else
+						{
+							convertData20.Value = "BR";
+						}
+						_valueList.Add(convertData20);
+					}
+					iHNode5 = iHNode4.FindNode("REFREB");
+					iHNode6 = iHNode4.FindNode("REFRATIO");
+					if (iHNode5 != null && (dynamic)iHNode5.get_Value(Type.Missing) == 0 && iHNode6 != null)
+					{
+						ConvertData convertData21 = new ConvertData();
+						if (_ibasis == 1)
+						{
+							convertData21.varName = "MASS_RR";
+						}
+						else
+						{
+							convertData21.varName = "MOLE_RR";
+						}
+						convertData21.Value = iHNode6.get_Value(Type.Missing);
+						_valueList.Add(convertData21);
+					}
+					iHNode5 = iHNode4.FindNode("REFREB");
+					iHNode6 = iHNode4.FindNode("REBRATIO");
+					if (iHNode5 != null && (dynamic)iHNode5.get_Value(Type.Missing) == 1 && iHNode6 != null)
+					{
+						ConvertData convertData22 = new ConvertData();
+						if (_ibasis == 1)
+						{
+							convertData22.varName = "MASS_BR";
+						}
+						else
+						{
+							convertData22.varName = "MOLE_BR";
+						}
+						convertData22.Value = iHNode6.get_Value(Type.Missing);
+						_valueList.Add(convertData22);
+					}
+					if (_iconfig == 2)
+					{
+						iHNode5 = iHNode4.FindNode("DECSPEC(1)");
+						if (iHNode5 != null)
+						{
+							ConvertData convertData23 = new ConvertData();
+							convertData23.varName = "SPECTYPE";
+							if ((dynamic)iHNode5.get_Value(Type.Missing) == 1)
+							{
+								convertData23.Value = "VAPOR-COMP";
+							}
+							else if ((dynamic)iHNode5.get_Value(Type.Missing) == 2)
+							{
+								convertData23.Value = "REFLUX-COMP";
+							}
+							else
+							{
+								convertData23.Value = "SP-REFLUX";
+							}
+							_valueList.Add(convertData23);
+						}
+						iHNode5 = iHNode4.FindNode("DECSPEC(2)");
+						if (iHNode5 != null)
+						{
+							ConvertData convertData24 = new ConvertData();
+							convertData24.varName = "COMP";
+							if ((dynamic)iHNode5.get_Value(Type.Missing) == 1)
+							{
+								convertData24.Value = _comp1;
+							}
+							else if ((dynamic)iHNode5.get_Value(Type.Missing) == 2)
+							{
+								convertData24.Value = _comp2;
+							}
+							else
+							{
+								convertData24.Value = _comp3;
+							}
+							_valueList.Add(convertData24);
+						}
+						iHNode5 = iHNode4.FindNode("DECVAL");
+						if (iHNode5 != null)
+						{
+							ConvertData convertData25 = new ConvertData();
+							convertData25.varName = "VALUE";
+							convertData25.Value = iHNode5.get_Value(Type.Missing);
+							_valueList.Add(convertData25);
+						}
+					}
+					iHNode5 = iHNode4.FindNode("MAXITER");
+					if (iHNode5 != null)
+					{
+						ConvertData convertData26 = new ConvertData();
+						convertData26.varName = "FLASH_MAXIT";
+						convertData26.Value = iHNode5.get_Value(Type.Missing);
+						_valueList.Add(convertData26);
+					}
+					iHNode5 = iHNode4.FindNode("FLASHTOL");
+					if (iHNode5 != null)
+					{
+						ConvertData convertData27 = new ConvertData();
+						convertData27.varName = "FLASHTOL";
+						convertData27.Value = iHNode5.get_Value(Type.Missing);
+						_valueList.Add(convertData27);
+					}
+					iHNode5 = iHNode4.FindNode("CURVECALC");
+					if (iHNode5 != null)
+					{
+						ConvertData convertData28 = new ConvertData();
+						convertData28.varName = "CURVEALG";
+						if ((dynamic)iHNode5.get_Value(Type.Missing) == 1)
+						{
+							convertData28.Value = "STANDARD";
+						}
+						else
+						{
+							convertData28.Value = "AZEOTROPIC";
+						}
+						_valueList.Add(convertData28);
+					}
+					iHNode5 = iHNode4.FindNode("CURVESTEP");
+					if (iHNode5 != null)
+					{
+						ConvertData convertData29 = new ConvertData();
+						convertData29.varName = "CURVESTEP";
+						convertData29.Value = iHNode5.get_Value(Type.Missing);
+						_valueList.Add(convertData29);
+					}
+					iHNode5 = iHNode4.FindNode("ENVSTEP");
+					if (iHNode5 != null)
+					{
+						ConvertData convertData30 = new ConvertData();
+						convertData30.varName = "ENVSTEP";
+						convertData30.Value = iHNode5.get_Value(Type.Missing);
+						_valueList.Add(convertData30);
+					}
+					iHNode5 = iHNode4.FindNode("MAXSTAGE");
+					if (iHNode5 != null)
+					{
+						ConvertData convertData31 = new ConvertData();
+						convertData31.varName = "MAXSTAGE";
+						convertData31.Value = iHNode5.get_Value(Type.Missing);
+						_valueList.Add(convertData31);
+					}
+					iHNode5 = iHNode4.FindNode("STOPCRIT");
+					if (iHNode5 != null)
+					{
+						ConvertData convertData32 = new ConvertData();
+						convertData32.varName = "DESIGNALG";
+						if ((dynamic)iHNode5.get_Value(Type.Missing) == 1)
+						{
+							convertData32.Value = "STANDARD";
+						}
+						else
+						{
+							convertData32.Value = "ADVANCED";
+						}
+						_valueList.Add(convertData32);
+					}
+					iHNode5 = iHNode4.FindNode("PRES");
+					if (iHNode5 != null)
+					{
+						ConvertData convertData33 = new ConvertData();
+						convertData33.varName = "P_SPEC";
+						convertData33.Value = iHNode5.get_Value(Type.Missing);
+						IHNode iHNode7 = iHNode4.FindNode("PRESUNIT");
+						if (iHNode7 != null)
+						{
+							switch ((dynamic)iHNode7.get_Value(Type.Missing))
+							{
+							case "N/SQM":
+								convertData33.Units = 1;
+								break;
+							case "PSI":
+								convertData33.Units = 35;
+								break;
+							case "ATM":
+								convertData33.Units = 3;
+								break;
+							case "LBF/SQFT":
+								convertData33.Units = 4;
+								break;
+							case "BAR":
+								convertData33.Units = 5;
+								break;
+							case "MMHG, TORR":
+								convertData33.Units = 6;
+								break;
+							case "IN-WATER":
+								convertData33.Units = 7;
+								break;
+							case "KG/SQCM":
+								convertData33.Units = 8;
+								break;
+							case "KPA":
+								convertData33.Units = 10;
+								break;
+							case "MM-WATER":
+								convertData33.Units = 11;
+								break;
+							case "MBAR":
+								convertData33.Units = 12;
+								break;
+							case "LB/FT-SQSEC":
+								convertData33.Units = 17;
+								break;
+							case "LB/M-SQSEC":
+								convertData33.Units = 18;
+								break;
+							}
+							_valueList.Add(convertData33);
+						}
+					}
+					IHNode iHNode8 = (pNode.Parent as IHNode).FindNode("Data/Components/Specifications/Input/ANAME1");
+					if (iHNode8 != null)
+					{
+						foreach (IHNode element in iHNode8.Elements)
+						{
+							_compList.Add(element.get_Name(Type.Missing));
+						}
+					}
+					for (int j = 1; j <= _compList.Count(); j++)
+					{
+						iHNode5 = iHNode4.FindNode("COMPMAP(1).CMAP(" + j + ")");
+						if (iHNode5 != null)
+						{
+							if ((dynamic)iHNode5.get_Value(Type.Missing) == null)
+							{
+								iHNode5.set_Value(Type.Missing, (object)0.0);
+							}
+							_comp1Map.Add((dynamic)iHNode5.get_Value(Type.Missing));
+						}
+						iHNode5 = iHNode4.FindNode("COMPMAP(2).CMAP(" + j + ")");
+						if (iHNode5 != null)
+						{
+							if ((dynamic)iHNode5.get_Value(Type.Missing) == null)
+							{
+								iHNode5.set_Value(Type.Missing, (object)0.0);
+							}
+							_comp2Map.Add((dynamic)iHNode5.get_Value(Type.Missing));
+						}
+						iHNode5 = iHNode4.FindNode("COMPMAP(3).CMAP(" + j + ")");
+						if (iHNode5 != null)
+						{
+							if ((dynamic)iHNode5.get_Value(Type.Missing) == null)
+							{
+								iHNode5.set_Value(Type.Missing, (object)0.0);
+							}
+							_comp3Map.Add((dynamic)iHNode5.get_Value(Type.Missing));
+						}
+					}
+				}
+				catch (Exception ex)
+				{
+					MessageBox.Show(WpfMMDialogResources.ConvertTo_CannotBeConverted, title);
+					throw new Exception(ex.Message.ToString());
+				}
+				return 0;
+			}
+		}
+
+		public void PostConvert(IHNode pNode)
+		{
+			IHNode iHNode = pNode.FindNode("Ports");
+			IHNodeCol elements = iHNode.Elements;
+			pNode?.HoldNotifies(hold: true);
+			if (elements != null)
+			{
+				for (int i = 0; i < streamList.Count; i++)
+				{
+					StreamConnection streamConnection = streamList[i];
+					for (int j = 0; j < elements.Count; j++)
+					{
+						string text = elements.get_Label(0, j, Type.Missing);
+						if (text.CompareTo(streamConnection.blockPort) == 0)
+						{
+							string streamName = streamConnection.streamName;
+							iHNode.FindNode(text).Elements?.Add(streamName);
+							break;
+						}
+					}
+				}
+			}
+			for (int k = 0; k < _valueList.Count(); k++)
+			{
+				string varName = _valueList[k].varName;
+				if (!(varName != ""))
+				{
+					continue;
+				}
+				IHNode iHNode2 = pNode.FindNode("Input/" + varName);
+				if (iHNode2 != null)
+				{
+					if (_valueList[k].Units > 0)
+					{
+						iHNode2.SetValueAndUnit(_valueList[k].Value, _valueList[k].Units, Type.Missing);
+					}
+					else
+					{
+						iHNode2.set_Value(Type.Missing, _valueList[k].Value);
+					}
+				}
+			}
+			IHNode iHNode3 = pNode.FindNode("Input/COMP1MAP");
+			IHNode iHNode4 = pNode.FindNode("Input/COMP2MAP");
+			IHNode iHNode5 = pNode.FindNode("Input/COMP3MAP");
+			int num = 0;
+			for (int l = 0; l < _compList.Count(); l++)
+			{
+				if (_compList[l] != _comp1 && _compList[l] != _comp2 && _compList[l] != _comp3 && ((_comp1Map[l] > 0.0 && _comp1Map[l] <= 1.0) || (_comp2Map[l] > 0.0 && _comp2Map[l] <= 1.0) || (_comp3Map[l] > 0.0 && _comp3Map[l] <= 1.0)))
+				{
+					iHNode3.Elements.InsertRow(0, num);
+					iHNode3.Elements.set_Label(0, num, Type.Missing, _compList[l]);
+					if (_comp1Map[l] > 0.0 && _comp1Map[l] <= 1.0)
+					{
+						iHNode3.Elements[num, Type.Missing, Type.Missing, Type.Missing, Type.Missing].set_Value(Type.Missing, (object)_comp1Map[l]);
+					}
+					if (_comp2Map[l] > 0.0 && _comp2Map[l] <= 1.0)
+					{
+						iHNode4.Elements[num, Type.Missing, Type.Missing, Type.Missing, Type.Missing].set_Value(Type.Missing, (object)_comp2Map[l]);
+					}
+					if (_comp3Map[l] > 0.0 && _comp3Map[l] <= 1.0)
+					{
+						iHNode5.Elements[num, Type.Missing, Type.Missing, Type.Missing, Type.Missing].set_Value(Type.Missing, (object)_comp3Map[l]);
+					}
+					num++;
+				}
+			}
+		}
+	}
+}
+namespace AspenTech.AspenPlus.APConvert
+{
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("865DEDD4-F1BA-46BE-91FA-6C9C4CBA368F")]
+	[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+	[TypeIdentifier]
+	public interface IAPBlockConverter
+	{
+		[DispId(1)]
+		string BaseSourceType
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+		}
+
+		[DispId(2)]
+		string BaseDestinationType
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(2)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+		}
+
+		[DispId(3)]
+		string Description
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(3)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+		}
+
+		[DispId(4)]
+		string DisplayName
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(4)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+		}
+
+		[DispId(5)]
+		string DestLibraryName
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(5)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+		}
+
+		[DispId(6)]
+		string DestLibraryFile
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(6)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+		}
+
+		[DispId(7)]
+		string DestLibraryModelType
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(7)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+		}
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(10)]
+		void PreConvert([In][MarshalAs(UnmanagedType.Interface)] IHNode pModel);
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(12)]
+		void PostConvert([In][MarshalAs(UnmanagedType.Interface)] IHNode pModel);
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+	[Guid("A6A6D520-4926-4A95-8757-BEC531C1C4C2")]
+	[TypeIdentifier]
+	public interface IAPBlockConverter2 : IAPBlockConverter
+	{
+		[DispId(1)]
+		new string BaseSourceType
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+		}
+
+		[DispId(2)]
+		new string BaseDestinationType
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(2)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+		}
+
+		[DispId(3)]
+		new string Description
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(3)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+		}
+
+		[DispId(4)]
+		new string DisplayName
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(4)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+		}
+
+		[DispId(5)]
+		new string DestLibraryName
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(5)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+		}
+
+		[DispId(6)]
+		new string DestLibraryFile
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(6)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+		}
+
+		[DispId(7)]
+		new string DestLibraryModelType
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(7)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+		}
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(10)]
+		new void PreConvert([In][MarshalAs(UnmanagedType.Interface)] IHNode pModel);
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(12)]
+		new void PostConvert([In][MarshalAs(UnmanagedType.Interface)] IHNode pModel);
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743808)]
+		int PreConvert2([In][MarshalAs(UnmanagedType.Interface)] IHNode pModel);
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("297376E7-9F3F-4DFA-9EE2-C87B180806DC")]
+	[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+	[TypeIdentifier]
+	public interface IAPConverterCollection
+	{
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalType = "System.Runtime.InteropServices.CustomMarshalers.EnumeratorToEnumVariantMarshaler, CustomMarshalers, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
+		IEnumerator GetEnumerator();
+
+		[DispId(0)]
+		object this[[In] int Index]
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[return: MarshalAs(UnmanagedType.Struct)]
+			get;
+		}
+
+		[DispId(1)]
+		int Count
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			get;
+		}
+	}
+}
+namespace AspenTech.AspenPlus.Happ
+{
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("8E567522-F9BA-11CF-90B2-0000C0A810C4")]
+	[TypeIdentifier]
+	public interface IHNode
+	{
+		void _VtblGap1_1();
+
+		[DispId(1610743809)]
+		IHapp Parent
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743809)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+
+		[DispId(1610743810)]
+		string Name
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743810)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743810)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.BStr)]
+			set;
+		}
+
+		void _VtblGap2_2();
+
+		[DispId(1610743814)]
+		object Value
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743814)]
+			[return: MarshalAs(UnmanagedType.Struct)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743814)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.Struct)]
+			set;
+		}
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743816)]
+		void SetValueAndUnit([In][MarshalAs(UnmanagedType.Struct)] object Value, [In] short unitcol, [Optional][In][MarshalAs(UnmanagedType.Struct)] object force);
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743817)]
+		void SetValueUnitAndBasis([In][MarshalAs(UnmanagedType.Struct)] object Value, [In] short unitcol, [In][MarshalAs(UnmanagedType.BStr)] string basis, [Optional][In][MarshalAs(UnmanagedType.Struct)] object force);
+
+		void _VtblGap3_2();
+
+		[DispId(1610743820)]
+		object AttributeValue
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743820)]
+			[return: MarshalAs(UnmanagedType.Struct)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743820)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.Struct)]
+			set;
+		}
+
+		void _VtblGap4_4();
+
+		[DispId(1610743826)]
+		IHNodeCol Elements
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743826)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+
+		void _VtblGap5_8();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743835)]
+		[return: MarshalAs(UnmanagedType.Interface)]
+		IHNode FindNode([In][MarshalAs(UnmanagedType.BStr)] string path);
+
+		void _VtblGap6_11();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743847)]
+		void HoldNotifies([In] bool hold);
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("89E81F60-019A-11D0-9BE7-0000C05375D5")]
+	[TypeIdentifier]
+	public interface IHNodeCol : IEnumerable
+	{
+		void _VtblGap1_2();
+
+		[DispId(1610743810)]
+		int Count
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743810)]
+			get;
+		}
+
+		void _VtblGap2_3();
+
+		[DispId(0)]
+		IHNode this[[In][MarshalAs(UnmanagedType.Struct)] object loc_or_name, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name2, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name3, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name4, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name5]
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(0)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+
+		void _VtblGap3_2();
+
+		[DispId(1610743817)]
+		string Label
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743817)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743817)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.BStr)]
+			set;
+		}
+
+		void _VtblGap4_5();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(-4)]
+		[return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalType = "System.Runtime.InteropServices.CustomMarshalers.EnumeratorToEnumVariantMarshaler, CustomMarshalers, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
+		new IEnumerator GetEnumerator();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743825)]
+		[return: MarshalAs(UnmanagedType.Interface)]
+		IHNode Add([Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name2, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name3, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name4, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name5);
+
+		void _VtblGap5_2();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743828)]
+		void InsertRow([In] int Dimension, [In] int location);
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[DefaultMember("Name")]
+	[Guid("8E567521-F9BA-11CF-90B2-0000C0A810C4")]
+	[TypeIdentifier]
+	public interface IHapp
+	{
+		void _VtblGap1_3();
+
+		[DispId(0)]
+		string Name
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(0)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+		}
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

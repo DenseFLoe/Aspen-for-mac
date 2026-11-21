@@ -1,0 +1,5924 @@
+using System;
+using System.CodeDom.Compiler;
+using System.Collections;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Resources;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Text;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Markup;
+using AspenTech.AspenPlus.Happ;
+using AspenTech.AspenPlus.Infrastructure;
+using AspenTech.AspenPlus.Localization.WpfPlotWizards;
+using AspenTech.WpfControls.Engineering;
+using WpfPLControls;
+using WpfPLMultifrac.DataHelper;
+using WpfPlotWizardsHelper;
+using WpfPlotwizard;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyFileVersion("41.0.0.614")]
+[assembly: AssemblyTitle("Multifrac")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("Aspen Technology, Inc.")]
+[assembly: AssemblyProduct("Multifrac")]
+[assembly: AssemblyCopyright("Copyright © Aspen Technology 2011 - 2024")]
+[assembly: AssemblyTrademark("")]
+[assembly: ComVisible(false)]
+[assembly: NeutralResourcesLanguage("en-US", UltimateResourceFallbackLocation.Satellite)]
+[assembly: ThemeInfo(ResourceDictionaryLocation.None, ResourceDictionaryLocation.SourceAssembly)]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.614")]
+namespace WpfPLMultifrac
+{
+	[ProgId("WpfPLMultifrac.CGCCStgH")]
+	public class CGCCStgH : UserControl, IRibbonPlotWizardType, IComponentConnector
+	{
+		private string ColumnListKey = string.Empty;
+
+		private string EnthalpyUnitListKey = string.Empty;
+
+		private string EnthalpyBoxKey = string.Empty;
+
+		private string StageOnKey = string.Empty;
+
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private multHelper _help;
+
+		private List<string> _columnList = new List<string>();
+
+		private List<string> _enthalpyUnitList = new List<string>();
+
+		private string _currentColumnId = string.Empty;
+
+		private string _currentEnthalpyUnit = string.Empty;
+
+		private bool _isAddEnthalpyBox = true;
+
+		private string _uniqueId = "mult_CGCCStgH";
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgIcon;
+
+		private bool _bHasInputDialog;
+
+		private string varname = string.Empty;
+
+		private string varname1 = string.Empty;
+
+		private string varname2 = string.Empty;
+
+		private bool _bCheckDataOnly;
+
+		private bool _contentLoaded;
+
+		public string TooltipContentForRibbonItem => WpfPLMultifracResources.TooltipContentForRibbonItem_CGCCSH;
+
+		public string TooltipHeaderForRibbonItem => "CGCC(S-H)";
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => ((PlotwizardHelper)_help).GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => ((PlotwizardHelper)_help).GetHelpID();
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgIcon;
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string> { ColumnListKey, EnthalpyUnitListKey, EnthalpyBoxKey };
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string> { StageOnKey };
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		public CGCCStgH()
+		{
+			InitializeComponent();
+			_help = new multHelper();
+			_bHasInputDialog = false;
+			if (_imgIcon == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLMultifrac.Images.cgcc2.ico");
+				_imgIcon = new Bitmap(manifestResourceStream);
+			}
+			ColumnListKey = WpfPLMultifracResources.ColumnList;
+			EnthalpyUnitListKey = WpfPLMultifracResources.EnthalpyUnit;
+			EnthalpyBoxKey = WpfPLMultifracResources.AddRealEnthalpyBox;
+			StageOnKey = WpfPLMultifracResources.StageOn;
+		}
+
+		private void GetVarName()
+		{
+			varname = "ENTHALPY";
+			varname1 = "Output/ENTHALPY";
+			varname2 = "Output/ENTHBOX";
+		}
+
+		void IRibbonPlotWizardType.Context(object oNode, ref object oPlotWizardComponent, ref int ierror)
+		{
+			if (oPlotWizardComponent == null || oNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			_context = oNode as IHNode;
+			_wizardPlot = oPlotWizardComponent as IHWizardPlot;
+			GetVarName();
+			if (_columnList.Count == 0)
+			{
+				_help.LoadColumn(_context, varname, _columnList);
+				if (_columnList.Count <= 0)
+				{
+					ierror = 1;
+					return;
+				}
+				_currentColumnId = _columnList[0];
+			}
+			string text = varname1 + "/" + _currentColumnId;
+			_wizardPlot.SetIndependentVariable(_context, text + "!Label");
+			_wizardPlot.RemoveAllDependentVariable();
+			_wizardPlot.AddDependentVariable(_context, text);
+			if (_isAddEnthalpyBox)
+			{
+				_wizardPlot.AddDependentVariable(_context, varname2 + "/" + _currentColumnId);
+			}
+			((PlotwizardHelper)_help).LoadUnitsList(_context.Application.Tree, _wizardPlot, _enthalpyUnitList);
+			_wizardPlot.PlotVal.SwapAxises = true;
+			if (_enthalpyUnitList.Count == 0)
+			{
+				_wizardPlot.set_ErrorStatus(2, true);
+			}
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(ColumnListKey) == 0)
+			{
+				return _columnList;
+			}
+			if (sFieldName.CompareTo(EnthalpyUnitListKey) == 0)
+			{
+				return _enthalpyUnitList;
+			}
+			if (sFieldName.CompareTo(StageOnKey) == 0)
+			{
+				return _help.StageOnList;
+			}
+			return new List<string>();
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sFieldName)
+		{
+			if (sFieldName.CompareTo(EnthalpyUnitListKey) != 0 && sFieldName.CompareTo(ColumnListKey) != 0 && sFieldName.CompareTo(StageOnKey) != 0)
+			{
+				if (sFieldName.CompareTo(EnthalpyBoxKey) != 0)
+				{
+					return (RibbonControlType)0;
+				}
+				return (RibbonControlType)2;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(EnthalpyUnitListKey) == 0)
+			{
+				sCurrentVal = ((PlotwizardHelper)_help).GetUnitString(_context.Application.Tree, _wizardPlot);
+			}
+			else if (sFieldName.CompareTo(ColumnListKey) == 0)
+			{
+				sCurrentVal = _currentColumnId;
+			}
+			else if (sFieldName.CompareTo(EnthalpyBoxKey) == 0)
+			{
+				sCurrentVal = _isAddEnthalpyBox.ToString();
+			}
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(StageOnKey) == 0)
+			{
+				sCurrentVal = _help.GetStageOn(_wizardPlot.PlotVal.SwapAxises);
+			}
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(EnthalpyUnitListKey) == 0 && _currentEnthalpyUnit.CompareTo(sValue) != 0)
+			{
+				_currentEnthalpyUnit = sValue;
+				((PlotwizardHelper)_help).SaveUnitsComboText(_context.Application.Tree, _wizardPlot, _currentEnthalpyUnit);
+			}
+			else if (sFieldName.CompareTo(ColumnListKey) == 0)
+			{
+				_currentColumnId = sValue;
+			}
+			else if (sFieldName.CompareTo(EnthalpyBoxKey) == 0)
+			{
+				_isAddEnthalpyBox = string.Compare(sValue, bool.TrueString, ignoreCase: true) == 0;
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(StageOnKey) == 0)
+			{
+				_wizardPlot.PlotVal.SwapAxises = _help.IsSwapAxis(sValue);
+			}
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		public void UpdateWizardData()
+		{
+			string text = _currentColumnId.Trim();
+			string text2 = varname1 + "/" + text;
+			if (_context.FindNode(text2) != null)
+			{
+				_wizardPlot.SetIndependentVariable(_context, text2 + "!Label");
+				_wizardPlot.RemoveAllDependentVariable();
+				_wizardPlot.AddDependentVariable(_context, text2);
+				((IHPlotVal)_wizardPlot.PlotVal).set_Label(0, WpfPLMultifracResources.CGCCstgH_Legends0);
+				_wizardPlot.PlotVal.Title = WpfPLMultifracResources.CGCCStgH_Title + text + ")";
+				if (_isAddEnthalpyBox)
+				{
+					_wizardPlot.AddDependentVariable(_context, varname2 + "/" + text);
+					((IHPlotVal)_wizardPlot.PlotVal).set_Label(1, WpfPLMultifracResources.CGCCstgH_Legends1);
+				}
+			}
+			((PlotwizardHelper)_help).SaveUnitsComboText(_context.Application.Tree, _wizardPlot, _currentEnthalpyUnit);
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLMultifrac;component/cgccstgh.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			_contentLoaded = true;
+		}
+	}
+	[ProgId("WpfPLMultifrac.CGCCTH")]
+	public class CGCCTH : UserControl, IRibbonPlotWizardType, IComponentConnector
+	{
+		private string ColumnListKey = string.Empty;
+
+		private string TemperatureUnitListKey = string.Empty;
+
+		private string EnthalpyUnitListKey = string.Empty;
+
+		private string EnthalpyBoxKey = string.Empty;
+
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private multHelper _help;
+
+		private List<string> _columnList = new List<string>();
+
+		private List<string> _temperatureUnitList = new List<string>();
+
+		private List<string> _enthalpyUnitList = new List<string>();
+
+		private string _currentColumnId = string.Empty;
+
+		private string _currentTemperatureUnit = string.Empty;
+
+		private string _currentEnthalpyUnit = string.Empty;
+
+		private bool _isAddEnthalpyBox = true;
+
+		private string _uniqueId = "mult_CGCCTH";
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgIcon;
+
+		private bool _bHasInputDialog;
+
+		private string varname1 = string.Empty;
+
+		private string varname2 = string.Empty;
+
+		private string varname3 = string.Empty;
+
+		private bool _bCheckDataOnly;
+
+		private bool _contentLoaded;
+
+		public string TooltipContentForRibbonItem => WpfPLMultifracResources.TooltipContentForRibbonItem_CGCCTH;
+
+		public string TooltipHeaderForRibbonItem => "CGCC(T-H)";
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => ((PlotwizardHelper)_help).GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => ((PlotwizardHelper)_help).GetHelpID();
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgIcon;
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string> { ColumnListKey, TemperatureUnitListKey, EnthalpyUnitListKey, EnthalpyBoxKey };
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string>();
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		public CGCCTH()
+		{
+			InitializeComponent();
+			_help = new multHelper();
+			_bHasInputDialog = false;
+			if (_imgIcon == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLMultifrac.Images.cgcc1.ico");
+				_imgIcon = new Bitmap(manifestResourceStream);
+			}
+			TemperatureUnitListKey = WpfPLMultifracResources.PressureUnit;
+			ColumnListKey = WpfPLMultifracResources.ColumnList;
+			EnthalpyUnitListKey = WpfPLMultifracResources.EnthalpyUnit;
+			EnthalpyBoxKey = WpfPLMultifracResources.AddRealEnthalpyBox;
+		}
+
+		private void GetVarName()
+		{
+			varname1 = "ENTHALPY";
+			varname2 = "B_TEMP4";
+			varname3 = "ENTHBOX";
+		}
+
+		void IRibbonPlotWizardType.Context(object oNode, ref object oPlotWizardComponent, ref int ierror)
+		{
+			if (oPlotWizardComponent == null || oNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			_context = oNode as IHNode;
+			_wizardPlot = oPlotWizardComponent as IHWizardPlot;
+			GetVarName();
+			if (_columnList.Count == 0)
+			{
+				_help.LoadColumn(_context, varname1, _columnList);
+				if (_columnList.Count <= 0)
+				{
+					ierror = 1;
+					return;
+				}
+				if (_columnList.Count > 0)
+				{
+					_currentColumnId = _columnList[0];
+				}
+			}
+			_wizardPlot.PlotVal.SwapAxises = true;
+			_wizardPlot.SetIndependentVariable(_context, "Output/" + varname2 + "/" + _currentColumnId);
+			_wizardPlot.RemoveAllDependentVariable();
+			_wizardPlot.AddDependentVariable(_context, "Output/" + varname1 + "/" + _currentColumnId);
+			if (_isAddEnthalpyBox)
+			{
+				_wizardPlot.AddDependentVariable(_context, "Output/" + varname3 + "/" + _currentColumnId);
+			}
+			((PlotwizardHelper)_help).LoadXUnitsList(_context.Application.Tree, _wizardPlot, _temperatureUnitList);
+			((PlotwizardHelper)_help).LoadUnitsList(_context.Application.Tree, _wizardPlot, _enthalpyUnitList);
+			if (_temperatureUnitList.Count == 0 || _enthalpyUnitList.Count == 0)
+			{
+				ierror = 1;
+			}
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(TemperatureUnitListKey) == 0)
+			{
+				return _temperatureUnitList;
+			}
+			if (sFieldName.CompareTo(ColumnListKey) == 0)
+			{
+				return _columnList;
+			}
+			if (sFieldName.CompareTo(EnthalpyUnitListKey) == 0)
+			{
+				return _enthalpyUnitList;
+			}
+			return new List<string>();
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sFieldName)
+		{
+			if (sFieldName.CompareTo(TemperatureUnitListKey) != 0 && sFieldName.CompareTo(EnthalpyUnitListKey) != 0 && sFieldName.CompareTo(ColumnListKey) != 0)
+			{
+				if (sFieldName.CompareTo(EnthalpyBoxKey) != 0)
+				{
+					return (RibbonControlType)0;
+				}
+				return (RibbonControlType)2;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(TemperatureUnitListKey) == 0)
+			{
+				sCurrentVal = ((PlotwizardHelper)_help).GetXUnitString(_context.Application.Tree, _wizardPlot);
+			}
+			else if (sFieldName.CompareTo(EnthalpyUnitListKey) == 0)
+			{
+				sCurrentVal = ((PlotwizardHelper)_help).GetUnitString(_context.Application.Tree, _wizardPlot);
+			}
+			else if (sFieldName.CompareTo(ColumnListKey) == 0)
+			{
+				sCurrentVal = _currentColumnId;
+			}
+			else if (sFieldName.CompareTo(EnthalpyBoxKey) == 0)
+			{
+				sCurrentVal = _isAddEnthalpyBox.ToString();
+			}
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(TemperatureUnitListKey) == 0 && _currentTemperatureUnit.CompareTo(sValue) != 0)
+			{
+				_currentTemperatureUnit = sValue;
+				((PlotwizardHelper)_help).SaveXUnitsComboText(_context.Application.Tree, _wizardPlot, _currentTemperatureUnit);
+			}
+			else if (sFieldName.CompareTo(EnthalpyUnitListKey) == 0 && _currentEnthalpyUnit.CompareTo(sValue) != 0)
+			{
+				_currentEnthalpyUnit = sValue;
+				((PlotwizardHelper)_help).SaveUnitsComboText(_context.Application.Tree, _wizardPlot, _currentEnthalpyUnit);
+			}
+			else if (sFieldName.CompareTo(ColumnListKey) == 0)
+			{
+				_currentColumnId = sValue;
+			}
+			else if (sFieldName.CompareTo(EnthalpyBoxKey) == 0)
+			{
+				_isAddEnthalpyBox = string.Compare(sValue, bool.TrueString, ignoreCase: true) == 0;
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		public void UpdateWizardData()
+		{
+			string text = _currentColumnId.Trim();
+			if (_context.Elements["Output", Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[varname1, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[text, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null)
+			{
+				_wizardPlot.SetIndependentVariable(_context, "Output/" + varname2 + "/" + text);
+				_wizardPlot.RemoveAllDependentVariable();
+				_wizardPlot.AddDependentVariable(_context, "Output/" + varname1 + "/" + text);
+				((IHPlotVal)_wizardPlot.PlotVal).set_Label(0, WpfPLMultifracResources.CGCCstgH_Legends0);
+				_wizardPlot.PlotVal.Title = WpfPLMultifracResources.CGCCTH_Title + text + ")";
+				if (_isAddEnthalpyBox)
+				{
+					_wizardPlot.AddDependentVariable(_context, "Output/" + varname3 + "/" + text);
+					((IHPlotVal)_wizardPlot.PlotVal).set_Label(1, WpfPLMultifracResources.CGCCstgH_Legends1);
+				}
+			}
+			((PlotwizardHelper)_help).SaveXUnitsComboText(_context.Application.Tree, _wizardPlot, _currentTemperatureUnit);
+			((PlotwizardHelper)_help).SaveUnitsComboText(_context.Application.Tree, _wizardPlot, _currentEnthalpyUnit);
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLMultifrac;component/cgccth.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			_contentLoaded = true;
+		}
+	}
+	[ProgId("WpfPLMultifrac.Composition")]
+	public class Composition : UserControl, IRibbonPlotWizardType, IPlotWizardTemplate, IComponentConnector
+	{
+		private string ColumnListKey = string.Empty;
+
+		private string StageOrderKey = string.Empty;
+
+		private string StageOnKey = string.Empty;
+
+		private string _currentConfigValue = string.Empty;
+
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private multHelper _help;
+
+		private List<string> _columnList;
+
+		private string _currentColumnId = string.Empty;
+
+		private string _uniqueId = "mult_Composition";
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgIcon;
+
+		private bool _bHasInputDialog;
+
+		private List<RadioButton> _rbArr = new List<RadioButton>();
+
+		private string[,] _varnames = new string[3, 4];
+
+		private bool _bCheckDataOnly;
+
+		internal CurvesSelectorControl CurveList;
+
+		internal RadioButton RBVapor;
+
+		internal RadioButton RBLiquid;
+
+		internal RadioButton RBOrganic;
+
+		internal RadioButton RBFreewater;
+
+		internal Button btnOk;
+
+		internal Button btnCancel;
+
+		private bool _contentLoaded;
+
+		public string TooltipContentForRibbonItem => WpfPLMultifracResources.TooltipContentForRibbonItem_Comp;
+
+		public string TooltipHeaderForRibbonItem => WpfPLMultifracResources.TooltipHeaderForRibbonItem_Comp;
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => ((PlotwizardHelper)_help).GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => ((PlotwizardHelper)_help).GetHelpID();
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgIcon;
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string> { ColumnListKey };
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string> { StageOrderKey, StageOnKey };
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		public Composition()
+		{
+			InitializeComponent();
+			CurveList.PropertyChanged += CurveList_PropertyChanged;
+			SetControls();
+			_help = new multHelper();
+			_bHasInputDialog = true;
+			if (_imgIcon == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLMultifrac.Images.composition.ico");
+				_imgIcon = new Bitmap(manifestResourceStream);
+			}
+			ColumnListKey = WpfPLMultifracResources.ColumnList;
+			StageOrderKey = WpfPLMultifracResources.StageOrder;
+			StageOnKey = WpfPLMultifracResources.StageOn;
+		}
+
+		private void CurveList_PropertyChanged(object sender, PropertyChangedEventArgs e)
+		{
+			btnOk.IsEnabled = CurveList.GetSelectedCurves().Length != 0;
+		}
+
+		private void GetVarName()
+		{
+			_varnames[0, 0] = "Output/Y";
+			_varnames[0, 1] = "Output/X";
+			_varnames[0, 2] = "Output/X1";
+			_varnames[0, 3] = "Output/X5";
+			_varnames[1, 0] = "Output/Y_MS";
+			_varnames[1, 1] = "Output/X_MS";
+			_varnames[1, 2] = "Output/X1_MS";
+			_varnames[1, 3] = "Output/X2_MS";
+			_varnames[2, 0] = "Output/Y_VOL";
+			_varnames[2, 1] = "Output/X_VOL";
+			_varnames[2, 2] = "Output/X1_VOL";
+			_varnames[2, 3] = "Output/X2_VOL";
+		}
+
+		private void SetControls()
+		{
+			_rbArr.Clear();
+			_rbArr.Add(RBVapor);
+			_rbArr.Add(RBLiquid);
+			_rbArr.Add(RBOrganic);
+			_rbArr.Add(RBFreewater);
+			for (int i = 0; i < _rbArr.Count; i++)
+			{
+				_rbArr[i].IsEnabled = false;
+				_rbArr[i].IsChecked = false;
+			}
+			btnOk.IsEnabled = CurveList.GetSelectedCurves().Length != 0;
+		}
+
+		private string SaveConfigValue()
+		{
+			_ = string.Empty;
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.Append("ColumnID=");
+			stringBuilder.Append(_currentColumnId);
+			stringBuilder.Append(";");
+			stringBuilder.Append("PhaseEnable=");
+			int num = 0;
+			for (int i = 0; i < _rbArr.Count; i++)
+			{
+				if (_rbArr[i].IsEnabled)
+				{
+					if (num > 0)
+					{
+						stringBuilder.Append(",");
+					}
+					stringBuilder.Append(i.ToString());
+					num++;
+				}
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("PhaseOption=");
+			for (int j = 0; j < _rbArr.Count; j++)
+			{
+				if (_rbArr[j].IsChecked == true)
+				{
+					stringBuilder.Append(j.ToString());
+					break;
+				}
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("CompSelection=");
+			List<string> list = new List<string>(CurveList.GetSelectedCurves());
+			int count = list.Count;
+			for (int k = 0; k < count; k++)
+			{
+				if (k > 0)
+				{
+					stringBuilder.Append(",");
+				}
+				stringBuilder.Append(list[k]);
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("CheckAll=");
+			stringBuilder.Append(CurveList.IsCheckAll);
+			stringBuilder.Append(";");
+			return stringBuilder.ToString();
+		}
+
+		private void RestoreConfigValue(string ConfigString)
+		{
+			SetControls();
+			string[] array = ConfigString.Split(';');
+			int num = 0;
+			string text = array[num].Substring(array[num].IndexOf('=') + 1);
+			string loc_or_name = text;
+			num++;
+			text = array[num].Substring(array[num].IndexOf('=') + 1);
+			string[] array2 = text.Split(',');
+			foreach (string value in array2)
+			{
+				_rbArr[Convert.ToInt16(value)].IsEnabled = true;
+			}
+			num++;
+			text = array[num].Substring(array[num].IndexOf('=') + 1);
+			int num2 = Convert.ToInt16(text);
+			_rbArr[num2].IsChecked = true;
+			int basis = _wizardPlot.basis;
+			IHNodeCol elements = _context.FindNode(_varnames[basis - 1, num2]).Elements[loc_or_name, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements;
+			List<string> list = new List<string>();
+			if (elements != null && elements.Count > 0)
+			{
+				int count = elements.Count;
+				for (int j = 0; j < count; j++)
+				{
+					list.Add(elements.get_Label(0, j, Type.Missing));
+				}
+				CurveList.SetCurves(list.ToArray(), isKeepSelection: true);
+			}
+			num++;
+			text = array[num].Substring(array[num].IndexOf('=') + 1);
+			string[] array3 = text.Split(',');
+			List<string> list2 = new List<string>();
+			array2 = array3;
+			foreach (string item in array2)
+			{
+				list2.Add(item);
+			}
+			CurveList.SetSelectedCurves(list2.ToArray());
+			num++;
+			text = array[num].Substring(array[num].IndexOf('=') + 1);
+			CurveList.IsCheckAll = Convert.ToBoolean(text);
+		}
+
+		void IRibbonPlotWizardType.Context(object oNode, ref object oPlotWizardComponent, ref int ierror)
+		{
+			if (oPlotWizardComponent == null || oNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			_context = oNode as IHNode;
+			_wizardPlot = oPlotWizardComponent as IHWizardPlot;
+			GetVarName();
+			_columnList = new List<string>();
+			_help.LoadColumn(_context, "Y", _columnList);
+			if (_columnList.Count == 0)
+			{
+				ierror = 1;
+				return;
+			}
+			if (_columnList.Count > 0)
+			{
+				_currentColumnId = _columnList[0];
+			}
+			IHNode iHNode = null;
+			bool flag = false;
+			for (int i = 0; i < _varnames.GetLength(1); i++)
+			{
+				iHNode = _context.FindNode(_varnames[0, i]);
+				if (iHNode != null && iHNode.Elements.Count > 0)
+				{
+					_rbArr[i].IsEnabled = true;
+					flag = true;
+				}
+			}
+			if (!flag)
+			{
+				ierror = 1;
+			}
+			else if (string.IsNullOrEmpty(_currentConfigValue))
+			{
+				_rbArr[0].IsChecked = true;
+				IHNodeCol iHNodeCol = null;
+				int basis = _wizardPlot.basis;
+				for (int j = 0; j < _rbArr.Count; j++)
+				{
+					if (!_rbArr[j].IsEnabled)
+					{
+						continue;
+					}
+					iHNode = _context.FindNode(_varnames[basis - 1, j]);
+					if (iHNode != null && iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements.Count > 0)
+					{
+						iHNodeCol = iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements;
+						if (iHNodeCol != null && iHNodeCol.Count > 0)
+						{
+							_rbArr[j].IsChecked = true;
+							break;
+						}
+					}
+				}
+				List<string> list = new List<string>();
+				if (iHNodeCol != null && iHNodeCol.Count > 0)
+				{
+					int count = iHNodeCol.Count;
+					for (int k = 0; k < count; k++)
+					{
+						iHNodeCol.get_Label(0, k, Type.Missing);
+						list.Add(iHNodeCol.get_Label(0, k, Type.Missing));
+					}
+					CurveList.SetCurves(list.ToArray(), isKeepSelection: true);
+				}
+			}
+			else
+			{
+				RestoreConfigValue(_currentConfigValue);
+			}
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(ColumnListKey) == 0)
+			{
+				return _columnList;
+			}
+			if (sFieldName.CompareTo(StageOrderKey) == 0)
+			{
+				return _help.StageOrderList;
+			}
+			if (sFieldName.CompareTo(StageOnKey) == 0)
+			{
+				return _help.StageOnList;
+			}
+			return new List<string>();
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sFieldName)
+		{
+			if (sFieldName.CompareTo(ColumnListKey) != 0 && sFieldName.CompareTo(StageOrderKey) != 0 && sFieldName.CompareTo(StageOnKey) != 0)
+			{
+				return (RibbonControlType)0;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(ColumnListKey) == 0)
+			{
+				sCurrentVal = _currentColumnId;
+			}
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(StageOrderKey) == 0)
+			{
+				sCurrentVal = _help.GetStageOrder(_wizardPlot.PlotVal.ReverseXAxis);
+			}
+			else if (sFieldName.CompareTo(StageOnKey) == 0)
+			{
+				sCurrentVal = _help.GetStageOn(_wizardPlot.PlotVal.SwapAxises);
+			}
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+			sConfigValue = _currentConfigValue;
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(ColumnListKey) == 0)
+			{
+				_currentColumnId = sValue;
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(StageOrderKey) == 0)
+			{
+				_wizardPlot.PlotVal.ReverseXAxis = _help.IsReverseXaxis(sValue);
+			}
+			else if (sFieldName.CompareTo(StageOnKey) == 0)
+			{
+				_wizardPlot.PlotVal.SwapAxises = _help.IsSwapAxis(sValue);
+			}
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+			_currentConfigValue = sValue;
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+			throw new NotImplementedException();
+		}
+
+		public void UpdateWizardData()
+		{
+			_wizardPlot.RemoveAllDependentVariable();
+			int num = 0;
+			if (RBVapor.IsChecked == true)
+			{
+				_wizardPlot.PlotVal.Title = PlotPWRResource.MULTIFRAC_Comp_PlotTitle;
+				((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle(Type.Missing, PlotPWRResource.MULTIFRAC_Comp_YAxisTitle);
+				num = 0;
+			}
+			else if (true == RBLiquid.IsChecked)
+			{
+				_wizardPlot.PlotVal.Title = WpfPLMultifracResources.Composition_Title_Liquid;
+				((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle(Type.Missing, WpfPLMultifracResources.Composition_YTitle_Liquid);
+				num = 1;
+			}
+			else if (true == RBOrganic.IsChecked)
+			{
+				_wizardPlot.PlotVal.Title = WpfPLMultifracResources.Composition_Title_Organic;
+				((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle(Type.Missing, WpfPLMultifracResources.Composition_YTitle_Organic);
+				num = 2;
+			}
+			else if (true == RBFreewater.IsChecked)
+			{
+				_wizardPlot.PlotVal.Title = WpfPLMultifracResources.Composition_Title_FreeWater;
+				((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle(Type.Missing, WpfPLMultifracResources.Composition_YTitle_FreeWater);
+				num = 3;
+			}
+			_wizardPlot.PlotVal.Title = _wizardPlot.PlotVal.Title + string.Format(PlotPWRResource.Multifrac_Column_Title, _currentColumnId);
+			string[] array = new string[3]
+			{
+				WpfPLMultifracResources.YTitle_Ymole,
+				WpfPLMultifracResources.YTitle_Xmole,
+				WpfPLMultifracResources.YTitle_X1mole
+			};
+			List<string> list = new List<string>(CurveList.GetSelectedCurves());
+			if (CurveList.Curves.Count == 0 || list.Count == 0)
+			{
+				_wizardPlot.set_ErrorStatus(3, true);
+				return;
+			}
+			int num2 = _wizardPlot.basis - 1;
+			IHNode iHNode = _context.FindNode(_varnames[num2, num]);
+			_wizardPlot.SetIndependentVariable(_context, _varnames[num2, num] + "/" + _currentColumnId + "!Label");
+			if (iHNode != null)
+			{
+				num2 = list.Count;
+				if (iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null)
+				{
+					int count = iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements.Count;
+					_wizardPlot.PlotVal.NVariables = num2;
+					for (int i = 0; i < list.Count; i++)
+					{
+						string text = list[i];
+						((IHPlotVal)_wizardPlot.PlotVal).set_Label(i, text);
+						for (int j = 0; j < count; j++)
+						{
+							object obj = iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[text, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+							((IHPlotVal)_wizardPlot.PlotVal).set_YData(i, j, (short)0, obj);
+						}
+					}
+					((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle(Type.Missing, array[num]);
+				}
+			}
+			_currentConfigValue = SaveConfigValue();
+		}
+
+		private void btnOk_Click(object sender, EventArgs e)
+		{
+			UpdateWizardData();
+			((PlotwizardHelper)_help).CloseForm((UserControl)this, (bool?)true);
+		}
+
+		private void btnCancel_Click(object sender, EventArgs e)
+		{
+			((PlotwizardHelper)_help).CloseForm((UserControl)this, (bool?)false);
+		}
+
+		void IPlotWizardTemplate.SetCaption(ref string caption)
+		{
+			caption = WpfPLMultifracResources.CompositionCaption;
+		}
+
+		void IPlotWizardTemplate.SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 400.0;
+		}
+
+		void IPlotWizardTemplate.SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 300.0;
+		}
+
+		void IPlotWizardTemplate.SetMinHeight(ref double minHeight)
+		{
+			minHeight = 400.0;
+		}
+
+		void IPlotWizardTemplate.SetMinWidth(ref double minWidth)
+		{
+			minWidth = 200.0;
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLMultifrac;component/composition.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			switch (connectionId)
+			{
+			case 1:
+				CurveList = (CurvesSelectorControl)target;
+				break;
+			case 2:
+				RBVapor = (RadioButton)target;
+				break;
+			case 3:
+				RBLiquid = (RadioButton)target;
+				break;
+			case 4:
+				RBOrganic = (RadioButton)target;
+				break;
+			case 5:
+				RBFreewater = (RadioButton)target;
+				break;
+			case 6:
+				btnOk = (Button)target;
+				btnOk.Click += btnOk_Click;
+				break;
+			case 7:
+				btnCancel = (Button)target;
+				btnCancel.Click += btnCancel_Click;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+	[ProgId("WpfPLMultifrac.RibbonPlotWizardMgr")]
+	public class RibbonPlotWizardMgr : IRibbonPlotWizardMgr
+	{
+		private static string[] supportedTypes = new string[11]
+		{
+			"Temp", "Comp", "Flow Rate", "Pressure", "K-Values", "Rel Vol", "Flow Ratio", "CGCC(T-H)", "CGCC(S-H)", "Hydraulics",
+			"Exergy"
+		};
+
+		private IHNode _hnode;
+
+		private IHWizardPlot _wizardPlot;
+
+		private static List<PWRPlotType> _lspwrTypes = new List<PWRPlotType>();
+
+		private PWRParser _pwrParser = new PWRParser();
+
+		private Assembly _asm;
+
+		private Dictionary<string, IRibbonPlotWizardType> _dicTagIdToPlotType;
+
+		private IHWizardPlot _tempWizard = (CHWizardPlot)Activator.CreateInstance(Marshal.GetTypeFromCLSID(new Guid("9E14C11F-6706-4067-8112-35CE9468F3A5")));
+
+		public RibbonPlotWizardMgr()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			Initialize();
+		}
+
+		long IRibbonPlotWizardMgr.SupportedPlotTypes(ref List<string> lsTagIds)
+		{
+			lsTagIds.Clear();
+			for (int i = 0; i < _lspwrTypes.Count; i++)
+			{
+				PWRPlotType val = _lspwrTypes[i];
+				IRibbonPlotWizardType iplotType = null;
+				_tempWizard.Clear();
+				_pwrParser.FillDefaultPlotVal(val, ref _hnode, ref _tempWizard);
+				if (DoesPlotTypeHaveData(val.TagId, ref iplotType, ref _tempWizard))
+				{
+					lsTagIds.Add(val.TagId);
+				}
+			}
+			return _lspwrTypes.Count;
+		}
+
+		long IRibbonPlotWizardMgr.GetPlotType(string sTagId, ref IRibbonPlotWizardType plwType)
+		{
+			if (_dicTagIdToPlotType.ContainsKey(sTagId))
+			{
+				plwType = _dicTagIdToPlotType[sTagId];
+				if (plwType == null)
+				{
+					return 0L;
+				}
+				PWRPlotType val = null;
+				_pwrParser.FindPlotType(sTagId, ref _lspwrTypes, ref val);
+				_pwrParser.FillDefaultPlotVal(val, ref _hnode, ref _wizardPlot);
+			}
+			return 0L;
+		}
+
+		void IRibbonPlotWizardMgr.SetContext(object oNode, ref object oWizard)
+		{
+			_hnode = oNode as IHNode;
+			_wizardPlot = oWizard as IHWizardPlot;
+		}
+
+		void IRibbonPlotWizardMgr.ShowInputDialog(string sPlotName)
+		{
+		}
+
+		private void InitializeWizardPlot()
+		{
+		}
+
+		private void Initialize()
+		{
+			_asm = Assembly.GetExecutingAssembly();
+			StreamReader streamReader = new StreamReader(Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLMultifrac.Text.Multifracpwr.txt"));
+			_lspwrTypes.Clear();
+			_pwrParser.ParsePwrFile(streamReader, ref _lspwrTypes);
+			_dicTagIdToPlotType = new Dictionary<string, IRibbonPlotWizardType>();
+			string[] array = supportedTypes;
+			foreach (string text in array)
+			{
+				if (text == supportedTypes[0])
+				{
+					IRibbonPlotWizardType value = (IRibbonPlotWizardType)(object)new Temperature();
+					_dicTagIdToPlotType.Add(text, value);
+				}
+				else if (text == supportedTypes[1])
+				{
+					IRibbonPlotWizardType value2 = (IRibbonPlotWizardType)(object)new Composition();
+					_dicTagIdToPlotType.Add(text, value2);
+				}
+				else if (text == supportedTypes[2])
+				{
+					IRibbonPlotWizardType value3 = (IRibbonPlotWizardType)(object)new FlowRate();
+					_dicTagIdToPlotType.Add(text, value3);
+				}
+				else if (text == supportedTypes[3])
+				{
+					IRibbonPlotWizardType value4 = (IRibbonPlotWizardType)(object)new Pressure();
+					_dicTagIdToPlotType.Add(text, value4);
+				}
+				else if (text == supportedTypes[4])
+				{
+					IRibbonPlotWizardType value5 = (IRibbonPlotWizardType)(object)new KValues();
+					_dicTagIdToPlotType.Add(text, value5);
+				}
+				else if (text == supportedTypes[5])
+				{
+					IRibbonPlotWizardType value6 = (IRibbonPlotWizardType)(object)new RelVol();
+					_dicTagIdToPlotType.Add(text, value6);
+				}
+				else if (text == supportedTypes[6])
+				{
+					IRibbonPlotWizardType value7 = (IRibbonPlotWizardType)(object)new FlowRatio();
+					_dicTagIdToPlotType.Add(text, value7);
+				}
+				else if (text == supportedTypes[7])
+				{
+					IRibbonPlotWizardType value8 = (IRibbonPlotWizardType)(object)new CGCCTH();
+					_dicTagIdToPlotType.Add(text, value8);
+				}
+				else if (text == supportedTypes[8])
+				{
+					IRibbonPlotWizardType value9 = (IRibbonPlotWizardType)(object)new CGCCStgH();
+					_dicTagIdToPlotType.Add(text, value9);
+				}
+				else if (text == supportedTypes[9])
+				{
+					IRibbonPlotWizardType value10 = (IRibbonPlotWizardType)(object)new Hydraulics();
+					_dicTagIdToPlotType.Add(text, value10);
+				}
+				else if (text == supportedTypes[10])
+				{
+					IRibbonPlotWizardType value11 = (IRibbonPlotWizardType)(object)new Exergy();
+					_dicTagIdToPlotType.Add(text, value11);
+				}
+			}
+		}
+
+		private bool DoesPlotTypeHaveData(string sTagId, ref IRibbonPlotWizardType iplotType, ref IHWizardPlot iWizardPlot)
+		{
+			int num = 0;
+			if (_dicTagIdToPlotType.ContainsKey(sTagId))
+			{
+				iplotType = _dicTagIdToPlotType[sTagId];
+				if (iplotType == null)
+				{
+					return false;
+				}
+				object obj = iWizardPlot;
+				iplotType.Context((object)_hnode, ref obj, ref num);
+				if (num == 0)
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+	}
+	[ProgId("WpfPLMultifrac.Exergy")]
+	public class Exergy : UserControl, IRibbonPlotWizardType, IPlotWizardTemplate, IComponentConnector
+	{
+		private string ColumnListKey = string.Empty;
+
+		private string StageOnKey = string.Empty;
+
+		private string _currentConfigValue = string.Empty;
+
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private multHelper _help;
+
+		private List<string> _columnList = new List<string>();
+
+		private List<string> _exergyUnitList = new List<string>();
+
+		private List<string> _termperatureUnitList = new List<string>();
+
+		private string _currentColumnId = string.Empty;
+
+		private string _uniqueId = "mult_Exergy";
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgIcon;
+
+		private bool _bHasInputDialog;
+
+		private string varname = string.Empty;
+
+		private bool _bCheckDataOnly;
+
+		internal RadioButton RBStage;
+
+		internal RadioButton RBTemperature;
+
+		internal RadioButton RBCarnotFactor;
+
+		internal AesLabel LblTemp;
+
+		internal AesComboEdit CBExgergyUnit;
+
+		internal AesComboEdit CBTemperatureUnit;
+
+		internal Button btnOk;
+
+		internal Button btnCancel;
+
+		private bool _contentLoaded;
+
+		public string TooltipContentForRibbonItem => WpfPLMultifracResources.TooltipContentForRibbonItem_Exergy;
+
+		public string TooltipHeaderForRibbonItem => WpfPLMultifracResources.TooltipHeaderForRibbonItem_Exergy;
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => ((PlotwizardHelper)_help).GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => ((PlotwizardHelper)_help).GetHelpID();
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgIcon;
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string> { ColumnListKey };
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string> { StageOnKey };
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		public Exergy()
+		{
+			InitializeComponent();
+			_help = new multHelper();
+			_bHasInputDialog = true;
+			if (_imgIcon == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLMultifrac.Images.hydraulics.ico");
+				_imgIcon = new Bitmap(manifestResourceStream);
+			}
+			ColumnListKey = WpfPLMultifracResources.ColumnList;
+			StageOnKey = WpfPLMultifracResources.StageOn;
+		}
+
+		private void GetVarName()
+		{
+			varname = "EXERGY";
+		}
+
+		private string SaveConfigValue()
+		{
+			_ = string.Empty;
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.Append("ColumnID=");
+			stringBuilder.Append(_currentColumnId);
+			stringBuilder.Append(";");
+			stringBuilder.Append("Stage=");
+			stringBuilder.Append(RBStage.IsChecked);
+			stringBuilder.Append(";");
+			stringBuilder.Append("Temperature=");
+			stringBuilder.Append(RBTemperature.IsChecked);
+			stringBuilder.Append(";");
+			stringBuilder.Append("CarnotFactor=");
+			stringBuilder.Append(RBCarnotFactor.IsChecked);
+			stringBuilder.Append(";");
+			stringBuilder.Append("ExgergyUnit=");
+			stringBuilder.Append(CBExgergyUnit.Value.ToString());
+			stringBuilder.Append(";");
+			stringBuilder.Append("EUnitVisibility=");
+			stringBuilder.Append(((UIElement)(object)CBTemperatureUnit).IsEnabled);
+			stringBuilder.Append(";");
+			stringBuilder.Append("TempUnit=");
+			stringBuilder.Append(CBTemperatureUnit.Value.ToString());
+			stringBuilder.Append(";");
+			return stringBuilder.ToString();
+		}
+
+		private void RestoreConfigValue(string ConfigString)
+		{
+			string[] array = ConfigString.Split(';');
+			int num = 0;
+			string text = array[num].Substring(array[num].IndexOf('=') + 1);
+			num++;
+			text = array[num].Substring(array[num].IndexOf('=') + 1);
+			RBStage.IsChecked = Convert.ToBoolean(text);
+			num++;
+			text = array[num].Substring(array[num].IndexOf('=') + 1);
+			RBTemperature.IsChecked = Convert.ToBoolean(text);
+			num++;
+			text = array[num].Substring(array[num].IndexOf('=') + 1);
+			RBCarnotFactor.IsChecked = Convert.ToBoolean(text);
+			num++;
+			text = array[num].Substring(array[num].IndexOf('=') + 1);
+			CBExgergyUnit.Value = text;
+			num++;
+			text = array[num].Substring(array[num].IndexOf('=') + 1);
+			AesComboEdit cBTemperatureUnit = CBTemperatureUnit;
+			bool isEnabled = (((UIElement)(object)LblTemp).IsEnabled = Convert.ToBoolean(text));
+			((UIElement)(object)cBTemperatureUnit).IsEnabled = isEnabled;
+			num++;
+			text = array[num].Substring(array[num].IndexOf('=') + 1);
+			CBTemperatureUnit.Value = text;
+		}
+
+		void IRibbonPlotWizardType.Context(object oNode, ref object oPlotWizardComponent, ref int ierror)
+		{
+			if (oPlotWizardComponent == null || oNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			_context = oNode as IHNode;
+			_wizardPlot = oPlotWizardComponent as IHWizardPlot;
+			GetVarName();
+			if (_columnList.Count == 0)
+			{
+				_help.LoadColumn(_context, varname, _columnList);
+				if (_columnList.Count == 0)
+				{
+					ierror = 1;
+					return;
+				}
+				if (_columnList.Count > 0)
+				{
+					_currentColumnId = _columnList[0];
+				}
+			}
+			_wizardPlot.SetIndependentVariable(_context, "Output/" + varname + "/" + _currentColumnId);
+			if (_exergyUnitList == null || _exergyUnitList.Count == 0)
+			{
+				((PlotwizardHelper)_help).LoadXUnitsList(_context.Application.Tree, _wizardPlot, _exergyUnitList);
+				if (_exergyUnitList.Count == 0)
+				{
+					ierror = 1;
+					return;
+				}
+				CBExgergyUnit.ValueOptions = _exergyUnitList;
+				CBExgergyUnit.Value = ((PlotwizardHelper)_help).GetXUnitString(_context.Application.Tree, _wizardPlot);
+			}
+			_wizardPlot.RemoveAllDependentVariable();
+			_wizardPlot.AddDependentVariable(_context, "Output/B_TEMP4/" + _currentColumnId);
+			if (_termperatureUnitList == null || _termperatureUnitList.Count == 0)
+			{
+				((PlotwizardHelper)_help).LoadUnitsList(_context.Application.Tree, _wizardPlot, _termperatureUnitList);
+				CBTemperatureUnit.ValueOptions = _termperatureUnitList;
+				CBTemperatureUnit.Value = ((PlotwizardHelper)_help).GetUnitString(_context.Application.Tree, _wizardPlot);
+			}
+			if (string.IsNullOrEmpty(_currentConfigValue))
+			{
+				((UIElement)(object)LblTemp).IsEnabled = false;
+				((UIElement)(object)CBTemperatureUnit).IsEnabled = false;
+			}
+			else
+			{
+				RestoreConfigValue(_currentConfigValue);
+			}
+			_wizardPlot.RemoveAllDependentVariable();
+			if (RBStage.IsChecked == true)
+			{
+				_wizardPlot.AddDependentVariable(_context, "Output/B_TEMP4/" + _currentColumnId + "!Label");
+			}
+			else if (RBTemperature.IsChecked == true)
+			{
+				_wizardPlot.AddDependentVariable(_context, "Output/B_TEMP4/" + _currentColumnId);
+			}
+			else if (RBCarnotFactor.IsChecked == true)
+			{
+				_wizardPlot.AddDependentVariable(_context, "Output/CARNOT/" + _currentColumnId);
+			}
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(ColumnListKey) == 0)
+			{
+				return _columnList;
+			}
+			if (sFieldName.CompareTo(StageOnKey) == 0)
+			{
+				return _help.StageOnList;
+			}
+			return new List<string>();
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sFieldName)
+		{
+			if (sFieldName.CompareTo(ColumnListKey) != 0 && sFieldName.CompareTo(StageOnKey) != 0)
+			{
+				return (RibbonControlType)0;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(ColumnListKey) == 0)
+			{
+				sCurrentVal = _currentColumnId;
+			}
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(StageOnKey) == 0)
+			{
+				if (_wizardPlot.PlotVal.SwapAxises)
+				{
+					sCurrentVal = WpfPLMultifracResources.X_axis;
+				}
+				else
+				{
+					sCurrentVal = WpfPLMultifracResources.Y_axis;
+				}
+			}
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+			sConfigValue = _currentConfigValue;
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(ColumnListKey) == 0)
+			{
+				_currentColumnId = sValue;
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(StageOnKey) == 0)
+			{
+				if (sValue.CompareTo(WpfPLMultifracResources.X_axis) == 0)
+				{
+					_wizardPlot.PlotVal.SwapAxises = true;
+				}
+				else
+				{
+					_wizardPlot.PlotVal.SwapAxises = false;
+				}
+			}
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+			_currentConfigValue = sValue;
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		public void UpdateWizardData()
+		{
+			string text = _currentColumnId.Trim();
+			_wizardPlot.RemoveAllDependentVariable();
+			_wizardPlot.SetIndependentVariable(_context, "Output/" + varname + "/" + text);
+			if (RBStage.IsChecked == true)
+			{
+				_wizardPlot.AddDependentVariable(_context, "Output/B_TEMP4/" + _currentColumnId + "!Label");
+			}
+			else if (RBTemperature.IsChecked == true)
+			{
+				_wizardPlot.AddDependentVariable(_context, "Output/B_TEMP4/" + _currentColumnId);
+			}
+			else if (RBCarnotFactor.IsChecked == true)
+			{
+				_wizardPlot.AddDependentVariable(_context, "Output/CARNOT/" + _currentColumnId);
+			}
+			((PlotwizardHelper)_help).SaveXUnitsComboText(_context.Application.Tree, _wizardPlot, CBExgergyUnit.Value.ToString());
+			if (RBTemperature.IsChecked == true)
+			{
+				((PlotwizardHelper)_help).SaveUnitsComboText(_context.Application.Tree, _wizardPlot, CBTemperatureUnit.Value.ToString());
+			}
+			if (RBStage.IsChecked == true)
+			{
+				_wizardPlot.PlotVal.Title = string.Format(WpfPLMultifracResources.Exergy_Stage_Title, _currentColumnId);
+				((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle(Type.Missing, WpfPLMultifracResources.Exergy_Stage_YTitle);
+			}
+			else if (RBTemperature.IsChecked == true)
+			{
+				_wizardPlot.PlotVal.Title = string.Format(WpfPLMultifracResources.Exergy_T_Title, _currentColumnId);
+				((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle(Type.Missing, WpfPLMultifracResources.Exergy_T_YTitle);
+			}
+			else if (RBCarnotFactor.IsChecked == true)
+			{
+				_wizardPlot.PlotVal.Title = string.Format(WpfPLMultifracResources.Exergy_CarnotFactor_Title, _currentColumnId);
+				((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle(Type.Missing, WpfPLMultifracResources.Exergy_CarnotFactor_YTitle);
+			}
+			_currentConfigValue = SaveConfigValue();
+		}
+
+		private void btnOk_Click(object sender, EventArgs e)
+		{
+			UpdateWizardData();
+			((PlotwizardHelper)_help).CloseForm((UserControl)this, (bool?)true);
+		}
+
+		private void btnCancel_Click(object sender, EventArgs e)
+		{
+			((PlotwizardHelper)_help).CloseForm((UserControl)this, (bool?)false);
+		}
+
+		private void RadioButton_Checked(object sender, RoutedEventArgs e)
+		{
+			_wizardPlot.RemoveAllDependentVariable();
+			if (RBStage.IsChecked == true)
+			{
+				_wizardPlot.AddDependentVariable(_context, "Output/B_TEMP4/" + _currentColumnId + "!Label");
+			}
+			else if (RBTemperature.IsChecked == true)
+			{
+				_wizardPlot.AddDependentVariable(_context, "Output/B_TEMP4/" + _currentColumnId);
+				if (_termperatureUnitList == null || _termperatureUnitList.Count == 0)
+				{
+					((PlotwizardHelper)_help).LoadUnitsList(_context.Application.Tree, _wizardPlot, _termperatureUnitList);
+					CBTemperatureUnit.ValueOptions = _termperatureUnitList;
+					CBTemperatureUnit.Value = ((PlotwizardHelper)_help).GetUnitString(_context.Application.Tree, _wizardPlot);
+				}
+			}
+			else if (RBCarnotFactor.IsChecked == true)
+			{
+				_wizardPlot.AddDependentVariable(_context, "Output/CARNOT/" + _currentColumnId);
+			}
+			((UIElement)(object)LblTemp).IsEnabled = RBTemperature.IsChecked == true;
+			((UIElement)(object)CBTemperatureUnit).IsEnabled = RBTemperature.IsChecked == true;
+		}
+
+		void IPlotWizardTemplate.SetCaption(ref string caption)
+		{
+			caption = WpfPLMultifracResources.ExergyCaption;
+		}
+
+		void IPlotWizardTemplate.SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 280.0;
+		}
+
+		void IPlotWizardTemplate.SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 300.0;
+		}
+
+		void IPlotWizardTemplate.SetMinHeight(ref double minHeight)
+		{
+			minHeight = 200.0;
+		}
+
+		void IPlotWizardTemplate.SetMinWidth(ref double minWidth)
+		{
+			minWidth = 250.0;
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLMultifrac;component/exergy.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			//IL_009b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00a5: Expected O, but got Unknown
+			//IL_00a8: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00b2: Expected O, but got Unknown
+			//IL_00b5: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00bf: Expected O, but got Unknown
+			switch (connectionId)
+			{
+			case 1:
+				RBStage = (RadioButton)target;
+				RBStage.Click += RadioButton_Checked;
+				break;
+			case 2:
+				RBTemperature = (RadioButton)target;
+				RBTemperature.Click += RadioButton_Checked;
+				break;
+			case 3:
+				RBCarnotFactor = (RadioButton)target;
+				RBCarnotFactor.Click += RadioButton_Checked;
+				break;
+			case 4:
+				LblTemp = (AesLabel)target;
+				break;
+			case 5:
+				CBExgergyUnit = (AesComboEdit)target;
+				break;
+			case 6:
+				CBTemperatureUnit = (AesComboEdit)target;
+				break;
+			case 7:
+				btnOk = (Button)target;
+				btnOk.Click += btnOk_Click;
+				break;
+			case 8:
+				btnCancel = (Button)target;
+				btnCancel.Click += btnCancel_Click;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+	[ProgId("WpfPLMultifrac.FlowRate")]
+	public class FlowRate : UserControl, IRibbonPlotWizardType, IPlotWizardTemplate, IComponentConnector
+	{
+		private string ColumnListKey = string.Empty;
+
+		private string FlowRateUnitListKey = string.Empty;
+
+		private string VaporFlowKey = string.Empty;
+
+		private string LiquidFlowKey = string.Empty;
+
+		private string OrganicKey = string.Empty;
+
+		private string FreeWaterKey = string.Empty;
+
+		private string StageOrderKey = string.Empty;
+
+		private string StageOnKey = string.Empty;
+
+		private string _currentConfigValue = string.Empty;
+
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private multHelper _help;
+
+		private List<string> _columnList;
+
+		private List<string> _flowRateUnitList;
+
+		private string _currentColumnId = string.Empty;
+
+		private string _currentFlowRateUnit = string.Empty;
+
+		private string _uniqueId = "mult_FlowRate";
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgIcon;
+
+		private bool _bHasInputDialog;
+
+		private string _varname = string.Empty;
+
+		private string[] _varnames = new string[4];
+
+		private AesCheckBox[] _cbArr;
+
+		private bool _bCheckDataOnly;
+
+		internal AesCheckBox AesCBVapor;
+
+		internal AesCheckBox AesCBLiquid;
+
+		internal AesCheckBox AesCBOrganic;
+
+		internal AesCheckBox AesCBFreeWater;
+
+		internal Button btnOk;
+
+		internal Button btnCancel;
+
+		private bool _contentLoaded;
+
+		public string TooltipContentForRibbonItem => WpfPLMultifracResources.TooltipContentForRibbonItem_FlowRate;
+
+		public string TooltipHeaderForRibbonItem => WpfPLMultifracResources.TooltipHeaderForRibbonItem_FlowRate;
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => ((PlotwizardHelper)_help).GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => ((PlotwizardHelper)_help).GetHelpID();
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgIcon;
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string> { ColumnListKey, FlowRateUnitListKey };
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string> { StageOrderKey, StageOnKey };
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		public FlowRate()
+		{
+			InitializeComponent();
+			_cbArr = (AesCheckBox[])(object)new AesCheckBox[4] { AesCBVapor, AesCBLiquid, AesCBOrganic, AesCBFreeWater };
+			_help = new multHelper();
+			_bHasInputDialog = true;
+			if (_imgIcon == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLMultifrac.Images.flow.ico");
+				_imgIcon = new Bitmap(manifestResourceStream);
+			}
+			FlowRateUnitListKey = WpfPLMultifracResources.FlowRateUnit;
+			ColumnListKey = WpfPLMultifracResources.ColumnList;
+			StageOrderKey = WpfPLMultifracResources.StageOrder;
+			StageOnKey = WpfPLMultifracResources.StageOn;
+		}
+
+		private void GetVarName()
+		{
+			if (_context != null)
+			{
+				IHNode iHNode = _context.FindNode("Output/VAP_FLOW2");
+				IHNode iHNode2 = _context.FindNode("Output/VAP_FLOW");
+				int count = iHNode.Elements.Count;
+				int count2 = iHNode2.Elements.Count;
+				if (count > 0)
+				{
+					_varnames[0] = "Output/VAP_FLOW2";
+					_varnames[1] = "Output/LIQ_FLOW3";
+					_varname = "VAP_FLOW2";
+				}
+				if (count2 > 0)
+				{
+					_varnames[0] = "Output/VAP_FLOW";
+					_varnames[1] = "Output/LIQ_FLOW2";
+					_varname = "VAP_FLOW";
+				}
+				_varnames[2] = "Output/L1_FLOW";
+				_varnames[3] = "Output/L2_FLOW";
+			}
+		}
+
+		private string SaveConfigValue()
+		{
+			_ = string.Empty;
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.Append("ColumnID=");
+			stringBuilder.Append(_currentColumnId);
+			stringBuilder.Append(";");
+			stringBuilder.Append("FlowOption=");
+			int num = 0;
+			for (int i = 0; i < _cbArr.Length; i++)
+			{
+				if (_cbArr[i].IsChecked == true)
+				{
+					if (num > 0)
+					{
+						stringBuilder.Append(",");
+					}
+					stringBuilder.Append(i.ToString());
+					num++;
+				}
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("FlowEnable=");
+			num = 0;
+			for (int j = 0; j < _cbArr.Length; j++)
+			{
+				if (((UIElement)(object)_cbArr[j]).IsEnabled)
+				{
+					if (num > 0)
+					{
+						stringBuilder.Append(",");
+					}
+					stringBuilder.Append(j.ToString());
+					num++;
+				}
+			}
+			stringBuilder.Append(";");
+			return stringBuilder.ToString();
+		}
+
+		private void RestoreConfigValue(string ConfigString)
+		{
+			string[] array = ConfigString.Split(';');
+			int num = 0;
+			array[num].Substring(array[num].IndexOf('=') + 1);
+			num++;
+			string[] array2 = array[num].Substring(array[num].IndexOf('=') + 1).Split(',');
+			foreach (string value in array2)
+			{
+				_cbArr[Convert.ToInt16(value)].IsChecked = true;
+			}
+			num++;
+			array2 = array[num].Substring(array[num].IndexOf('=') + 1).Split(',');
+			foreach (string value2 in array2)
+			{
+				((UIElement)(object)_cbArr[Convert.ToInt16(value2)]).IsEnabled = true;
+			}
+		}
+
+		void IRibbonPlotWizardType.Context(object oNode, ref object oPlotWizardComponent, ref int ierror)
+		{
+			if (oPlotWizardComponent == null || oNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			_context = oNode as IHNode;
+			_wizardPlot = oPlotWizardComponent as IHWizardPlot;
+			GetVarName();
+			_columnList = new List<string>();
+			_help.LoadColumn(_context, _varname, _columnList);
+			if (_columnList.Count <= 0)
+			{
+				ierror = 1;
+				return;
+			}
+			_currentColumnId = _columnList[0];
+			for (int i = 0; i < _cbArr.Length; i++)
+			{
+				((UIElement)(object)_cbArr[i]).IsEnabled = false;
+				_cbArr[i].IsChecked = false;
+			}
+			for (int j = 0; j < _varnames.Length; j++)
+			{
+				IHNode iHNode = _context.FindNode(_varnames[j]);
+				if (iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null)
+				{
+					((UIElement)(object)_cbArr[j]).IsEnabled = true;
+				}
+			}
+			if (string.IsNullOrEmpty(_currentConfigValue))
+			{
+				AesCBVapor.IsChecked = true;
+			}
+			else
+			{
+				RestoreConfigValue(_currentConfigValue);
+			}
+			_wizardPlot.RemoveAllDependentVariable();
+			_wizardPlot.SetIndependentVariable(_context, _varnames[0] + "/" + _currentColumnId + "!Label");
+			_wizardPlot.AddDependentVariable(_context, _varnames[0] + "/" + _currentColumnId);
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(FlowRateUnitListKey) == 0)
+			{
+				_flowRateUnitList = new List<string>();
+				((PlotwizardHelper)_help).LoadUnitsList(_context.Application.Tree, _wizardPlot, _flowRateUnitList);
+				return _flowRateUnitList;
+			}
+			if (sFieldName.CompareTo(ColumnListKey) == 0)
+			{
+				return _columnList;
+			}
+			if (sFieldName.CompareTo(StageOrderKey) == 0)
+			{
+				return _help.StageOrderList;
+			}
+			if (sFieldName.CompareTo(StageOnKey) == 0)
+			{
+				return _help.StageOnList;
+			}
+			return new List<string>();
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sFieldName)
+		{
+			if (sFieldName.CompareTo(FlowRateUnitListKey) != 0 && sFieldName.CompareTo(ColumnListKey) != 0 && sFieldName.CompareTo(StageOrderKey) != 0 && sFieldName.CompareTo(StageOnKey) != 0)
+			{
+				return (RibbonControlType)0;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(FlowRateUnitListKey) == 0)
+			{
+				sCurrentVal = ((PlotwizardHelper)_help).GetUnitString(_context.Application.Tree, _wizardPlot);
+			}
+			else if (sFieldName.CompareTo(ColumnListKey) == 0)
+			{
+				sCurrentVal = _currentColumnId;
+			}
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(StageOrderKey) == 0)
+			{
+				sCurrentVal = _help.GetStageOrder(_wizardPlot.PlotVal.ReverseXAxis);
+			}
+			else if (sFieldName.CompareTo(StageOnKey) == 0)
+			{
+				sCurrentVal = _help.GetStageOn(_wizardPlot.PlotVal.SwapAxises);
+			}
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+			sConfigValue = _currentConfigValue;
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(FlowRateUnitListKey) == 0 && _currentFlowRateUnit.CompareTo(sValue) != 0)
+			{
+				_currentFlowRateUnit = sValue;
+				((PlotwizardHelper)_help).SaveUnitsComboText(_context.Application.Tree, _wizardPlot, _currentFlowRateUnit);
+			}
+			else if (sFieldName.CompareTo(ColumnListKey) == 0)
+			{
+				_currentColumnId = sValue;
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(StageOrderKey) == 0)
+			{
+				_wizardPlot.PlotVal.ReverseXAxis = _help.IsReverseXaxis(sValue);
+			}
+			else if (sFieldName.CompareTo(StageOnKey) == 0)
+			{
+				_wizardPlot.PlotVal.SwapAxises = _help.IsSwapAxis(sValue);
+			}
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+			_currentConfigValue = sValue;
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		public void UpdateWizardData()
+		{
+			bool flag = false;
+			AesCheckBox[] cbArr = _cbArr;
+			foreach (AesCheckBox val in cbArr)
+			{
+				if (((UIElement)(object)val).IsEnabled && val.IsChecked == true)
+				{
+					flag = true;
+					break;
+				}
+			}
+			if (!flag)
+			{
+				_wizardPlot.set_ErrorStatus(3, true);
+				return;
+			}
+			_wizardPlot.RemoveAllDependentVariable();
+			_wizardPlot.SetIndependentVariable(_context, _varnames[0] + "/" + _currentColumnId + "!Label");
+			string text = _currentColumnId.Trim();
+			int j = 0;
+			int num = 0;
+			for (; j < _varnames.Length; j++)
+			{
+				if (_cbArr[j].IsChecked == true)
+				{
+					_wizardPlot.AddDependentVariable(_context, _varnames[j] + "/" + text);
+					((IHPlotVal)_wizardPlot.PlotVal).set_Label(num, _cbArr[j].Content.ToString());
+					num++;
+				}
+			}
+			((PlotwizardHelper)_help).SaveUnitsComboText(_context.Application.Tree, _wizardPlot, _currentFlowRateUnit);
+			if (_wizardPlot.PlotVal.NVariables > 1)
+			{
+				_wizardPlot.PlotVal.Title = PlotPWRResource.MULTIFRAC_Flow_Rate_PlotTitle;
+			}
+			else
+			{
+				_wizardPlot.PlotVal.Title = PlotPWRResource.MULTIFRAC_Flow_Rate_Single_PlotTitle;
+			}
+			int num2 = _wizardPlot.PlotVal.Title.IndexOf("(");
+			if (num2 < 0)
+			{
+				_wizardPlot.PlotVal.Title = _wizardPlot.PlotVal.Title + string.Format(PlotPWRResource.Multifrac_Column_Title, text);
+			}
+			else
+			{
+				_wizardPlot.PlotVal.Title = _wizardPlot.PlotVal.Title.Substring(0, num2) + string.Format(PlotPWRResource.Multifrac_Column_Title, text);
+			}
+			((PlotwizardHelper)_help).SaveUnitsCombo(_context.Application.Tree, _wizardPlot, _currentFlowRateUnit);
+			_currentConfigValue = SaveConfigValue();
+		}
+
+		private void btnOk_Click(object sender, EventArgs e)
+		{
+			UpdateWizardData();
+			((PlotwizardHelper)_help).CloseForm((UserControl)this, (bool?)true);
+		}
+
+		private void btnCancel_Click(object sender, EventArgs e)
+		{
+			((PlotwizardHelper)_help).CloseForm((UserControl)this, (bool?)false);
+		}
+
+		void IPlotWizardTemplate.SetCaption(ref string caption)
+		{
+			caption = WpfPLMultifracResources.FlowRateCaption;
+		}
+
+		void IPlotWizardTemplate.SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 250.0;
+		}
+
+		void IPlotWizardTemplate.SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 220.0;
+		}
+
+		void IPlotWizardTemplate.SetMinHeight(ref double minHeight)
+		{
+			minHeight = 280.0;
+		}
+
+		void IPlotWizardTemplate.SetMinWidth(ref double minWidth)
+		{
+			minWidth = 220.0;
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLMultifrac;component/flowrate.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			//IL_0024: Unknown result type (might be due to invalid IL or missing references)
+			//IL_002e: Expected O, but got Unknown
+			//IL_0031: Unknown result type (might be due to invalid IL or missing references)
+			//IL_003b: Expected O, but got Unknown
+			//IL_003e: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0048: Expected O, but got Unknown
+			//IL_004b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0055: Expected O, but got Unknown
+			switch (connectionId)
+			{
+			case 1:
+				AesCBVapor = (AesCheckBox)target;
+				break;
+			case 2:
+				AesCBLiquid = (AesCheckBox)target;
+				break;
+			case 3:
+				AesCBOrganic = (AesCheckBox)target;
+				break;
+			case 4:
+				AesCBFreeWater = (AesCheckBox)target;
+				break;
+			case 5:
+				btnOk = (Button)target;
+				btnOk.Click += btnOk_Click;
+				break;
+			case 6:
+				btnCancel = (Button)target;
+				btnCancel.Click += btnCancel_Click;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+	[ProgId("WpfPLMultifrac.FlowRatio")]
+	public class FlowRatio : UserControl, IRibbonPlotWizardType, IPlotWizardTemplate, IComponentConnector
+	{
+		private string ColumnListKey = string.Empty;
+
+		private string VaporFlowKey = string.Empty;
+
+		private string LiquidFlowKey = string.Empty;
+
+		private string OrganicKey = string.Empty;
+
+		private string FreeWaterKey = string.Empty;
+
+		private string StageOrderKey = string.Empty;
+
+		private string StageOnKey = string.Empty;
+
+		private string _currentConfigValue = string.Empty;
+
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private multHelper _help;
+
+		private List<string> _columnList;
+
+		private string _currentColumnId = string.Empty;
+
+		private string _currentFlowRateUnit = string.Empty;
+
+		private string _uniqueId = "mult_FlowRatio";
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgIcon;
+
+		private bool _bHasInputDialog;
+
+		private string _varname = string.Empty;
+
+		private string[] _varnames = new string[4];
+
+		private AesCheckBox[] _cbArr;
+
+		private bool _bCheckDataOnly;
+
+		internal AesCheckBox AesCBVapor2Liquid;
+
+		internal AesCheckBox AesCBOrganic2Freewater;
+
+		internal Button btnOk;
+
+		internal Button btnCancel;
+
+		private bool _contentLoaded;
+
+		public string TooltipContentForRibbonItem => WpfPLMultifracResources.TooltipContentForRibbonItem_FlowRatio;
+
+		public string TooltipHeaderForRibbonItem => WpfPLMultifracResources.TooltipHeaderForRibbonItem_FlowRatio;
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => ((PlotwizardHelper)_help).GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => ((PlotwizardHelper)_help).GetHelpID();
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgIcon;
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string> { ColumnListKey };
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string> { StageOrderKey, StageOnKey };
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		public FlowRatio()
+		{
+			InitializeComponent();
+			_cbArr = (AesCheckBox[])(object)new AesCheckBox[2] { AesCBVapor2Liquid, AesCBOrganic2Freewater };
+			_help = new multHelper();
+			_bHasInputDialog = true;
+			if (_imgIcon == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLMultifrac.Images.flwratio.ico");
+				_imgIcon = new Bitmap(manifestResourceStream);
+			}
+			ColumnListKey = WpfPLMultifracResources.ColumnList;
+			StageOrderKey = WpfPLMultifracResources.StageOrder;
+			StageOnKey = WpfPLMultifracResources.StageOn;
+		}
+
+		private void GetVarName()
+		{
+			if (_context != null)
+			{
+				IHNode iHNode = _context.FindNode("Output/VAP_FLOW2");
+				IHNode iHNode2 = _context.FindNode("Output/VAP_FLOW");
+				int count = iHNode.Elements.Count;
+				int count2 = iHNode2.Elements.Count;
+				if (count > 0)
+				{
+					_varnames[0] = "Output/VAP_FLOW2";
+					_varnames[1] = "Output/LIQ_FLOW3";
+					_varname = "VAP_FLOW2";
+				}
+				if (count2 > 0)
+				{
+					_varnames[0] = "Output/VAP_FLOW";
+					_varnames[1] = "Output/LIQ_FLOW2";
+					_varname = "VAP_FLOW";
+				}
+				_varnames[2] = "Output/L1_FLOW";
+				_varnames[3] = "Output/L2_FLOW";
+			}
+		}
+
+		private string SaveConfigValue()
+		{
+			_ = string.Empty;
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.Append("ColumnID=");
+			stringBuilder.Append(_currentColumnId);
+			stringBuilder.Append(";");
+			stringBuilder.Append("FlowOption=");
+			int num = 0;
+			for (int i = 0; i < _cbArr.Length; i++)
+			{
+				if (_cbArr[i].IsChecked == true)
+				{
+					if (num > 0)
+					{
+						stringBuilder.Append(",");
+					}
+					stringBuilder.Append(i.ToString());
+					num++;
+				}
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("FlowEnable=");
+			num = 0;
+			for (int j = 0; j < _cbArr.Length; j++)
+			{
+				if (((UIElement)(object)_cbArr[j]).IsEnabled)
+				{
+					if (num > 0)
+					{
+						stringBuilder.Append(",");
+					}
+					stringBuilder.Append(j.ToString());
+					num++;
+				}
+			}
+			stringBuilder.Append(";");
+			return stringBuilder.ToString();
+		}
+
+		private void RestoreConfigValue(string ConfigString)
+		{
+			string[] array = ConfigString.Split(';');
+			int num = 0;
+			array[num].Substring(array[num].IndexOf('=') + 1);
+			num++;
+			string[] array2 = array[num].Substring(array[num].IndexOf('=') + 1).Split(',');
+			foreach (string value in array2)
+			{
+				_cbArr[Convert.ToInt16(value)].IsChecked = true;
+			}
+			num++;
+			array2 = array[num].Substring(array[num].IndexOf('=') + 1).Split(',');
+			foreach (string value2 in array2)
+			{
+				((UIElement)(object)_cbArr[Convert.ToInt16(value2)]).IsEnabled = true;
+			}
+		}
+
+		void IRibbonPlotWizardType.Context(object oNode, ref object oPlotWizardComponent, ref int ierror)
+		{
+			if (oPlotWizardComponent == null || oNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			_context = oNode as IHNode;
+			_wizardPlot = oPlotWizardComponent as IHWizardPlot;
+			GetVarName();
+			_columnList = new List<string>();
+			_help.LoadColumn(_context, _varname, _columnList);
+			if (_columnList.Count <= 0)
+			{
+				ierror = 1;
+				return;
+			}
+			_currentColumnId = _columnList[0];
+			for (int i = 0; i < _cbArr.Length; i++)
+			{
+				((UIElement)(object)_cbArr[i]).IsEnabled = false;
+				_cbArr[i].IsChecked = false;
+			}
+			IHNode iHNode = _context.FindNode(_varnames[0]);
+			if (iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null)
+			{
+				((UIElement)(object)_cbArr[0]).IsEnabled = true;
+			}
+			iHNode = _context.FindNode(_varnames[2]);
+			if (iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null)
+			{
+				((UIElement)(object)_cbArr[1]).IsEnabled = true;
+			}
+			if (string.IsNullOrEmpty(_currentConfigValue))
+			{
+				AesCBVapor2Liquid.IsChecked = true;
+			}
+			else
+			{
+				RestoreConfigValue(_currentConfigValue);
+			}
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(ColumnListKey) == 0)
+			{
+				return _columnList;
+			}
+			if (sFieldName.CompareTo(StageOrderKey) == 0)
+			{
+				return _help.StageOrderList;
+			}
+			if (sFieldName.CompareTo(StageOnKey) == 0)
+			{
+				return _help.StageOnList;
+			}
+			return new List<string>();
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sFieldName)
+		{
+			if (sFieldName.CompareTo(ColumnListKey) != 0 && sFieldName.CompareTo(StageOrderKey) != 0 && sFieldName.CompareTo(StageOnKey) != 0)
+			{
+				return (RibbonControlType)0;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(ColumnListKey) == 0)
+			{
+				sCurrentVal = _currentColumnId;
+			}
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(StageOrderKey) == 0)
+			{
+				sCurrentVal = _help.GetStageOrder(_wizardPlot.PlotVal.ReverseXAxis);
+			}
+			else if (sFieldName.CompareTo(StageOnKey) == 0)
+			{
+				sCurrentVal = _help.GetStageOn(_wizardPlot.PlotVal.SwapAxises);
+			}
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+			sConfigValue = _currentConfigValue;
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(ColumnListKey) == 0)
+			{
+				_currentColumnId = sValue;
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(StageOrderKey) == 0)
+			{
+				_wizardPlot.PlotVal.ReverseXAxis = _help.IsReverseXaxis(sValue);
+			}
+			else if (sFieldName.CompareTo(StageOnKey) == 0)
+			{
+				_wizardPlot.PlotVal.SwapAxises = _help.IsSwapAxis(sValue);
+			}
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+			_currentConfigValue = sValue;
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		public void UpdateWizardData()
+		{
+			if (AesCBVapor2Liquid.IsChecked != true)
+			{
+				_wizardPlot.set_ErrorStatus(3, true);
+				return;
+			}
+			_wizardPlot.RemoveAllDependentVariable();
+			IHNode iHNode = _context.FindNode(_varnames[0]);
+			IHNode iHNode2 = _context.FindNode(_varnames[1]);
+			IHNode iHNode3 = _context.FindNode(_varnames[2]);
+			IHNode iHNode4 = _context.FindNode(_varnames[3]);
+			((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle(Type.Missing, WpfPLMultifracResources.FlowRatio);
+			_wizardPlot.PlotVal.NVariables = 0;
+			string text = _currentColumnId.Trim();
+			int num = -1;
+			if (AesCBVapor2Liquid.IsChecked == true && iHNode.Elements[text, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode2.Elements[text, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null)
+			{
+				num++;
+				_wizardPlot.PlotVal.NVariables = num + 1;
+				_wizardPlot.SetIndependentVariable(_context, _varnames[0] + "/" + text + "!Label");
+				int count = iHNode.Elements[text, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements.Count;
+				((IHPlotVal)_wizardPlot.PlotVal).set_Label(num, AesCBVapor2Liquid.Content.ToString());
+				for (int i = 0; i < count; i++)
+				{
+					double num2 = 0.0;
+					double num3 = 0.0;
+					num2 = (dynamic)iHNode.Elements[text, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[i, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+					num3 = (dynamic)iHNode2.Elements[text, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[i, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+					if (num3 != 0.0)
+					{
+						((IHPlotVal)_wizardPlot.PlotVal).set_YData(num, i, (short)0, (object)(num2 / num3));
+					}
+				}
+			}
+			if (AesCBOrganic2Freewater.IsChecked == true && iHNode3.Elements[text, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode4.Elements[text, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null)
+			{
+				num++;
+				_wizardPlot.PlotVal.NVariables = num + 1;
+				_wizardPlot.SetIndependentVariable(_context, _varnames[2] + "/" + text + "!Label");
+				int count2 = iHNode4.Elements[text, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements.Count;
+				((IHPlotVal)_wizardPlot.PlotVal).set_Label(num, AesCBOrganic2Freewater.Content.ToString());
+				for (int j = 0; j < count2; j++)
+				{
+					double num4 = 0.0;
+					double num5 = 0.0;
+					num4 = (dynamic)iHNode4.Elements[text, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+					num5 = (dynamic)iHNode3.Elements[text, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+					if (num5 != 0.0)
+					{
+						((IHPlotVal)_wizardPlot.PlotVal).set_YData(num, j, (short)0, (object)(num4 / num5));
+					}
+				}
+			}
+			int num6 = _wizardPlot.PlotVal.Title.IndexOf("(");
+			if (num6 < 0)
+			{
+				_wizardPlot.PlotVal.Title = _wizardPlot.PlotVal.Title + string.Format(PlotPWRResource.Multifrac_Column_Title, text);
+			}
+			else
+			{
+				_wizardPlot.PlotVal.Title = _wizardPlot.PlotVal.Title.Substring(0, num6) + string.Format(PlotPWRResource.Multifrac_Column_Title, text);
+			}
+			((PlotwizardHelper)_help).SaveUnitsCombo(_context.Application.Tree, _wizardPlot, _currentFlowRateUnit);
+			_currentConfigValue = SaveConfigValue();
+		}
+
+		private void btnOk_Click(object sender, EventArgs e)
+		{
+			UpdateWizardData();
+			((PlotwizardHelper)_help).CloseForm((UserControl)this, (bool?)true);
+		}
+
+		private void btnCancel_Click(object sender, EventArgs e)
+		{
+			((PlotwizardHelper)_help).CloseForm((UserControl)this, (bool?)false);
+		}
+
+		void IPlotWizardTemplate.SetCaption(ref string caption)
+		{
+			caption = WpfPLMultifracResources.FlowRateCaption;
+		}
+
+		void IPlotWizardTemplate.SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 200.0;
+		}
+
+		void IPlotWizardTemplate.SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 250.0;
+		}
+
+		void IPlotWizardTemplate.SetMinHeight(ref double minHeight)
+		{
+			minHeight = 220.0;
+		}
+
+		void IPlotWizardTemplate.SetMinWidth(ref double minWidth)
+		{
+			minWidth = 250.0;
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLMultifrac;component/flowratio.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			//IL_001c: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0026: Expected O, but got Unknown
+			//IL_0029: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0033: Expected O, but got Unknown
+			switch (connectionId)
+			{
+			case 1:
+				AesCBVapor2Liquid = (AesCheckBox)target;
+				break;
+			case 2:
+				AesCBOrganic2Freewater = (AesCheckBox)target;
+				break;
+			case 3:
+				btnOk = (Button)target;
+				btnOk.Click += btnOk_Click;
+				break;
+			case 4:
+				btnCancel = (Button)target;
+				btnCancel.Click += btnCancel_Click;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+	[ProgId("WpfPLMultifrac.Hydraulics")]
+	public class Hydraulics : UserControl, IRibbonPlotWizardType, IPlotWizardTemplate, IComponentConnector
+	{
+		private string ColumnListKey = string.Empty;
+
+		private string FlowUnitListKey = string.Empty;
+
+		private string StageOrderKey = string.Empty;
+
+		private string StageOnKey = string.Empty;
+
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private multHelper _help;
+
+		private List<string> _columnList = new List<string>();
+
+		private List<string> _flowUnitList = new List<string>();
+
+		private string _currentColumnId = string.Empty;
+
+		private string _currentFlowUnit = string.Empty;
+
+		private string _currentConfigValue = string.Empty;
+
+		private string _uniqueId = "mult_Hydraulics";
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgIcon;
+
+		private bool _bHasInputDialog;
+
+		private string[] varnames = new string[3];
+
+		private string[] vars = new string[3];
+
+		private AesCheckBox[] _CBArr;
+
+		public static RoutedCommand OKCommand = new RoutedCommand();
+
+		public static RoutedCommand CancelCommand = new RoutedCommand();
+
+		private bool _bCheckDataOnly;
+
+		internal RadioButton RBVapor;
+
+		internal RadioButton RBLiquid;
+
+		internal AesCheckBox ThermodynamicFlow;
+
+		internal AesCheckBox ActualFlow;
+
+		internal AesCheckBox HydraulicFlow;
+
+		private bool _contentLoaded;
+
+		public string TooltipContentForRibbonItem => WpfPLMultifracResources.TooltipContentForRibbonItem_Hydraulics;
+
+		public string TooltipHeaderForRibbonItem => WpfPLMultifracResources.TooltipHeaderForRibbonItem_Hydraulics;
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => ((PlotwizardHelper)_help).GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => ((PlotwizardHelper)_help).GetHelpID();
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgIcon;
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string> { ColumnListKey, FlowUnitListKey };
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string> { StageOrderKey, StageOnKey };
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		public Hydraulics()
+		{
+			InitializeComponent();
+			_CBArr = (AesCheckBox[])(object)new AesCheckBox[3] { ThermodynamicFlow, ActualFlow, HydraulicFlow };
+			_help = new multHelper();
+			_bHasInputDialog = true;
+			if (_imgIcon == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLMultifrac.Images.hydraulics.ico");
+				_imgIcon = new Bitmap(manifestResourceStream);
+			}
+			CommandBinding commandBinding = new CommandBinding(OKCommand, ExecuteOKCommand, CanExecuteOKCommand);
+			CommandBinding commandBinding2 = new CommandBinding(CancelCommand, ExecuteCancelCommand);
+			base.CommandBindings.Add(commandBinding);
+			base.CommandBindings.Add(commandBinding2);
+			FlowUnitListKey = WpfPLMultifracResources.FlowRateUnit;
+			ColumnListKey = WpfPLMultifracResources.ColumnList;
+			StageOrderKey = WpfPLMultifracResources.StageOrder;
+			StageOnKey = WpfPLMultifracResources.StageOn;
+		}
+
+		private void GetVarName()
+		{
+			RBVapor.IsChecked = true;
+			vars[0] = "VAP_MIN";
+			vars[1] = "VAP_ACT";
+			vars[2] = "VAP_MAX";
+			SetCheckBox(RBVapor);
+			vars[0] = "LIQ_MIN";
+			vars[1] = "LIQ_ACT";
+			vars[2] = "LIQ_MAX";
+			SetCheckBox(RBLiquid);
+			if (RBLiquid.IsChecked == false && RBVapor.IsChecked == false)
+			{
+				_wizardPlot.set_ErrorStatus(2, true);
+			}
+			if (RBLiquid.IsChecked == false)
+			{
+				vars[0] = "VAP_MIN";
+				vars[1] = "VAP_ACT";
+				vars[2] = "VAP_MAX";
+				varnames[0] = "Output/VAP_MIN";
+				varnames[1] = "Output/VAP_ACT";
+				varnames[2] = "Output/VAP_MAX";
+			}
+			else if (RBVapor.IsChecked == false)
+			{
+				vars[0] = "LIQ_MIN";
+				vars[1] = "LIQ_ACT";
+				vars[2] = "LIQ_MAX";
+				varnames[0] = "Output/LIQ_MIN";
+				varnames[1] = "Output/LIQ_ACT";
+				varnames[2] = "Output/LIQ_MAX";
+			}
+		}
+
+		private void SetCheckBox(RadioButton rb)
+		{
+			for (int i = 0; i < 3; i++)
+			{
+				IHNode iHNode = _context.Elements["Output", Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[vars[i], Type.Missing, Type.Missing, Type.Missing, Type.Missing];
+				_CBArr[i].IsChecked = false;
+				((UIElement)(object)_CBArr[i]).IsEnabled = false;
+				if (iHNode != null && iHNode.Elements.Count > 0)
+				{
+					_CBArr[i].IsChecked = true;
+					((UIElement)(object)_CBArr[i]).IsEnabled = true;
+				}
+			}
+			if (!((UIElement)(object)_CBArr[0]).IsEnabled && !((UIElement)(object)_CBArr[1]).IsEnabled && !((UIElement)(object)_CBArr[2]).IsEnabled)
+			{
+				rb.IsChecked = false;
+				rb.IsEnabled = false;
+			}
+		}
+
+		private string SaveConfigValue()
+		{
+			_ = string.Empty;
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.Append("PhaseOption=");
+			stringBuilder.Append(RBVapor.IsChecked);
+			stringBuilder.Append(";");
+			stringBuilder.Append("VPhaseEnable=");
+			stringBuilder.Append(RBVapor.IsEnabled);
+			stringBuilder.Append(";");
+			stringBuilder.Append("LPhaseEnable=");
+			stringBuilder.Append(RBLiquid.IsEnabled);
+			stringBuilder.Append(";");
+			stringBuilder.Append("FlowOption=");
+			int num = 0;
+			for (int i = 0; i < _CBArr.Length; i++)
+			{
+				if (_CBArr[i].IsChecked == true)
+				{
+					if (num > 0)
+					{
+						stringBuilder.Append(",");
+					}
+					stringBuilder.Append(i.ToString());
+					num++;
+				}
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("FlowEnable=");
+			num = 0;
+			for (int j = 0; j < _CBArr.Length; j++)
+			{
+				if (((UIElement)(object)_CBArr[j]).IsEnabled)
+				{
+					if (num > 0)
+					{
+						stringBuilder.Append(",");
+					}
+					stringBuilder.Append(j.ToString());
+					num++;
+				}
+			}
+			stringBuilder.Append(";");
+			return stringBuilder.ToString();
+		}
+
+		private void RestoreConfigValue(string ConfigString)
+		{
+			string[] array = ConfigString.Split(';');
+			int num = 0;
+			string value = array[num].Substring(array[num].IndexOf('=') + 1);
+			RBVapor.IsChecked = Convert.ToBoolean(value);
+			RBLiquid.IsChecked = !RBVapor.IsChecked;
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			RBVapor.IsEnabled = Convert.ToBoolean(value);
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			RBLiquid.IsEnabled = Convert.ToBoolean(value);
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			string[] array2 = value.Split(',');
+			foreach (string value2 in array2)
+			{
+				_CBArr[Convert.ToInt16(value2)].IsChecked = true;
+			}
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			array2 = value.Split(',');
+			foreach (string value3 in array2)
+			{
+				((UIElement)(object)_CBArr[Convert.ToInt16(value3)]).IsEnabled = true;
+			}
+		}
+
+		void IRibbonPlotWizardType.Context(object oNode, ref object oPlotWizardComponent, ref int ierror)
+		{
+			if (oPlotWizardComponent == null || oNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			_context = oNode as IHNode;
+			_wizardPlot = oPlotWizardComponent as IHWizardPlot;
+			GetVarName();
+			if (_columnList.Count == 0)
+			{
+				_help.LoadColumn(_context, "VAP_ACT", _columnList);
+				if (_columnList.Count == 0)
+				{
+					ierror = 1;
+					return;
+				}
+				if (_columnList.Count > 0)
+				{
+					_currentColumnId = _columnList[0];
+				}
+			}
+			_wizardPlot.RemoveAllDependentVariable();
+			_wizardPlot.SetIndependentVariable(_context, varnames[1] + "/" + _currentColumnId + "!Label");
+			_wizardPlot.AddDependentVariable(_context, varnames[0] + "/" + _currentColumnId);
+			_wizardPlot.AddDependentVariable(_context, varnames[1] + "/" + _currentColumnId);
+			_wizardPlot.AddDependentVariable(_context, varnames[2] + "/" + _currentColumnId);
+			if (_flowUnitList == null || _flowUnitList.Count == 0)
+			{
+				((PlotwizardHelper)_help).LoadUnitsList(_context.Application.Tree, _wizardPlot, _flowUnitList);
+				if (_flowUnitList.Count == 0)
+				{
+					ierror = 1;
+					return;
+				}
+			}
+			if (string.IsNullOrEmpty(_currentConfigValue))
+			{
+				for (int i = 0; i < _CBArr.Length; i++)
+				{
+					IHNode iHNode = _context.FindNode(varnames[i]);
+					_CBArr[i].IsChecked = false;
+					((UIElement)(object)_CBArr[i]).IsEnabled = false;
+					if (iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null)
+					{
+						((UIElement)(object)_CBArr[i]).IsEnabled = true;
+					}
+				}
+				for (int j = 0; j < _CBArr.Length; j++)
+				{
+					if (((UIElement)(object)_CBArr[j]).IsEnabled && _wizardPlot.get_HasDependentVariable(_context, varnames[j] + "/" + _currentColumnId))
+					{
+						_CBArr[j].IsChecked = true;
+					}
+				}
+			}
+			else
+			{
+				for (int k = 0; k < _CBArr.Length; k++)
+				{
+					_CBArr[k].IsChecked = false;
+					((UIElement)(object)_CBArr[k]).IsEnabled = false;
+				}
+				RestoreConfigValue(_currentConfigValue);
+			}
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(FlowUnitListKey) == 0)
+			{
+				return _flowUnitList;
+			}
+			if (sFieldName.CompareTo(ColumnListKey) == 0)
+			{
+				return _columnList;
+			}
+			if (sFieldName.CompareTo(StageOrderKey) == 0)
+			{
+				return _help.StageOrderList;
+			}
+			if (sFieldName.CompareTo(StageOnKey) == 0)
+			{
+				return _help.StageOnList;
+			}
+			return new List<string>();
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sFieldName)
+		{
+			if (sFieldName.CompareTo(FlowUnitListKey) != 0 && sFieldName.CompareTo(ColumnListKey) != 0 && sFieldName.CompareTo(StageOrderKey) != 0 && sFieldName.CompareTo(StageOnKey) != 0)
+			{
+				return (RibbonControlType)0;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(FlowUnitListKey) == 0)
+			{
+				sCurrentVal = ((PlotwizardHelper)_help).GetUnitString(_context.Application.Tree, _wizardPlot);
+			}
+			else if (sFieldName.CompareTo(ColumnListKey) == 0)
+			{
+				sCurrentVal = _currentColumnId;
+			}
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(StageOrderKey) == 0)
+			{
+				sCurrentVal = _help.GetStageOrder(_wizardPlot.PlotVal.ReverseXAxis);
+			}
+			else if (sFieldName.CompareTo(StageOnKey) == 0)
+			{
+				sCurrentVal = _help.GetStageOn(_wizardPlot.PlotVal.SwapAxises);
+			}
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+			sConfigValue = _currentConfigValue;
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(FlowUnitListKey) == 0 && _currentFlowUnit.CompareTo(sValue) != 0)
+			{
+				_currentFlowUnit = sValue;
+				((PlotwizardHelper)_help).SaveUnitsComboText(_context.Application.Tree, _wizardPlot, _currentFlowUnit);
+			}
+			else if (sFieldName.CompareTo(ColumnListKey) == 0)
+			{
+				_currentColumnId = sValue;
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(StageOrderKey) == 0)
+			{
+				_wizardPlot.PlotVal.ReverseXAxis = _help.IsReverseXaxis(sValue);
+			}
+			else if (sFieldName.CompareTo(StageOnKey) == 0)
+			{
+				_wizardPlot.PlotVal.SwapAxises = _help.IsSwapAxis(sValue);
+			}
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+			_currentConfigValue = sValue;
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		public void UpdateWizardData()
+		{
+			if (RBVapor.IsChecked == true)
+			{
+				((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle(Type.Missing, PlotPWRResource.MULTIFRAC_Hydraulics_Vapor_YAxisTitle);
+				vars[0] = "VAP_MIN";
+				vars[1] = "VAP_ACT";
+				vars[2] = "VAP_MAX";
+				varnames[0] = "Output/VAP_MIN";
+				varnames[1] = "Output/VAP_ACT";
+				varnames[2] = "Output/VAP_MAX";
+			}
+			else if (RBLiquid.IsChecked == true)
+			{
+				((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle(Type.Missing, PlotPWRResource.MULTIFRAC_Hydraulics_Liquid_YAxisTitle);
+				vars[0] = "LIQ_MIN";
+				vars[1] = "LIQ_ACT";
+				vars[2] = "LIQ_MAX";
+				varnames[0] = "Output/LIQ_MIN";
+				varnames[1] = "Output/LIQ_ACT";
+				varnames[2] = "Output/LIQ_MAX";
+			}
+			_wizardPlot.RemoveAllDependentVariable();
+			string text = _currentColumnId.Trim();
+			_wizardPlot.SetIndependentVariable(_context, varnames[1] + "/" + text + "!Label");
+			int num = 0;
+			for (int i = 0; i < _CBArr.Length; i++)
+			{
+				string text2 = varnames[i];
+				if (_CBArr[i].IsChecked == true && !_wizardPlot.get_HasDependentVariable(_context, text2 + "/" + text))
+				{
+					_wizardPlot.AddDependentVariable(_context, text2 + "/" + text);
+					((IHPlotVal)_wizardPlot.PlotVal).set_Label(num, _CBArr[i].Content.ToString());
+					num++;
+				}
+			}
+			_wizardPlot.PlotVal.Title = string.Format(WpfPLMultifracResources.Hydraulic_Title_Mole, text);
+			((PlotwizardHelper)_help).SaveUnitsComboText(_context.Application.Tree, _wizardPlot, _currentFlowUnit);
+			_currentConfigValue = SaveConfigValue();
+		}
+
+		private void ExecuteOKCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			UpdateWizardData();
+			((PlotwizardHelper)_help).CloseForm((UserControl)this, (bool?)true);
+		}
+
+		private void CanExecuteOKCommand(object sender, CanExecuteRoutedEventArgs e)
+		{
+			int num = 0;
+			for (int i = 0; i < _CBArr.Count(); i++)
+			{
+				if (_CBArr[i].IsChecked.Value)
+				{
+					num++;
+					break;
+				}
+			}
+			e.CanExecute = num != 0;
+		}
+
+		private void ExecuteCancelCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			if (!string.IsNullOrEmpty(_currentConfigValue))
+			{
+				RestoreConfigValue(_currentConfigValue);
+			}
+			((PlotwizardHelper)_help).CloseForm((UserControl)this, (bool?)false);
+		}
+
+		void IPlotWizardTemplate.SetCaption(ref string caption)
+		{
+			caption = WpfPLMultifracResources.HydraulicsCaption;
+		}
+
+		void IPlotWizardTemplate.SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 280.0;
+		}
+
+		void IPlotWizardTemplate.SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 300.0;
+		}
+
+		void IPlotWizardTemplate.SetMinHeight(ref double minHeight)
+		{
+			minHeight = 200.0;
+		}
+
+		void IPlotWizardTemplate.SetMinWidth(ref double minWidth)
+		{
+			minWidth = 300.0;
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLMultifrac;component/hydraulics.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			//IL_003a: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0044: Expected O, but got Unknown
+			//IL_0047: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0051: Expected O, but got Unknown
+			//IL_0054: Unknown result type (might be due to invalid IL or missing references)
+			//IL_005e: Expected O, but got Unknown
+			switch (connectionId)
+			{
+			case 1:
+				RBVapor = (RadioButton)target;
+				break;
+			case 2:
+				RBLiquid = (RadioButton)target;
+				break;
+			case 3:
+				ThermodynamicFlow = (AesCheckBox)target;
+				break;
+			case 4:
+				ActualFlow = (AesCheckBox)target;
+				break;
+			case 5:
+				HydraulicFlow = (AesCheckBox)target;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+	[ProgId("WpfPLMultifrac.KValues")]
+	public class KValues : UserControl, IRibbonPlotWizardType, IPlotWizardTemplate, IComponentConnector
+	{
+		private string ColumnListKey = string.Empty;
+
+		private string StageOrderKey = string.Empty;
+
+		private string StageOnKey = string.Empty;
+
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private multHelper _help;
+
+		private List<string> _columnList;
+
+		private string _currentColumnId = string.Empty;
+
+		private string _currentConfigValue = string.Empty;
+
+		private string _uniqueId = "mult_KValues";
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgIcon;
+
+		private bool _bHasInputDialog;
+
+		private string[] _varnames = new string[4];
+
+		private RadioButton[] _rbArr;
+
+		private bool _bCheckDataOnly;
+
+		internal CurvesSelectorControl CurveList;
+
+		internal RadioButton RBVapor2Liquid;
+
+		internal RadioButton RBVapor2Organic;
+
+		internal RadioButton RBVapor2Freewater;
+
+		internal RadioButton RBOrganic2Freewater;
+
+		internal Button btnOk;
+
+		internal Button btnCancel;
+
+		private bool _contentLoaded;
+
+		public string TooltipContentForRibbonItem => WpfPLMultifracResources.TooltipContentForRibbonItem_KValues;
+
+		public string TooltipHeaderForRibbonItem => WpfPLMultifracResources.TooltipHeaderForRibbonItem_KValues;
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => ((PlotwizardHelper)_help).GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => ((PlotwizardHelper)_help).GetHelpID();
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgIcon;
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string> { ColumnListKey };
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string> { StageOrderKey, StageOnKey };
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		public KValues()
+		{
+			InitializeComponent();
+			_rbArr = new RadioButton[4] { RBVapor2Liquid, RBVapor2Organic, RBVapor2Freewater, RBOrganic2Freewater };
+			_help = new multHelper();
+			CurveList.PropertyChanged += CurveList_PropertyChanged;
+			_bHasInputDialog = true;
+			if (_imgIcon == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLMultifrac.Images.kvalues.ico");
+				_imgIcon = new Bitmap(manifestResourceStream);
+			}
+			ColumnListKey = WpfPLMultifracResources.ColumnList;
+			StageOrderKey = WpfPLMultifracResources.StageOrder;
+			StageOnKey = WpfPLMultifracResources.StageOn;
+		}
+
+		private void CurveList_PropertyChanged(object sender, PropertyChangedEventArgs e)
+		{
+			btnOk.IsEnabled = CurveList.GetSelectedCurves().Length != 0;
+		}
+
+		private void GetVarName()
+		{
+			_varnames[0] = "Output/B_K";
+			_varnames[1] = "Output/K1";
+			_varnames[2] = "Output/K2";
+			_varnames[3] = "Output/KLL";
+		}
+
+		private string SaveConfigValue()
+		{
+			_ = string.Empty;
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.Append("ColumnID=");
+			stringBuilder.Append(_currentColumnId);
+			stringBuilder.Append(";");
+			stringBuilder.Append("PhaseEnable=");
+			for (int i = 0; i < _rbArr.Length; i++)
+			{
+				if (_rbArr[i].IsEnabled)
+				{
+					if (i > 0)
+					{
+						stringBuilder.Append(",");
+					}
+					stringBuilder.Append(i.ToString());
+				}
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("PhaseOption=");
+			for (int j = 0; j < _rbArr.Length; j++)
+			{
+				if (_rbArr[j].IsChecked == true)
+				{
+					stringBuilder.Append(j.ToString());
+					break;
+				}
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("CompSelection=");
+			List<string> list = new List<string>(CurveList.GetSelectedCurves());
+			int count = list.Count;
+			for (int k = 0; k < count; k++)
+			{
+				if (k > 0)
+				{
+					stringBuilder.Append(",");
+				}
+				string value = list[k];
+				stringBuilder.Append(value);
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("CheckAll=");
+			stringBuilder.Append(CurveList.IsCheckAll);
+			stringBuilder.Append(";");
+			return stringBuilder.ToString();
+		}
+
+		private void RestoreConfigValue(string ConfigString)
+		{
+			string[] array = ConfigString.Split(';');
+			int num = 0;
+			string text = array[num].Substring(array[num].IndexOf('=') + 1);
+			string loc_or_name = text;
+			num++;
+			text = array[num].Substring(array[num].IndexOf('=') + 1);
+			string[] array2 = text.Split(',');
+			foreach (string value in array2)
+			{
+				_rbArr[Convert.ToInt16(value)].IsEnabled = true;
+			}
+			num++;
+			text = array[num].Substring(array[num].IndexOf('=') + 1);
+			int num2 = Convert.ToInt16(text);
+			_rbArr[num2].IsChecked = true;
+			_ = _wizardPlot.basis;
+			IHNodeCol elements = _context.FindNode(_varnames[0]).Elements[loc_or_name, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements;
+			List<string> list = new List<string>();
+			if (elements != null && elements.Count > 0)
+			{
+				int count = elements.Count;
+				for (int j = 0; j < count; j++)
+				{
+					list.Add(elements.get_Label(0, j, Type.Missing));
+				}
+				CurveList.SetCurves(list.ToArray(), isKeepSelection: true);
+			}
+			num++;
+			text = array[num].Substring(array[num].IndexOf('=') + 1);
+			string[] array3 = text.Split(',');
+			List<string> list2 = new List<string>();
+			array2 = array3;
+			foreach (string item in array2)
+			{
+				list2.Add(item);
+			}
+			CurveList.SetSelectedCurves(list2.ToArray());
+			num++;
+			text = array[num].Substring(array[num].IndexOf('=') + 1);
+			CurveList.IsCheckAll = Convert.ToBoolean(text);
+		}
+
+		void IRibbonPlotWizardType.Context(object oNode, ref object oPlotWizardComponent, ref int ierror)
+		{
+			if (oPlotWizardComponent == null || oNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			_context = oNode as IHNode;
+			_wizardPlot = oPlotWizardComponent as IHWizardPlot;
+			GetVarName();
+			_columnList = new List<string>();
+			if (string.IsNullOrEmpty(_currentConfigValue))
+			{
+				IHNode iHNode = null;
+				IHNode iHNode2 = _context.Elements["Output", Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements["K1", Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing];
+				IHNode iHNode3 = _context.Elements["Output", Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements["B_K", Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing];
+				int num = iHNode2?.Elements.Count ?? 0;
+				int num2 = iHNode3?.Elements.Count ?? 0;
+				if (num > 0)
+				{
+					_rbArr[0].IsEnabled = false;
+					_rbArr[1].IsEnabled = true;
+					_rbArr[2].IsEnabled = true;
+					_rbArr[3].IsEnabled = true;
+					_help.LoadColumn(_context, "K1", _columnList);
+					if (_rbArr[0].IsChecked == true)
+					{
+						_rbArr[1].IsChecked = true;
+					}
+					iHNode = _context.FindNode(_varnames[1]);
+				}
+				if (num2 > 0)
+				{
+					_rbArr[0].IsEnabled = true;
+					_rbArr[1].IsEnabled = false;
+					_rbArr[2].IsEnabled = false;
+					_rbArr[3].IsEnabled = false;
+					_rbArr[0].IsChecked = true;
+					_help.LoadColumn(_context, "B_K", _columnList);
+					iHNode = _context.FindNode(_varnames[0]);
+				}
+				if (_columnList.Count == 0)
+				{
+					ierror = 1;
+					return;
+				}
+				if (_columnList.Count > 0)
+				{
+					_currentColumnId = _columnList[0];
+				}
+				IHNodeCol elements = iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements;
+				_rbArr[0].IsChecked = true;
+				List<string> list = new List<string>();
+				if (elements != null && elements.Count > 0)
+				{
+					int count = elements.Count;
+					for (int i = 0; i < count; i++)
+					{
+						elements.get_Label(0, i, Type.Missing);
+						list.Add(elements.get_Label(0, i, Type.Missing));
+					}
+					CurveList.SetCurves(list.ToArray(), isKeepSelection: true);
+				}
+				if (list.Count == 0)
+				{
+					ierror = 1;
+				}
+			}
+			else
+			{
+				RestoreConfigValue(_currentConfigValue);
+			}
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(ColumnListKey) == 0)
+			{
+				return _columnList;
+			}
+			if (sFieldName.CompareTo(StageOrderKey) == 0)
+			{
+				return _help.StageOrderList;
+			}
+			if (sFieldName.CompareTo(StageOnKey) == 0)
+			{
+				return _help.StageOnList;
+			}
+			return new List<string>();
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sFieldName)
+		{
+			if (sFieldName.CompareTo(ColumnListKey) != 0 && sFieldName.CompareTo(StageOrderKey) != 0 && sFieldName.CompareTo(StageOnKey) != 0)
+			{
+				return (RibbonControlType)0;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(ColumnListKey) == 0)
+			{
+				sCurrentVal = _currentColumnId;
+			}
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(StageOrderKey) == 0)
+			{
+				sCurrentVal = _help.GetStageOrder(_wizardPlot.PlotVal.ReverseXAxis);
+			}
+			else if (sFieldName.CompareTo(StageOnKey) == 0)
+			{
+				sCurrentVal = _help.GetStageOn(_wizardPlot.PlotVal.SwapAxises);
+			}
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+			sConfigValue = _currentConfigValue;
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(ColumnListKey) == 0)
+			{
+				_currentColumnId = sValue;
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(StageOrderKey) == 0)
+			{
+				_wizardPlot.PlotVal.ReverseXAxis = _help.IsReverseXaxis(sValue);
+			}
+			else if (sFieldName.CompareTo(StageOnKey) == 0)
+			{
+				_wizardPlot.PlotVal.SwapAxises = _help.IsSwapAxis(sValue);
+			}
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+			_currentConfigValue = sValue;
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+			throw new NotImplementedException();
+		}
+
+		public void UpdateWizardData()
+		{
+			List<string> list = new List<string>(CurveList.GetSelectedCurves());
+			if (CurveList.Curves.Count == 0 || list.Count == 0)
+			{
+				_wizardPlot.set_ErrorStatus(3, true);
+				return;
+			}
+			_wizardPlot.RemoveAllDependentVariable();
+			int num = 0;
+			if (RBVapor2Liquid.IsChecked == true)
+			{
+				_wizardPlot.PlotVal.Title = WpfPLMultifracResources.KValues_VL_Title;
+				num = 0;
+			}
+			else if (true == RBVapor2Organic.IsChecked)
+			{
+				_wizardPlot.PlotVal.Title = WpfPLMultifracResources.KValues_VO_Title;
+				num = 1;
+			}
+			else if (true == RBVapor2Freewater.IsChecked)
+			{
+				_wizardPlot.PlotVal.Title = WpfPLMultifracResources.KValues_VFW_Title;
+				num = 2;
+			}
+			else if (true == RBOrganic2Freewater.IsChecked)
+			{
+				_wizardPlot.PlotVal.Title = WpfPLMultifracResources.KValues_OFW_Title;
+				num = 3;
+			}
+			int num2 = _wizardPlot.basis - 1;
+			IHNode iHNode = _context.FindNode(_varnames[num]);
+			_wizardPlot.SetIndependentVariable(_context, _varnames[num] + "/" + _currentColumnId + "!Label");
+			if (iHNode != null)
+			{
+				num2 = list.Count;
+				if (iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null)
+				{
+					num = iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements.Count;
+					_wizardPlot.PlotVal.NVariables = num2;
+					for (int i = 0; i < list.Count; i++)
+					{
+						string text = list[i];
+						((IHPlotVal)_wizardPlot.PlotVal).set_Label(i, text);
+						for (int j = 0; j < num; j++)
+						{
+							object obj = iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[text, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+							((IHPlotVal)_wizardPlot.PlotVal).set_YData(i, j, (short)0, obj);
+						}
+					}
+				}
+			}
+			string arg = _currentColumnId.Trim();
+			int num3 = _wizardPlot.PlotVal.Title.IndexOf("(");
+			if (num3 < 0)
+			{
+				_wizardPlot.PlotVal.Title = _wizardPlot.PlotVal.Title + string.Format(PlotPWRResource.Multifrac_Column_Title, arg);
+			}
+			else
+			{
+				_wizardPlot.PlotVal.Title = _wizardPlot.PlotVal.Title.Substring(0, num3) + string.Format(PlotPWRResource.Multifrac_Column_Title, arg);
+			}
+			((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle(Type.Missing, WpfPLMultifracResources.TooltipHeaderForRibbonItem_KValues);
+			_currentConfigValue = SaveConfigValue();
+		}
+
+		private void btnOk_Click(object sender, EventArgs e)
+		{
+			UpdateWizardData();
+			((PlotwizardHelper)_help).CloseForm((UserControl)this, (bool?)true);
+		}
+
+		private void btnCancel_Click(object sender, EventArgs e)
+		{
+			((PlotwizardHelper)_help).CloseForm((UserControl)this, (bool?)false);
+		}
+
+		void IPlotWizardTemplate.SetCaption(ref string caption)
+		{
+			caption = WpfPLMultifracResources.KValuesCaption;
+		}
+
+		void IPlotWizardTemplate.SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 450.0;
+		}
+
+		void IPlotWizardTemplate.SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 300.0;
+		}
+
+		void IPlotWizardTemplate.SetMinHeight(ref double minHeight)
+		{
+			minHeight = 400.0;
+		}
+
+		void IPlotWizardTemplate.SetMinWidth(ref double minWidth)
+		{
+			minWidth = 300.0;
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLMultifrac;component/kvalues.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			switch (connectionId)
+			{
+			case 1:
+				CurveList = (CurvesSelectorControl)target;
+				break;
+			case 2:
+				RBVapor2Liquid = (RadioButton)target;
+				break;
+			case 3:
+				RBVapor2Organic = (RadioButton)target;
+				break;
+			case 4:
+				RBVapor2Freewater = (RadioButton)target;
+				break;
+			case 5:
+				RBOrganic2Freewater = (RadioButton)target;
+				break;
+			case 6:
+				btnOk = (Button)target;
+				btnOk.Click += btnOk_Click;
+				break;
+			case 7:
+				btnCancel = (Button)target;
+				btnCancel.Click += btnCancel_Click;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+	[RibbonPlotWizardMgr("WpfPLMULTIFRAC.RibbonPlotWizardMgr", typeof(RibbonPlotWizardMgr))]
+	public class MultifracPlotWizardModule : PlotModuleBase
+	{
+	}
+	[ProgId("WpfPLMultifrac.Pressure")]
+	public class Pressure : UserControl, IRibbonPlotWizardType, IComponentConnector
+	{
+		private string ColumnListKey = string.Empty;
+
+		private string PressureUnitListKey = string.Empty;
+
+		private string StageOrderKey = string.Empty;
+
+		private string StageOnKey = string.Empty;
+
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private multHelper _help;
+
+		private List<string> _columnList;
+
+		private List<string> _pressureUnitList;
+
+		private string _currentColumnId = string.Empty;
+
+		private string _currentPressureUnit = string.Empty;
+
+		private string _uniqueId = "mult_Pressure";
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgIcon;
+
+		private bool _bHasInputDialog;
+
+		private string varname = string.Empty;
+
+		private bool _bCheckDataOnly;
+
+		private bool _contentLoaded;
+
+		public string TooltipContentForRibbonItem => WpfPLMultifracResources.TooltipContentForRibbonItem_Pressure;
+
+		public string TooltipHeaderForRibbonItem => WpfPLMultifracResources.TooltipHeaderForRibbonItem_Pressure;
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => ((PlotwizardHelper)_help).GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => ((PlotwizardHelper)_help).GetHelpID();
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgIcon;
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string> { ColumnListKey, PressureUnitListKey };
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string> { StageOrderKey, StageOnKey };
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		public Pressure()
+		{
+			InitializeComponent();
+			_help = new multHelper();
+			_bHasInputDialog = false;
+			if (_imgIcon == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLMultifrac.Images.pres.ico");
+				_imgIcon = new Bitmap(manifestResourceStream);
+			}
+			PressureUnitListKey = WpfPLMultifracResources.PressureUnit;
+			ColumnListKey = WpfPLMultifracResources.ColumnList;
+			StageOrderKey = WpfPLMultifracResources.StageOrder;
+			StageOnKey = WpfPLMultifracResources.StageOn;
+		}
+
+		private void GetVarName()
+		{
+			if (_context != null)
+			{
+				IHNode iHNode = _context.FindNode("Output/B_PRES2");
+				IHNode iHNode2 = _context.FindNode("Output/B_PRES3");
+				int count = iHNode.Elements.Count;
+				if (iHNode2.Elements.Count > 0)
+				{
+					varname = "B_PRES3";
+					_wizardPlot.SetIndependentVariable(_context, "Output/B_PRES3");
+				}
+				if (count > 0)
+				{
+					varname = "B_PRES2";
+					_wizardPlot.SetIndependentVariable(_context, "Output/B_PRES2");
+				}
+			}
+		}
+
+		void IRibbonPlotWizardType.Context(object oNode, ref object oPlotWizardComponent, ref int ierror)
+		{
+			if (oPlotWizardComponent == null || oNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			_context = oNode as IHNode;
+			_wizardPlot = oPlotWizardComponent as IHWizardPlot;
+			GetVarName();
+			_columnList = new List<string>();
+			_help.LoadColumn(_context, varname, _columnList);
+			if (_columnList.Count > 0)
+			{
+				_currentColumnId = _columnList[0];
+			}
+			else
+			{
+				ierror = 1;
+			}
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(PressureUnitListKey) == 0)
+			{
+				_pressureUnitList = new List<string>();
+				((PlotwizardHelper)_help).LoadUnitsList(_context.Application.Tree, _wizardPlot, _pressureUnitList);
+				return _pressureUnitList;
+			}
+			if (sFieldName.CompareTo(ColumnListKey) == 0)
+			{
+				return _columnList;
+			}
+			if (sFieldName.CompareTo(StageOrderKey) == 0)
+			{
+				return _help.StageOrderList;
+			}
+			if (sFieldName.CompareTo(StageOnKey) == 0)
+			{
+				return _help.StageOnList;
+			}
+			return new List<string>();
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sFieldName)
+		{
+			if (sFieldName.CompareTo(PressureUnitListKey) != 0 && sFieldName.CompareTo(ColumnListKey) != 0 && sFieldName.CompareTo(StageOrderKey) != 0 && sFieldName.CompareTo(StageOnKey) != 0)
+			{
+				return (RibbonControlType)0;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(PressureUnitListKey) == 0)
+			{
+				sCurrentVal = ((PlotwizardHelper)_help).GetUnitString(_context.Application.Tree, _wizardPlot);
+			}
+			else if (sFieldName.CompareTo(ColumnListKey) == 0)
+			{
+				sCurrentVal = _currentColumnId;
+			}
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(StageOrderKey) == 0)
+			{
+				sCurrentVal = _help.GetStageOrder(_wizardPlot.PlotVal.ReverseXAxis);
+			}
+			else if (sFieldName.CompareTo(StageOnKey) == 0)
+			{
+				sCurrentVal = _help.GetStageOn(_wizardPlot.PlotVal.SwapAxises);
+			}
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(PressureUnitListKey) == 0 && _currentPressureUnit.CompareTo(sValue) != 0)
+			{
+				_currentPressureUnit = sValue;
+				((PlotwizardHelper)_help).SaveUnitsComboText(_context.Application.Tree, _wizardPlot, _currentPressureUnit);
+			}
+			else if (sFieldName.CompareTo(ColumnListKey) == 0)
+			{
+				_currentColumnId = sValue;
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(StageOrderKey) == 0)
+			{
+				_wizardPlot.PlotVal.ReverseXAxis = _help.IsReverseXaxis(sValue);
+			}
+			else if (sFieldName.CompareTo(StageOnKey) == 0)
+			{
+				_wizardPlot.PlotVal.SwapAxises = _help.IsSwapAxis(sValue);
+			}
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		public void UpdateWizardData()
+		{
+			_wizardPlot.RemoveAllDependentVariable();
+			string text = _currentColumnId.Trim();
+			IHNode iHNode = _context.Elements["Output", Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[varname, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[text, Type.Missing, Type.Missing, Type.Missing, Type.Missing];
+			if (iHNode != null)
+			{
+				int count = iHNode.Elements.Count;
+				_wizardPlot.PlotVal.NVariables = 1;
+				_wizardPlot.SetIndependentVariable(_context, "Output/" + varname + "/" + text + "!Label");
+				for (int i = 0; i < count; i++)
+				{
+					((IHPlotVal)_wizardPlot.PlotVal).set_YData(0, (int)(short)i, (short)1, (object)iHNode.Elements[i, Type.Missing, Type.Missing, Type.Missing, Type.Missing]);
+				}
+			}
+			((PlotwizardHelper)_help).SaveUnitsComboText(_context.Application.Tree, _wizardPlot, _currentPressureUnit);
+			int num = _wizardPlot.PlotVal.Title.IndexOf("(");
+			if (num < 0)
+			{
+				_wizardPlot.PlotVal.Title = _wizardPlot.PlotVal.Title + string.Format(PlotPWRResource.Multifrac_Column_Title, text);
+			}
+			else
+			{
+				_wizardPlot.PlotVal.Title = _wizardPlot.PlotVal.Title.Substring(0, num) + string.Format(PlotPWRResource.Multifrac_Column_Title, text);
+			}
+			_wizardPlot.set_ErrorStatus(3, false);
+			_wizardPlot.RefreshCallBack = "PLMultiFrac.mult_PressureUpdate";
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLMultifrac;component/pressure.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			_contentLoaded = true;
+		}
+	}
+	[ProgId("WpfPLMultifrac.RelVol")]
+	public class RelVol : UserControl, IRibbonPlotWizardType, IPlotWizardTemplate, IComponentConnector
+	{
+		private string ColumnListKey = string.Empty;
+
+		private string StageOrderKey = string.Empty;
+
+		private string StageOnKey = string.Empty;
+
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private multHelper _help;
+
+		private List<string> _columnList;
+
+		private string _currentColumnId = string.Empty;
+
+		private string _currentConfigValue = string.Empty;
+
+		private string _uniqueId = "mult_RelVol";
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgIcon;
+
+		private bool _bHasInputDialog;
+
+		private string[] _varnames = new string[2];
+
+		private RadioButton[] _rbArr;
+
+		private bool _bCheckDataOnly;
+
+		internal RadioButton RBComponent;
+
+		internal RadioButton RBComponentGroup;
+
+		internal ComboBox AesCBComponent;
+
+		internal ComboBox AesCBComponentGroup;
+
+		internal CurvesSelectorControl ComponentsList;
+
+		internal CurvesSelectorControl ComponentsGroupList;
+
+		internal Button btnOk;
+
+		internal Button btnCancel;
+
+		private bool _contentLoaded;
+
+		public string TooltipContentForRibbonItem => WpfPLMultifracResources.TooltipContentForRibbonItem_RelVol;
+
+		public string TooltipHeaderForRibbonItem => WpfPLMultifracResources.TooltipHeaderForRibbonItem_RelVol;
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => ((PlotwizardHelper)_help).GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => ((PlotwizardHelper)_help).GetHelpID();
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgIcon;
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string> { ColumnListKey };
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string> { StageOrderKey, StageOnKey };
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		public RelVol()
+		{
+			InitializeComponent();
+			ComponentsList.Header = WpfPLMultifracResources.RelVolHeader1;
+			ComponentsGroupList.Header = WpfPLMultifracResources.RelVolHeader2;
+			ComponentsList.PropertyChanged += CurveList_PropertyChanged;
+			RBComponent.IsChecked = true;
+			RBComponentGroup.IsChecked = false;
+			_rbArr = new RadioButton[2] { RBComponent, RBComponentGroup };
+			_help = new multHelper();
+			_bHasInputDialog = true;
+			if (_imgIcon == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLMultifrac.Images.relvol.ico");
+				_imgIcon = new Bitmap(manifestResourceStream);
+			}
+			ColumnListKey = WpfPLMultifracResources.ColumnList;
+			StageOrderKey = WpfPLMultifracResources.StageOrder;
+			StageOnKey = WpfPLMultifracResources.StageOn;
+		}
+
+		private void CurveList_PropertyChanged(object sender, PropertyChangedEventArgs e)
+		{
+			btnOk.IsEnabled = ComponentsList.GetSelectedCurves().Length != 0;
+		}
+
+		private void GetVarName()
+		{
+			_varnames[0] = "Output/Y";
+			_varnames[1] = "Output/X";
+		}
+
+		private string SaveConfigValue()
+		{
+			_ = string.Empty;
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.Append("ColumnID=");
+			stringBuilder.Append(_currentColumnId);
+			stringBuilder.Append(";");
+			stringBuilder.Append("CompOption=");
+			stringBuilder.Append(RBComponent.IsChecked);
+			stringBuilder.Append(";");
+			stringBuilder.Append("CGroupEnable=");
+			stringBuilder.Append(RBComponentGroup.IsEnabled);
+			stringBuilder.Append(";");
+			stringBuilder.Append("CompSelection=");
+			List<string> list = new List<string>(ComponentsList.GetSelectedCurves());
+			int count = list.Count;
+			for (int i = 0; i < count; i++)
+			{
+				if (i > 0)
+				{
+					stringBuilder.Append(",");
+				}
+				stringBuilder.Append(list[i]);
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("CompCheckAll=");
+			stringBuilder.Append(ComponentsList.IsCheckAll);
+			stringBuilder.Append(";");
+			stringBuilder.Append("CompGSelection=");
+			List<string> list2 = new List<string>(ComponentsGroupList.GetSelectedCurves());
+			int count2 = list2.Count;
+			for (int j = 0; j < count2; j++)
+			{
+				if (j > 0)
+				{
+					stringBuilder.Append(",");
+				}
+				stringBuilder.Append(list2[j]);
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("CompGCheckAll=");
+			stringBuilder.Append(ComponentsGroupList.IsCheckAll);
+			stringBuilder.Append(";");
+			return stringBuilder.ToString();
+		}
+
+		private void RestoreConfigValue(string ConfigString)
+		{
+			string[] array = ConfigString.Split(';');
+			int num = 0;
+			string text = array[num].Substring(array[num].IndexOf('=') + 1);
+			num++;
+			text = array[num].Substring(array[num].IndexOf('=') + 1);
+			RBComponent.IsChecked = Convert.ToBoolean(text);
+			RBComponentGroup.IsChecked = !Convert.ToBoolean(text);
+			num++;
+			text = array[num].Substring(array[num].IndexOf('=') + 1);
+			RBComponentGroup.IsEnabled = Convert.ToBoolean(text);
+			num++;
+			text = array[num].Substring(array[num].IndexOf('=') + 1);
+			string[] array2 = text.Split(',');
+			List<string> list = new List<string>();
+			string[] array3 = array2;
+			foreach (string item in array3)
+			{
+				list.Add(item);
+			}
+			ComponentsList.SetSelectedCurves(list.ToArray());
+			num++;
+			string value = array[num].Substring(array[num].IndexOf('=') + 1);
+			ComponentsList.IsCheckAll = Convert.ToBoolean(value);
+			num++;
+			text = array[num].Substring(array[num].IndexOf('=') + 1);
+			string[] array4 = text.Split(',');
+			List<string> list2 = new List<string>();
+			array3 = array4;
+			foreach (string item2 in array3)
+			{
+				list2.Add(item2);
+			}
+			ComponentsGroupList.SetSelectedCurves(list2.ToArray());
+			num++;
+			value = array[num].Substring(array[num].IndexOf('=') + 1);
+			ComponentsGroupList.IsCheckAll = Convert.ToBoolean(value);
+		}
+
+		void IRibbonPlotWizardType.Context(object oNode, ref object oPlotWizardComponent, ref int ierror)
+		{
+			if (oPlotWizardComponent == null || oNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			_context = oNode as IHNode;
+			_wizardPlot = oPlotWizardComponent as IHWizardPlot;
+			GetVarName();
+			_columnList = new List<string>();
+			_help.LoadColumn(_context, "Y", _columnList);
+			if (_columnList.Count == 0)
+			{
+				ierror = 1;
+				return;
+			}
+			if (_columnList.Count > 0 && string.IsNullOrEmpty(_currentColumnId))
+			{
+				_currentColumnId = _columnList[0];
+			}
+			IHNode iHNode = _context.FindNode(_varnames[0]);
+			int result = 1;
+			int.TryParse(_currentColumnId, out result);
+			if (iHNode.Elements[result, Type.Missing, Type.Missing, Type.Missing, Type.Missing] == null)
+			{
+				ierror = 1;
+				return;
+			}
+			IHNodeCol elements = iHNode.Elements[result, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements;
+			List<string> list = new List<string>();
+			AesCBComponent.Items.Clear();
+			if (elements != null && elements.Count > 0)
+			{
+				for (int i = 0; i < elements.Count; i++)
+				{
+					string text = elements.get_Label(0, i, Type.Missing);
+					list.Add(text);
+					AesCBComponent.Items.Add(text);
+				}
+				AesCBComponent.SelectedIndex = 0;
+				ComponentsList.IsCheckAll = false;
+				ComponentsList.SetCurves(list.ToArray(), isKeepSelection: true);
+			}
+			IHNodeCol elements2 = _context.Application.Tree.FindNode("Data/Components/Comp-Groups").Elements;
+			List<string> list2 = new List<string>();
+			AesCBComponentGroup.Items.Clear();
+			if (elements2 != null && elements2.Count > 0)
+			{
+				for (int j = 0; j < elements2.Count; j++)
+				{
+					string text2 = elements2.get_Label(0, j, Type.Missing);
+					list2.Add(text2);
+					AesCBComponentGroup.Items.Add(text2);
+				}
+				AesCBComponentGroup.SelectedIndex = 0;
+				ComponentsGroupList.SetCurves(list2.ToArray(), isKeepSelection: true);
+			}
+			RBComponentGroup.IsEnabled = false;
+			if (string.IsNullOrEmpty(_currentConfigValue))
+			{
+				RBComponent.IsEnabled = true;
+				RBComponent.IsChecked = true;
+				RBComponentGroup.IsEnabled = false;
+				ComponentsGroupList.IsEnabled = false;
+				if (list2.Count != 0)
+				{
+					RBComponentGroup.IsEnabled = true;
+					ComponentsGroupList.IsEnabled = true;
+				}
+			}
+			else
+			{
+				RestoreConfigValue(_currentConfigValue);
+			}
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(ColumnListKey) == 0)
+			{
+				return _columnList;
+			}
+			if (sFieldName.CompareTo(StageOrderKey) == 0)
+			{
+				return _help.StageOrderList;
+			}
+			if (sFieldName.CompareTo(StageOnKey) == 0)
+			{
+				return _help.StageOnList;
+			}
+			return new List<string>();
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sFieldName)
+		{
+			if (sFieldName.CompareTo(ColumnListKey) != 0 && sFieldName.CompareTo(StageOrderKey) != 0 && sFieldName.CompareTo(StageOnKey) != 0)
+			{
+				return (RibbonControlType)0;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(ColumnListKey) == 0)
+			{
+				sCurrentVal = _currentColumnId;
+			}
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(StageOrderKey) == 0)
+			{
+				sCurrentVal = _help.GetStageOrder(_wizardPlot.PlotVal.ReverseXAxis);
+			}
+			else if (sFieldName.CompareTo(StageOnKey) == 0)
+			{
+				sCurrentVal = _help.GetStageOn(_wizardPlot.PlotVal.SwapAxises);
+			}
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+			sConfigValue = _currentConfigValue;
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(ColumnListKey) == 0)
+			{
+				_currentColumnId = sValue;
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(StageOrderKey) == 0)
+			{
+				_wizardPlot.PlotVal.ReverseXAxis = _help.IsReverseXaxis(sValue);
+			}
+			else if (sFieldName.CompareTo(StageOnKey) == 0)
+			{
+				_wizardPlot.PlotVal.SwapAxises = _help.IsSwapAxis(sValue);
+			}
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+			_currentConfigValue = sValue;
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+			throw new NotImplementedException();
+		}
+
+		public void UpdateWizardData()
+		{
+			List<string> list = new List<string>(ComponentsList.GetSelectedCurves());
+			List<string> list2 = new List<string>(ComponentsGroupList.GetSelectedCurves());
+			_wizardPlot.RemoveAllDependentVariable();
+			_wizardPlot.SetIndependentVariable(_context, _varnames[0] + "/" + _currentColumnId + "!Label");
+			IHNode iHNode = _context.FindNode(_varnames[0]);
+			IHNode iHNode2 = _context.FindNode(_varnames[1]);
+			if (iHNode == null || iHNode2 == null)
+			{
+				return;
+			}
+			string text = string.Empty;
+			int count = list.Count;
+			int count2 = list2.Count;
+			int num = count + count2;
+			if (iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing] == null)
+			{
+				return;
+			}
+			int count3 = iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements.Count;
+			_wizardPlot.PlotVal.NVariables = num;
+			bool flag = false;
+			for (int i = 0; i < num; i++)
+			{
+				try
+				{
+					flag = false;
+					string text2 = "";
+					if (i < count)
+					{
+						text2 = list[i];
+					}
+					else
+					{
+						text2 = list2[i - count];
+						flag = true;
+					}
+					((IHPlotVal)_wizardPlot.PlotVal).set_Label(i, text2);
+					for (int j = 0; j < count3; j++)
+					{
+						double num2 = 0.0;
+						double num3 = 0.0;
+						double num4 = 0.0;
+						double num5 = 0.0;
+						try
+						{
+							if (!flag)
+							{
+								if (iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[text2, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null)
+								{
+									num2 = ((double?)(dynamic)iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[text2, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing)) ?? 0.0;
+								}
+								if (iHNode2.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode2.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode2.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[text2, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null)
+								{
+									num3 = ((double?)(dynamic)iHNode2.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[text2, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing)) ?? 0.0;
+								}
+							}
+							else
+							{
+								string path = "Data/Components/Comp-Groups/" + text2 + "/Input/L1/MIXED";
+								IHNode iHNode3 = _context.Application.Tree.FindNode(path);
+								if (iHNode3 != null && iHNode3.Elements.Count > 0)
+								{
+									for (int k = 0; k < iHNode3.Elements.Count; k++)
+									{
+										IHNode iHNode4 = iHNode3.Elements[k, Type.Missing, Type.Missing, Type.Missing, Type.Missing];
+										string loc_or_name = ((dynamic)iHNode4.get_Value(Type.Missing)).ToString();
+										if (iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[loc_or_name, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null)
+										{
+											num2 += ((double?)(dynamic)iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[loc_or_name, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing)) ?? 0.0;
+										}
+										if (iHNode2.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode2.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode2.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[loc_or_name, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null)
+										{
+											num3 += ((double?)(dynamic)iHNode2.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[loc_or_name, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing)) ?? 0.0;
+										}
+									}
+								}
+							}
+							if (RBComponent.IsChecked == true || RBComponentGroup.IsChecked != true)
+							{
+								text = AesCBComponent.SelectedItem.ToString().Trim();
+								if (iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[text, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null)
+								{
+									num4 = ((double?)(dynamic)iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[text, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing)) ?? 0.0;
+								}
+								if (iHNode2.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode2.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode2.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[text, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null)
+								{
+									num5 = ((double?)(dynamic)iHNode2.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[text, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing)) ?? 0.0;
+								}
+							}
+							else if (AesCBComponentGroup.SelectedItem != null)
+							{
+								text = AesCBComponentGroup.SelectedItem.ToString().Trim();
+								string path2 = "Data/Components/Comp-Groups/" + text + "/Input/L1/MIXED";
+								IHNode iHNode5 = _context.Application.Tree.FindNode(path2);
+								if (iHNode5 != null && iHNode5.Elements.Count > 0)
+								{
+									for (int l = 0; l < iHNode5.Elements.Count; l++)
+									{
+										IHNode iHNode6 = iHNode5.Elements[l, Type.Missing, Type.Missing, Type.Missing, Type.Missing];
+										string loc_or_name2 = ((dynamic)iHNode6.get_Value(Type.Missing)).ToString();
+										if (iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[loc_or_name2, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null)
+										{
+											num4 += ((double?)(dynamic)iHNode.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[loc_or_name2, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing)) ?? 0.0;
+										}
+										if (iHNode2.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode2.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode2.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[loc_or_name2, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null)
+										{
+											num5 += ((double?)(dynamic)iHNode2.Elements[_currentColumnId, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[loc_or_name2, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing)) ?? 0.0;
+										}
+									}
+								}
+							}
+							if (num3 != 0.0 && num5 != 0.0)
+							{
+								double num6 = num2 / num3 / (num4 / num5);
+								((IHPlotVal)_wizardPlot.PlotVal).set_YData(i, j, (short)0, (object)num6);
+							}
+						}
+						catch
+						{
+						}
+					}
+				}
+				catch
+				{
+				}
+			}
+			((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle(Type.Missing, PlotPWRResource.MULTIFRAC_Rel_Vol_YAxisTitle + text);
+			string arg = _currentColumnId.Trim();
+			int num7 = _wizardPlot.PlotVal.Title.IndexOf("(");
+			if (num7 < 0)
+			{
+				_wizardPlot.PlotVal.Title = _wizardPlot.PlotVal.Title + string.Format(PlotPWRResource.Multifrac_Column_Title, arg);
+			}
+			else
+			{
+				_wizardPlot.PlotVal.Title = _wizardPlot.PlotVal.Title.Substring(0, num7) + string.Format(PlotPWRResource.Multifrac_Column_Title, arg);
+			}
+			_currentConfigValue = SaveConfigValue();
+		}
+
+		private void btnOk_Click(object sender, EventArgs e)
+		{
+			UpdateWizardData();
+			((PlotwizardHelper)_help).CloseForm((UserControl)this, (bool?)true);
+		}
+
+		private void btnCancel_Click(object sender, EventArgs e)
+		{
+			((PlotwizardHelper)_help).CloseForm((UserControl)this, (bool?)false);
+		}
+
+		void IPlotWizardTemplate.SetCaption(ref string caption)
+		{
+			caption = WpfPLMultifracResources.RelVolCaption;
+		}
+
+		void IPlotWizardTemplate.SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 400.0;
+		}
+
+		void IPlotWizardTemplate.SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 420.0;
+		}
+
+		void IPlotWizardTemplate.SetMinHeight(ref double minHeight)
+		{
+			minHeight = 400.0;
+		}
+
+		void IPlotWizardTemplate.SetMinWidth(ref double minWidth)
+		{
+			minWidth = ComponentsList.ActualWidth + ComponentsGroupList.ActualWidth + 50.0;
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLMultifrac;component/relvol.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			switch (connectionId)
+			{
+			case 1:
+				RBComponent = (RadioButton)target;
+				break;
+			case 2:
+				RBComponentGroup = (RadioButton)target;
+				break;
+			case 3:
+				AesCBComponent = (ComboBox)target;
+				break;
+			case 4:
+				AesCBComponentGroup = (ComboBox)target;
+				break;
+			case 5:
+				ComponentsList = (CurvesSelectorControl)target;
+				break;
+			case 6:
+				ComponentsGroupList = (CurvesSelectorControl)target;
+				break;
+			case 7:
+				btnOk = (Button)target;
+				btnOk.Click += btnOk_Click;
+				break;
+			case 8:
+				btnCancel = (Button)target;
+				btnCancel.Click += btnCancel_Click;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+	[ProgId("WpfPLMultifrac.Temperature")]
+	public class Temperature : UserControl, IRibbonPlotWizardType, IComponentConnector
+	{
+		private string ColumnListKey = string.Empty;
+
+		private string TempUnitListKey = string.Empty;
+
+		private string StageOrderKey = string.Empty;
+
+		private string StageOnKey = string.Empty;
+
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private multHelper _help;
+
+		private List<string> _columnList;
+
+		private List<string> _temperatureUnitList;
+
+		private string _currentColumnId = string.Empty;
+
+		private string _currentTemperatureUnit = string.Empty;
+
+		private string _uniqueId = "mult_Temperature";
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgIcon;
+
+		private bool _bHasInputDialog;
+
+		private string varname = string.Empty;
+
+		private bool _bCheckDataOnly;
+
+		private bool _contentLoaded;
+
+		public string TooltipContentForRibbonItem => WpfPLMultifracResources.TooltipContentForRibbonItem_Temp;
+
+		public string TooltipHeaderForRibbonItem => WpfPLMultifracResources.TooltipHeaderForRibbonItem_Temp;
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => ((PlotwizardHelper)_help).GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => ((PlotwizardHelper)_help).GetHelpID();
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgIcon;
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string> { ColumnListKey, TempUnitListKey };
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string> { StageOrderKey, StageOnKey };
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		public Temperature()
+		{
+			InitializeComponent();
+			_help = new multHelper();
+			_bHasInputDialog = false;
+			if (_imgIcon == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLMultifrac.Images.temp.ico");
+				_imgIcon = new Bitmap(manifestResourceStream);
+			}
+			TempUnitListKey = WpfPLMultifracResources.TemperatureUnit;
+			ColumnListKey = WpfPLMultifracResources.ColumnList;
+			StageOrderKey = WpfPLMultifracResources.StageOrder;
+			StageOnKey = WpfPLMultifracResources.StageOn;
+		}
+
+		private void GetVarName()
+		{
+			if (_context != null)
+			{
+				IHNode iHNode = _context.FindNode("Output/B_TEMP2");
+				IHNode iHNode2 = _context.FindNode("Output/B_TEMP3");
+				int count = iHNode.Elements.Count;
+				if (iHNode2.Elements.Count > 0)
+				{
+					varname = "B_TEMP3";
+				}
+				if (count > 0)
+				{
+					varname = "B_TEMP2";
+				}
+			}
+		}
+
+		void IRibbonPlotWizardType.Context(object oNode, ref object oPlotWizardComponent, ref int ierror)
+		{
+			if (oPlotWizardComponent == null || oNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			_context = oNode as IHNode;
+			_wizardPlot = oPlotWizardComponent as IHWizardPlot;
+			GetVarName();
+			_columnList = new List<string>();
+			_help.LoadColumn(_context, varname, _columnList);
+			if (_columnList.Count > 0)
+			{
+				_currentColumnId = _columnList[0];
+			}
+			else
+			{
+				ierror = 1;
+			}
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(TempUnitListKey) == 0)
+			{
+				_temperatureUnitList = new List<string>();
+				((PlotwizardHelper)_help).LoadUnitsList(_context.Application.Tree, _wizardPlot, _temperatureUnitList);
+				return _temperatureUnitList;
+			}
+			if (sFieldName.CompareTo(ColumnListKey) == 0)
+			{
+				return _columnList;
+			}
+			if (sFieldName.CompareTo(StageOrderKey) == 0)
+			{
+				return _help.StageOrderList;
+			}
+			if (sFieldName.CompareTo(StageOnKey) == 0)
+			{
+				return _help.StageOnList;
+			}
+			return new List<string>();
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sFieldName)
+		{
+			if (sFieldName.CompareTo(TempUnitListKey) != 0 && sFieldName.CompareTo(ColumnListKey) != 0 && sFieldName.CompareTo(StageOrderKey) != 0 && sFieldName.CompareTo(StageOnKey) != 0)
+			{
+				return (RibbonControlType)0;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(TempUnitListKey) == 0)
+			{
+				sCurrentVal = ((PlotwizardHelper)_help).GetUnitString(_context.Application.Tree, _wizardPlot);
+			}
+			else if (sFieldName.CompareTo(ColumnListKey) == 0)
+			{
+				sCurrentVal = _currentColumnId;
+			}
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(StageOrderKey) == 0)
+			{
+				sCurrentVal = _help.GetStageOrder(_wizardPlot.PlotVal.ReverseXAxis);
+			}
+			else if (sFieldName.CompareTo(StageOnKey) == 0)
+			{
+				sCurrentVal = _help.GetStageOn(_wizardPlot.PlotVal.SwapAxises);
+			}
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(TempUnitListKey) == 0 && _currentTemperatureUnit.CompareTo(sValue) != 0)
+			{
+				_currentTemperatureUnit = sValue;
+				((PlotwizardHelper)_help).SaveUnitsComboText(_context.Application.Tree, _wizardPlot, _currentTemperatureUnit);
+			}
+			else if (sFieldName.CompareTo(ColumnListKey) == 0)
+			{
+				_currentColumnId = sValue;
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(StageOrderKey) == 0)
+			{
+				_wizardPlot.PlotVal.ReverseXAxis = _help.IsReverseXaxis(sValue);
+			}
+			else if (sFieldName.CompareTo(StageOnKey) == 0)
+			{
+				_wizardPlot.PlotVal.SwapAxises = _help.IsSwapAxis(sValue);
+			}
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		public void UpdateWizardData()
+		{
+			_wizardPlot.RemoveAllDependentVariable();
+			string text = _currentColumnId.Trim();
+			IHNode iHNode = _context.Elements["Output", Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[varname, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[text, Type.Missing, Type.Missing, Type.Missing, Type.Missing];
+			if (iHNode != null)
+			{
+				int count = iHNode.Elements.Count;
+				_wizardPlot.PlotVal.NVariables = 1;
+				_wizardPlot.SetIndependentVariable(_context, "Output/" + varname + "/" + text + "!Label");
+				for (int i = 0; i < count; i++)
+				{
+					((IHPlotVal)_wizardPlot.PlotVal).set_YData(0, (int)(short)i, (short)1, (object)iHNode.Elements[i, Type.Missing, Type.Missing, Type.Missing, Type.Missing]);
+				}
+			}
+			((PlotwizardHelper)_help).SaveUnitsComboText(_context.Application.Tree, _wizardPlot, _currentTemperatureUnit);
+			int num = _wizardPlot.PlotVal.Title.IndexOf("(");
+			if (num < 0)
+			{
+				_wizardPlot.PlotVal.Title = _wizardPlot.PlotVal.Title + string.Format(PlotPWRResource.Multifrac_Column_Title, text);
+			}
+			else
+			{
+				_wizardPlot.PlotVal.Title = _wizardPlot.PlotVal.Title.Substring(0, num) + string.Format(PlotPWRResource.Multifrac_Column_Title, text);
+			}
+			_wizardPlot.set_ErrorStatus(3, false);
+			_wizardPlot.RefreshCallBack = "PLMultiFrac.mult_TemperatureUpdate";
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLMultifrac;component/temperature.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			_contentLoaded = true;
+		}
+	}
+}
+namespace WpfPLMultifrac.DataHelper
+{
+	public class multHelper : PlotwizardHelper
+	{
+		private List<string> _StageOrder = new List<string>
+		{
+			WpfPLMultifracResources.Ascending,
+			WpfPLMultifracResources.Descending
+		};
+
+		private List<string> _StageOn = new List<string>
+		{
+			WpfPLMultifracResources.X_axis,
+			WpfPLMultifracResources.Y_axis
+		};
+
+		public List<string> StageOrderList => _StageOrder;
+
+		public List<string> StageOnList => _StageOn;
+
+		public string GetStageOrder(bool isReverse)
+		{
+			if (!isReverse)
+			{
+				return WpfPLMultifracResources.Ascending;
+			}
+			return WpfPLMultifracResources.Descending;
+		}
+
+		public bool IsReverseXaxis(string stageOrder)
+		{
+			return string.Compare(stageOrder, WpfPLMultifracResources.Descending) == 0;
+		}
+
+		public string GetStageOn(bool isSwap)
+		{
+			if (!isSwap)
+			{
+				return WpfPLMultifracResources.X_axis;
+			}
+			return WpfPLMultifracResources.Y_axis;
+		}
+
+		public bool IsSwapAxis(string stageOn)
+		{
+			return string.Compare(stageOn, WpfPLMultifracResources.Y_axis) == 0;
+		}
+
+		public void LoadColumn(IHNode top, string varName, List<string> listColumns)
+		{
+			IHNode iHNode = top.Elements["Output", Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[varName, Type.Missing, Type.Missing, Type.Missing, Type.Missing];
+			if (iHNode != null)
+			{
+				int count = iHNode.Elements.Count;
+				for (int i = 0; i < count; i++)
+				{
+					string item = iHNode.Elements.get_Label(0, i, Type.Missing);
+					listColumns.Add(item);
+				}
+			}
+		}
+	}
+	public class mult_Column3data
+	{
+		public int Column { get; set; }
+
+		public string ColumnText { get; set; }
+
+		public int m_unit { get; set; }
+
+		public int m_check1 { get; set; }
+
+		public int m_check2 { get; set; }
+
+		public int m_check3 { get; set; }
+
+		public int m_check4 { get; set; }
+	}
+	public class mult_Composition3Data
+	{
+		private ObservableCollection<string> m_Components = new ObservableCollection<string>();
+
+		public int Phase { get; set; }
+
+		public int Column { get; set; }
+
+		public string ColumnText { get; set; }
+
+		public int ComponentsCount => m_Components.Count;
+
+		public void AddComponent(string Label)
+		{
+			m_Components.Add(Label);
+		}
+
+		public void RemoveComponent(int Index)
+		{
+			m_Components.RemoveAt(Index);
+		}
+
+		public void RemoveAllComponents()
+		{
+			m_Components.Clear();
+		}
+
+		public string Component(int index)
+		{
+			return m_Components[index];
+		}
+	}
+	public class mult_KeyComponent3data
+	{
+		private ObservableCollection<string> m_Components = new ObservableCollection<string>();
+
+		private ObservableCollection<string> m_Comp_Group = new ObservableCollection<string>();
+
+		public int Phase { get; set; }
+
+		public int KeyComponent { get; set; }
+
+		public int CompOrGroup { get; set; }
+
+		public int GrpComponent { get; set; }
+
+		public int Column { get; set; }
+
+		public string ColumnText { get; set; }
+
+		public string KeyCompText { get; set; }
+
+		public void AddComponent(string Label, int CorG)
+		{
+			if (CorG == 0)
+			{
+				m_Components.Add(Label);
+			}
+			else
+			{
+				m_Comp_Group.Add(Label);
+			}
+		}
+
+		public void RemoveComponent(int Index, int CorG)
+		{
+			if (CorG == 0)
+			{
+				m_Components.RemoveAt(Index);
+			}
+			else
+			{
+				m_Comp_Group.RemoveAt(Index);
+			}
+		}
+
+		public void RemoveAllComponents(int CorG)
+		{
+			if (CorG == 0)
+			{
+				m_Components.Clear();
+			}
+			else
+			{
+				m_Comp_Group.Clear();
+			}
+		}
+
+		public string Component(int index, int CorG)
+		{
+			if (CorG == 0)
+			{
+				return m_Components[index];
+			}
+			return m_Comp_Group[index];
+		}
+
+		public int ComponentsCount(int CorG)
+		{
+			if (CorG == 0)
+			{
+				return m_Components.Count;
+			}
+			return m_Comp_Group.Count;
+		}
+	}
+}
+namespace AspenTech.AspenPlus.Happ
+{
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("11677780-B72B-11D0-A943-0000C0A118DB")]
+	[CoClass(typeof(object))]
+	[TypeIdentifier]
+	public interface CHPlotVal : IHPlotVal
+	{
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("8008C730-1A3E-11D1-8A4D-0000C0237DF9")]
+	[CoClass(typeof(object))]
+	[TypeIdentifier]
+	public interface CHWizardPlot : IHWizardPlot
+	{
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("8E567522-F9BA-11CF-90B2-0000C0A810C4")]
+	[TypeIdentifier]
+	public interface IHNode
+	{
+		[DispId(1610743808)]
+		IHapp Application
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743808)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+
+		void _VtblGap1_5();
+
+		[DispId(1610743814)]
+		object Value
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743814)]
+			[return: MarshalAs(UnmanagedType.Struct)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743814)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.Struct)]
+			set;
+		}
+
+		void _VtblGap2_10();
+
+		[DispId(1610743826)]
+		IHNodeCol Elements
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743826)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+
+		void _VtblGap3_8();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743835)]
+		[return: MarshalAs(UnmanagedType.Interface)]
+		IHNode FindNode([In][MarshalAs(UnmanagedType.BStr)] string path);
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("89E81F60-019A-11D0-9BE7-0000C05375D5")]
+	[TypeIdentifier]
+	public interface IHNodeCol : IEnumerable
+	{
+		void _VtblGap1_2();
+
+		[DispId(1610743810)]
+		int Count
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743810)]
+			get;
+		}
+
+		void _VtblGap2_3();
+
+		[DispId(0)]
+		IHNode this[[In][MarshalAs(UnmanagedType.Struct)] object loc_or_name, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name2, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name3, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name4, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name5]
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(0)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+
+		void _VtblGap3_2();
+
+		[DispId(1610743817)]
+		string Label
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743817)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743817)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.BStr)]
+			set;
+		}
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("11677780-B72B-11D0-A943-0000C0A118DB")]
+	[TypeIdentifier]
+	public interface IHPlotVal
+	{
+		void _VtblGap1_2();
+
+		[DispId(1610743810)]
+		string Title
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743810)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743810)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.BStr)]
+			set;
+		}
+
+		void _VtblGap2_1();
+
+		void _VtblGap3_3();
+
+		[DispId(1610743816)]
+		string YAxisTitle
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743816)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743816)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.BStr)]
+			set;
+		}
+
+		void _VtblGap4_1();
+
+		[DispId(1610743819)]
+		string Label
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743819)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743819)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.BStr)]
+			set;
+		}
+
+		void _VtblGap5_1();
+
+		void _VtblGap6_2();
+
+		[DispId(1610743824)]
+		int NVariables
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743824)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743824)]
+			[param: In]
+			set;
+		}
+
+		void _VtblGap7_5();
+
+		[DispId(1610743831)]
+		object YData
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743831)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.Struct)]
+			set;
+		}
+
+		void _VtblGap8_3();
+
+		[DispId(1610743835)]
+		bool SwapAxises
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743835)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743835)]
+			[param: In]
+			set;
+		}
+
+		[DispId(1610743837)]
+		bool ReverseXAxis
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743837)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743837)]
+			[param: In]
+			set;
+		}
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("8008C730-1A3E-11D1-8A4D-0000C0237DF9")]
+	[TypeIdentifier]
+	public interface IHWizardPlot
+	{
+		[DispId(1610743808)]
+		CHPlotVal PlotVal
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743808)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+
+		[DispId(1610743809)]
+		int basis
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743809)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743809)]
+			[param: In]
+			set;
+		}
+
+		void _VtblGap1_4();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743815)]
+		void SetIndependentVariable([In][MarshalAs(UnmanagedType.Interface)] IHNode pContext, [In][MarshalAs(UnmanagedType.BStr)] string indepvar);
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743816)]
+		void AddDependentVariable([In][MarshalAs(UnmanagedType.Interface)] IHNode pContext, [In][MarshalAs(UnmanagedType.BStr)] string depvar);
+
+		void _VtblGap2_1();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743818)]
+		void RemoveAllDependentVariable();
+
+		[DispId(1610743819)]
+		bool HasDependentVariable
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743819)]
+			get;
+		}
+
+		void _VtblGap3_3();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743823)]
+		void Clear();
+
+		void _VtblGap4_1();
+
+		[DispId(1610743825)]
+		bool ErrorStatus
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743825)]
+			set;
+		}
+
+		[DispId(1610743826)]
+		string RefreshCallBack
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743826)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743826)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.BStr)]
+			set;
+		}
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[DefaultMember("Name")]
+	[Guid("8E567521-F9BA-11CF-90B2-0000C0A810C4")]
+	[TypeIdentifier]
+	public interface IHapp
+	{
+		void _VtblGap1_3();
+
+		[DispId(0)]
+		string Name
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(0)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+		}
+
+		void _VtblGap2_7();
+
+		[DispId(1610743819)]
+		IHNode Tree
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743819)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

@@ -1,0 +1,5172 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
+using System.IO.MemoryMappedFiles;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Automation.Peers;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
+using System.Windows.Interop;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Threading;
+using CefSharp.Core;
+using CefSharp.DevTools;
+using CefSharp.DevTools.DOM;
+using CefSharp.Enums;
+using CefSharp.Handler;
+using CefSharp.Internals;
+using CefSharp.Structs;
+using CefSharp.Wpf.Experimental;
+using CefSharp.Wpf.Experimental.Accessibility;
+using CefSharp.Wpf.Handler;
+using CefSharp.Wpf.Internals;
+using CefSharp.Wpf.Rendering;
+using Microsoft.Win32.SafeHandles;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyTitle("CefSharp.Wpf")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCompany("The CefSharp Authors")]
+[assembly: AssemblyProduct("CefSharp")]
+[assembly: AssemblyCopyright("Copyright © 2023 The CefSharp Authors")]
+[assembly: ComVisible(false)]
+[assembly: AssemblyFileVersion("113.1.40.0")]
+[assembly: ThemeInfo(ResourceDictionaryLocation.None, ResourceDictionaryLocation.SourceAssembly)]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("113.1.40.0")]
+namespace CefSharp.Wpf
+{
+	public class CefSettings : CefSettingsBase
+	{
+		public CefSettings()
+		{
+			base.WindowlessRenderingEnabled = true;
+		}
+	}
+	[TemplatePart(Name = "PART_image", Type = typeof(Image))]
+	[TemplatePart(Name = "PART_popupImage", Type = typeof(Image))]
+	public class ChromiumWebBrowser : Control, IRenderWebBrowser, IWebBrowserInternal, IWebBrowser, IChromiumWebBrowserBase, IDisposable, IWpfWebBrowser, IInputElement
+	{
+		public const string PartImageName = "PART_image";
+
+		public const string PartPopupImageName = "PART_popupImage";
+
+		private CefSharp.Structs.Rect viewRect;
+
+		private WindowState previousWindowState;
+
+		private HwndSource source;
+
+		private Window sourceWindow;
+
+		private MonitorInfoEx monitorInfo;
+
+		private DispatcherTimer tooltipTimer;
+
+		private ToolTip toolTip;
+
+		private IBrowserAdapter managedCefBrowserAdapter;
+
+		private bool ignoreUriChange;
+
+		private string initialAddress;
+
+		private bool initialLoadCalled;
+
+		private bool browserCreated;
+
+		private Image image;
+
+		private Image popupImage;
+
+		private System.Windows.Point browserScreenLocation;
+
+		private IBrowserSettings browserSettings;
+
+		private IRequestContext requestContext;
+
+		private IDragData currentDragData;
+
+		private DragDropEffects currentDragDropEffects;
+
+		private static bool DesignMode;
+
+		private bool resizeHackIgnoreOnPaint;
+
+		private CefSharp.Structs.Size? resizeHackSize;
+
+		private bool initialFocus;
+
+		public static DependencyProperty CanGoBackProperty;
+
+		public static DependencyProperty CanGoForwardProperty;
+
+		public static readonly DependencyProperty AddressProperty;
+
+		public static readonly DependencyProperty IsLoadingProperty;
+
+		public static readonly DependencyProperty IsBrowserInitializedProperty;
+
+		public static readonly DependencyProperty TitleProperty;
+
+		public static readonly DependencyProperty ZoomLevelProperty;
+
+		public static readonly DependencyProperty ZoomLevelIncrementProperty;
+
+		public static readonly DependencyProperty CleanupElementProperty;
+
+		public static readonly DependencyProperty TooltipTextProperty;
+
+		public static readonly DependencyProperty WebBrowserProperty;
+
+		public const string BrowserNotInitializedExceptionErrorMessage = "The ChromiumWebBrowser instance creates the underlying Chromium Embedded Framework (CEF) browser instance in an async fashion. The undelying CefBrowser instance is not yet initialized. Use the IsBrowserInitializedChanged event and check the IsBrowserInitialized property to determine when the browser has been initialized.";
+
+		private const string CefInitializeFailedErrorMessage = "Cef.Initialize() failed.Check the log file see https://github.com/cefsharp/CefSharp/wiki/Trouble-Shooting#log-file for details.";
+
+		private long canExecuteJavascriptInMainFrameId;
+
+		private int browserInitialized;
+
+		private int disposeSignaled;
+
+		private IBrowser browser;
+
+		private TaskCompletionSource<LoadUrlAsyncResponse> initialLoadTaskCompletionSource = new TaskCompletionSource<LoadUrlAsyncResponse>();
+
+		private Action<bool?, CefErrorCode?> initialLoadAction;
+
+		public bool ResizeHackEnabled { get; set; }
+
+		public int ResizeHackDelayInMs { get; set; } = 50;
+
+		public bool IsDisposed => Interlocked.CompareExchange(ref disposeSignaled, 1, 1) == 1;
+
+		public IWpfKeyboardHandler WpfKeyboardHandler { get; set; }
+
+		public IBrowserSettings BrowserSettings
+		{
+			get
+			{
+				return browserSettings;
+			}
+			set
+			{
+				if (browserCreated)
+				{
+					throw new Exception("Browser has already been created. BrowserSettings must be set before the underlying CEF browser is created.");
+				}
+				if (browserSettings != null && browserSettings.AutoDispose)
+				{
+					browserSettings.Dispose();
+				}
+				browserSettings = value;
+			}
+		}
+
+		public IRequestContext RequestContext
+		{
+			get
+			{
+				return requestContext;
+			}
+			set
+			{
+				if (browserCreated)
+				{
+					throw new Exception("Browser has already been created. RequestContext must be set before the underlying CEF browser is created.");
+				}
+				if (value != null && !ObjectFactory.RequestContextType.IsAssignableFrom(value.UnWrap().GetType()))
+				{
+					throw new Exception($"RequestContext can only be of type {ObjectFactory.RequestContextType} or null");
+				}
+				requestContext = value;
+			}
+		}
+
+		public IRenderHandler RenderHandler { get; set; }
+
+		public IAccessibilityHandler AccessibilityHandler { get; set; }
+
+		public ICommand BackCommand { get; private set; }
+
+		public ICommand ForwardCommand { get; private set; }
+
+		public ICommand ReloadCommand { get; private set; }
+
+		public ICommand PrintCommand { get; private set; }
+
+		public ICommand ZoomInCommand { get; private set; }
+
+		public ICommand ZoomOutCommand { get; private set; }
+
+		public ICommand ZoomResetCommand { get; private set; }
+
+		public ICommand ViewSourceCommand { get; private set; }
+
+		public ICommand CleanupCommand { get; private set; }
+
+		public ICommand StopCommand { get; private set; }
+
+		public ICommand CutCommand { get; private set; }
+
+		public ICommand CopyCommand { get; private set; }
+
+		public ICommand PasteCommand { get; private set; }
+
+		public ICommand SelectAllCommand { get; private set; }
+
+		public ICommand UndoCommand { get; private set; }
+
+		public ICommand RedoCommand { get; private set; }
+
+		public ICommand ToggleAudioMuteCommand { get; private set; }
+
+		public float DpiScaleFactor { get; set; }
+
+		public bool CanGoBack => (bool)GetValue(CanGoBackProperty);
+
+		public bool CanGoForward => (bool)GetValue(CanGoForwardProperty);
+
+		public string Address
+		{
+			get
+			{
+				return (string)GetValue(AddressProperty);
+			}
+			set
+			{
+				SetValue(AddressProperty, value);
+			}
+		}
+
+		public bool IsLoading => (bool)GetValue(IsLoadingProperty);
+
+		public bool IsBrowserInitialized => (bool)GetValue(IsBrowserInitializedProperty);
+
+		public string Title
+		{
+			get
+			{
+				return (string)GetValue(TitleProperty);
+			}
+			set
+			{
+				SetValue(TitleProperty, value);
+			}
+		}
+
+		public double ZoomLevel
+		{
+			get
+			{
+				return (double)GetValue(ZoomLevelProperty);
+			}
+			set
+			{
+				SetValue(ZoomLevelProperty, value);
+			}
+		}
+
+		public double ZoomLevelIncrement
+		{
+			get
+			{
+				return (double)GetValue(ZoomLevelIncrementProperty);
+			}
+			set
+			{
+				SetValue(ZoomLevelIncrementProperty, value);
+			}
+		}
+
+		public FrameworkElement CleanupElement
+		{
+			get
+			{
+				return (FrameworkElement)GetValue(CleanupElementProperty);
+			}
+			set
+			{
+				SetValue(CleanupElementProperty, value);
+			}
+		}
+
+		public string TooltipText => (string)GetValue(TooltipTextProperty);
+
+		public IWebBrowser WebBrowser
+		{
+			get
+			{
+				return (IWebBrowser)GetValue(WebBrowserProperty);
+			}
+			set
+			{
+				SetValue(WebBrowserProperty, value);
+			}
+		}
+
+		public IJavascriptObjectRepository JavascriptObjectRepository => managedCefBrowserAdapter?.JavascriptObjectRepository;
+
+		[Browsable(false)]
+		[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+		[DefaultValue(null)]
+		public IBrowser BrowserCore { get; internal set; }
+
+		[Browsable(false)]
+		[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+		[DefaultValue(false)]
+		public bool CanExecuteJavascriptInMainFrame { get; private set; }
+
+		[Browsable(false)]
+		[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+		[DefaultValue(null)]
+		public IDialogHandler DialogHandler { get; set; }
+
+		[Browsable(false)]
+		[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+		[DefaultValue(null)]
+		public IJsDialogHandler JsDialogHandler { get; set; }
+
+		[Browsable(false)]
+		[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+		[DefaultValue(null)]
+		public IKeyboardHandler KeyboardHandler { get; set; }
+
+		[Browsable(false)]
+		[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+		[DefaultValue(null)]
+		public IRequestHandler RequestHandler { get; set; }
+
+		[Browsable(false)]
+		[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+		[DefaultValue(null)]
+		public IDownloadHandler DownloadHandler { get; set; }
+
+		[Browsable(false)]
+		[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+		[DefaultValue(null)]
+		public ILoadHandler LoadHandler { get; set; }
+
+		[Browsable(false)]
+		[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+		[DefaultValue(null)]
+		public ILifeSpanHandler LifeSpanHandler { get; set; }
+
+		[Browsable(false)]
+		[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+		[DefaultValue(null)]
+		public IDisplayHandler DisplayHandler { get; set; }
+
+		[Browsable(false)]
+		[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+		[DefaultValue(null)]
+		public IContextMenuHandler MenuHandler { get; set; }
+
+		[Browsable(false)]
+		[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+		[DefaultValue(null)]
+		public IRenderProcessMessageHandler RenderProcessMessageHandler { get; set; }
+
+		[Browsable(false)]
+		[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+		[DefaultValue(null)]
+		public IFindHandler FindHandler { get; set; }
+
+		[Browsable(false)]
+		[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+		[DefaultValue(null)]
+		public IAudioHandler AudioHandler { get; set; }
+
+		[Browsable(false)]
+		[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+		[DefaultValue(null)]
+		public IFrameHandler FrameHandler { get; set; }
+
+		[Browsable(false)]
+		[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+		[DefaultValue(null)]
+		public IPermissionHandler PermissionHandler { get; set; }
+
+		[Browsable(false)]
+		[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+		[DefaultValue(null)]
+		public IFocusHandler FocusHandler { get; set; }
+
+		[Browsable(false)]
+		[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+		[DefaultValue(null)]
+		public IDragHandler DragHandler { get; set; }
+
+		[Browsable(false)]
+		[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+		[DefaultValue(null)]
+		public IResourceRequestHandlerFactory ResourceRequestHandlerFactory { get; set; }
+
+		bool IChromiumWebBrowserBase.IsBrowserInitialized => InternalIsBrowserInitialized();
+
+		bool IWebBrowserInternal.HasParent { get; set; }
+
+		IDisposable IWebBrowserInternal.DevToolsContext { get; set; }
+
+		IBrowserAdapter IWebBrowserInternal.BrowserAdapter => managedCefBrowserAdapter;
+
+		public event EventHandler<PaintEventArgs> Paint;
+
+		public event EventHandler<VirtualKeyboardRequestedEventArgs> VirtualKeyboardRequested;
+
+		public event DependencyPropertyChangedEventHandler AddressChanged;
+
+		public event DependencyPropertyChangedEventHandler IsBrowserInitializedChanged;
+
+		public event DependencyPropertyChangedEventHandler TitleChanged;
+
+		public event EventHandler<LoadErrorEventArgs> LoadError;
+
+		public event EventHandler<FrameLoadStartEventArgs> FrameLoadStart;
+
+		public event EventHandler<FrameLoadEndEventArgs> FrameLoadEnd;
+
+		public event EventHandler<LoadingStateChangedEventArgs> LoadingStateChanged;
+
+		public event EventHandler<ConsoleMessageEventArgs> ConsoleMessage;
+
+		public event EventHandler<StatusMessageEventArgs> StatusMessage;
+
+		public event EventHandler<JavascriptMessageReceivedEventArgs> JavascriptMessageReceived;
+
+		static ChromiumWebBrowser()
+		{
+			CanGoBackProperty = DependencyProperty.Register("CanGoBack", typeof(bool), typeof(ChromiumWebBrowser));
+			CanGoForwardProperty = DependencyProperty.Register("CanGoForward", typeof(bool), typeof(ChromiumWebBrowser));
+			AddressProperty = DependencyProperty.Register("Address", typeof(string), typeof(ChromiumWebBrowser), new UIPropertyMetadata(null, OnAddressChanged));
+			IsLoadingProperty = DependencyProperty.Register("IsLoading", typeof(bool), typeof(ChromiumWebBrowser), new PropertyMetadata(false));
+			IsBrowserInitializedProperty = DependencyProperty.Register("IsBrowserInitialized", typeof(bool), typeof(ChromiumWebBrowser), new PropertyMetadata(false, OnIsBrowserInitializedChanged));
+			TitleProperty = DependencyProperty.Register("Title", typeof(string), typeof(ChromiumWebBrowser), new PropertyMetadata(null, OnTitleChanged));
+			ZoomLevelProperty = DependencyProperty.Register("ZoomLevel", typeof(double), typeof(ChromiumWebBrowser), new UIPropertyMetadata(0.0, OnZoomLevelChanged));
+			ZoomLevelIncrementProperty = DependencyProperty.Register("ZoomLevelIncrement", typeof(double), typeof(ChromiumWebBrowser), new PropertyMetadata(0.1));
+			CleanupElementProperty = DependencyProperty.Register("CleanupElement", typeof(FrameworkElement), typeof(ChromiumWebBrowser), new PropertyMetadata(null, OnCleanupElementChanged));
+			TooltipTextProperty = DependencyProperty.Register("TooltipText", typeof(string), typeof(ChromiumWebBrowser), new PropertyMetadata(null, OnTooltipTextChanged));
+			WebBrowserProperty = DependencyProperty.Register("WebBrowser", typeof(IWebBrowser), typeof(ChromiumWebBrowser), new UIPropertyMetadata((object)null));
+			FrameworkElement.DefaultStyleKeyProperty.OverrideMetadata(typeof(ChromiumWebBrowser), new FrameworkPropertyMetadata(typeof(ChromiumWebBrowser)));
+			if (!CefSharpSettings.ShutdownOnExit)
+			{
+				return;
+			}
+			Dispatcher dispatcher = Dispatcher.FromThread(Thread.CurrentThread);
+			if (dispatcher == null)
+			{
+				Application current = Application.Current;
+				if (current != null)
+				{
+					current.Exit += OnApplicationExit;
+				}
+			}
+			else
+			{
+				dispatcher.ShutdownStarted += DispatcherShutdownStarted;
+				dispatcher.ShutdownFinished += DispatcherShutdownFinished;
+			}
+		}
+
+		private static void DispatcherShutdownStarted(object sender, EventArgs e)
+		{
+			Dispatcher dispatcher = (Dispatcher)sender;
+			dispatcher.ShutdownStarted -= DispatcherShutdownStarted;
+			if (!DesignMode)
+			{
+				CefPreShutdown();
+			}
+		}
+
+		private static void DispatcherShutdownFinished(object sender, EventArgs e)
+		{
+			Dispatcher dispatcher = (Dispatcher)sender;
+			dispatcher.ShutdownFinished -= DispatcherShutdownFinished;
+			if (!DesignMode)
+			{
+				CefShutdown();
+			}
+		}
+
+		private static void OnApplicationExit(object sender, ExitEventArgs e)
+		{
+			if (!DesignMode)
+			{
+				CefShutdown();
+			}
+		}
+
+		[MethodImpl(MethodImplOptions.NoInlining)]
+		private static void CefPreShutdown()
+		{
+			Cef.PreShutdown();
+		}
+
+		[MethodImpl(MethodImplOptions.NoInlining)]
+		private static void CefShutdown()
+		{
+			Cef.Shutdown();
+		}
+
+		public static void UnregisterShutdownHandler()
+		{
+			Dispatcher dispatcher = Dispatcher.FromThread(Thread.CurrentThread);
+			if (dispatcher != null)
+			{
+				dispatcher.ShutdownStarted -= DispatcherShutdownStarted;
+				dispatcher.ShutdownFinished -= DispatcherShutdownFinished;
+			}
+			Application current = Application.Current;
+			if (current != null)
+			{
+				current.Exit -= OnApplicationExit;
+			}
+		}
+
+		public ChromiumWebBrowser()
+		{
+			DesignMode = DesignerProperties.GetIsInDesignMode(this);
+			if (!DesignMode)
+			{
+				NoInliningConstructor();
+			}
+		}
+
+		public ChromiumWebBrowser(HwndSource parentWindowHwndSource, string initialAddress, System.Windows.Size size)
+			: this(initialAddress)
+		{
+			CreateBrowser(parentWindowHwndSource, size);
+		}
+
+		public ChromiumWebBrowser(string initialAddress)
+		{
+			this.initialAddress = initialAddress;
+			NoInliningConstructor();
+		}
+
+		[MethodImpl(MethodImplOptions.NoInlining)]
+		private void NoInliningConstructor()
+		{
+			if (!Cef.IsInitialized)
+			{
+				CefSettings settings = new CefSettings();
+				if (!Cef.Initialize(settings))
+				{
+					throw new InvalidOperationException("Cef.Initialize() failed.Check the log file see https://github.com/cefsharp/CefSharp/wiki/Trouble-Shooting#log-file for details.");
+				}
+			}
+			Cef.AddDisposable(this);
+			base.Focusable = true;
+			base.FocusVisualStyle = null;
+			base.IsTabStop = true;
+			base.Dispatcher.BeginInvoke((Action)delegate
+			{
+				WebBrowser = this;
+			});
+			base.Loaded += OnLoaded;
+			base.SizeChanged += OnActualSizeChanged;
+			base.GotKeyboardFocus += OnGotKeyboardFocus;
+			base.LostKeyboardFocus += OnLostKeyboardFocus;
+			base.DragEnter += OnDragEnter;
+			base.DragOver += OnDragOver;
+			base.DragLeave += OnDragLeave;
+			base.Drop += OnDrop;
+			base.IsVisibleChanged += OnIsVisibleChanged;
+			base.ToolTip = (toolTip = new ToolTip());
+			toolTip.StaysOpen = true;
+			toolTip.Visibility = Visibility.Collapsed;
+			toolTip.Closed += OnTooltipClosed;
+			BackCommand = new DelegateCommand(this.Back, () => CanGoBack);
+			ForwardCommand = new DelegateCommand(this.Forward, () => CanGoForward);
+			ReloadCommand = new DelegateCommand(((IChromiumWebBrowserBase)this).Reload, () => !IsLoading);
+			PrintCommand = new DelegateCommand(this.Print);
+			ZoomInCommand = new DelegateCommand(ZoomIn);
+			ZoomOutCommand = new DelegateCommand(ZoomOut);
+			ZoomResetCommand = new DelegateCommand(ZoomReset);
+			ViewSourceCommand = new DelegateCommand(this.ViewSource);
+			CleanupCommand = new DelegateCommand(Dispose);
+			StopCommand = new DelegateCommand(this.Stop);
+			CutCommand = new DelegateCommand(this.Cut);
+			CopyCommand = new DelegateCommand(this.Copy);
+			PasteCommand = new DelegateCommand(this.Paste);
+			SelectAllCommand = new DelegateCommand(this.SelectAll);
+			UndoCommand = new DelegateCommand(this.Undo);
+			RedoCommand = new DelegateCommand(this.Redo);
+			ToggleAudioMuteCommand = new DelegateCommand(this.ToggleAudioMute);
+			managedCefBrowserAdapter = ManagedCefBrowserAdapter.Create(this, offScreenRendering: true);
+			browserSettings = ObjectFactory.CreateBrowserSettings(autoDispose: true);
+			WpfKeyboardHandler = new WpfKeyboardHandler(this);
+			PresentationSource.AddSourceChangedHandler(this, PresentationSourceChangedHandler);
+			MenuHandler = new CefSharp.Wpf.Handler.ContextMenuHandler();
+			base.UseLayoutRounding = true;
+		}
+
+		~ChromiumWebBrowser()
+		{
+			Dispose(disposing: false);
+		}
+
+		public void Dispose()
+		{
+			Dispose(disposing: true);
+			GC.SuppressFinalize(this);
+		}
+
+		protected virtual void Dispose(bool disposing)
+		{
+			if (Interlocked.CompareExchange(ref disposeSignaled, 1, 0) == 0 && !DesignMode)
+			{
+				InternalDispose(disposing);
+			}
+		}
+
+		[MethodImpl(MethodImplOptions.NoInlining)]
+		private void InternalDispose(bool disposing)
+		{
+			if (disposing)
+			{
+				CanExecuteJavascriptInMainFrame = false;
+				Interlocked.Exchange(ref browserInitialized, 0);
+				browser?.GetHost().WasHidden(hidden: true);
+				UiThreadRunAsync(delegate
+				{
+					SetCurrentValue(IsBrowserInitializedProperty, false);
+					WebBrowser = null;
+				});
+				this.ConsoleMessage = null;
+				this.FrameLoadEnd = null;
+				this.FrameLoadStart = null;
+				this.AddressChanged = null;
+				this.IsBrowserInitializedChanged = null;
+				this.LoadError = null;
+				this.LoadingStateChanged = null;
+				this.Paint = null;
+				this.StatusMessage = null;
+				this.TitleChanged = null;
+				this.VirtualKeyboardRequested = null;
+				this.JavascriptMessageReceived = null;
+				FreeHandlersExceptLifeSpanAndFocus();
+				FocusHandler = new NoFocusHandler();
+				browser = null;
+				BrowserCore = null;
+				currentDragData?.Dispose();
+				currentDragData = null;
+				PresentationSource.RemoveSourceChangedHandler(this, PresentationSourceChangedHandler);
+				if (sourceWindow != null)
+				{
+					sourceWindow.StateChanged -= OnWindowStateChanged;
+					sourceWindow.LocationChanged -= OnWindowLocationChanged;
+					sourceWindow = null;
+				}
+				base.Loaded -= OnLoaded;
+				base.SizeChanged -= OnActualSizeChanged;
+				base.GotKeyboardFocus -= OnGotKeyboardFocus;
+				base.LostKeyboardFocus -= OnLostKeyboardFocus;
+				base.DragEnter -= OnDragEnter;
+				base.DragOver -= OnDragOver;
+				base.DragLeave -= OnDragLeave;
+				base.Drop -= OnDrop;
+				base.IsVisibleChanged -= OnIsVisibleChanged;
+				if (tooltipTimer != null)
+				{
+					tooltipTimer.Tick -= OnTooltipTimerTick;
+					tooltipTimer.Stop();
+					tooltipTimer = null;
+				}
+				if (CleanupElement != null)
+				{
+					CleanupElement.Unloaded -= OnCleanupElementUnloaded;
+				}
+				managedCefBrowserAdapter?.Dispose();
+				managedCefBrowserAdapter = null;
+				LifeSpanHandler = null;
+				WpfKeyboardHandler?.Dispose();
+				WpfKeyboardHandler = null;
+				IRenderHandler renderHandler = RenderHandler;
+				RenderHandler = null;
+				renderHandler?.Dispose();
+				source = null;
+			}
+			Cef.RemoveDisposable(this);
+		}
+
+		ScreenInfo? IRenderWebBrowser.GetScreenInfo()
+		{
+			return GetScreenInfo();
+		}
+
+		protected virtual ScreenInfo? GetScreenInfo()
+		{
+			CefSharp.Structs.Rect value = monitorInfo.Monitor;
+			CefSharp.Structs.Rect value2 = monitorInfo.WorkArea;
+			if ((double)DpiScaleFactor > 1.0)
+			{
+				value = value.ScaleByDpi(DpiScaleFactor);
+				value2 = value2.ScaleByDpi(DpiScaleFactor);
+			}
+			return new ScreenInfo
+			{
+				DeviceScaleFactor = DpiScaleFactor,
+				Rect = value,
+				AvailableRect = value2
+			};
+		}
+
+		CefSharp.Structs.Rect IRenderWebBrowser.GetViewRect()
+		{
+			return GetViewRect();
+		}
+
+		protected virtual CefSharp.Structs.Rect GetViewRect()
+		{
+			CefSharp.Structs.Size? size = resizeHackSize;
+			if (!size.HasValue)
+			{
+				return viewRect;
+			}
+			CefSharp.Structs.Size value = size.Value;
+			return new CefSharp.Structs.Rect(0, 0, value.Width, value.Height);
+		}
+
+		bool IRenderWebBrowser.GetScreenPoint(int viewX, int viewY, out int screenX, out int screenY)
+		{
+			return GetScreenPoint(viewX, viewY, out screenX, out screenY);
+		}
+
+		protected virtual bool GetScreenPoint(int viewX, int viewY, out int screenX, out int screenY)
+		{
+			screenX = 0;
+			screenY = 0;
+			if (DpiScaleFactor > 1f)
+			{
+				screenX = (int)(browserScreenLocation.X + (double)((float)viewX * DpiScaleFactor));
+				screenY = (int)(browserScreenLocation.Y + (double)((float)viewY * DpiScaleFactor));
+			}
+			else
+			{
+				screenX = (int)(browserScreenLocation.X + (double)viewX);
+				screenY = (int)(browserScreenLocation.Y + (double)viewY);
+			}
+			return true;
+		}
+
+		bool IRenderWebBrowser.StartDragging(IDragData dragData, DragOperationsMask allowedOps, int x, int y)
+		{
+			return StartDragging(dragData, allowedOps, x, y);
+		}
+
+		protected virtual bool StartDragging(IDragData dragData, DragOperationsMask allowedOps, int x, int y)
+		{
+			DataObject dataObject = new DataObject();
+			dataObject.SetText(dragData.FragmentText, TextDataFormat.Text);
+			dataObject.SetText(dragData.FragmentText, TextDataFormat.UnicodeText);
+			dataObject.SetText(dragData.FragmentHtml, TextDataFormat.Html);
+			currentDragData = dragData.Clone();
+			currentDragData.ResetFileContents();
+			UiThreadRunAsync(delegate
+			{
+				if (browser != null)
+				{
+					DragDropEffects dragDropEffects = DragDrop.DoDragDrop(this, dataObject, allowedOps.GetDragEffects());
+					currentDragData = null;
+					browser.GetHost().DragSourceEndedAt(x, y, dragDropEffects.GetDragOperationsMask());
+					browser.GetHost().DragSourceSystemDragEnded();
+				}
+			});
+			return true;
+		}
+
+		void IRenderWebBrowser.UpdateDragCursor(DragOperationsMask operation)
+		{
+			UpdateDragCursor(operation);
+		}
+
+		protected virtual void UpdateDragCursor(DragOperationsMask operation)
+		{
+			currentDragDropEffects = operation.GetDragEffects();
+		}
+
+		void IRenderWebBrowser.OnAcceleratedPaint(PaintElementType type, CefSharp.Structs.Rect dirtyRect, IntPtr sharedHandle)
+		{
+			OnAcceleratedPaint(type == PaintElementType.Popup, dirtyRect, sharedHandle);
+		}
+
+		protected virtual void OnAcceleratedPaint(bool isPopup, CefSharp.Structs.Rect dirtyRect, IntPtr sharedHandle)
+		{
+			RenderHandler?.OnAcceleratedPaint(isPopup, dirtyRect, sharedHandle);
+		}
+
+		void IRenderWebBrowser.OnPaint(PaintElementType type, CefSharp.Structs.Rect dirtyRect, IntPtr buffer, int width, int height)
+		{
+			OnPaint(type == PaintElementType.Popup, dirtyRect, buffer, width, height);
+		}
+
+		protected virtual void OnPaint(bool isPopup, CefSharp.Structs.Rect dirtyRect, IntPtr buffer, int width, int height)
+		{
+			if (resizeHackIgnoreOnPaint)
+			{
+				return;
+			}
+			EventHandler<PaintEventArgs> eventHandler = this.Paint;
+			if (eventHandler != null)
+			{
+				PaintEventArgs e = new PaintEventArgs(isPopup, dirtyRect, buffer, width, height);
+				eventHandler(this, e);
+				if (e.Handled)
+				{
+					return;
+				}
+			}
+			Image image = (isPopup ? popupImage : this.image);
+			RenderHandler?.OnPaint(isPopup, dirtyRect, buffer, width, height, image);
+		}
+
+		void IRenderWebBrowser.OnPopupSize(CefSharp.Structs.Rect rect)
+		{
+			OnPopupSize(rect);
+		}
+
+		protected virtual void OnPopupSize(CefSharp.Structs.Rect rect)
+		{
+			UiThreadRunAsync(delegate
+			{
+				SetPopupSizeAndPositionImpl(rect);
+			});
+		}
+
+		void IRenderWebBrowser.OnPopupShow(bool isOpen)
+		{
+			OnPopupShow(isOpen);
+		}
+
+		protected virtual void OnPopupShow(bool isOpen)
+		{
+			UiThreadRunAsync(delegate
+			{
+				popupImage.Visibility = ((!isOpen) ? Visibility.Hidden : Visibility.Visible);
+			});
+		}
+
+		void IRenderWebBrowser.OnCursorChange(IntPtr handle, CefSharp.Enums.CursorType type, CursorInfo customCursorInfo)
+		{
+			OnCursorChange(handle, type, customCursorInfo);
+		}
+
+		protected virtual void OnCursorChange(IntPtr handle, CefSharp.Enums.CursorType type, CursorInfo customCursorInfo)
+		{
+			if (type == CefSharp.Enums.CursorType.Custom)
+			{
+				UiThreadRunSync(delegate
+				{
+					base.Cursor = CursorInteropHelper.Create(new SafeFileHandle(handle, ownsHandle: false));
+				});
+			}
+			else
+			{
+				UiThreadRunAsync(delegate
+				{
+					base.Cursor = CursorInteropHelper.Create(new SafeFileHandle(handle, ownsHandle: false));
+				});
+			}
+		}
+
+		void IRenderWebBrowser.OnImeCompositionRangeChanged(Range selectedRange, CefSharp.Structs.Rect[] characterBounds)
+		{
+			OnImeCompositionRangeChanged(selectedRange, characterBounds);
+		}
+
+		protected virtual void OnImeCompositionRangeChanged(Range selectedRange, CefSharp.Structs.Rect[] characterBounds)
+		{
+			if (WpfKeyboardHandler is WpfImeKeyboardHandler wpfImeKeyboardHandler)
+			{
+				wpfImeKeyboardHandler.ChangeCompositionRange(selectedRange, characterBounds);
+			}
+		}
+
+		void IRenderWebBrowser.OnVirtualKeyboardRequested(IBrowser browser, TextInputMode inputMode)
+		{
+			OnVirtualKeyboardRequested(browser, inputMode);
+		}
+
+		protected virtual void OnVirtualKeyboardRequested(IBrowser browser, TextInputMode inputMode)
+		{
+			VirtualKeyboardRequestedEventArgs e = new VirtualKeyboardRequestedEventArgs(browser, inputMode);
+			this.VirtualKeyboardRequested?.Invoke(this, e);
+		}
+
+		void IWebBrowserInternal.SetAddress(AddressChangedEventArgs args)
+		{
+			UiThreadRunAsync(delegate
+			{
+				ignoreUriChange = true;
+				SetCurrentValue(AddressProperty, args.Address);
+				ignoreUriChange = false;
+				SetCurrentValue(TooltipTextProperty, null);
+			});
+		}
+
+		void IWebBrowserInternal.SetTitle(TitleChangedEventArgs args)
+		{
+			UiThreadRunAsync(delegate
+			{
+				SetCurrentValue(TitleProperty, args.Title);
+			});
+		}
+
+		void IWebBrowserInternal.SetTooltipText(string tooltipText)
+		{
+			UiThreadRunAsync(delegate
+			{
+				SetCurrentValue(TooltipTextProperty, tooltipText);
+			});
+		}
+
+		private static void OnAddressChanged(DependencyObject sender, DependencyPropertyChangedEventArgs args)
+		{
+			ChromiumWebBrowser chromiumWebBrowser = (ChromiumWebBrowser)sender;
+			string oldValue = (string)args.OldValue;
+			string newValue = (string)args.NewValue;
+			chromiumWebBrowser.OnAddressChanged(oldValue, newValue);
+			chromiumWebBrowser.AddressChanged?.Invoke(chromiumWebBrowser, args);
+		}
+
+		protected virtual void OnAddressChanged(string oldValue, string newValue)
+		{
+			if (!ignoreUriChange && newValue != null && InternalIsBrowserInitialized())
+			{
+				Load(newValue);
+			}
+		}
+
+		private static void OnIsBrowserInitializedChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			ChromiumWebBrowser chromiumWebBrowser = (ChromiumWebBrowser)d;
+			bool oldValue = (bool)e.OldValue;
+			bool newValue = (bool)e.NewValue;
+			chromiumWebBrowser.OnIsBrowserInitializedChanged(oldValue, newValue);
+			chromiumWebBrowser.IsBrowserInitializedChanged?.Invoke(chromiumWebBrowser, e);
+		}
+
+		protected virtual void OnIsBrowserInitializedChanged(bool oldValue, bool newValue)
+		{
+			if (!newValue || IsDisposed)
+			{
+				return;
+			}
+			Task<double> zoomLevelAsync = this.GetZoomLevelAsync();
+			zoomLevelAsync.ContinueWith(delegate(Task<double> previous)
+			{
+				if (previous.Status == TaskStatus.RanToCompletion)
+				{
+					UiThreadRunAsync(delegate
+					{
+						if (!IsDisposed)
+						{
+							SetCurrentValue(ZoomLevelProperty, previous.Result);
+						}
+					});
+					return;
+				}
+				throw new InvalidOperationException("Unexpected failure of calling CEF->GetZoomLevelAsync", previous.Exception);
+			}, TaskContinuationOptions.ExecuteSynchronously);
+		}
+
+		private static void OnTitleChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			ChromiumWebBrowser chromiumWebBrowser = (ChromiumWebBrowser)d;
+			chromiumWebBrowser.TitleChanged?.Invoke(chromiumWebBrowser, e);
+		}
+
+		private static void OnZoomLevelChanged(DependencyObject sender, DependencyPropertyChangedEventArgs args)
+		{
+			ChromiumWebBrowser chromiumWebBrowser = (ChromiumWebBrowser)sender;
+			double oldValue = (double)args.OldValue;
+			double newValue = (double)args.NewValue;
+			chromiumWebBrowser.OnZoomLevelChanged(oldValue, newValue);
+		}
+
+		protected virtual void OnZoomLevelChanged(double oldValue, double newValue)
+		{
+			this.SetZoomLevel(newValue);
+		}
+
+		private static void OnCleanupElementChanged(DependencyObject sender, DependencyPropertyChangedEventArgs args)
+		{
+			ChromiumWebBrowser chromiumWebBrowser = (ChromiumWebBrowser)sender;
+			FrameworkElement oldValue = (FrameworkElement)args.OldValue;
+			FrameworkElement newValue = (FrameworkElement)args.NewValue;
+			chromiumWebBrowser.OnCleanupElementChanged(oldValue, newValue);
+		}
+
+		protected virtual void OnCleanupElementChanged(FrameworkElement oldValue, FrameworkElement newValue)
+		{
+			if (oldValue != null)
+			{
+				oldValue.Unloaded -= OnCleanupElementUnloaded;
+			}
+			if (newValue != null)
+			{
+				newValue.Unloaded -= OnCleanupElementUnloaded;
+				newValue.Unloaded += OnCleanupElementUnloaded;
+			}
+		}
+
+		private void OnCleanupElementUnloaded(object sender, RoutedEventArgs e)
+		{
+			Dispose();
+		}
+
+		private static void OnTooltipTextChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			ChromiumWebBrowser chromiumWebBrowser = (ChromiumWebBrowser)d;
+			string oldValue = (string)e.OldValue;
+			string newValue = (string)e.NewValue;
+			chromiumWebBrowser.OnTooltipTextChanged(oldValue, newValue);
+		}
+
+		protected virtual void OnTooltipTextChanged(string oldValue, string newValue)
+		{
+			DispatcherTimer dispatcherTimer = tooltipTimer;
+			if (dispatcherTimer == null || (string.IsNullOrEmpty(oldValue) && string.IsNullOrEmpty(newValue)))
+			{
+				return;
+			}
+			if (string.IsNullOrEmpty(newValue))
+			{
+				if (dispatcherTimer.IsEnabled)
+				{
+					dispatcherTimer.Stop();
+				}
+				OpenOrCloseToolTip(null);
+			}
+			else if (!dispatcherTimer.IsEnabled)
+			{
+				dispatcherTimer.Start();
+			}
+		}
+
+		private void OnDrop(object sender, DragEventArgs e)
+		{
+			if (browser != null)
+			{
+				MouseEvent mouseEvent = GetMouseEvent(e);
+				DragOperationsMask dragOperationsMask = e.AllowedEffects.GetDragOperationsMask();
+				browser.GetHost().DragTargetDragOver(mouseEvent, dragOperationsMask);
+				browser.GetHost().DragTargetDragDrop(mouseEvent);
+			}
+		}
+
+		private void OnDragLeave(object sender, DragEventArgs e)
+		{
+			if (browser != null)
+			{
+				browser.GetHost().DragTargetDragLeave();
+			}
+		}
+
+		private void OnDragOver(object sender, DragEventArgs e)
+		{
+			if (browser != null)
+			{
+				browser.GetHost().DragTargetDragOver(GetMouseEvent(e), e.AllowedEffects.GetDragOperationsMask());
+			}
+			e.Effects = currentDragDropEffects;
+			e.Handled = true;
+		}
+
+		private void OnDragEnter(object sender, DragEventArgs e)
+		{
+			if (browser != null)
+			{
+				MouseEvent mouseEvent = GetMouseEvent(e);
+				DragOperationsMask dragOperationsMask = e.AllowedEffects.GetDragOperationsMask();
+				IDragData dragData = currentDragData ?? e.GetDragData();
+				browser.GetHost().DragTargetDragEnter(dragData, mouseEvent, dragOperationsMask);
+				browser.GetHost().DragTargetDragOver(mouseEvent, dragOperationsMask);
+			}
+		}
+
+		private void PresentationSourceChangedHandler(object sender, SourceChangedEventArgs args)
+		{
+			if (args.NewSource != null)
+			{
+				source = (HwndSource)args.NewSource;
+				WpfKeyboardHandler.Setup(source);
+				NotifyDpiChange((float)source.CompositionTarget.TransformToDevice.M11);
+				if (source.RootVisual is Window window)
+				{
+					window.StateChanged += OnWindowStateChanged;
+					window.LocationChanged += OnWindowLocationChanged;
+					sourceWindow = window;
+					if (CleanupElement == null)
+					{
+						CleanupElement = window;
+					}
+					else if (CleanupElement is Window window2 && window2 != window)
+					{
+						CleanupElement = window;
+					}
+				}
+				browserScreenLocation = GetBrowserScreenLocation();
+				monitorInfo.Init();
+				MonitorInfo.GetMonitorInfoForWindowHandle(source.Handle, ref monitorInfo);
+			}
+			else if (args.OldSource != null)
+			{
+				WpfKeyboardHandler.Dispose();
+				if (args.OldSource.RootVisual is Window window3)
+				{
+					window3.StateChanged -= OnWindowStateChanged;
+					window3.LocationChanged -= OnWindowLocationChanged;
+					sourceWindow = null;
+				}
+			}
+		}
+
+		private void OnWindowStateChanged(object sender, EventArgs e)
+		{
+			Window window = (Window)sender;
+			switch (window.WindowState)
+			{
+			case WindowState.Normal:
+			case WindowState.Maximized:
+				if (previousWindowState == WindowState.Minimized && base.IsVisible)
+				{
+					OnBrowserWasHidden(hidden: false);
+				}
+				break;
+			case WindowState.Minimized:
+				OnBrowserWasHidden(hidden: true);
+				break;
+			}
+			previousWindowState = window.WindowState;
+		}
+
+		protected virtual void OnBrowserWasHidden(bool hidden)
+		{
+			if (browser == null)
+			{
+				return;
+			}
+			browser.GetHost().WasHidden(hidden);
+			if (!ResizeHackEnabled)
+			{
+				return;
+			}
+			if (hidden)
+			{
+				resizeHackIgnoreOnPaint = true;
+				return;
+			}
+			CefUiThreadRunAsync(async delegate
+			{
+				await ResizeHackRun();
+			});
+		}
+
+		protected virtual System.Windows.Point GetBrowserScreenLocation()
+		{
+			if (source != null && PresentationSource.FromVisual(this) != null)
+			{
+				return PointToScreen(default(System.Windows.Point));
+			}
+			return default(System.Windows.Point);
+		}
+
+		private void OnWindowLocationChanged(object sender, EventArgs e)
+		{
+			browserScreenLocation = GetBrowserScreenLocation();
+		}
+
+		public bool CreateBrowser(HwndSource parentWindowHwndSource, System.Windows.Size initialSize)
+		{
+			if (initialSize.IsEmpty || initialSize.Equals(new System.Windows.Size(0.0, 0.0)))
+			{
+				throw new Exception("Invalid size, must be greater than 0,0");
+			}
+			source = parentWindowHwndSource;
+			if (!CreateOffscreenBrowser(initialSize))
+			{
+				return false;
+			}
+			RoutedEventHandler handler = null;
+			handler = delegate
+			{
+				base.Loaded -= handler;
+				this.GetBrowserHost()?.Invalidate(PaintElementType.View);
+			};
+			base.Loaded += handler;
+			return true;
+		}
+
+		protected virtual bool CreateOffscreenBrowser(System.Windows.Size size)
+		{
+			if (browserCreated || size.IsEmpty || size.Equals(new System.Windows.Size(0.0, 0.0)))
+			{
+				return false;
+			}
+			if (!((IWebBrowserInternal)this).HasParent)
+			{
+				IWindowInfo windowInfo = CreateOffscreenBrowserWindowInfo((source == null) ? IntPtr.Zero : source.Handle);
+				managedCefBrowserAdapter.CreateBrowser(windowInfo, browserSettings, requestContext, initialAddress);
+				if (browserSettings.AutoDispose)
+				{
+					browserSettings.Dispose();
+				}
+				browserSettings = null;
+			}
+			browserCreated = true;
+			return true;
+		}
+
+		protected virtual IWindowInfo CreateOffscreenBrowserWindowInfo(IntPtr handle)
+		{
+			IWindowInfo windowInfo = ObjectFactory.CreateWindowInfo();
+			windowInfo.SetAsWindowless(handle);
+			return windowInfo;
+		}
+
+		internal void UiThreadRunAsync(Action action, DispatcherPriority priority = DispatcherPriority.DataBind)
+		{
+			if (base.Dispatcher.CheckAccess())
+			{
+				action();
+			}
+			else if (!base.Dispatcher.HasShutdownStarted)
+			{
+				base.Dispatcher.BeginInvoke(action, priority);
+			}
+		}
+
+		private void UiThreadRunSync(Action action, DispatcherPriority priority = DispatcherPriority.DataBind)
+		{
+			if (base.Dispatcher.CheckAccess())
+			{
+				action();
+			}
+			else if (!base.Dispatcher.HasShutdownStarted)
+			{
+				base.Dispatcher.Invoke(action, priority);
+			}
+		}
+
+		private void OnActualSizeChanged(object sender, SizeChangedEventArgs e)
+		{
+			CreateOffscreenBrowser(e.NewSize);
+			viewRect = new CefSharp.Structs.Rect(0, 0, (int)e.NewSize.Width, (int)e.NewSize.Height);
+			if (browser != null)
+			{
+				browser.GetHost().WasResized();
+			}
+		}
+
+		private void OnIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs args)
+		{
+			bool flag = (bool)args.NewValue;
+			if (browser == null)
+			{
+				return;
+			}
+			OnBrowserWasHidden(!flag);
+			if (!flag)
+			{
+				return;
+			}
+			IBrowserHost host = browser.GetHost();
+			host.GetZoomLevelAsync().ContinueWith(delegate(Task<double> t)
+			{
+				if (!IsDisposed)
+				{
+					SetCurrentValue(ZoomLevelProperty, t.Result);
+				}
+			}, CancellationToken.None, TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.FromCurrentSynchronizationContext());
+		}
+
+		private void OnLoaded(object sender, RoutedEventArgs routedEventArgs)
+		{
+			tooltipTimer = new DispatcherTimer(TimeSpan.FromSeconds(0.5), DispatcherPriority.Render, OnTooltipTimerTick, base.Dispatcher);
+			tooltipTimer.IsEnabled = false;
+			browserScreenLocation = GetBrowserScreenLocation();
+		}
+
+		public override void OnApplyTemplate()
+		{
+			base.OnApplyTemplate();
+			if (image == null)
+			{
+				image = (Image)GetTemplateChild("PART_image");
+			}
+			if (popupImage == null)
+			{
+				popupImage = (Image)GetTemplateChild("PART_popupImage");
+			}
+		}
+
+		private MouseEvent GetMouseEvent(DragEventArgs e)
+		{
+			System.Windows.Point position = e.GetPosition(this);
+			return new MouseEvent((int)position.X, (int)position.Y, e.GetModifiers());
+		}
+
+		private void SetPopupSizeAndPositionImpl(CefSharp.Structs.Rect rect)
+		{
+			popupImage.Width = rect.Width;
+			popupImage.Height = rect.Height;
+			Canvas.SetLeft(popupImage, rect.X);
+			Canvas.SetTop(popupImage, rect.Y);
+		}
+
+		private void OnTooltipTimerTick(object sender, EventArgs e)
+		{
+			if (!IsDisposed)
+			{
+				tooltipTimer.Stop();
+				OpenOrCloseToolTip(TooltipText);
+			}
+		}
+
+		private void OnTooltipClosed(object sender, RoutedEventArgs e)
+		{
+			toolTip.Visibility = Visibility.Collapsed;
+			toolTip.Placement = PlacementMode.Absolute;
+		}
+
+		protected virtual void OpenOrCloseToolTip(string text)
+		{
+			if (string.IsNullOrEmpty(text))
+			{
+				if (toolTip.IsOpen)
+				{
+					toolTip.IsOpen = false;
+				}
+				return;
+			}
+			if (toolTip.IsOpen)
+			{
+				toolTip.IsOpen = false;
+			}
+			if (toolTip.Style == null)
+			{
+				toolTip.Content = new TextBlock
+				{
+					Text = text,
+					TextWrapping = TextWrapping.Wrap
+				};
+			}
+			else
+			{
+				toolTip.SetCurrentValue(ContentControl.ContentProperty, text);
+			}
+			toolTip.Placement = PlacementMode.Mouse;
+			toolTip.Visibility = Visibility.Visible;
+			toolTip.IsOpen = true;
+		}
+
+		private void OnGotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+		{
+			if (browser == null)
+			{
+				initialFocus = true;
+			}
+			else
+			{
+				browser.GetHost().SetFocus(focus: true);
+			}
+		}
+
+		private void OnLostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+		{
+			if (browser == null)
+			{
+				initialFocus = false;
+			}
+			else
+			{
+				browser.GetHost().SetFocus(focus: false);
+			}
+		}
+
+		protected override void OnPreviewKeyDown(KeyEventArgs e)
+		{
+			if (!e.Handled && browser != null)
+			{
+				WpfKeyboardHandler.HandleKeyPress(e);
+			}
+			base.OnPreviewKeyDown(e);
+		}
+
+		protected override void OnPreviewKeyUp(KeyEventArgs e)
+		{
+			if (!e.Handled && browser != null)
+			{
+				WpfKeyboardHandler.HandleKeyPress(e);
+			}
+			base.OnPreviewKeyUp(e);
+		}
+
+		protected override void OnPreviewTextInput(TextCompositionEventArgs e)
+		{
+			if (!e.Handled && browser != null)
+			{
+				WpfKeyboardHandler.HandleTextInput(e);
+			}
+			base.OnPreviewTextInput(e);
+		}
+
+		protected override void OnMouseMove(MouseEventArgs e)
+		{
+			if (!e.Handled && browser != null && e.StylusDevice == null)
+			{
+				System.Windows.Point position = e.GetPosition(this);
+				CefEventFlags modifiers = e.GetModifiers();
+				browser.GetHost().SendMouseMoveEvent((int)position.X, (int)position.Y, mouseLeave: false, modifiers);
+			}
+			base.OnMouseMove(e);
+		}
+
+		protected override void OnMouseWheel(MouseWheelEventArgs e)
+		{
+			if (!e.Handled && browser != null)
+			{
+				System.Windows.Point position = e.GetPosition(this);
+				CefEventFlags modifiers = e.GetModifiers();
+				bool flag = Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift);
+				int x = (int)position.X;
+				int y = (int)position.Y;
+				browser.SendMouseWheelEvent(x, y, flag ? e.Delta : 0, (!flag) ? e.Delta : 0, modifiers);
+				e.Handled = true;
+			}
+			base.OnMouseWheel(e);
+		}
+
+		protected override void OnMouseDown(MouseButtonEventArgs e)
+		{
+			if (e.StylusDevice == null)
+			{
+				Focus();
+				OnMouseButton(e);
+				if (e.ChangedButton == MouseButton.Left && e.LeftButton == MouseButtonState.Pressed)
+				{
+					CaptureMouse();
+				}
+			}
+			base.OnMouseDown(e);
+		}
+
+		protected override void OnMouseUp(MouseButtonEventArgs e)
+		{
+			if (e.StylusDevice == null)
+			{
+				OnMouseButton(e);
+				if (e.ChangedButton == MouseButton.Left && e.LeftButton == MouseButtonState.Released)
+				{
+					ReleaseMouseCapture();
+				}
+			}
+			base.OnMouseUp(e);
+		}
+
+		protected override void OnMouseLeave(MouseEventArgs e)
+		{
+			if (!e.Handled && browser != null && e.StylusDevice == null)
+			{
+				CefEventFlags modifiers = e.GetModifiers();
+				System.Windows.Point position = e.GetPosition(this);
+				browser.GetHost().SendMouseMoveEvent((int)position.X, (int)position.Y, mouseLeave: true, modifiers);
+				((IWebBrowserInternal)this).SetTooltipText((string)null);
+			}
+			base.OnMouseLeave(e);
+		}
+
+		protected override void OnLostMouseCapture(MouseEventArgs e)
+		{
+			if (!e.Handled && browser != null)
+			{
+				browser.GetHost().SendCaptureLostEvent();
+			}
+			base.OnLostMouseCapture(e);
+		}
+
+		private void OnMouseButton(MouseButtonEventArgs e)
+		{
+			if (e.Handled || browser == null)
+			{
+				return;
+			}
+			CefEventFlags modifiers = e.GetModifiers();
+			bool flag = e.ButtonState == MouseButtonState.Released;
+			System.Windows.Point position = e.GetPosition(this);
+			if (e.ChangedButton == MouseButton.XButton1)
+			{
+				if (CanGoBack && flag)
+				{
+					this.Back();
+				}
+			}
+			else if (e.ChangedButton == MouseButton.XButton2)
+			{
+				if (CanGoForward && flag)
+				{
+					this.Forward();
+				}
+			}
+			else
+			{
+				int num = e.ClickCount;
+				if (num > 3)
+				{
+					num = 1;
+				}
+				browser.GetHost().SendMouseClickEvent((int)position.X, (int)position.Y, (MouseButtonType)e.ChangedButton, flag, num, modifiers);
+			}
+			e.Handled = true;
+		}
+
+		protected override void OnTouchDown(TouchEventArgs e)
+		{
+			Focus();
+			CaptureTouch(e.TouchDevice);
+			OnTouch(e);
+			base.OnTouchDown(e);
+		}
+
+		protected override void OnTouchMove(TouchEventArgs e)
+		{
+			OnTouch(e);
+			base.OnTouchMove(e);
+		}
+
+		protected override void OnTouchUp(TouchEventArgs e)
+		{
+			ReleaseTouchCapture(e.TouchDevice);
+			OnTouch(e);
+			base.OnTouchUp(e);
+		}
+
+		private void OnTouch(TouchEventArgs e)
+		{
+			if (!e.Handled && browser != null)
+			{
+				CefEventFlags modifierKeys = WpfExtensions.GetModifierKeys();
+				TouchPoint touchPoint = e.GetTouchPoint(this);
+				TouchEventType touchEventType = TouchEventType.Cancelled;
+				touchEventType = touchPoint.Action switch
+				{
+					TouchAction.Down => TouchEventType.Pressed, 
+					TouchAction.Move => TouchEventType.Moved, 
+					TouchAction.Up => TouchEventType.Released, 
+					_ => TouchEventType.Cancelled, 
+				};
+				TouchEvent evt = new TouchEvent
+				{
+					Id = e.TouchDevice.Id,
+					X = (float)touchPoint.Position.X,
+					Y = (float)touchPoint.Position.Y,
+					PointerType = PointerType.Touch,
+					Type = touchEventType,
+					Modifiers = modifierKeys
+				};
+				browser.GetHost().SendTouchEvent(evt);
+				e.Handled = true;
+			}
+		}
+
+		protected override AutomationPeer OnCreateAutomationPeer()
+		{
+			if (!(AccessibilityHandler is CefSharp.Wpf.Experimental.Accessibility.AccessibilityHandler accessibilityHandler))
+			{
+				return base.OnCreateAutomationPeer();
+			}
+			return accessibilityHandler.AutomationPeer;
+		}
+
+		public void Load(string url)
+		{
+			if (IsDisposed)
+			{
+				return;
+			}
+			if (InternalIsBrowserInitialized())
+			{
+				if (browser != null)
+				{
+					initialLoadCalled = true;
+					using IFrame frame = browser.MainFrame;
+					frame.LoadUrl(url);
+				}
+			}
+			else if (browserCreated)
+			{
+				UiThreadRunAsync(delegate
+				{
+					Address = url;
+				});
+			}
+			else
+			{
+				initialAddress = url;
+			}
+		}
+
+		private void ZoomIn()
+		{
+			UiThreadRunAsync(delegate
+			{
+				ZoomLevel += ZoomLevelIncrement;
+			});
+		}
+
+		private void ZoomOut()
+		{
+			UiThreadRunAsync(delegate
+			{
+				ZoomLevel -= ZoomLevelIncrement;
+			});
+		}
+
+		private void ZoomReset()
+		{
+			UiThreadRunAsync(delegate
+			{
+				ZoomLevel = 0.0;
+			});
+		}
+
+		public virtual void NotifyDpiChange(float newDpi)
+		{
+			if (DpiScaleFactor.Equals(newDpi))
+			{
+				return;
+			}
+			bool flag = DpiScaleFactor > 0f && !DpiScaleFactor.Equals(newDpi);
+			DpiScaleFactor = newDpi;
+			if (flag && browser != null)
+			{
+				browser.GetHost().NotifyScreenInfoChanged();
+			}
+			if (RenderHandler == null || RenderHandler is WritableBitmapRenderHandler || RenderHandler is DirectWritableBitmapRenderHandler)
+			{
+				float num = 96f * DpiScaleFactor;
+				IRenderHandler renderHandler = RenderHandler;
+				if (Cef.CurrentlyOnThread(CefThreadIds.TID_UI))
+				{
+					RenderHandler = new DirectWritableBitmapRenderHandler(num, num);
+				}
+				else
+				{
+					RenderHandler = new WritableBitmapRenderHandler(num, num);
+				}
+				renderHandler?.Dispose();
+			}
+		}
+
+		public void UseLegacyKeyboardHandler()
+		{
+			if (!(WpfKeyboardHandler is WpfLegacyKeyboardHandler))
+			{
+				WpfKeyboardHandler.Dispose();
+				WpfKeyboardHandler = new WpfLegacyKeyboardHandler(this);
+				WpfKeyboardHandler.Setup(source);
+			}
+		}
+
+		public IBrowser GetBrowser()
+		{
+			ThrowExceptionIfDisposed();
+			ThrowExceptionIfBrowserNotInitialized();
+			return browser;
+		}
+
+		private async Task CefUiThreadRunAsync(Action action)
+		{
+			if (IsDisposed || !InternalIsBrowserInitialized())
+			{
+				return;
+			}
+			if (Cef.CurrentlyOnThread(CefThreadIds.TID_UI))
+			{
+				action();
+				return;
+			}
+			await Cef.UIThreadTaskFactory.StartNew(delegate
+			{
+				action();
+			});
+		}
+
+		private async Task ResizeHackRun()
+		{
+			IBrowserHost host = browser?.GetHost();
+			if (host != null && !host.IsDisposed)
+			{
+				resizeHackSize = new CefSharp.Structs.Size(viewRect.Width + 1, viewRect.Height + 1);
+				host.WasResized();
+				await Task.Delay(ResizeHackDelayInMs);
+				if (!host.IsDisposed)
+				{
+					resizeHackSize = null;
+					host.WasResized();
+					resizeHackIgnoreOnPaint = false;
+					host.Invalidate(PaintElementType.View);
+				}
+			}
+		}
+
+		void IWebBrowserInternal.SetCanExecuteJavascriptOnMainFrame(long frameId, bool canExecute)
+		{
+			if (frameId <= canExecuteJavascriptInMainFrameId || canExecute)
+			{
+				canExecuteJavascriptInMainFrameId = frameId;
+				CanExecuteJavascriptInMainFrame = canExecute;
+			}
+		}
+
+		void IWebBrowserInternal.SetJavascriptMessageReceived(JavascriptMessageReceivedEventArgs args)
+		{
+			Task.Run(delegate
+			{
+				this.JavascriptMessageReceived?.Invoke(this, args);
+			});
+		}
+
+		void IWebBrowserInternal.OnFrameLoadStart(FrameLoadStartEventArgs args)
+		{
+			this.FrameLoadStart?.Invoke(this, args);
+		}
+
+		void IWebBrowserInternal.OnFrameLoadEnd(FrameLoadEndEventArgs args)
+		{
+			this.FrameLoadEnd?.Invoke(this, args);
+		}
+
+		void IWebBrowserInternal.OnConsoleMessage(ConsoleMessageEventArgs args)
+		{
+			this.ConsoleMessage?.Invoke(this, args);
+		}
+
+		void IWebBrowserInternal.OnStatusMessage(StatusMessageEventArgs args)
+		{
+			this.StatusMessage?.Invoke(this, args);
+		}
+
+		void IWebBrowserInternal.OnLoadError(LoadErrorEventArgs args)
+		{
+			this.LoadError?.Invoke(this, args);
+			initialLoadAction?.Invoke(null, args.ErrorCode);
+		}
+
+		void IWebBrowserInternal.OnAfterBrowserCreated(IBrowser browser)
+		{
+			if (!IsDisposed && !browser.IsDisposed)
+			{
+				this.browser = browser;
+				BrowserCore = browser;
+				initialLoadAction = InitialLoad;
+				Interlocked.Exchange(ref browserInitialized, 1);
+				OnAfterBrowserCreated(browser);
+			}
+		}
+
+		void IWebBrowserInternal.SetLoadingStateChange(LoadingStateChangedEventArgs args)
+		{
+			SetLoadingStateChange(args);
+			this.LoadingStateChanged?.Invoke(this, args);
+			initialLoadAction?.Invoke(args.IsLoading, null);
+		}
+
+		public void LoadUrl(string url)
+		{
+			Load(url);
+		}
+
+		public Task<LoadUrlAsyncResponse> LoadUrlAsync(string url)
+		{
+			return WebBrowserExtensions.LoadUrlAsync(this, url);
+		}
+
+		public Task<WaitForNavigationAsyncResponse> WaitForNavigationAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default(CancellationToken))
+		{
+			return WebBrowserExtensions.WaitForNavigationAsync(this, timeout, cancellationToken);
+		}
+
+		public Task<LoadUrlAsyncResponse> WaitForInitialLoadAsync()
+		{
+			return initialLoadTaskCompletionSource.Task;
+		}
+
+		public bool TryGetBrowserCoreById(int browserId, out IBrowser browser)
+		{
+			IBrowserAdapter browserAdapter = managedCefBrowserAdapter;
+			if (IsDisposed || browserAdapter == null || browserAdapter.IsDisposed)
+			{
+				browser = null;
+				return false;
+			}
+			browser = browserAdapter.GetBrowser(browserId);
+			return browser != null;
+		}
+
+		public async Task<DomRect> GetContentSizeAsync()
+		{
+			ThrowExceptionIfDisposed();
+			ThrowExceptionIfBrowserNotInitialized();
+			using DevToolsClient devToolsClient = browser.GetDevToolsClient();
+			CefSharp.DevTools.DOM.Rect cssContentSize = (await devToolsClient.Page.GetLayoutMetricsAsync().ConfigureAwait(continueOnCapturedContext: false)).CssContentSize;
+			return new DomRect(cssContentSize.X, cssContentSize.Y, cssContentSize.Width, cssContentSize.Height);
+		}
+
+		private void InitialLoad(bool? isLoading, CefErrorCode? errorCode)
+		{
+			if (IsDisposed)
+			{
+				initialLoadAction = null;
+				initialLoadTaskCompletionSource.TrySetCanceled();
+			}
+			else if (isLoading.HasValue)
+			{
+				if (!isLoading.Value)
+				{
+					initialLoadAction = null;
+					int num = ((browser?.GetHost())?.GetVisibleNavigationEntry())?.HttpStatusCode ?? (-1);
+					if (num == 0)
+					{
+						num = -1;
+					}
+					initialLoadTaskCompletionSource.TrySetResultAsync(new LoadUrlAsyncResponse(CefErrorCode.None, num));
+				}
+			}
+			else if (errorCode.HasValue && errorCode != CefErrorCode.Aborted)
+			{
+				initialLoadAction = null;
+				initialLoadTaskCompletionSource.TrySetResultAsync(new LoadUrlAsyncResponse(errorCode.Value, -1));
+			}
+		}
+
+		private void OnAfterBrowserCreated(IBrowser browser)
+		{
+			UiThreadRunAsync(delegate
+			{
+				if (!IsDisposed)
+				{
+					SetCurrentValue(IsBrowserInitializedProperty, true);
+					if (string.IsNullOrEmpty(initialAddress) && !string.IsNullOrEmpty(Address) && !initialLoadCalled)
+					{
+						Load(Address);
+					}
+				}
+			});
+			if (initialFocus)
+			{
+				browser.GetHost()?.SetFocus(focus: true);
+			}
+		}
+
+		private void SetLoadingStateChange(LoadingStateChangedEventArgs args)
+		{
+			UiThreadRunAsync(delegate
+			{
+				SetCurrentValue(CanGoBackProperty, args.CanGoBack);
+				SetCurrentValue(CanGoForwardProperty, args.CanGoForward);
+				SetCurrentValue(IsLoadingProperty, args.IsLoading);
+				((DelegateCommand)BackCommand).RaiseCanExecuteChanged();
+				((DelegateCommand)ForwardCommand).RaiseCanExecuteChanged();
+				((DelegateCommand)ReloadCommand).RaiseCanExecuteChanged();
+			});
+		}
+
+		private void FreeHandlersExceptLifeSpanAndFocus()
+		{
+			AudioHandler?.Dispose();
+			AudioHandler = null;
+			DialogHandler = null;
+			FindHandler = null;
+			RequestHandler = null;
+			DisplayHandler = null;
+			LoadHandler = null;
+			KeyboardHandler = null;
+			JsDialogHandler = null;
+			DragHandler = null;
+			DownloadHandler = null;
+			MenuHandler = null;
+			ResourceRequestHandlerFactory = null;
+			RenderProcessMessageHandler = null;
+			this.FreeDevToolsContext();
+		}
+
+		private bool InternalIsBrowserInitialized()
+		{
+			return Interlocked.CompareExchange(ref browserInitialized, 0, 0) == 1;
+		}
+
+		private void ThrowExceptionIfBrowserNotInitialized()
+		{
+			if (!InternalIsBrowserInitialized())
+			{
+				throw new Exception("The ChromiumWebBrowser instance creates the underlying Chromium Embedded Framework (CEF) browser instance in an async fashion. The undelying CefBrowser instance is not yet initialized. Use the IsBrowserInitializedChanged event and check the IsBrowserInitialized property to determine when the browser has been initialized.");
+			}
+		}
+
+		private void ThrowExceptionIfDisposed()
+		{
+			if (IsDisposed)
+			{
+				throw new ObjectDisposedException("ChromiumWebBrowser");
+			}
+		}
+
+		Dispatcher IWpfWebBrowser.get_Dispatcher()
+		{
+			return base.Dispatcher;
+		}
+	}
+	internal class DelegateCommand : ICommand
+	{
+		private readonly Action commandHandler;
+
+		private readonly Func<bool> canExecuteHandler;
+
+		public event EventHandler CanExecuteChanged;
+
+		public DelegateCommand(Action commandHandler, Func<bool> canExecuteHandler = null)
+		{
+			this.commandHandler = commandHandler;
+			this.canExecuteHandler = canExecuteHandler;
+		}
+
+		public void Execute(object parameter)
+		{
+			commandHandler();
+		}
+
+		public bool CanExecute(object parameter)
+		{
+			if (canExecuteHandler != null)
+			{
+				return canExecuteHandler();
+			}
+			return true;
+		}
+
+		public void RaiseCanExecuteChanged()
+		{
+			if (this.CanExecuteChanged != null)
+			{
+				this.CanExecuteChanged(this, EventArgs.Empty);
+			}
+		}
+	}
+	public interface IRenderHandler : IDisposable
+	{
+		void OnAcceleratedPaint(bool isPopup, CefSharp.Structs.Rect dirtyRect, IntPtr sharedHandle);
+
+		void OnPaint(bool isPopup, CefSharp.Structs.Rect dirtyRect, IntPtr buffer, int width, int height, Image image);
+	}
+	public interface IWpfKeyboardHandler : IDisposable
+	{
+		void Setup(HwndSource source);
+
+		void HandleKeyPress(KeyEventArgs e);
+
+		void HandleTextInput(TextCompositionEventArgs e);
+	}
+	public interface IWpfWebBrowser : IWebBrowser, IChromiumWebBrowserBase, IDisposable, IInputElement
+	{
+		ICommand BackCommand { get; }
+
+		ICommand ForwardCommand { get; }
+
+		ICommand ReloadCommand { get; }
+
+		ICommand PrintCommand { get; }
+
+		ICommand ZoomInCommand { get; }
+
+		ICommand ZoomOutCommand { get; }
+
+		ICommand ZoomResetCommand { get; }
+
+		ICommand ViewSourceCommand { get; }
+
+		ICommand CleanupCommand { get; }
+
+		ICommand StopCommand { get; }
+
+		ICommand CutCommand { get; }
+
+		ICommand CopyCommand { get; }
+
+		ICommand PasteCommand { get; }
+
+		ICommand SelectAllCommand { get; }
+
+		ICommand UndoCommand { get; }
+
+		ICommand RedoCommand { get; }
+
+		ICommand ToggleAudioMuteCommand { get; }
+
+		Dispatcher Dispatcher { get; }
+
+		double ZoomLevel { get; set; }
+
+		double ZoomLevelIncrement { get; set; }
+
+		string Title { get; }
+
+		event EventHandler<PaintEventArgs> Paint;
+
+		event EventHandler<VirtualKeyboardRequestedEventArgs> VirtualKeyboardRequested;
+	}
+	public class PaintEventArgs : EventArgs
+	{
+		public bool IsPopup { get; private set; }
+
+		public CefSharp.Structs.Rect DirtyRect { get; private set; }
+
+		public IntPtr Buffer { get; private set; }
+
+		public int Width { get; private set; }
+
+		public int Height { get; private set; }
+
+		public bool Handled { get; set; }
+
+		public PaintEventArgs(bool isPopup, CefSharp.Structs.Rect dirtyRect, IntPtr buffer, int width, int height)
+		{
+			IsPopup = isPopup;
+			DirtyRect = dirtyRect;
+			Buffer = buffer;
+			Width = width;
+			Height = height;
+		}
+	}
+	public class VirtualKeyboardRequestedEventArgs : EventArgs
+	{
+		public TextInputMode TextInputMode { get; private set; }
+
+		public IBrowser Browser { get; private set; }
+
+		public VirtualKeyboardRequestedEventArgs(IBrowser browser, TextInputMode inputMode)
+		{
+			Browser = browser;
+			TextInputMode = inputMode;
+		}
+	}
+	public enum WM : uint
+	{
+		KEYDOWN = 256u,
+		KEYUP = 257u,
+		CHAR = 258u,
+		SYSKEYDOWN = 260u,
+		SYSKEYUP = 261u,
+		SYSCHAR = 262u,
+		IME_CHAR = 646u,
+		IME_STARTCOMPOSITION = 269u,
+		IME_ENDCOMPOSITION = 270u,
+		IME_COMPOSITION = 271u,
+		IME_SETCONTEXT = 641u
+	}
+}
+namespace CefSharp.Wpf.Rendering
+{
+	public abstract class AbstractRenderHandler : IDisposable, IRenderHandler
+	{
+		internal static readonly PixelFormat PixelFormat = PixelFormats.Pbgra32;
+
+		internal static int BytesPerPixel = PixelFormat.BitsPerPixel / 8;
+
+		protected object lockObject = new object();
+
+		protected System.Windows.Size viewSize;
+
+		protected System.Windows.Size popupSize;
+
+		protected DispatcherPriority dispatcherPriority;
+
+		protected MemoryMappedFile viewMemoryMappedFile;
+
+		protected MemoryMappedFile popupMemoryMappedFile;
+
+		protected MemoryMappedViewAccessor viewMemoryMappedViewAccessor;
+
+		protected MemoryMappedViewAccessor popupMemoryMappedViewAccessor;
+
+		private int disposeSignaled;
+
+		public bool IsDisposed => Interlocked.CompareExchange(ref disposeSignaled, 1, 1) == 1;
+
+		public void Dispose()
+		{
+			Dispose(disposing: true);
+			GC.SuppressFinalize(this);
+		}
+
+		protected virtual void Dispose(bool disposing)
+		{
+			if (Interlocked.CompareExchange(ref disposeSignaled, 1, 0) != 0 || !disposing)
+			{
+				return;
+			}
+			lock (lockObject)
+			{
+				ReleaseMemoryMappedView(ref popupMemoryMappedFile, ref popupMemoryMappedViewAccessor);
+				ReleaseMemoryMappedView(ref viewMemoryMappedFile, ref viewMemoryMappedViewAccessor);
+			}
+		}
+
+		protected void ReleaseMemoryMappedView(ref MemoryMappedFile mappedFile, ref MemoryMappedViewAccessor stream)
+		{
+			if (stream != null)
+			{
+				stream.Dispose();
+				stream = null;
+			}
+			if (mappedFile != null)
+			{
+				mappedFile.Dispose();
+				mappedFile = null;
+			}
+		}
+
+		public virtual void OnAcceleratedPaint(bool isPopup, CefSharp.Structs.Rect dirtyRect, IntPtr sharedHandle)
+		{
+		}
+
+		public virtual void OnPaint(bool isPopup, CefSharp.Structs.Rect dirtyRect, IntPtr buffer, int width, int height, Image image)
+		{
+			if (!IsDisposed && !image.Dispatcher.HasShutdownStarted)
+			{
+				if (isPopup)
+				{
+					CreateOrUpdateBitmap(isPopup, dirtyRect, buffer, width, height, image, ref popupSize, ref popupMemoryMappedFile, ref popupMemoryMappedViewAccessor);
+				}
+				else
+				{
+					CreateOrUpdateBitmap(isPopup, dirtyRect, buffer, width, height, image, ref viewSize, ref viewMemoryMappedFile, ref viewMemoryMappedViewAccessor);
+				}
+			}
+		}
+
+		protected abstract void CreateOrUpdateBitmap(bool isPopup, CefSharp.Structs.Rect dirtyRect, IntPtr buffer, int width, int height, Image image, ref System.Windows.Size currentSize, ref MemoryMappedFile mappedFile, ref MemoryMappedViewAccessor viewAccessor);
+	}
+	public class AllocHGlobalWritableBitmapRenderHandler : IRenderHandler, IDisposable
+	{
+		private class PaintElement
+		{
+			private readonly double dpiX;
+
+			private readonly double dpiY;
+
+			private Image image;
+
+			private int width;
+
+			private int height;
+
+			private CefSharp.Structs.Rect dirtyRect;
+
+			private IntPtr buffer;
+
+			private int bufferSize;
+
+			private int imageSize;
+
+			private readonly bool invalidateDirtyRect;
+
+			internal bool IsDirty { get; set; }
+
+			internal PaintElement(double dpiX, double dpiY, bool invalidateDirtyRect)
+			{
+				this.dpiX = dpiX;
+				this.dpiY = dpiY;
+				this.invalidateDirtyRect = invalidateDirtyRect;
+			}
+
+			internal void Dispose()
+			{
+				image = null;
+				if (buffer != IntPtr.Zero)
+				{
+					Marshal.FreeHGlobal(buffer);
+					buffer = IntPtr.Zero;
+				}
+			}
+
+			internal void UpdateBuffer(CefSharp.Structs.Rect dirtyRect, IntPtr sourceBuffer, int width, int height, Image image)
+			{
+				imageSize = width * height * AbstractRenderHandler.BytesPerPixel;
+				if (bufferSize < imageSize)
+				{
+					Marshal.FreeHGlobal(buffer);
+					buffer = Marshal.AllocHGlobal(imageSize);
+					bufferSize = imageSize;
+				}
+				this.width = width;
+				this.height = height;
+				this.dirtyRect = dirtyRect;
+				NativeMethodWrapper.MemoryCopy(buffer, sourceBuffer, imageSize);
+				this.image = image;
+				IsDirty = true;
+			}
+
+			internal void UpdateImage(object lockObject)
+			{
+				image.Dispatcher.BeginInvoke((Action)delegate
+				{
+					lock (lockObject)
+					{
+						if (IsDirty && image != null)
+						{
+							WriteableBitmap writeableBitmap = image.Source as WriteableBitmap;
+							if (writeableBitmap == null || writeableBitmap.PixelWidth != width || writeableBitmap.PixelHeight != height)
+							{
+								if (image.Source != null)
+								{
+									image.Source = null;
+									GC.Collect(1);
+								}
+								writeableBitmap = (WriteableBitmap)(image.Source = new WriteableBitmap(width, height, dpiX, dpiY, AbstractRenderHandler.PixelFormat, null));
+							}
+							if (writeableBitmap != null)
+							{
+								if (invalidateDirtyRect)
+								{
+									Int32Rect sourceRect = new Int32Rect(dirtyRect.X, dirtyRect.Y, dirtyRect.Width, dirtyRect.Height);
+									writeableBitmap.Lock();
+									writeableBitmap.WritePixels(sourceRect, buffer, imageSize, width * AbstractRenderHandler.BytesPerPixel, sourceRect.X, sourceRect.Y);
+									writeableBitmap.Unlock();
+								}
+								else
+								{
+									Int32Rect sourceRect2 = new Int32Rect(0, 0, width, height);
+									writeableBitmap.Lock();
+									writeableBitmap.WritePixels(sourceRect2, buffer, imageSize, width * AbstractRenderHandler.BytesPerPixel, sourceRect2.X, sourceRect2.Y);
+									writeableBitmap.Unlock();
+								}
+							}
+							IsDirty = false;
+						}
+					}
+				});
+			}
+		}
+
+		private readonly double dpiX;
+
+		private readonly double dpiY;
+
+		private readonly PaintElement view;
+
+		private readonly PaintElement popup;
+
+		private readonly DispatcherPriority dispatcherPriority;
+
+		private readonly object lockObject = new object();
+
+		private int disposeSignaled;
+
+		public bool IsDisposed => Interlocked.CompareExchange(ref disposeSignaled, 1, 1) == 1;
+
+		public AllocHGlobalWritableBitmapRenderHandler(double dpiX, double dpiY, bool invalidateDirtyRect = true, DispatcherPriority dispatcherPriority = DispatcherPriority.Render)
+		{
+			this.dpiX = dpiX;
+			this.dpiY = dpiY;
+			this.dispatcherPriority = dispatcherPriority;
+			view = new PaintElement(dpiX, dpiY, invalidateDirtyRect);
+			popup = new PaintElement(dpiX, dpiY, invalidateDirtyRect);
+		}
+
+		public void Dispose()
+		{
+			Dispose(disposing: true);
+			GC.SuppressFinalize(this);
+		}
+
+		protected virtual void Dispose(bool disposing)
+		{
+			if (Interlocked.CompareExchange(ref disposeSignaled, 1, 0) != 0 || !disposing)
+			{
+				return;
+			}
+			lock (lockObject)
+			{
+				view?.Dispose();
+				popup?.Dispose();
+			}
+		}
+
+		void IRenderHandler.OnAcceleratedPaint(bool isPopup, CefSharp.Structs.Rect dirtyRect, IntPtr sharedHandle)
+		{
+		}
+
+		void IRenderHandler.OnPaint(bool isPopup, CefSharp.Structs.Rect dirtyRect, IntPtr buffer, int width, int height, Image image)
+		{
+			lock (lockObject)
+			{
+				if (!IsDisposed && !image.Dispatcher.HasShutdownStarted)
+				{
+					PaintElement paintElement = (isPopup ? popup : view);
+					paintElement?.UpdateBuffer(dirtyRect, buffer, width, height, image);
+					paintElement?.UpdateImage(lockObject);
+				}
+			}
+		}
+	}
+	public class DirectWritableBitmapRenderHandler : IRenderHandler, IDisposable
+	{
+		private readonly double dpiX;
+
+		private readonly double dpiY;
+
+		private readonly bool invalidateDirtyRect;
+
+		public DirectWritableBitmapRenderHandler(double dpiX, double dpiY, bool invalidateDirtyRect = true, DispatcherPriority dispatcherPriority = DispatcherPriority.Render)
+		{
+			if (!Cef.CurrentlyOnThread(CefThreadIds.TID_UI))
+			{
+				throw new NotSupportedException("Can only be used when CEF is integrated into your WPF Message Loop (MultiThreadedMessageLoop = false).");
+			}
+			this.dpiX = dpiX;
+			this.dpiY = dpiY;
+			this.invalidateDirtyRect = invalidateDirtyRect;
+		}
+
+		void IDisposable.Dispose()
+		{
+		}
+
+		void IRenderHandler.OnAcceleratedPaint(bool isPopup, CefSharp.Structs.Rect dirtyRect, IntPtr sharedHandle)
+		{
+			throw new NotImplementedException();
+		}
+
+		void IRenderHandler.OnPaint(bool isPopup, CefSharp.Structs.Rect dirtyRect, IntPtr buffer, int width, int height, Image image)
+		{
+			WriteableBitmap writeableBitmap = image.Source as WriteableBitmap;
+			if (writeableBitmap == null || writeableBitmap.PixelWidth != width || writeableBitmap.PixelHeight != height)
+			{
+				writeableBitmap = (WriteableBitmap)(image.Source = new WriteableBitmap(width, height, dpiX, dpiY, AbstractRenderHandler.PixelFormat, null));
+			}
+			if (writeableBitmap != null)
+			{
+				writeableBitmap.Lock();
+				NativeMethodWrapper.MemoryCopy(writeableBitmap.BackBuffer, buffer, writeableBitmap.BackBufferStride * writeableBitmap.PixelHeight);
+				if (invalidateDirtyRect)
+				{
+					writeableBitmap.AddDirtyRect(new Int32Rect(dirtyRect.X, dirtyRect.Y, dirtyRect.Width, dirtyRect.Height));
+				}
+				else
+				{
+					writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, writeableBitmap.PixelWidth, writeableBitmap.PixelHeight));
+				}
+				writeableBitmap.Unlock();
+			}
+		}
+	}
+	public class InteropBitmapRenderHandler : AbstractRenderHandler
+	{
+		public InteropBitmapRenderHandler(DispatcherPriority dispatcherPriority = DispatcherPriority.Render)
+		{
+			base.dispatcherPriority = dispatcherPriority;
+		}
+
+		protected override void CreateOrUpdateBitmap(bool isPopup, CefSharp.Structs.Rect dirtyRect, IntPtr buffer, int width, int height, Image image, ref System.Windows.Size currentSize, ref MemoryMappedFile mappedFile, ref MemoryMappedViewAccessor viewAccessor)
+		{
+			bool createNewBitmap = false;
+			lock (lockObject)
+			{
+				int num = width * height;
+				int num2 = num * AbstractRenderHandler.BytesPerPixel;
+				createNewBitmap = mappedFile == null || currentSize.Height != (double)height || currentSize.Width != (double)width;
+				if (createNewBitmap)
+				{
+					ReleaseMemoryMappedView(ref mappedFile, ref viewAccessor);
+					mappedFile = MemoryMappedFile.CreateNew(null, num2, MemoryMappedFileAccess.ReadWrite);
+					viewAccessor = mappedFile.CreateViewAccessor();
+					currentSize.Height = height;
+					currentSize.Width = width;
+				}
+				NativeMethodWrapper.MemoryCopy(viewAccessor.SafeMemoryMappedViewHandle.DangerousGetHandle(), buffer, num2);
+				SafeMemoryMappedFileHandle backBufferHandle = mappedFile.SafeMemoryMappedFileHandle;
+				image.Dispatcher.BeginInvoke((Action)delegate
+				{
+					lock (lockObject)
+					{
+						if (!backBufferHandle.IsClosed && !backBufferHandle.IsInvalid)
+						{
+							System.Windows.Size size = (isPopup ? popupSize : viewSize);
+							if (size.Width == (double)width && size.Height == (double)height)
+							{
+								if (createNewBitmap)
+								{
+									if (image.Source != null)
+									{
+										image.Source = null;
+										GC.Collect(1);
+									}
+									int stride = width * AbstractRenderHandler.BytesPerPixel;
+									InteropBitmap source = (InteropBitmap)Imaging.CreateBitmapSourceFromMemorySection(backBufferHandle.DangerousGetHandle(), width, height, AbstractRenderHandler.PixelFormat, stride, 0);
+									image.Source = source;
+								}
+								else if (image.Source != null)
+								{
+									Int32Rect value = new Int32Rect(dirtyRect.X, dirtyRect.Y, dirtyRect.Width, dirtyRect.Height);
+									InteropBitmap interopBitmap = (InteropBitmap)image.Source;
+									interopBitmap.Invalidate(value);
+								}
+							}
+						}
+					}
+				}, dispatcherPriority);
+			}
+		}
+	}
+	public class WritableBitmapRenderHandler : AbstractRenderHandler
+	{
+		private readonly double dpiX;
+
+		private readonly double dpiY;
+
+		private readonly bool invalidateDirtyRect;
+
+		public bool CopyOnlyDirtyRect { get; set; }
+
+		public WritableBitmapRenderHandler(double dpiX, double dpiY, bool invalidateDirtyRect = true, DispatcherPriority dispatcherPriority = DispatcherPriority.Render)
+		{
+			this.dpiX = dpiX;
+			this.dpiY = dpiY;
+			this.invalidateDirtyRect = invalidateDirtyRect;
+			base.dispatcherPriority = dispatcherPriority;
+		}
+
+		protected override void CreateOrUpdateBitmap(bool isPopup, CefSharp.Structs.Rect dirtyRect, IntPtr buffer, int width, int height, Image image, ref System.Windows.Size currentSize, ref MemoryMappedFile mappedFile, ref MemoryMappedViewAccessor viewAccessor)
+		{
+			bool createNewBitmap = false;
+			lock (lockObject)
+			{
+				int num = width * height;
+				int num2 = num * AbstractRenderHandler.BytesPerPixel;
+				createNewBitmap = mappedFile == null || currentSize.Height != (double)height || currentSize.Width != (double)width;
+				if (createNewBitmap)
+				{
+					if (viewAccessor == null || viewAccessor.Capacity < num2)
+					{
+						ReleaseMemoryMappedView(ref mappedFile, ref viewAccessor);
+						mappedFile = MemoryMappedFile.CreateNew(null, num2, MemoryMappedFileAccess.ReadWrite);
+						viewAccessor = mappedFile.CreateViewAccessor();
+					}
+					currentSize.Height = height;
+					currentSize.Width = width;
+				}
+				if (CopyOnlyDirtyRect)
+				{
+					if (width == dirtyRect.Width && height == dirtyRect.Height)
+					{
+						NativeMethodWrapper.MemoryCopy(viewAccessor.SafeMemoryMappedViewHandle.DangerousGetHandle(), buffer, num2);
+					}
+					else
+					{
+						for (int i = width * dirtyRect.Y + dirtyRect.X; i < (dirtyRect.Y + dirtyRect.Height) * width; i += width)
+						{
+							NativeMethodWrapper.MemoryCopy(viewAccessor.SafeMemoryMappedViewHandle.DangerousGetHandle() + i * AbstractRenderHandler.BytesPerPixel, buffer + i * AbstractRenderHandler.BytesPerPixel, dirtyRect.Width * AbstractRenderHandler.BytesPerPixel);
+						}
+					}
+				}
+				else
+				{
+					NativeMethodWrapper.MemoryCopy(viewAccessor.SafeMemoryMappedViewHandle.DangerousGetHandle(), buffer, num2);
+				}
+				SafeMemoryMappedViewHandle sourceBuffer = viewAccessor.SafeMemoryMappedViewHandle;
+				image.Dispatcher.BeginInvoke((Action)delegate
+				{
+					lock (lockObject)
+					{
+						if (!sourceBuffer.IsClosed && !sourceBuffer.IsInvalid)
+						{
+							System.Windows.Size size = (isPopup ? popupSize : viewSize);
+							if (size.Width == (double)width && size.Height == (double)height)
+							{
+								if (createNewBitmap)
+								{
+									if (image.Source != null)
+									{
+										image.Source = null;
+										GC.Collect(1);
+									}
+									image.Source = new WriteableBitmap(width, height, dpiX, dpiY, AbstractRenderHandler.PixelFormat, null);
+								}
+								int num3 = width * AbstractRenderHandler.BytesPerPixel;
+								int num4 = num3 * height;
+								WriteableBitmap writeableBitmap = (WriteableBitmap)image.Source;
+								if (width <= writeableBitmap.PixelWidth && height <= writeableBitmap.PixelHeight)
+								{
+									if (invalidateDirtyRect)
+									{
+										Int32Rect sourceRect = new Int32Rect(dirtyRect.X, dirtyRect.Y, dirtyRect.Width, dirtyRect.Height);
+										writeableBitmap.Lock();
+										writeableBitmap.WritePixels(sourceRect, sourceBuffer.DangerousGetHandle(), num4, num3, dirtyRect.X, dirtyRect.Y);
+										writeableBitmap.Unlock();
+									}
+									else
+									{
+										Int32Rect sourceRect2 = new Int32Rect(0, 0, width, height);
+										writeableBitmap.Lock();
+										writeableBitmap.WritePixels(sourceRect2, sourceBuffer.DangerousGetHandle(), num4, num3);
+										writeableBitmap.Unlock();
+									}
+								}
+							}
+						}
+					}
+				}, dispatcherPriority);
+			}
+		}
+	}
+}
+namespace CefSharp.Wpf.Rendering.Experimental
+{
+	public class ByteArrayWritableBitmapRenderHandler : IRenderHandler, IDisposable
+	{
+		private readonly double dpiX;
+
+		private readonly double dpiY;
+
+		private readonly bool invalidateDirtyRect;
+
+		private readonly DispatcherPriority dispatcherPriority;
+
+		public ByteArrayWritableBitmapRenderHandler(double dpiX, double dpiY, bool invalidateDirtyRect = true, DispatcherPriority dispatcherPriority = DispatcherPriority.Render)
+		{
+			this.dpiX = dpiX;
+			this.dpiY = dpiY;
+			this.invalidateDirtyRect = invalidateDirtyRect;
+			this.dispatcherPriority = dispatcherPriority;
+		}
+
+		void IRenderHandler.OnAcceleratedPaint(bool isPopup, CefSharp.Structs.Rect dirtyRect, IntPtr sharedHandle)
+		{
+		}
+
+		void IRenderHandler.OnPaint(bool isPopup, CefSharp.Structs.Rect dirtyRect, IntPtr buffer, int width, int height, Image image)
+		{
+			if (image.Dispatcher.HasShutdownStarted)
+			{
+				return;
+			}
+			int num = width * height;
+			int numberOfBytes = num * AbstractRenderHandler.BytesPerPixel;
+			int stride = width * AbstractRenderHandler.BytesPerPixel;
+			byte[] tempBuffer = new byte[numberOfBytes];
+			Marshal.Copy(buffer, tempBuffer, 0, numberOfBytes);
+			image.Dispatcher.BeginInvoke((Action)delegate
+			{
+				WriteableBitmap writeableBitmap = image.Source as WriteableBitmap;
+				if (writeableBitmap == null || writeableBitmap.PixelHeight != height || writeableBitmap.PixelWidth != width)
+				{
+					if (image.Source != null)
+					{
+						image.Source = null;
+						GC.Collect(1);
+					}
+					writeableBitmap = (WriteableBitmap)(image.Source = new WriteableBitmap(width, height, dpiX, dpiY, AbstractRenderHandler.PixelFormat, null));
+				}
+				IntPtr intPtr = Marshal.UnsafeAddrOfPinnedArrayElement(tempBuffer, 0);
+				if (invalidateDirtyRect)
+				{
+					Int32Rect sourceRect = new Int32Rect(dirtyRect.X, dirtyRect.Y, dirtyRect.Width, dirtyRect.Height);
+					writeableBitmap.Lock();
+					writeableBitmap.WritePixels(sourceRect, intPtr, numberOfBytes, stride, dirtyRect.X, dirtyRect.Y);
+					writeableBitmap.Unlock();
+				}
+				else
+				{
+					Int32Rect sourceRect2 = new Int32Rect(0, 0, width, height);
+					writeableBitmap.Lock();
+					writeableBitmap.WritePixels(sourceRect2, intPtr, numberOfBytes, stride);
+					writeableBitmap.Unlock();
+				}
+			}, dispatcherPriority);
+		}
+
+		void IDisposable.Dispose()
+		{
+		}
+	}
+	public class CompositionTargetRenderHandler : IRenderHandler, IDisposable
+	{
+		private class PaintElement
+		{
+			internal double DpiX { get; private set; }
+
+			internal double DpiY { get; private set; }
+
+			internal Image Image { get; set; }
+
+			internal int Width { get; private set; }
+
+			internal int Height { get; private set; }
+
+			internal CefSharp.Structs.Rect DirtyRect { get; private set; }
+
+			internal IntPtr Buffer { get; private set; }
+
+			internal int BufferSize { get; private set; }
+
+			internal int ImageSize { get; private set; }
+
+			internal bool IsDirty { get; set; }
+
+			internal PaintElement(double dpiX, double dpiY)
+			{
+				DpiX = dpiX;
+				DpiY = dpiY;
+			}
+
+			internal void Dispose()
+			{
+				if (Buffer != IntPtr.Zero)
+				{
+					Marshal.FreeHGlobal(Buffer);
+					Buffer = IntPtr.Zero;
+				}
+			}
+
+			internal void OnPaint(CefSharp.Structs.Rect dirtyRect, IntPtr sourceBuffer, int width, int height, Image image)
+			{
+				ImageSize = width * height * AbstractRenderHandler.BytesPerPixel;
+				if (BufferSize < ImageSize)
+				{
+					Marshal.FreeHGlobal(Buffer);
+					Buffer = Marshal.AllocHGlobal(ImageSize);
+					BufferSize = ImageSize;
+				}
+				Width = width;
+				Height = height;
+				DirtyRect = dirtyRect;
+				NativeMethodWrapper.MemoryCopy(Buffer, sourceBuffer, ImageSize);
+				Image = image;
+				IsDirty = true;
+			}
+		}
+
+		private PaintElement view;
+
+		private PaintElement popup;
+
+		private readonly object lockObj = new object();
+
+		private ChromiumWebBrowser browser;
+
+		public CompositionTargetRenderHandler(ChromiumWebBrowser browser, double dpiX, double dpiY)
+		{
+			this.browser = browser;
+			this.browser.IsVisibleChanged += BrowserIsVisibleChanged;
+			view = new PaintElement(dpiX, dpiY);
+			popup = new PaintElement(dpiX, dpiY);
+			if (browser.IsVisible)
+			{
+				CompositionTarget.Rendering += OnRendering;
+			}
+		}
+
+		private void BrowserIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+		{
+			if ((bool)e.NewValue)
+			{
+				CompositionTarget.Rendering += OnRendering;
+			}
+			else
+			{
+				CompositionTarget.Rendering -= OnRendering;
+			}
+		}
+
+		void IDisposable.Dispose()
+		{
+			CompositionTarget.Rendering -= OnRendering;
+			if (browser != null)
+			{
+				browser.IsVisibleChanged -= BrowserIsVisibleChanged;
+				browser = null;
+			}
+			lock (lockObj)
+			{
+				view?.Dispose();
+				view = null;
+				popup?.Dispose();
+				popup = null;
+			}
+		}
+
+		void IRenderHandler.OnAcceleratedPaint(bool isPopup, CefSharp.Structs.Rect dirtyRect, IntPtr sharedHandle)
+		{
+			throw new NotImplementedException();
+		}
+
+		void IRenderHandler.OnPaint(bool isPopup, CefSharp.Structs.Rect dirtyRect, IntPtr buffer, int width, int height, Image image)
+		{
+			if (image.Dispatcher.HasShutdownStarted)
+			{
+				return;
+			}
+			lock (lockObj)
+			{
+				(isPopup ? popup : view)?.OnPaint(dirtyRect, buffer, width, height, image);
+			}
+		}
+
+		private void OnRendering(object sender, EventArgs args)
+		{
+			lock (lockObj)
+			{
+				UpdateImage(view);
+				UpdateImage(popup);
+			}
+		}
+
+		private void UpdateImage(PaintElement element)
+		{
+			if (element != null && element.IsDirty && element.Image != null)
+			{
+				WriteableBitmap writeableBitmap = element.Image.Source as WriteableBitmap;
+				if (writeableBitmap == null || writeableBitmap.PixelWidth != element.Width || writeableBitmap.PixelHeight != element.Height)
+				{
+					writeableBitmap = (WriteableBitmap)(element.Image.Source = new WriteableBitmap(element.Width, element.Height, element.DpiX, element.DpiY, AbstractRenderHandler.PixelFormat, null));
+				}
+				if (writeableBitmap != null)
+				{
+					CefSharp.Structs.Rect dirtyRect = element.DirtyRect;
+					Int32Rect sourceRect = new Int32Rect(dirtyRect.X, dirtyRect.Y, dirtyRect.Width, dirtyRect.Height);
+					writeableBitmap.Lock();
+					writeableBitmap.WritePixels(sourceRect, element.Buffer, element.ImageSize, element.Width * AbstractRenderHandler.BytesPerPixel, sourceRect.X, sourceRect.Y);
+					writeableBitmap.Unlock();
+				}
+				element.IsDirty = false;
+			}
+		}
+	}
+}
+namespace CefSharp.Wpf.Internals
+{
+	internal static class DragOperationMaskExtensions
+	{
+		public static DragOperationsMask GetDragOperationsMask(this DragDropEffects dragDropEffects)
+		{
+			DragOperationsMask dragOperationsMask = DragOperationsMask.None;
+			if (dragDropEffects.HasFlag(DragDropEffects.All))
+			{
+				dragOperationsMask = (DragOperationsMask)((uint)dragOperationsMask | 0xFFFFFFFFu);
+			}
+			if (dragDropEffects.HasFlag(DragDropEffects.Copy))
+			{
+				dragOperationsMask |= DragOperationsMask.Copy;
+			}
+			if (dragDropEffects.HasFlag(DragDropEffects.Move))
+			{
+				dragOperationsMask |= DragOperationsMask.Move;
+			}
+			if (dragDropEffects.HasFlag(DragDropEffects.Link))
+			{
+				dragOperationsMask |= DragOperationsMask.Link;
+			}
+			return dragOperationsMask;
+		}
+
+		public static DragDropEffects GetDragEffects(this DragOperationsMask mask)
+		{
+			if (((uint)mask & 0xFFFFFFFFu) == uint.MaxValue)
+			{
+				return DragDropEffects.All | DragDropEffects.Link;
+			}
+			if ((mask & DragOperationsMask.Copy) == DragOperationsMask.Copy)
+			{
+				return DragDropEffects.Copy;
+			}
+			if ((mask & DragOperationsMask.Move) == DragOperationsMask.Move)
+			{
+				return DragDropEffects.Move;
+			}
+			if ((mask & DragOperationsMask.Link) == DragOperationsMask.Link)
+			{
+				return DragDropEffects.Link;
+			}
+			return DragDropEffects.None;
+		}
+	}
+	public static class ImeHandler
+	{
+		public static uint ColorUNDERLINE = 4278190080u;
+
+		public static uint ColorBKCOLOR = 0u;
+
+		public static bool GetResult(IntPtr hwnd, uint lParam, out string text)
+		{
+			IntPtr hIMC = ImeNative.ImmGetContext(hwnd);
+			bool result = GetString(hIMC, lParam, 2048u, out text);
+			ImeNative.ImmReleaseContext(hwnd, hIMC);
+			return result;
+		}
+
+		public static bool GetComposition(IntPtr hwnd, uint lParam, List<CompositionUnderline> underlines, ref int compositionStart, out string text)
+		{
+			IntPtr hIMC = ImeNative.ImmGetContext(hwnd);
+			bool flag = GetString(hIMC, lParam, 8u, out text);
+			if (flag)
+			{
+				GetCompositionInfo(hwnd, lParam, text, underlines, ref compositionStart);
+			}
+			ImeNative.ImmReleaseContext(hwnd, hIMC);
+			return flag;
+		}
+
+		private static bool GetString(IntPtr hIMC, uint lParam, uint type, out string text)
+		{
+			text = string.Empty;
+			if (!IsParam(lParam, type))
+			{
+				return false;
+			}
+			uint num = ImeNative.ImmGetCompositionString(hIMC, type, null, 0u);
+			if (num == 0)
+			{
+				return false;
+			}
+			byte[] array = new byte[num];
+			ImeNative.ImmGetCompositionString(hIMC, type, array, num);
+			text = Encoding.Unicode.GetString(array);
+			return true;
+		}
+
+		private static void GetCompositionInfo(IntPtr hwnd, uint lParam, string text, List<CompositionUnderline> underlines, ref int compositionStart)
+		{
+			IntPtr hIMC = ImeNative.ImmGetContext(hwnd);
+			underlines.Clear();
+			byte[] array = null;
+			int targetStart = text.Length;
+			int targetEnd = text.Length;
+			if (IsParam(lParam, 16u))
+			{
+				array = GetCompositionSelectionRange(hIMC, ref targetStart, ref targetEnd);
+			}
+			if (!IsParam(lParam, 16384u) && IsParam(lParam, 128u))
+			{
+				int num = (int)ImeNative.ImmGetCompositionString(hIMC, 128u, null, 0u);
+				compositionStart = num;
+			}
+			else
+			{
+				compositionStart = 0;
+			}
+			if (array == null || ((compositionStart <= 0 || compositionStart - 1 >= array.Length || array[compositionStart - 1] != 0) && (compositionStart < 0 || compositionStart >= array.Length || array[compositionStart] != 0)))
+			{
+				compositionStart = text.Length;
+			}
+			if (IsParam(lParam, 32u))
+			{
+				GetCompositionUnderlines(hIMC, targetStart, targetEnd, underlines);
+			}
+			if (underlines.Count == 0)
+			{
+				Range range = default(Range);
+				bool thick = false;
+				if (targetStart > 0)
+				{
+					range = new Range(0, targetStart);
+				}
+				if (targetEnd > targetStart)
+				{
+					range = new Range(targetStart, targetEnd);
+					thick = true;
+				}
+				if (targetEnd < text.Length)
+				{
+					range = new Range(targetEnd, text.Length);
+				}
+				underlines.Add(new CompositionUnderline(range, ColorUNDERLINE, ColorBKCOLOR, thick));
+			}
+			ImeNative.ImmReleaseContext(hwnd, hIMC);
+		}
+
+		private static void GetCompositionUnderlines(IntPtr hIMC, int targetStart, int targetEnd, List<CompositionUnderline> underlines)
+		{
+			uint num = ImeNative.ImmGetCompositionString(hIMC, 32u, null, 0u);
+			if (num != 0)
+			{
+				int num2 = (int)num / 4;
+				byte[] array = new byte[num];
+				ImeNative.ImmGetCompositionString(hIMC, 32u, array, num);
+				int num3 = num2 - 1;
+				for (int i = 0; i < num3; i++)
+				{
+					int num4 = BitConverter.ToInt32(array, i * 4);
+					int to = BitConverter.ToInt32(array, (i + 1) * 4);
+					Range range = new Range(num4, to);
+					bool thick = range.From >= targetStart && range.To <= targetEnd;
+					underlines.Add(new CompositionUnderline(range, ColorUNDERLINE, ColorBKCOLOR, thick));
+				}
+			}
+		}
+
+		private static byte[] GetCompositionSelectionRange(IntPtr hIMC, ref int targetStart, ref int targetEnd)
+		{
+			uint num = ImeNative.ImmGetCompositionString(hIMC, 16u, null, 0u);
+			if (num == 0)
+			{
+				return null;
+			}
+			int num2 = 0;
+			int num3 = 0;
+			byte[] array = new byte[num];
+			ImeNative.ImmGetCompositionString(hIMC, 16u, array, num);
+			for (num2 = 0; num2 < num && !IsSelectionAttribute(array[num2]); num2++)
+			{
+			}
+			for (num3 = num2; num3 < num && IsSelectionAttribute(array[num3]); num3++)
+			{
+			}
+			targetStart = num2;
+			targetEnd = num3;
+			return array;
+		}
+
+		private static bool IsSelectionAttribute(byte attribute)
+		{
+			if (attribute != 1)
+			{
+				return attribute == 3;
+			}
+			return true;
+		}
+
+		private static bool IsParam(uint lParam, uint type)
+		{
+			return (lParam & type) == type;
+		}
+	}
+	public static class ImeNative
+	{
+		public struct POINT
+		{
+			public int X;
+
+			public int Y;
+
+			public POINT(int x, int y)
+			{
+				X = x;
+				Y = y;
+			}
+		}
+
+		public struct RECT
+		{
+			public int Left;
+
+			public int Top;
+
+			public int Right;
+
+			public int Bottom;
+
+			public RECT(int left, int top, int right, int bottom)
+			{
+				Left = left;
+				Top = top;
+				Right = right;
+				Bottom = bottom;
+			}
+		}
+
+		public struct COMPOSITIONFORM
+		{
+			public int dwStyle;
+
+			public POINT ptCurrentPos;
+
+			public RECT rcArea;
+		}
+
+		public struct CANDIDATEFORM
+		{
+			public int dwIndex;
+
+			public int dwStyle;
+
+			public POINT ptCurrentPos;
+
+			public RECT rcArea;
+		}
+
+		internal const uint GCS_RESULTSTR = 2048u;
+
+		internal const uint GCS_COMPSTR = 8u;
+
+		internal const uint GCS_COMPATTR = 16u;
+
+		internal const uint GCS_CURSORPOS = 128u;
+
+		internal const uint GCS_COMPCLAUSE = 32u;
+
+		internal const uint CPS_CANCEL = 4u;
+
+		internal const uint CS_NOMOVECARET = 16384u;
+
+		internal const uint NI_COMPOSITIONSTR = 21u;
+
+		internal const uint ATTR_INPUT = 0u;
+
+		internal const uint ATTR_TARGET_CONVERTED = 1u;
+
+		internal const uint ATTR_TARGET_NOTCONVERTED = 3u;
+
+		internal const uint ISC_SHOWUICOMPOSITIONWINDOW = 2147483648u;
+
+		internal const uint CFS_DEFAULT = 0u;
+
+		internal const uint CFS_RECT = 1u;
+
+		internal const uint CFS_POINT = 2u;
+
+		internal const uint CFS_FORCE_POSITION = 32u;
+
+		internal const uint CFS_CANDIDATEPOS = 64u;
+
+		internal const uint CFS_EXCLUDE = 128u;
+
+		internal const uint LANG_JAPANESE = 17u;
+
+		internal const uint LANG_CHINESE = 4u;
+
+		internal const uint LANG_KOREAN = 18u;
+
+		[DllImport("imm32.dll")]
+		internal static extern IntPtr ImmCreateContext();
+
+		[DllImport("imm32.dll")]
+		internal static extern IntPtr ImmAssociateContext(IntPtr hWnd, IntPtr hIMC);
+
+		[DllImport("imm32.dll")]
+		internal static extern bool ImmDestroyContext(IntPtr hIMC);
+
+		[DllImport("imm32.dll")]
+		internal static extern IntPtr ImmGetContext(IntPtr hWnd);
+
+		[DllImport("Imm32.dll")]
+		internal static extern bool ImmReleaseContext(IntPtr hWnd, IntPtr hIMC);
+
+		[DllImport("Imm32.dll")]
+		internal static extern bool ImmNotifyIME(IntPtr hIMC, uint action, uint index, uint value);
+
+		[DllImport("imm32.dll", CharSet = CharSet.Unicode)]
+		internal static extern uint ImmGetCompositionString(IntPtr hIMC, uint dwIndex, byte[] lpBuf, uint dwBufLen);
+
+		[DllImport("imm32.dll")]
+		internal static extern int ImmSetCompositionWindow(IntPtr hIMC, ref COMPOSITIONFORM lpCompForm);
+
+		[DllImport("imm32.dll")]
+		public static extern int ImmSetCandidateWindow(IntPtr hIMC, [MarshalAs(UnmanagedType.Struct)] ref CANDIDATEFORM lpCandidateForm);
+
+		[DllImport("user32.dll")]
+		internal static extern bool CreateCaret(IntPtr hWnd, IntPtr hBitmap, int nWidth, int nHeight);
+
+		[DllImport("user32.dll")]
+		internal static extern bool DestroyCaret();
+
+		[DllImport("user32.dll")]
+		internal static extern bool SetCaretPos(int x, int y);
+
+		[DllImport("user32.dll")]
+		internal static extern IntPtr DefWindowProc(IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam);
+
+		[DllImport("user32.dll")]
+		internal static extern IntPtr GetForegroundWindow();
+
+		[DllImport("user32.dll")]
+		internal static extern uint GetWindowThreadProcessId(IntPtr hWnd, IntPtr ProcessId);
+
+		[DllImport("user32.dll")]
+		internal static extern IntPtr GetKeyboardLayout(uint idThread);
+
+		[DllImport("user32.dll")]
+		internal static extern IntPtr SetFocus(IntPtr hWnd);
+	}
+	internal static class MonitorInfo
+	{
+		private const int MONITOR_DEFAULTTONULL = 0;
+
+		private const int MONITOR_DEFAULTTOPRIMARY = 1;
+
+		private const int MONITOR_DEFAULTTONEAREST = 2;
+
+		[DllImport("user32.dll", CharSet = CharSet.Auto)]
+		private static extern bool GetMonitorInfo(IntPtr hMonitor, ref MonitorInfoEx lpmi);
+
+		[DllImport("user32.dll")]
+		private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint dwFlags);
+
+		internal static void GetMonitorInfoForWindowHandle(IntPtr windowHandle, ref MonitorInfoEx monitorInfo)
+		{
+			IntPtr hMonitor = MonitorFromWindow(windowHandle, 2u);
+			GetMonitorInfo(hMonitor, ref monitorInfo);
+		}
+	}
+	[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+	internal struct MonitorInfoEx
+	{
+		private const int CCHDEVICENAME = 32;
+
+		public int Size;
+
+		public RectStruct Monitor;
+
+		public RectStruct WorkArea;
+
+		public uint Flags;
+
+		[MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+		public string DeviceName;
+
+		public void Init()
+		{
+			Size = 104;
+			DeviceName = string.Empty;
+		}
+	}
+	public struct RectStruct
+	{
+		public int Left;
+
+		public int Top;
+
+		public int Right;
+
+		public int Bottom;
+
+		public static implicit operator CefSharp.Structs.Rect(RectStruct rect)
+		{
+			return new CefSharp.Structs.Rect(0, 0, rect.Right - rect.Left, rect.Bottom - rect.Top);
+		}
+	}
+	public enum VirtualKeys : ushort
+	{
+		LeftButton = 1,
+		RightButton = 2,
+		Cancel = 3,
+		MiddleButton = 4,
+		ExtraButton1 = 5,
+		ExtraButton2 = 6,
+		Back = 8,
+		Tab = 9,
+		Clear = 12,
+		Return = 13,
+		Shift = 16,
+		Control = 17,
+		Menu = 18,
+		Pause = 19,
+		CapsLock = 20,
+		Kana = 21,
+		Hangeul = 21,
+		Hangul = 21,
+		Junja = 23,
+		Final = 24,
+		Hanja = 25,
+		Kanji = 25,
+		Escape = 27,
+		Convert = 28,
+		NonConvert = 29,
+		Accept = 30,
+		ModeChange = 31,
+		Space = 32,
+		Prior = 33,
+		Next = 34,
+		End = 35,
+		Home = 36,
+		Left = 37,
+		Up = 38,
+		Right = 39,
+		Down = 40,
+		Select = 41,
+		Print = 42,
+		Execute = 43,
+		Snapshot = 44,
+		Insert = 45,
+		Delete = 46,
+		Help = 47,
+		N0 = 48,
+		N1 = 49,
+		N2 = 50,
+		N3 = 51,
+		N4 = 52,
+		N5 = 53,
+		N6 = 54,
+		N7 = 55,
+		N8 = 56,
+		N9 = 57,
+		A = 65,
+		B = 66,
+		C = 67,
+		D = 68,
+		E = 69,
+		F = 70,
+		G = 71,
+		H = 72,
+		I = 73,
+		J = 74,
+		K = 75,
+		L = 76,
+		M = 77,
+		N = 78,
+		O = 79,
+		P = 80,
+		Q = 81,
+		R = 82,
+		S = 83,
+		T = 84,
+		U = 85,
+		V = 86,
+		W = 87,
+		X = 88,
+		Y = 89,
+		Z = 90,
+		LeftWindows = 91,
+		RightWindows = 92,
+		Application = 93,
+		Sleep = 95,
+		Numpad0 = 96,
+		Numpad1 = 97,
+		Numpad2 = 98,
+		Numpad3 = 99,
+		Numpad4 = 100,
+		Numpad5 = 101,
+		Numpad6 = 102,
+		Numpad7 = 103,
+		Numpad8 = 104,
+		Numpad9 = 105,
+		Multiply = 106,
+		Add = 107,
+		Separator = 108,
+		Subtract = 109,
+		Decimal = 110,
+		Divide = 111,
+		F1 = 112,
+		F2 = 113,
+		F3 = 114,
+		F4 = 115,
+		F5 = 116,
+		F6 = 117,
+		F7 = 118,
+		F8 = 119,
+		F9 = 120,
+		F10 = 121,
+		F11 = 122,
+		F12 = 123,
+		F13 = 124,
+		F14 = 125,
+		F15 = 126,
+		F16 = 127,
+		F17 = 128,
+		F18 = 129,
+		F19 = 130,
+		F20 = 131,
+		F21 = 132,
+		F22 = 133,
+		F23 = 134,
+		F24 = 135,
+		NumLock = 144,
+		ScrollLock = 145,
+		NEC_Equal = 146,
+		Fujitsu_Jisho = 146,
+		Fujitsu_Masshou = 147,
+		Fujitsu_Touroku = 148,
+		Fujitsu_Loya = 149,
+		Fujitsu_Roya = 150,
+		LeftShift = 160,
+		RightShift = 161,
+		LeftControl = 162,
+		RightControl = 163,
+		LeftMenu = 164,
+		RightMenu = 165,
+		BrowserBack = 166,
+		BrowserForward = 167,
+		BrowserRefresh = 168,
+		BrowserStop = 169,
+		BrowserSearch = 170,
+		BrowserFavorites = 171,
+		BrowserHome = 172,
+		VolumeMute = 173,
+		VolumeDown = 174,
+		VolumeUp = 175,
+		MediaNextTrack = 176,
+		MediaPrevTrack = 177,
+		MediaStop = 178,
+		MediaPlayPause = 179,
+		LaunchMail = 180,
+		LaunchMediaSelect = 181,
+		LaunchApplication1 = 182,
+		LaunchApplication2 = 183,
+		OEM1 = 186,
+		OEMPlus = 187,
+		OEMComma = 188,
+		OEMMinus = 189,
+		OEMPeriod = 190,
+		OEM2 = 191,
+		OEM3 = 192,
+		OEM4 = 219,
+		OEM5 = 220,
+		OEM6 = 221,
+		OEM7 = 222,
+		OEM8 = 223,
+		OEMAX = 225,
+		OEM102 = 226,
+		ICOHelp = 227,
+		ICO00 = 228,
+		ProcessKey = 229,
+		ICOClear = 230,
+		Packet = 231,
+		OEMReset = 233,
+		OEMJump = 234,
+		OEMPA1 = 235,
+		OEMPA2 = 236,
+		OEMPA3 = 237,
+		OEMWSCtrl = 238,
+		OEMCUSel = 239,
+		OEMATTN = 240,
+		OEMFinish = 241,
+		OEMCopy = 242,
+		OEMAuto = 243,
+		OEMENLW = 244,
+		OEMBackTab = 245,
+		ATTN = 246,
+		CRSel = 247,
+		EXSel = 248,
+		EREOF = 249,
+		Play = 250,
+		Zoom = 251,
+		Noname = 252,
+		PA1 = 253,
+		OEMClear = 254
+	}
+	public static class WpfExtensions
+	{
+		public static CefEventFlags GetModifiers(this MouseEventArgs e)
+		{
+			CefEventFlags cefEventFlags = CefEventFlags.None;
+			if (e.LeftButton == MouseButtonState.Pressed)
+			{
+				cefEventFlags |= CefEventFlags.LeftMouseButton;
+			}
+			if (e.MiddleButton == MouseButtonState.Pressed)
+			{
+				cefEventFlags |= CefEventFlags.MiddleMouseButton;
+			}
+			if (e.RightButton == MouseButtonState.Pressed)
+			{
+				cefEventFlags |= CefEventFlags.RightMouseButton;
+			}
+			return cefEventFlags | GetModifierKeys(cefEventFlags);
+		}
+
+		public static CefEventFlags GetModifiers(this DragEventArgs e)
+		{
+			return GetModifierKeys();
+		}
+
+		public static CefEventFlags GetModifierKeys(CefEventFlags modifiers = CefEventFlags.None)
+		{
+			if (Keyboard.IsKeyDown(Key.LeftCtrl))
+			{
+				modifiers |= CefEventFlags.ControlDown | CefEventFlags.IsLeft;
+			}
+			if (Keyboard.IsKeyDown(Key.RightCtrl))
+			{
+				modifiers |= CefEventFlags.ControlDown | CefEventFlags.IsRight;
+			}
+			if (Keyboard.IsKeyDown(Key.LeftShift))
+			{
+				modifiers |= CefEventFlags.ShiftDown | CefEventFlags.IsLeft;
+			}
+			if (Keyboard.IsKeyDown(Key.RightShift))
+			{
+				modifiers |= CefEventFlags.ShiftDown | CefEventFlags.IsRight;
+			}
+			if (Keyboard.IsKeyDown(Key.LeftAlt))
+			{
+				modifiers |= CefEventFlags.AltDown | CefEventFlags.IsLeft;
+			}
+			if (Keyboard.IsKeyDown(Key.RightAlt))
+			{
+				modifiers |= CefEventFlags.AltDown | CefEventFlags.IsRight;
+			}
+			return modifiers;
+		}
+
+		public static CefEventFlags GetModifiers(this KeyEventArgs e)
+		{
+			CefEventFlags cefEventFlags = CefEventFlags.None;
+			ModifierKeys modifiers = e.KeyboardDevice.Modifiers;
+			if (modifiers.HasFlag(ModifierKeys.Shift))
+			{
+				cefEventFlags |= CefEventFlags.ShiftDown;
+			}
+			if (modifiers.HasFlag(ModifierKeys.Alt))
+			{
+				cefEventFlags |= CefEventFlags.AltDown;
+			}
+			if (modifiers.HasFlag(ModifierKeys.Control))
+			{
+				cefEventFlags |= CefEventFlags.ControlDown;
+			}
+			return cefEventFlags;
+		}
+
+		public static IDragData GetDragData(this DragEventArgs e)
+		{
+			IDragData dragData = DragData.Create();
+			dragData.IsFile = e.Data.GetDataPresent(DataFormats.FileDrop);
+			if (dragData.IsFile)
+			{
+				string[] array = (string[])e.Data.GetData(DataFormats.FileDrop);
+				foreach (string text in array)
+				{
+					string fileName = Path.GetFileName(text);
+					dragData.AddFile(text.Replace("\\", "/"), fileName);
+				}
+			}
+			string link = GetLink(e.Data);
+			dragData.IsLink = !string.IsNullOrEmpty(link);
+			if (dragData.IsLink)
+			{
+				dragData.LinkUrl = link;
+			}
+			dragData.IsFragment = e.Data.GetDataPresent(DataFormats.Text);
+			if (dragData.IsFragment)
+			{
+				dragData.FragmentText = (string)e.Data.GetData(DataFormats.Text);
+				string text2 = (string)e.Data.GetData(DataFormats.Html);
+				if (text2 != string.Empty)
+				{
+					dragData.FragmentHtml = text2;
+				}
+			}
+			return dragData;
+		}
+
+		private static string GetLink(IDataObject data)
+		{
+			if (data.GetDataPresent("UniformResourceLocatorW"))
+			{
+				string text = ReadUrlFromDragDropData(data, "UniformResourceLocatorW", Encoding.Unicode);
+				if (text != null)
+				{
+					return text;
+				}
+			}
+			if (data.GetDataPresent("UniformResourceLocator"))
+			{
+				return ReadUrlFromDragDropData(data, "UniformResourceLocator", Encoding.ASCII);
+			}
+			return null;
+		}
+
+		private static string ReadUrlFromDragDropData(IDataObject data, string urlDataFormatName, Encoding urlEncoding)
+		{
+			string text;
+			using (Stream stream = (Stream)data.GetData(urlDataFormatName))
+			{
+				using TextReader textReader = new StreamReader(stream, urlEncoding);
+				text = textReader.ReadToEnd();
+			}
+			return text.TrimEnd(default(char));
+		}
+	}
+	public class WpfKeyboardHandler : IWpfKeyboardHandler, IDisposable
+	{
+		protected readonly ChromiumWebBrowser owner;
+
+		public WpfKeyboardHandler(ChromiumWebBrowser owner)
+		{
+			this.owner = owner;
+		}
+
+		public virtual void Setup(HwndSource source)
+		{
+		}
+
+		public virtual void Dispose()
+		{
+		}
+
+		public virtual void HandleKeyPress(KeyEventArgs e)
+		{
+			IBrowser browserCore = owner.BrowserCore;
+			Key key = ((e.SystemKey == Key.None) ? e.Key : e.SystemKey);
+			if (browserCore != null)
+			{
+				int num = 0;
+				switch (key)
+				{
+				case Key.LeftAlt:
+				case Key.RightAlt:
+					num = 18;
+					break;
+				case Key.LeftCtrl:
+				case Key.RightCtrl:
+					num = 17;
+					break;
+				case Key.LeftShift:
+				case Key.RightShift:
+					num = 16;
+					break;
+				default:
+					num = KeyInterop.VirtualKeyFromKey(key);
+					break;
+				}
+				int message = ((!e.IsDown) ? ((e.SystemKey != Key.None) ? 261 : 257) : ((e.SystemKey != Key.None) ? 260 : 256));
+				browserCore.GetHost().SendKeyEvent(message, num, 0);
+			}
+			switch (key)
+			{
+			case Key.A:
+				if (Keyboard.Modifiers != ModifierKeys.Control)
+				{
+					break;
+				}
+				goto case Key.Tab;
+			case Key.Tab:
+			case Key.End:
+			case Key.Home:
+			case Key.Left:
+			case Key.Up:
+			case Key.Right:
+			case Key.Down:
+				e.Handled = true;
+				break;
+			}
+		}
+
+		public virtual void HandleTextInput(TextCompositionEventArgs e)
+		{
+			IBrowser browserCore = owner.BrowserCore;
+			if (browserCore != null)
+			{
+				IBrowserHost host = browserCore.GetHost();
+				for (int i = 0; i < e.Text.Length; i++)
+				{
+					host.SendKeyEvent(258, e.Text[i], 0);
+				}
+				e.Handled = true;
+			}
+		}
+	}
+	public class WpfLegacyKeyboardHandler : IWpfKeyboardHandler, IDisposable
+	{
+		private HwndSourceHook sourceHook;
+
+		private HwndSource source;
+
+		private readonly ChromiumWebBrowser owner;
+
+		public WpfLegacyKeyboardHandler(ChromiumWebBrowser owner)
+		{
+			this.owner = owner;
+		}
+
+		public virtual void Setup(HwndSource source)
+		{
+			this.source = source;
+			if (source != null)
+			{
+				sourceHook = SourceHook;
+				source.AddHook(SourceHook);
+			}
+		}
+
+		public virtual void Dispose()
+		{
+			if (source != null && sourceHook != null)
+			{
+				source.RemoveHook(sourceHook);
+			}
+			source = null;
+		}
+
+		protected virtual IntPtr SourceHook(IntPtr hWnd, int message, IntPtr wParam, IntPtr lParam, ref bool handled)
+		{
+			if (handled)
+			{
+				return IntPtr.Zero;
+			}
+			if (((uint)(message - 256) <= 2u || (uint)(message - 260) <= 2u || message == 646) && owner.IsKeyboardFocused)
+			{
+				if (message == 260 && wParam.ToInt32() == KeyInterop.VirtualKeyFromKey(Key.F4))
+				{
+					return IntPtr.Zero;
+				}
+				IBrowser browserCore = owner.BrowserCore;
+				if (browserCore != null)
+				{
+					browserCore.GetHost().SendKeyEvent(message, wParam.CastToInt32(), lParam.CastToInt32());
+					handled = true;
+				}
+			}
+			return IntPtr.Zero;
+		}
+
+		public virtual void HandleKeyPress(KeyEventArgs e)
+		{
+			if (e.Key == Key.Tab || e.Key == Key.Home || e.Key == Key.End || e.Key == Key.Up || e.Key == Key.Down || e.Key == Key.Left || e.Key == Key.Right || (e.Key == Key.A && Keyboard.Modifiers == ModifierKeys.Control))
+			{
+				CefEventFlags modifiers = e.GetModifiers();
+				int message = (e.IsDown ? 256 : 257);
+				int wParam = KeyInterop.VirtualKeyFromKey(e.Key);
+				IBrowser browserCore = owner.BrowserCore;
+				if (browserCore != null)
+				{
+					browserCore.GetHost().SendKeyEvent(message, wParam, (int)modifiers);
+					e.Handled = true;
+				}
+			}
+		}
+
+		public virtual void HandleTextInput(TextCompositionEventArgs e)
+		{
+		}
+	}
+}
+namespace CefSharp.Wpf.Handler
+{
+	public class ContextMenuExecuteModel
+	{
+		public CefMenuCommand MenuCommand { get; private set; }
+
+		public IList<string> DictionarySuggestions { get; private set; }
+
+		public int XCoord { get; private set; }
+
+		public int YCoord { get; private set; }
+
+		public string SelectionText { get; private set; }
+
+		public string MisspelledWord { get; private set; }
+
+		public ContextMenuExecuteModel(CefMenuCommand menuCommand, IList<string> dictionarySuggestions, int xCoord, int yCoord, string selectionText, string misspelledWord)
+		{
+			MenuCommand = menuCommand;
+			DictionarySuggestions = dictionarySuggestions;
+			XCoord = xCoord;
+			YCoord = yCoord;
+			SelectionText = selectionText;
+			MisspelledWord = misspelledWord;
+		}
+	}
+	public class ContextMenuHandler : CefSharp.Handler.ContextMenuHandler
+	{
+		internal class MenuModel
+		{
+			internal string Label { get; set; }
+
+			internal CefMenuCommand CommandId { get; set; }
+
+			internal bool IsEnabled { get; set; }
+
+			internal bool IsSeperator { get; set; }
+
+			internal bool? IsChecked { get; set; }
+
+			internal MenuItemType Type { get; set; }
+
+			internal IList<MenuModel> SubMenus { get; set; }
+		}
+
+		public const int CefMenuCommandShowDevToolsId = 28440;
+
+		public const int CefMenuCommandCloseDevToolsId = 28441;
+
+		private readonly bool addDevtoolsMenuItems;
+
+		public ContextMenuHandler(bool addDevtoolsMenuItems = false)
+		{
+			this.addDevtoolsMenuItems = addDevtoolsMenuItems;
+		}
+
+		protected override void OnBeforeContextMenu(IWebBrowser chromiumWebBrowser, IBrowser browser, IFrame frame, IContextMenuParams parameters, IMenuModel model)
+		{
+			if (addDevtoolsMenuItems)
+			{
+				if (model.Count > 0)
+				{
+					model.AddSeparator();
+				}
+				model.AddItem((CefMenuCommand)28440, "Show DevTools (Inspect)");
+				model.AddItem((CefMenuCommand)28441, "Close DevTools");
+			}
+		}
+
+		protected override void OnContextMenuDismissed(IWebBrowser chromiumWebBrowser, IBrowser browser, IFrame frame)
+		{
+			ChromiumWebBrowser webBrowser = (ChromiumWebBrowser)chromiumWebBrowser;
+			webBrowser.UiThreadRunAsync(delegate
+			{
+				webBrowser.ContextMenu = null;
+			});
+		}
+
+		protected override bool RunContextMenu(IWebBrowser chromiumWebBrowser, IBrowser browser, IFrame frame, IContextMenuParams parameters, IMenuModel model, IRunContextMenuCallback callback)
+		{
+			ChromiumWebBrowser webBrowser = (ChromiumWebBrowser)chromiumWebBrowser;
+			IList<MenuModel> menuItems = GetMenuItems(model);
+			List<string> dictionarySuggestions = parameters.DictionarySuggestions;
+			int xCoord = parameters.XCoord;
+			int yCoord = parameters.YCoord;
+			string misspelledWord = parameters.MisspelledWord;
+			string selectionText = parameters.SelectionText;
+			webBrowser.UiThreadRunAsync(delegate
+			{
+				ContextMenu menu = new ContextMenu
+				{
+					IsOpen = true,
+					Placement = PlacementMode.Mouse
+				};
+				RoutedEventHandler handler = null;
+				handler = delegate
+				{
+					menu.Closed -= handler;
+					if (!callback.IsDisposed)
+					{
+						callback.Cancel();
+					}
+				};
+				menu.Closed += handler;
+				foreach (MenuModel item in menuItems)
+				{
+					if (item.IsSeperator)
+					{
+						menu.Items.Add(new Separator());
+					}
+					else if (item.CommandId != CefMenuCommand.NotFound)
+					{
+						MenuItem menuItem = new MenuItem
+						{
+							Header = item.Label.Replace("&", "_"),
+							IsEnabled = item.IsEnabled,
+							IsChecked = (item.IsChecked == true),
+							IsCheckable = item.IsChecked.HasValue,
+							Command = new DelegateCommand(delegate
+							{
+								ExecuteCommand(browser, new ContextMenuExecuteModel(item.CommandId, dictionarySuggestions, xCoord, yCoord, selectionText, misspelledWord));
+							})
+						};
+						if (item.SubMenus != null && item.SubMenus.Count > 0)
+						{
+							foreach (MenuModel subItem in item.SubMenus)
+							{
+								if (subItem.CommandId != CefMenuCommand.NotFound)
+								{
+									if (subItem.IsSeperator)
+									{
+										menu.Items.Add(new Separator());
+									}
+									else
+									{
+										MenuItem newItem = new MenuItem
+										{
+											Header = subItem.Label.Replace("&", "_"),
+											IsEnabled = subItem.IsEnabled,
+											IsChecked = (subItem.IsChecked == true),
+											IsCheckable = subItem.IsChecked.HasValue,
+											Command = new DelegateCommand(delegate
+											{
+												ExecuteCommand(browser, new ContextMenuExecuteModel(subItem.CommandId, dictionarySuggestions, xCoord, yCoord, selectionText, misspelledWord));
+											})
+										};
+										menuItem.Items.Add(newItem);
+									}
+								}
+							}
+						}
+						menu.Items.Add(menuItem);
+					}
+				}
+				webBrowser.ContextMenu = menu;
+			});
+			return true;
+		}
+
+		protected virtual void ExecuteCommand(IBrowser browser, ContextMenuExecuteModel model)
+		{
+			if (model.MenuCommand >= CefMenuCommand.SpellCheckSuggestion0 && model.MenuCommand <= CefMenuCommand.SpellCheckSuggestion4)
+			{
+				int num = (int)(model.MenuCommand - 200);
+				if (num < model.DictionarySuggestions.Count)
+				{
+					string word = model.DictionarySuggestions[num];
+					browser.ReplaceMisspelling(word);
+				}
+				return;
+			}
+			switch (model.MenuCommand)
+			{
+			case CefMenuCommand.Back:
+				browser.GoBack();
+				break;
+			case CefMenuCommand.Forward:
+				browser.GoForward();
+				break;
+			case CefMenuCommand.Reload:
+				browser.Reload();
+				break;
+			case CefMenuCommand.ReloadNoCache:
+				browser.Reload(ignoreCache: true);
+				break;
+			case CefMenuCommand.StopLoad:
+				browser.StopLoad();
+				break;
+			case CefMenuCommand.Undo:
+				browser.FocusedFrame.Undo();
+				break;
+			case CefMenuCommand.Redo:
+				browser.FocusedFrame.Redo();
+				break;
+			case CefMenuCommand.Cut:
+				browser.FocusedFrame.Cut();
+				break;
+			case CefMenuCommand.Copy:
+				browser.FocusedFrame.Copy();
+				break;
+			case CefMenuCommand.Paste:
+				browser.FocusedFrame.Paste();
+				break;
+			case CefMenuCommand.Delete:
+				browser.FocusedFrame.Delete();
+				break;
+			case CefMenuCommand.SelectAll:
+				browser.FocusedFrame.SelectAll();
+				break;
+			case CefMenuCommand.Print:
+				browser.GetHost().Print();
+				break;
+			case CefMenuCommand.ViewSource:
+				browser.FocusedFrame.ViewSource();
+				break;
+			case CefMenuCommand.Find:
+				browser.GetHost().Find(model.SelectionText, forward: true, matchCase: false, findNext: false);
+				break;
+			case CefMenuCommand.AddToDictionary:
+				browser.GetHost().AddWordToDictionary(model.MisspelledWord);
+				break;
+			case (CefMenuCommand)28440:
+				browser.GetHost().ShowDevTools(null, model.XCoord, model.YCoord);
+				break;
+			case (CefMenuCommand)28441:
+				browser.GetHost().CloseDevTools();
+				break;
+			}
+		}
+
+		private static IList<MenuModel> GetMenuItems(IMenuModel model)
+		{
+			List<MenuModel> list = new List<MenuModel>();
+			for (int i = 0; i < model.Count; i++)
+			{
+				MenuItemType typeAt = model.GetTypeAt(i);
+				bool? isChecked = null;
+				if (typeAt == MenuItemType.Check)
+				{
+					isChecked = model.IsCheckedAt(i);
+				}
+				IMenuModel subMenuAt = model.GetSubMenuAt(i);
+				IList<MenuModel> subMenus = ((subMenuAt == null) ? null : GetMenuItems(subMenuAt));
+				MenuModel item = new MenuModel
+				{
+					Label = model.GetLabelAt(i),
+					CommandId = model.GetCommandIdAt(i),
+					IsEnabled = model.IsEnabledAt(i),
+					Type = typeAt,
+					IsSeperator = (typeAt == MenuItemType.Separator),
+					IsChecked = isChecked,
+					SubMenus = subMenus
+				};
+				list.Add(item);
+			}
+			return list;
+		}
+	}
+}
+namespace CefSharp.Wpf.Experimental
+{
+	public class ChromiumWebBrowserWithTouchSupport : ChromiumWebBrowser
+	{
+		protected override void OnStylusDown(StylusDownEventArgs e)
+		{
+			if (e.StylusDevice.TabletDevice.Type == TabletDeviceType.Stylus)
+			{
+				Focus();
+				CaptureStylus();
+				OnStylus(e, TouchEventType.Pressed);
+			}
+			base.OnStylusDown(e);
+		}
+
+		protected override void OnStylusMove(StylusEventArgs e)
+		{
+			if (e.StylusDevice.TabletDevice.Type == TabletDeviceType.Stylus)
+			{
+				OnStylus(e, TouchEventType.Moved);
+			}
+			base.OnStylusMove(e);
+		}
+
+		protected override void OnStylusUp(StylusEventArgs e)
+		{
+			if (e.StylusDevice.TabletDevice.Type == TabletDeviceType.Stylus)
+			{
+				ReleaseStylusCapture();
+				OnStylus(e, TouchEventType.Released);
+			}
+			base.OnStylusUp(e);
+		}
+
+		private void OnStylus(StylusEventArgs e, TouchEventType touchEventType)
+		{
+			IBrowser browser = GetBrowser();
+			if (e.Handled || browser == null)
+			{
+				return;
+			}
+			CefEventFlags modifierKeys = WpfExtensions.GetModifierKeys();
+			PointerType pointerType = (e.StylusDevice.Inverted ? PointerType.Eraser : PointerType.Pen);
+			foreach (StylusPoint stylusPoint in e.GetStylusPoints(this))
+			{
+				TouchEvent evt = new TouchEvent
+				{
+					Id = e.StylusDevice.Id,
+					X = (float)stylusPoint.X,
+					Y = (float)stylusPoint.Y,
+					PointerType = pointerType,
+					Pressure = stylusPoint.PressureFactor,
+					Type = touchEventType,
+					Modifiers = modifierKeys
+				};
+				browser.GetHost().SendTouchEvent(evt);
+			}
+			e.Handled = true;
+		}
+	}
+	public delegate PopupCreation LifeSpanHandlerOnBeforePopupCreatedDelegate(IWebBrowser chromiumWebBrowser, IBrowser browser, IFrame frame, string targetUrl, string targetFrameName, WindowOpenDisposition targetDisposition, bool userGesture, IBrowserSettings browserSettings);
+	public delegate void LifeSpanHandlerOnPopupCreatedDelegate(ChromiumWebBrowser control, string url, string targetFrameName, IWindowInfo windowInfo);
+	public delegate void LifeSpanHandlerOnPopupBrowserCreatedDelegate(ChromiumWebBrowser control, IBrowser browser);
+	public delegate void LifeSpanHandlerOnPopupDestroyedDelegate(ChromiumWebBrowser control, IBrowser browser);
+	public delegate ChromiumWebBrowser LifeSpanHandlerCreatePopupChromiumWebBrowser();
+	public class LifeSpanHandler : CefSharp.Handler.LifeSpanHandler
+	{
+		private LifeSpanHandlerOnBeforePopupCreatedDelegate onBeforePopupCreated;
+
+		private LifeSpanHandlerOnPopupDestroyedDelegate onPopupDestroyed;
+
+		private LifeSpanHandlerOnPopupBrowserCreatedDelegate onPopupBrowserCreated;
+
+		private LifeSpanHandlerOnPopupCreatedDelegate onPopupCreated;
+
+		private LifeSpanHandlerCreatePopupChromiumWebBrowser chromiumWebBrowserCreatedDelegate;
+
+		private Dictionary<IntPtr, ChromiumWebBrowser> chromiumWebBrowserMap = new Dictionary<IntPtr, ChromiumWebBrowser>();
+
+		private ChromiumWebBrowser pendingChromiumWebBrowser;
+
+		public LifeSpanHandler(LifeSpanHandlerCreatePopupChromiumWebBrowser chromiumWebBrowserCreatedDelegate = null)
+		{
+			this.chromiumWebBrowserCreatedDelegate = chromiumWebBrowserCreatedDelegate;
+		}
+
+		public LifeSpanHandler OnBeforePopupCreated(LifeSpanHandlerOnBeforePopupCreatedDelegate onBeforePopupCreated)
+		{
+			this.onBeforePopupCreated = onBeforePopupCreated;
+			return this;
+		}
+
+		public LifeSpanHandler OnPopupCreated(LifeSpanHandlerOnPopupCreatedDelegate onPopupCreated)
+		{
+			this.onPopupCreated = onPopupCreated;
+			return this;
+		}
+
+		public LifeSpanHandler OnPopupBrowserCreated(LifeSpanHandlerOnPopupBrowserCreatedDelegate onPopupBrowserCreated)
+		{
+			this.onPopupBrowserCreated = onPopupBrowserCreated;
+			return this;
+		}
+
+		public LifeSpanHandler OnPopupDestroyed(LifeSpanHandlerOnPopupDestroyedDelegate onPopupDestroyed)
+		{
+			this.onPopupDestroyed = onPopupDestroyed;
+			return this;
+		}
+
+		public static LifeSpanHandlerBuilder Create(LifeSpanHandlerCreatePopupChromiumWebBrowser chromiumWebBrowserCreatedDelegate = null)
+		{
+			return new LifeSpanHandlerBuilder(chromiumWebBrowserCreatedDelegate);
+		}
+
+		protected override bool OnBeforePopup(IWebBrowser browserControl, IBrowser browser, IFrame frame, string targetUrl, string targetFrameName, WindowOpenDisposition targetDisposition, bool userGesture, IPopupFeatures popupFeatures, IWindowInfo windowInfo, IBrowserSettings browserSettings, ref bool noJavascriptAccess, out IWebBrowser newBrowser)
+		{
+			newBrowser = null;
+			switch (onBeforePopupCreated?.Invoke(browserControl, browser, frame, targetUrl, targetFrameName, targetDisposition, userGesture, browserSettings) ?? PopupCreation.Continue)
+			{
+			case PopupCreation.Cancel:
+				return true;
+			case PopupCreation.ContinueWithJavascriptDisabled:
+				noJavascriptAccess = true;
+				break;
+			}
+			if (onPopupCreated == null)
+			{
+				return false;
+			}
+			ChromiumWebBrowser chromiumWebBrowser = (ChromiumWebBrowser)browserControl;
+			ChromiumWebBrowser control = null;
+			chromiumWebBrowser.Dispatcher.Invoke(delegate
+			{
+				control = chromiumWebBrowserCreatedDelegate?.Invoke();
+				if (control == null)
+				{
+					control = new ChromiumWebBrowser();
+				}
+				control.SetAsPopup();
+				control.LifeSpanHandler = this;
+				pendingChromiumWebBrowser = control;
+				onPopupCreated?.Invoke(control, targetUrl, targetFrameName, windowInfo);
+				Window window = Window.GetWindow(control);
+				if (window == null)
+				{
+					windowInfo.SetAsWindowless(IntPtr.Zero);
+				}
+				else
+				{
+					WindowInteropHelper windowInteropHelper = new WindowInteropHelper(window);
+					IntPtr asWindowless = windowInteropHelper.EnsureHandle();
+					windowInfo.SetAsWindowless(asWindowless);
+				}
+			});
+			newBrowser = control;
+			return false;
+		}
+
+		protected override void OnAfterCreated(IWebBrowser browserControl, IBrowser browser)
+		{
+			if (browser.IsPopup && pendingChromiumWebBrowser != null)
+			{
+				chromiumWebBrowserMap.Add(browser.GetHost().GetWindowHandle(), pendingChromiumWebBrowser);
+				onPopupBrowserCreated?.Invoke(pendingChromiumWebBrowser, browser);
+				pendingChromiumWebBrowser = null;
+			}
+		}
+
+		protected override bool DoClose(IWebBrowser chromiumWebBrowser, IBrowser browser)
+		{
+			if (browser.IsPopup && !browser.IsDisposed)
+			{
+				IntPtr windowHandle = browser.GetHost().GetWindowHandle();
+				if (chromiumWebBrowserMap.TryGetValue(windowHandle, out var control))
+				{
+					if (control == null)
+					{
+						return false;
+					}
+					if (!control.Dispatcher.HasShutdownStarted)
+					{
+						control.Dispatcher.Invoke(delegate
+						{
+							onPopupDestroyed?.Invoke(control, browser);
+							if (!control.IsDisposed)
+							{
+								control.Dispose();
+							}
+						});
+					}
+					chromiumWebBrowserMap.Remove(windowHandle);
+					return true;
+				}
+			}
+			return false;
+		}
+	}
+	public class LifeSpanHandlerBuilder
+	{
+		private readonly LifeSpanHandler handler;
+
+		public LifeSpanHandlerBuilder(LifeSpanHandlerCreatePopupChromiumWebBrowser chromiumWebBrowserCreatedDelegate)
+		{
+			handler = new LifeSpanHandler(chromiumWebBrowserCreatedDelegate);
+		}
+
+		public LifeSpanHandlerBuilder OnBeforePopupCreated(LifeSpanHandlerOnBeforePopupCreatedDelegate onBeforePopupCreated)
+		{
+			handler.OnBeforePopupCreated(onBeforePopupCreated);
+			return this;
+		}
+
+		public LifeSpanHandlerBuilder OnPopupCreated(LifeSpanHandlerOnPopupCreatedDelegate onPopupCreated)
+		{
+			handler.OnPopupCreated(onPopupCreated);
+			return this;
+		}
+
+		public LifeSpanHandlerBuilder OnPopupBrowserCreated(LifeSpanHandlerOnPopupBrowserCreatedDelegate onPopupBrowserCreated)
+		{
+			handler.OnPopupBrowserCreated(onPopupBrowserCreated);
+			return this;
+		}
+
+		public LifeSpanHandlerBuilder OnPopupDestroyed(LifeSpanHandlerOnPopupDestroyedDelegate onPopupDestroyed)
+		{
+			handler.OnPopupDestroyed(onPopupDestroyed);
+			return this;
+		}
+
+		public ILifeSpanHandler Build()
+		{
+			return handler;
+		}
+	}
+	public enum PopupCreation
+	{
+		Cancel,
+		Continue,
+		ContinueWithJavascriptDisabled
+	}
+	public class WpfImeKeyboardHandler : WpfKeyboardHandler
+	{
+		private int languageCodeId;
+
+		private bool systemCaret;
+
+		private bool isSetup;
+
+		private List<CefSharp.Structs.Rect> compositionBounds = new List<CefSharp.Structs.Rect>();
+
+		private HwndSource source;
+
+		private HwndSourceHook sourceHook;
+
+		private bool hasImeComposition;
+
+		private MouseButtonEventHandler mouseDownEventHandler;
+
+		private bool isActive;
+
+		public WpfImeKeyboardHandler(ChromiumWebBrowser owner)
+			: base(owner)
+		{
+		}
+
+		public void ChangeCompositionRange(Range selectionRange, CefSharp.Structs.Rect[] characterBounds)
+		{
+			if (!isActive)
+			{
+				return;
+			}
+			ScreenInfo? screenInfo = ((IRenderWebBrowser)owner).GetScreenInfo();
+			float scaleFactor = (screenInfo.HasValue ? screenInfo.Value.DeviceScaleFactor : 1f);
+			owner.UiThreadRunAsync(delegate
+			{
+				Window window = Window.GetWindow(owner);
+				if (window != null)
+				{
+					System.Windows.Point point = owner.TransformToAncestor(window).Transform(new System.Windows.Point(0.0, 0.0));
+					List<CefSharp.Structs.Rect> list = new List<CefSharp.Structs.Rect>();
+					CefSharp.Structs.Rect[] array = characterBounds;
+					for (int i = 0; i < array.Length; i++)
+					{
+						CefSharp.Structs.Rect rect = array[i];
+						list.Add(new CefSharp.Structs.Rect((int)((point.X + (double)rect.X) * (double)scaleFactor), (int)((point.Y + (double)rect.Y) * (double)scaleFactor), (int)((float)rect.Width * scaleFactor), (int)((float)rect.Height * scaleFactor)));
+					}
+					compositionBounds = list;
+					MoveImeWindow(source.Handle);
+				}
+			});
+		}
+
+		public override void Setup(HwndSource source)
+		{
+			if (!isSetup)
+			{
+				isSetup = true;
+				this.source = source;
+				sourceHook = SourceHook;
+				source.AddHook(SourceHook);
+				owner.GotFocus += OwnerGotFocus;
+				owner.LostFocus += OwnerLostFocus;
+				mouseDownEventHandler = OwnerMouseDown;
+				owner.AddHandler(UIElement.MouseDownEvent, mouseDownEventHandler, handledEventsToo: true);
+				if (owner.IsFocused)
+				{
+					SetActive();
+				}
+			}
+		}
+
+		public override void Dispose()
+		{
+			if (isSetup)
+			{
+				isSetup = false;
+				owner.GotFocus -= OwnerGotFocus;
+				owner.LostFocus -= OwnerLostFocus;
+				owner.RemoveHandler(UIElement.MouseDownEvent, mouseDownEventHandler);
+				if (source != null && sourceHook != null)
+				{
+					source.RemoveHook(sourceHook);
+					source = null;
+				}
+			}
+		}
+
+		private void OwnerMouseDown(object sender, MouseButtonEventArgs e)
+		{
+			CloseImeComposition();
+		}
+
+		private void OwnerGotFocus(object sender, RoutedEventArgs e)
+		{
+			SetActive();
+		}
+
+		private void OwnerLostFocus(object sender, RoutedEventArgs e)
+		{
+			SetInactive();
+		}
+
+		private void SetActive()
+		{
+			if (InputMethod.GetIsInputMethodEnabled(owner))
+			{
+				InputMethod.SetIsInputMethodEnabled(owner, value: false);
+			}
+			if (InputMethod.GetIsInputMethodSuspended(owner))
+			{
+				InputMethod.SetIsInputMethodSuspended(owner, value: false);
+			}
+			InputMethod.SetIsInputMethodEnabled(owner, value: true);
+			InputMethod.SetIsInputMethodSuspended(owner, value: true);
+			isActive = true;
+		}
+
+		private void SetInactive()
+		{
+			isActive = false;
+			InputMethod.SetIsInputMethodEnabled(owner, value: false);
+			InputMethod.SetIsInputMethodSuspended(owner, value: false);
+		}
+
+		private IntPtr SourceHook(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+		{
+			handled = false;
+			if (!isActive || !isSetup || owner == null || owner.IsDisposed || !owner.IsBrowserInitialized)
+			{
+				return IntPtr.Zero;
+			}
+			IBrowserHost browserHost = owner.GetBrowserHost();
+			if (browserHost == null)
+			{
+				return IntPtr.Zero;
+			}
+			switch ((WM)msg)
+			{
+			case WM.IME_SETCONTEXT:
+				OnImeSetContext(hwnd, (uint)msg, wParam, lParam);
+				handled = true;
+				break;
+			case WM.IME_STARTCOMPOSITION:
+				OnIMEStartComposition(hwnd);
+				hasImeComposition = true;
+				handled = true;
+				break;
+			case WM.IME_COMPOSITION:
+				OnImeComposition(browserHost, hwnd, lParam.ToInt32());
+				handled = true;
+				break;
+			case WM.IME_ENDCOMPOSITION:
+				OnImeEndComposition(browserHost, hwnd);
+				hasImeComposition = false;
+				handled = true;
+				break;
+			}
+			if (!handled)
+			{
+				return new IntPtr(1);
+			}
+			return IntPtr.Zero;
+		}
+
+		private void CloseImeComposition()
+		{
+			if (hasImeComposition)
+			{
+				ImeNative.SetFocus(IntPtr.Zero);
+				ImeNative.SetFocus(source.Handle);
+			}
+		}
+
+		private void OnImeComposition(IBrowserHost browserHost, IntPtr hwnd, int lParam)
+		{
+			string text = string.Empty;
+			if (ImeHandler.GetResult(hwnd, (uint)lParam, out text))
+			{
+				browserHost.ImeCommitText(text, new Range(int.MaxValue, int.MaxValue), 0);
+				browserHost.ImeSetComposition(text, new CompositionUnderline[0], new Range(int.MaxValue, int.MaxValue), new Range(0, 0));
+				browserHost.ImeFinishComposingText(keepSelection: false);
+				return;
+			}
+			List<CompositionUnderline> list = new List<CompositionUnderline>();
+			int compositionStart = 0;
+			if (ImeHandler.GetComposition(hwnd, (uint)lParam, list, ref compositionStart, out text))
+			{
+				if ((long)languageCodeId == 18)
+				{
+					browserHost.ImeSetComposition(text, list.ToArray(), new Range(int.MaxValue, int.MaxValue), new Range(compositionStart + list.Count, compositionStart + list.Count));
+				}
+				else
+				{
+					browserHost.ImeSetComposition(text, list.ToArray(), new Range(int.MaxValue, int.MaxValue), new Range(compositionStart, compositionStart));
+				}
+				UpdateCaretPosition(compositionStart - 1);
+			}
+			else
+			{
+				CancelComposition(browserHost, hwnd);
+			}
+		}
+
+		private void CancelComposition(IBrowserHost browserHost, IntPtr hwnd)
+		{
+			browserHost.ImeCancelComposition();
+			DestroyImeWindow(hwnd);
+		}
+
+		private void OnImeEndComposition(IBrowserHost browserHost, IntPtr hwnd)
+		{
+			if ((long)languageCodeId != 18)
+			{
+				browserHost.ImeFinishComposingText(keepSelection: false);
+			}
+			DestroyImeWindow(hwnd);
+		}
+
+		private void OnImeSetContext(IntPtr hwnd, uint msg, IntPtr wParam, IntPtr lParam)
+		{
+			ImeNative.DefWindowProc(hwnd, msg, wParam, (IntPtr)(lParam.ToInt64() & 0x7FFFFFFF));
+			CreateImeWindow(hwnd);
+			MoveImeWindow(hwnd);
+		}
+
+		private void OnIMEStartComposition(IntPtr hwnd)
+		{
+			CreateImeWindow(hwnd);
+			MoveImeWindow(hwnd);
+		}
+
+		private void CreateImeWindow(IntPtr hwnd)
+		{
+			languageCodeId = PrimaryLangId(InputLanguageManager.Current.CurrentInputLanguage.KeyboardLayoutId);
+			if (((long)languageCodeId == 17 || (long)languageCodeId == 4) && !systemCaret && ImeNative.CreateCaret(hwnd, IntPtr.Zero, 1, 1))
+			{
+				systemCaret = true;
+			}
+		}
+
+		private int PrimaryLangId(int lgid)
+		{
+			return lgid & 0x3FF;
+		}
+
+		private void MoveImeWindow(IntPtr hwnd)
+		{
+			if (compositionBounds.Count != 0)
+			{
+				IntPtr hIMC = ImeNative.ImmGetContext(hwnd);
+				CefSharp.Structs.Rect rect = compositionBounds[0];
+				int num = rect.X + rect.Width;
+				int num2 = rect.Y + rect.Height;
+				ImeNative.CANDIDATEFORM lpCandidateForm = new ImeNative.CANDIDATEFORM
+				{
+					dwIndex = 0,
+					dwStyle = 64,
+					ptCurrentPos = new ImeNative.POINT(num, num2),
+					rcArea = new ImeNative.RECT(0, 0, 0, 0)
+				};
+				ImeNative.ImmSetCandidateWindow(hIMC, ref lpCandidateForm);
+				if (systemCaret)
+				{
+					ImeNative.SetCaretPos(num, num2);
+				}
+				if ((long)languageCodeId == 4)
+				{
+					ImeNative.COMPOSITIONFORM lpCompForm = new ImeNative.COMPOSITIONFORM
+					{
+						dwStyle = 2,
+						ptCurrentPos = new ImeNative.POINT(num, num2),
+						rcArea = new ImeNative.RECT(0, 0, 0, 0)
+					};
+					ImeNative.ImmSetCompositionWindow(hIMC, ref lpCompForm);
+				}
+				if ((long)languageCodeId == 18)
+				{
+					num2++;
+				}
+				ImeNative.CANDIDATEFORM lpCandidateForm2 = new ImeNative.CANDIDATEFORM
+				{
+					dwIndex = 0,
+					dwStyle = 128,
+					ptCurrentPos = new ImeNative.POINT(num, num2),
+					rcArea = new ImeNative.RECT(rect.X, rect.Y, num, num2 + 1)
+				};
+				ImeNative.ImmSetCandidateWindow(hIMC, ref lpCandidateForm2);
+				ImeNative.ImmReleaseContext(hwnd, hIMC);
+			}
+		}
+
+		private void DestroyImeWindow(IntPtr hwnd)
+		{
+			if (systemCaret)
+			{
+				ImeNative.DestroyCaret();
+				systemCaret = false;
+			}
+		}
+
+		private void UpdateCaretPosition(int index)
+		{
+			MoveImeWindow(source.Handle);
+		}
+	}
+}
+namespace CefSharp.Wpf.Experimental.Accessibility
+{
+	public class AccessibilityHandler : IAccessibilityHandler
+	{
+		protected readonly FrameworkElement owner;
+
+		public BrowserAutomationPeer AutomationPeer { get; protected set; }
+
+		public AccessibilityHandler(FrameworkElement owner)
+		{
+			AutomationPeer = new BrowserAutomationPeer(owner);
+			this.owner = owner;
+		}
+
+		void IAccessibilityHandler.OnAccessibilityLocationChange(IValue value)
+		{
+			OnAccessibilityLocationChange(value);
+		}
+
+		protected virtual void OnAccessibilityLocationChange(IValue value)
+		{
+		}
+
+		void IAccessibilityHandler.OnAccessibilityTreeChange(IValue value)
+		{
+			OnAccessibilityTreeChange(value);
+		}
+
+		protected virtual void OnAccessibilityTreeChange(IValue value)
+		{
+			if (value.Type != CefSharp.Enums.ValueType.Dictionary)
+			{
+				return;
+			}
+			IDictionary<string, IValue> accessibilityUpdateDictionary = value.GetDictionary();
+			if (accessibilityUpdateDictionary != null && accessibilityUpdateDictionary.ContainsKey("ax_tree_id"))
+			{
+				string treeId = accessibilityUpdateDictionary["ax_tree_id"].GetString();
+				owner.Dispatcher.Invoke(delegate
+				{
+					AutomationPeer.OnAccessibilityTreeChange(treeId, accessibilityUpdateDictionary);
+				});
+			}
+		}
+	}
+	public class AccessibilityNode : FrameworkElementAutomationPeer
+	{
+		private readonly AccessibilityTree accessibilityTree;
+
+		private CefSharp.Structs.Rect location;
+
+		private CefSharp.Structs.Point scroll;
+
+		private int offsetContainerId = -1;
+
+		private HashSet<int> childIds;
+
+		private static readonly Dictionary<string, AutomationControlType> ControlTypeMapping = new Dictionary<string, AutomationControlType>
+		{
+			{
+				"alert",
+				AutomationControlType.Text
+			},
+			{
+				"application",
+				AutomationControlType.Pane
+			},
+			{
+				"button",
+				AutomationControlType.Button
+			},
+			{
+				"buttonDropDown",
+				AutomationControlType.ComboBox
+			},
+			{
+				"client",
+				AutomationControlType.Calendar
+			},
+			{
+				"popUpButton",
+				AutomationControlType.Button
+			},
+			{
+				"checkBox",
+				AutomationControlType.CheckBox
+			},
+			{
+				"comboBox",
+				AutomationControlType.ComboBox
+			},
+			{
+				"dialog",
+				AutomationControlType.Pane
+			},
+			{
+				"genericContainer",
+				AutomationControlType.Group
+			},
+			{
+				"group",
+				AutomationControlType.Group
+			},
+			{
+				"image",
+				AutomationControlType.Image
+			},
+			{
+				"inlineTextBox",
+				AutomationControlType.Text
+			},
+			{
+				"link",
+				AutomationControlType.Hyperlink
+			},
+			{
+				"locationBar",
+				AutomationControlType.Group
+			},
+			{
+				"menuBar",
+				AutomationControlType.MenuBar
+			},
+			{
+				"menuItem",
+				AutomationControlType.MenuItem
+			},
+			{
+				"menuListPopup",
+				AutomationControlType.Menu
+			},
+			{
+				"pane",
+				AutomationControlType.Pane
+			},
+			{
+				"progressIndicator",
+				AutomationControlType.ProgressBar
+			},
+			{
+				"radioButton",
+				AutomationControlType.RadioButton
+			},
+			{
+				"rootWebArea",
+				AutomationControlType.Group
+			},
+			{
+				"scrollBar",
+				AutomationControlType.ScrollBar
+			},
+			{
+				"slider",
+				AutomationControlType.Slider
+			},
+			{
+				"splitter",
+				AutomationControlType.Separator
+			},
+			{
+				"staticText",
+				AutomationControlType.Text
+			},
+			{
+				"tab",
+				AutomationControlType.TabItem
+			},
+			{
+				"tabList",
+				AutomationControlType.Tab
+			},
+			{
+				"textField",
+				AutomationControlType.Edit
+			},
+			{
+				"titleBar",
+				AutomationControlType.Pane
+			},
+			{
+				"toolbar",
+				AutomationControlType.ToolBar
+			},
+			{
+				"tree",
+				AutomationControlType.Tree
+			},
+			{
+				"treeItem",
+				AutomationControlType.TreeItem
+			},
+			{
+				"webView",
+				AutomationControlType.Group
+			},
+			{
+				"window",
+				AutomationControlType.Window
+			}
+		};
+
+		public int Id { get; private set; } = -1;
+
+		public string Role { get; private set; }
+
+		public string Name { get; private set; }
+
+		public string Value { get; private set; }
+
+		public string Description { get; private set; }
+
+		public AccessibilityNode(FrameworkElement owner, IDictionary<string, IValue> node, AccessibilityTree accessibilityTree)
+			: base(owner)
+		{
+			this.accessibilityTree = accessibilityTree;
+			childIds = new HashSet<int>();
+			Update(node);
+		}
+
+		protected override List<AutomationPeer> GetChildrenCore()
+		{
+			return GetChildAccessibilityNodes().Cast<AutomationPeer>().ToList();
+		}
+
+		public override object GetPattern(PatternInterface patternInterface)
+		{
+			return null;
+		}
+
+		protected override System.Windows.Rect GetBoundingRectangleCore()
+		{
+			CefSharp.Structs.Rect rect = GetLocation();
+			System.Windows.Point point = CefPointToScreen(rect.X, rect.Y);
+			System.Windows.Size size = new System.Windows.Size(rect.Width, rect.Height);
+			return new System.Windows.Rect(point, size);
+		}
+
+		protected override bool IsOffscreenCore()
+		{
+			return false;
+		}
+
+		protected override AutomationOrientation GetOrientationCore()
+		{
+			return AutomationOrientation.None;
+		}
+
+		protected override string GetItemTypeCore()
+		{
+			return Role;
+		}
+
+		protected override string GetClassNameCore()
+		{
+			return "CefSharpAccessibilityNode:" + Role;
+		}
+
+		protected override string GetItemStatusCore()
+		{
+			return string.Empty;
+		}
+
+		protected override bool IsRequiredForFormCore()
+		{
+			return false;
+		}
+
+		protected override bool IsKeyboardFocusableCore()
+		{
+			return true;
+		}
+
+		protected override bool HasKeyboardFocusCore()
+		{
+			return HasFocus();
+		}
+
+		protected override bool IsEnabledCore()
+		{
+			return true;
+		}
+
+		protected override bool IsPasswordCore()
+		{
+			return false;
+		}
+
+		protected override string GetAutomationIdCore()
+		{
+			return Id.ToString();
+		}
+
+		protected override string GetNameCore()
+		{
+			return Name;
+		}
+
+		protected override AutomationControlType GetAutomationControlTypeCore()
+		{
+			if (ControlTypeMapping.ContainsKey(Role))
+			{
+				return ControlTypeMapping[Role];
+			}
+			return AutomationControlType.Custom;
+		}
+
+		protected override bool IsContentElementCore()
+		{
+			return true;
+		}
+
+		protected override bool IsControlElementCore()
+		{
+			return true;
+		}
+
+		protected override AutomationPeer GetLabeledByCore()
+		{
+			return null;
+		}
+
+		protected override string GetHelpTextCore()
+		{
+			return Description;
+		}
+
+		protected override string GetAcceleratorKeyCore()
+		{
+			return string.Empty;
+		}
+
+		protected override string GetAccessKeyCore()
+		{
+			return string.Empty;
+		}
+
+		protected override System.Windows.Point GetClickablePointCore()
+		{
+			System.Windows.Rect boundingRectangleCore = GetBoundingRectangleCore();
+			return new System.Windows.Point(boundingRectangleCore.X + boundingRectangleCore.Width / 2.0, boundingRectangleCore.Y + boundingRectangleCore.Height / 2.0);
+		}
+
+		protected override void SetFocusCore()
+		{
+		}
+
+		public void Update(IDictionary<string, IValue> node)
+		{
+			if (node == null || !node.ContainsKey("id"))
+			{
+				return;
+			}
+			Id = node["id"].GetInt();
+			if (node.ContainsKey("role"))
+			{
+				Role = node["role"].GetString();
+			}
+			if (node.ContainsKey("child_ids"))
+			{
+				IEnumerable<int> enumerable = from value in node["child_ids"].GetList()
+					select value.GetInt();
+				if (!childIds.SetEquals(enumerable))
+				{
+					childIds = new HashSet<int>(enumerable);
+					OnChildrenChanged();
+				}
+			}
+			if (node.ContainsKey("location"))
+			{
+				IDictionary<string, IValue> dictionary = node["location"].GetDictionary();
+				if (dictionary != null)
+				{
+					int x = (int)dictionary["x"].GetDouble();
+					int y = (int)dictionary["y"].GetDouble();
+					int width = (int)dictionary["width"].GetDouble();
+					int height = (int)dictionary["height"].GetDouble();
+					location = new CefSharp.Structs.Rect(x, y, width, height);
+				}
+			}
+			if (node.ContainsKey("offset_container_id"))
+			{
+				offsetContainerId = node["offset_container_id"].GetInt();
+			}
+			if (!node.ContainsKey("attributes"))
+			{
+				return;
+			}
+			IDictionary<string, IValue> dictionary2 = node["attributes"].GetDictionary();
+			if (dictionary2 != null)
+			{
+				if (dictionary2.ContainsKey("name"))
+				{
+					Name = dictionary2["name"].GetString();
+				}
+				if (dictionary2.ContainsKey("value"))
+				{
+					Value = dictionary2["value"].GetString();
+				}
+				if (dictionary2.ContainsKey("description"))
+				{
+					Description = dictionary2["description"].GetString();
+				}
+				if (dictionary2.ContainsKey("scrollX") && dictionary2.ContainsKey("scrollY"))
+				{
+					int x2 = dictionary2["scrollX"].GetInt();
+					int y2 = dictionary2["scrollY"].GetInt();
+					scroll = new CefSharp.Structs.Point(x2, y2);
+				}
+			}
+		}
+
+		protected virtual CefSharp.Structs.Rect GetLocation()
+		{
+			AccessibilityNode node = accessibilityTree.GetNode(offsetContainerId);
+			if (node == null)
+			{
+				return location;
+			}
+			int x = location.X;
+			int y = location.Y;
+			CefSharp.Structs.Rect rect = node.GetLocation();
+			x += rect.X - node.scroll.X;
+			y += rect.Y - node.scroll.Y;
+			return new CefSharp.Structs.Rect(x, y, location.Width, location.Height);
+		}
+
+		public virtual List<AccessibilityNode> GetChildAccessibilityNodes()
+		{
+			return (from x in childIds
+				select accessibilityTree.GetNode(x) into y
+				where y != null
+				select y).ToList();
+		}
+
+		protected virtual bool HasFocus()
+		{
+			return Id == accessibilityTree.FocusedNodeId;
+		}
+
+		protected virtual System.Windows.Point CefPointToScreen(int x, int y)
+		{
+			ChromiumWebBrowser chromiumWebBrowser = (ChromiumWebBrowser)base.Owner;
+			if (chromiumWebBrowser.DpiScaleFactor > 1f)
+			{
+				int num = (int)((float)x / (chromiumWebBrowser.DpiScaleFactor / 96f));
+				int num2 = (int)((float)y / (chromiumWebBrowser.DpiScaleFactor / 96f));
+				return base.Owner.PointToScreen(new System.Windows.Point(num, num2));
+			}
+			return base.Owner.PointToScreen(new System.Windows.Point(x, y));
+		}
+
+		protected virtual void OnChildrenChanged()
+		{
+			RaiseAutomationEvent(AutomationEvents.StructureChanged);
+		}
+
+		public virtual void OnFocusChanged()
+		{
+			RaiseAutomationEvent(AutomationEvents.AutomationFocusChanged);
+		}
+	}
+	public class AccessibilityTree : FrameworkElementAutomationPeer
+	{
+		private readonly Dictionary<int, AccessibilityNode> accessibilityNodeMap;
+
+		public string Id { get; }
+
+		public int RootNodeId { get; private set; } = -1;
+
+		public int FocusedNodeId { get; private set; } = -1;
+
+		public AccessibilityTree(FrameworkElement owner, string Id)
+			: base(owner)
+		{
+			this.Id = Id;
+			accessibilityNodeMap = new Dictionary<int, AccessibilityNode>();
+		}
+
+		protected override List<AutomationPeer> GetChildrenCore()
+		{
+			AccessibilityNode rootNode = GetRootNode();
+			if (rootNode == null)
+			{
+				return new List<AutomationPeer>(0);
+			}
+			return new List<AutomationPeer>(1) { rootNode };
+		}
+
+		protected virtual AccessibilityNode GetRootNode()
+		{
+			return GetNode(RootNodeId);
+		}
+
+		protected virtual AccessibilityNode GetFocusedNode()
+		{
+			return GetNode(FocusedNodeId);
+		}
+
+		public virtual void Update(IDictionary<string, IValue> accessibilityUpdateDictionary)
+		{
+			if (accessibilityUpdateDictionary == null || !accessibilityUpdateDictionary.ContainsKey("events") || !accessibilityUpdateDictionary.ContainsKey("updates"))
+			{
+				return;
+			}
+			IList<IValue> list = accessibilityUpdateDictionary["events"].GetList();
+			IList<IValue> list2 = accessibilityUpdateDictionary["updates"].GetList();
+			if (list == null || list2 == null)
+			{
+				return;
+			}
+			List<IDictionary<string, IValue>> list3 = (from x in list
+				select x.GetDictionary() into y
+				where y.ContainsKey("event_type")
+				select y).ToList();
+			List<IDictionary<string, IValue>> updateDictionaries = list2.Select((IValue x) => x.GetDictionary()).ToList();
+			foreach (IDictionary<string, IValue> item in list3)
+			{
+				string text = item["event_type"].GetString();
+				if (text == "layoutComplete")
+				{
+					UpdateLayout(item, updateDictionaries);
+				}
+				else if (text == "focus")
+				{
+					UpdateFocus(item, updateDictionaries);
+				}
+			}
+		}
+
+		protected virtual void UpdateLayout(IDictionary<string, IValue> eventDictionary, List<IDictionary<string, IValue>> updateDictionaries)
+		{
+			foreach (IDictionary<string, IValue> updateDictionary in updateDictionaries)
+			{
+				bool flag = false;
+				if (updateDictionary.ContainsKey("node_id_to_clear"))
+				{
+					int num = updateDictionary["node_id_to_clear"].GetInt();
+					if (num == RootNodeId)
+					{
+						RootNodeId = -1;
+					}
+					AccessibilityNode node = GetNode(num);
+					RemoveNode(node);
+				}
+				if (updateDictionary.ContainsKey("root_id"))
+				{
+					int num2 = updateDictionary["root_id"].GetInt();
+					if (num2 != RootNodeId)
+					{
+						RootNodeId = num2;
+						flag = true;
+					}
+				}
+				UpdateNodes(updateDictionary);
+				if (flag)
+				{
+					RaiseAutomationEvent(AutomationEvents.StructureChanged);
+				}
+			}
+		}
+
+		protected virtual void UpdateFocus(IDictionary<string, IValue> eventDictionary, List<IDictionary<string, IValue>> updateDictionaries)
+		{
+			bool flag = false;
+			if (eventDictionary.ContainsKey("id"))
+			{
+				int num = eventDictionary["id"].GetInt();
+				if (num != FocusedNodeId)
+				{
+					FocusedNodeId = num;
+					flag = true;
+				}
+			}
+			if (!flag)
+			{
+				return;
+			}
+			AccessibilityNode focusedNode = GetFocusedNode();
+			if (focusedNode == null)
+			{
+				foreach (IDictionary<string, IValue> updateDictionary in updateDictionaries)
+				{
+					UpdateNodes(updateDictionary);
+				}
+			}
+			GetFocusedNode()?.OnFocusChanged();
+		}
+
+		protected virtual void RemoveNode(AccessibilityNode node)
+		{
+			if (node == null)
+			{
+				return;
+			}
+			foreach (AccessibilityNode childAccessibilityNode in node.GetChildAccessibilityNodes())
+			{
+				RemoveNode(childAccessibilityNode);
+			}
+			accessibilityNodeMap.Remove(node.Id);
+		}
+
+		protected virtual void UpdateNodes(IDictionary<string, IValue> update)
+		{
+			if (update == null || !update.ContainsKey("nodes"))
+			{
+				return;
+			}
+			IList<IValue> list = update["nodes"].GetList();
+			foreach (IValue item in list)
+			{
+				IDictionary<string, IValue> dictionary = item.GetDictionary();
+				if (dictionary != null)
+				{
+					int num = dictionary["id"].GetInt();
+					AccessibilityNode node = GetNode(num);
+					if (node != null)
+					{
+						node.Update(dictionary);
+						continue;
+					}
+					node = new AccessibilityNode((FrameworkElement)base.Owner, dictionary, this);
+					accessibilityNodeMap[num] = node;
+				}
+			}
+		}
+
+		internal AccessibilityNode GetNode(int nodeId)
+		{
+			if (accessibilityNodeMap.ContainsKey(nodeId))
+			{
+				return accessibilityNodeMap[nodeId];
+			}
+			return null;
+		}
+	}
+	public class BrowserAutomationPeer : FrameworkElementAutomationPeer
+	{
+		private readonly Dictionary<string, AccessibilityTree> accessibilityTrees;
+
+		public BrowserAutomationPeer(FrameworkElement owner)
+			: base(owner)
+		{
+			accessibilityTrees = new Dictionary<string, AccessibilityTree>();
+		}
+
+		public virtual void OnAccessibilityTreeChange(string treeId, IDictionary<string, IValue> accessibilityUpdateDictionary)
+		{
+			AccessibilityTree accessibilityTree;
+			if (accessibilityTrees.ContainsKey(treeId))
+			{
+				accessibilityTree = accessibilityTrees[treeId];
+			}
+			else
+			{
+				accessibilityTree = new AccessibilityTree((FrameworkElement)base.Owner, treeId);
+				accessibilityTrees.Add(treeId, accessibilityTree);
+				RaiseAutomationEvent(AutomationEvents.StructureChanged);
+			}
+			accessibilityTree.Update(accessibilityUpdateDictionary);
+		}
+
+		protected override List<AutomationPeer> GetChildrenCore()
+		{
+			return accessibilityTrees.Values.Cast<AutomationPeer>().ToList();
+		}
+
+		protected override string GetNameCore()
+		{
+			return "Web Browser";
+		}
+
+		protected override AutomationControlType GetAutomationControlTypeCore()
+		{
+			return AutomationControlType.Group;
+		}
+	}
+	public class TabControlAutomationPeer : UIElementAutomationPeer
+	{
+		public TabControlAutomationPeer(UIElement owner)
+			: base(owner)
+		{
+		}
+
+		protected override List<AutomationPeer> GetChildrenCore()
+		{
+			List<AutomationPeer> childrenCore = base.GetChildrenCore();
+			childrenCore.AddRange(GetChildPeers(base.Owner));
+			return childrenCore;
+		}
+
+		private List<AutomationPeer> GetChildPeers(UIElement element)
+		{
+			List<AutomationPeer> list = new List<AutomationPeer>();
+			for (int i = 0; i < VisualTreeHelper.GetChildrenCount(element); i++)
+			{
+				if (VisualTreeHelper.GetChild(element, i) is UIElement element2)
+				{
+					AutomationPeer automationPeer = UIElementAutomationPeer.CreatePeerForElement(element2);
+					if (automationPeer != null)
+					{
+						list.Add(automationPeer);
+					}
+					else
+					{
+						list.AddRange(GetChildPeers(element2));
+					}
+				}
+			}
+			return list;
+		}
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

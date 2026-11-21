@@ -1,0 +1,4074 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: TargetFramework(".NETStandard,Version=v2.0", FrameworkDisplayName = "")]
+[assembly: AssemblyCompany("Aspen Technology, Inc.")]
+[assembly: AssemblyConfiguration("Release")]
+[assembly: AssemblyCopyright("Copyright Aspen Technology, Inc. 2024")]
+[assembly: AssemblyDescription("ManagedXLP for HybridModeling .NET Standard with Linux and Windows dependencies")]
+[assembly: AssemblyFileVersion("23.1.23.0")]
+[assembly: AssemblyInformationalVersion("23.1.23.0")]
+[assembly: AssemblyProduct("ManagedXLP for HybridModeling .NET Standard with Linux and Windows dependencies")]
+[assembly: AssemblyTitle("HMManagedXLP")]
+[assembly: AssemblyVersion("23.1.23.0")]
+namespace Aspentech.SupplyChain.PIMS.ManagedXLP;
+
+public class XlpEquationEnumerable : IEnumerable<XLPEquation>, IEnumerable
+{
+	private readonly XLPManager _manager;
+
+	public XlpEquationEnumerable(XLPManager manager)
+	{
+		_manager = manager;
+	}
+
+	public IEnumerator<XLPEquation> GetEnumerator()
+	{
+		return new XlpEquationEnumerator(_manager);
+	}
+
+	IEnumerator IEnumerable.GetEnumerator()
+	{
+		return GetEnumerator();
+	}
+}
+public class XlpEquationEnumerator : IEnumerator<XLPEquation>, IEnumerator, IDisposable
+{
+	private readonly XLPManager _manager;
+
+	private readonly XLPEqnCollection _pEqnList;
+
+	private readonly int _equationCount;
+
+	private readonly byte[] _bEqn;
+
+	private XLPEquation _current;
+
+	private int _currentNumber;
+
+	public XLPEquation Current => _current;
+
+	object IEnumerator.Current => _current;
+
+	public XlpEquationEnumerator(XLPManager manager)
+	{
+		_manager = manager;
+		_pEqnList = manager.GetEquationCollectionIntf();
+		_equationCount = _pEqnList.NumberOfEquations();
+		_bEqn = new byte[128];
+		Reset();
+	}
+
+	public bool MoveNext()
+	{
+		if (_currentNumber >= _equationCount)
+		{
+			return false;
+		}
+		StringBuilder strname = new StringBuilder(_bEqn.Length);
+		if (_current == null)
+		{
+			XLPEqnCollection.FrstEquationName(_pEqnList.Ptr, _bEqn);
+		}
+		else
+		{
+			XLPEqnCollection.NextEquationName(_pEqnList.Ptr, _bEqn);
+		}
+		_pEqnList.convert2String(_bEqn, strname, out var stringItem);
+		_current = _manager.FindEquationObject(stringItem);
+		_currentNumber++;
+		return true;
+	}
+
+	public void Dispose()
+	{
+	}
+
+	public void Reset()
+	{
+		_current = null;
+		_currentNumber = 0;
+	}
+}
+internal class XLPEquationNonLinearities : IEnumerable<XLPNonlinearity>, IEnumerable
+{
+	private readonly XLPEquation _equation;
+
+	private readonly XLPNonLinearModel _nonLinearModel;
+
+	public XLPEquationNonLinearities(XLPEquation equation, XLPNonLinearModel nonLinearModel)
+	{
+		_equation = equation;
+		_nonLinearModel = nonLinearModel;
+	}
+
+	public IEnumerator<XLPNonlinearity> GetEnumerator()
+	{
+		return new XLPEquationNonLinearityEnumerator(_equation, _nonLinearModel);
+	}
+
+	IEnumerator IEnumerable.GetEnumerator()
+	{
+		return GetEnumerator();
+	}
+}
+internal class XLPEquationNonLinearityEnumerator : IEnumerator<XLPNonlinearity>, IEnumerator, IDisposable
+{
+	private readonly XLPEquation _equation;
+
+	private readonly XLPNonLinearModel _nonLinearModel;
+
+	private XLPNonlinearity _current;
+
+	private int _equationIndex => _equation.EqnIndexGet();
+
+	public XLPNonlinearity Current => _current;
+
+	object IEnumerator.Current => _current;
+
+	public XLPEquationNonLinearityEnumerator(XLPEquation equation, XLPNonLinearModel nonLinearModel)
+	{
+		_equation = equation;
+		_nonLinearModel = nonLinearModel;
+		Reset();
+	}
+
+	public bool MoveNext()
+	{
+		if (_current == null)
+		{
+			_current = _nonLinearModel.RowFirstNonLinearity(_equationIndex);
+		}
+		else
+		{
+			_current = _nonLinearModel.RowNextNonLinearity();
+		}
+		return _current != null;
+	}
+
+	public void Dispose()
+	{
+	}
+
+	public void Reset()
+	{
+		_current = null;
+	}
+}
+internal class XLPEquationNonZeros : IEnumerable<XLPNonZero>, IEnumerable
+{
+	private readonly XLPEquation _equation;
+
+	private readonly XLPMatrix _matrix;
+
+	public XLPEquationNonZeros(XLPEquation equation, XLPMatrix matrix)
+	{
+		_equation = equation;
+		_matrix = matrix;
+	}
+
+	public IEnumerator<XLPNonZero> GetEnumerator()
+	{
+		return new XLPEquationNonZeroEnumerator(_equation, _matrix);
+	}
+
+	IEnumerator IEnumerable.GetEnumerator()
+	{
+		return GetEnumerator();
+	}
+}
+internal class XLPEquationNonZeroEnumerator : IEnumerator<XLPNonZero>, IEnumerator, IDisposable
+{
+	private readonly XLPEquation _equation;
+
+	private readonly XLPMatrix _matrix;
+
+	private XLPNonZero _current;
+
+	private int _equationIndex => _equation.EqnIndexGet();
+
+	public XLPNonZero Current => _current;
+
+	object IEnumerator.Current => _current;
+
+	public XLPEquationNonZeroEnumerator(XLPEquation equation, XLPMatrix matrix)
+	{
+		_equation = equation;
+		_matrix = matrix;
+		Reset();
+	}
+
+	public bool MoveNext()
+	{
+		if (_current == null)
+		{
+			_current = _matrix.RowFirstNonZero(_equationIndex);
+		}
+		else
+		{
+			_current = _matrix.RowNextNonZero();
+		}
+		return _current != null;
+	}
+
+	public void Dispose()
+	{
+	}
+
+	public void Reset()
+	{
+		_current = null;
+	}
+}
+public enum ExpTreeNodeType
+{
+	Constant,
+	Variable,
+	Addition,
+	Subtraction,
+	Multiplication,
+	Division,
+	Exponentiation,
+	Maximum,
+	Minimum,
+	Negation,
+	NaturalLog,
+	LogBase10,
+	Exponential,
+	Switch
+}
+public class XLPExpressionTree
+{
+	private readonly IntPtr xlpTreePtr;
+
+	private readonly XLPManager manager;
+
+	public IntPtr TreePtr => xlpTreePtr;
+
+	public XLPExpressionTree(XLPManager mgr, IntPtr nativePtr)
+	{
+		xlpTreePtr = nativePtr;
+		manager = mgr;
+	}
+
+	public XLPExpressionTreeNode Constant(double constant)
+	{
+		return manager.MakeExpressionTreeConstant(this, constant);
+	}
+
+	public XLPExpressionTreeNode Variable(string variableName)
+	{
+		return manager.MakeExpressionTreeVariable(this, variableName);
+	}
+
+	public XLPExpressionTreeNode UnaryNode(ExpTreeNodeType type, XLPExpressionTreeNode operand)
+	{
+		return manager.MakeExpressionTreeUnaryOperator(this, (short)type, operand);
+	}
+
+	public XLPExpressionTreeNode BinaryNode(ExpTreeNodeType type, XLPExpressionTreeNode operand1, XLPExpressionTreeNode operand2)
+	{
+		return manager.MakeExpressionTreeBinaryOperator(this, (short)type, operand1, operand2);
+	}
+
+	public XLPExpressionTreeNode SwitchNode(XLPExpressionTreeNode condition, double constant, XLPExpressionTreeNode trueOperand, XLPExpressionTreeNode falseOperand)
+	{
+		return manager.MakeExpressionTreeSwitchOperator(this, condition, constant, trueOperand, falseOperand);
+	}
+
+	public void SetRoot(XLPExpressionTreeNode root)
+	{
+		manager.SetExpressionTreeRoot(this, root);
+	}
+}
+public class XLPExpressionTreeNode
+{
+	private readonly IntPtr xlpTreeNodePtr;
+
+	private readonly ExpTreeNodeType treeNodeType;
+
+	public IntPtr NodePtr => xlpTreeNodePtr;
+
+	public ExpTreeNodeType NodeType => treeNodeType;
+
+	public XLPExpressionTreeNode(IntPtr nativePtr, short type)
+	{
+		xlpTreeNodePtr = nativePtr;
+		treeNodeType = (ExpTreeNodeType)type;
+	}
+}
+internal class XLPNonLinearitiesUniqueVariables : IEnumerable<XLPVariable>, IEnumerable
+{
+	private XLPNonlinearity _nonLinearity;
+
+	public XLPNonLinearitiesUniqueVariables(XLPNonlinearity nonLinearity)
+	{
+		_nonLinearity = nonLinearity;
+	}
+
+	public IEnumerator<XLPVariable> GetEnumerator()
+	{
+		return new XLPNonLinearitiesUniqueVariableEnumerator(_nonLinearity);
+	}
+
+	IEnumerator IEnumerable.GetEnumerator()
+	{
+		return GetEnumerator();
+	}
+}
+internal class XLPNonLinearitiesUniqueVariableEnumerator : IEnumerator<XLPVariable>, IEnumerator, IDisposable
+{
+	private XLPNonlinearity _nonLinearity;
+
+	private XLPVariable _current;
+
+	public XLPVariable Current => _current;
+
+	object IEnumerator.Current => _current;
+
+	public XLPNonLinearitiesUniqueVariableEnumerator(XLPNonlinearity nonLinearity)
+	{
+		_nonLinearity = nonLinearity;
+		Reset();
+	}
+
+	public bool MoveNext()
+	{
+		if (_current == null)
+		{
+			_current = _nonLinearity.GetFirstUniqueVariable();
+		}
+		else
+		{
+			_current = _nonLinearity.GetNextUniqueVariable();
+		}
+		return _current != null;
+	}
+
+	public void Dispose()
+	{
+	}
+
+	public void Reset()
+	{
+		_current = null;
+	}
+}
+public class XLPConstants
+{
+	internal const string XLPXMPS = "hmxlpxmps";
+
+	public const double LPFILEVERSION = 0.1;
+
+	public const short xlp_EQTYPE_OBJ = 1;
+
+	public const short xlp_EQTYPE_EQ = 2;
+
+	public const short xlp_EQTYPE_LE = 3;
+
+	public const short xlp_EQTYPE_GE = 4;
+
+	public const short xlp_EQTYPE_FREE = 5;
+
+	public const short xlp_VARTYPE_CONT = 1;
+
+	public const short xlp_VARTYPE_BINARY = 2;
+
+	public const short xlp_VARTYPE_DISCRETE = 3;
+
+	public const short xlp_VARTYPE_SEMICONT = 4;
+
+	public const short xlp_VARSTATUS_NONBASIC = 1;
+
+	public const short xlp_VARSTATUS_BASIC = 2;
+
+	public const short xlp_VARSTATUS_FIXED = 3;
+
+	public const short xlp_VARSTATUS_NBUPBND = 4;
+
+	public const short xlp_VARSTATUS_NBLOBND = 5;
+
+	public const short xlp_VARSTATUS_INEQSLK = 101;
+
+	public const short xlp_VARSTATUS_INFEAS_BASIC = 201;
+
+	public const short xlp_VARSTATUS_INFEAS_NONBASIC = 202;
+
+	public const short xlp_VARSTATUS_STEPBOUND = 203;
+
+	public const short xlp_SOSTYPE_1 = 1;
+
+	public const short xlp_SOSTYPE_2 = 2;
+
+	public const short xlp_SOSTYPE_3 = 3;
+
+	public const short xlp_SOSTYPE_CMPLGRP = 4;
+
+	public const short xlp_SOSTYPE_TMPBNDS = 5;
+
+	public const short xlp_SOSTYPE_TRSTRGN2 = 6;
+
+	public const short xlp_SOSTYPE_DRVDPRP = 7;
+
+	public const short xlp_EDIT_BOUND_LO = -1;
+
+	public const short xlp_EDIT_BOUND_UP = 1;
+
+	public const short xlp_EDIT_BOUND_BOTH = 0;
+
+	public const double INFLOWERBND = -1E+20;
+
+	public const double INFUPPERBND = 1E+20;
+
+	public const double EMPTYVAL = 1E+30;
+
+	public const double ZERO = 0.0;
+
+	public const string xlp_NL_NAME_PROD = "XPROD";
+
+	public const string xlp_NL_NAME_LNX = "LNX";
+
+	public const string xlp_NL_NAME_EXPX = "EXPX";
+
+	public const string xlp_NL_NAME_CONST = "CONST";
+
+	public const string xlp_NL_NAME_CONSTPROD = "CONSTPROD";
+
+	public const string xlp_NL_NAME_GNREQ = "GNREQ";
+
+	public const string xlp_NL_NAME_PROD2 = "XPROD2";
+
+	public const short xlp_NL_TYPE_NONE = 0;
+
+	public const short xlp_NL_TYPE_PROD = 1;
+
+	public const short xlp_NL_TYPE_LNX = 2;
+
+	public const short xlp_NL_TYPE_EXPX = 3;
+
+	public const short xlp_NL_TYPE_CONST = 4;
+
+	public const short xlp_NL_TYPE_CONSTPROD = 5;
+
+	public const short xlp_NL_TYPE_GENSIM = 6;
+
+	public const short xlp_NL_TYPE_NLUNKNOWN = 7;
+
+	public const short xlp_NL_TYPE_NLBLKEQ = 8;
+
+	public const short xlp_NL_TYPE_BMLEQ = 9;
+
+	public const short xlp_NL_TYPE_CURVE = 10;
+
+	public const short xlp_NL_TYPE_NLEEQ = 11;
+
+	public const short xlp_NL_TYPE_PROD2 = 19;
+
+	public const short xlp_NL_TYPE_NNEQ = 28;
+
+	public const short xlp_NL_TYPE_COMPLEXBMLEQ = 29;
+
+	public const short xlp_NL_TYPE_POLYDIV = 30;
+
+	public const short xlp_NL_TYPE_EXPRESSIONTREE = 31;
+
+	public const short xlp_NLBLK_TYPE_SMC = 101;
+
+	public const short xlp_NLBLK_TYPE_SCD = 102;
+
+	public const short xlp_NLBLK_TYPE_XLP = 103;
+
+	public const short xlp_NLBLK_TYPE_ACM = 104;
+
+	public const short xlp_NLBLK_TYPE_ACMFLW = 105;
+
+	public const short xlp_NLBLK_TYPE_ACM_NEW = 109;
+
+	public const short xlp_NLBLK_TYPE_HYBRID = 110;
+
+	public const short xlp_NLBLK_TYPE_FREE = 111;
+
+	public const int xlp_BML_MaxPropertyIdLength = 255;
+
+	public const short xlp_EXPTREE_TERM_CONSTANT = 0;
+
+	public const short xlp_EXPTREE_TERM_VARIABLE = 1;
+
+	public const short xlp_EXPTREE_TERM_ADDITION = 2;
+
+	public const short xlp_EXPTREE_TERM_SUBTRACTION = 3;
+
+	public const short xlp_EXPTREE_TERM_MULTIPLICATION = 4;
+
+	public const short xlp_EXPTREE_TERM_DIVISION = 5;
+
+	public const short xlp_EXPTREE_TERM_EXPONENTIATION = 6;
+
+	public const short xlp_EXPTREE_TERM_MAXIMUM = 7;
+
+	public const short xlp_EXPTREE_TERM_MINIMUM = 8;
+
+	public const short xlp_EXPTREE_TERM_NEGATION = 9;
+
+	public const short xlp_EXPTREE_TERM_NATURALLOG = 10;
+
+	public const short xlp_EXPTREE_TERM_LOGBASE10 = 11;
+
+	public const short xlp_EXPTREE_TERM_EXPONENTIAL = 12;
+
+	public const short xlp_EXPTREE_TERM_SWITCH = 13;
+
+	public const double xlp_FILE_VERSION_2020_1 = 2020.1;
+
+	public const double xlp_FILE_VERSION_2022_1 = 2022.1;
+
+	public const double xlp_FILE_VERSION_2024_1 = 2024.1;
+}
+public class XLPManager
+{
+	private IntPtr xlpMgrPtr;
+
+	private IntPtr xlpBldrPtr;
+
+	public int codepage = 1252;
+
+	public IntPtr Ptr
+	{
+		get
+		{
+			return xlpMgrPtr;
+		}
+		set
+		{
+			xlpMgrPtr = value;
+		}
+	}
+
+	public XLPManager(string modelName)
+	{
+		XLPcreate();
+		GetXLPBuilder();
+		SetXLPModelName(modelName);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern void NameScreen(IntPtr xlpPtr, string name, byte[] newName);
+
+	public void NameScreen(ref string name)
+	{
+		byte[] array = new byte[256];
+		NameScreen(xlpMgrPtr, name, array);
+		if (array != null)
+		{
+			name = StringGet(array);
+		}
+		name = name.ToUpper();
+	}
+
+	public void ProcessXLPNames()
+	{
+		XLPVarCollection variableCollectionIntf = GetVariableCollectionIntf();
+		int num = variableCollectionIntf.NumberOfVariables();
+		byte[] array = new byte[128];
+		StringBuilder strname = new StringBuilder(array.Length);
+		for (int i = 0; i < num; i++)
+		{
+			if (i == 0)
+			{
+				XLPVarCollection.FrstVariableName(variableCollectionIntf.Ptr, array);
+			}
+			else
+			{
+				XLPVarCollection.NextVariableName(variableCollectionIntf.Ptr, array);
+			}
+			variableCollectionIntf.convert2String(array, strname, out var stringItem);
+			XLPVariable xLPVariable = FindVariableObject(stringItem);
+			if (xLPVariable != null)
+			{
+				NameScreen(ref stringItem);
+				UpdateVariableName(xLPVariable, stringItem);
+			}
+		}
+		XLPEqnCollection equationCollectionIntf = GetEquationCollectionIntf();
+		int num2 = equationCollectionIntf.NumberOfEquations();
+		byte[] array2 = new byte[128];
+		StringBuilder strname2 = new StringBuilder(array2.Length);
+		for (int j = 0; j < num2; j++)
+		{
+			if (j == 0)
+			{
+				XLPEqnCollection.FrstEquationName(equationCollectionIntf.Ptr, array2);
+			}
+			else
+			{
+				XLPEqnCollection.NextEquationName(equationCollectionIntf.Ptr, array2);
+			}
+			equationCollectionIntf.convert2String(array2, strname2, out var stringItem2);
+			XLPEquation xLPEquation = FindEquationObject(stringItem2);
+			if (xLPEquation != null)
+			{
+				NameScreen(ref stringItem2);
+				UpdateEquationName(xLPEquation, stringItem2);
+			}
+		}
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int CreateXLPObject(out IntPtr xlpPtr);
+
+	private int XLPcreate()
+	{
+		return CreateXLPObject(out xlpMgrPtr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int ReleaseXLPObject(IntPtr xlpPtr);
+
+	public void DestroyXLP()
+	{
+		ReleaseXLPObject(xlpMgrPtr);
+		xlpMgrPtr = IntPtr.Zero;
+		xlpBldrPtr = IntPtr.Zero;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int SetXLPModelName(IntPtr pXLPMgr, string modelName);
+
+	public void SetXLPModelName(string modelName)
+	{
+		SetXLPModelName(xlpMgrPtr, modelName);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int PutOptionTable(IntPtr pXLPMgr, string optionName, string optionValue);
+
+	public void PutOptionTable(string optionName, string optionValue)
+	{
+		PutOptionTable(xlpMgrPtr, optionName, optionValue);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern void SetHybridModel(IntPtr pXLPMgr, bool bHybrid);
+
+	public void SetHybridModel(bool bHybrid)
+	{
+		SetHybridModel(xlpMgrPtr, bHybrid);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern bool IsHybridModel(IntPtr pXLPMgr);
+
+	public bool IsHybridModel()
+	{
+		return IsHybridModel(xlpMgrPtr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern void SetVCOModel(IntPtr pXLPMgr, bool bVCO);
+
+	public void SetVCOModel(bool bVCO)
+	{
+		SetVCOModel(xlpMgrPtr, bVCO);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern bool IsVCOModel(IntPtr pXLPMgr);
+
+	public bool IsVCOModel()
+	{
+		return IsVCOModel(xlpMgrPtr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int GetXLPBuilder(IntPtr xlpPtr, out IntPtr xlpBldrPtr);
+
+	private int GetXLPBuilder()
+	{
+		return GetXLPBuilder(xlpMgrPtr, out xlpBldrPtr);
+	}
+
+	public XLPVariable NewXLPVariable(string vname)
+	{
+		return MakeAddReturnVariableNew(vname);
+	}
+
+	public XLPVariable GetXLPVariable(string vname)
+	{
+		return MakeAddReturnVariable(vname);
+	}
+
+	public XLPVariable NewXLPVariable(string vname, double lobnd, double upbnd)
+	{
+		XLPVariable xLPVariable = NewXLPVariable(vname);
+		xLPVariable.LowerBnd = lobnd;
+		xLPVariable.UpperBnd = upbnd;
+		return xLPVariable;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeAddVariable(IntPtr xlpBldr, byte[] vname);
+
+	public int MakeAddVariable(string vname)
+	{
+		byte[] bytes = Encoding.GetEncoding(codepage).GetBytes(vname);
+		return MakeAddVariable(xlpBldrPtr, bytes);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeAddVariableNew(IntPtr xlpBldr, byte[] vname);
+
+	public int MakeAddVariableNew(string vname)
+	{
+		byte[] bytes = Encoding.GetEncoding(codepage).GetBytes(vname);
+		return MakeAddVariableNew(xlpBldrPtr, bytes);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeAddReturnVariable(IntPtr xlpBldr, byte[] vname, out IntPtr xlpVarPtr);
+
+	public XLPVariable MakeAddReturnVariable(string vname)
+	{
+		byte[] bytes = Encoding.GetEncoding(codepage).GetBytes(vname);
+		MakeAddReturnVariable(xlpBldrPtr, bytes, out var xlpVarPtr);
+		return new XLPVariable(xlpVarPtr, vname);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeAddReturnVariableNew(IntPtr xlpBldr, byte[] vname, out IntPtr xlpVarPtr);
+
+	public XLPVariable MakeAddReturnVariableNew(string vname)
+	{
+		byte[] bytes = Encoding.GetEncoding(codepage).GetBytes(vname);
+		MakeAddReturnVariableNew(xlpBldrPtr, bytes, out var xlpVarPtr);
+		return new XLPVariable(xlpVarPtr, vname);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeAddVarTypeNew(IntPtr xlpBldr, byte[] vname, double initval, double loBnd, double upBnd, int varType);
+
+	public int MakeAddVarTypeNew(string vname, double initval, double loBnd, double upBnd, int varType)
+	{
+		byte[] bytes = Encoding.GetEncoding(codepage).GetBytes(vname);
+		return MakeAddVarTypeNew(xlpBldrPtr, bytes, initval, loBnd, upBnd, varType);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeAddVarNew(IntPtr xlpBldr, byte[] vname, double initval, double loBnd, double upBnd);
+
+	public int MakeAddVarNew(string vname, double initval, double loBnd, double upBnd)
+	{
+		byte[] bytes = Encoding.GetEncoding(codepage).GetBytes(vname);
+		return MakeAddVarNew(xlpBldrPtr, bytes, initval, loBnd, upBnd);
+	}
+
+	public XLPEquation NewXLPEquation(string ename)
+	{
+		return MakeAddReturnEquationNew(ename);
+	}
+
+	public XLPEquation GetXLPEquation(string ename)
+	{
+		return MakeAddReturnEquation(ename);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeAddEquation(IntPtr xlpBldr, byte[] ename);
+
+	public int MakeAddEquation(string ename)
+	{
+		byte[] bytes = Encoding.GetEncoding(codepage).GetBytes(ename);
+		return MakeAddEquation(xlpBldrPtr, bytes);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeAddEquationNew(IntPtr xlpBldr, byte[] ename);
+
+	public int MakeAddEquationNew(string ename)
+	{
+		byte[] bytes = Encoding.GetEncoding(codepage).GetBytes(ename);
+		return MakeAddEquationNew(xlpBldrPtr, bytes);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeAddReturnEquation(IntPtr xlpBldr, byte[] ename, out IntPtr ppEqn);
+
+	public XLPEquation MakeAddReturnEquation(string ename)
+	{
+		byte[] bytes = Encoding.GetEncoding(codepage).GetBytes(ename);
+		MakeAddReturnEquation(xlpBldrPtr, bytes, out var ppEqn);
+		return new XLPEquation(ppEqn, ename);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeAddReturnEquationNew(IntPtr xlpBldr, byte[] ename, out IntPtr ppEqn);
+
+	public XLPEquation MakeAddReturnEquationNew(string ename)
+	{
+		byte[] bytes = Encoding.GetEncoding(codepage).GetBytes(ename);
+		MakeAddReturnEquationNew(xlpBldrPtr, bytes, out var ppEqn);
+		return new XLPEquation(ppEqn, ename);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeAddEqn(IntPtr xlpBldr, byte[] ename, double rhsMin, double rhsMax);
+
+	public int MakeAddEqn(string ename, double rhsMin, double rhsMax)
+	{
+		byte[] bytes = Encoding.GetEncoding(codepage).GetBytes(ename);
+		return MakeAddEqn(xlpBldrPtr, bytes, rhsMin, rhsMax);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeAddEqnNew(IntPtr xlpBldr, byte[] ename, double rhsMin, double rhsMax);
+
+	public int MakeAddEqnNew(string ename, double rhsMin, double rhsMax)
+	{
+		byte[] bytes = Encoding.GetEncoding(codepage).GetBytes(ename);
+		return MakeAddEqnNew(xlpBldrPtr, bytes, rhsMin, rhsMax);
+	}
+
+	public XLPNonZero NewXLPLinearNonZero(string ename, string vname, double coeff)
+	{
+		byte[] bytes = Encoding.GetEncoding(codepage).GetBytes(vname);
+		byte[] bytes2 = Encoding.GetEncoding(codepage).GetBytes(ename);
+		MakeAddReturnLinearNonZero(xlpBldrPtr, bytes2, bytes, coeff, out var ppNZ);
+		return new XLPNonZero(ppNZ);
+	}
+
+	public XLPNonZero NewXLPLinearNonZero(XLPEquation pEqn, XLPVariable pVar, double coeff)
+	{
+		MakeAddReturnLinearNonZeroNew(xlpBldrPtr, pEqn.Ptr, pVar.Ptr, coeff, out var ppNZ);
+		return new XLPNonZero(ppNZ);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeAddLinearNonZero(IntPtr xlpBldr, byte[] ename, byte[] vname, double coeff);
+
+	public int MakeAddLinearNonZero(string ename, string vname, double coeff)
+	{
+		byte[] bytes = Encoding.GetEncoding(codepage).GetBytes(vname);
+		byte[] bytes2 = Encoding.GetEncoding(codepage).GetBytes(ename);
+		return MakeAddLinearNonZero(xlpBldrPtr, bytes2, bytes, coeff);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeAddReturnLinearNonZero(IntPtr xlpBldr, byte[] ename, byte[] vname, double coeff, out IntPtr ppNZ);
+
+	public XLPNonZero MakeAddReturnLinearNonZero(string ename, string vname, double coeff)
+	{
+		byte[] bytes = Encoding.GetEncoding(codepage).GetBytes(vname);
+		byte[] bytes2 = Encoding.GetEncoding(codepage).GetBytes(ename);
+		MakeAddReturnLinearNonZero(xlpBldrPtr, bytes2, bytes, coeff, out var ppNZ);
+		return new XLPNonZero(ppNZ);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeAddReturnLinearNonZeroNew(IntPtr xlpBldr, IntPtr pEqn, IntPtr pVar, double coeff, out IntPtr ppNZ);
+
+	public XLPNonZero MakeAddReturnLinearNonZeroNew(XLPEquation pEqn, XLPVariable pVar, double coeff)
+	{
+		MakeAddReturnLinearNonZeroNew(xlpBldrPtr, pEqn.Ptr, pVar.Ptr, coeff, out var ppNZ);
+		return new XLPNonZero(ppNZ);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int SetLinearNonZeroEntry(IntPtr xlpBldr, IntPtr pEqn, IntPtr pVar, double coeff);
+
+	public void SetLinearNonZeroEntry(XLPEquation pEqn, XLPVariable pVar, double coeff)
+	{
+		SetLinearNonZeroEntry(xlpBldrPtr, pEqn.Ptr, pVar.Ptr, coeff);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int FindNonLinearityCode(IntPtr xlpBldr, string nlrName, out short nlTypeCode);
+
+	public int FindNonLinearityCode(string nlrName, out short nlTypeCode)
+	{
+		short nlTypeCode2;
+		int num = FindNonLinearityCode(xlpBldrPtr, nlrName, out nlTypeCode2);
+		if (num == 0)
+		{
+			nlTypeCode = nlTypeCode2;
+			return 0;
+		}
+		nlTypeCode = -1;
+		return num;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeNonLinearityByName(IntPtr xlpBldr, string nlrName, byte[] ename, double nlcoeff, out IntPtr ppNlr);
+
+	public XLPNonlinearity MakeNonLinearityByName(string nlrName, string ename, double nlcoeff)
+	{
+		byte[] bytes = Encoding.GetEncoding(codepage).GetBytes(ename);
+		MakeNonLinearityByName(xlpBldrPtr, nlrName, bytes, nlcoeff, out var ppNlr);
+		return new XLPNonlinearity(ppNlr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeNonLinearityByCode(IntPtr xlpBldr, short nlTypeCode, byte[] ename, double nlcoeff, out IntPtr ppNlr);
+
+	public XLPNonlinearity MakeNonLinearityByCode(short nlTypeCode, string ename, double nlcoeff)
+	{
+		byte[] bytes = Encoding.GetEncoding(codepage).GetBytes(ename);
+		MakeNonLinearityByCode(xlpBldrPtr, nlTypeCode, bytes, nlcoeff, out var ppNlr);
+		return new XLPNonlinearity(ppNlr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeNonLinearityFast(IntPtr xlpBldr, short nlTypeCode, IntPtr pEqn, double nlcoeff, out IntPtr ppNlr);
+
+	public XLPNonlinearity MakeNonLinearityFast(short nlTypeCode, XLPEquation pEqn, double nlcoeff)
+	{
+		MakeNonLinearityFast(xlpBldrPtr, nlTypeCode, pEqn.Ptr, nlcoeff, out var ppNlr);
+		return new XLPNonlinearity(ppNlr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeNonLinearityLog(IntPtr xlpBldr, IntPtr pEqn, double nlcoeff, double naddconstant, double nextthresh, out IntPtr ppNlr);
+
+	public XLPNonlinearity MakeNonLinearityLog(XLPEquation pEqn, double nlcoeff, double naddconstant, double nextthresh)
+	{
+		MakeNonLinearityLog(xlpBldrPtr, pEqn.Ptr, nlcoeff, naddconstant, nextthresh, out var ppNlr);
+		return new XLPNonlinearity(ppNlr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeNonLinearityDiBiFullDist(IntPtr xlpBldr, IntPtr pEqn, double nlcoeff, double nbp, out IntPtr ppNlr);
+
+	public XLPNonlinearity MakeNonLinearityDiBiFullDist(XLPEquation pEqn, double nlcoeff, double nbp)
+	{
+		MakeNonLinearityDiBiFullDist(xlpBldrPtr, pEqn.Ptr, nlcoeff, nbp, out var ppNlr);
+		return new XLPNonlinearity(ppNlr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeNonLinearityExp(IntPtr xlpBldr, IntPtr pEqn, double nlcoeff, double naddconstant, out IntPtr ppNlr);
+
+	public XLPNonlinearity MakeNonLinearityExp(XLPEquation pEqn, double nlcoeff, double naddconstant)
+	{
+		MakeNonLinearityExp(xlpBldrPtr, pEqn.Ptr, nlcoeff, naddconstant, out var ppNlr);
+		return new XLPNonlinearity(ppNlr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeNonLinearityTPercent(IntPtr xlpBldr, IntPtr pEqn, int iunits, int n, double percent, double[] evapT, int[] evapNumbers, out IntPtr ppNlr);
+
+	public XLPNonlinearity MakeNonLinearityTPercent(XLPEquation pEqn, int iunits, int n, double percent, double[] evapT, int[] evapNumbers)
+	{
+		MakeNonLinearityTPercent(xlpBldrPtr, pEqn.Ptr, iunits, n, percent, evapT, evapNumbers, out var ppNlr);
+		return new XLPNonlinearity(ppNlr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeNonLinearityWeightEXP(IntPtr xlpBldr, IntPtr pEqn, int iunits, double a, double b, double c, out IntPtr ppNlr);
+
+	public XLPNonlinearity MakeNonLinearityWeightEXP(XLPEquation pEqn, int iunits, double a, double b, double c)
+	{
+		MakeNonLinearityWeightEXP(xlpBldrPtr, pEqn.Ptr, iunits, a, b, c, out var ppNlr);
+		return new XLPNonlinearity(ppNlr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeNonLinearityWeightPOW(IntPtr xlpBldr, IntPtr pEqn, int iunits, double a, double b, double c, out IntPtr ppNlr);
+
+	public XLPNonlinearity MakeNonLinearityWeightPOW(XLPEquation pEqn, int iunits, double a, double b, double c)
+	{
+		MakeNonLinearityWeightPOW(xlpBldrPtr, pEqn.Ptr, iunits, a, b, c, out var ppNlr);
+		return new XLPNonlinearity(ppNlr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeNonLinearityWeightLOG(IntPtr xlpBldr, IntPtr pEqn, int iunits, double a, double b, double c, out IntPtr ppNlr);
+
+	public XLPNonlinearity MakeNonLinearityWeightLOG(XLPEquation pEqn, int iunits, double a, double b, double c)
+	{
+		MakeNonLinearityWeightLOG(xlpBldrPtr, pEqn.Ptr, iunits, a, b, c, out var ppNlr);
+		return new XLPNonlinearity(ppNlr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeNonLinearityPow(IntPtr xlpBldr, IntPtr pEqn, double nlcoeff, double npowconstant, out IntPtr ppNlr);
+
+	public XLPNonlinearity MakeNonLinearityPow(XLPEquation pEqn, double nlcoeff, double npowconstant)
+	{
+		MakeNonLinearityPow(xlpBldrPtr, pEqn.Ptr, nlcoeff, npowconstant, out var ppNlr);
+		return new XLPNonlinearity(ppNlr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeNonLinearityXPow(IntPtr xlpBldr, IntPtr pEqn, double nlcoeff, double npowconstant, double naddconstant, out IntPtr ppNlr);
+
+	public XLPNonlinearity MakeNonLinearityXPow(XLPEquation pEqn, double nlcoeff, double npowconstant, double naddconstant)
+	{
+		MakeNonLinearityXPow(xlpBldrPtr, pEqn.Ptr, nlcoeff, npowconstant, naddconstant, out var ppNlr);
+		return new XLPNonlinearity(ppNlr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeNonLinearitySwitch(IntPtr xlpBldr, IntPtr pEqn, double constant, out IntPtr ppNlr);
+
+	public XLPNonlinearity MakeNonLinearitySwitch(XLPEquation pEqn, double constant)
+	{
+		MakeNonLinearitySwitch(xlpBldrPtr, pEqn.Ptr, constant, out var ppNlr);
+		return new XLPNonlinearity(ppNlr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeNonLinearityDivision(IntPtr xlpBldr, IntPtr pEqn, int numberOfDenomVariables, int numberOfNumeratorVariables, double leadCoeff, double[] denomCoeffs, double[] numCoeffs, out IntPtr ppNlr);
+
+	public XLPNonlinearity MakeNonLinearityDivision(XLPEquation pEqn, int numberOfDenomVariables, int numberOfNumeratorVariables, double leadCoeff, double[] denomCoeffs, double[] numCoeffs)
+	{
+		MakeNonLinearityDivision(xlpBldrPtr, pEqn.Ptr, numberOfDenomVariables, numberOfNumeratorVariables, leadCoeff, denomCoeffs, numCoeffs, out var ppNlr);
+		return new XLPNonlinearity(ppNlr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeNonLinearityPolynomialDivision(IntPtr xlpBlder, IntPtr pEqn, int numberOfDenomTerms, int numberOfNumeratorTerms, double leadCoeff, double[] denomCoeffs, double[] numCoeffs, int[] numberOfDenomVariablesInEachTerm, int[] numberOfNumVariablesInEachTerm, int[] denomVariablePowers, int[] numVariablePowers, out IntPtr pNlr);
+
+	public XLPNonlinearity MakeNonLinearityPolynomialDivision(XLPEquation pEqn, int numberOfDenomTerms, int numberOfNumeratorTerms, double leadCoeff, double[] denomCoeffs, double[] numCoeffs, int[] numberOfDenomVariablesInEachTerm, int[] numberOfNumVariablesInEachTerm, int[] denomVariablePowers, int[] numVariablePowers)
+	{
+		MakeNonLinearityPolynomialDivision(xlpBldrPtr, pEqn.Ptr, numberOfDenomTerms, numberOfNumeratorTerms, leadCoeff, denomCoeffs, numCoeffs, numberOfDenomVariablesInEachTerm, numberOfNumVariablesInEachTerm, denomVariablePowers, numVariablePowers, out var pNlr);
+		return new XLPNonlinearity(pNlr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeNonLinearityEvapGDOT(IntPtr xlpBldr, IntPtr pEqn, double tSpec, int evapN, out IntPtr ppNlr);
+
+	public XLPNonlinearity MakeNonLinearityEvap(XLPEquation pEqn, double tSpec, int evapN)
+	{
+		MakeNonLinearityEvapGDOT(xlpBldrPtr, pEqn.Ptr, tSpec, evapN, out var ppNlr);
+		return new XLPNonlinearity(ppNlr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeNonLinearityFastSCD(IntPtr xlpBldr, string outputName, short nOutputIndex, IntPtr pEqn, double nlcoeff, out IntPtr ppNlr);
+
+	public XLPNonlinearity MakeNonLinearityFastSCD(string outputName, short nOutputIndex, XLPEquation pEqn, double nlcoeff)
+	{
+		MakeNonLinearityFastSCD(xlpBldrPtr, outputName, nOutputIndex, pEqn.Ptr, nlcoeff, out var ppNlr);
+		return new XLPNonlinearity(ppNlr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int SetSCDControl(IntPtr xlpBldr, IntPtr scdControlPtr);
+
+	public void SetSCDControl(IntPtr scdControlPtr)
+	{
+		SetSCDControl(xlpBldrPtr, scdControlPtr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeNonLinearityFastBML(IntPtr xlpBldr, string corrName, short nOutPropIndex, IntPtr pEqn, double nlcoeff, out IntPtr ppNlr);
+
+	public XLPNonlinearity MakeNonLinearityFastBML(string corrName, short nOutPropIndex, XLPEquation pEqn, double nlcoeff)
+	{
+		MakeNonLinearityFastBML(xlpBldrPtr, corrName, nOutPropIndex, pEqn.Ptr, nlcoeff, out var ppNlr);
+		return new XLPNonlinearity(ppNlr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeNonLinearityFastComplexBML(IntPtr xlpBldr, string corrName, short nOutPropIndex, IntPtr pEqn, double nlcoeff, int nComp, out IntPtr ppNlr);
+
+	public XLPNonlinearity MakeNonLinearityFastComplexBML(string corrName, short nOutPropIndex, XLPEquation pEqn, double nlcoeff, int nComp)
+	{
+		MakeNonLinearityFastComplexBML(xlpBldrPtr, corrName, nOutPropIndex, pEqn.Ptr, nlcoeff, nComp, out var ppNlr);
+		return new XLPNonlinearity(ppNlr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeNonLinearityFastWRAP(IntPtr xlpBldr, string corrName, short nOutPropIndex, IntPtr pEqn, double nlcoeff, out IntPtr ppNlr);
+
+	public XLPNonlinearity MakeNonLinearityFastWRAP(string corrName, short nOutPropIndex, XLPEquation pEqn, double nlcoeff)
+	{
+		MakeNonLinearityFastWRAP(xlpBldrPtr, corrName, nOutPropIndex, pEqn.Ptr, nlcoeff, out var ppNlr);
+		return new XLPNonlinearity(ppNlr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeNonLinearityFastNLE(IntPtr xlpBldr, string equationName, string equationText, IntPtr pEqn, double nlCoeff, out IntPtr ppNlr);
+
+	public XLPNonlinearity MakeNonLinearityFastNLE(string equationName, string equationText, XLPEquation pEqn, double nlCoeff)
+	{
+		string equationText2 = Regex.Replace(equationText, "\\s", "");
+		MakeNonLinearityFastNLE(xlpBldrPtr, equationName, equationText2, pEqn.Ptr, nlCoeff, out var ppNlr);
+		return new XLPNonlinearity(ppNlr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeNonLinearityFastNLED(IntPtr xlpBldr, string equationName, string equationText, IntPtr pEqn, double nlCoeff, out IntPtr ppNlr);
+
+	public XLPNonlinearity MakeNonLinearityFastNLED(string equationName, string equationText, XLPEquation pEqn, double nlCoeff)
+	{
+		string equationText2 = Regex.Replace(equationText, "\\s", "");
+		MakeNonLinearityFastNLED(xlpBldrPtr, equationName, equationText2, pEqn.Ptr, nlCoeff, out var ppNlr);
+		return new XLPNonlinearity(ppNlr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeNonLinearityFastNLEDSwitch(IntPtr xlpBldr, string equationName, string equationText, IntPtr pEqn, double nlCoeff, out IntPtr ppNlr);
+
+	public XLPNonlinearity MakeNonLinearityFastNLEDSwitch(string equationName, string equationText, XLPEquation pEqn, double nlCoeff)
+	{
+		string equationText2 = Regex.Replace(equationText, "\\s", "");
+		MakeNonLinearityFastNLEDSwitch(xlpBldrPtr, equationName, equationText2, pEqn.Ptr, nlCoeff, out var ppNlr);
+		return new XLPNonlinearity(ppNlr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeNonLinearityFastNLEDLog(IntPtr xlpBldr, string equationName, string equationText, IntPtr pEqn, double nlCoeff, out IntPtr ppNlr);
+
+	public XLPNonlinearity MakeNonLinearityFastNLEDLog(string equationName, string equationText, XLPEquation pEqn, double nlCoeff)
+	{
+		string equationText2 = Regex.Replace(equationText, "\\s", "");
+		MakeNonLinearityFastNLEDLog(xlpBldrPtr, equationName, equationText2, pEqn.Ptr, nlCoeff, out var ppNlr);
+		return new XLPNonlinearity(ppNlr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeNonLinearityFastNLEDLogParameters(IntPtr xlpBldr, string equationName, string equationText, IntPtr pEqn, double a, double b, double alpha, out IntPtr ppNlr);
+
+	public XLPNonlinearity MakeNonLinearityFastNLEDLogParameters(string equationName, string equationText, XLPEquation pEqn, double a, double b, double alpha)
+	{
+		string equationText2 = Regex.Replace(equationText, "\\s", "");
+		MakeNonLinearityFastNLEDLogParameters(xlpBldrPtr, equationName, equationText2, pEqn.Ptr, a, b, alpha, out var ppNlr);
+		return new XLPNonlinearity(ppNlr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeNonLinearityNN(IntPtr xlpBldr, IntPtr pEqn, double nlcoeff, string nnName, string outputName, int outputIndex, out IntPtr ppNlr);
+
+	public XLPNonlinearity MakeNonLinearityNN(XLPEquation pEqn, double nlcoeff, string nnName, string outputName, int outputIndex)
+	{
+		MakeNonLinearityNN(xlpBldrPtr, pEqn.Ptr, nlcoeff, nnName, outputName, outputIndex, out var ppNlr);
+		return new XLPNonlinearity(ppNlr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int RegisterNNModel(IntPtr xlpBldr, string nnName, byte[] modelBuffer, int modelSize, byte[] gradientBuffer, int gradientSize);
+
+	public void RegisterNNModel(string nnName, byte[] modelBuffer, byte[] gradientBuffer)
+	{
+		RegisterNNModel(xlpBldrPtr, nnName, modelBuffer, modelBuffer.Length, gradientBuffer, gradientBuffer.Length);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeNonLinearityExpressionTree(IntPtr xlpBldr, IntPtr pEqn, double nlcoeff, string expTreeName, out IntPtr ppExpTree, out IntPtr ppNlr);
+
+	public XLPNonlinearity MakeNonLinearityExpressionTree(XLPEquation pEqn, double nlcoeff, string expTreeName, out XLPExpressionTree expTree)
+	{
+		MakeNonLinearityExpressionTree(xlpBldrPtr, pEqn.Ptr, nlcoeff, expTreeName, out var ppExpTree, out var ppNlr);
+		expTree = new XLPExpressionTree(this, ppExpTree);
+		return new XLPNonlinearity(ppNlr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeExpressionTreeConstant(IntPtr pExpTree, double constant, out IntPtr term);
+
+	public XLPExpressionTreeNode MakeExpressionTreeConstant(XLPExpressionTree expTree, double constant)
+	{
+		IntPtr term;
+		int code = MakeExpressionTreeConstant(expTree.TreePtr, constant, out term);
+		CheckExpressionTreeReturnCode(code);
+		return new XLPExpressionTreeNode(term, 0);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeExpressionTreeVariable(IntPtr pExpTree, string variableName, out IntPtr term);
+
+	public XLPExpressionTreeNode MakeExpressionTreeVariable(XLPExpressionTree expTree, string variableName)
+	{
+		IntPtr term;
+		int code = MakeExpressionTreeVariable(expTree.TreePtr, variableName, out term);
+		CheckExpressionTreeReturnCode(code);
+		return new XLPExpressionTreeNode(term, 1);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeExpressionTreeUnaryOperator(IntPtr pExpTree, short termCode, IntPtr operand, out IntPtr term);
+
+	public XLPExpressionTreeNode MakeExpressionTreeUnaryOperator(XLPExpressionTree expTree, short termCode, XLPExpressionTreeNode operand)
+	{
+		IntPtr term;
+		int code = MakeExpressionTreeUnaryOperator(expTree.TreePtr, termCode, operand.NodePtr, out term);
+		CheckExpressionTreeReturnCode(code);
+		return new XLPExpressionTreeNode(term, termCode);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeExpressionTreeBinaryOperator(IntPtr pExpTree, short termCode, IntPtr operand1, IntPtr operand2, out IntPtr term);
+
+	public XLPExpressionTreeNode MakeExpressionTreeBinaryOperator(XLPExpressionTree expTree, short termCode, XLPExpressionTreeNode operand1, XLPExpressionTreeNode operand2)
+	{
+		IntPtr term;
+		int code = MakeExpressionTreeBinaryOperator(expTree.TreePtr, termCode, operand1.NodePtr, operand2.NodePtr, out term);
+		CheckExpressionTreeReturnCode(code);
+		return new XLPExpressionTreeNode(term, termCode);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeExpressionTreeSwitchOperator(IntPtr pExpTree, IntPtr pCondition, double constant, IntPtr pTrueOperand, IntPtr pFalseOperand, out IntPtr term);
+
+	public XLPExpressionTreeNode MakeExpressionTreeSwitchOperator(XLPExpressionTree expTree, XLPExpressionTreeNode condition, double constant, XLPExpressionTreeNode trueOperand, XLPExpressionTreeNode falseOperand)
+	{
+		IntPtr term;
+		int code = MakeExpressionTreeSwitchOperator(expTree.TreePtr, condition.NodePtr, constant, trueOperand.NodePtr, falseOperand.NodePtr, out term);
+		CheckExpressionTreeReturnCode(code);
+		return new XLPExpressionTreeNode(term, 13);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int SetExpressionTreeRoot(IntPtr pExpTree, IntPtr pRoot);
+
+	public void SetExpressionTreeRoot(XLPExpressionTree expTree, XLPExpressionTreeNode root)
+	{
+		int code = SetExpressionTreeRoot(expTree.TreePtr, root.NodePtr);
+		CheckExpressionTreeReturnCode(code);
+	}
+
+	public void AddBilinearTerm(XLPEquation pEqn, XLPVariable pVar, XLPVariable pVar2, double nlcoeff)
+	{
+		XLPNonlinearity pNlr = MakeNonLinearityFast(1, pEqn, nlcoeff);
+		AddNonLinearityVariable(pNlr, pVar);
+		AddNonLinearityVariable(pNlr, pVar2);
+		AddNonLinearity(pNlr);
+	}
+
+	public void AddTrilinearTerm(XLPEquation pEqn, XLPVariable pVar, XLPVariable pVar2, XLPVariable pVar3, double nlcoeff)
+	{
+		XLPNonlinearity pNlr = MakeNonLinearityFast(1, pEqn, nlcoeff);
+		AddNonLinearityVariable(pNlr, pVar);
+		AddNonLinearityVariable(pNlr, pVar2);
+		AddNonLinearityVariable(pNlr, pVar3);
+		AddNonLinearity(pNlr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int AddNonLinearityVariableByName(IntPtr xlpBldr, IntPtr pNlr, byte[] vname);
+
+	public int AddNonLinearityVariableByName(XLPNonlinearity pNlr, string vname)
+	{
+		byte[] bytes = Encoding.GetEncoding(codepage).GetBytes(vname);
+		return AddNonLinearityVariableByName(xlpBldrPtr, pNlr.Ptr, bytes);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int AddNonLinearityVariable(IntPtr xlpBldr, IntPtr pNlr, IntPtr pVar);
+
+	public int AddNonLinearityVariable(XLPNonlinearity pNlr, XLPVariable pVar)
+	{
+		return AddNonLinearityVariable(xlpBldrPtr, pNlr.Ptr, pVar.Ptr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int AddNonLinearityValue(IntPtr xlpBldr, IntPtr pNlr, double value);
+
+	public int AddNonLinearityValue(XLPNonlinearity pNlr, double value)
+	{
+		return AddNonLinearityValue(xlpBldrPtr, pNlr.Ptr, value);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int AddNonLinearity(IntPtr xlpBldr, IntPtr pNlr);
+
+	public int AddNonLinearity(XLPNonlinearity pNlr)
+	{
+		return AddNonLinearity(xlpBldrPtr, pNlr.Ptr);
+	}
+
+	public void AddNonLinearBlock(XLPNonLinearBlock pNLBlk)
+	{
+		pNLBlk.AddNonLinearBlock(xlpBldrPtr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int FindVariableObject(IntPtr xlpBldr, byte[] vname, out IntPtr ppVar);
+
+	public XLPVariable FindVariableObject(string vname)
+	{
+		byte[] bytes = Encoding.GetEncoding(codepage).GetBytes(vname);
+		FindVariableObject(xlpBldrPtr, bytes, out var ppVar);
+		if (ppVar == IntPtr.Zero)
+		{
+			return null;
+		}
+		return new XLPVariable(ppVar, vname);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int FindEquationObject(IntPtr xlpBldr, byte[] ename, out IntPtr ppEqn);
+
+	public XLPEquation FindEquationObject(string ename)
+	{
+		byte[] bytes = Encoding.GetEncoding(codepage).GetBytes(ename);
+		FindEquationObject(xlpBldrPtr, bytes, out var ppEqn);
+		if (ppEqn == IntPtr.Zero)
+		{
+			return null;
+		}
+		return new XLPEquation(ppEqn, ename);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int FindNonZeroObject(IntPtr xlpBldr, IntPtr pEqn, IntPtr pVar, out IntPtr ppNZ);
+
+	public XLPNonZero FindNonZeroObject(XLPEquation pEqn, XLPVariable pVar)
+	{
+		FindNonZeroObject(xlpBldrPtr, pEqn.Ptr, pVar.Ptr, out var ppNZ);
+		if (ppNZ == IntPtr.Zero)
+		{
+			return null;
+		}
+		return new XLPNonZero(ppNZ);
+	}
+
+	public IEnumerable<XLPVariable> EnumerateVariables()
+	{
+		return new XlpVariableEnumerable(this);
+	}
+
+	public IEnumerable<XLPEquation> EnumerateEquations()
+	{
+		return new XlpEquationEnumerable(this);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int UpdateVariableName(IntPtr xlpBldr, byte[] oldName, byte[] newName);
+
+	public void UpdateVariableName(XLPVariable variable, string newName)
+	{
+		byte[] bytes = Encoding.GetEncoding(codepage).GetBytes(newName);
+		byte[] bytes2 = Encoding.GetEncoding(codepage).GetBytes(variable.Name);
+		UpdateVariableName(xlpBldrPtr, bytes2, bytes);
+		variable.Name = newName;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int UpdateEquationName(IntPtr xlpBldr, byte[] oldName, byte[] newName);
+
+	public void UpdateEquationName(XLPEquation equation, string newName)
+	{
+		byte[] bytes = Encoding.GetEncoding(codepage).GetBytes(newName);
+		byte[] bytes2 = Encoding.GetEncoding(codepage).GetBytes(equation.Name);
+		UpdateEquationName(xlpBldrPtr, bytes2, bytes);
+		equation.Name = newName;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeSpecialOrderedSet(IntPtr xlpBldr, string spordsetname, short sosType, out IntPtr ppLPSos);
+
+	public XLPSpOrdSet MakeSpecialOrderedSet(string spordsetname, short sosType)
+	{
+		MakeSpecialOrderedSet(xlpBldrPtr, spordsetname, sosType, out var ppLPSos);
+		if (ppLPSos == IntPtr.Zero)
+		{
+			return null;
+		}
+		return new XLPSpOrdSet(ppLPSos, spordsetname);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int AddSpecialOrderedSetVariable(IntPtr xlpBldr, IntPtr pSOS, IntPtr pVar);
+
+	public int AddSpecialOrderedSetVariable(XLPSpOrdSet spOrdSet, XLPVariable pVar)
+	{
+		return AddSpecialOrderedSetVariable(xlpBldrPtr, spOrdSet.Ptr, pVar.Ptr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int AddSpecialOrderedSet(IntPtr xlpBldr, IntPtr pLPSos);
+
+	public int AddSpecialOrderedSet(XLPSpOrdSet pSOS)
+	{
+		return AddSpecialOrderedSet(xlpBldrPtr, pSOS.Ptr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int FindSpecialOrderedSet(IntPtr xlpBldr, string spordsetname, out IntPtr ppLPSos);
+
+	public XLPSpOrdSet FindSpecialOrderedSet(string spordsetname)
+	{
+		FindSpecialOrderedSet(xlpBldrPtr, spordsetname, out var ppLPSos);
+		if (ppLPSos == IntPtr.Zero)
+		{
+			return null;
+		}
+		return new XLPSpOrdSet(ppLPSos, spordsetname);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int EliminateVariableByName(IntPtr xlpBldr, byte[] vname);
+
+	public int EliminateVariableByName(string vname)
+	{
+		byte[] bytes = Encoding.GetEncoding(codepage).GetBytes(vname);
+		return EliminateVariableByName(xlpBldrPtr, bytes);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int EliminateVariable(IntPtr xlpBldr, IntPtr pVar);
+
+	public int EliminateVariable(XLPVariable pVar)
+	{
+		return EliminateVariable(xlpBldrPtr, pVar.Ptr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int EliminateEquationByName(IntPtr xlpBldr, byte[] ename);
+
+	public int EliminateEquationByName(string ename)
+	{
+		byte[] bytes = Encoding.GetEncoding(codepage).GetBytes(ename);
+		return EliminateEquationByName(xlpBldrPtr, bytes);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int EliminateEquation(IntPtr xlpBldr, IntPtr pEqn);
+
+	public int EliminateEquation(XLPEquation pEqn)
+	{
+		return EliminateEquation(xlpBldrPtr, pEqn.Ptr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int RemoveNonZeroByNames(IntPtr xlpBldr, byte[] ename, byte[] vname);
+
+	public int RemoveNonZeroByNames(string ename, string vname)
+	{
+		byte[] bytes = Encoding.GetEncoding(codepage).GetBytes(vname);
+		byte[] bytes2 = Encoding.GetEncoding(codepage).GetBytes(ename);
+		return RemoveNonZeroByNames(xlpBldrPtr, bytes2, bytes);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int RemoveNonZero(IntPtr xlpBldr, IntPtr pLPNz);
+
+	public int RemoveNonZero(XLPNonZero pNZ)
+	{
+		return RemoveNonZero(xlpBldrPtr, pNZ.Ptr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int TrashNonZeroByNames(IntPtr xlpBldr, byte[] ename, byte[] vname);
+
+	public int TrashNonZeroByNames(string ename, string vname)
+	{
+		byte[] bytes = Encoding.GetEncoding(codepage).GetBytes(vname);
+		byte[] bytes2 = Encoding.GetEncoding(codepage).GetBytes(ename);
+		return TrashNonZeroByNames(xlpBldrPtr, bytes2, bytes);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int TrashNonZero(IntPtr xlpBldr, IntPtr pLPNz);
+
+	public int TrashNonZero(XLPNonZero pNZ)
+	{
+		return TrashNonZero(xlpBldrPtr, pNZ.Ptr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int EmptyNonZeroTrash(IntPtr xlpBldr);
+
+	public int EmptyNonZeroTrash()
+	{
+		return EmptyNonZeroTrash(xlpBldrPtr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int TrashNonLinearity(IntPtr xlpBldr, IntPtr pNlr);
+
+	public int TrashNonLinearity(XLPNonlinearity pNlr)
+	{
+		return TrashNonLinearity(xlpBldrPtr, pNlr.Ptr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int EmptyNonLinearityTrash(IntPtr xlpBldr);
+
+	public int EmptyNonLinearityTrash()
+	{
+		return EmptyNonLinearityTrash(xlpBldrPtr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int WriteXLPSummary(IntPtr pXLPMgr, string rptName);
+
+	public int WriteXLPSummary(string rptName)
+	{
+		return WriteXLPSummary(xlpMgrPtr, rptName);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int WriteXLPFile(IntPtr pXLPMgr, string xlpName);
+
+	public int WriteXLPFile(string xlpName)
+	{
+		return WriteXLPFile(xlpMgrPtr, xlpName);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int WriteXLPFileVersion(IntPtr pXLPMgr, string xlpName, double xlpVersion);
+
+	public int WriteXLPFileVersion(string xlpName, double xlpVersionValue)
+	{
+		return WriteXLPFileVersion(xlpMgrPtr, xlpName, xlpVersionValue);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int WriteXMPSFile(IntPtr pXLPMgr, string xmpsName);
+
+	public int WriteXMPSFile(string xmpsName)
+	{
+		return WriteXMPSFile(xlpMgrPtr, xmpsName);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int CreateXLPStream(IntPtr pXLPMgr);
+
+	public int CreateXLPStream()
+	{
+		return CreateXLPStream(xlpMgrPtr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int RestoreFromXLPFile(IntPtr pXLPMgr, string xlpName);
+
+	public int RestoreFromXLPFile(string xlpName)
+	{
+		int result = RestoreFromXLPFile(xlpMgrPtr, xlpName);
+		GetXLPBuilder();
+		return result;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int RestoreFromMPSFile(IntPtr pXLPMgr, string mpsName);
+
+	public int RestoreFromMPSFile(string mpsName)
+	{
+		int result = RestoreFromMPSFile(xlpMgrPtr, mpsName);
+		GetXLPBuilder();
+		return result;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int AppendFromXLPFile(IntPtr pXLPMgr, string xlpName);
+
+	public int AppendFromXLPFile(string xlpName)
+	{
+		return AppendFromXLPFile(xlpMgrPtr, xlpName);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int AppendFromXLP(IntPtr pXLPMgrTarg, IntPtr pXLPMgrSrc, string strPostTag, string strPreTag);
+
+	public int AppendFromXLP(XLPManager xlpSrc, string strPostTag, string strPreTag)
+	{
+		return AppendFromXLP(xlpMgrPtr, xlpSrc.Ptr, strPostTag, strPreTag);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int CopyFromXLP(IntPtr pXLPMgrTarg, IntPtr pXLPMgrSrc);
+
+	public int CopyFromXLP(XLPManager xlpSrc)
+	{
+		return CopyFromXLP(xlpMgrPtr, xlpSrc.Ptr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int LinearizeGeneralNonlinear(IntPtr pXLPMgr);
+
+	public void LinearizeGeneralNonlinear()
+	{
+		LinearizeGeneralNonlinear(xlpMgrPtr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int ProcessFullCollection(IntPtr pXLPMgr);
+
+	public void ProcessFullCollection()
+	{
+		ProcessFullCollection(xlpMgrPtr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int ReIndexConnectionEqn(IntPtr pXLPMgr);
+
+	public void ReIndexConnectionEqn()
+	{
+		ReIndexConnectionEqn(xlpMgrPtr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int MakeAddReturnNamedVarCollection(IntPtr pXLPMgr, string collectionName, out IntPtr pVarColl);
+
+	public XLPVarCollection NewNamedVarCollection(string collectionName)
+	{
+		MakeAddReturnNamedVarCollection(xlpMgrPtr, collectionName, out var pVarColl);
+		if (pVarColl == IntPtr.Zero)
+		{
+			return null;
+		}
+		return new XLPVarCollection(pVarColl, collectionName);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int AddVariableToNamedVarCollection(IntPtr pXLPMgr, IntPtr pVarColl, IntPtr pVar);
+
+	public int AddVariableToNamedVarCollection(XLPVarCollection pVarColl, XLPVariable pVar)
+	{
+		return AddVariableToNamedVarCollection(xlpMgrPtr, pVarColl.Ptr, pVar.Ptr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int AddVarByNameToNamedVarCollection(IntPtr pXLPMgr, string collectionName, byte[] vname);
+
+	public int AddVariableByNameToNamedVarCollection(string collectionName, string vname)
+	{
+		byte[] bytes = Encoding.GetEncoding(codepage).GetBytes(vname);
+		return AddVarByNameToNamedVarCollection(xlpMgrPtr, collectionName, bytes);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int RemoveNamedVarCollection(IntPtr pXLPMgr, string collectionName);
+
+	public int RemoveNamedVarCollection(string collectionName)
+	{
+		return RemoveNamedVarCollection(xlpMgrPtr, collectionName);
+	}
+
+	public int RemoveNamedVarCollection(XLPVarCollection pVarColl)
+	{
+		return RemoveNamedVarCollection(pVarColl.Name);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int FindNamedVarCollection(IntPtr pXLPMgr, string collectionName, out IntPtr pVarColl);
+
+	public XLPVarCollection FindNamedVarCollection(string collectionName)
+	{
+		FindNamedVarCollection(xlpMgrPtr, collectionName, out var pVarColl);
+		if (pVarColl == IntPtr.Zero)
+		{
+			return null;
+		}
+		return new XLPVarCollection(pVarColl, collectionName);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int GetVariableCollectionIntf(IntPtr pXLPMgr, out IntPtr pVarColl);
+
+	public XLPVarCollection GetVariableCollectionIntf()
+	{
+		GetVariableCollectionIntf(xlpMgrPtr, out var pVarColl);
+		if (pVarColl == IntPtr.Zero)
+		{
+			return null;
+		}
+		return new XLPVarCollection(pVarColl, "");
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int GetEquationCollectionIntf(IntPtr pXLPMgr, out IntPtr pEqnColl);
+
+	public XLPEqnCollection GetEquationCollectionIntf()
+	{
+		GetEquationCollectionIntf(xlpMgrPtr, out var pEqnColl);
+		if (pEqnColl == IntPtr.Zero)
+		{
+			return null;
+		}
+		return new XLPEqnCollection(pEqnColl, "");
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int GetMatrixIntf(IntPtr pXLPMgr, out IntPtr pMatrix);
+
+	public XLPMatrix GetMatrixIntf()
+	{
+		GetMatrixIntf(xlpMgrPtr, out var pMatrix);
+		if (pMatrix == IntPtr.Zero)
+		{
+			return null;
+		}
+		return new XLPMatrix(pMatrix);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int GetNonLinearModelIntf(IntPtr pXLPMgr, out IntPtr pNLMdl);
+
+	public XLPNonLinearModel GetNonLinearModelIntf()
+	{
+		GetNonLinearModelIntf(xlpMgrPtr, out var pNLMdl);
+		if (pNLMdl == IntPtr.Zero)
+		{
+			return null;
+		}
+		return new XLPNonLinearModel(pNLMdl);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int CompareXLPtoBasis(IntPtr pXLPPrimary, string fullModelPath, string diffLogName, int nTrace);
+
+	public int CompareXLPtoBasis(string fullModelPath, string diffLogName, int nTrace)
+	{
+		return CompareXLPtoBasis(xlpMgrPtr, fullModelPath, diffLogName, nTrace);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int CheckDuplicateNames(IntPtr pXLPPrimary, string strPath, string fileName);
+
+	public int CheckDuplicateNames(string strPath, string fileName)
+	{
+		return CheckDuplicateNames(xlpMgrPtr, strPath, fileName);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int AddSoftBounds(IntPtr pXLP);
+
+	public int AddSoftBounds()
+	{
+		return AddSoftBounds(xlpMgrPtr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern double EvaluateInitial(IntPtr pXLPMgr, byte[] ename, byte[] vname);
+
+	public double EvaluateInitial(string ename, string vname)
+	{
+		byte[] bytes = Encoding.GetEncoding(codepage).GetBytes(vname);
+		byte[] bytes2 = Encoding.GetEncoding(codepage).GetBytes(ename);
+		return EvaluateInitial(xlpMgrPtr, bytes2, bytes);
+	}
+
+	public bool LoadSolutionFile(string fullModelPath, string fileName, XLPManager scdXLP, ArrayList messages)
+	{
+		CultureInfo currentCulture = Thread.CurrentThread.CurrentCulture;
+		try
+		{
+			CultureInfo currentCulture2 = new CultureInfo("en-US");
+			Thread.CurrentThread.CurrentCulture = currentCulture2;
+			double num = 1E-05;
+			bool flag = false;
+			string path = fullModelPath + fileName;
+			ArrayList arrayList = new ArrayList();
+			if (!File.Exists(path))
+			{
+				return false;
+			}
+			using (StreamReader streamReader = new StreamReader(path, Encoding.Default))
+			{
+				string text = streamReader.ReadLine();
+				text = streamReader.ReadLine();
+				while ((text = streamReader.ReadLine()) != null && text != "")
+				{
+					if (text[0] == '*' || text[0] == '$')
+					{
+						continue;
+					}
+					int num2 = text.LastIndexOf(' ');
+					if (num2 <= 0)
+					{
+						continue;
+					}
+					string text2 = text.Substring(0, num2).Trim();
+					if (!flag && text2.StartsWith("INVT"))
+					{
+						flag = true;
+					}
+					double num3 = Convert.ToDouble(text.Substring(num2 + 1));
+					if (Math.Abs(num3) < 1E-06)
+					{
+						num3 = 0.0;
+					}
+					XLPVariable xLPVariable = FindVariableObject(text2);
+					if (xLPVariable == null && scdXLP != null)
+					{
+						xLPVariable = scdXLP.FindVariableObject(text2);
+						if (xLPVariable != null)
+						{
+							xLPVariable.Value = num3;
+						}
+					}
+					else
+					{
+						if (xLPVariable == null)
+						{
+							continue;
+						}
+						xLPVariable.Value = num3;
+						if (xLPVariable.Value < xLPVariable.LowerBnd)
+						{
+							if (xLPVariable.Value < xLPVariable.LowerBnd - num && Math.Abs(xLPVariable.Value - xLPVariable.LowerBnd) / (1.0 + Math.Abs(xLPVariable.Value)) > num)
+							{
+								string value = "Variable " + xLPVariable.Name + " value " + xLPVariable.Value.ToString("G6") + " is below the lower bound of " + xLPVariable.LowerBnd.ToString("G6");
+								messages.Add(value);
+							}
+							xLPVariable.Value = xLPVariable.LowerBnd;
+						}
+						else if (xLPVariable.Value > xLPVariable.UpperBnd)
+						{
+							if (xLPVariable.Value > xLPVariable.UpperBnd + num && Math.Abs(xLPVariable.Value - xLPVariable.UpperBnd) / (1.0 + Math.Abs(xLPVariable.Value)) > num)
+							{
+								string value = "Variable " + xLPVariable.Name + " value " + xLPVariable.Value.ToString("G6") + " is above the upper bound of " + xLPVariable.UpperBnd.ToString("G6");
+								messages.Add(value);
+							}
+							xLPVariable.Value = xLPVariable.UpperBnd;
+						}
+						if (xLPVariable.Spec == 3 && Math.Abs(xLPVariable.UpperBnd - xLPVariable.LowerBnd) > num)
+						{
+							string value = "Variable " + xLPVariable.Name + " is fixed but the bounds are open " + xLPVariable.UpperBnd.ToString("G6") + " and the solution file value " + num3.ToString("G6") + " is ignored.";
+							messages.Add(value);
+						}
+						if (num3 == 99999.0)
+						{
+							xLPVariable.Value = 0.0;
+						}
+						if (text2.StartsWith("IEXC"))
+						{
+							arrayList.Add(xLPVariable);
+						}
+						if (scdXLP == null)
+						{
+							continue;
+						}
+						xLPVariable = scdXLP.FindVariableObject(text2);
+						if (xLPVariable == null)
+						{
+							continue;
+						}
+						xLPVariable.Value = num3;
+						if (xLPVariable.Value < xLPVariable.LowerBnd)
+						{
+							if (xLPVariable.Value < xLPVariable.LowerBnd - num && Math.Abs(xLPVariable.Value - xLPVariable.LowerBnd) / (1.0 + Math.Abs(xLPVariable.Value)) > num)
+							{
+								string value = "*** Warning for variable " + xLPVariable.Name + ": Initial value " + xLPVariable.Value.ToString("G6") + " is below the lower bound of  " + xLPVariable.LowerBnd.ToString("G6");
+								messages.Add(value);
+							}
+							xLPVariable.Value = xLPVariable.LowerBnd;
+						}
+						else if (xLPVariable.Value > xLPVariable.UpperBnd)
+						{
+							if (xLPVariable.Value > xLPVariable.UpperBnd + num && Math.Abs(xLPVariable.Value - xLPVariable.UpperBnd) / (1.0 + Math.Abs(xLPVariable.Value)) > num)
+							{
+								string value = "*** Warning for variable " + xLPVariable.Name + ": Initial value " + xLPVariable.Value.ToString("G6") + " is above the upper bound of  " + xLPVariable.UpperBnd.ToString("G6");
+								messages.Add(value);
+							}
+							xLPVariable.Value = xLPVariable.UpperBnd;
+						}
+						if (xLPVariable.Spec == 3 && Math.Abs(xLPVariable.UpperBnd - xLPVariable.LowerBnd) > num)
+						{
+							string value = "Variable " + xLPVariable.Name + " is fixed but the bounds are open " + xLPVariable.UpperBnd.ToString("G6") + " and the solution file value " + num3.ToString("G6") + " is ignored.";
+							messages.Add(value);
+						}
+					}
+				}
+			}
+			if (!flag && arrayList.Count > 0)
+			{
+				foreach (XLPVariable item in arrayList)
+				{
+					double value2 = item.Value;
+					string vname = "IDEF" + item.Name.Substring(4);
+					XLPVariable xLPVariable3 = FindVariableObject(vname);
+					double num4 = 0.0;
+					if (xLPVariable3 != null)
+					{
+						num4 = xLPVariable3.Value;
+					}
+					string vname2 = "INVT" + item.Name.Substring(4);
+					XLPVariable xLPVariable4 = FindVariableObject(vname2);
+					if (xLPVariable4 != null)
+					{
+						xLPVariable4.Value = xLPVariable4.Value + value2 - num4;
+					}
+				}
+			}
+		}
+		finally
+		{
+			Thread.CurrentThread.CurrentCulture = currentCulture;
+		}
+		return true;
+	}
+
+	public bool FixSolution(XLPManager pXLP, string fullModelPath, string fileName)
+	{
+		string path = fullModelPath + fileName;
+		if (File.Exists(path))
+		{
+			using (StreamReader streamReader = File.OpenText(path))
+			{
+				string text = streamReader.ReadLine();
+				text = streamReader.ReadLine();
+				while ((text = streamReader.ReadLine()) != null && text != "")
+				{
+					if (text[0] == '*' || text[0] == '$')
+					{
+						continue;
+					}
+					int num = text.IndexOf(' ');
+					if (num < 0)
+					{
+						continue;
+					}
+					string vname = text.Substring(0, num);
+					double num2 = Convert.ToDouble(text.Substring(num + 1));
+					if (Math.Abs(num2) < 1E-06)
+					{
+						num2 = 0.0;
+					}
+					XLPVariable xLPVariable = pXLP.FindVariableObject(vname);
+					if (xLPVariable != null && num2 != 99999.0)
+					{
+						if (num2 >= 0.0)
+						{
+							xLPVariable.LowerBnd = 0.99 * num2;
+							xLPVariable.UpperBnd = 1.01 * num2;
+						}
+						else
+						{
+							xLPVariable.LowerBnd = 1.01 * num2;
+							xLPVariable.UpperBnd = 0.99 * num2;
+						}
+					}
+				}
+			}
+			return true;
+		}
+		return false;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern bool UpdateEflo(IntPtr pXLPMgr, byte[] ename, byte[] strMat);
+
+	public bool UpdateEflo(XLPEquation pEqn, XLPEquation pEqnBal)
+	{
+		byte[] bytes = Encoding.GetEncoding(codepage).GetBytes(pEqn.Name);
+		byte[] bytes2 = Encoding.GetEncoding(codepage).GetBytes(pEqnBal.Name);
+		return UpdateEflo(xlpMgrPtr, bytes, bytes2);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern bool WritePenaltyFile(IntPtr pXLPMgr, string strFileName);
+
+	public bool WritePenaltyFile(string strFileName)
+	{
+		return WritePenaltyFile(xlpMgrPtr, strFileName);
+	}
+
+	public XLPNonLinearBlockManifest CreateNonLinearBlockManifest(string blockname)
+	{
+		return XLPNonLinearBlockManifest.Create(xlpBldrPtr, blockname);
+	}
+
+	public XLPNonLinearBlock CreateNonLinearBlock(XLPNonLinearBlockManifest nlBlkManifest)
+	{
+		return XLPNonLinearBlock.Create(xlpBldrPtr, nlBlkManifest);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int GetNumberOfNonLinearBlocks(IntPtr pXLPMgr);
+
+	public int GetNumberOfNonLinearBlocks()
+	{
+		return GetNumberOfNonLinearBlocks(xlpMgrPtr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int GetNonLinearBlockManifest(IntPtr pXLPMgr, int whichManifest, out IntPtr pNLBlkMnfst);
+
+	public IEnumerable<XLPNonLinearBlockManifest> GetAllNonLinearBlockManifests()
+	{
+		for (int i = 0; i < GetNumberOfNonLinearBlocks(); i++)
+		{
+			GetNonLinearBlockManifest(xlpMgrPtr, i + 1, out var pNLBlkMnfst);
+			yield return (pNLBlkMnfst != IntPtr.Zero) ? new XLPNonLinearBlockManifest(pNLBlkMnfst) : null;
+		}
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern bool InitializeBML(IntPtr pXLPMgr, string szLicense, string szUbmlDll);
+
+	public bool InitializeBML(string szLicense, string szUbmlDll)
+	{
+		return InitializeBML(xlpBldrPtr, szLicense, szUbmlDll);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern bool CreateBMLIdMap(IntPtr pXLPMgr);
+
+	public bool CreateBMLIdMap()
+	{
+		return CreateBMLIdMap(xlpBldrPtr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int GetBMLCorrelationCount(IntPtr pXLPMgr);
+
+	public int GetBMLCorrelationCount()
+	{
+		return GetBMLCorrelationCount(xlpBldrPtr);
+	}
+
+	public string ConvertByteToString(int nLength, byte[] sByteString)
+	{
+		StringBuilder stringBuilder = new StringBuilder(64);
+		for (int i = 0; i < nLength + 1; i++)
+		{
+			char c = Convert.ToChar(sByteString[i]);
+			if (c == '\0')
+			{
+				break;
+			}
+			stringBuilder.Append(c);
+		}
+		return stringBuilder.ToString();
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern string GetBMLCorrelationId(IntPtr pXLPMgr, int nCorrId, byte[] sCorrId);
+
+	public string GetBMLCorrelationId(int nCorrId)
+	{
+		byte[] array = new byte[256];
+		GetBMLCorrelationId(xlpBldrPtr, nCorrId, array);
+		return ConvertByteToString(255, array);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern string GetBMLCorrelationType(IntPtr pXLPMgr, int nCorrId);
+
+	public string GetBMLCorrelationType(int nCorrId)
+	{
+		return GetBMLCorrelationType(xlpBldrPtr, nCorrId);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int GetBMLCorrelationIndex(IntPtr pXLPMgr, string szCorrId);
+
+	public int GetBMLCorrelationIndex(string szCorrId)
+	{
+		return GetBMLCorrelationIndex(xlpBldrPtr, szCorrId);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern void MakeAddBMLCorrelationInstance(IntPtr pXLPMgr, int nCorrId, out IntPtr pCorr);
+
+	public XLPBMLCorrelation MakeAddBMLCorrelationInstance(int nCorrId)
+	{
+		MakeAddBMLCorrelationInstance(xlpBldrPtr, nCorrId, out var pCorr);
+		if (pCorr == IntPtr.Zero)
+		{
+			return null;
+		}
+		return new XLPBMLCorrelation(pCorr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern void UninitializeBML(IntPtr pXLPMgr);
+
+	public void UninitializeBML()
+	{
+		UninitializeBML(xlpBldrPtr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int GetNumberOfManifests(IntPtr pXLPMgr);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int GetManifestName(IntPtr pXLPMgr, int whichManifest, [MarshalAs(UnmanagedType.LPStr)] StringBuilder nameBuffer, int bufferSize);
+
+	public string[] GetManifestNames()
+	{
+		int numberOfManifests = GetNumberOfManifests(xlpMgrPtr);
+		string[] array = new string[numberOfManifests];
+		for (int i = 0; i < numberOfManifests; i++)
+		{
+			int manifestName = GetManifestName(xlpMgrPtr, i, null, 0);
+			StringBuilder stringBuilder = new StringBuilder(manifestName + 1);
+			GetManifestName(xlpMgrPtr, i, stringBuilder, manifestName + 1);
+			array[i] = stringBuilder.ToString();
+		}
+		return array;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int GetManifest(IntPtr pXLPMgr, string name, [MarshalAs(UnmanagedType.LPArray)] byte[] manifestBuffer, int bufferSize);
+
+	public byte[] GetManifest(string name)
+	{
+		int manifest = GetManifest(xlpMgrPtr, name, null, 0);
+		byte[] array = new byte[manifest];
+		if (manifest > 0)
+		{
+			GetManifest(xlpMgrPtr, name, array, manifest);
+		}
+		return array;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern void SetManifest(IntPtr pXLPMgr, string name, byte[] manifest, int size);
+
+	public void SetManifest(string name, byte[] manifest)
+	{
+		SetManifest(xlpMgrPtr, name, manifest, manifest.Length);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern void RemoveManifest(IntPtr pXLPMgr, string name);
+
+	public void RemoveManifest(string name)
+	{
+		RemoveManifest(xlpMgrPtr, name);
+	}
+
+	public string StringGet(byte[] byteStr)
+	{
+		StringBuilder stringBuilder = new StringBuilder(256);
+		for (int i = 0; i < byteStr.Length; i++)
+		{
+			char c = Convert.ToChar(byteStr[i]);
+			if (c == '\0')
+			{
+				break;
+			}
+			stringBuilder.Append(c);
+		}
+		return stringBuilder.ToString();
+	}
+
+	internal void CheckExpressionTreeReturnCode(int code)
+	{
+		if (code == -1)
+		{
+			throw new ArgumentException("ExpressionTree function failed to create/set resource");
+		}
+		if (code == -2)
+		{
+			throw new ArgumentException("Invalid argument sent to ExpressionTree function");
+		}
+		if (code < 0)
+		{
+			throw new Exception("Unknown ExpressionTree failure");
+		}
+	}
+}
+public class XLPVariable
+{
+	private IntPtr xlpVariablePtr;
+
+	private string varName;
+
+	private int varIndex;
+
+	public IntPtr Ptr => xlpVariablePtr;
+
+	public double Value
+	{
+		get
+		{
+			VarValueGet(xlpVariablePtr, out var value);
+			return value;
+		}
+		set
+		{
+			VarValueSet(xlpVariablePtr, value);
+		}
+	}
+
+	public double LowerBnd
+	{
+		get
+		{
+			VarLowerBndGet(xlpVariablePtr, out var value);
+			return value;
+		}
+		set
+		{
+			VarLowerBndSet(xlpVariablePtr, value);
+		}
+	}
+
+	public double UpperBnd
+	{
+		get
+		{
+			VarUpperBndGet(xlpVariablePtr, out var value);
+			return value;
+		}
+		set
+		{
+			VarUpperBndSet(xlpVariablePtr, value);
+		}
+	}
+
+	public double LowerTempBnd
+	{
+		get
+		{
+			VarTempLowerBndGet(xlpVariablePtr, out var value);
+			return value;
+		}
+		set
+		{
+			VarTempLowerBndSet(xlpVariablePtr, value);
+		}
+	}
+
+	public short Spec
+	{
+		get
+		{
+			VarStatusGet(xlpVariablePtr, out var status);
+			return status;
+		}
+		set
+		{
+			VarStatusSet(xlpVariablePtr, value);
+		}
+	}
+
+	public int VarType
+	{
+		get
+		{
+			VarTypeGet(xlpVariablePtr, out var value);
+			return value;
+		}
+		set
+		{
+			if (value > 0)
+			{
+				VarTypeSet(xlpVariablePtr, value);
+			}
+		}
+	}
+
+	public string Name
+	{
+		get
+		{
+			return varName;
+		}
+		set
+		{
+			varName = value;
+			VarNameSet(xlpVariablePtr, value);
+		}
+	}
+
+	public int Nonlinear
+	{
+		get
+		{
+			VarNonlinGet(xlpVariablePtr, out var value);
+			return value;
+		}
+		set
+		{
+			if (value > 0)
+			{
+				VarNonlinSet(xlpVariablePtr, value);
+			}
+		}
+	}
+
+	public XLPVariable(IntPtr pVar, string vname)
+	{
+		xlpVariablePtr = pVar;
+		varName = vname;
+		VarIndexGet();
+	}
+
+	public XLPVariable(IntPtr pVar)
+	{
+		xlpVariablePtr = pVar;
+		VarNameGet();
+		VarIndexGet();
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int VarStatusSet(IntPtr pVar, short status);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int VarStatusGet(IntPtr pVar, out short status);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int VarValueSet(IntPtr pVar, double value);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int VarValueGet(IntPtr pVar, out double value);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int VarLowerBndSet(IntPtr pVar, double value);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int VarLowerBndGet(IntPtr pVar, out double value);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int VarUpperBndSet(IntPtr pVar, double value);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int VarUpperBndGet(IntPtr pVar, out double value);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int VarTypeSet(IntPtr pVar, int value);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int VarTypeGet(IntPtr pVar, out int value);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int VarNameGet(IntPtr pVar, byte[] name);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int VarNameSet(IntPtr pVar, string name);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int VarIndexGet(IntPtr pVar, out int index);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int VarTempLowerBndSet(IntPtr pVar, double value);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int VarTempLowerBndGet(IntPtr pVar, out double value);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int VarNonlinSet(IntPtr pVar, int value);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int VarNonlinGet(IntPtr pVar, out int value);
+
+	public string VarNameGet()
+	{
+		byte[] array = new byte[200];
+		VarNameGet(xlpVariablePtr, array);
+		StringBuilder stringBuilder = new StringBuilder(64);
+		for (int i = 0; i < 200; i++)
+		{
+			char c = Convert.ToChar(array[i]);
+			if (c == '\0')
+			{
+				break;
+			}
+			stringBuilder.Append(c);
+		}
+		varName = stringBuilder.ToString();
+		return varName;
+	}
+
+	public int VarIndexGet()
+	{
+		int index = 0;
+		VarIndexGet(xlpVariablePtr, out index);
+		varIndex = index;
+		return index;
+	}
+}
+public class XLPEquation
+{
+	private IntPtr xlpEquationPtr;
+
+	private string eqnName;
+
+	private int eqnIndex;
+
+	public IntPtr Ptr => xlpEquationPtr;
+
+	public double Scale
+	{
+		get
+		{
+			EqnScaleGet(xlpEquationPtr, out var scale);
+			return scale;
+		}
+		set
+		{
+			EqnScaleSet(xlpEquationPtr, value);
+		}
+	}
+
+	public double RHS
+	{
+		get
+		{
+			EqnRHSGet(xlpEquationPtr, out var rhs);
+			return rhs;
+		}
+		set
+		{
+			EqnRHSSet(xlpEquationPtr, value);
+		}
+	}
+
+	public double Range
+	{
+		get
+		{
+			EqnRangeGet(xlpEquationPtr, out var range);
+			return range;
+		}
+		set
+		{
+			EqnRangeSet(xlpEquationPtr, value);
+		}
+	}
+
+	public string Name
+	{
+		get
+		{
+			return eqnName;
+		}
+		set
+		{
+			eqnName = value;
+			EqnNameSet(xlpEquationPtr, value);
+		}
+	}
+
+	public int Type
+	{
+		get
+		{
+			EqnTypeGet(xlpEquationPtr, out var type);
+			return type;
+		}
+		set
+		{
+			EqnTypeSet(xlpEquationPtr, value);
+		}
+	}
+
+	public int Nonlinear
+	{
+		get
+		{
+			EqnNonlinGet(xlpEquationPtr, out var value);
+			return value;
+		}
+	}
+
+	public XLPEquation(IntPtr pEqn, string ename)
+	{
+		xlpEquationPtr = pEqn;
+		eqnName = ename;
+		EqnIndexGet();
+	}
+
+	public XLPEquation(IntPtr pEqn)
+	{
+		xlpEquationPtr = pEqn;
+		EqnNameGet();
+		EqnIndexGet();
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int EqnRHSSet(IntPtr pEqn, double rhs);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int EqnRHSGet(IntPtr pEqn, out double rhs);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int EqnRangeSet(IntPtr pEqn, double range);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int EqnRangeGet(IntPtr pEqn, out double range);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int EqnNameSet(IntPtr pEqn, string name);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int EqnNameGet(IntPtr pEqn, byte[] name);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int EqnIndexGet(IntPtr pEqn, out int index);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int EqnNonlinGet(IntPtr pEqn, out int value);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int EqnTypeSet(IntPtr pEqn, int type);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int EqnTypeGet(IntPtr pEqn, out int type);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int EqnScaleSet(IntPtr pEqn, double scale);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int EqnScaleGet(IntPtr pEqn, out double scale);
+
+	public string EqnNameGet()
+	{
+		byte[] array = new byte[200];
+		EqnNameGet(xlpEquationPtr, array);
+		StringBuilder stringBuilder = new StringBuilder(64);
+		for (int i = 0; i < 200; i++)
+		{
+			char c = Convert.ToChar(array[i]);
+			if (c == '\0')
+			{
+				break;
+			}
+			stringBuilder.Append(c);
+		}
+		eqnName = stringBuilder.ToString();
+		return eqnName;
+	}
+
+	public int EqnIndexGet()
+	{
+		int index = 0;
+		EqnIndexGet(xlpEquationPtr, out index);
+		eqnIndex = index;
+		return index;
+	}
+
+	public IEnumerable<XLPNonZero> EnumerateNonZeros(XLPMatrix matrix)
+	{
+		return new XLPEquationNonZeros(this, matrix);
+	}
+
+	public IEnumerable<XLPNonlinearity> EnumerateNonlinearities(XLPNonLinearModel nonLinearModel)
+	{
+		return new XLPEquationNonLinearities(this, nonLinearModel);
+	}
+}
+public class XLPNonZero
+{
+	private IntPtr xlpNonZeroPtr;
+
+	private XLPEquation nzEqn;
+
+	private XLPVariable nzVar;
+
+	public IntPtr Ptr => xlpNonZeroPtr;
+
+	public XLPEquation EqnPtr
+	{
+		get
+		{
+			if (nzEqn == null)
+			{
+				GetNZPtrs();
+			}
+			return nzEqn;
+		}
+	}
+
+	public XLPVariable VarPtr
+	{
+		get
+		{
+			if (nzVar == null)
+			{
+				GetNZPtrs();
+			}
+			return nzVar;
+		}
+	}
+
+	public XLPNonZero(IntPtr pNZ)
+	{
+		xlpNonZeroPtr = pNZ;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int GetNZVarEqnObjects(IntPtr pNZ, out IntPtr ppEqn, out IntPtr ppVar);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int GetCoefficient(IntPtr pNZ, out double dCoeff);
+
+	public void GetNZPtrs()
+	{
+		GetNZVarEqnObjects(xlpNonZeroPtr, out var ppEqn, out var ppVar);
+		nzEqn = new XLPEquation(ppEqn);
+		nzVar = new XLPVariable(ppVar);
+	}
+
+	public double GetCoefficient()
+	{
+		GetCoefficient(xlpNonZeroPtr, out var dCoeff);
+		return dCoeff;
+	}
+}
+public class XLPNonlinearity
+{
+	private IntPtr xlpNonlinearityPtr;
+
+	private double dCoeff;
+
+	public IntPtr Ptr => xlpNonlinearityPtr;
+
+	public double Coefficient
+	{
+		get
+		{
+			return dCoeff;
+		}
+		set
+		{
+			dCoeff = value;
+		}
+	}
+
+	public XLPNonlinearity(IntPtr pNlr)
+	{
+		xlpNonlinearityPtr = pNlr;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern void GetFirstNLConstant(IntPtr pNL, out double dCoeff);
+
+	public void GetFirstConstant()
+	{
+		GetFirstNLConstant(xlpNonlinearityPtr, out var coefficient);
+		Coefficient = coefficient;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern void GetNonlinearityType(IntPtr pNp, out int type);
+
+	public int GetNonlinearityType()
+	{
+		int type = 0;
+		GetNonlinearityType(xlpNonlinearityPtr, out type);
+		return type;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern void GetFirstUniqueVariable(IntPtr pNL, out IntPtr pVar);
+
+	public XLPVariable GetFirstUniqueVariable()
+	{
+		GetFirstUniqueVariable(xlpNonlinearityPtr, out var pVar);
+		if (pVar == IntPtr.Zero)
+		{
+			return null;
+		}
+		return new XLPVariable(pVar);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern void GetNextUniqueVariable(IntPtr pNL, out IntPtr pVar);
+
+	public XLPVariable GetNextUniqueVariable()
+	{
+		GetNextUniqueVariable(xlpNonlinearityPtr, out var pVar);
+		if (pVar == IntPtr.Zero)
+		{
+			return null;
+		}
+		return new XLPVariable(pVar);
+	}
+
+	public IEnumerable<XLPVariable> EnumerateUniqueVariables()
+	{
+		return new XLPNonLinearitiesUniqueVariables(this);
+	}
+}
+public class XLPVarCollection
+{
+	private IntPtr xlpVarCollectionPtr;
+
+	private string vcname;
+
+	public const int MaxConfigStrLength = 128;
+
+	public IntPtr Ptr => xlpVarCollectionPtr;
+
+	public string Name => vcname;
+
+	public XLPVarCollection(IntPtr pPort, string varCollName)
+	{
+		xlpVarCollectionPtr = pPort;
+		vcname = varCollName;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int GetDirection(IntPtr pVarCol1, out short nDir);
+
+	public int GetDirection()
+	{
+		short nDir = 0;
+		GetDirection(xlpVarCollectionPtr, out nDir);
+		return nDir;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int SetDirection(IntPtr pVarCol1, short nDir);
+
+	public int SetDirection(short nDir)
+	{
+		return SetDirection(xlpVarCollectionPtr, nDir);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int NumberOfVariables(IntPtr pVarCol1, out int nVars);
+
+	public int NumberOfVariables()
+	{
+		int nVars = 0;
+		NumberOfVariables(xlpVarCollectionPtr, out nVars);
+		return nVars;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int VariableNames(IntPtr pVarCol1, byte[] sVar);
+
+	public void VariableNames(int nVars, out string[] varNames)
+	{
+		byte[] array = new byte[128];
+		varNames = new string[nVars];
+		int num = FrstVariableName(xlpVarCollectionPtr, array);
+		int num2 = 0;
+		StringBuilder strname = new StringBuilder(array.Length);
+		while (num == 0)
+		{
+			convert2String(array, strname, out varNames[num2]);
+			num = NextVariableName(xlpVarCollectionPtr, array);
+			num2++;
+		}
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	public static extern int FrstVariableName(IntPtr pVarCol1, byte[] name);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	public static extern int NextVariableName(IntPtr pVarCol1, byte[] name);
+
+	public void convert2StringArrays(int numItems, byte[] byteItems, string[] stringItems)
+	{
+		StringBuilder stringBuilder = new StringBuilder(128);
+		int i = 0;
+		int num = 0;
+		for (; i < numItems; i++)
+		{
+			for (int j = num; j < numItems * 129; j++)
+			{
+				char c = Convert.ToChar(byteItems[j]);
+				if (c == '\0')
+				{
+					num = j + 1;
+					break;
+				}
+				stringBuilder.Append(c);
+			}
+			stringItems[i] = stringBuilder.ToString();
+			int length = stringBuilder.Length;
+			stringBuilder.Remove(0, length);
+		}
+	}
+
+	public void convert2String(byte[] byteItem, StringBuilder strname, out string stringItem)
+	{
+		strname.Length = 0;
+		for (int i = 0; i < byteItem.Length; i++)
+		{
+			char c = Convert.ToChar(byteItem[i]);
+			if (c == '\0')
+			{
+				break;
+			}
+			strname.Append(c);
+		}
+		stringItem = strname.ToString();
+	}
+}
+public class XLPEqnCollection
+{
+	private IntPtr xlpEqnCollectionPtr;
+
+	private string ecname;
+
+	public const int MaxConfigStrLength = 128;
+
+	public IntPtr Ptr => xlpEqnCollectionPtr;
+
+	public string Name => ecname;
+
+	public XLPEqnCollection(IntPtr pPort, string eqnCollName)
+	{
+		xlpEqnCollectionPtr = pPort;
+		ecname = eqnCollName;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int NumberOfEquations(IntPtr pEqnCol1, out int nEqns);
+
+	public int NumberOfEquations()
+	{
+		int nEqns = 0;
+		NumberOfEquations(xlpEqnCollectionPtr, out nEqns);
+		return nEqns;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int EquationNames(IntPtr pEqnCol1, byte[] sEqn);
+
+	public void EquationNames(int nEqns, out string[] eqnNames)
+	{
+		byte[] array = new byte[128];
+		eqnNames = new string[nEqns];
+		int num = FrstEquationName(xlpEqnCollectionPtr, array);
+		int num2 = 0;
+		StringBuilder strname = new StringBuilder(array.Length);
+		while (num == 0)
+		{
+			convert2String(array, strname, out eqnNames[num2]);
+			num = NextEquationName(xlpEqnCollectionPtr, array);
+			num2++;
+		}
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	public static extern int FrstEquationName(IntPtr pEqnCol1, byte[] name);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	public static extern int NextEquationName(IntPtr pEqnCol1, byte[] name);
+
+	public void convert2StringArrays(int numItems, byte[] byteItems, string[] stringItems)
+	{
+		StringBuilder stringBuilder = new StringBuilder(128);
+		int i = 0;
+		int num = 0;
+		for (; i < numItems; i++)
+		{
+			for (int j = num; j < numItems * 129; j++)
+			{
+				char c = Convert.ToChar(byteItems[j]);
+				if (c == '\0')
+				{
+					num = j + 1;
+					break;
+				}
+				stringBuilder.Append(c);
+			}
+			stringItems[i] = stringBuilder.ToString();
+			int length = stringBuilder.Length;
+			stringBuilder.Remove(0, length);
+		}
+	}
+
+	public void convert2String(byte[] byteItem, StringBuilder strname, out string stringItem)
+	{
+		strname.Length = 0;
+		for (int i = 0; i < byteItem.Length; i++)
+		{
+			char c = Convert.ToChar(byteItem[i]);
+			if (c == '\0')
+			{
+				break;
+			}
+			strname.Append(c);
+		}
+		stringItem = strname.ToString();
+	}
+}
+public class XLPMatrix
+{
+	private IntPtr xlpMatrixPtr;
+
+	public IntPtr Ptr => xlpMatrixPtr;
+
+	public XLPMatrix(IntPtr pPort)
+	{
+		xlpMatrixPtr = pPort;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern void RowFrstNonZeroObject(IntPtr pMatrix, int rowIndex, out IntPtr pNZ);
+
+	public XLPNonZero RowFirstNonZero(int rowIndex)
+	{
+		RowFrstNonZeroObject(xlpMatrixPtr, rowIndex, out var pNZ);
+		if (pNZ == IntPtr.Zero)
+		{
+			return null;
+		}
+		XLPNonZero xLPNonZero = new XLPNonZero(pNZ);
+		xLPNonZero.GetNZPtrs();
+		return xLPNonZero;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern void RowNextNonZeroObject(IntPtr pMatrix, out IntPtr pNZ);
+
+	public XLPNonZero RowNextNonZero()
+	{
+		RowNextNonZeroObject(xlpMatrixPtr, out var pNZ);
+		if (pNZ == IntPtr.Zero)
+		{
+			return null;
+		}
+		XLPNonZero xLPNonZero = new XLPNonZero(pNZ);
+		xLPNonZero.GetNZPtrs();
+		return xLPNonZero;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern void ColFrstNonZeroObject(IntPtr pMatrix, int colIndex, out IntPtr pNZ);
+
+	public XLPNonZero ColFirstNonZero(int colIndex)
+	{
+		ColFrstNonZeroObject(xlpMatrixPtr, colIndex, out var pNZ);
+		if (pNZ == IntPtr.Zero)
+		{
+			return null;
+		}
+		XLPNonZero xLPNonZero = new XLPNonZero(pNZ);
+		xLPNonZero.GetNZPtrs();
+		return xLPNonZero;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern void ColNextNonZeroObject(IntPtr pMatrix, out IntPtr pNZ);
+
+	public XLPNonZero ColNextNonZero()
+	{
+		ColNextNonZeroObject(xlpMatrixPtr, out var pNZ);
+		if (pNZ == IntPtr.Zero)
+		{
+			return null;
+		}
+		XLPNonZero xLPNonZero = new XLPNonZero(pNZ);
+		xLPNonZero.GetNZPtrs();
+		return xLPNonZero;
+	}
+}
+public class XLPNonLinearModel
+{
+	private IntPtr xlpNLMdlPtr;
+
+	public IntPtr Ptr => xlpNLMdlPtr;
+
+	public XLPNonLinearModel(IntPtr pPort)
+	{
+		xlpNLMdlPtr = pPort;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern void RowFrstNonLinearityObject(IntPtr pNLMdl, int rowIndex, out IntPtr pNL);
+
+	public XLPNonlinearity RowFirstNonLinearity(int rowIndex)
+	{
+		RowFrstNonLinearityObject(xlpNLMdlPtr, rowIndex, out var pNL);
+		if (pNL == IntPtr.Zero)
+		{
+			return null;
+		}
+		XLPNonlinearity xLPNonlinearity = new XLPNonlinearity(pNL);
+		xLPNonlinearity.GetFirstConstant();
+		return xLPNonlinearity;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern void RowNextNonLinearityObject(IntPtr pNLMdl, out IntPtr pNL);
+
+	public XLPNonlinearity RowNextNonLinearity()
+	{
+		RowNextNonLinearityObject(xlpNLMdlPtr, out var pNL);
+		if (pNL == IntPtr.Zero)
+		{
+			return null;
+		}
+		XLPNonlinearity xLPNonlinearity = new XLPNonlinearity(pNL);
+		xLPNonlinearity.GetFirstConstant();
+		return xLPNonlinearity;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern void GetFirstBiLinearVarEqn(IntPtr pNLMdl, int eqnIndex, int varIndex, out IntPtr pNL);
+
+	public XLPNonlinearity GtFirstBiLinearVarEqn(int eqnIndex, int varIndex)
+	{
+		GetFirstBiLinearVarEqn(xlpNLMdlPtr, eqnIndex, varIndex, out var pNL);
+		if (pNL == IntPtr.Zero)
+		{
+			return null;
+		}
+		XLPNonlinearity xLPNonlinearity = new XLPNonlinearity(pNL);
+		xLPNonlinearity.GetFirstConstant();
+		return xLPNonlinearity;
+	}
+}
+public class XLPSpOrdSet
+{
+	private IntPtr xlpSpOrdSetPtr;
+
+	private string sosName;
+
+	public IntPtr Ptr => xlpSpOrdSetPtr;
+
+	public string Name => sosName;
+
+	public XLPSpOrdSet(IntPtr pSet, string name)
+	{
+		xlpSpOrdSetPtr = pSet;
+		sosName = name;
+	}
+}
+public class XLPNonLinearBlockManifest
+{
+	private IntPtr xlpNLBlkManifestPtr;
+
+	private string instName;
+
+	private byte[] chname;
+
+	public IntPtr Ptr => xlpNLBlkManifestPtr;
+
+	public string BlockInstanceName
+	{
+		get
+		{
+			return instName;
+		}
+		set
+		{
+			NLBlkManifestBlockInstanceNameSet(xlpNLBlkManifestPtr, value);
+		}
+	}
+
+	public int ExternalModelSourceType
+	{
+		get
+		{
+			NLBlkManifestModelSourceTypeGet(xlpNLBlkManifestPtr, out var mtype);
+			return mtype;
+		}
+		set
+		{
+			NLBlkManifestModelSourceTypeSet(xlpNLBlkManifestPtr, value);
+		}
+	}
+
+	public string ExternalSourceFileSpec
+	{
+		get
+		{
+			NLBlkManifestSourceFileSpecGet(xlpNLBlkManifestPtr, chname);
+			return StringGet(chname);
+		}
+		set
+		{
+			NLBlkManifestSourceFileSpecSet(xlpNLBlkManifestPtr, value);
+		}
+	}
+
+	public string ExternalSourceDirSpec
+	{
+		get
+		{
+			NLBlkManifestSourceDirSpecGet(xlpNLBlkManifestPtr, chname);
+			return StringGet(chname);
+		}
+		set
+		{
+			NLBlkManifestSourceDirSpecSet(xlpNLBlkManifestPtr, value);
+		}
+	}
+
+	public string FreeformBlockType
+	{
+		get
+		{
+			NLBlkManifestFreeformBlockTypeGet(xlpNLBlkManifestPtr, chname);
+			return StringGet(chname);
+		}
+		set
+		{
+			NLBlkManifestFreeformBlockTypeSet(xlpNLBlkManifestPtr, value);
+		}
+	}
+
+	public string FreeformBlockParameter
+	{
+		get
+		{
+			NLBlkManifestFreeformBlockParametersGet(xlpNLBlkManifestPtr, chname);
+			return StringGet(chname);
+		}
+		set
+		{
+			NLBlkManifestFreeformBlockParametersSet(xlpNLBlkManifestPtr, value);
+		}
+	}
+
+	public string InitBlockScriptFileSpec
+	{
+		get
+		{
+			NLBlkManifestInitScriptSpecGet(xlpNLBlkManifestPtr, chname);
+			return StringGet(chname);
+		}
+		set
+		{
+			NLBlkManifestInitScriptSpecSet(xlpNLBlkManifestPtr, value);
+		}
+	}
+
+	public string BlockAPPdfFileSpec
+	{
+		get
+		{
+			NLBlkManifestAPPdfFileSpecGet(xlpNLBlkManifestPtr, chname);
+			return StringGet(chname);
+		}
+		set
+		{
+			NLBlkManifestAPPdfFileSpecSet(xlpNLBlkManifestPtr, value);
+		}
+	}
+
+	public string AMFModelType
+	{
+		get
+		{
+			NLBlkManifestAMFModelTypeGet(xlpNLBlkManifestPtr, chname);
+			return StringGet(chname);
+		}
+		set
+		{
+			NLBlkManifestAMFModelTypeSet(xlpNLBlkManifestPtr, value);
+		}
+	}
+
+	public bool DelayLoad
+	{
+		get
+		{
+			NLBlkManifestDelayLoadGet(xlpNLBlkManifestPtr, out var delayLoad);
+			return delayLoad;
+		}
+		set
+		{
+			NLBlkManifestDelayLoadSet(xlpNLBlkManifestPtr, value);
+		}
+	}
+
+	public bool InputOutputMap
+	{
+		get
+		{
+			NLBlkManifestInputOutputMapGet(xlpNLBlkManifestPtr, out var inputOutputMap);
+			return inputOutputMap;
+		}
+		set
+		{
+			NLBlkManifestInputOutputMapSet(xlpNLBlkManifestPtr, value);
+		}
+	}
+
+	public int SolverNumber
+	{
+		get
+		{
+			NLBlkManifestSolverGet(xlpNLBlkManifestPtr, out var solverNumber);
+			return solverNumber;
+		}
+		set
+		{
+			NLBlkManifestSolverSet(xlpNLBlkManifestPtr, value);
+		}
+	}
+
+	public string PeriodModelTags
+	{
+		get
+		{
+			NLBlkManifestPerioModelTagsGet(xlpNLBlkManifestPtr, chname);
+			return StringGet(chname);
+		}
+		set
+		{
+			NLBlkManifestPerioModelTagsSet(xlpNLBlkManifestPtr, value);
+		}
+	}
+
+	public XLPNonLinearBlockManifest(IntPtr pNLBlkMnfst, string blkName)
+	{
+		xlpNLBlkManifestPtr = pNLBlkMnfst;
+		instName = blkName;
+		chname = new byte[300];
+	}
+
+	public XLPNonLinearBlockManifest(IntPtr pNLBlkMnfst)
+	{
+		xlpNLBlkManifestPtr = pNLBlkMnfst;
+		chname = new byte[300];
+		instName = RetrieveBlockInstanceNameFromXLP();
+	}
+
+	public static XLPNonLinearBlockManifest Create(IntPtr xlpBldr, string blkName)
+	{
+		CreateNonLinearBlockManifest(xlpBldr, out var pNLBlkMnfst);
+		return new XLPNonLinearBlockManifest(pNLBlkMnfst, blkName);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int CreateNonLinearBlockManifest(IntPtr pXLPBldr, out IntPtr pNLBlkMnfst);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int NLBlkManifestBlockInstanceNameSet(IntPtr pMnfst, string bname);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int NLBlkManifestBlockInstanceNameGet(IntPtr pMnfst, byte[] bname);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int NLBlkManifestModelSourceTypeSet(IntPtr pMnfst, int mtype);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int NLBlkManifestModelSourceTypeGet(IntPtr pMnfst, out int mtype);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int NLBlkManifestSourceFileSpecSet(IntPtr pMnfst, string srcFileSpec);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int NLBlkManifestSourceFileSpecGet(IntPtr pMnfst, byte[] srcFileSpec);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int NLBlkManifestFreeformBlockTypeSet(IntPtr pMnfst, string type);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int NLBlkManifestFreeformBlockTypeGet(IntPtr pMnfst, byte[] type);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int NLBlkManifestFreeformBlockParametersSet(IntPtr pMnfst, string parameters);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int NLBlkManifestFreeformBlockParametersGet(IntPtr pMnfst, byte[] parameters);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int NLBlkManifestSourceDirSpecSet(IntPtr pMnfst, string srcDirSpec);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int NLBlkManifestSourceDirSpecGet(IntPtr pMnfst, byte[] srcDirSpec);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int NLBlkManifestInitScriptSpecSet(IntPtr pMnfst, string initScriptSpec);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int NLBlkManifestInitScriptSpecGet(IntPtr pMnfst, byte[] initScriptSpec);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int NLBlkManifestAPPdfFileSpecSet(IntPtr pMnfst, string appdfSpec);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int NLBlkManifestAPPdfFileSpecGet(IntPtr pMnfst, byte[] appdfSpec);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int NLBlkManifestAMFModelTypeSet(IntPtr pMnfst, string amfType);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int NLBlkManifestAMFModelTypeGet(IntPtr pMnfst, byte[] amfType);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int NLBlkManifestDelayLoadSet(IntPtr pMnfst, bool delayLoad);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int NLBlkManifestDelayLoadGet(IntPtr pMnfst, out bool delayLoad);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int NLBlkManifestInputOutputMapSet(IntPtr pMnfst, bool inputOutputMap);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int NLBlkManifestInputOutputMapGet(IntPtr pMnfst, out bool inputOutputMap);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int NLBlkManifestSolverSet(IntPtr pMnfst, int solverNumber);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int NLBlkManifestSolverGet(IntPtr pMnfst, out int solverNumber);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int NLBlkManifestPerioModelTagsSet(IntPtr pMnfst, string strTags);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int NLBlkManifestPerioModelTagsGet(IntPtr pMnfst, byte[] strTags);
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int NLBlkManifestVerify(IntPtr pMnfst, string strModelDir);
+
+	private string StringGet(byte[] byteStr)
+	{
+		StringBuilder stringBuilder = new StringBuilder(64);
+		for (int i = 0; i < byteStr.Length; i++)
+		{
+			char c = Convert.ToChar(chname[i]);
+			if (c == '\0')
+			{
+				break;
+			}
+			stringBuilder.Append(c);
+		}
+		return stringBuilder.ToString();
+	}
+
+	private string RetrieveBlockInstanceNameFromXLP()
+	{
+		NLBlkManifestBlockInstanceNameGet(xlpNLBlkManifestPtr, chname);
+		return StringGet(chname);
+	}
+
+	public int VerifyManifest(string strModelDir)
+	{
+		return NLBlkManifestVerify(xlpNLBlkManifestPtr, strModelDir);
+	}
+}
+public class XLPNonLinearBlock
+{
+	private IntPtr xlpNLBlkPtr;
+
+	private XLPNonLinearBlockManifest xlpNLBlkMnfstPtr;
+
+	public IntPtr Ptr => xlpNLBlkPtr;
+
+	public string BlockName => xlpNLBlkMnfstPtr.BlockInstanceName;
+
+	public XLPNonLinearBlock(IntPtr pNLBlk, XLPNonLinearBlockManifest pNLBlkMnfst)
+	{
+		xlpNLBlkPtr = pNLBlk;
+		xlpNLBlkMnfstPtr = pNLBlkMnfst;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int CreateNonLinearBlock(IntPtr pXLPBldr, IntPtr pNLBlkMnfst, out IntPtr pNLBlk);
+
+	public static XLPNonLinearBlock Create(IntPtr xlpBldr, XLPNonLinearBlockManifest pNLBlkMnfst)
+	{
+		CreateNonLinearBlock(xlpBldr, pNLBlkMnfst.Ptr, out var pNLBlk);
+		return new XLPNonLinearBlock(pNLBlk, pNLBlkMnfst);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int NLBlkInitializeBlockHost(IntPtr pNLBlk);
+
+	public int InitializeBlockHost()
+	{
+		return NLBlkInitializeBlockHost(xlpNLBlkPtr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int NLBlkConstructBlock(IntPtr pNLBlk);
+
+	public int ConstructBlock()
+	{
+		return NLBlkConstructBlock(xlpNLBlkPtr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int AddNonLinearBlock(IntPtr pXLPBldr, IntPtr pNLBlk);
+
+	public void AddNonLinearBlock(IntPtr xlpBldr)
+	{
+		AddNonLinearBlock(xlpBldr, xlpNLBlkPtr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int NLBlkInitializeVariables(IntPtr pNLBlk);
+
+	public void NLBlkInitializeVariables()
+	{
+		NLBlkInitializeVariables(xlpNLBlkPtr);
+	}
+}
+public class XLPDotNetTester
+{
+	public void BuildTest1()
+	{
+		XLPManager xLPManager = new XLPManager("TestMod1");
+		xLPManager.NewXLPVariable("Var1");
+		xLPManager.NewXLPVariable("Var2");
+		XLPVariable xLPVariable = xLPManager.NewXLPVariable("Var3");
+		xLPVariable.Value = 3.333;
+		xLPVariable.LowerBnd = 1.0;
+		xLPVariable.UpperBnd = 5.5;
+		XLPEquation xLPEquation = xLPManager.NewXLPEquation("Eqn1");
+		xLPEquation.RHS = 1.0;
+		xLPManager.NewXLPLinearNonZero(xLPEquation, xLPVariable, 3.1);
+		xLPManager.NewXLPLinearNonZero("Eqn1", "Var1", 1.1);
+		xLPManager.NewXLPLinearNonZero("Eqn1", "Var2", 2.1);
+		XLPEquation pEqn = xLPManager.NewXLPEquation("Eqn2");
+		XLPVariable pVar = xLPManager.NewXLPVariable("Var4");
+		XLPVariable pVar2 = xLPManager.NewXLPVariable("Var5");
+		xLPManager.NewXLPLinearNonZero(pEqn, xLPVariable, -1.0);
+		XLPNonlinearity pNlr = xLPManager.MakeNonLinearityFast(1, pEqn, 1.0);
+		xLPManager.AddNonLinearityVariable(pNlr, pVar);
+		xLPManager.AddNonLinearityVariable(pNlr, pVar2);
+		xLPManager.AddNonLinearity(pNlr);
+		xLPManager.FindVariableObject("Var5");
+		XLPEquation xLPEquation2 = xLPManager.FindEquationObject("E2");
+		xLPEquation2 = xLPManager.FindEquationObject("NOTHERE");
+		if (xLPEquation2 == null)
+		{
+			xLPEquation2 = xLPManager.NewXLPEquation("NOTHERE");
+		}
+		xLPManager.NewXLPLinearNonZero(xLPEquation2, xLPVariable, 300.3);
+		xLPManager.NewXLPLinearNonZero(xLPEquation2, pVar2, -50.3);
+		xLPManager.MakeAddReturnVariableNew("QOXYURG");
+		XLPVariable pVar3 = xLPManager.MakeAddReturnVariableNew("QETOURG");
+		XLPVariable pVar4 = xLPManager.MakeAddReturnVariableNew("QEHOURG");
+		XLPVariable pVar5 = xLPManager.MakeAddReturnVariableNew("QTMOURG");
+		XLPVariable pVar6 = xLPManager.MakeAddReturnVariableNew("QSULURG");
+		XLPVariable pVar7 = xLPManager.MakeAddReturnVariableNew("QRVPURG");
+		XLPVariable pVar8 = xLPManager.MakeAddReturnVariableNew("QE20URG");
+		XLPVariable pVar9 = xLPManager.MakeAddReturnVariableNew("QE30URG");
+		XLPVariable pVar10 = xLPManager.MakeAddReturnVariableNew("QAROURG");
+		XLPVariable pVar11 = xLPManager.MakeAddReturnVariableNew("QOLFURG");
+		XLPVariable pVar12 = xLPManager.MakeAddReturnVariableNew("QBNZURG");
+		XLPVariable pVar13 = xLPManager.MakeAddReturnVariableNew("QVOCURG");
+		XLPVariable pVar14 = xLPManager.MakeAddReturnVariableNew("QRVPURG");
+		XLPVariable pVar15 = xLPManager.MakeAddReturnVariableNew("QRVIURG");
+		XLPEquation pEqn2 = xLPManager.MakeAddReturnEquationNew("EQ3");
+		XLPEquation pEqn3 = xLPManager.MakeAddReturnEquationNew("EQ4");
+		XLPEquation pEqn4 = xLPManager.MakeAddReturnEquationNew("EQ5");
+		xLPManager.MakeAddReturnLinearNonZeroNew(pEqn2, pVar13, 1.0);
+		pNlr = xLPManager.MakeNonLinearityFastBML("EPA", 0, pEqn2, -1.0);
+		xLPManager.MakeAddReturnLinearNonZeroNew(pEqn3, pVar15, 1.0);
+		XLPNonlinearity pNlr2 = xLPManager.MakeNonLinearityFastBML("RVPINDEX", 0, pEqn3, -1.0);
+		xLPManager.MakeAddReturnLinearNonZeroNew(pEqn4, pVar14, 1.0);
+		XLPNonlinearity pNlr3 = xLPManager.MakeNonLinearityFastBML("RVP", 0, pEqn4, -1.0);
+		xLPManager.AddNonLinearityVariable(pNlr, pVar3);
+		xLPManager.AddNonLinearityVariable(pNlr, pVar4);
+		xLPManager.AddNonLinearityVariable(pNlr, pVar5);
+		xLPManager.AddNonLinearityVariable(pNlr, pVar6);
+		xLPManager.AddNonLinearityVariable(pNlr, pVar7);
+		xLPManager.AddNonLinearityVariable(pNlr, pVar8);
+		xLPManager.AddNonLinearityVariable(pNlr, pVar9);
+		xLPManager.AddNonLinearityVariable(pNlr, pVar10);
+		xLPManager.AddNonLinearityVariable(pNlr, pVar11);
+		xLPManager.AddNonLinearityVariable(pNlr, pVar12);
+		xLPManager.AddNonLinearity(pNlr);
+		xLPManager.AddNonLinearityVariable(pNlr2, pVar14);
+		xLPManager.AddNonLinearity(pNlr2);
+		xLPManager.AddNonLinearityVariable(pNlr3, pVar15);
+		xLPManager.AddNonLinearity(pNlr3);
+		int bMLCorrelationIndex = xLPManager.GetBMLCorrelationIndex("EPA");
+		XLPBMLCorrelation xLPBMLCorrelation = xLPManager.MakeAddBMLCorrelationInstance(bMLCorrelationIndex);
+		int bMLCorrelationIndex2 = xLPManager.GetBMLCorrelationIndex("RVPINDEX");
+		XLPBMLCorrelation xLPBMLCorrelation2 = xLPManager.MakeAddBMLCorrelationInstance(bMLCorrelationIndex2);
+		int bMLCorrelationIndex3 = xLPManager.GetBMLCorrelationIndex("RVP");
+		XLPBMLCorrelation xLPBMLCorrelation3 = xLPManager.MakeAddBMLCorrelationInstance(bMLCorrelationIndex3);
+		double[] array = new double[xLPBMLCorrelation.GetBMLInputPropertyCount()];
+		array[0] = 0.0;
+		array[1] = 0.0;
+		array[2] = 0.0;
+		array[3] = 0.0;
+		array[4] = 0.0262657;
+		array[5] = 8.9999;
+		array[6] = 52.794;
+		array[7] = 97.873;
+		array[8] = 25.188;
+		array[9] = 8.147868;
+		array[10] = 2.0;
+		xLPBMLCorrelation.SetBMLInputProperties(array.Length, array);
+		double[] array2 = new double[xLPBMLCorrelation2.GetBMLInputPropertyCount()];
+		array2[0] = 30.0;
+		xLPBMLCorrelation2.SetBMLInputProperties(array2.Length, array2);
+		double[] array3 = new double[xLPBMLCorrelation3.GetBMLInputPropertyCount()];
+		array3[0] = 30.0;
+		xLPBMLCorrelation3.SetBMLInputProperties(array3.Length, array3);
+		double dValue = -1.0;
+		string sCoefId = xLPBMLCorrelation.GetBMLOutputPropertyId(0);
+		xLPBMLCorrelation.GetBMLCoefficientValue(0, ref sCoefId, ref dValue);
+		xLPManager.AddNonLinearityValue(pNlr, 1.0);
+		xLPBMLCorrelation.GetBMLCoefficientValue(1, ref sCoefId, ref dValue);
+		xLPManager.AddNonLinearityValue(pNlr, 2.0);
+		xLPBMLCorrelation.GetBMLCoefficientValue(2, ref sCoefId, ref dValue);
+		xLPManager.AddNonLinearityValue(pNlr, 1.0);
+		xLPBMLCorrelation.GetBMLCoefficientValue(3, ref sCoefId, ref dValue);
+		xLPManager.AddNonLinearityValue(pNlr, 1.0);
+		xLPBMLCorrelation.GetBMLCoefficientValue(4, ref sCoefId, ref dValue);
+		xLPManager.AddNonLinearityValue(pNlr, 1.0);
+		xLPBMLCorrelation.GetBMLCoefficientValue(5, ref sCoefId, ref dValue);
+		xLPManager.AddNonLinearityValue(pNlr, 1.0);
+		xLPBMLCorrelation.GetBMLCoefficientValue(6, ref sCoefId, ref dValue);
+		xLPManager.AddNonLinearityValue(pNlr, 1.0);
+		xLPBMLCorrelation.BMLCalculate();
+		double[] array4 = new double[xLPBMLCorrelation.GetBMLOutputPropertyCount()];
+		array4 = xLPBMLCorrelation.GetBMLOutputPropertyValues(array4.Length);
+		xLPBMLCorrelation2.BMLCalculate();
+		double[] array5 = new double[xLPBMLCorrelation2.GetBMLOutputPropertyCount()];
+		array5 = xLPBMLCorrelation2.GetBMLOutputPropertyValues(array5.Length);
+		xLPBMLCorrelation3.BMLCalculate();
+		double[] array6 = new double[xLPBMLCorrelation3.GetBMLOutputPropertyCount()];
+		array6 = xLPBMLCorrelation3.GetBMLOutputPropertyValues(array6.Length);
+		xLPManager.ProcessFullCollection();
+		xLPManager.WriteXLPSummary("XLPBuildTest1.log");
+		xLPManager.DestroyXLP();
+	}
+}
+public class XLPBMLCorrelation
+{
+	private IntPtr xlpCorrelationPtr;
+
+	public IntPtr Ptr => xlpCorrelationPtr;
+
+	public XLPBMLCorrelation(IntPtr pCorr)
+	{
+		xlpCorrelationPtr = pCorr;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int GetBMLCorrelationType(IntPtr pCorr);
+
+	public int GetBMLCorrelationType()
+	{
+		return GetBMLCorrelationType(xlpCorrelationPtr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern string GetBMLCorrelationDesc(IntPtr pCorr, byte[] sCorrDes);
+
+	public string GetBMLCorrelationDesc()
+	{
+		byte[] array = new byte[256];
+		GetBMLCorrelationDesc(xlpCorrelationPtr, array);
+		return ConvertByteToString(255, array);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int GetBMLCorrelationBlendIndex(IntPtr pCorr);
+
+	public int GetBMLCorrelationBlendIndex()
+	{
+		return GetBMLCorrelationBlendIndex(xlpCorrelationPtr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int GetBMLCoefficientCount(IntPtr pCorr);
+
+	public int GetBMLCoefficientCount()
+	{
+		return GetBMLCoefficientCount(xlpCorrelationPtr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int GetBMLSlackCount(IntPtr pCorr);
+
+	public int GetBMLSlackCount()
+	{
+		return GetBMLSlackCount(xlpCorrelationPtr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int GetBMLInputPropertyCount(IntPtr pCorr);
+
+	public int GetBMLInputPropertyCount()
+	{
+		return GetBMLInputPropertyCount(xlpCorrelationPtr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int GetBMLOutputPropertyCount(IntPtr pCorr);
+
+	public int GetBMLOutputPropertyCount()
+	{
+		return GetBMLOutputPropertyCount(xlpCorrelationPtr);
+	}
+
+	public string ConvertByteToString(int nLength, byte[] sByteString)
+	{
+		StringBuilder stringBuilder = new StringBuilder(64);
+		for (int i = 0; i < nLength + 1; i++)
+		{
+			char c = Convert.ToChar(sByteString[i]);
+			if (c == '\0')
+			{
+				break;
+			}
+			stringBuilder.Append(c);
+		}
+		return stringBuilder.ToString();
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern string GetBMLInputPropertyId(IntPtr pCorr, int nPropId, byte[] sPropertyId);
+
+	public string GetBMLInputPropertyId(int nPropId)
+	{
+		byte[] array = new byte[256];
+		GetBMLInputPropertyId(xlpCorrelationPtr, nPropId, array);
+		return ConvertByteToString(255, array);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern string GetBMLOutputPropertyId(IntPtr pCorr, int nPropId, byte[] sPropertyId);
+
+	public string GetBMLOutputPropertyId(int nPropId)
+	{
+		byte[] array = new byte[256];
+		GetBMLOutputPropertyId(xlpCorrelationPtr, nPropId, array);
+		return ConvertByteToString(255, array);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int GetBMLOutputPropertyType(IntPtr pCorr, int nPropId, out int nPropertyType);
+
+	public int GetBMLOutputPropertyType(int nPropId)
+	{
+		GetBMLOutputPropertyType(xlpCorrelationPtr, nPropId, out var nPropertyType);
+		return nPropertyType;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int GetBMLCoefficientValue(IntPtr pCorr, int nCoefId, byte[] sCoefId, out double dValue);
+
+	public int GetBMLCoefficientValue(int nCoefId, ref string sCoefId, ref double dValue)
+	{
+		byte[] array = new byte[256];
+		double dValue2;
+		int bMLCoefficientValue = GetBMLCoefficientValue(xlpCorrelationPtr, nCoefId, array, out dValue2);
+		sCoefId = ConvertByteToString(255, array);
+		dValue = dValue2;
+		return bMLCoefficientValue;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int GetBMLInputPropertyValues(IntPtr pCorr, int nArrLen, double[] dInputProperties);
+
+	public double[] GetBMLInputPropertyValues(int nArrLen)
+	{
+		double[] array = new double[nArrLen];
+		GetBMLInputPropertyValues(xlpCorrelationPtr, nArrLen, array);
+		return array;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int GetBMLOutputPropertyValues(IntPtr pCorr, int nArrLen, double[] dOutputProperties);
+
+	public double[] GetBMLOutputPropertyValues(int nArrLen)
+	{
+		double[] array = new double[nArrLen];
+		GetBMLOutputPropertyValues(xlpCorrelationPtr, nArrLen, array);
+		return array;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int GetBMLDerivativeValues(IntPtr pCorr, int nArrLen, double[] dDerivatives);
+
+	public double[] GetBMLDerivativeValues(int nArrLen)
+	{
+		double[] array = new double[nArrLen];
+		GetBMLDerivativeValues(xlpCorrelationPtr, nArrLen, array);
+		return array;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int GetComplexBMLDerivativeValues(IntPtr pCorr, int nComp, int nArrLen, double[] dDerivatives);
+
+	public double[] GetComplexBMLDerivativeValues(int nArrLen, int nComp)
+	{
+		double[] array = new double[nArrLen];
+		GetComplexBMLDerivativeValues(xlpCorrelationPtr, nComp, nArrLen, array);
+		return array;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern void SetBMLDerivativeOption(IntPtr pCorr, bool bDerivative);
+
+	public void SetBMLDerivativeOption(bool bOption)
+	{
+		SetBMLDerivativeOption(xlpCorrelationPtr, bOption);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern void SetBMLForwardOption(IntPtr pCorr, bool bForward);
+
+	public void SetBMLForwardOption(bool bOption)
+	{
+		SetBMLForwardOption(xlpCorrelationPtr, bOption);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern void SetBMLMonotoneOption(IntPtr pCorr, double dMonotone);
+
+	public void SetBMLMonotoneOption(double dMonotone)
+	{
+		SetBMLMonotoneOption(xlpCorrelationPtr, dMonotone);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int SetBMLCoefficient(IntPtr pCorr, int nCoefId, double dValue);
+
+	public int SetBMLCoefficient(int nCoefId, double dValue)
+	{
+		return SetBMLCoefficient(xlpCorrelationPtr, nCoefId, dValue);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int SetBMLInputProperty(IntPtr pCorr, int nPropId, double dValue);
+
+	public int SetBMLInputProperty(int nPropId, double dValue)
+	{
+		return SetBMLInputProperty(xlpCorrelationPtr, nPropId, dValue);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int SetBMLInputProperties(IntPtr pCorr, int nArrLen, double[] dValuesArray);
+
+	public int SetBMLInputProperties(int nArrLen, double[] dValuesArray)
+	{
+		return SetBMLInputProperties(xlpCorrelationPtr, nArrLen, dValuesArray);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int BMLCalculate(IntPtr pCorr);
+
+	public int BMLCalculate()
+	{
+		return BMLCalculate(xlpCorrelationPtr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int ComplexBMLCalculate(IntPtr pCorr, int nComp, double[] dValuesArray);
+
+	public int ComplexBMLCalculate(int nComp, double[] dValuesArray)
+	{
+		return ComplexBMLCalculate(xlpCorrelationPtr, nComp, dValuesArray);
+	}
+}
+public class XLPCaseCollection
+{
+	private IntPtr xlpCaseCollectionPtr;
+
+	private XLPManager baseXLPMgr;
+
+	private XLPManager linearXLPMgr;
+
+	public string uniqueXLPid;
+
+	public IntPtr Ptr => xlpCaseCollectionPtr;
+
+	public XLPManager BaseXLP => baseXLPMgr;
+
+	public XLPManager LinearXLP
+	{
+		get
+		{
+			return linearXLPMgr;
+		}
+		set
+		{
+			linearXLPMgr = value;
+		}
+	}
+
+	public XLPCaseCollection(XLPManager pBaseXLP)
+	{
+		baseXLPMgr = pBaseXLP;
+		CreateCaseCollection();
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int DestroyXLPCaseCollection(IntPtr pColl);
+
+	public void DestroyCollection()
+	{
+		DestroyXLPCaseCollection(xlpCaseCollectionPtr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int DisplayCaseCollectionToFile(IntPtr pColl, string caselogname);
+
+	public int DisplayCaseCollectionToFile(string caselogname)
+	{
+		return DisplayCaseCollectionToFile(Ptr, caselogname);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int CreateXLPCaseCollection(IntPtr xlpBaseMgr, out IntPtr pColl);
+
+	private int CreateCaseCollection()
+	{
+		return CreateXLPCaseCollection(baseXLPMgr.Ptr, out xlpCaseCollectionPtr);
+	}
+
+	public XLPCaseMgr CreateAddNewXLPCase(int caseIDnumber, string caseName, string caseDesc)
+	{
+		XLPCaseMgr xLPCaseMgr = new XLPCaseMgr(baseXLPMgr, caseIDnumber, caseName, caseDesc);
+		AddXLPCaseToCollection(xLPCaseMgr);
+		return xLPCaseMgr;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int AddXLPCaseToCollection(IntPtr pColl, IntPtr pCase);
+
+	public int AddXLPCaseToCollection(XLPCaseMgr pCase)
+	{
+		return AddXLPCaseToCollection(Ptr, pCase.Ptr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int PersistCasesToXLMFile(IntPtr pColl, string xlmName);
+
+	public int PersistCasesToXLMFile(string xlmFileName)
+	{
+		return PersistCasesToXLMFile(Ptr, xlmFileName);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int RestoreCasesFromXLMFile(IntPtr pColl, string xlmName);
+
+	public int RestoreCasesFromXLMFile(string xlmFileName)
+	{
+		return RestoreCasesFromXLMFile(Ptr, xlmFileName);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int ApplyCaseNumber(IntPtr pColl, int nCase);
+
+	public int ApplyCaseNumber(int nCase)
+	{
+		return ApplyCaseNumber(Ptr, nCase);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int UnApplyCaseNumber(IntPtr pColl, int nCase);
+
+	public int UnApplyCaseNumber(int nCase)
+	{
+		return UnApplyCaseNumber(Ptr, nCase);
+	}
+}
+public class XLPCaseMgr
+{
+	private XLPManager xlpMgr;
+
+	private IntPtr xlpCasePtr;
+
+	private string cName;
+
+	private string cDesc;
+
+	private int cID;
+
+	public IntPtr Ptr => xlpCasePtr;
+
+	private string CaseName => cName;
+
+	private string CaseDesc => cDesc;
+
+	private int CaseID => cID;
+
+	public XLPCaseMgr(XLPManager pXLP, int caseIDnumber, string caseName, string caseDesc)
+	{
+		xlpMgr = pXLP;
+		cName = caseName;
+		cDesc = caseDesc;
+		cID = caseIDnumber;
+		CreateXLPCaseMgr();
+	}
+
+	public void ClearReferences()
+	{
+		xlpMgr = null;
+		xlpCasePtr = IntPtr.Zero;
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int CreateXLPCaseMgr(IntPtr xlpMgr, int casenumber, string casename, string casedesc, out IntPtr pCase);
+
+	private int CreateXLPCaseMgr()
+	{
+		return CreateXLPCaseMgr(xlpMgr.Ptr, cID, cName, cDesc, out xlpCasePtr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int ApplyCase(IntPtr xlpCasePtr);
+
+	public int ApplyCase()
+	{
+		return ApplyCase(xlpCasePtr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int UnApplyCase(IntPtr xlpCasePtr);
+
+	public int UnApplyCase()
+	{
+		return UnApplyCase(xlpCasePtr);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int AddVarValueEdit(IntPtr xlpCasePtr, IntPtr pVar, double dval);
+
+	public int AddVarValueEdit(XLPVariable pVar, double dval)
+	{
+		return AddVarValueEdit(xlpCasePtr, pVar.Ptr, dval);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int AddVarBoundEdit(IntPtr xlpCasePtr, IntPtr pVar, short bndtype, double dbndval);
+
+	public int AddVarBoundEdit(XLPVariable pVar, short bndtype, double dbndval)
+	{
+		return AddVarBoundEdit(xlpCasePtr, pVar.Ptr, bndtype, dbndval);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int AddVarTypeEdit(IntPtr xlpCasePtr, IntPtr pVar, short vartype);
+
+	public int AddVarTypeEdit(XLPVariable pVar, short vartype)
+	{
+		return AddVarTypeEdit(xlpCasePtr, pVar.Ptr, vartype);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int AddEqnRHSEdit(IntPtr xlpCasePtr, IntPtr pEqn, double drhsval);
+
+	public int AddEqnRHSEdit(XLPEquation pEqn, double drhsval)
+	{
+		return AddEqnRHSEdit(xlpCasePtr, pEqn.Ptr, drhsval);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int AddEqnRangeEdit(IntPtr xlpCasePtr, IntPtr pEqn, double drngval);
+
+	public int AddEqnRangeEdit(XLPEquation pEqn, double drngval)
+	{
+		return AddEqnRangeEdit(xlpCasePtr, pEqn.Ptr, drngval);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int AddEqnTypeEdit(IntPtr xlpCasePtr, IntPtr pEqn, short eqnType);
+
+	public int AddEqnTypeEdit(XLPEquation pEqn, short eqnType)
+	{
+		return AddEqnTypeEdit(xlpCasePtr, pEqn.Ptr, eqnType);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int AddMatrixCoeffEdit(IntPtr xlpCasePtr, IntPtr pEqn, IntPtr pVar, double dcoeffval);
+
+	public int AddMatrixCoeffEdit(XLPEquation pEqn, XLPVariable pVar, double dcoeffval)
+	{
+		return AddMatrixCoeffEdit(xlpCasePtr, pEqn.Ptr, pVar.Ptr, dcoeffval);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int AddMatrixNonLinearityCoeffEdit(IntPtr xlpCasePtr, IntPtr pNL, double dcoeffval);
+
+	public int AddMatrixNonLinearityCoeffEdit(XLPNonlinearity pNL, double dcoeffval)
+	{
+		return AddMatrixNonLinearityCoeffEdit(xlpCasePtr, pNL.Ptr, dcoeffval);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int AddMatrixCoeffEditNZ(IntPtr xlpCasePtr, IntPtr pNZ, double dcoeffval);
+
+	public int AddMatrixCoeffEdit(XLPNonZero pNZ, double dcoeffval)
+	{
+		return AddMatrixCoeffEditNZ(xlpCasePtr, pNZ.Ptr, dcoeffval);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl)]
+	private static extern int AddInitialVectorEdits(IntPtr xlpCasePtr, double[] iniVarVals);
+
+	public int AddInitialVectorEdits(double[] iniVarValVec)
+	{
+		return AddInitialVectorEdits(xlpCasePtr, iniVarValVec);
+	}
+
+	[DllImport("hmxlpxmps", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+	private static extern int AddOptionTableEdit(IntPtr xlpCasePtr, string name, string value);
+
+	public int AddOptionTableEdit(string name, string value)
+	{
+		return AddOptionTableEdit(xlpCasePtr, name, value);
+	}
+}
+public class XlpVariableEnumerable : IEnumerable<XLPVariable>, IEnumerable
+{
+	private readonly XLPManager _manager;
+
+	public XlpVariableEnumerable(XLPManager manager)
+	{
+		_manager = manager;
+	}
+
+	public IEnumerator<XLPVariable> GetEnumerator()
+	{
+		return new XlpVariableEnumerator(_manager);
+	}
+
+	IEnumerator IEnumerable.GetEnumerator()
+	{
+		return GetEnumerator();
+	}
+}
+public class XlpVariableEnumerator : IEnumerator<XLPVariable>, IEnumerator, IDisposable
+{
+	private readonly XLPManager _manager;
+
+	private readonly XLPVarCollection _pVarList;
+
+	private readonly int _variableCount;
+
+	private readonly byte[] _bVar;
+
+	private XLPVariable _current;
+
+	private int _currentNumber;
+
+	public XLPVariable Current => _current;
+
+	object IEnumerator.Current => _current;
+
+	public XlpVariableEnumerator(XLPManager manager)
+	{
+		_manager = manager;
+		_pVarList = manager.GetVariableCollectionIntf();
+		_variableCount = _pVarList.NumberOfVariables();
+		_bVar = new byte[128];
+		Reset();
+	}
+
+	public bool MoveNext()
+	{
+		if (_currentNumber >= _variableCount)
+		{
+			return false;
+		}
+		StringBuilder strname = new StringBuilder(_bVar.Length);
+		if (_current == null)
+		{
+			XLPVarCollection.FrstVariableName(_pVarList.Ptr, _bVar);
+		}
+		else
+		{
+			XLPVarCollection.NextVariableName(_pVarList.Ptr, _bVar);
+		}
+		_pVarList.convert2String(_bVar, strname, out var stringItem);
+		_current = _manager.FindVariableObject(stringItem);
+		_currentNumber++;
+		return true;
+	}
+
+	public void Dispose()
+	{
+	}
+
+	public void Reset()
+	{
+		_current = null;
+		_currentNumber = 0;
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

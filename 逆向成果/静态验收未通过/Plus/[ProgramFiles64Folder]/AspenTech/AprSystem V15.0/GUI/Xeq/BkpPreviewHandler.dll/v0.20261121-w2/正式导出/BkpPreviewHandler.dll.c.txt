@@ -1,0 +1,1914 @@
+// FUNC 10001000 sub_10001000
+signed __int32 __stdcall sub_10001000(int a1)
+{
+  return _InterlockedIncrement((volatile signed __int32 *)(a1 + 4));
+}
+// ENDFUNC
+// FUNC 10001020 sub_10001020
+int __stdcall sub_10001020(int a1, int a2, int a3, int a4)
+{
+  if ( a2 != 0 )
+    return -2147221232;
+  else
+    return (*(int (__cdecl **)(int, int))(a1 + 8))(a3, a4);
+}
+// ENDFUNC
+// FUNC 10001050 sub_10001050
+int __stdcall sub_10001050(int a1, int a2)
+{
+  if ( a2 != 0 )
+    _InterlockedIncrement(&dword_10005198);
+  else
+    _InterlockedDecrement(&dword_10005198);
+  return 0;
+}
+// ENDFUNC
+// FUNC 10001080 sub_10001080
+HRESULT __stdcall sub_10001080(void *that, IID *riid, void **ppv)
+{
+  return QISearch(that, &pqit, riid, ppv);
+}
+// ENDFUNC
+// FUNC 100010a0 sub_100010A0
+int __stdcall sub_100010A0(volatile signed __int32 *Block)
+{
+  signed __int32 v1; // esi
+
+  v1 = _InterlockedDecrement(Block + 1);
+  if ( v1 == 0 && Block != nullptr )
+  {
+    *Block = (volatile signed __int32)&CClassFactory::`vftable';
+    _InterlockedDecrement(&dword_10005198);
+    operator delete((void *)Block);
+  }
+  return v1;
+}
+// ENDFUNC
+// FUNC 100010e0 DllCanUnloadNow
+HRESULT __stdcall DllCanUnloadNow()
+{
+  return dword_10005198 != 0;
+}
+// ENDFUNC
+// FUNC 100010f0 DllGetClassObject
+HRESULT __stdcall DllGetClassObject(const IID *const rclsid, const IID *const riid, LPVOID *ppv)
+{
+  int v3; // edi
+  const IID *v4; // edx
+  unsigned int v5; // esi
+  _DWORD *v6; // eax
+  bool v7; // cf
+  HRESULT (__stdcall ***v8)(void *, IID *, void **); // esi
+  HRESULT (__stdcall **v9)(void *, IID *, void **); // eax
+  HRESULT (__stdcall *v10)(void *, IID *, void **); // eax
+  HRESULT v11; // eax
+  HRESULT v13; // edi
+  int (__stdcall *v14)(volatile signed __int32 *); // eax
+
+  v3 = 0;
+  *ppv = nullptr;
+  while ( 2 )
+  {
+    v4 = rclsid;
+    v5 = 12;
+    v6 = *(&off_10003138 + 2 * v3);
+    while ( v4->Data1 == *v6 )
+    {
+      v4 = (const IID *)((char *)v4 + 4);
+      ++v6;
+      v7 = v5 < 4;
+      v5 -= 4;
+      if ( v7 )
+      {
+        v8 = (HRESULT (__stdcall ***)(void *, IID *, void **))operator new(0xCu, (const std::nothrow_t *)&unk_100035A4);
+        if ( v8 == nullptr )
+          return -2147024882;
+        v9 = (HRESULT (__stdcall **)(void *, IID *, void **))*(&off_1000313C + 2 * v3);
+        *v8 = (HRESULT (__stdcall **)(void *, IID *, void **))&CClassFactory::`vftable';
+        v8[1] = (HRESULT (__stdcall **)(void *, IID *, void **))1;
+        v8[2] = v9;
+        _InterlockedIncrement(&dword_10005198);
+        v10 = **v8;
+        if ( v10 == sub_10001080 )
+          v11 = QISearch(v8, &pqit, riid, ppv);
+        else
+          v11 = v10(v8, (IID *)riid, ppv);
+        v13 = v11;
+        v14 = (int (__stdcall *)(volatile signed __int32 *))(*v8)[2];
+        if ( v14 == sub_100010A0 )
+          sub_100010A0((volatile signed __int32 *)v8);
+        else
+          v14((volatile signed __int32 *)v8);
+        return v13;
+      }
+    }
+    if ( ++v3 == 0 )
+      continue;
+    break;
+  }
+  return -2147221231;
+}
+// ENDFUNC
+// FUNC 100011c0 _DllMain@12
+BOOL __stdcall DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
+{
+  if ( fdwReason == 1 )
+  {
+    hInstance = hinstDLL;
+    DisableThreadLibraryCalls(hinstDLL);
+  }
+  return true;
+}
+// ENDFUNC
+// FUNC 100011f0 DllRegisterServer
+HRESULT __stdcall DllRegisterServer()
+{
+  HRESULT result; // eax
+  HRESULT v1; // esi
+  const BYTE **v2; // edi
+  unsigned int v3; // ebx
+  LSTATUS Key; // eax
+  bool v5; // sf
+  const BYTE *v6; // ecx
+  __int16 v7; // ax
+  LSTATUS v8; // eax
+  HKEY phkResult[4]; // [esp+0h] [ebp-270h] BYREF
+  _DWORD v10[21]; // [esp+10h] [ebp-260h] BYREF
+  WCHAR Filename[260]; // [esp+64h] [ebp-20Ch] BYREF
+
+  if ( GetModuleFileNameW(hInstance, Filename, 0x104u) != 0 )
+  {
+    phkResult[1] = HKEY_CLASSES_ROOT;
+    v1 = 0;
+    phkResult[2] = (HKEY)L".bkp\\ShellEx\\{8895b1c6-b41f-4c1c-a562-0d564250836f}";
+    phkResult[3] = nullptr;
+    v2 = (const BYTE **)v10;
+    v10[0] = L"{199AAB34-0312-47D4-8475-6247D86F0157}";
+    v3 = 0;
+    v10[1] = 0x80000000;
+    v10[2] = L"CLSID\\{199AAB34-0312-47D4-8475-6247D86F0157}";
+    v10[3] = 0;
+    v10[4] = L"Bkp Preview Handler";
+    v10[5] = 0x80000000;
+    v10[6] = L"CLSID\\{199AAB34-0312-47D4-8475-6247D86F0157}\\InProcServer32";
+    v10[7] = 0;
+    v10[8] = Filename;
+    v10[9] = 0x80000000;
+    v10[10] = L"CLSID\\{199AAB34-0312-47D4-8475-6247D86F0157}\\InProcServer32";
+    v10[11] = L"ThreadingModel";
+    v10[12] = L"Apartment";
+    v10[13] = 0x80000000;
+    v10[14] = L"CLSID\\{199AAB34-0312-47D4-8475-6247D86F0157}";
+    v10[15] = L"AppID";
+    v10[16] = L"{534A1E02-D58F-44f0-B58B-36CBED287C7C}";
+    v10[17] = -2147483646;
+    v10[18] = L"Software\\Microsoft\\Windows\\CurrentVersion\\PreviewHandlers";
+    v10[19] = L"{199AAB34-0312-47D4-8475-6247D86F0157}";
+    v10[20] = L"BkpPreviewHandler";
+    do
+    {
+      if ( v1 < 0 )
+        break;
+      Key = RegCreateKeyExW((HKEY)*(v2 - 3), (LPCWSTR)*(v2 - 2), 0, nullptr, 0, 2u, nullptr, phkResult, nullptr);
+      v1 = Key;
+      v5 = Key < 0;
+      if ( Key > 0 )
+      {
+        v1 = (unsigned __int16)Key | 0x80070000;
+        v5 = true;
+      }
+      if ( !v5 )
+      {
+        v6 = *v2;
+        do
+        {
+          v7 = *(_WORD *)v6;
+          v6 += 2;
+        }
+        while ( v7 != 0 );
+        v8 = RegSetValueExW(phkResult[0], (LPCWSTR)*(v2 - 1), 0, 1u, *v2, 2 * ((v6 - (*v2 + 2)) >> 1) + 2);
+        v1 = v8;
+        if ( v8 > 0 )
+          v1 = (unsigned __int16)v8 | 0x80070000;
+        RegCloseKey(phkResult[0]);
+      }
+      ++v3;
+      v2 += 4;
+    }
+    while ( v3 < 6 );
+    return v1;
+  }
+  else
+  {
+    result = GetLastError();
+    if ( result > 0 )
+      return (unsigned __int16)result | 0x80070000;
+  }
+  return result;
+}
+// ENDFUNC
+// FUNC 100013f0 DllUnregisterServer
+HRESULT __stdcall DllUnregisterServer()
+{
+  HRESULT v0; // esi
+  unsigned int v1; // edi
+  int v2; // eax
+  LPCWSTR lpSubKey; // [esp+Ch] [ebp-8h]
+  HKEY phkResult; // [esp+10h] [ebp-4h] BYREF
+
+  v0 = 0;
+  lpSubKey = L"CLSID\\{199AAB34-0312-47D4-8475-6247D86F0157}";
+  phkResult = (HKEY)L".bkp\\ShellEx\\{8895b1c6-b41f-4c1c-a562-0d564250836f}";
+  v1 = 0;
+  while ( v0 >= 0 )
+  {
+    v2 = RegDeleteTreeW(HKEY_CLASSES_ROOT, (&lpSubKey)[v1]);
+    if ( v2 > 0 )
+      v2 = (unsigned __int16)v2 | 0x80070000;
+    v0 = 0;
+    ++v1;
+    if ( v2 != -2147024894 )
+      v0 = v2;
+    if ( v1 >= 2 )
+    {
+      if ( v0 >= 0
+        && RegOpenKeyExW(
+             HKEY_LOCAL_MACHINE,
+             L"Software\\Microsoft\\Windows\\CurrentVersion\\PreviewHandlers",
+             0,
+             0x20006u,
+             &phkResult) == 0 )
+      {
+        RegDeleteValueW(phkResult, L"{199AAB34-0312-47D4-8475-6247D86F0157}");
+        RegCloseKey(phkResult);
+      }
+      return v0;
+    }
+  }
+  return v0;
+}
+// ENDFUNC
+// FUNC 10001480 sub_10001480
+void *__thiscall sub_10001480(void *Block, char a2)
+{
+  HWND v3; // eax
+  int v4; // ecx
+  int v5; // ecx
+  int v6; // ecx
+
+  v3 = *((HWND *)Block + 10);
+  *(_DWORD *)Block = &CBkpPreviewHandler::`vftable';
+  *((_DWORD *)Block + 1) = &CBkpPreviewHandler::`vftable';
+  *((_DWORD *)Block + 2) = &CBkpPreviewHandler::`vftable';
+  *((_DWORD *)Block + 3) = &CBkpPreviewHandler::`vftable';
+  if ( v3 != nullptr )
+    DestroyWindow(v3);
+  if ( *((_DWORD *)Block + 11) != 0 )
+    FreeLibrary(*((HMODULE *)Block + 11));
+  v4 = *((_DWORD *)Block + 12);
+  if ( v4 != 0 )
+  {
+    (*(void (__stdcall **)(_DWORD))(*(_DWORD *)v4 + 8))(*((_DWORD *)Block + 12));
+    *((_DWORD *)Block + 12) = 0;
+  }
+  v5 = *((_DWORD *)Block + 14);
+  if ( v5 != 0 )
+  {
+    (*(void (__stdcall **)(_DWORD))(*(_DWORD *)v5 + 8))(*((_DWORD *)Block + 14));
+    *((_DWORD *)Block + 14) = 0;
+  }
+  v6 = *((_DWORD *)Block + 13);
+  if ( v6 != 0 )
+  {
+    (*(void (__stdcall **)(_DWORD))(*(_DWORD *)v6 + 8))(*((_DWORD *)Block + 13));
+    *((_DWORD *)Block + 13) = 0;
+  }
+  if ( (a2 & 1) != 0 )
+    operator delete(Block);
+  return Block;
+}
+// ENDFUNC
+// FUNC 10001550 sub_10001550
+signed __int32 __stdcall sub_10001550(int a1)
+{
+  return _InterlockedIncrement((volatile signed __int32 *)(a1 + 16));
+}
+// ENDFUNC
+// FUNC 10001565 sub_10001565
+signed __int32 __stdcall sub_10001565(int a1)
+{
+  return sub_10001550(a1 - 4);
+}
+// ENDFUNC
+// FUNC 1000156f sub_1000156F
+signed __int32 __stdcall sub_1000156F(int a1)
+{
+  return sub_10001550(a1 - 8);
+}
+// ENDFUNC
+// FUNC 10001579 sub_10001579
+signed __int32 __stdcall sub_10001579(int a1)
+{
+  return sub_10001550(a1 - 12);
+}
+// ENDFUNC
+// FUNC 10001590 sub_10001590
+HRESULT __cdecl sub_10001590(IID *riid, void **ppv)
+{
+  int (__stdcall ***v2)(void *, IID *, void **); // esi
+  HRESULT result; // eax
+  int (__stdcall *v4)(void *, IID *, void **); // eax
+  HRESULT v5; // eax
+  HRESULT v6; // edi
+  int (__stdcall *v7)(void *, IID *, void **); // eax
+
+  *ppv = nullptr;
+  v2 = (int (__stdcall ***)(void *, IID *, void **))operator new(0x3Cu, (const std::nothrow_t *)&unk_100035A4);
+  result = -2147024882;
+  if ( v2 != nullptr )
+  {
+    *v2 = (int (__stdcall **)(void *, IID *, void **))&CBkpPreviewHandler::`vftable';
+    v2[1] = (int (__stdcall **)(void *, IID *, void **))&CBkpPreviewHandler::`vftable';
+    v2[2] = (int (__stdcall **)(void *, IID *, void **))&CBkpPreviewHandler::`vftable';
+    v2[3] = (int (__stdcall **)(void *, IID *, void **))&CBkpPreviewHandler::`vftable';
+    v2[4] = (int (__stdcall **)(void *, IID *, void **))1;
+    v2[5] = nullptr;
+    v2[10] = nullptr;
+    v2[11] = nullptr;
+    v2[12] = nullptr;
+    v2[13] = nullptr;
+    v2[14] = nullptr;
+    v4 = **v2;
+    if ( v4 == sub_10001AC0 )
+    {
+      *ppv = nullptr;
+      v5 = QISearch(v2, &stru_100034E8, riid, ppv);
+    }
+    else
+    {
+      v5 = v4(v2, riid, ppv);
+    }
+    v6 = v5;
+    v7 = (*v2)[2];
+    if ( (char *)v7 == (char *)sub_10001B90 )
+      sub_10001B90(v2);
+    else
+      ((void (__stdcall *)(int (__stdcall ***)(void *, IID *, void **)))v7)(v2);
+    return v6;
+  }
+  return result;
+}
+// ENDFUNC
+// FUNC 10001660 sub_10001660
+int __stdcall sub_10001660(int a1, int a2)
+{
+  return -2147467263;
+}
+// ENDFUNC
+// FUNC 10001670 sub_10001670
+int __stdcall sub_10001670(int a1)
+{
+  int v1; // edi
+  int v2; // eax
+  void *v3; // eax
+  void *v4; // ebx
+  UINT v5; // eax
+  void *v6; // eax
+  int v8; // [esp+0h] [ebp-F8h] BYREF
+  int cchWideChar; // [esp+10h] [ebp-E8h]
+  void *Block; // [esp+14h] [ebp-E4h] BYREF
+  LPVOID pv; // [esp+18h] [ebp-E0h] BYREF
+  WCHAR Buffer[100]; // [esp+1Ch] [ebp-DCh] BYREF
+  int *v13; // [esp+E8h] [ebp-10h]
+  int v14; // [esp+F4h] [ebp-4h]
+
+  v13 = &v8;
+  v1 = -2147467259;
+  cchWideChar = -2147467259;
+  if ( *(_DWORD *)(a1 + 36) == 0 )
+  {
+    v2 = *(_DWORD *)(a1 + 52);
+    if ( v2 != 0 )
+    {
+      pv = nullptr;
+      v14 = 0;
+      sub_10001B00(v2, nullptr, (int)&pv);
+      v3 = malloc((size_t)pv + 1);
+      v4 = v3;
+      if ( v3 != nullptr )
+      {
+        sub_10001B00(*(_DWORD *)(a1 + 52), v3, 0);
+        Block = nullptr;
+        if ( (unsigned __int8)sub_10001890(v4, pv, &Block) != 0 )
+        {
+          v1 = sub_10001DA0((LPARAM)Block);
+        }
+        else
+        {
+          v5 = 101;
+          if ( word_10005004 != 9 )
+          {
+            switch ( word_10005004 )
+            {
+              case 12:
+                v5 = 103;
+                break;
+              case 1:
+                v5 = 104;
+                break;
+              case 10:
+                v5 = 105;
+                break;
+              case 17:
+                v5 = 107;
+                break;
+              case 4:
+                v5 = 102;
+                break;
+              case 18:
+                v5 = 108;
+                break;
+              case 25:
+                v5 = 109;
+                break;
+              case 22:
+                v5 = 110;
+                break;
+              default:
+                break;
+            }
+          }
+          LoadStringW(hInstance, v5, Buffer, 100);
+          cchWideChar = wcslen(Buffer) + 1;
+          v6 = CoTaskMemAlloc(cchWideChar);
+          pv = v6;
+          if ( v6 != nullptr )
+          {
+            WideCharToMultiByte(0, 0, Buffer, cchWideChar, (LPSTR)v6, cchWideChar, nullptr, nullptr);
+            v1 = sub_10001DA0((LPARAM)pv);
+            CoTaskMemFree(pv);
+          }
+        }
+        free(Block);
+        free(v4);
+      }
+    }
+  }
+  return v1;
+}
+// ENDFUNC
+// FUNC 10001890 sub_10001890
+bool __cdecl sub_10001890(int a1, int a2, void **a3)
+{
+  _BYTE *v3; // eax
+  void **v4; // edx
+  int v5; // ecx
+  signed int v6; // ebx
+  int v7; // eax
+  int v8; // edi
+  char v9; // cl
+  BOOL v10; // eax
+  int v11; // esi
+  char v12; // cl
+  void *v14; // eax
+  void *v15; // eax
+  BOOL v16; // [esp+Ch] [ebp-8h]
+  int v17; // [esp+10h] [ebp-4h]
+
+  v3 = malloc(0x40u);
+  v4 = a3;
+  v5 = a1;
+  v6 = 64;
+  *a3 = v3;
+  *v3 = 0;
+  if ( a1 == 0 )
+    return false;
+  v7 = 0;
+  v8 = 0;
+  if ( a2 <= 0 )
+    return false;
+  while ( 1 )
+  {
+    v9 = *(_BYTE *)(v8 + v5);
+    ++v8;
+    if ( v9 == -1 )
+      return v7 != 0;
+    if ( v9 != 13 && v9 != 10 )
+      break;
+LABEL_17:
+    if ( v8 >= a2 )
+      return v7 != 0;
+    v5 = a1;
+  }
+  if ( v9 != byte_10003458[v7] )
+  {
+    v7 = 0;
+    goto LABEL_17;
+  }
+  if ( byte_10003458[++v7] != 0 )
+    goto LABEL_17;
+  v10 = true;
+  v11 = 0;
+  v17 = 1;
+  if ( v8 < a2 )
+  {
+    while ( 1 )
+    {
+      v16 = v10;
+      v12 = *(_BYTE *)(v8 + a1);
+      ++v8;
+      if ( v12 == -1 )
+        return true;
+      if ( v12 != 13 && v12 != 10 )
+      {
+        if ( v12 == 41 )
+        {
+          if ( !v10 )
+          {
+            *((_BYTE *)*v4 + v11) = 0;
+            return true;
+          }
+LABEL_25:
+          *((_BYTE *)*v4 + v11) = v12;
+LABEL_26:
+          if ( ++v11 >= v6 )
+          {
+            v6 *= 2;
+            v15 = realloc(*v4, v6);
+            v4 = a3;
+            *a3 = v15;
+          }
+          v10 = v17;
+          goto LABEL_29;
+        }
+        if ( v12 == 34 )
+        {
+          v10 = v17 == 0;
+          v17 = v10;
+          if ( !v16 )
+          {
+            *((_BYTE *)*v4 + v11) = 13;
+            if ( ++v11 >= v6 )
+            {
+              v6 *= 2;
+              v14 = realloc(*v4, v6);
+              v4 = a3;
+              *a3 = v14;
+            }
+            *((_BYTE *)*v4 + v11) = 10;
+            goto LABEL_26;
+          }
+        }
+        else if ( v10 )
+        {
+          goto LABEL_25;
+        }
+      }
+LABEL_29:
+      if ( v8 >= a2 )
+        return true;
+    }
+  }
+  return true;
+}
+// ENDFUNC
+// FUNC 100019e0 sub_100019E0
+int __stdcall sub_100019E0(int a1, int a2, _DWORD *a3)
+{
+  int (__stdcall ***v3)(_DWORD, int, _DWORD *); // ecx
+
+  *a3 = 0;
+  v3 = *(int (__stdcall ****)(_DWORD, int, _DWORD *))(a1 + 48);
+  if ( v3 != nullptr )
+    return (**v3)(v3, a2, a3);
+  else
+    return -2147467259;
+}
+// ENDFUNC
+// FUNC 10001a10 sub_10001A10
+int __stdcall sub_10001A10(int a1, _DWORD *a2)
+{
+  if ( a2 == nullptr )
+    return -2147024809;
+  *a2 = *(_DWORD *)(a1 + 12);
+  return 0;
+}
+// ENDFUNC
+// FUNC 10001a40 sub_10001A40
+int __stdcall sub_10001A40(int a1, int a2, int a3)
+{
+  int v3; // ecx
+
+  if ( a2 == 0 )
+    return -2147024809;
+  v3 = *(_DWORD *)(a1 + 44);
+  if ( v3 != 0 )
+    (*(void (__stdcall **)(_DWORD))(*(_DWORD *)v3 + 8))(*(_DWORD *)(a1 + 44));
+  *(_DWORD *)(a1 + 44) = a2;
+  (*(void (__stdcall **)(int))(*(_DWORD *)a2 + 4))(a2);
+  return 0;
+}
+// ENDFUNC
+// FUNC 10001a80 sub_10001A80
+signed int __stdcall sub_10001A80(int a1, HWND *a2)
+{
+  HWND Focus; // eax
+  signed int result; // eax
+
+  if ( a2 == nullptr )
+    return -2147024809;
+  Focus = GetFocus();
+  *a2 = Focus;
+  if ( Focus != nullptr )
+    return 0;
+  result = GetLastError();
+  if ( result > 0 )
+    return (unsigned __int16)result | 0x80070000;
+  return result;
+}
+// ENDFUNC
+// FUNC 10001ac0 sub_10001AC0
+HRESULT __stdcall sub_10001AC0(void *that, IID *riid, void **ppv)
+{
+  *ppv = nullptr;
+  return QISearch(that, &stru_100034E8, riid, ppv);
+}
+// ENDFUNC
+// FUNC 10001ae1 sub_10001AE1
+HRESULT __stdcall sub_10001AE1(int a1, IID *a2, void **a3)
+{
+  return sub_10001AC0((void *)(a1 - 4), a2, a3);
+}
+// ENDFUNC
+// FUNC 10001aeb sub_10001AEB
+HRESULT __stdcall sub_10001AEB(int a1, IID *a2, void **a3)
+{
+  return sub_10001AC0((void *)(a1 - 8), a2, a3);
+}
+// ENDFUNC
+// FUNC 10001af5 sub_10001AF5
+HRESULT __stdcall sub_10001AF5(int a1, IID *a2, void **a3)
+{
+  return sub_10001AC0((void *)(a1 - 12), a2, a3);
+}
+// ENDFUNC
+// FUNC 10001b00 sub_10001B00
+int __cdecl sub_10001B00(int a1, void *a2, _DWORD *a3)
+{
+  int result; // eax
+  int v4; // edi
+  _DWORD v5[18]; // [esp+10h] [ebp-4Ch] BYREF
+
+  result = (*(int (__stdcall **)(int, _DWORD, _DWORD, _DWORD, _DWORD))(*(_DWORD *)a1 + 20))(a1, 0, 0, 0, 0);
+  if ( result == 0 )
+  {
+    memset(v5, 0, sizeof(v5));
+    result = (*(int (__stdcall **)(int, _DWORD *, int))(*(_DWORD *)a1 + 48))(a1, v5, 1);
+    if ( result == 0 )
+    {
+      v4 = v5[2];
+      if ( a3 != nullptr )
+        *a3 = v5[2];
+      if ( a2 != nullptr )
+      {
+        memset(a2, 0, v4 + 1);
+        (*(void (__stdcall **)(int, void *, int, _DWORD))(*(_DWORD *)a1 + 12))(a1, a2, v4, 0);
+      }
+      return 0;
+    }
+  }
+  return result;
+}
+// ENDFUNC
+// FUNC 10001b90 sub_10001B90
+signed __int32 __stdcall sub_10001B90(volatile signed __int32 *a1)
+{
+  signed __int32 v1; // esi
+
+  v1 = _InterlockedDecrement(a1 + 4);
+  if ( v1 == 0 && a1 != nullptr )
+    (*(void (__thiscall **)(volatile signed __int32 *, int))(*a1 + 20))(a1, 1);
+  return v1;
+}
+// ENDFUNC
+// FUNC 10001bb4 sub_10001BB4
+signed __int32 __stdcall sub_10001BB4(int a1)
+{
+  return sub_10001B90((volatile signed __int32 *)(a1 - 4));
+}
+// ENDFUNC
+// FUNC 10001bbe sub_10001BBE
+signed __int32 __stdcall sub_10001BBE(int a1)
+{
+  return sub_10001B90((volatile signed __int32 *)(a1 - 8));
+}
+// ENDFUNC
+// FUNC 10001bc8 sub_10001BC8
+signed __int32 __stdcall sub_10001BC8(int a1)
+{
+  return sub_10001B90((volatile signed __int32 *)(a1 - 12));
+}
+// ENDFUNC
+// FUNC 10001be0 sub_10001BE0
+int __stdcall sub_10001BE0(int a1)
+{
+  if ( *(_DWORD *)(a1 + 36) == 0 )
+    return 1;
+  SetFocus(*(HWND *)(a1 + 36));
+  return 0;
+}
+// ENDFUNC
+// FUNC 10001c10 sub_10001C10
+int __stdcall sub_10001C10(int a1, _OWORD *a2)
+{
+  bool v2; // zf
+
+  if ( a2 == nullptr )
+    return -2147024809;
+  v2 = *(_DWORD *)(a1 + 36) == 0;
+  *(_OWORD *)(a1 + 20) = *a2;
+  if ( !v2 )
+    SetWindowPos(
+      *(HWND *)(a1 + 36),
+      nullptr,
+      *(_DWORD *)(a1 + 20),
+      *(_DWORD *)(a1 + 24),
+      *(_DWORD *)(a1 + 28) - *(_DWORD *)(a1 + 20),
+      *(_DWORD *)(a1 + 32) - *(_DWORD *)(a1 + 24),
+      0x16u);
+  return 0;
+}
+// ENDFUNC
+// FUNC 10001c60 sub_10001C60
+int __stdcall sub_10001C60(int a1, int (__stdcall ***a2)(_DWORD, void *, _DWORD *))
+{
+  _DWORD *v2; // esi
+  int v3; // ecx
+
+  v2 = (_DWORD *)(a1 + 48);
+  v3 = *(_DWORD *)(a1 + 48);
+  if ( v3 != 0 )
+  {
+    (*(void (__stdcall **)(_DWORD))(*(_DWORD *)v3 + 8))(*(_DWORD *)(a1 + 48));
+    *v2 = 0;
+  }
+  if ( a2 != nullptr )
+    return (**a2)(a2, &unk_10003594, v2);
+  else
+    return 0;
+}
+// ENDFUNC
+// FUNC 10001ca0 sub_10001CA0
+int __stdcall sub_10001CA0(int a1, HWND hWndNewParent, _OWORD *a3)
+{
+  HWND v3; // ecx
+
+  if ( hWndNewParent == nullptr || a3 == nullptr )
+    return 0;
+  *(_DWORD *)(a1 + 16) = hWndNewParent;
+  v3 = *(HWND *)(a1 + 36);
+  *(_OWORD *)(a1 + 20) = *a3;
+  if ( v3 != nullptr )
+  {
+    SetParent(v3, hWndNewParent);
+    SetWindowPos(
+      *(HWND *)(a1 + 36),
+      nullptr,
+      *(_DWORD *)(a1 + 20),
+      *(_DWORD *)(a1 + 24),
+      *(_DWORD *)(a1 + 28) - *(_DWORD *)(a1 + 20),
+      *(_DWORD *)(a1 + 32) - *(_DWORD *)(a1 + 24),
+      0x16u);
+  }
+  return 0;
+}
+// ENDFUNC
+// FUNC 10001d00 sub_10001D00
+int __userpurge sub_10001D00@<eax>(int a1@<esi>, int a2, int a3)
+{
+  int (__stdcall ***v3)(_DWORD, void *, int *); // ecx
+  int result; // eax
+  int v5; // esi
+  int v6; // [esp+0h] [ebp-4h] BYREF
+
+  v6 = 0;
+  v3 = *(int (__stdcall ****)(_DWORD, void *, int *))(a2 + 44);
+  if ( v3 == nullptr || (**v3)(v3, &unk_10003584, &v6) < 0 )
+    return 1;
+  result = (*(int (__stdcall **)(int, int, int))(*(_DWORD *)v6 + 16))(v6, a3, a1);
+  v5 = result;
+  if ( v6 != 0 )
+  {
+    (*(void (__stdcall **)(int))(*(_DWORD *)v6 + 8))(v6);
+    return v5;
+  }
+  return result;
+}
+// ENDFUNC
+// FUNC 10001d60 sub_10001D60
+int __stdcall sub_10001D60(int a1)
+{
+  int v1; // ecx
+
+  v1 = *(_DWORD *)(a1 + 52);
+  if ( v1 != 0 )
+  {
+    (*(void (__stdcall **)(_DWORD))(*(_DWORD *)v1 + 8))(*(_DWORD *)(a1 + 52));
+    *(_DWORD *)(a1 + 52) = 0;
+  }
+  if ( *(_DWORD *)(a1 + 36) != 0 )
+  {
+    DestroyWindow(*(HWND *)(a1 + 36));
+    *(_DWORD *)(a1 + 36) = 0;
+  }
+  return 0;
+}
+// ENDFUNC
+// FUNC 10001da0 sub_10001DA0
+int __thiscall sub_10001DA0(int this, LPARAM lParam)
+{
+  HMODULE LibraryW; // eax
+  HWND Window; // eax
+  int result; // eax
+  HWND v6; // [esp-10h] [ebp-1Ch]
+  WPARAM wParam[2]; // [esp+4h] [ebp-8h] BYREF
+
+  if ( (*(_DWORD *)(this + 44) != 0
+     || (LibraryW = LoadLibraryW(L"msftedit.dll"), *(_DWORD *)(this + 44) = LibraryW, LibraryW != nullptr))
+    && (Window = CreateWindowExW(
+                   0,
+                   L"RICHEDIT50W",
+                   nullptr,
+                   0x50201844u,
+                   *(_DWORD *)(this + 24),
+                   *(_DWORD *)(this + 28),
+                   *(_DWORD *)(this + 32) - *(_DWORD *)(this + 24),
+                   *(_DWORD *)(this + 36) - *(_DWORD *)(this + 28),
+                   *(HWND *)(this + 20),
+                   nullptr,
+                   nullptr,
+                   nullptr),
+        *(_DWORD *)(this + 40) = Window,
+        Window != nullptr) )
+  {
+    SendMessageW(Window, 0x435u, 0, 0x10000);
+    if ( lParam != 0 )
+    {
+      wParam[0] = 0;
+      v6 = *(HWND *)(this + 40);
+      wParam[1] = 0;
+      SendMessageW(v6, 0x461u, (WPARAM)wParam, lParam);
+      ShowWindow(*(HWND *)(this + 40), 5);
+      return 0;
+    }
+    else
+    {
+      return -2147024882;
+    }
+  }
+  else
+  {
+    result = GetLastError();
+    if ( result > 0 )
+      return (unsigned __int16)result | 0x80070000;
+  }
+  return result;
+}
+// ENDFUNC
+// FUNC 10001e6e ??3@YAXPAXI@Z
+void __cdecl operator delete(void *Block)
+{
+  j_free(Block);
+}
+// ENDFUNC
+// FUNC 10001e7c ??2@YAPAXIABUnothrow_t@std@@@Z
+void *__cdecl operator new(size_t Size)
+{
+  _DWORD v2[8]; // [esp+0h] [ebp-20h] BYREF
+
+  v2[4] = v2;
+  v2[7] = 0;
+  return operator new(Size);
+}
+// ENDFUNC
+// FUNC 10001ed1 @__security_check_cookie@4
+void __fastcall __security_check_cookie(uintptr_t StackCookie)
+{
+  if ( StackCookie != __security_cookie )
+    __report_gsfailure();
+}
+// ENDFUNC
+// FUNC 10001edf ??_Gtype_info@@UAEPAXI@Z
+_DWORD *__thiscall type_info::`scalar deleting destructor'(_DWORD *Block, char a2)
+{
+  *Block = &type_info::`vftable';
+  if ( (a2 & 1) != 0 )
+    operator delete(Block);
+  return Block;
+}
+// ENDFUNC
+// FUNC 10001f02 ?dllmain_crt_dispatch@@YGHQAUHINSTANCE__@@KQAX@Z
+int __stdcall dllmain_crt_dispatch(HINSTANCE a1, unsigned int a2, void *const a3)
+{
+  int result; // eax
+
+  switch ( a2 )
+  {
+    case 0u:
+      return dllmain_crt_process_detach(a3 != nullptr);
+    case 1u:
+      return dllmain_crt_process_attach(a1, a3);
+    case 2u:
+      LOBYTE(result) = __scrt_dllmain_crt_thread_attach();
+      break;
+    case 3u:
+      LOBYTE(result) = __scrt_dllmain_crt_thread_detach();
+      break;
+    default:
+      return 1;
+  }
+  return (unsigned __int8)result;
+}
+// ENDFUNC
+// FUNC 10001f55 ?dllmain_crt_process_attach@@YAHQAUHINSTANCE__@@QAX@Z
+int __cdecl dllmain_crt_process_attach(HINSTANCE a1, void *const a2)
+{
+  char v2; // bl
+  _DWORD *dyn_tls_init_callback; // eax
+  _DWORD *v4; // esi
+  char v6; // [esp+13h] [ebp-1Dh]
+
+  if ( (unsigned __int8)__scrt_initialize_crt(0) == 0 )
+    return 0;
+  v6 = __scrt_acquire_startup_lock();
+  v2 = 1;
+  if ( __scrt_current_native_startup_state != 0 )
+  {
+    __scrt_fastfail(7);
+    __debugbreak();
+  }
+  __scrt_current_native_startup_state = 1;
+  if ( (unsigned __int8)__scrt_dllmain_before_initialize_c() != 0 )
+  {
+    _RTC_Initialize();
+    __scrt_initialize_type_info();
+    __scrt_initialize_default_local_stdio_options();
+    if ( initterm_e((_PIFV *)&__xi_a, (_PIFV *)&__xi_z) == 0
+      && (unsigned __int8)__scrt_dllmain_after_initialize_c() != 0 )
+    {
+      initterm((_PVFV *)&__xc_a, (_PVFV *)&__xc_z);
+      __scrt_current_native_startup_state = 2;
+      v2 = 0;
+    }
+  }
+  __scrt_release_startup_lock(v6);
+  if ( v2 != 0 )
+    return 0;
+  dyn_tls_init_callback = (_DWORD *)__scrt_get_dyn_tls_init_callback();
+  v4 = dyn_tls_init_callback;
+  if ( *dyn_tls_init_callback != 0
+    && (unsigned __int8)__scrt_is_nonwritable_in_current_image(dyn_tls_init_callback) != 0 )
+  {
+    ((void (__thiscall *)(_DWORD, HINSTANCE, int, void *const))*v4)(*v4, a1, 2, a2);
+  }
+  ++__proc_attached;
+  return 1;
+}
+// ENDFUNC
+// FUNC 1000205c ?dllmain_crt_process_detach@@YAH_N@Z
+BOOL __cdecl dllmain_crt_process_detach(__vcrt_bool a1)
+{
+  BOOL v2; // esi
+  int v3; // [esp+0h] [ebp-30h]
+  int v4; // [esp+4h] [ebp-2Ch]
+  int v5; // [esp+8h] [ebp-28h]
+  int v6; // [esp+Ch] [ebp-24h]
+  int v7; // [esp+10h] [ebp-20h]
+  int ms_exc; // [esp+18h] [ebp-18h]
+  int ms_exc_4; // [esp+1Ch] [ebp-14h]
+  int ms_exc_8; // [esp+20h] [ebp-10h]
+  int ms_exc_12; // [esp+24h] [ebp-Ch]
+  int ms_exc_16; // [esp+28h] [ebp-8h]
+
+  if ( __proc_attached <= 0 )
+    return false;
+  --__proc_attached;
+  LOBYTE(v7) = __scrt_acquire_startup_lock();
+  if ( __scrt_current_native_startup_state != 2 )
+  {
+    __scrt_fastfail(7);
+    __debugbreak();
+  }
+  __scrt_dllmain_uninitialize_c();
+  __scrt_uninitialize_type_info();
+  _RTC_Terminate();
+  __scrt_current_native_startup_state = 0;
+  __scrt_release_startup_lock(v7);
+  v2 = (unsigned __int8)__scrt_uninitialize_crt(a1, 0) != 0;
+  __scrt_dllmain_uninitialize_critical(
+    268443868,
+    v3,
+    v4,
+    v5,
+    v6,
+    v7,
+    v2,
+    ms_exc,
+    ms_exc_4,
+    ms_exc_8,
+    ms_exc_12,
+    ms_exc_16,
+    -2);
+  return v2;
+}
+// ENDFUNC
+// FUNC 1000210c ?dllmain_dispatch@@YAHQAUHINSTANCE__@@KQAX@Z
+int __cdecl dllmain_dispatch(HINSTANCE hinstDLL, DWORD fdwReason, void *const lpvReserved)
+{
+  void *v4; // ebx
+  int v5; // esi
+  BOOL v6; // eax
+
+  if ( fdwReason == 0 && __proc_attached <= 0 )
+    return 0;
+  if ( fdwReason != 1 && fdwReason != 2 )
+  {
+    v4 = lpvReserved;
+LABEL_9:
+    v6 = DllMain(hinstDLL, fdwReason, v4);
+    v5 = v6;
+    if ( fdwReason == 1 && !v6 )
+    {
+      DllMain(hinstDLL, 0, v4);
+      dllmain_crt_process_detach(v4 != nullptr);
+      dllmain_raw(hinstDLL, 0, v4);
+    }
+    if ( fdwReason == 0 || fdwReason == 3 )
+    {
+      v5 = dllmain_crt_dispatch(hinstDLL, fdwReason, v4);
+      if ( v5 != 0 )
+        return dllmain_raw(hinstDLL, fdwReason, v4);
+    }
+    return v5;
+  }
+  v4 = lpvReserved;
+  v5 = dllmain_raw(hinstDLL, fdwReason, lpvReserved);
+  if ( v5 != 0 )
+  {
+    v5 = dllmain_crt_dispatch(hinstDLL, fdwReason, lpvReserved);
+    if ( v5 != 0 )
+      goto LABEL_9;
+  }
+  return v5;
+}
+// ENDFUNC
+// FUNC 10002217 ?dllmain_raw@@YGHQAUHINSTANCE__@@KQAX@Z
+int __stdcall dllmain_raw(HINSTANCE a1, unsigned int a2, void *const a3)
+{
+  return 1;
+}
+// ENDFUNC
+// FUNC 10002242 DllEntryPoint
+BOOL __stdcall DllEntryPoint(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
+{
+  if ( fdwReason == 1 )
+    __security_init_cookie();
+  return dllmain_dispatch(hinstDLL, fdwReason, lpReserved);
+}
+// ENDFUNC
+// FUNC 10002265 j_free
+// attributes: thunk
+void __cdecl j_free(void *Block)
+{
+  free(Block);
+}
+// ENDFUNC
+// FUNC 1000226a ??2@YAPAXI@Z
+void *__cdecl operator new(size_t Size)
+{
+  void *result; // eax
+
+  while ( 1 )
+  {
+    result = malloc(Size);
+    if ( result != nullptr )
+      break;
+    if ( callnewh(Size) == 0 )
+    {
+      if ( Size != -1 )
+        __scrt_throw_std_bad_alloc();
+      __scrt_throw_std_bad_array_new_length();
+    }
+  }
+  return result;
+}
+// ENDFUNC
+// FUNC 1000229a ___raise_securityfailure
+BOOL __cdecl __raise_securityfailure(struct _EXCEPTION_POINTERS *ExceptionInfo)
+{
+  HANDLE CurrentProcess; // eax
+
+  SetUnhandledExceptionFilter(nullptr);
+  UnhandledExceptionFilter(ExceptionInfo);
+  CurrentProcess = GetCurrentProcess();
+  return TerminateProcess(CurrentProcess, 0xC0000409);
+}
+// ENDFUNC
+// FUNC 100022c2 ___report_gsfailure
+void __cdecl __noreturn __report_gsfailure()
+{
+  int v0; // ebx
+  int v1; // edi
+  int v2; // esi
+  int v3; // edx
+  int v4; // ecx
+  unsigned int v5; // kr00_4
+  int vars0; // [esp+324h] [ebp+0h]
+  int retaddr; // [esp+328h] [ebp+4h]
+  char v8; // [esp+32Ch] [ebp+8h] BYREF
+
+  if ( IsProcessorFeaturePresent(0x17u) )
+    __fastfail(2u);
+  dword_100054A8 = 0;
+  dword_100054A4 = v4;
+  dword_100054A0 = v3;
+  dword_1000549C = v0;
+  dword_10005498 = v2;
+  dword_10005494 = v1;
+  word_100054C0 = __SS__;
+  word_100054B4 = __CS__;
+  word_10005490 = __DS__;
+  word_1000548C = __ES__;
+  word_10005488 = __FS__;
+  word_10005484 = __GS__;
+  v5 = __readeflags();
+  dword_100054B8 = v5;
+  dword_100054AC = vars0;
+  dword_100054B0 = retaddr;
+  dword_100054BC = (int)&v8;
+  GS_ContextRecord = 65537;
+  dword_100053B4 = retaddr;
+  GS_ExceptionRecord = -1073740791;
+  dword_100053AC = 1;
+  dword_100053B8 = 1;
+  dword_100053BC = 2;
+  __raise_securityfailure((struct _EXCEPTION_POINTERS *)&GS_ExceptionPointers);
+}
+// ENDFUNC
+// FUNC 100023bc ___get_entropy
+unsigned int __get_entropy()
+{
+  LARGE_INTEGER PerformanceCount; // [esp+0h] [ebp-14h] BYREF
+  struct _FILETIME SystemTimeAsFileTime; // [esp+8h] [ebp-Ch] BYREF
+  DWORD v3; // [esp+10h] [ebp-4h] BYREF
+
+  SystemTimeAsFileTime.dwLowDateTime = 0;
+  SystemTimeAsFileTime.dwHighDateTime = 0;
+  GetSystemTimeAsFileTime(&SystemTimeAsFileTime);
+  v3 = SystemTimeAsFileTime.dwLowDateTime ^ SystemTimeAsFileTime.dwHighDateTime;
+  v3 ^= GetCurrentThreadId();
+  v3 ^= GetCurrentProcessId();
+  QueryPerformanceCounter(&PerformanceCount);
+  return (unsigned int)&v3 ^ v3 ^ PerformanceCount.LowPart ^ PerformanceCount.HighPart;
+}
+// ENDFUNC
+// FUNC 10002409 ___security_init_cookie
+void __cdecl __security_init_cookie()
+{
+  uintptr_t v0; // ecx
+  unsigned int entropy; // eax
+
+  v0 = __security_cookie;
+  if ( __security_cookie == -1153374642 || (__security_cookie & 0xFFFF0000) == 0 )
+  {
+    entropy = __get_entropy();
+    v0 = entropy;
+    if ( entropy == -1153374642 )
+    {
+      v0 = 0xBB40E64F;
+    }
+    else if ( (entropy & 0xFFFF0000) == 0 )
+    {
+      v0 = ((entropy | 0x4711) << 16) | entropy;
+    }
+    __security_cookie = v0;
+  }
+  __security_cookie_complement = ~v0;
+}
+// ENDFUNC
+// FUNC 10002454 ?__scrt_initialize_type_info@@YAXXZ
+void __scrt_initialize_type_info()
+{
+  InitializeSListHead(&__type_info_root_node);
+}
+// ENDFUNC
+// FUNC 10002460 ?__scrt_uninitialize_type_info@@YAXXZ
+int __scrt_uninitialize_type_info()
+{
+  return _std_type_info_destroy_list(&__type_info_root_node);
+}
+// ENDFUNC
+// FUNC 1000246c ___local_stdio_printf_options
+unsigned __int64 *__cdecl __local_stdio_printf_options()
+{
+  return (unsigned __int64 *)&unk_100056D0;
+}
+// ENDFUNC
+// FUNC 10002472 ___local_stdio_scanf_options
+unsigned __int64 *__cdecl __local_stdio_scanf_options()
+{
+  return (unsigned __int64 *)&unk_100056D8;
+}
+// ENDFUNC
+// FUNC 10002478 ___scrt_initialize_default_local_stdio_options
+unsigned __int64 *__scrt_initialize_default_local_stdio_options()
+{
+  unsigned __int64 *v0; // eax
+  int v1; // ecx
+  unsigned __int64 *result; // eax
+  int v3; // ecx
+
+  v0 = __local_stdio_printf_options();
+  v1 = *((_DWORD *)v0 + 1);
+  *(_DWORD *)v0 |= 0x24u;
+  *((_DWORD *)v0 + 1) = v1;
+  result = __local_stdio_scanf_options();
+  v3 = *((_DWORD *)result + 1);
+  *(_DWORD *)result |= 2u;
+  *((_DWORD *)result + 1) = v3;
+  return result;
+}
+// ENDFUNC
+// FUNC 10002495 ?find_pe_section@@YAPAU_IMAGE_SECTION_HEADER@@QAEI@Z
+_IMAGE_SECTION_HEADER *__cdecl find_pe_section(unsigned __int8 *const a1, unsigned int a2)
+{
+  unsigned __int8 *v2; // ecx
+  int v3; // edx
+  int v4; // esi
+
+  v2 = &a1[*((_DWORD *)a1 + 15)];
+  v3 = (int)&v2[*((unsigned __int16 *)v2 + 10) + 24];
+  v4 = v3 + 40 * *((unsigned __int16 *)v2 + 3);
+  if ( v3 == v4 )
+    return nullptr;
+  while ( a2 < *(_DWORD *)(v3 + 12) || a2 >= *(_DWORD *)(v3 + 12) + *(_DWORD *)(v3 + 8) )
+  {
+    v3 += 40;
+    if ( v3 == v4 )
+      return nullptr;
+  }
+  return (_IMAGE_SECTION_HEADER *)v3;
+}
+// ENDFUNC
+// FUNC 100024d9 ___scrt_acquire_startup_lock
+char __scrt_acquire_startup_lock()
+{
+  PVOID StackBase; // edx
+  signed __int32 v1; // eax
+
+  if ( __scrt_is_ucrt_dll_in_use() != 0 )
+  {
+    StackBase = NtCurrentTeb()->NtTib.StackBase;
+    while ( 1 )
+    {
+      v1 = _InterlockedCompareExchange(&__scrt_native_startup_lock, (signed __int32)StackBase, 0);
+      if ( v1 == 0 )
+        break;
+      if ( StackBase == (PVOID)v1 )
+        return 1;
+    }
+  }
+  return 0;
+}
+// ENDFUNC
+// FUNC 1000250b ___scrt_dllmain_after_initialize_c
+char __scrt_dllmain_after_initialize_c()
+{
+  _crt_argv_mode startup_argv_mode; // eax
+
+  if ( __scrt_is_ucrt_dll_in_use() != 0 )
+  {
+    __isa_available_init();
+  }
+  else
+  {
+    startup_argv_mode = _get_startup_argv_mode();
+    if ( configure_narrow_argv(startup_argv_mode) != 0 )
+      return 0;
+    initialize_narrow_environment();
+  }
+  return 1;
+}
+// ENDFUNC
+// FUNC 10002536 ___scrt_dllmain_before_initialize_c
+bool __scrt_dllmain_before_initialize_c()
+{
+  return (unsigned __int8)__scrt_initialize_onexit_tables(0) != 0;
+}
+// ENDFUNC
+// DECOMP-FAIL 10002544 ___scrt_dllmain_crt_thread_attach RuntimeError
+// DECOMP-FAIL 10002563 ___scrt_dllmain_crt_thread_detach RuntimeError
+// FUNC 10002570 ___scrt_dllmain_exception_filter
+int __cdecl __scrt_dllmain_exception_filter(
+        int a1,
+        int a2,
+        int a3,
+        void (__thiscall *a4)(_DWORD, int, _DWORD, int),
+        unsigned int ExceptionNum,
+        struct _EXCEPTION_POINTERS *ExceptionPtr)
+{
+  if ( __scrt_is_ucrt_dll_in_use() == 0 && a2 == 1 )
+    a4(a4, a1, 0, a3);
+  return seh_filter_dll(ExceptionNum, ExceptionPtr);
+}
+// ENDFUNC
+// FUNC 100025a4 ___scrt_dllmain_uninitialize_c
+void __scrt_dllmain_uninitialize_c()
+{
+  if ( __scrt_is_ucrt_dll_in_use() != 0 )
+  {
+    execute_onexit_table(&Table);
+  }
+  else if ( _is_c_termination_complete() == 0 )
+  {
+    _cexit();
+  }
+}
+// ENDFUNC
+// FUNC 100025c7 ___scrt_dllmain_uninitialize_critical
+__vcrt_bool __cdecl __scrt_dllmain_uninitialize_critical(__vcrt_bool Terminating)
+{
+  __acrt_thread_attach(false);
+  return __acrt_thread_attach(Terminating);
+}
+// ENDFUNC
+// FUNC 100025d4 ___scrt_initialize_crt
+char __cdecl __scrt_initialize_crt(int a1)
+{
+  __vcrt_bool savedregs; // [esp+0h] [ebp+0h]
+  __vcrt_bool savedregsa; // [esp+0h] [ebp+0h]
+
+  if ( a1 == 0 )
+    is_initialized_as_dll = true;
+  __isa_available_init();
+  if ( !__acrt_thread_attach(savedregs) )
+    return 0;
+  if ( !__acrt_thread_attach(savedregsa) )
+  {
+    __acrt_thread_attach(false);
+    return 0;
+  }
+  return 1;
+}
+// ENDFUNC
+// FUNC 1000260d ___scrt_initialize_onexit_tables
+char __cdecl __scrt_initialize_onexit_tables(unsigned int a1)
+{
+  if ( module_local_atexit_table_initialized )
+    return 1;
+  if ( a1 > 1 )
+  {
+    __scrt_fastfail(5);
+    __debugbreak();
+  }
+  if ( __scrt_is_ucrt_dll_in_use() == 0 || a1 != 0 )
+  {
+    Table._first = (_PVFV *)-1;
+    Table._last = (_PVFV *)-1;
+    Table._end = (_PVFV *)-1;
+    module_local_at_quick_exit_table._first = (_PVFV *)-1;
+    module_local_at_quick_exit_table._last = (_PVFV *)-1;
+    module_local_at_quick_exit_table._end = (_PVFV *)-1;
+  }
+  else if ( initialize_onexit_table(&Table) != 0 || initialize_onexit_table(&module_local_at_quick_exit_table) != 0 )
+  {
+    return 0;
+  }
+  module_local_atexit_table_initialized = true;
+  return 1;
+}
+// ENDFUNC
+// FUNC 10002694 ___scrt_is_nonwritable_in_current_image
+bool __cdecl __scrt_is_nonwritable_in_current_image(int a1)
+{
+  _IMAGE_SECTION_HEADER *pe_section; // eax
+  bool result; // al
+
+  result = false;
+  if ( *(_WORD *)&MEMORY[0x10000000] == 23117
+    && *(_DWORD *)(MEMORY[0x1000003C] + 0x10000000) == 17744
+    && *(_WORD *)(MEMORY[0x1000003C] + 268435480) == 267 )
+  {
+    pe_section = find_pe_section((unsigned __int8 *const)0x10000000, a1 - 0x10000000);
+    if ( pe_section != nullptr && (pe_section->Characteristics & 0x80000000) == 0 )
+      return true;
+  }
+  return result;
+}
+// ENDFUNC
+// FUNC 10002728 ___scrt_release_startup_lock
+__int32 __cdecl __scrt_release_startup_lock(char a1)
+{
+  __int32 result; // eax
+
+  result = __scrt_is_ucrt_dll_in_use();
+  if ( result != 0 && a1 == 0 )
+    return _InterlockedExchange(&__scrt_native_startup_lock, 0);
+  return result;
+}
+// ENDFUNC
+// FUNC 10002745 ___scrt_uninitialize_crt
+char __cdecl __scrt_uninitialize_crt(__vcrt_bool Terminating, char a2)
+{
+  if ( !is_initialized_as_dll || a2 == 0 )
+  {
+    __acrt_thread_attach(Terminating);
+    __acrt_thread_attach(Terminating);
+  }
+  return 1;
+}
+// ENDFUNC
+// FUNC 1000276d ___scrt_get_dyn_tls_init_callback
+void *__scrt_get_dyn_tls_init_callback()
+{
+  return &unk_10005710;
+}
+// ENDFUNC
+// FUNC 10002773 ___scrt_fastfail
+LONG __usercall __scrt_fastfail@<eax>(int a1@<ebx>, int a2@<edi>, int a3@<esi>, unsigned int a4)
+{
+  void *v4; // eax
+  int v5; // ecx
+  int v6; // edx
+  unsigned int v7; // kr00_4
+  BOOL v8; // eax
+  bool v9; // bl
+  LONG result; // eax
+  _DWORD v11[179]; // [esp+8h] [ebp-324h] BYREF
+  _DWORD v12[20]; // [esp+2D4h] [ebp-58h] BYREF
+  struct _EXCEPTION_POINTERS ExceptionInfo; // [esp+324h] [ebp-8h] BYREF
+  int savedregs; // [esp+32Ch] [ebp+0h]
+  _UNKNOWN *retaddr; // [esp+330h] [ebp+4h] BYREF
+
+  if ( IsProcessorFeaturePresent(0x17u) )
+    __fastfail(a4);
+  _crt_debugger_hook(3);
+  v4 = memset(v11, 0, sizeof(v11));
+  v11[44] = v4;
+  v11[43] = v5;
+  v11[42] = v6;
+  v11[41] = a1;
+  v11[40] = a3;
+  v11[39] = a2;
+  LOWORD(v11[50]) = __SS__;
+  LOWORD(v11[47]) = __CS__;
+  LOWORD(v11[38]) = __DS__;
+  LOWORD(v11[37]) = __ES__;
+  LOWORD(v11[36]) = __FS__;
+  LOWORD(v11[35]) = __GS__;
+  v7 = __readeflags();
+  v11[48] = v7;
+  v11[46] = retaddr;
+  v11[49] = &retaddr;
+  v11[0] = 65537;
+  v11[45] = savedregs;
+  memset(v12, 0, sizeof(v12));
+  v12[0] = 1073741845;
+  v12[1] = 1;
+  v12[3] = retaddr;
+  v8 = IsDebuggerPresent();
+  ExceptionInfo.ExceptionRecord = (PEXCEPTION_RECORD)v12;
+  ExceptionInfo.ContextRecord = (PCONTEXT)v11;
+  v9 = v8;
+  SetUnhandledExceptionFilter(nullptr);
+  result = UnhandledExceptionFilter(&ExceptionInfo);
+  if ( result == 0 && !v9 )
+    return _crt_debugger_hook(3);
+  return result;
+}
+// ENDFUNC
+// FUNC 1000288e __crt_debugger_hook
+void _crt_debugger_hook()
+{
+  dword_10005704 = 0;
+}
+// ENDFUNC
+// FUNC 10002896 __RTC_Initialize
+void __cdecl _RTC_Initialize()
+{
+  ;
+}
+// ENDFUNC
+// FUNC 100028c2 __RTC_Terminate
+void __cdecl _RTC_Terminate()
+{
+  ;
+}
+// ENDFUNC
+// FUNC 100028f0 __SEH_prolog4
+_DWORD *__cdecl _SEH_prolog4(int a1, int a2)
+{
+  void *v4; // esp
+  void *v6; // [esp-18h] [ebp-18h]
+  _DWORD v7[2]; // [esp-8h] [ebp-8h] BYREF
+  _UNKNOWN *retaddr; // [esp+0h] [ebp+0h]
+  int v9; // [esp+4h] [ebp+4h]
+
+  v7[1] = _except_handler4;
+  v7[0] = NtCurrentTeb()->NtTib.ExceptionList;
+  v4 = alloca(a2);
+  v9 = -2;
+  retaddr = v6;
+  return v7;
+}
+// ENDFUNC
+// FUNC 10002935 __except_handler4
+int __cdecl _except_handler4(_DWORD *a1, int a2, int a3, int a4)
+{
+  *a1 = _filter_x86_sse2_floating_point_exception_default(*a1);
+  return except_handler4_common(&__security_cookie, __security_check_cookie, a1, a2, a3, a4);
+}
+// ENDFUNC
+// FUNC 10002964 nullsub_1
+void nullsub_1()
+{
+  ;
+}
+// ENDFUNC
+// FUNC 10002967 ??0_Interruption_exception@details@Concurrency@@QAE@ABV012@@Z
+struct Concurrency::details::_Interruption_exception *__thiscall Concurrency::details::_Interruption_exception::_Interruption_exception(
+        Concurrency::details::_Interruption_exception *this,
+        const struct Concurrency::details::_Interruption_exception *a2)
+{
+  std::exception::exception(this, a2);
+  *(_DWORD *)this = &std::bad_alloc::`vftable';
+  return this;
+}
+// ENDFUNC
+// FUNC 10002982 ??0bad_alloc@std@@QAE@XZ
+std::bad_alloc *__thiscall std::bad_alloc::bad_alloc(std::bad_alloc *this)
+{
+  *((_DWORD *)this + 1) = 0;
+  *((_DWORD *)this + 2) = 0;
+  *((_DWORD *)this + 1) = "bad allocation";
+  *(_DWORD *)this = &std::bad_alloc::`vftable';
+  return this;
+}
+// ENDFUNC
+// FUNC 1000299a ??0bad_array_new_length@std@@QAE@ABV01@@Z
+Concurrency::details::_Interruption_exception *__thiscall std::bad_array_new_length::bad_array_new_length(
+        Concurrency::details::_Interruption_exception *this,
+        const Concurrency::details::_Interruption_exception *a2)
+{
+  std::exception::exception(this, a2);
+  *(_DWORD *)this = &std::bad_array_new_length::`vftable';
+  return this;
+}
+// ENDFUNC
+// FUNC 100029b5 ??0bad_array_new_length@std@@QAE@XZ
+std::bad_array_new_length *__thiscall std::bad_array_new_length::bad_array_new_length(std::bad_array_new_length *this)
+{
+  *((_DWORD *)this + 1) = 0;
+  *((_DWORD *)this + 2) = 0;
+  *((_DWORD *)this + 1) = "bad array new length";
+  *(_DWORD *)this = &std::bad_array_new_length::`vftable';
+  return this;
+}
+// ENDFUNC
+// FUNC 100029cd ??0exception@std@@QAE@ABV01@@Z
+std::exception *__thiscall std::exception::exception(std::exception *this, const std::exception *a2)
+{
+  *(_DWORD *)this = &std::exception::`vftable';
+  *((_DWORD *)this + 1) = 0;
+  *((_DWORD *)this + 2) = 0;
+  _std_exception_copy((char *)a2 + 4, (char *)this + 4);
+  return this;
+}
+// ENDFUNC
+// FUNC 100029f9 unknown_libname_4
+// Microsoft VisualC 14/net runtime
+// Microsoft VisualC 14/net runtime
+int __thiscall unknown_libname_4(_DWORD *this)
+{
+  *this = &std::exception::`vftable';
+  return _std_exception_destroy(this + 1);
+}
+// ENDFUNC
+// FUNC 10002a0a unknown_libname_3
+// Microsoft VisualC 14/net runtime
+// Microsoft VisualC 14/net runtime
+char *__thiscall unknown_libname_3(char *Block, char a2)
+{
+  *(_DWORD *)Block = &std::exception::`vftable';
+  _std_exception_destroy(Block + 4);
+  if ( (a2 & 1) != 0 )
+    operator delete(Block);
+  return Block;
+}
+// ENDFUNC
+// FUNC 10002a37 ?__scrt_throw_std_bad_alloc@@YAXXZ
+void __noreturn __scrt_throw_std_bad_alloc()
+{
+  _BYTE pExceptionObject[12]; // [esp+0h] [ebp-Ch] BYREF
+
+  std::bad_alloc::bad_alloc((std::bad_alloc *)pExceptionObject);
+  CxxThrowException(pExceptionObject, (_ThrowInfo *)&_TI2?AVbad_alloc_std__);
+}
+// ENDFUNC
+// FUNC 10002a54 ?__scrt_throw_std_bad_array_new_length@@YAXXZ
+void __noreturn __scrt_throw_std_bad_array_new_length()
+{
+  _BYTE pExceptionObject[12]; // [esp+0h] [ebp-Ch] BYREF
+
+  std::bad_array_new_length::bad_array_new_length((std::bad_array_new_length *)pExceptionObject);
+  CxxThrowException(pExceptionObject, (_ThrowInfo *)&_TI3?AVbad_array_new_length_std__);
+}
+// ENDFUNC
+// FUNC 10002a71 ?what@exception@std@@UBEPBDXZ
+const char *__thiscall std::exception::what(std::exception *this)
+{
+  const char *result; // eax
+
+  result = *((const char **)this + 1);
+  if ( result == nullptr )
+    return "Unknown exception";
+  return result;
+}
+// ENDFUNC
+// FUNC 10002a7e ___isa_available_init
+int __cdecl __isa_available_init()
+{
+  int v5; // edi
+  int v11; // eax
+  int v12; // edi
+  int v18; // eax
+  int v19; // eax
+  int v20; // eax
+  int v22; // [esp+0h] [ebp-24h]
+  char v23; // [esp+10h] [ebp-14h]
+  int v24; // [esp+18h] [ebp-Ch]
+  int v25; // [esp+1Ch] [ebp-8h]
+  int v26; // [esp+20h] [ebp-4h]
+  int v27; // [esp+20h] [ebp-4h]
+
+  __isa_available = 0;
+  __isa_enabled |= 1u;
+  if ( IsProcessorFeaturePresent(0xAu) )
+  {
+    _EAX = 0;
+    __asm { cpuid }
+    v24 = _EAX;
+    v5 = _EBX ^ 0x756E6547;
+    v26 = _EDX ^ 0x49656E69;
+    v25 = _ECX ^ 0x6C65746E;
+    _EAX = 1;
+    __asm { cpuid }
+    v22 = _EAX;
+    if ( (v5 | v25 | v26) == 0
+      && ((v11 = _EAX & 0xFFF3FF0, (v22 & 0xFFF3FF0) == 0x106C0)
+       || v11 == 132704
+       || v11 == 132720
+       || v11 == 198224
+       || v11 == 198240
+       || v11 == 198256) )
+    {
+      v12 = __favor | 1;
+      __favor |= 1u;
+    }
+    else
+    {
+      v12 = __favor;
+    }
+    _EAX = 7;
+    v27 = _ECX;
+    if ( v24 < 7 )
+    {
+      _EBX = 0;
+    }
+    else
+    {
+      __asm { cpuid }
+      _ECX = v27;
+      if ( (_EBX & 0x200) != 0 )
+        __favor = v12 | 2;
+    }
+    v18 = __isa_enabled | 2;
+    __isa_available = 1;
+    __isa_enabled |= 2u;
+    if ( (_ECX & 0x100000) != 0 )
+    {
+      v19 = v18 | 4;
+      __isa_available = 2;
+      __isa_enabled = v19;
+      if ( (_ECX & 0x8000000) != 0 && (_ECX & 0x10000000) != 0 )
+      {
+        __asm { xgetbv }
+        v23 = v19;
+        if ( (v19 & 6) == 6 )
+        {
+          v20 = __isa_enabled | 8;
+          __isa_available = 3;
+          __isa_enabled |= 8u;
+          if ( (_EBX & 0x20) != 0 )
+          {
+            __isa_available = 5;
+            __isa_enabled = v20 | 0x20;
+            if ( (_EBX & 0xD0030000) == 0xD0030000 && (v23 & 0xE0) == 0xE0 )
+            {
+              __isa_enabled |= 0x40u;
+              __isa_available = 6;
+            }
+          }
+        }
+      }
+    }
+  }
+  return 0;
+}
+// ENDFUNC
+// FUNC 10002c52 __get_startup_argv_mode
+_crt_argv_mode __cdecl _get_startup_argv_mode()
+{
+  return _crt_argv_unexpanded_arguments;
+}
+// ENDFUNC
+// FUNC 10002c56 ___scrt_is_ucrt_dll_in_use
+BOOL __scrt_is_ucrt_dll_in_use()
+{
+  return dword_10005024 != 0;
+}
+// ENDFUNC
+// FUNC 10002c62 QISearch
+// attributes: thunk
+HRESULT __stdcall QISearch(void *that, LPCQITAB pqit, const IID *const riid, void **ppv)
+{
+  return __imp_QISearch(that, pqit, riid, ppv);
+}
+// ENDFUNC
+// FUNC 10002c6e __CxxFrameHandler3
+// attributes: thunk
+int _CxxFrameHandler3()
+{
+  return __CxxFrameHandler3();
+}
+// ENDFUNC
+// FUNC 10002c74 memset
+// attributes: thunk
+void *__cdecl memset(void *a1, int Val, size_t Size)
+{
+  return __imp_memset(a1, Val, Size);
+}
+// ENDFUNC
+// FUNC 10002c7a __std_type_info_destroy_list
+// attributes: thunk
+int __cdecl _std_type_info_destroy_list(int a1)
+{
+  return __std_type_info_destroy_list(a1);
+}
+// ENDFUNC
+// FUNC 10002c80 _except_handler4_common
+// attributes: thunk
+int __cdecl except_handler4_common(int a1, int a2, int a3, int a4, int a5, int a6)
+{
+  return _except_handler4_common(a1, a2, a3, a4, a5, a6);
+}
+// ENDFUNC
+// FUNC 10002c86 __std_exception_copy
+// attributes: thunk
+int __cdecl _std_exception_copy(int a1, int a2)
+{
+  return __std_exception_copy(a1, a2);
+}
+// ENDFUNC
+// FUNC 10002c8c __std_exception_destroy
+// attributes: thunk
+int __cdecl _std_exception_destroy(int a1)
+{
+  return __std_exception_destroy(a1);
+}
+// ENDFUNC
+// FUNC 10002c92 _CxxThrowException
+// attributes: thunk
+void __stdcall __noreturn CxxThrowException(void *pExceptionObject, _ThrowInfo *pThrowInfo)
+{
+  _CxxThrowException(pExceptionObject, pThrowInfo);
+}
+// ENDFUNC
+// FUNC 10002c98 free
+// attributes: thunk
+void __cdecl free(void *Block)
+{
+  __imp_free(Block);
+}
+// ENDFUNC
+// FUNC 10002c9e malloc
+// attributes: thunk
+void *__cdecl malloc(size_t Size)
+{
+  return __imp_malloc(Size);
+}
+// ENDFUNC
+// FUNC 10002ca4 _initterm
+// attributes: thunk
+void __cdecl initterm(_PVFV *First, _PVFV *Last)
+{
+  _initterm(First, Last);
+}
+// ENDFUNC
+// FUNC 10002caa _initterm_e
+// attributes: thunk
+int __cdecl initterm_e(_PIFV *First, _PIFV *Last)
+{
+  return _initterm_e(First, Last);
+}
+// ENDFUNC
+// FUNC 10002cb0 _callnewh
+// attributes: thunk
+int __cdecl callnewh(size_t Size)
+{
+  return _callnewh(Size);
+}
+// ENDFUNC
+// FUNC 10002cb6 _seh_filter_dll
+// attributes: thunk
+int __cdecl seh_filter_dll(unsigned int ExceptionNum, struct _EXCEPTION_POINTERS *ExceptionPtr)
+{
+  return _seh_filter_dll(ExceptionNum, ExceptionPtr);
+}
+// ENDFUNC
+// FUNC 10002cbc _configure_narrow_argv
+// attributes: thunk
+errno_t __cdecl configure_narrow_argv(_crt_argv_mode mode)
+{
+  return _configure_narrow_argv(mode);
+}
+// ENDFUNC
+// FUNC 10002cc2 _initialize_narrow_environment
+// attributes: thunk
+int __cdecl initialize_narrow_environment()
+{
+  return _initialize_narrow_environment();
+}
+// ENDFUNC
+// FUNC 10002cc8 _initialize_onexit_table
+// attributes: thunk
+int __cdecl initialize_onexit_table(_onexit_table_t *Table)
+{
+  return _initialize_onexit_table(Table);
+}
+// ENDFUNC
+// FUNC 10002cce _execute_onexit_table
+// attributes: thunk
+int __cdecl execute_onexit_table(_onexit_table_t *Table)
+{
+  return _execute_onexit_table(Table);
+}
+// ENDFUNC
+// FUNC 10002cd4 __cexit
+// attributes: thunk
+void __cdecl _cexit()
+{
+  cexit();
+}
+// ENDFUNC
+// FUNC 10002cda ___acrt_thread_attach
+// Alternative name is '___acrt_uninitialize'
+// Alternative name is '___vcrt_initialize'
+// Alternative name is '___acrt_initialize'
+// Alternative name is '___vcrt_thread_attach'
+// Alternative name is '___vcrt_thread_detach'
+__vcrt_bool __cdecl __acrt_thread_attach(__vcrt_bool Terminating)
+{
+  return true;
+}
+// ENDFUNC
+// FUNC 10002cdd __is_c_termination_complete
+int __cdecl _is_c_termination_complete()
+{
+  return 0;
+}
+// ENDFUNC
+// FUNC 10002ce0 __filter_x86_sse2_floating_point_exception_default
+int __cdecl _filter_x86_sse2_floating_point_exception_default(int a1)
+{
+  unsigned __int16 v2; // [esp+0h] [ebp-4h]
+
+  if ( __isa_available >= 1 && (a1 == -1073741132 || a1 == -1073741131) )
+  {
+    v2 = _mm_getcsr();
+    if ( (((unsigned __int8)v2 ^ 0x3F) & 0x81) == 0 )
+      return -1073741680;
+    if ( ((v2 ^ 0x3F) & 0x204) == 0 )
+      return -1073741682;
+    if ( ((v2 ^ 0x3F) & 0x102) == 0 )
+      return -1073741680;
+    if ( ((v2 ^ 0x3F) & 0x408) == 0 )
+      return -1073741679;
+    if ( ((v2 ^ 0x3F) & 0x810) == 0 )
+      return -1073741677;
+    if ( ((v2 ^ 0x3F) & 0x1020) == 0 )
+      return -1073741681;
+  }
+  return a1;
+}
+// ENDFUNC

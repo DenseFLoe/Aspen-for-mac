@@ -1,0 +1,6595 @@
+using System;
+using System.CodeDom.Compiler;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Configuration;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Reflection;
+using System.Resources;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
+using System.Runtime.Versioning;
+using System.Security.Principal;
+using System.ServiceModel;
+using System.ServiceModel.Channels;
+using System.ServiceModel.Security;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
+using System.Windows.Input;
+using System.Windows.Markup;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
+using System.Windows.Shapes;
+using System.Xml;
+using AspenTech.AspenONEShare.Localization;
+using AspenTech.AspenONEShare.Properties;
+using AspenTech.AspenONEShare.ShareService;
+using Interop.SECSERVEROBJECTLib;
+using Ionic.Zip;
+using Metadata_SDK;
+using XamlToPng;
+
+[assembly: ThemeInfo(ResourceDictionaryLocation.None, ResourceDictionaryLocation.SourceAssembly)]
+[assembly: CompilationRelaxations(8)]
+[assembly: ComVisible(false)]
+[assembly: AssemblyFileVersion("9.0.0.0")]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: TargetFramework(".NETFramework,Version=v4.5.1", FrameworkDisplayName = ".NET Framework 4.5.1")]
+[assembly: AssemblyTitle("AspenONE Share")]
+[assembly: AssemblyDescription("Component used to publish simulation models")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("AspenTech")]
+[assembly: AssemblyProduct("AspenONE Share")]
+[assembly: AssemblyCopyright("Copyright ©  2014, 2015")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyVersion("9.0.0.0")]
+namespace AspenTech.AspenONEShare
+{
+	public class AdClickBait : UserControl, IComponentConnector
+	{
+		private static readonly string aspenONEDriveURL = "www.aspentech.com/aspenonedrive";
+
+		internal Canvas myCanvas;
+
+		internal Image Drive_Icon;
+
+		internal Image Play;
+
+		private bool _contentLoaded;
+
+		public AdClickBait()
+		{
+			InitializeComponent();
+		}
+
+		private void GoToAdvertisement()
+		{
+			try
+			{
+				Process.Start(aspenONEDriveURL);
+			}
+			catch (Exception e)
+			{
+				ShareLog.LogException("Failed opening advertisement video", e);
+			}
+		}
+
+		private void this_MouseDown(object sender, MouseButtonEventArgs e)
+		{
+			GoToAdvertisement();
+		}
+
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[DebuggerNonUserCode]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/AspenTech.AspenONEShare;component/controls/adclickbait.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		[DebuggerNonUserCode]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			switch (connectionId)
+			{
+			case 1:
+				((AdClickBait)target).MouseDown += this_MouseDown;
+				break;
+			case 2:
+				myCanvas = (Canvas)target;
+				break;
+			case 3:
+				Drive_Icon = (Image)target;
+				break;
+			case 4:
+				Play = (Image)target;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+	public class SessionInfoEventManager : WeakEventManager
+	{
+		public static SessionInfoEventManager CurrentManager
+		{
+			get
+			{
+				Type typeFromHandle = typeof(SessionInfoEventManager);
+				SessionInfoEventManager sessionInfoEventManager = WeakEventManager.GetCurrentManager(typeFromHandle) as SessionInfoEventManager;
+				if (sessionInfoEventManager == null)
+				{
+					sessionInfoEventManager = new SessionInfoEventManager();
+					WeakEventManager.SetCurrentManager(typeFromHandle, sessionInfoEventManager);
+				}
+				return sessionInfoEventManager;
+			}
+		}
+
+		private SessionInfoEventManager()
+		{
+		}
+
+		public static void AddListener(SessionInfo source, IWeakEventListener listener)
+		{
+			if (source != null)
+			{
+				CurrentManager.ProtectedAddListener(source, listener);
+			}
+		}
+
+		public static void RemoveListener(SessionInfo source, IWeakEventListener listener)
+		{
+			CurrentManager.ProtectedRemoveListener(source, listener);
+		}
+
+		protected override void StartListening(object source)
+		{
+			if (source is SessionInfo sessionInfo)
+			{
+				sessionInfo.Message += base.DeliverEvent;
+			}
+		}
+
+		protected override void StopListening(object source)
+		{
+			if (source is SessionInfo sessionInfo)
+			{
+				sessionInfo.Message -= base.DeliverEvent;
+			}
+		}
+	}
+	public class BasicURL : UserControl
+	{
+		public enum ConnectStatus
+		{
+			UNKNOWN,
+			URLISMALFORMATTED,
+			SERVEREXISTS,
+			SERVERISA1,
+			SERVERHASSHARE,
+			USERHASACCESS
+		}
+
+		public enum mode
+		{
+			Editing,
+			Connecting,
+			Connected
+		}
+
+		public class RequestState
+		{
+			public HttpWebRequest request;
+
+			public HttpWebResponse response;
+
+			public RequestState()
+			{
+				request = null;
+				response = null;
+			}
+		}
+
+		private const string ANYHomeTestString = "ANYHome.html";
+
+		private const string VersionQueryString = "Version";
+
+		private UserProfile owner;
+
+		public bool ConnectedSuccessfully;
+
+		protected HttpStatusCode connectionStatusCode;
+
+		protected ConnectStatus connectStatus;
+
+		private WebRequest _request;
+
+		private RequestState _requestState = new RequestState();
+
+		public ManualResetEvent allDone = new ManualResetEvent(initialState: false);
+
+		protected Version _AppVersion;
+
+		protected string _AppHostName;
+
+		public static readonly DependencyProperty CurrentURLProperty = DependencyProperty.Register("CurrentURL", typeof(string), typeof(BasicURL), new PropertyMetadata(""));
+
+		public static readonly DependencyProperty CurrentStatusColorProperty = DependencyProperty.Register("CurrentStatusColor", typeof(Brush), typeof(BasicURL), new PropertyMetadata(Brushes.Black));
+
+		public static readonly DependencyProperty CurrentStatusMessageProperty = DependencyProperty.Register("CurrentStatusMessage", typeof(string), typeof(BasicURL), new PropertyMetadata(""));
+
+		public static readonly DependencyProperty CurrentImageProperty = DependencyProperty.Register("CurrentImage", typeof(ImageSource), typeof(BasicURL), new PropertyMetadata(null));
+
+		protected bool _serverVersionIsValid;
+
+		protected bool _serverSimVersionIsValid;
+
+		public WebRequest request => _request;
+
+		public RequestState requestState => _requestState;
+
+		public string CurrentURL
+		{
+			get
+			{
+				return (string)GetValue(CurrentURLProperty);
+			}
+			set
+			{
+				SetValue(CurrentURLProperty, value);
+			}
+		}
+
+		public ShareUser Owner => owner;
+
+		public Brush CurrentStatusColor
+		{
+			get
+			{
+				return (Brush)GetValue(CurrentStatusColorProperty);
+			}
+			set
+			{
+				SetValue(CurrentStatusColorProperty, value);
+			}
+		}
+
+		public string CurrentStatusMessage
+		{
+			get
+			{
+				return (string)GetValue(CurrentStatusMessageProperty);
+			}
+			set
+			{
+				SetValue(CurrentStatusMessageProperty, value);
+			}
+		}
+
+		public ImageSource CurrentImage
+		{
+			get
+			{
+				return (ImageSource)GetValue(CurrentImageProperty);
+			}
+			set
+			{
+				SetValue(CurrentImageProperty, value);
+			}
+		}
+
+		public event PropertyChangedEventHandler ReadyToTransitionPropertyChanged;
+
+		public BasicURL()
+		{
+			CurrentURL = "";
+		}
+
+		private void responseCallback(IAsyncResult result)
+		{
+			try
+			{
+				_requestState = (RequestState)result.AsyncState;
+				HttpWebRequest httpWebRequest = _requestState.request;
+				_requestState.response = (HttpWebResponse)httpWebRequest.EndGetResponse(result);
+			}
+			catch (Exception e)
+			{
+				_requestState.response = null;
+				ShareLog.LogException("Error ending request to server.", e);
+			}
+			allDone.Set();
+		}
+
+		private static bool CheckAspenONEVersion(Version simClientVersion, VersionInfo ServerVersionInfo)
+		{
+			if (simClientVersion == null || ServerVersionInfo == null || ServerVersionInfo.SystemVersion == null)
+			{
+				ShareLog.LogWarning("Checking AspenONEVersion Failed: Null Checks Failed");
+				return false;
+			}
+			string systemVersion = ServerVersionInfo.SystemVersion;
+			if (Version.TryParse(systemVersion, out var result))
+			{
+				int num = result.CompareTo(simClientVersion);
+				if (num < 0)
+				{
+					ShareLog.LogWarning("Checking AspenONEVersion Failed: A1 Version->" + result.ToString() + " SimVersion->" + simClientVersion.ToString());
+					return false;
+				}
+				return true;
+			}
+			ShareLog.LogWarning("Checking AspenONEVersion Failed: A1 Version->" + result.ToString() + " SimVersion->" + simClientVersion.ToString());
+			return false;
+		}
+
+		private static bool CheckSimulatorVersion(Version simClientVersion, VersionInfo ServerVersionInfo, string appName)
+		{
+			if (simClientVersion == null || string.IsNullOrWhiteSpace(appName) || ServerVersionInfo == null || ServerVersionInfo.Components == null || ServerVersionInfo.Components.Length == 0)
+			{
+				ShareLog.LogWarning("Checking SimVersion Failed: Null Checks Failed");
+				return false;
+			}
+			bool flag = false;
+			string text = appName.Replace(" ", "").ToUpper();
+			ComponentVersionInfo[] components = ServerVersionInfo.Components;
+			foreach (ComponentVersionInfo componentVersionInfo in components)
+			{
+				if (string.IsNullOrWhiteSpace(componentVersionInfo.ResourceType) || !text.Contains(componentVersionInfo.ResourceType.ToUpper()))
+				{
+					continue;
+				}
+				string resourceVersion = componentVersionInfo.ResourceVersion;
+				if (Version.TryParse(Regex.Replace(resourceVersion, "[^0-9.]", ""), out var result))
+				{
+					result = new Version(result.Major, (result.Minor >= 0) ? result.Minor : 0, (result.Build >= 0) ? result.Build : 0, (result.Revision >= 0) ? result.Revision : 0);
+					int num = result.CompareTo(simClientVersion);
+					if (num >= 0)
+					{
+						flag = true;
+						break;
+					}
+				}
+			}
+			if (flag)
+			{
+				return true;
+			}
+			return false;
+		}
+
+		private bool CheckVersion(Version simClientVersion, VersionInfo ServerVersionInfo, string appName)
+		{
+			ShareLog.LogInfo("Checking Versions...");
+			_serverVersionIsValid = CheckAspenONEVersion(simClientVersion, ServerVersionInfo);
+			if (_serverVersionIsValid)
+			{
+				_serverSimVersionIsValid = CheckSimulatorVersion(simClientVersion, ServerVersionInfo, appName);
+				return _serverSimVersionIsValid;
+			}
+			return false;
+		}
+
+		protected void connectToServer(object sender, DoWorkEventArgs e)
+		{
+			if (sender is BackgroundWorker { CancellationPending: false } backgroundWorker)
+			{
+				string text = e.Argument as string;
+				VersionInfo versionInfo = null;
+				connectStatus = ConnectStatus.UNKNOWN;
+				try
+				{
+					if (backgroundWorker.CancellationPending)
+					{
+						e.Cancel = true;
+						return;
+					}
+					using ShareClient shareClient = ShareServiceHelper.CreateClient(Utilities.GetRelativeShareUrl(text));
+					versionInfo = shareClient.GetVersion();
+					if (backgroundWorker.CancellationPending)
+					{
+						e.Cancel = true;
+						return;
+					}
+					if (versionInfo != null)
+					{
+						connectStatus = ConnectStatus.SERVERHASSHARE;
+					}
+					owner = shareClient.GetUserProfile(WindowsIdentity.GetCurrent().Name.ToLower());
+					if (owner != null && (owner.IsAdmin || (owner.Roles != null && owner.Roles.Contains("aspenONESimulationUsers") && owner.Roles.Contains("aspenONE Members"))))
+					{
+						connectStatus = ConnectStatus.USERHASACCESS;
+					}
+				}
+				catch (EndpointNotFoundException)
+				{
+					connectionStatusCode = HttpStatusCode.NotFound;
+					if (backgroundWorker.CancellationPending)
+					{
+						e.Cancel = true;
+						return;
+					}
+				}
+				catch (FaultException<SecurityAccessDeniedException>)
+				{
+					connectStatus = ConnectStatus.SERVERHASSHARE;
+					ConnectedSuccessfully = false;
+					return;
+				}
+				catch (Exception ex3)
+				{
+					versionInfo = null;
+					if (ex3 is ArgumentException || ex3 is UriFormatException)
+					{
+						connectStatus = ConnectStatus.URLISMALFORMATTED;
+						ConnectedSuccessfully = false;
+						return;
+					}
+					ShareLog.LogException("Error connecting to server.", ex3);
+				}
+				if (backgroundWorker.CancellationPending)
+				{
+					e.Cancel = true;
+					return;
+				}
+				if (versionInfo != null)
+				{
+					ConnectedSuccessfully = CheckVersion(_AppVersion, versionInfo, _AppHostName) && connectStatus == ConnectStatus.USERHASACCESS;
+					return;
+				}
+				ConnectedSuccessfully = false;
+				bool flag = false;
+				_request = null;
+				try
+				{
+					_request = WebRequest.Create(GetANYHomeURL(text));
+					_request.Timeout = 10000;
+					_request.Method = "HEAD";
+					_request.UseDefaultCredentials = true;
+					_requestState.request = request as HttpWebRequest;
+				}
+				catch (Exception ex4)
+				{
+					if (ex4 is NotSupportedException || ex4 is ArgumentNullException || ex4 is UriFormatException)
+					{
+						connectStatus = ConnectStatus.URLISMALFORMATTED;
+						return;
+					}
+					ShareLog.LogException("Unexpected error while testing URL.", ex4);
+				}
+				try
+				{
+					if (backgroundWorker.CancellationPending)
+					{
+						e.Cancel = true;
+						return;
+					}
+					_request.BeginGetResponse(responseCallback, _requestState);
+					allDone.WaitOne();
+					flag = _requestState.response != null;
+				}
+				finally
+				{
+					if (_requestState.response != null)
+					{
+						_requestState.response.Close();
+					}
+				}
+				if (!flag)
+				{
+					_request = WebRequest.Create(new Uri(text));
+					_request.Method = "HEAD";
+					_request.Timeout = 10000;
+					_request.UseDefaultCredentials = true;
+					_requestState.request = request as HttpWebRequest;
+					try
+					{
+						if (backgroundWorker.CancellationPending)
+						{
+							e.Cancel = true;
+							Monitor.Exit(_requestState);
+							return;
+						}
+						_request.BeginGetResponse(responseCallback, _requestState);
+						allDone.WaitOne();
+						if (_requestState.response != null)
+						{
+							connectStatus = ConnectStatus.SERVEREXISTS;
+						}
+						return;
+					}
+					catch (Exception e2)
+					{
+						ShareLog.LogException("Error while testing server status", e2);
+						return;
+					}
+					finally
+					{
+						if (_requestState.response != null)
+						{
+							_requestState.response.Close();
+						}
+					}
+				}
+				connectStatus = ConnectStatus.SERVERISA1;
+			}
+			else
+			{
+				e.Cancel = true;
+			}
+		}
+
+		private Uri GetANYHomeURL(string urlString)
+		{
+			Uri result = null;
+			if (!string.IsNullOrEmpty(urlString))
+			{
+				result = new Uri((urlString.EndsWith("/") ? urlString.Substring(0, urlString.Length - 1) : urlString) + "/ANYHome.html");
+			}
+			return result;
+		}
+	}
+	public class DriveControl : UserControl, IWeakEventListener, IComponentConnector
+	{
+		private bool _suppressUpdates;
+
+		internal Label ShareStatusLabel;
+
+		internal Label ModelStatusLabel;
+
+		internal Label LastSharedLabel;
+
+		internal Button RemoveButton;
+
+		internal ShareURLValidator shareURLValidator;
+
+		internal Button UploadButton;
+
+		internal Button aspenONEMyDriveButton;
+
+		internal Image ShareOpStatusImage;
+
+		internal TextBlock ShareOpStatusBlock;
+
+		private bool _contentLoaded;
+
+		public DriveControl()
+		{
+			InitializeComponent();
+			base.Loaded += Control_Loaded;
+			SessionInfoEventManager.AddListener(SessionInfo.Instance, this);
+			UpdateUI();
+		}
+
+		private void Control_Loaded(object sender, RoutedEventArgs e)
+		{
+			UpdateUI();
+		}
+
+		private void SessionInfo_MessageReceived(object sender, SessionInfo.SessionMessageArgs e)
+		{
+			switch (e.Message)
+			{
+			case "ActionComplete":
+				OnActionComplete();
+				break;
+			case "ConnectedToServerSuccessfully":
+			case "ServerURL":
+			case "ModelDetails":
+			case "ModelModified":
+				UpdateUI();
+				break;
+			case "SimUpdate":
+				UpdateUI();
+				ShareOpStatusBlock.Visibility = Visibility.Hidden;
+				ShareOpStatusImage.Visibility = Visibility.Hidden;
+				break;
+			}
+		}
+
+		private void OnActionComplete()
+		{
+			try
+			{
+				_suppressUpdates = true;
+				if (SessionInfo.Instance.ConnectedToServerSuccessfully && SessionInfo.Instance.ModelShareStatus == ModelStatus.COMPLETED && SessionInfo.Instance.FileActionType == FileActionType.INGESTION)
+				{
+					ShareOpStatusImage.Source = StatusImages.greenCheckMark;
+					ShareOpStatusImage.RenderTransform = null;
+					ShareOpStatusBlock.Foreground = Palette.GreenStatus;
+					ShareOpStatusBlock.Text = Strings.DRIVECONTROL_UPLOADED;
+					FadeOut(ShareOpStatusBlock, 2);
+					FadeOut(ShareOpStatusImage, 2);
+				}
+				else if (SessionInfo.Instance.ConnectedToServerSuccessfully && SessionInfo.Instance.ModelShareStatus == ModelStatus.PROCESSING && SessionInfo.Instance.FileActionType == FileActionType.INGESTION)
+				{
+					ShareOpStatusBlock.Text = Strings.SHAREWINDOW_STATUS_QUEUED_INFO;
+					ShareOpStatusImage.RenderTransform = null;
+					ShareOpStatusBlock.Foreground = Palette.GreenStatus;
+					FadeOut(ShareOpStatusImage, 2);
+				}
+				else if (SessionInfo.Instance.FileActionType == FileActionType.INGESTION)
+				{
+					ShareOpStatusImage.Source = StatusImages.redX;
+					ShareOpStatusImage.RenderTransform = null;
+					ShareOpStatusBlock.Foreground = Palette.RedStatus;
+					ShareOpStatusBlock.Text = Strings.DRIVECONTROL_UNABLE_TO_UPLOAD;
+				}
+				else
+				{
+					ShareOpStatusImage.Source = StatusImages.greenCheckMark;
+					ShareOpStatusImage.RenderTransform = null;
+					ShareOpStatusBlock.Foreground = Palette.GreenStatus;
+					ShareOpStatusBlock.Text = Strings.DRIVECONTROL_REMOVED;
+					FadeOut(ShareOpStatusBlock, 2);
+					FadeOut(ShareOpStatusImage, 2);
+				}
+			}
+			finally
+			{
+				_suppressUpdates = false;
+			}
+			UpdateUI();
+		}
+
+		private void UpdateUI()
+		{
+			if (_suppressUpdates)
+			{
+				return;
+			}
+			aspenONEMyDriveButton.IsEnabled = SessionInfo.Instance.ConnectedToServerSuccessfully;
+			if (string.IsNullOrWhiteSpace(SessionInfo.Instance.ActiveDocumentFilePath))
+			{
+				ShareStatusLabel.Content = Strings.SHAREWINDOW_OPEN_A_MODEL;
+				LastSharedLabel.Content = Strings.SHAREWINDOW_NA;
+				ModelStatusLabel.Content = string.Empty;
+				UploadButton.IsEnabled = false;
+				RemoveButton.IsEnabled = false;
+			}
+			else if (!SessionInfo.Instance.FileExtensionIsValid)
+			{
+				if (SessionInfo.Instance.HostApplicationName == "Aspen Plus")
+				{
+					ShareStatusLabel.Content = Strings.SHAREWINDOW_STATUS_UNSUPPORTED_FILE_APLUS;
+				}
+				else if (SessionInfo.Instance.HostApplicationName == "Aspen HYSYS")
+				{
+					ShareStatusLabel.Content = Strings.SHAREWINDOW_STATUS_UNSUPPORTED_FILE_HYSYS;
+				}
+				LastSharedLabel.Content = Strings.SHAREWINDOW_NA;
+				ModelStatusLabel.Content = string.Empty;
+				UploadButton.IsEnabled = false;
+				RemoveButton.IsEnabled = false;
+			}
+			else if (!SessionInfo.Instance.ConnectedToServerSuccessfully)
+			{
+				ShareStatusLabel.Content = Strings.SHAREWINDOW_STATUS_NOT_CONNECTED;
+				LastSharedLabel.Content = Strings.SHAREWINDOW_NA;
+				ModelStatusLabel.Content = string.Empty;
+				UploadButton.IsEnabled = false;
+				aspenONEMyDriveButton.IsEnabled = false;
+				RemoveButton.IsEnabled = false;
+			}
+			else if (SessionInfo.Instance.ModelShareStatus == ModelStatus.PROCESSING)
+			{
+				RemoveButton.IsEnabled = false;
+				UploadButton.IsEnabled = true;
+				ShareStatusLabel.Content = Strings.SHAREWINDOW_STATUS_QUEUED;
+			}
+			else if (SessionInfo.Instance.ModelHasBeenShared)
+			{
+				ShareStatusLabel.Content = Strings.DRIVECONTROL_UPLOADED;
+				RemoveButton.IsEnabled = true;
+				if (!SessionInfo.Instance.ModelShareTime.HasValue)
+				{
+					LastSharedLabel.Content = Strings.SHAREWINDOW_NA;
+				}
+				else if (SessionInfo.Instance.ModelShareTime == DateTime.MinValue)
+				{
+					LastSharedLabel.Content = DateTime.Now.ToString("MMMM dd, yyyy") + " - " + DateTime.Now.ToShortTimeString();
+				}
+				else
+				{
+					LastSharedLabel.Content = SessionInfo.Instance.ModelShareTime.Value.ToString("MMMM dd, yyyy") + " - " + SessionInfo.Instance.ModelShareTime.Value.ToShortTimeString();
+				}
+				if (SessionInfo.Instance.ModelModified)
+				{
+					UploadButton.IsEnabled = true;
+					ModelStatusLabel.Content = Strings.SHAREWINDOW_STATUS_MODIFIED;
+				}
+				else
+				{
+					UploadButton.IsEnabled = false;
+					ModelStatusLabel.Content = string.Empty;
+				}
+			}
+			else
+			{
+				RemoveButton.IsEnabled = false;
+				UploadButton.IsEnabled = true;
+				LastSharedLabel.Content = Strings.SHAREWINDOW_NA;
+				ModelStatusLabel.Content = string.Empty;
+				ShareStatusLabel.Content = Strings.DRIVECONTROL_NOT_UPLOADED;
+			}
+		}
+
+		private void UploadButton_Click(object sender, RoutedEventArgs e)
+		{
+			if (SessionInfo.Instance.IsDirty)
+			{
+				MessageBoxResult messageBoxResult = MessageBox.Show(Strings.SHAREWINDOW_DIALOG_SAVE_AND_SHARE, SessionInfo.Instance.HostApplicationName, MessageBoxButton.OKCancel, MessageBoxImage.None, MessageBoxResult.Yes);
+				if (messageBoxResult != MessageBoxResult.OK)
+				{
+					return;
+				}
+				SessionInfo.Instance.SaveCase();
+			}
+			ShareOpStatusImage.Source = StatusImages.spinner;
+			ShareOpStatusBlock.Foreground = Brushes.Black;
+			ShareOpStatusBlock.Text = Strings.DRIVECONTROL_UPLOADING;
+			StatusImages.Spin(ShareOpStatusImage);
+			UploadButton.IsEnabled = false;
+			ShareOpStatusBlock.Visibility = Visibility.Visible;
+			ShareOpStatusImage.Visibility = Visibility.Visible;
+			Cursor overrideCursor = Mouse.OverrideCursor;
+			try
+			{
+				Mouse.OverrideCursor = Cursors.Wait;
+				SessionInfo.Instance.ShareCase();
+			}
+			finally
+			{
+				Mouse.OverrideCursor = overrideCursor;
+			}
+		}
+
+		private void RemoveButton_Click(object sender, RoutedEventArgs e)
+		{
+			MessageBoxResult messageBoxResult = MessageBox.Show(Strings.SHAREWINDOW_DIALOG_UNSHARE, SessionInfo.Instance.HostApplicationName, MessageBoxButton.OKCancel, MessageBoxImage.None, MessageBoxResult.No);
+			if (messageBoxResult == MessageBoxResult.OK)
+			{
+				RemoveButton.IsEnabled = false;
+				ShareOpStatusImage.Source = StatusImages.spinner;
+				ShareOpStatusBlock.Foreground = Brushes.Black;
+				ShareOpStatusBlock.Text = Strings.DRIVECONTROL_REMOVING;
+				StatusImages.Spin(ShareOpStatusImage);
+				UploadButton.IsEnabled = false;
+				ShareOpStatusBlock.Visibility = Visibility.Visible;
+				ShareOpStatusImage.Visibility = Visibility.Visible;
+				Cursor overrideCursor = Mouse.OverrideCursor;
+				try
+				{
+					Mouse.OverrideCursor = Cursors.Wait;
+					SessionInfo.Instance.UnShareCase();
+				}
+				finally
+				{
+					Mouse.OverrideCursor = overrideCursor;
+				}
+			}
+		}
+
+		private void AspenONEMyDriveButton_Click(object sender, RoutedEventArgs e)
+		{
+			string serverURL = SessionInfo.Instance.ServerURL;
+			if (!string.IsNullOrWhiteSpace(serverURL))
+			{
+				try
+				{
+					Process.Start(serverURL + "/aspenone.html#Search?models");
+				}
+				catch (Exception e2)
+				{
+					ShareLog.LogException("Failure launching A1Drive", e2);
+				}
+			}
+		}
+
+		private static void FadeOut(UIElement control, int fadeDuration)
+		{
+			DoubleAnimation doubleAnimation = new DoubleAnimation();
+			doubleAnimation.From = 1.0;
+			doubleAnimation.To = 0.0;
+			doubleAnimation.Duration = new Duration(TimeSpan.FromSeconds(fadeDuration));
+			doubleAnimation.Completed += delegate
+			{
+				control.Visibility = Visibility.Hidden;
+				control.Opacity = 1.0;
+			};
+			doubleAnimation.FillBehavior = FillBehavior.Stop;
+			control.BeginAnimation(UIElement.OpacityProperty, doubleAnimation);
+		}
+
+		public bool ReceiveWeakEvent(Type managerType, object sender, EventArgs e)
+		{
+			if (managerType == typeof(SessionInfoEventManager))
+			{
+				SessionInfo_MessageReceived(sender, (SessionInfo.SessionMessageArgs)e);
+			}
+			return true;
+		}
+
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[DebuggerNonUserCode]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/AspenTech.AspenONEShare;component/controls/drivecontrol.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		internal Delegate _CreateDelegate(Type delegateType, string handler)
+		{
+			return Delegate.CreateDelegate(delegateType, this, handler);
+		}
+
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			switch (connectionId)
+			{
+			case 1:
+				ShareStatusLabel = (Label)target;
+				break;
+			case 2:
+				ModelStatusLabel = (Label)target;
+				break;
+			case 3:
+				LastSharedLabel = (Label)target;
+				break;
+			case 4:
+				RemoveButton = (Button)target;
+				RemoveButton.Click += RemoveButton_Click;
+				break;
+			case 5:
+				shareURLValidator = (ShareURLValidator)target;
+				break;
+			case 6:
+				UploadButton = (Button)target;
+				UploadButton.Click += UploadButton_Click;
+				break;
+			case 7:
+				aspenONEMyDriveButton = (Button)target;
+				aspenONEMyDriveButton.Click += AspenONEMyDriveButton_Click;
+				break;
+			case 8:
+				ShareOpStatusImage = (Image)target;
+				break;
+			case 9:
+				ShareOpStatusBlock = (TextBlock)target;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+	public class DriveShareToggle : UserControl, IComponentConnector
+	{
+		public static readonly DependencyProperty InDriveProperty = DependencyProperty.Register("InDrive", typeof(bool), typeof(DriveShareToggle), new PropertyMetadata(true));
+
+		public static readonly DependencyProperty InShareProperty = DependencyProperty.Register("InShare", typeof(bool), typeof(DriveShareToggle), new PropertyMetadata(false));
+
+		internal DriveShareToggle driveShareToggle;
+
+		internal Button DriveButton;
+
+		internal Button ShareButton;
+
+		private bool _contentLoaded;
+
+		public bool InDrive
+		{
+			get
+			{
+				return (bool)GetValue(InDriveProperty);
+			}
+			set
+			{
+				SetValue(InDriveProperty, value);
+				SetValue(InShareProperty, !value);
+			}
+		}
+
+		public DriveShareToggle()
+		{
+			InitializeComponent();
+			base.Loaded += this_Loaded;
+		}
+
+		private void this_Loaded(object sender, RoutedEventArgs e)
+		{
+			InDrive = true;
+		}
+
+		private void DriveButton_Click(object sender, RoutedEventArgs e)
+		{
+			InDrive = true;
+		}
+
+		private void ShareButton_Click(object sender, RoutedEventArgs e)
+		{
+			InDrive = false;
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/AspenTech.AspenONEShare;component/controls/drivesharetoggle.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			switch (connectionId)
+			{
+			case 1:
+				driveShareToggle = (DriveShareToggle)target;
+				break;
+			case 2:
+				DriveButton = (Button)target;
+				DriveButton.Click += DriveButton_Click;
+				break;
+			case 3:
+				ShareButton = (Button)target;
+				ShareButton.Click += ShareButton_Click;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+}
+namespace AspenTech.AspenONEShare.Localization
+{
+	[GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
+	[DebuggerNonUserCode]
+	[CompilerGenerated]
+	public class Strings
+	{
+		private static ResourceManager resourceMan;
+
+		private static CultureInfo resourceCulture;
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		public static ResourceManager ResourceManager
+		{
+			get
+			{
+				if (object.ReferenceEquals(resourceMan, null))
+				{
+					ResourceManager resourceManager = new ResourceManager("AspenTech.AspenONEShare.Localization.Strings", typeof(Strings).Assembly);
+					resourceMan = resourceManager;
+				}
+				return resourceMan;
+			}
+		}
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		public static CultureInfo Culture
+		{
+			get
+			{
+				return resourceCulture;
+			}
+			set
+			{
+				resourceCulture = value;
+			}
+		}
+
+		public static string ASPENONE_DRIVE => ResourceManager.GetString("ASPENONE_DRIVE", resourceCulture);
+
+		public static string CANCEL => ResourceManager.GetString("CANCEL", resourceCulture);
+
+		public static string DO_NOT_SHOW_AGAIN => ResourceManager.GetString("DO_NOT_SHOW_AGAIN", resourceCulture);
+
+		public static string DRIVECONTROL_ASPENONE_DRIVE_DESCRIPTION => ResourceManager.GetString("DRIVECONTROL_ASPENONE_DRIVE_DESCRIPTION", resourceCulture);
+
+		public static string DRIVECONTROL_LAST_UPLOADED => ResourceManager.GetString("DRIVECONTROL_LAST_UPLOADED", resourceCulture);
+
+		public static string DRIVECONTROL_NOT_UPLOADED => ResourceManager.GetString("DRIVECONTROL_NOT_UPLOADED", resourceCulture);
+
+		public static string DRIVECONTROL_REMOVED => ResourceManager.GetString("DRIVECONTROL_REMOVED", resourceCulture);
+
+		public static string DRIVECONTROL_REMOVING => ResourceManager.GetString("DRIVECONTROL_REMOVING", resourceCulture);
+
+		public static string DRIVECONTROL_UNABLE_TO_UPLOAD => ResourceManager.GetString("DRIVECONTROL_UNABLE_TO_UPLOAD", resourceCulture);
+
+		public static string DRIVECONTROL_UPLOAD => ResourceManager.GetString("DRIVECONTROL_UPLOAD", resourceCulture);
+
+		public static string DRIVECONTROL_UPLOADED => ResourceManager.GetString("DRIVECONTROL_UPLOADED", resourceCulture);
+
+		public static string DRIVECONTROL_UPLOADING => ResourceManager.GetString("DRIVECONTROL_UPLOADING", resourceCulture);
+
+		public static string INTROWINDOW_ALREADY_INSTALLED => ResourceManager.GetString("INTROWINDOW_ALREADY_INSTALLED", resourceCulture);
+
+		public static string INTROWINDOW_APWZ_REQUIRED => ResourceManager.GetString("INTROWINDOW_APWZ_REQUIRED", resourceCulture);
+
+		public static string INTROWINDOW_ENTER_SERVER_ADDRESS => ResourceManager.GetString("INTROWINDOW_ENTER_SERVER_ADDRESS", resourceCulture);
+
+		public static string INTROWINDOW_HSC_REQUIRED => ResourceManager.GetString("INTROWINDOW_HSC_REQUIRED", resourceCulture);
+
+		public static string INTROWINDOW_SUMMARY => ResourceManager.GetString("INTROWINDOW_SUMMARY", resourceCulture);
+
+		public static string POPUPLIST_USER_NOT_FOUND => ResourceManager.GetString("POPUPLIST_USER_NOT_FOUND", resourceCulture);
+
+		public static string PREVIEWSCREEN_ERROR_GEN_PREVIEW => ResourceManager.GetString("PREVIEWSCREEN_ERROR_GEN_PREVIEW", resourceCulture);
+
+		public static string PREVIEWSCREEN_FAILED_LOADING_IMAGE => ResourceManager.GetString("PREVIEWSCREEN_FAILED_LOADING_IMAGE", resourceCulture);
+
+		public static string PREVIEWSCREEN_NO_MODEL => ResourceManager.GetString("PREVIEWSCREEN_NO_MODEL", resourceCulture);
+
+		public static string PREVIEWSCREENCONTROLLER_VERSION => ResourceManager.GetString("PREVIEWSCREENCONTROLLER_VERSION", resourceCulture);
+
+		public static string REMOVE => ResourceManager.GetString("REMOVE", resourceCulture);
+
+		public static string SHARECONTAINER_MY_DRIVE => ResourceManager.GetString("SHARECONTAINER_MY_DRIVE", resourceCulture);
+
+		public static string SHARECONTAINER_SHARE => ResourceManager.GetString("SHARECONTAINER_SHARE", resourceCulture);
+
+		public static string SHARECONTROL_ASPENONE_SHARE_DESCRIPTION => ResourceManager.GetString("SHARECONTROL_ASPENONE_SHARE_DESCRIPTION", resourceCulture);
+
+		public static string SHAREURLVALIDATOR_EDIT => ResourceManager.GetString("SHAREURLVALIDATOR_EDIT", resourceCulture);
+
+		public static string SHAREURLVALIDATOR_SERVER_ADDRESS => ResourceManager.GetString("SHAREURLVALIDATOR_SERVER_ADDRESS", resourceCulture);
+
+		public static string SHAREWINDOW_ADD => ResourceManager.GetString("SHAREWINDOW_ADD", resourceCulture);
+
+		public static string SHAREWINDOW_CAN_DOWNLOAD => ResourceManager.GetString("SHAREWINDOW_CAN_DOWNLOAD", resourceCulture);
+
+		public static string SHAREWINDOW_CANNOT_REMOVE_ACTIVE_USER => ResourceManager.GetString("SHAREWINDOW_CANNOT_REMOVE_ACTIVE_USER", resourceCulture);
+
+		public static string SHAREWINDOW_DEFAULT_EMAIL_BODY => ResourceManager.GetString("SHAREWINDOW_DEFAULT_EMAIL_BODY", resourceCulture);
+
+		public static string SHAREWINDOW_DEFAULT_EMAIL_TEXT => ResourceManager.GetString("SHAREWINDOW_DEFAULT_EMAIL_TEXT", resourceCulture);
+
+		public static string SHAREWINDOW_DIALOG_LICENSE_CHECKOUT_ERROR => ResourceManager.GetString("SHAREWINDOW_DIALOG_LICENSE_CHECKOUT_ERROR", resourceCulture);
+
+		public static string SHAREWINDOW_DIALOG_REMOVE_ALL => ResourceManager.GetString("SHAREWINDOW_DIALOG_REMOVE_ALL", resourceCulture);
+
+		public static string SHAREWINDOW_DIALOG_REMOVE_USER => ResourceManager.GetString("SHAREWINDOW_DIALOG_REMOVE_USER", resourceCulture);
+
+		public static string SHAREWINDOW_DIALOG_SAVE_AND_SHARE => ResourceManager.GetString("SHAREWINDOW_DIALOG_SAVE_AND_SHARE", resourceCulture);
+
+		public static string SHAREWINDOW_DIALOG_SLM_CREATION_ERROR => ResourceManager.GetString("SHAREWINDOW_DIALOG_SLM_CREATION_ERROR", resourceCulture);
+
+		public static string SHAREWINDOW_DIALOG_UNSHARE => ResourceManager.GetString("SHAREWINDOW_DIALOG_UNSHARE", resourceCulture);
+
+		public static string SHAREWINDOW_EMAIL_ADDRESS => ResourceManager.GetString("SHAREWINDOW_EMAIL_ADDRESS", resourceCulture);
+
+		public static string SHAREWINDOW_EMAIL_BODY_INSTRUCTIONS => ResourceManager.GetString("SHAREWINDOW_EMAIL_BODY_INSTRUCTIONS", resourceCulture);
+
+		public static string SHAREWINDOW_EMAIL_MESSAGE => ResourceManager.GetString("SHAREWINDOW_EMAIL_MESSAGE", resourceCulture);
+
+		public static string SHAREWINDOW_LAST_SHARED => ResourceManager.GetString("SHAREWINDOW_LAST_SHARED", resourceCulture);
+
+		public static string SHAREWINDOW_NA => ResourceManager.GetString("SHAREWINDOW_NA", resourceCulture);
+
+		public static string SHAREWINDOW_NAME => ResourceManager.GetString("SHAREWINDOW_NAME", resourceCulture);
+
+		public static string SHAREWINDOW_OPEN_A_MODEL => ResourceManager.GetString("SHAREWINDOW_OPEN_A_MODEL", resourceCulture);
+
+		public static string SHAREWINDOW_OPEN_PART1 => ResourceManager.GetString("SHAREWINDOW_OPEN_PART1", resourceCulture);
+
+		public static string SHAREWINDOW_OPEN_PART2 => ResourceManager.GetString("SHAREWINDOW_OPEN_PART2", resourceCulture);
+
+		public static string SHAREWINDOW_PREVIEW => ResourceManager.GetString("SHAREWINDOW_PREVIEW", resourceCulture);
+
+		public static string SHAREWINDOW_REMOVE_ALL_USERS => ResourceManager.GetString("SHAREWINDOW_REMOVE_ALL_USERS", resourceCulture);
+
+		public static string SHAREWINDOW_REMOVE_USER => ResourceManager.GetString("SHAREWINDOW_REMOVE_USER", resourceCulture);
+
+		public static string SHAREWINDOW_SHARE => ResourceManager.GetString("SHAREWINDOW_SHARE", resourceCulture);
+
+		public static string SHAREWINDOW_SHARE_WITH => ResourceManager.GetString("SHAREWINDOW_SHARE_WITH", resourceCulture);
+
+		public static string SHAREWINDOW_STATUS => ResourceManager.GetString("SHAREWINDOW_STATUS", resourceCulture);
+
+		public static string SHAREWINDOW_STATUS_INCOMPATIBLE_VERSIONS => ResourceManager.GetString("SHAREWINDOW_STATUS_INCOMPATIBLE_VERSIONS", resourceCulture);
+
+		public static string SHAREWINDOW_STATUS_MODIFIED => ResourceManager.GetString("SHAREWINDOW_STATUS_MODIFIED", resourceCulture);
+
+		public static string SHAREWINDOW_STATUS_NOT_CONNECTED => ResourceManager.GetString("SHAREWINDOW_STATUS_NOT_CONNECTED", resourceCulture);
+
+		public static string SHAREWINDOW_STATUS_NOT_SHARED => ResourceManager.GetString("SHAREWINDOW_STATUS_NOT_SHARED", resourceCulture);
+
+		public static string SHAREWINDOW_STATUS_QUEUED => ResourceManager.GetString("SHAREWINDOW_STATUS_QUEUED", resourceCulture);
+
+		public static string SHAREWINDOW_STATUS_QUEUED_INFO => ResourceManager.GetString("SHAREWINDOW_STATUS_QUEUED_INFO", resourceCulture);
+
+		public static string SHAREWINDOW_STATUS_SHARED => ResourceManager.GetString("SHAREWINDOW_STATUS_SHARED", resourceCulture);
+
+		public static string SHAREWINDOW_STATUS_SHARING => ResourceManager.GetString("SHAREWINDOW_STATUS_SHARING", resourceCulture);
+
+		public static string SHAREWINDOW_STATUS_UNSAVED_CHANGES => ResourceManager.GetString("SHAREWINDOW_STATUS_UNSAVED_CHANGES", resourceCulture);
+
+		public static string SHAREWINDOW_STATUS_UNSHARING => ResourceManager.GetString("SHAREWINDOW_STATUS_UNSHARING", resourceCulture);
+
+		public static string SHAREWINDOW_STATUS_UNSUPPORTED_FILE_APLUS => ResourceManager.GetString("SHAREWINDOW_STATUS_UNSUPPORTED_FILE_APLUS", resourceCulture);
+
+		public static string SHAREWINDOW_STATUS_UNSUPPORTED_FILE_HYSYS => ResourceManager.GetString("SHAREWINDOW_STATUS_UNSUPPORTED_FILE_HYSYS", resourceCulture);
+
+		public static string SHAREWINDOW_UNABLE_TO_SHARE => ResourceManager.GetString("SHAREWINDOW_UNABLE_TO_SHARE", resourceCulture);
+
+		public static string SHAREWINDOW_UNSHARE => ResourceManager.GetString("SHAREWINDOW_UNSHARE", resourceCulture);
+
+		public static string TOOLTIP_ADD => ResourceManager.GetString("TOOLTIP_ADD", resourceCulture);
+
+		public static string TOOLTIP_CANCEL_CONNECTING => ResourceManager.GetString("TOOLTIP_CANCEL_CONNECTING", resourceCulture);
+
+		public static string TOOLTIP_CONNECT => ResourceManager.GetString("TOOLTIP_CONNECT", resourceCulture);
+
+		public static string TOOLTIP_EDIT => ResourceManager.GetString("TOOLTIP_EDIT", resourceCulture);
+
+		public static string TOOLTIP_MY_DRIVE => ResourceManager.GetString("TOOLTIP_MY_DRIVE", resourceCulture);
+
+		public static string TOOLTIP_REMOVE => ResourceManager.GetString("TOOLTIP_REMOVE", resourceCulture);
+
+		public static string TOOLTIP_SHARE => ResourceManager.GetString("TOOLTIP_SHARE", resourceCulture);
+
+		public static string TOOLTIP_UNSHARE => ResourceManager.GetString("TOOLTIP_UNSHARE", resourceCulture);
+
+		public static string TOOLTIP_UPLOAD => ResourceManager.GetString("TOOLTIP_UPLOAD", resourceCulture);
+
+		public static string TOOLTIP_WEB_VIEW => ResourceManager.GetString("TOOLTIP_WEB_VIEW", resourceCulture);
+
+		public static string URLVALIDATOR_CANNOT_CONNECT_BAD_SIMVERSION => ResourceManager.GetString("URLVALIDATOR_CANNOT_CONNECT_BAD_SIMVERSION", resourceCulture);
+
+		public static string URLVALIDATOR_CANNOT_CONNECT_BAD_VERSION => ResourceManager.GetString("URLVALIDATOR_CANNOT_CONNECT_BAD_VERSION", resourceCulture);
+
+		public static string URLVALIDATOR_CANNOT_CONNECT_DEFAULT => ResourceManager.GetString("URLVALIDATOR_CANNOT_CONNECT_DEFAULT", resourceCulture);
+
+		public static string URLVALIDATOR_CANNOT_CONNECT_NO_SHARE => ResourceManager.GetString("URLVALIDATOR_CANNOT_CONNECT_NO_SHARE", resourceCulture);
+
+		public static string URLVALIDATOR_CANNOT_CONNECT_NOT_A1_SERVER => ResourceManager.GetString("URLVALIDATOR_CANNOT_CONNECT_NOT_A1_SERVER", resourceCulture);
+
+		public static string URLVALIDATOR_CANNOT_CONNECT_SERVER_NOT_FOUND => ResourceManager.GetString("URLVALIDATOR_CANNOT_CONNECT_SERVER_NOT_FOUND", resourceCulture);
+
+		public static string URLVALIDATOR_CANNOT_CONNECT_UNAUTHORIZED => ResourceManager.GetString("URLVALIDATOR_CANNOT_CONNECT_UNAUTHORIZED", resourceCulture);
+
+		public static string URLVALIDATOR_CONNECT => ResourceManager.GetString("URLVALIDATOR_CONNECT", resourceCulture);
+
+		public static string URLVALIDATOR_CONNECTED => ResourceManager.GetString("URLVALIDATOR_CONNECTED", resourceCulture);
+
+		public static string URLVALIDATOR_CONNECTING => ResourceManager.GetString("URLVALIDATOR_CONNECTING", resourceCulture);
+
+		public static string URLVALIDATOR_MALFORMATTED_URL => ResourceManager.GetString("URLVALIDATOR_MALFORMATTED_URL", resourceCulture);
+
+		internal Strings()
+		{
+		}
+	}
+}
+namespace AspenTech.AspenONEShare
+{
+	public class DriveWindow : UserControl, IWeakEventListener, IComponentConnector
+	{
+		internal DriveShareToggle driveShareToggle;
+
+		internal DriveControl driveControl;
+
+		internal ShareControl shareControl;
+
+		internal Rectangle verticalDivider;
+
+		internal Preview preview;
+
+		internal Button OpenInAspenONE;
+
+		private bool _contentLoaded;
+
+		public DriveWindow()
+		{
+			InitializeComponent();
+			SessionInfoEventManager.AddListener(SessionInfo.Instance, this);
+		}
+
+		private void SessionInfo_MessageReceived(object sender, SessionInfo.SessionMessageArgs e)
+		{
+			switch (e.Message)
+			{
+			case "ActionComplete":
+			case "ModelDetails":
+				UpdateUI();
+				break;
+			case "SimUpdate":
+				preview.FullCaseFilePath = SessionInfo.Instance.ActiveDocumentFilePath;
+				preview.ExecuteExtraction();
+				UpdateUI();
+				break;
+			}
+		}
+
+		private void UpdateUI()
+		{
+			UpdateButtonState(!string.IsNullOrEmpty(SessionInfo.Instance.DeepLink));
+		}
+
+		private void OpenDeepLink(object sender, RoutedEventArgs e)
+		{
+			if (string.IsNullOrWhiteSpace(SessionInfo.Instance.DeepLink))
+			{
+				return;
+			}
+			try
+			{
+				Process.Start(SessionInfo.Instance.DeepLink);
+			}
+			catch (Exception e2)
+			{
+				ShareLog.LogException("Error opening deep link.", e2);
+			}
+		}
+
+		public void UpdateButtonState(bool enable)
+		{
+			OpenInAspenONE.IsEnabled = enable;
+		}
+
+		public bool ReceiveWeakEvent(Type managerType, object sender, EventArgs e)
+		{
+			if (managerType == typeof(SessionInfoEventManager))
+			{
+				SessionInfo_MessageReceived(sender, (SessionInfo.SessionMessageArgs)e);
+			}
+			return true;
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/AspenTech.AspenONEShare;component/controls/drivewindow.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[DebuggerNonUserCode]
+		internal Delegate _CreateDelegate(Type delegateType, string handler)
+		{
+			return Delegate.CreateDelegate(delegateType, this, handler);
+		}
+
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[DebuggerNonUserCode]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			switch (connectionId)
+			{
+			case 1:
+				driveShareToggle = (DriveShareToggle)target;
+				break;
+			case 2:
+				driveControl = (DriveControl)target;
+				break;
+			case 3:
+				shareControl = (ShareControl)target;
+				break;
+			case 4:
+				verticalDivider = (Rectangle)target;
+				break;
+			case 5:
+				preview = (Preview)target;
+				break;
+			case 6:
+				OpenInAspenONE = (Button)target;
+				OpenInAspenONE.Click += OpenDeepLink;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+	internal class PendingProfileParser
+	{
+		public delegate void PendingTextChangedEvent();
+
+		public delegate void PendingProfileListChangedEvent();
+
+		public delegate void FullTextChangedEvent();
+
+		public string DefaultText = Strings.SHAREWINDOW_DEFAULT_EMAIL_TEXT;
+
+		private string _fullText = string.Empty;
+
+		private BindingList<Profile> _pendingProfiles = new BindingList<Profile>();
+
+		private List<Profile> _knownProfiles = new List<Profile>();
+
+		private Dictionary<Profile, bool> _dicSelectedProfiles = new Dictionary<Profile, bool>();
+
+		private List<Profile> _selectedProfiles = new List<Profile>();
+
+		private string _pendingText = string.Empty;
+
+		public bool IsClean
+		{
+			get
+			{
+				if (string.IsNullOrWhiteSpace(PendingText))
+				{
+					return true;
+				}
+				return false;
+			}
+		}
+
+		public string FullText
+		{
+			get
+			{
+				return _fullText;
+			}
+			set
+			{
+				if (_fullText != value)
+				{
+					_fullText = value;
+					ParseFullText();
+					OnFullTextChanged();
+				}
+			}
+		}
+
+		public BindingList<Profile> PendingProfiles => _pendingProfiles;
+
+		public List<Profile> KnownProfiles => _knownProfiles;
+
+		public List<Profile> SelectedProfiles => _selectedProfiles;
+
+		public string PendingText
+		{
+			get
+			{
+				return _pendingText;
+			}
+			private set
+			{
+				if (_pendingText != value)
+				{
+					_pendingText = value;
+					OnPendingTextChanged();
+				}
+			}
+		}
+
+		public event PendingTextChangedEvent PendingTextChanged;
+
+		public event PendingProfileListChangedEvent PendingProfileListChanged;
+
+		public event FullTextChangedEvent FullTextChanged;
+
+		public void WipeOut()
+		{
+			PendingProfiles.Clear();
+			KnownProfiles.Clear();
+			_dicSelectedProfiles.Clear();
+			SelectedProfiles.Clear();
+			FullText = DefaultText;
+		}
+
+		public void Clear()
+		{
+			PendingProfiles.Clear();
+			_dicSelectedProfiles.Clear();
+			SelectedProfiles.Clear();
+			FullText = DefaultText;
+		}
+
+		private void ResetSelectedProfileDictionary()
+		{
+			_dicSelectedProfiles = new Dictionary<Profile, bool>();
+			foreach (Profile selectedProfile in SelectedProfiles)
+			{
+				_dicSelectedProfiles.Add(selectedProfile, value: false);
+			}
+		}
+
+		private void ParseFullText()
+		{
+			if (string.IsNullOrWhiteSpace(_fullText))
+			{
+				_pendingProfiles.Clear();
+				PendingText = string.Empty;
+				return;
+			}
+			List<string> list = new List<string>();
+			string[] array = _fullText.Split(';');
+			if (array != null && array.Length > 0)
+			{
+				for (int i = 0; i < array.Length; i++)
+				{
+					if (i < array.Length - 1)
+					{
+						list.Add(array[i].Trim());
+					}
+					else
+					{
+						list.Add(array[i].TrimStart());
+					}
+				}
+			}
+			_pendingProfiles.Clear();
+			ResetSelectedProfileDictionary();
+			List<string> list2 = new List<string>();
+			int num = 0;
+			foreach (string item in list)
+			{
+				if (num != list.Count - 1)
+				{
+					VerifyText(item);
+				}
+				list2.Add(item);
+				num++;
+			}
+			_fullText = string.Empty;
+			num = 0;
+			foreach (string item2 in list2)
+			{
+				if (num < list2.Count - 1)
+				{
+					_fullText = _fullText + item2 + "; ";
+				}
+				else
+				{
+					_fullText += list2[num].TrimStart(' ');
+				}
+				num++;
+			}
+			if (list2.Count == 0)
+			{
+				PendingText = string.Empty;
+			}
+			else
+			{
+				PendingText = list2[list2.Count - 1];
+			}
+		}
+
+		private bool VerifyText(string text)
+		{
+			if (!string.IsNullOrWhiteSpace(text))
+			{
+				text = text.TrimEnd();
+			}
+			if (string.IsNullOrWhiteSpace(text))
+			{
+				return false;
+			}
+			foreach (KeyValuePair<Profile, bool> dicSelectedProfile in _dicSelectedProfiles)
+			{
+				if (dicSelectedProfile.Value)
+				{
+					continue;
+				}
+				Profile key = dicSelectedProfile.Key;
+				if (key != null && (string.Equals(key.FullName, text, StringComparison.CurrentCultureIgnoreCase) || string.Equals(key.EmailAddress, text, StringComparison.CurrentCultureIgnoreCase)))
+				{
+					if (!_pendingProfiles.Contains(key))
+					{
+						_pendingProfiles.Add(key);
+					}
+					_dicSelectedProfiles[dicSelectedProfile.Key] = true;
+					return true;
+				}
+			}
+			foreach (Profile knownProfile in _knownProfiles)
+			{
+				Profile profile = knownProfile;
+				if (profile != null && (string.Equals(profile.FullName, text, StringComparison.CurrentCultureIgnoreCase) || string.Equals(profile.EmailAddress, text, StringComparison.CurrentCultureIgnoreCase)))
+				{
+					if (!_pendingProfiles.Contains(knownProfile))
+					{
+						_pendingProfiles.Add(knownProfile);
+					}
+					return true;
+				}
+			}
+			_pendingProfiles.Add(new Profile(string.Empty, string.Empty, text, string.Empty)
+			{
+				IsValid = false
+			});
+			return false;
+		}
+
+		public void DeleteLastProfile()
+		{
+			if (_pendingProfiles.Count > 0)
+			{
+				_pendingProfiles.RemoveAt(_pendingProfiles.Count - 1);
+			}
+			_fullText = string.Empty;
+			foreach (Profile pendingProfile in _pendingProfiles)
+			{
+				_fullText = _fullText + pendingProfile.EmailAddress + "; ";
+			}
+			OnPendingProfileListChanged();
+		}
+
+		public void AddProfile(Profile p)
+		{
+			if (!_pendingProfiles.Contains(p))
+			{
+				_pendingProfiles.Add(p);
+			}
+			if (!SelectedProfiles.Contains(p))
+			{
+				SelectedProfiles.Add(p);
+			}
+			_fullText = string.Empty;
+			foreach (Profile pendingProfile in _pendingProfiles)
+			{
+				_fullText = _fullText + ((pendingProfile.EmailAddress == null) ? pendingProfile.FullName : pendingProfile.EmailAddress) + "; ";
+			}
+			ParseFullText();
+			OnPendingProfileListChanged();
+		}
+
+		private void OnPendingTextChanged()
+		{
+			if (this.PendingTextChanged != null)
+			{
+				this.PendingTextChanged();
+			}
+		}
+
+		private void OnPendingProfileListChanged()
+		{
+			if (this.PendingProfileListChanged != null)
+			{
+				this.PendingProfileListChanged();
+			}
+		}
+
+		private void OnFullTextChanged()
+		{
+			if (this.FullTextChanged != null)
+			{
+				this.FullTextChanged();
+			}
+		}
+	}
+	public class PopUpDataGrid : UserControl, IComponentConnector
+	{
+		internal DataGrid PopUpGrid;
+
+		private bool _contentLoaded;
+
+		public DataGrid Grid => PopUpGrid;
+
+		public PopUpDataGrid()
+		{
+			InitializeComponent();
+		}
+
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[DebuggerNonUserCode]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/AspenTech.AspenONEShare;component/profiles/popupdatagrid.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			if (connectionId == 1)
+			{
+				PopUpGrid = (DataGrid)target;
+			}
+			else
+			{
+				_contentLoaded = true;
+			}
+		}
+	}
+	public class PopUpList : Popup
+	{
+		public delegate void PopUpSelectionChangedEventHandler();
+
+		private PopUpDataGrid _popUpGrid = new PopUpDataGrid();
+
+		private DataGrid _dataGrid;
+
+		private bool _suppressSelectionChanged;
+
+		private TextBlock _UserNotFound = new TextBlock
+		{
+			Text = Strings.POPUPLIST_USER_NOT_FOUND,
+			FontWeight = FontWeights.Light,
+			FontStyle = FontStyles.Italic,
+			Visibility = Visibility.Collapsed
+		};
+
+		public Profile SelectedItem;
+
+		public DataGrid DataGridPopUp => _dataGrid;
+
+		public event PopUpSelectionChangedEventHandler SelectionChanged;
+
+		public void AddCurrentSelection()
+		{
+			base.IsOpen = false;
+			if (_dataGrid.SelectedItem != null)
+			{
+				SelectedItem = _dataGrid.SelectedItem as Profile;
+			}
+			else
+			{
+				SelectedItem = null;
+			}
+			OnSelectionChanged();
+		}
+
+		public PopUpList()
+		{
+			_dataGrid = _popUpGrid.Grid;
+			StackPanel child = new StackPanel
+			{
+				Orientation = Orientation.Vertical,
+				Background = SystemColors.WindowBrush,
+				Children = 
+				{
+					(UIElement)_popUpGrid,
+					(UIElement)_UserNotFound
+				}
+			};
+			base.Child = new Border
+			{
+				Child = child,
+				BorderBrush = Brushes.Black,
+				BorderThickness = new Thickness(2.0)
+			};
+			base.StaysOpen = false;
+			_dataGrid.MouseUp += _dataGrid_MouseUp;
+		}
+
+		protected virtual void OnSelectionChanged()
+		{
+			if (this.SelectionChanged != null)
+			{
+				this.SelectionChanged();
+			}
+		}
+
+		public void SetItemsSource(List<Profile> profiles)
+		{
+			if (profiles == null || profiles.Count == 0)
+			{
+				_UserNotFound.Visibility = Visibility.Visible;
+			}
+			else
+			{
+				_UserNotFound.Visibility = Visibility.Collapsed;
+			}
+			_dataGrid.ItemsSource = null;
+			_dataGrid.ItemsSource = profiles;
+			_suppressSelectionChanged = true;
+			try
+			{
+				_dataGrid.SelectedIndex = -1;
+				if (_dataGrid.SelectedItems.Count > 0)
+				{
+					_dataGrid.SelectedItems.Clear();
+				}
+			}
+			finally
+			{
+				_suppressSelectionChanged = false;
+			}
+			if (_dataGrid.Items != null && _dataGrid.Items.Count > 0)
+			{
+				_dataGrid.SelectedIndex = 0;
+			}
+		}
+
+		private void _dataGrid_MouseUp(object sender, MouseButtonEventArgs e)
+		{
+			AddCurrentSelection();
+		}
+	}
+	public class Preview : UserControl, IComponentConnector
+	{
+		private PreviewController controller = new PreviewController();
+
+		private TransformGroup MoveTransform;
+
+		private bool _CanMove;
+
+		private ImageSource spinner = new BitmapImage(new Uri("../Resources/Spinner.png", UriKind.RelativeOrAbsolute));
+
+		private ImageSource splash = new BitmapImage(new Uri("../Resources/aspenONE_Splash_Blue.png", UriKind.RelativeOrAbsolute));
+
+		private string _fullCaseFilePath = string.Empty;
+
+		private Point origin;
+
+		private Point start;
+
+		internal Grid PreviewGrid;
+
+		internal TextBlock Status;
+
+		internal Border border;
+
+		internal TextBlock PreviewTextBlock;
+
+		internal Image PreviewPng;
+
+		private bool _contentLoaded;
+
+		public string FullCaseFilePath
+		{
+			get
+			{
+				return _fullCaseFilePath;
+			}
+			set
+			{
+				if (string.IsNullOrWhiteSpace(value))
+				{
+					PreviewPng.Height = double.NaN;
+					PreviewTextBlock.Visibility = Visibility.Visible;
+					PreviewPng.Source = splash;
+					PreviewPng.RenderTransform = null;
+					ResetTransform();
+					_CanMove = false;
+				}
+				if (_fullCaseFilePath != value)
+				{
+					_fullCaseFilePath = value;
+				}
+			}
+		}
+
+		public Preview()
+		{
+			InitializeComponent();
+			controller.ExtractionComplete += controller_ExtractionComplete;
+			controller.ExtractionFailed += controller_ExtractionFailed;
+			MoveTransform = new TransformGroup();
+			MoveTransform.Children.Add(new ScaleTransform());
+			MoveTransform.Children.Add(new TranslateTransform());
+		}
+
+		private void controller_ExtractionFailed(string message)
+		{
+			Status.Visibility = Visibility.Visible;
+			Status.Text = Strings.PREVIEWSCREEN_ERROR_GEN_PREVIEW + " " + message;
+			PreviewPng.RenderTransform = null;
+			PreviewPng.Source = null;
+			PreviewPng.Height = double.NaN;
+		}
+
+		private void controller_ExtractionComplete()
+		{
+			BitmapImage bitmapImage = new BitmapImage();
+			bool flag = true;
+			int num = 0;
+			if (!string.IsNullOrWhiteSpace(controller.PathToPng))
+			{
+				bool flag2 = true;
+				while (flag2)
+				{
+					try
+					{
+						FileInfo fileInfo = new FileInfo(controller.PathToPng);
+						if (fileInfo.Exists)
+						{
+							flag2 = false;
+						}
+						else
+						{
+							Thread.Sleep(20);
+						}
+					}
+					catch
+					{
+						Thread.Sleep(20);
+					}
+					finally
+					{
+						num++;
+						if (num > 50)
+						{
+							ShareLog.LogInfo("Extraction Completed but File does not exist");
+							flag2 = false;
+						}
+					}
+				}
+				ShareLog.LogInfo("File did not exist for " + num + " iterations.");
+			}
+			else
+			{
+				flag = false;
+			}
+			if (!flag)
+			{
+				return;
+			}
+			bool flag3 = true;
+			Exception ex = null;
+			int num2 = 0;
+			while (flag3)
+			{
+				try
+				{
+					using (FileStream streamSource = File.OpenRead(controller.PathToPng))
+					{
+						flag3 = false;
+						bitmapImage.BeginInit();
+						bitmapImage.StreamSource = streamSource;
+						bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+						bitmapImage.EndInit();
+					}
+					SetFlowsheetImage(bitmapImage);
+					Status.Visibility = Visibility.Collapsed;
+					Status.Text = "";
+					ex = null;
+				}
+				catch (IOException ex2)
+				{
+					ex = ex2;
+					Thread.Sleep(20);
+				}
+				catch (Exception ex3)
+				{
+					ex = ex3;
+					Thread.Sleep(20);
+				}
+				finally
+				{
+					num2++;
+					if (num2 > 50)
+					{
+						flag3 = false;
+					}
+				}
+			}
+			ShareLog.LogInfo("File was locked for " + num2 + " iterations.");
+			if (ex != null)
+			{
+				ShareLog.LogException("Failed to load Preview Image", ex);
+				PreviewPng.RenderTransform = null;
+				PreviewPng.Source = null;
+				PreviewPng.Height = double.NaN;
+				Status.Text = Strings.PREVIEWSCREEN_FAILED_LOADING_IMAGE + " " + ex.Message;
+			}
+		}
+
+		public void ExecuteExtraction()
+		{
+			if (!string.IsNullOrWhiteSpace(FullCaseFilePath))
+			{
+				Status.Visibility = Visibility.Collapsed;
+				Status.Text = "";
+				BeginSpinner();
+				controller.FullCaseFilePath = FullCaseFilePath;
+				controller.Execute();
+			}
+		}
+
+		private void BeginSpinner()
+		{
+			_CanMove = false;
+			PreviewTextBlock.Visibility = Visibility.Hidden;
+			PreviewPng.Source = null;
+			PreviewPng.Height = 50.0;
+			PreviewPng.Source = spinner;
+			PreviewPng.RenderTransformOrigin = new Point(0.5, 0.5);
+			DoubleAnimation doubleAnimation = new DoubleAnimation();
+			doubleAnimation.From = 0.0;
+			doubleAnimation.To = 360.0;
+			doubleAnimation.Duration = new Duration(TimeSpan.FromSeconds(3.0));
+			doubleAnimation.RepeatBehavior = RepeatBehavior.Forever;
+			RotateTransform rotateTransform = new RotateTransform();
+			PreviewPng.RenderTransform = rotateTransform;
+			rotateTransform.BeginAnimation(RotateTransform.AngleProperty, doubleAnimation);
+		}
+
+		private void ResetTransform()
+		{
+			if (MoveTransform != null)
+			{
+				ScaleTransform scaleTransform = (ScaleTransform)MoveTransform.Children[0];
+				scaleTransform.ScaleY = 1.0;
+				scaleTransform.ScaleX = 1.0;
+				TranslateTransform translateTransform = (TranslateTransform)MoveTransform.Children[1];
+				translateTransform.X = 1.0;
+				translateTransform.Y = 1.0;
+			}
+		}
+
+		public void SetFlowsheetImage(ImageSource source)
+		{
+			ResetTransform();
+			PreviewPng.RenderTransform = null;
+			PreviewPng.RenderTransform = MoveTransform;
+			PreviewPng.Source = null;
+			PreviewPng.Height = double.NaN;
+			PreviewPng.Source = source;
+			_CanMove = true;
+		}
+
+		private void PreviewPng_MouseWheel(object sender, MouseWheelEventArgs e)
+		{
+			if (!_CanMove || PreviewPng.RenderTransform == null)
+			{
+				return;
+			}
+			TransformGroup transformGroup = (TransformGroup)PreviewPng.RenderTransform;
+			if (transformGroup == null)
+			{
+				return;
+			}
+			ScaleTransform scaleTransform = (ScaleTransform)transformGroup.Children[0];
+			if (scaleTransform != null)
+			{
+				double num = ((e.Delta > 0) ? 0.2 : (-0.2));
+				double num2 = scaleTransform.ScaleX + num;
+				double num3 = scaleTransform.ScaleY + num;
+				if (num2 > 0.2 && num2 < 4.0)
+				{
+					scaleTransform.ScaleX += num;
+				}
+				if (num3 > 0.2 && num3 < 4.0)
+				{
+					scaleTransform.ScaleY += num;
+				}
+				e.Handled = true;
+			}
+		}
+
+		private void PreviewPng_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+		{
+			if (!_CanMove)
+			{
+				return;
+			}
+			PreviewPng.CaptureMouse();
+			if (PreviewPng.RenderTransform == null)
+			{
+				return;
+			}
+			TransformGroup transformGroup = (TransformGroup)PreviewPng.RenderTransform;
+			if (transformGroup != null)
+			{
+				TranslateTransform translateTransform = (TranslateTransform)transformGroup.Children[1];
+				if (translateTransform != null)
+				{
+					start = e.GetPosition(border);
+					origin = new Point(translateTransform.X, translateTransform.Y);
+					e.Handled = true;
+				}
+			}
+		}
+
+		private void PreviewPng_MouseMove(object sender, MouseEventArgs e)
+		{
+			if (!_CanMove || !PreviewPng.IsMouseCaptured || PreviewPng.RenderTransform == null)
+			{
+				return;
+			}
+			TransformGroup transformGroup = (TransformGroup)PreviewPng.RenderTransform;
+			if (transformGroup != null)
+			{
+				TranslateTransform translateTransform = (TranslateTransform)transformGroup.Children[1];
+				if (translateTransform != null)
+				{
+					Vector vector = start - e.GetPosition(border);
+					translateTransform.X = origin.X - vector.X;
+					translateTransform.Y = origin.Y - vector.Y;
+					e.Handled = true;
+				}
+			}
+		}
+
+		private void PreviewPng_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+		{
+			if (_CanMove)
+			{
+				PreviewPng.ReleaseMouseCapture();
+			}
+		}
+
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[DebuggerNonUserCode]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/AspenTech.AspenONEShare;component/previewscreen/preview.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		[DebuggerNonUserCode]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			switch (connectionId)
+			{
+			case 1:
+				PreviewGrid = (Grid)target;
+				PreviewGrid.MouseWheel += PreviewPng_MouseWheel;
+				PreviewGrid.MouseLeftButtonDown += PreviewPng_MouseLeftButtonDown;
+				PreviewGrid.MouseMove += PreviewPng_MouseMove;
+				PreviewGrid.MouseLeftButtonUp += PreviewPng_MouseLeftButtonUp;
+				break;
+			case 2:
+				Status = (TextBlock)target;
+				break;
+			case 3:
+				border = (Border)target;
+				break;
+			case 4:
+				PreviewTextBlock = (TextBlock)target;
+				break;
+			case 5:
+				PreviewPng = (Image)target;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+	internal class PreviewController
+	{
+		public delegate void ExtractionFailedEventHandler(string message);
+
+		public delegate void ExtractionCompleteEventHandler();
+
+		private string _extractionErrorMessages = string.Empty;
+
+		private bool Success = true;
+
+		private string _tempDirectory = string.Empty;
+
+		public string PathToPng { get; private set; }
+
+		public string FullCaseFilePath { get; set; }
+
+		public event ExtractionFailedEventHandler ExtractionFailed;
+
+		public event ExtractionCompleteEventHandler ExtractionComplete;
+
+		private void BeginExtraction(object sender, DoWorkEventArgs e)
+		{
+			//IL_003b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0041: Expected O, but got Unknown
+			if (string.IsNullOrWhiteSpace(FullCaseFilePath))
+			{
+				return;
+			}
+			try
+			{
+				_extractionErrorMessages = string.Empty;
+				string location = Program.GetLocation();
+				string text = System.IO.Path.GetDirectoryName(location) + "\\";
+				MetadataSDK val = new MetadataSDK(901000, 901000, text);
+				val.Initialize(FullCaseFilePath);
+				string fileNameWithoutExtension = System.IO.Path.GetFileNameWithoutExtension(FullCaseFilePath);
+				string tempPath = System.IO.Path.GetTempPath();
+				string text2 = System.IO.Path.Combine(tempPath, fileNameWithoutExtension + ".png");
+				if (File.Exists(text2))
+				{
+					File.Delete(text2);
+				}
+				bool flag = val.ExtractPFD(1536, 1152, text2);
+				if (flag)
+				{
+					PathToPng = text2;
+				}
+				Success = flag;
+			}
+			catch (Exception ex)
+			{
+				Success = false;
+				ShareLog.LogException("Preview Extraction Failed", ex);
+				_extractionErrorMessages = ex.Message;
+			}
+		}
+
+		private void ExtractionCompleted(object sender, RunWorkerCompletedEventArgs e)
+		{
+			if (Success)
+			{
+				OnExtractionComplete();
+			}
+			else
+			{
+				OnExtractionFailed(_extractionErrorMessages);
+			}
+			if (string.IsNullOrWhiteSpace(_tempDirectory))
+			{
+				return;
+			}
+			try
+			{
+				bool flag = false;
+				int num = 0;
+				while (!flag)
+				{
+					try
+					{
+						Directory.Delete(_tempDirectory, recursive: true);
+						flag = true;
+					}
+					catch (IOException)
+					{
+						if (num > 50)
+						{
+							break;
+						}
+						Thread.Sleep(50);
+					}
+					num++;
+				}
+			}
+			catch (Exception)
+			{
+			}
+			finally
+			{
+				_tempDirectory = string.Empty;
+			}
+		}
+
+		private void OnExtractionFailed(string message)
+		{
+			if (this.ExtractionFailed != null)
+			{
+				this.ExtractionFailed(message);
+			}
+		}
+
+		private void OnExtractionComplete()
+		{
+			if (this.ExtractionComplete != null)
+			{
+				this.ExtractionComplete();
+			}
+		}
+
+		private int GetVersionNumber(string fileName)
+		{
+			if (File.Exists(fileName))
+			{
+				using (FileStream fileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
+				{
+					BinaryReader binaryReader = new BinaryReader(fileStream);
+					fileStream.Position = 22L;
+					return binaryReader.ReadInt32();
+				}
+			}
+			return 0;
+		}
+
+		public void Execute()
+		{
+			if (string.IsNullOrWhiteSpace(FullCaseFilePath))
+			{
+				return;
+			}
+			switch (System.IO.Path.GetExtension(FullCaseFilePath))
+			{
+			case ".hsc":
+				if (GetVersionNumber(FullCaseFilePath) < 8615)
+				{
+					OnExtractionFailed(Strings.PREVIEWSCREENCONTROLLER_VERSION);
+					return;
+				}
+				break;
+			case ".apwz":
+			case ".hscz":
+				try
+				{
+					_tempDirectory = Utilities.GenerateZipTempDirectory();
+					FullCaseFilePath = Utilities.GetSimulationFileFromZip(FullCaseFilePath, _tempDirectory);
+				}
+				catch (Exception ex)
+				{
+					OnExtractionFailed("Preview failed to create. " + ex.Message);
+					return;
+				}
+				break;
+			}
+			Success = false;
+			BackgroundWorker backgroundWorker = new BackgroundWorker();
+			backgroundWorker.DoWork += BeginExtraction;
+			backgroundWorker.RunWorkerCompleted += ExtractionCompleted;
+			backgroundWorker.RunWorkerAsync();
+		}
+	}
+	public class Profile : IEquatable<Profile>
+	{
+		internal bool IsValid = true;
+
+		internal bool IsActiveUser;
+
+		private string _domain;
+
+		private string _userName;
+
+		private string _emailAddress;
+
+		private string _fullName;
+
+		public string Domain => _domain;
+
+		public string UserName => _userName;
+
+		public string EmailAddress => _emailAddress;
+
+		public string FullName => _fullName;
+
+		public Profile(string domain = "", string userName = "", string emailAddress = "", string fullName = "")
+		{
+			_domain = domain;
+			_userName = userName;
+			_emailAddress = emailAddress;
+			_fullName = fullName;
+		}
+
+		public string[] GetFilterableFields()
+		{
+			return new string[2] { _fullName, _emailAddress };
+		}
+
+		public override int GetHashCode()
+		{
+			return base.GetHashCode();
+		}
+
+		public bool Equals(Profile p)
+		{
+			if (p == null)
+			{
+				return false;
+			}
+			if (p.EmailAddress == EmailAddress && p.UserName == UserName && p.FullName == FullName)
+			{
+				return p.Domain == Domain;
+			}
+			return false;
+		}
+	}
+	public class ProfileListDisplay : BindingList<Profile>
+	{
+		public ProfileListDisplay()
+		{
+			EnsureSize();
+		}
+
+		private void EnsureSize()
+		{
+			while (base.Count < 6)
+			{
+				base.Add(new Profile
+				{
+					IsValid = false
+				});
+			}
+		}
+
+		private int NumberOfDummy()
+		{
+			int num = 0;
+			using IEnumerator<Profile> enumerator = GetEnumerator();
+			while (enumerator.MoveNext())
+			{
+				Profile current = enumerator.Current;
+				if (!current.IsValid)
+				{
+					num++;
+				}
+			}
+			return num;
+		}
+
+		public new void Remove(Profile p)
+		{
+			base.Remove(p);
+			EnsureSize();
+		}
+
+		public new void RemoveAt(int i)
+		{
+			base.RemoveAt(i);
+			EnsureSize();
+		}
+
+		public new void Add(Profile p)
+		{
+			if (p != null)
+			{
+				int num = NumberOfDummy();
+				Insert(base.Count - num, p);
+				if (num > 0)
+				{
+					base.RemoveAt(base.Count - 1);
+				}
+				EnsureSize();
+			}
+		}
+
+		public new void Clear()
+		{
+			base.Clear();
+			EnsureSize();
+		}
+	}
+	public class ProfileTextBox : TextBox, IWeakEventListener
+	{
+		private List<Profile> _availableProfiles = new List<Profile>();
+
+		private Dictionary<string, List<Profile>> _profileMap = new Dictionary<string, List<Profile>>();
+
+		private PopUpList _popUp = new PopUpList();
+
+		private List<Profile> TypeAheadContents = new List<Profile>();
+
+		private Profile _activeUserProfile;
+
+		private PendingProfileParser PendingEmailTextParser = new PendingProfileParser();
+
+		public BindingList<Profile> Profiles => PendingEmailTextParser.PendingProfiles;
+
+		public ProfileTextBox()
+		{
+			base.Text = PendingEmailTextParser.DefaultText;
+			base.Foreground = Brushes.Silver;
+			base.FontStyle = FontStyles.Italic;
+			base.SizeChanged += Size_Changed;
+			_popUp.SelectionChanged += _popUp_SelectionChanged;
+			PendingEmailTextParser.PendingTextChanged += PendingEmailTextChanged;
+			PendingEmailTextParser.PendingProfileListChanged += PendingProfileListChanged;
+			PendingEmailTextParser.FullTextChanged += FullTextChanged;
+			SetBinding(TextBox.TextProperty, new System.Windows.Data.Binding
+			{
+				Path = new PropertyPath("FullText"),
+				Source = PendingEmailTextParser,
+				Mode = BindingMode.TwoWay
+			});
+			SessionInfoEventManager.AddListener(SessionInfo.Instance, this);
+		}
+
+		protected override void OnPreviewKeyDown(KeyEventArgs e)
+		{
+			base.OnPreviewKeyDown(e);
+			switch (e.Key)
+			{
+			case Key.Down:
+				if (_popUp.DataGridPopUp.SelectedIndex == -1 && _popUp.DataGridPopUp.Items != null && _popUp.DataGridPopUp.Items.Count > 0)
+				{
+					_popUp.DataGridPopUp.SelectedIndex = 0;
+				}
+				else if (_popUp.DataGridPopUp.Items != null && _popUp.DataGridPopUp.Items.Count > _popUp.DataGridPopUp.SelectedIndex + 1)
+				{
+					_popUp.DataGridPopUp.SelectedIndex++;
+				}
+				break;
+			case Key.Up:
+				if (_popUp.DataGridPopUp.Items != null && _popUp.DataGridPopUp.Items.Count > _popUp.DataGridPopUp.SelectedIndex - 1 && _popUp.DataGridPopUp.SelectedIndex - 1 > -1)
+				{
+					_popUp.DataGridPopUp.SelectedIndex--;
+				}
+				break;
+			case Key.Tab:
+			case Key.Return:
+				if (_popUp.IsOpen && _popUp.DataGridPopUp.SelectedIndex != -1)
+				{
+					_popUp.AddCurrentSelection();
+					e.Handled = true;
+				}
+				break;
+			}
+			if (_popUp.DataGridPopUp.SelectedIndex != -1)
+			{
+				_popUp.DataGridPopUp.ScrollIntoView(_popUp.DataGridPopUp.SelectedItem);
+			}
+		}
+
+		protected override void OnGotFocus(RoutedEventArgs e)
+		{
+			base.OnGotFocus(e);
+			EmptyPendingEmailText();
+		}
+
+		protected override void OnLostFocus(RoutedEventArgs e)
+		{
+			if (string.IsNullOrWhiteSpace(base.Text))
+			{
+				base.Text = PendingEmailTextParser.DefaultText;
+				base.Foreground = Brushes.Silver;
+				base.FontStyle = FontStyles.Italic;
+			}
+		}
+
+		protected override void OnMouseDown(MouseButtonEventArgs e)
+		{
+			base.OnMouseDown(e);
+			EmptyPendingEmailText();
+		}
+
+		protected override void OnKeyDown(KeyEventArgs e)
+		{
+			base.OnKeyDown(e);
+			EmptyPendingEmailText();
+		}
+
+		protected override void OnTextChanged(TextChangedEventArgs e)
+		{
+			PendingEmailTextParser.FullText = base.Text;
+			if (PendingEmailTextParser.FullText != PendingEmailTextParser.DefaultText)
+			{
+				base.Foreground = Brushes.Black;
+				base.FontStyle = FontStyles.Normal;
+			}
+			else
+			{
+				base.Foreground = Brushes.Silver;
+				base.FontStyle = FontStyles.Italic;
+			}
+		}
+
+		private void SessionInfo_MessageReceived(object sender, SessionInfo.SessionMessageArgs e)
+		{
+			string message;
+			if ((message = e.Message) != null && message == "ConnectedToServerSuccessfully" && SessionInfo.Instance.ConnectedToServerSuccessfully)
+			{
+				Initialize();
+			}
+		}
+
+		private void Initialize()
+		{
+			GetProfilesFromCore(Environment.UserName);
+		}
+
+		private static void requestUsernames(object sender, DoWorkEventArgs e)
+		{
+			List<Profile> list = new List<Profile>();
+			try
+			{
+				object[] array = e.Argument as object[];
+				string text = array[0] as string;
+				if (string.IsNullOrEmpty(text))
+				{
+					return;
+				}
+				string term = array[1] as string;
+				using ShareClient shareClient = ShareServiceHelper.CreateClient(text);
+				ShareUser[] array2 = shareClient.QueryUserName(term);
+				ShareUser[] array3 = array2;
+				foreach (ShareUser shareUser in array3)
+				{
+					string[] array4 = shareUser.Account.Split('\\');
+					list.Add(new Profile(array4[0], array4[1], shareUser.EMail, shareUser.DisplayName));
+				}
+			}
+			catch (Exception e2)
+			{
+				ShareLog.LogException("Error requesting usernames.", e2);
+			}
+			e.Result = list;
+		}
+
+		private void ProcessProfilesFromCore(object sender, RunWorkerCompletedEventArgs e)
+		{
+			_availableProfiles = (e.Result as List<Profile>) ?? new List<Profile>();
+			foreach (Profile availableProfile in _availableProfiles)
+			{
+				if (!PendingEmailTextParser.KnownProfiles.Contains(availableProfile))
+				{
+					PendingEmailTextParser.KnownProfiles.Add(availableProfile);
+				}
+				if (_activeUserProfile == null && availableProfile.UserName.ToUpper() == Environment.UserName.ToUpper() && availableProfile.Domain.ToUpper() == Environment.UserDomainName.ToUpper())
+				{
+					_activeUserProfile = availableProfile;
+				}
+				string[] filterableFields = availableProfile.GetFilterableFields();
+				foreach (string text in filterableFields)
+				{
+					if (text != null)
+					{
+						if (!_profileMap.ContainsKey(text))
+						{
+							_profileMap.Add(text, new List<Profile>(new Profile[1] { availableProfile }));
+						}
+						else
+						{
+							_profileMap[text].Add(availableProfile);
+						}
+					}
+				}
+			}
+			if (_activeUserProfile != null)
+			{
+				SessionInfo.Instance.ActiveUserProfile = _activeUserProfile;
+			}
+			PopulateTypeAhead(PendingEmailTextParser.PendingText);
+		}
+
+		private void GetProfilesFromCore(string queryTerm)
+		{
+			_availableProfiles.Clear();
+			_profileMap.Clear();
+			string relativeServerURL = SessionInfo.Instance.RelativeServerURL;
+			BackgroundWorker backgroundWorker = new BackgroundWorker();
+			backgroundWorker.DoWork += requestUsernames;
+			backgroundWorker.RunWorkerCompleted += ProcessProfilesFromCore;
+			backgroundWorker.RunWorkerAsync(new object[2] { relativeServerURL, queryTerm });
+		}
+
+		private void PopulateTypeAhead(string userInput)
+		{
+			TypeAheadContents.Clear();
+			TypeAheadContents = _availableProfiles;
+			if (userInput != PendingEmailTextParser.DefaultText)
+			{
+				_popUp.SetItemsSource(TypeAheadContents);
+				_popUp.Placement = PlacementMode.Bottom;
+				_popUp.PlacementTarget = this;
+				_popUp.IsOpen = true;
+			}
+			else
+			{
+				_popUp.IsOpen = false;
+			}
+		}
+
+		private void Size_Changed(object sender, SizeChangedEventArgs e)
+		{
+			if (_popUp.IsOpen)
+			{
+				_popUp.IsOpen = false;
+				_popUp.IsOpen = true;
+			}
+		}
+
+		private void _popUp_SelectionChanged()
+		{
+			if (_popUp.SelectedItem != null)
+			{
+				PendingEmailTextParser.AddProfile(_popUp.SelectedItem);
+			}
+		}
+
+		public void ClearAfterAdd()
+		{
+			PendingEmailTextParser.Clear();
+		}
+
+		public void Reset()
+		{
+			PendingEmailTextParser.WipeOut();
+		}
+
+		private void PendingEmailTextChanged()
+		{
+			if (string.IsNullOrEmpty(PendingEmailTextParser.PendingText) || PendingEmailTextParser.PendingText == Strings.SHAREWINDOW_DEFAULT_EMAIL_TEXT)
+			{
+				TypeAheadContents.Clear();
+			}
+			else
+			{
+				GetProfilesFromCore(PendingEmailTextParser.PendingText);
+			}
+		}
+
+		private void PendingProfileListChanged()
+		{
+			base.Text = PendingEmailTextParser.FullText;
+			Focus();
+			Select(base.Text.Length, 0);
+		}
+
+		private void FullTextChanged()
+		{
+			base.Text = PendingEmailTextParser.FullText;
+			Select(base.Text.Length, 0);
+		}
+
+		private void EmptyPendingEmailText()
+		{
+			if (PendingEmailTextParser != null && base.Text == PendingEmailTextParser.DefaultText)
+			{
+				base.Text = string.Empty;
+				base.Foreground = Brushes.Black;
+				base.FontStyle = FontStyles.Normal;
+			}
+		}
+
+		public bool ReceiveWeakEvent(Type managerType, object sender, EventArgs e)
+		{
+			if (managerType == typeof(SessionInfoEventManager))
+			{
+				SessionInfo_MessageReceived(sender, (SessionInfo.SessionMessageArgs)e);
+			}
+			return true;
+		}
+	}
+	public class RemoveUserDialog : Window, IComponentConnector
+	{
+		private string _ParentClass;
+
+		internal CheckBox noShowCheckbox;
+
+		internal Button okButton;
+
+		internal Button cancelButton;
+
+		private bool _contentLoaded;
+
+		public string ParentClass => _ParentClass;
+
+		public RemoveUserDialog(Window owner, string title)
+		{
+			InitializeComponent();
+			base.Title = title;
+			base.Owner = owner;
+			base.Icon = base.Owner.Icon;
+			_ParentClass = GetType().BaseType.Name;
+		}
+
+		private void okButton_Click(object sender, RoutedEventArgs e)
+		{
+			base.DialogResult = true;
+		}
+
+		private void cancelButton_Click(object sender, RoutedEventArgs e)
+		{
+			base.DialogResult = false;
+		}
+
+		private void Window_Closed(object sender, EventArgs e)
+		{
+			ShareConfiguration.Set(ConfigurationSetting.DialogSetting, noShowCheckbox.IsChecked.HasValue ? (!noShowCheckbox.IsChecked.Value).ToString() : "True");
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/AspenTech.AspenONEShare;component/profiles/removeuserdialog.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			switch (connectionId)
+			{
+			case 1:
+				((RemoveUserDialog)target).Closed += Window_Closed;
+				break;
+			case 2:
+				noShowCheckbox = (CheckBox)target;
+				break;
+			case 3:
+				okButton = (Button)target;
+				okButton.Click += okButton_Click;
+				break;
+			case 4:
+				cancelButton = (Button)target;
+				cancelButton.Click += cancelButton_Click;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+}
+namespace AspenTech.AspenONEShare.ShareService
+{
+	[Serializable]
+	[KnownType(typeof(UserProfile))]
+	[DebuggerStepThrough]
+	[GeneratedCode("System.Runtime.Serialization", "4.0.0.0")]
+	[DataContract(Name = "ShareUser", Namespace = "http://schemas.datacontract.org/2004/07/Aspen.aspenONE.Simulation.ShareServiceContract")]
+	public class ShareUser : IExtensibleDataObject, INotifyPropertyChanged
+	{
+		[NonSerialized]
+		private ExtensionDataObject extensionDataField;
+
+		[OptionalField]
+		private string AccountField;
+
+		[OptionalField]
+		private string DisplayNameField;
+
+		[OptionalField]
+		private string EMailField;
+
+		[Browsable(false)]
+		public ExtensionDataObject ExtensionData
+		{
+			get
+			{
+				return extensionDataField;
+			}
+			set
+			{
+				extensionDataField = value;
+			}
+		}
+
+		[DataMember]
+		public string Account
+		{
+			get
+			{
+				return AccountField;
+			}
+			set
+			{
+				if (!object.ReferenceEquals(AccountField, value))
+				{
+					AccountField = value;
+					RaisePropertyChanged("Account");
+				}
+			}
+		}
+
+		[DataMember]
+		public string DisplayName
+		{
+			get
+			{
+				return DisplayNameField;
+			}
+			set
+			{
+				if (!object.ReferenceEquals(DisplayNameField, value))
+				{
+					DisplayNameField = value;
+					RaisePropertyChanged("DisplayName");
+				}
+			}
+		}
+
+		[DataMember]
+		public string EMail
+		{
+			get
+			{
+				return EMailField;
+			}
+			set
+			{
+				if (!object.ReferenceEquals(EMailField, value))
+				{
+					EMailField = value;
+					RaisePropertyChanged("EMail");
+				}
+			}
+		}
+
+		public event PropertyChangedEventHandler PropertyChanged;
+
+		protected void RaisePropertyChanged(string propertyName)
+		{
+			this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+		}
+	}
+	[Serializable]
+	[GeneratedCode("System.Runtime.Serialization", "4.0.0.0")]
+	[DebuggerStepThrough]
+	[DataContract(Name = "UserProfile", Namespace = "http://schemas.datacontract.org/2004/07/Aspen.aspenONE.Simulation.ShareServiceContract")]
+	public class UserProfile : ShareUser
+	{
+		[OptionalField]
+		private bool IsAdminField;
+
+		[OptionalField]
+		private string[] RolesField;
+
+		[DataMember]
+		public bool IsAdmin
+		{
+			get
+			{
+				return IsAdminField;
+			}
+			set
+			{
+				if (!IsAdminField.Equals(value))
+				{
+					IsAdminField = value;
+					RaisePropertyChanged("IsAdmin");
+				}
+			}
+		}
+
+		[DataMember]
+		public string[] Roles
+		{
+			get
+			{
+				return RolesField;
+			}
+			set
+			{
+				if (!object.ReferenceEquals(RolesField, value))
+				{
+					RolesField = value;
+					RaisePropertyChanged("Roles");
+				}
+			}
+		}
+	}
+	[Serializable]
+	[DebuggerStepThrough]
+	[DataContract(Name = "ModelDetail", Namespace = "http://schemas.datacontract.org/2004/07/Aspen.aspenONE.Simulation.ShareServiceContract")]
+	[GeneratedCode("System.Runtime.Serialization", "4.0.0.0")]
+	public class ModelDetail : IExtensibleDataObject, INotifyPropertyChanged
+	{
+		[NonSerialized]
+		private ExtensionDataObject extensionDataField;
+
+		[OptionalField]
+		private DateTime CreatedDateField;
+
+		[OptionalField]
+		private string DeepLinkField;
+
+		[OptionalField]
+		private bool IsDownloadableField;
+
+		[OptionalField]
+		private DateTime LastModifiedField;
+
+		[OptionalField]
+		private string NameField;
+
+		[OptionalField]
+		private ShareUser OwnerField;
+
+		[OptionalField]
+		private DateTime SharedTimeField;
+
+		[OptionalField]
+		private ShareUser[] SharedUsersField;
+
+		[OptionalField]
+		private ModelStatus StatusField;
+
+		[Browsable(false)]
+		public ExtensionDataObject ExtensionData
+		{
+			get
+			{
+				return extensionDataField;
+			}
+			set
+			{
+				extensionDataField = value;
+			}
+		}
+
+		[DataMember]
+		public DateTime CreatedDate
+		{
+			get
+			{
+				return CreatedDateField;
+			}
+			set
+			{
+				if (!CreatedDateField.Equals(value))
+				{
+					CreatedDateField = value;
+					RaisePropertyChanged("CreatedDate");
+				}
+			}
+		}
+
+		[DataMember]
+		public string DeepLink
+		{
+			get
+			{
+				return DeepLinkField;
+			}
+			set
+			{
+				if (!object.ReferenceEquals(DeepLinkField, value))
+				{
+					DeepLinkField = value;
+					RaisePropertyChanged("DeepLink");
+				}
+			}
+		}
+
+		[DataMember]
+		public bool IsDownloadable
+		{
+			get
+			{
+				return IsDownloadableField;
+			}
+			set
+			{
+				if (!IsDownloadableField.Equals(value))
+				{
+					IsDownloadableField = value;
+					RaisePropertyChanged("IsDownloadable");
+				}
+			}
+		}
+
+		[DataMember]
+		public DateTime LastModified
+		{
+			get
+			{
+				return LastModifiedField;
+			}
+			set
+			{
+				if (!LastModifiedField.Equals(value))
+				{
+					LastModifiedField = value;
+					RaisePropertyChanged("LastModified");
+				}
+			}
+		}
+
+		[DataMember]
+		public string Name
+		{
+			get
+			{
+				return NameField;
+			}
+			set
+			{
+				if (!object.ReferenceEquals(NameField, value))
+				{
+					NameField = value;
+					RaisePropertyChanged("Name");
+				}
+			}
+		}
+
+		[DataMember]
+		public ShareUser Owner
+		{
+			get
+			{
+				return OwnerField;
+			}
+			set
+			{
+				if (!object.ReferenceEquals(OwnerField, value))
+				{
+					OwnerField = value;
+					RaisePropertyChanged("Owner");
+				}
+			}
+		}
+
+		[DataMember]
+		public DateTime SharedTime
+		{
+			get
+			{
+				return SharedTimeField;
+			}
+			set
+			{
+				if (!SharedTimeField.Equals(value))
+				{
+					SharedTimeField = value;
+					RaisePropertyChanged("SharedTime");
+				}
+			}
+		}
+
+		[DataMember]
+		public ShareUser[] SharedUsers
+		{
+			get
+			{
+				return SharedUsersField;
+			}
+			set
+			{
+				if (!object.ReferenceEquals(SharedUsersField, value))
+				{
+					SharedUsersField = value;
+					RaisePropertyChanged("SharedUsers");
+				}
+			}
+		}
+
+		[DataMember]
+		public ModelStatus Status
+		{
+			get
+			{
+				return StatusField;
+			}
+			set
+			{
+				if (!StatusField.Equals(value))
+				{
+					StatusField = value;
+					RaisePropertyChanged("Status");
+				}
+			}
+		}
+
+		public event PropertyChangedEventHandler PropertyChanged;
+
+		protected void RaisePropertyChanged(string propertyName)
+		{
+			this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+		}
+	}
+	[GeneratedCode("System.Runtime.Serialization", "4.0.0.0")]
+	[DataContract(Name = "ModelStatus", Namespace = "http://schemas.datacontract.org/2004/07/Aspen.aspenONE.Simulation.ShareServiceContract")]
+	public enum ModelStatus
+	{
+		[EnumMember]
+		NOTSTARTED,
+		[EnumMember]
+		STARTED,
+		[EnumMember]
+		PROCESSING,
+		[EnumMember]
+		INTERRUPTED,
+		[EnumMember]
+		COMPLETED,
+		[EnumMember]
+		ERROR
+	}
+	[Serializable]
+	[GeneratedCode("System.Runtime.Serialization", "4.0.0.0")]
+	[DebuggerStepThrough]
+	[DataContract(Name = "VersionInfo", Namespace = "http://schemas.datacontract.org/2004/07/Aspen.aspenONE.Simulation.ShareServiceContract")]
+	public class VersionInfo : IExtensibleDataObject, INotifyPropertyChanged
+	{
+		[NonSerialized]
+		private ExtensionDataObject extensionDataField;
+
+		[OptionalField]
+		private ComponentVersionInfo[] ComponentsField;
+
+		[OptionalField]
+		private string SystemVersionField;
+
+		[Browsable(false)]
+		public ExtensionDataObject ExtensionData
+		{
+			get
+			{
+				return extensionDataField;
+			}
+			set
+			{
+				extensionDataField = value;
+			}
+		}
+
+		[DataMember]
+		public ComponentVersionInfo[] Components
+		{
+			get
+			{
+				return ComponentsField;
+			}
+			set
+			{
+				if (!object.ReferenceEquals(ComponentsField, value))
+				{
+					ComponentsField = value;
+					RaisePropertyChanged("Components");
+				}
+			}
+		}
+
+		[DataMember]
+		public string SystemVersion
+		{
+			get
+			{
+				return SystemVersionField;
+			}
+			set
+			{
+				if (!object.ReferenceEquals(SystemVersionField, value))
+				{
+					SystemVersionField = value;
+					RaisePropertyChanged("SystemVersion");
+				}
+			}
+		}
+
+		public event PropertyChangedEventHandler PropertyChanged;
+
+		protected void RaisePropertyChanged(string propertyName)
+		{
+			this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+		}
+	}
+	[Serializable]
+	[DataContract(Name = "ComponentVersionInfo", Namespace = "http://schemas.datacontract.org/2004/07/Aspen.aspenONE.Simulation.ShareServiceContract")]
+	[DebuggerStepThrough]
+	[GeneratedCode("System.Runtime.Serialization", "4.0.0.0")]
+	public class ComponentVersionInfo : IExtensibleDataObject, INotifyPropertyChanged
+	{
+		[NonSerialized]
+		private ExtensionDataObject extensionDataField;
+
+		[OptionalField]
+		private string ComponentVersionField;
+
+		[OptionalField]
+		private string ResourceTypeField;
+
+		[OptionalField]
+		private string ResourceVersionField;
+
+		[Browsable(false)]
+		public ExtensionDataObject ExtensionData
+		{
+			get
+			{
+				return extensionDataField;
+			}
+			set
+			{
+				extensionDataField = value;
+			}
+		}
+
+		[DataMember]
+		public string ComponentVersion
+		{
+			get
+			{
+				return ComponentVersionField;
+			}
+			set
+			{
+				if (!object.ReferenceEquals(ComponentVersionField, value))
+				{
+					ComponentVersionField = value;
+					RaisePropertyChanged("ComponentVersion");
+				}
+			}
+		}
+
+		[DataMember]
+		public string ResourceType
+		{
+			get
+			{
+				return ResourceTypeField;
+			}
+			set
+			{
+				if (!object.ReferenceEquals(ResourceTypeField, value))
+				{
+					ResourceTypeField = value;
+					RaisePropertyChanged("ResourceType");
+				}
+			}
+		}
+
+		[DataMember]
+		public string ResourceVersion
+		{
+			get
+			{
+				return ResourceVersionField;
+			}
+			set
+			{
+				if (!object.ReferenceEquals(ResourceVersionField, value))
+				{
+					ResourceVersionField = value;
+					RaisePropertyChanged("ResourceVersion");
+				}
+			}
+		}
+
+		public event PropertyChangedEventHandler PropertyChanged;
+
+		protected void RaisePropertyChanged(string propertyName)
+		{
+			this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+		}
+	}
+	[ServiceContract(ConfigurationName = "ShareService.IShare")]
+	[GeneratedCode("System.ServiceModel", "4.0.0.0")]
+	public interface IShare
+	{
+		[OperationContract(Action = "http://tempuri.org/IShare/QueryUserName", ReplyAction = "http://tempuri.org/IShare/QueryUserNameResponse")]
+		[FaultContract(typeof(SecurityAccessDeniedException), Action = "http://tempuri.org/IShare/QueryUserNameSecurityAccessDeniedExceptionFault", Name = "SecurityAccessDeniedException", Namespace = "http://schemas.datacontract.org/2004/07/System.ServiceModel.Security")]
+		ShareUser[] QueryUserName(string term);
+
+		[OperationContract(Action = "http://tempuri.org/IShare/GetModelDetail", ReplyAction = "http://tempuri.org/IShare/GetModelDetailResponse")]
+		[FaultContract(typeof(SecurityAccessDeniedException), Action = "http://tempuri.org/IShare/GetModelDetailSecurityAccessDeniedExceptionFault", Name = "SecurityAccessDeniedException", Namespace = "http://schemas.datacontract.org/2004/07/System.ServiceModel.Security")]
+		ModelDetail GetModelDetail(string owner, string modelFileName);
+
+		[OperationContract(Action = "http://tempuri.org/IShare/GetModelStatus", ReplyAction = "http://tempuri.org/IShare/GetModelStatusResponse")]
+		[FaultContract(typeof(SecurityAccessDeniedException), Action = "http://tempuri.org/IShare/GetModelStatusSecurityAccessDeniedExceptionFault", Name = "SecurityAccessDeniedException", Namespace = "http://schemas.datacontract.org/2004/07/System.ServiceModel.Security")]
+		ModelStatus GetModelStatus(string owner, string modelFileName);
+
+		[OperationContract(Action = "http://tempuri.org/IShare/RequestAccess", ReplyAction = "http://tempuri.org/IShare/RequestAccessResponse")]
+		bool RequestAccess(string account);
+
+		[FaultContract(typeof(SecurityAccessDeniedException), Action = "http://tempuri.org/IShare/PublishModelSecurityAccessDeniedExceptionFault", Name = "SecurityAccessDeniedException", Namespace = "http://schemas.datacontract.org/2004/07/System.ServiceModel.Security")]
+		[OperationContract(Action = "http://tempuri.org/IShare/PublishModel", ReplyAction = "http://tempuri.org/IShare/PublishModelResponse")]
+		bool PublishModel(bool downloadable, string modelFileName, ShareUser owner, DateTime createDate, DateTime modifiedDate, ShareUser[] sharedUser, string mailContent, byte[] content);
+
+		[OperationContract(Action = "http://tempuri.org/IShare/DeleteModel", ReplyAction = "http://tempuri.org/IShare/DeleteModelResponse")]
+		[FaultContract(typeof(SecurityAccessDeniedException), Action = "http://tempuri.org/IShare/DeleteModelSecurityAccessDeniedExceptionFault", Name = "SecurityAccessDeniedException", Namespace = "http://schemas.datacontract.org/2004/07/System.ServiceModel.Security")]
+		ModelStatus DeleteModel(string owner, string modelName);
+
+		[FaultContract(typeof(SecurityAccessDeniedException), Action = "http://tempuri.org/IShare/GetVersionSecurityAccessDeniedExceptionFault", Name = "SecurityAccessDeniedException", Namespace = "http://schemas.datacontract.org/2004/07/System.ServiceModel.Security")]
+		[OperationContract(Action = "http://tempuri.org/IShare/GetVersion", ReplyAction = "http://tempuri.org/IShare/GetVersionResponse")]
+		VersionInfo GetVersion();
+
+		[OperationContract(Action = "http://tempuri.org/IShare/GetUserProfile", ReplyAction = "http://tempuri.org/IShare/GetUserProfileResponse")]
+		[FaultContract(typeof(SecurityAccessDeniedException), Action = "http://tempuri.org/IShare/GetUserProfileSecurityAccessDeniedExceptionFault", Name = "SecurityAccessDeniedException", Namespace = "http://schemas.datacontract.org/2004/07/System.ServiceModel.Security")]
+		UserProfile GetUserProfile(string account);
+	}
+	[GeneratedCode("System.ServiceModel", "4.0.0.0")]
+	public interface IShareChannel : IShare, IClientChannel, IContextChannel, IChannel, ICommunicationObject, IExtensibleObject<IContextChannel>, IDisposable
+	{
+	}
+	[DebuggerStepThrough]
+	[GeneratedCode("System.ServiceModel", "4.0.0.0")]
+	public class ShareClient : ClientBase<IShare>, IShare
+	{
+		public ShareClient()
+		{
+		}
+
+		public ShareClient(string endpointConfigurationName)
+			: base(endpointConfigurationName)
+		{
+		}
+
+		public ShareClient(string endpointConfigurationName, string remoteAddress)
+			: base(endpointConfigurationName, remoteAddress)
+		{
+		}
+
+		public ShareClient(string endpointConfigurationName, EndpointAddress remoteAddress)
+			: base(endpointConfigurationName, remoteAddress)
+		{
+		}
+
+		public ShareClient(System.ServiceModel.Channels.Binding binding, EndpointAddress remoteAddress)
+			: base(binding, remoteAddress)
+		{
+		}
+
+		public ShareUser[] QueryUserName(string term)
+		{
+			return base.Channel.QueryUserName(term);
+		}
+
+		public ModelDetail GetModelDetail(string owner, string modelFileName)
+		{
+			return base.Channel.GetModelDetail(owner, modelFileName);
+		}
+
+		public ModelStatus GetModelStatus(string owner, string modelFileName)
+		{
+			return base.Channel.GetModelStatus(owner, modelFileName);
+		}
+
+		public bool RequestAccess(string account)
+		{
+			return base.Channel.RequestAccess(account);
+		}
+
+		public bool PublishModel(bool downloadable, string modelFileName, ShareUser owner, DateTime createDate, DateTime modifiedDate, ShareUser[] sharedUser, string mailContent, byte[] content)
+		{
+			return base.Channel.PublishModel(downloadable, modelFileName, owner, createDate, modifiedDate, sharedUser, mailContent, content);
+		}
+
+		public ModelStatus DeleteModel(string owner, string modelName)
+		{
+			return base.Channel.DeleteModel(owner, modelName);
+		}
+
+		public VersionInfo GetVersion()
+		{
+			return base.Channel.GetVersion();
+		}
+
+		public UserProfile GetUserProfile(string account)
+		{
+			return base.Channel.GetUserProfile(account);
+		}
+	}
+}
+namespace AspenTech.AspenONEShare
+{
+	public class SessionInfo
+	{
+		public delegate void SessionMessageEventHandler(SessionInfo session, SessionMessageArgs e);
+
+		public class SessionMessageArgs : EventArgs
+		{
+			public string Message;
+		}
+
+		private FileActionType _fileActionType;
+
+		private string _serverURL = string.Empty;
+
+		private bool _modelModified;
+
+		private ModelStatus _modelShareStatus;
+
+		private DateTime? _modelShareTime;
+
+		private bool _modelHasBeenShared;
+
+		private string _deepLink = string.Empty;
+
+		private Profile _activeUserProfile;
+
+		private bool _fileExtensionIsValid;
+
+		private BindingList<Profile> _addedProfiles = new BindingList<Profile>();
+
+		private BindingList<Profile> _sharedWithProfiles = new BindingList<Profile>();
+
+		private ShareUser _owner;
+
+		private string _emailContent = string.Empty;
+
+		private bool _shareUsersCanDownload = true;
+
+		private ModelDetail _latestDetail;
+
+		private bool _connectedToServerSuccessfully;
+
+		private string _fullCaseFilePath = string.Empty;
+
+		private string _activeDocumentName = string.Empty;
+
+		private bool _isDirty;
+
+		private string _hostApplicationName = string.Empty;
+
+		private Version _applicationVersion;
+
+		private ShareContainer _shareContainer;
+
+		private bool _needsUpdate;
+
+		private KeyValuePair<string, DateTime> _CaseFileLastWriteTime = new KeyValuePair<string, DateTime>(string.Empty, DateTime.MinValue);
+
+		private static SessionInfo _instance;
+
+		private EventHandler ActionComplete;
+
+		public string RelativeServerURL => Utilities.GetRelativeShareUrl(ServerURL);
+
+		public FileActionType FileActionType => _fileActionType;
+
+		public string ServerURL
+		{
+			get
+			{
+				return _serverURL;
+			}
+			set
+			{
+				if (_serverURL != value)
+				{
+					_serverURL = value;
+					SendMessage("ServerURL");
+				}
+			}
+		}
+
+		public bool ModelModified
+		{
+			get
+			{
+				return _modelModified;
+			}
+			set
+			{
+				if (_modelModified != value)
+				{
+					_modelModified = value;
+					SendMessage("ModelModified");
+				}
+			}
+		}
+
+		public ModelStatus ModelShareStatus => _modelShareStatus;
+
+		public DateTime? ModelShareTime => _modelShareTime;
+
+		public bool ModelHasBeenShared => _modelHasBeenShared;
+
+		public string DeepLink => _deepLink;
+
+		public Profile ActiveUserProfile
+		{
+			get
+			{
+				return _activeUserProfile;
+			}
+			set
+			{
+				if (_activeUserProfile != value)
+				{
+					_activeUserProfile = value;
+					SendMessage("ActiveUserProfile");
+				}
+			}
+		}
+
+		public bool FileExtensionIsValid => _fileExtensionIsValid;
+
+		public BindingList<Profile> AddedProfiles
+		{
+			get
+			{
+				return _addedProfiles;
+			}
+			set
+			{
+				if (_addedProfiles != value)
+				{
+					_addedProfiles = value;
+				}
+			}
+		}
+
+		public BindingList<Profile> SharedWithProfiles => _sharedWithProfiles;
+
+		public ShareUser Owner
+		{
+			get
+			{
+				return _owner;
+			}
+			set
+			{
+				if (_owner != value)
+				{
+					_owner = value;
+				}
+			}
+		}
+
+		public string OptionalEmailContent
+		{
+			get
+			{
+				return _emailContent;
+			}
+			set
+			{
+				if (_emailContent != value)
+				{
+					_emailContent = value;
+				}
+			}
+		}
+
+		public bool ShareUsersCanDownload
+		{
+			get
+			{
+				return _shareUsersCanDownload;
+			}
+			set
+			{
+				if (_shareUsersCanDownload != value)
+				{
+					_shareUsersCanDownload = value;
+				}
+			}
+		}
+
+		public ModelDetail LatestDetail => _latestDetail;
+
+		public bool ConnectedToServerSuccessfully
+		{
+			get
+			{
+				return _connectedToServerSuccessfully;
+			}
+			set
+			{
+				if (_connectedToServerSuccessfully != value)
+				{
+					_connectedToServerSuccessfully = value;
+					_modelModified = false;
+					if (_fileExtensionIsValid)
+					{
+						UpdateModelDetails();
+					}
+					SendMessage("ConnectedToServerSuccessfully");
+				}
+			}
+		}
+
+		public string ActiveDocumentFilePath
+		{
+			get
+			{
+				return _fullCaseFilePath;
+			}
+			private set
+			{
+				if (_fullCaseFilePath != value)
+				{
+					_needsUpdate = true;
+					_fullCaseFilePath = value;
+				}
+				_fileExtensionIsValid = Utilities.VerifyExtension(_fullCaseFilePath);
+			}
+		}
+
+		public string ActiveDocumentName
+		{
+			get
+			{
+				return _activeDocumentName;
+			}
+			private set
+			{
+				if (_activeDocumentName != value)
+				{
+					_needsUpdate = true;
+					_activeDocumentName = value;
+				}
+			}
+		}
+
+		public bool IsDirty
+		{
+			get
+			{
+				return _isDirty;
+			}
+			private set
+			{
+				if (_isDirty != value)
+				{
+					_isDirty = value;
+					if (!_modelModified && _isDirty)
+					{
+						_modelModified = true;
+					}
+				}
+			}
+		}
+
+		public string HostApplicationName
+		{
+			get
+			{
+				return _hostApplicationName;
+			}
+			private set
+			{
+				if (_hostApplicationName != value)
+				{
+					_needsUpdate = true;
+					_hostApplicationName = value;
+				}
+			}
+		}
+
+		public Version ApplicationVersion
+		{
+			get
+			{
+				return _applicationVersion;
+			}
+			private set
+			{
+				if (_applicationVersion != value)
+				{
+					_needsUpdate = true;
+					_applicationVersion = value;
+				}
+			}
+		}
+
+		public bool IsLoaded
+		{
+			get
+			{
+				if (_shareContainer == null)
+				{
+					return false;
+				}
+				return _shareContainer.SimulatorConnectionLoaded;
+			}
+		}
+
+		public static SessionInfo Instance
+		{
+			get
+			{
+				if (_instance == null)
+				{
+					_instance = new SessionInfo();
+				}
+				return _instance;
+			}
+		}
+
+		public event SessionMessageEventHandler Message;
+
+		private SessionInfo()
+		{
+			ActionComplete = (EventHandler)Delegate.Combine(ActionComplete, new EventHandler(OnActionComplete));
+		}
+
+		private void OnActionComplete(object sender, EventArgs e)
+		{
+			UpdateModelDetails("ActionComplete");
+		}
+
+		private void SendMessage(string message)
+		{
+			if (this.Message != null)
+			{
+				this.Message(this, new SessionMessageArgs
+				{
+					Message = message
+				});
+			}
+		}
+
+		private void ProcessModelDetails()
+		{
+			_modelShareStatus = ((LatestDetail != null) ? LatestDetail.Status : ModelStatus.NOTSTARTED);
+			if (ModelShareStatus == ModelStatus.NOTSTARTED)
+			{
+				_modelHasBeenShared = false;
+				_modelShareTime = null;
+				_deepLink = null;
+				_modelModified = false;
+				_sharedWithProfiles.Clear();
+				return;
+			}
+			_modelShareTime = LatestDetail.SharedTime.ToLocalTime();
+			_modelHasBeenShared = true;
+			_deepLink = LatestDetail.DeepLink;
+			_shareUsersCanDownload = LatestDetail.IsDownloadable;
+			if (!_modelModified)
+			{
+				_modelModified = Math.Abs((LatestDetail.LastModified.ToLocalTime() - File.GetLastWriteTime(ActiveDocumentFilePath)).TotalMilliseconds) > 1.0;
+			}
+			if (LatestDetail.SharedUsers != null)
+			{
+				BindingList<Profile> bindingList = new BindingList<Profile>();
+				ShareUser[] sharedUsers = LatestDetail.SharedUsers;
+				foreach (ShareUser shareUser in sharedUsers)
+				{
+					string[] array = shareUser.Account.Split('\\');
+					bindingList.Add(new Profile(array[0], array[1], shareUser.EMail, shareUser.DisplayName));
+				}
+				_sharedWithProfiles = bindingList;
+			}
+		}
+
+		private void UpdateModelDetails(string message = "")
+		{
+			if (_connectedToServerSuccessfully)
+			{
+				BackgroundWorker backgroundWorker = new BackgroundWorker();
+				backgroundWorker.DoWork += delegate(object sender, DoWorkEventArgs args)
+				{
+					args.Result = Utilities.RequestModelDetail(args.Argument as SessionInfo);
+				};
+				backgroundWorker.RunWorkerCompleted += delegate(object sender, RunWorkerCompletedEventArgs args)
+				{
+					_latestDetail = args.Result as ModelDetail;
+					ProcessModelDetails();
+					if (string.IsNullOrWhiteSpace(message))
+					{
+						SendMessage("ModelDetails");
+					}
+					else
+					{
+						SendMessage(message);
+					}
+				};
+				backgroundWorker.RunWorkerAsync(this);
+			}
+			else
+			{
+				SendMessage("ModelDetails");
+			}
+		}
+
+		private bool IsPreviewUpToDate()
+		{
+			bool flag = true;
+			DateTime dateTime = (string.IsNullOrWhiteSpace(_fullCaseFilePath) ? DateTime.MinValue : File.GetLastWriteTimeUtc(_fullCaseFilePath));
+			if (_CaseFileLastWriteTime.Key == _fullCaseFilePath)
+			{
+				if (_CaseFileLastWriteTime.Value != dateTime)
+				{
+					flag = false;
+				}
+			}
+			else
+			{
+				flag = false;
+			}
+			if (!flag)
+			{
+				_CaseFileLastWriteTime = new KeyValuePair<string, DateTime>(_fullCaseFilePath, dateTime);
+			}
+			return flag;
+		}
+
+		public void TriggerSimUpdate()
+		{
+			SendMessage("SimUpdate");
+		}
+
+		public void SetShareContainer(ShareContainer container)
+		{
+			_shareContainer = container;
+		}
+
+		public void SaveCase()
+		{
+			if (_shareContainer != null)
+			{
+				_shareContainer.DoSave();
+			}
+		}
+
+		public void ShareCase()
+		{
+			_fileActionType = FileActionType.INGESTION;
+			_modelShareStatus = ModelStatus.STARTED;
+			_modelModified = false;
+			Utilities.ShareCase(this, OnActionComplete);
+		}
+
+		public void UnShareCase()
+		{
+			_fileActionType = FileActionType.DELETE;
+			_modelModified = false;
+			Utilities.UnShareCase(this, OnActionComplete);
+		}
+
+		public void UpdateCaseFromSimulator()
+		{
+			if (_shareContainer != null)
+			{
+				_needsUpdate = false;
+				HostApplicationName = _shareContainer.HostApplicationName;
+				ApplicationVersion = _shareContainer.ApplicationVersion;
+				ActiveDocumentName = _shareContainer.ActiveDocumentName;
+				ActiveDocumentFilePath = _shareContainer.ActiveDocumentFilePath;
+				IsDirty = _shareContainer.IsDirty;
+				if (!IsPreviewUpToDate())
+				{
+					_needsUpdate = true;
+				}
+				UpdateModelDetails();
+				if (_needsUpdate)
+				{
+					TriggerSimUpdate();
+				}
+			}
+		}
+	}
+	public sealed class ShareLog
+	{
+		public static void LogException(string logMessage, Exception e)
+		{
+		}
+
+		public static void LogInfo(string Info)
+		{
+		}
+
+		public static void LogWarning(string Warning)
+		{
+		}
+	}
+	public class ShareServiceHelper
+	{
+		private const double timeOutTime = 15.0;
+
+		public static System.ServiceModel.Channels.Binding NewBinding
+		{
+			get
+			{
+				BasicHttpBinding basicHttpBinding = new BasicHttpBinding();
+				basicHttpBinding.Security.Mode = BasicHttpSecurityMode.TransportCredentialOnly;
+				basicHttpBinding.Security.Transport.ClientCredentialType = HttpClientCredentialType.Windows;
+				basicHttpBinding.OpenTimeout = TimeSpan.FromSeconds(15.0);
+				basicHttpBinding.CloseTimeout = TimeSpan.FromSeconds(15.0);
+				basicHttpBinding.SendTimeout = TimeSpan.FromSeconds(300.0);
+				basicHttpBinding.ReceiveTimeout = TimeSpan.FromSeconds(300.0);
+				basicHttpBinding.MaxBufferPoolSize = 2147483647L;
+				basicHttpBinding.MaxBufferSize = int.MaxValue;
+				basicHttpBinding.MaxReceivedMessageSize = 2147483647L;
+				basicHttpBinding.ReaderQuotas = new XmlDictionaryReaderQuotas
+				{
+					MaxArrayLength = int.MaxValue,
+					MaxBytesPerRead = int.MaxValue,
+					MaxStringContentLength = int.MaxValue,
+					MaxDepth = 32767
+				};
+				return basicHttpBinding;
+			}
+		}
+
+		public static ShareClient CreateClient(string endPoint)
+		{
+			return new ShareClient(NewBinding, new EndpointAddress(new Uri(endPoint)));
+		}
+	}
+	public class ShareURLValidator : BasicURL, IComponentConnector
+	{
+		private BackgroundWorker connectWorker;
+
+		private bool waitForWorkerToFinish;
+
+		private mode _currentMode;
+
+		public static readonly DependencyProperty TextBlockVisibilityProperty = DependencyProperty.Register("TextBlockVisibility", typeof(Visibility), typeof(ShareURLValidator), new PropertyMetadata(Visibility.Hidden));
+
+		public static readonly DependencyProperty TextBoxVisibilityProperty = DependencyProperty.Register("TextBoxVisibility", typeof(Visibility), typeof(ShareURLValidator), new PropertyMetadata(Visibility.Visible));
+
+		public static readonly DependencyProperty CurrentButtonTextProperty = DependencyProperty.Register("CurrentButtonText", typeof(string), typeof(ShareURLValidator), new PropertyMetadata(Strings.URLVALIDATOR_CONNECT));
+
+		private bool FirstLoad = true;
+
+		internal TextBox ServerNameTextBox;
+
+		internal TextBlock ServerNameTextBlock;
+
+		internal Button buttonConnect;
+
+		internal StackPanel stackPanelStatus;
+
+		internal Image StatusImage;
+
+		internal TextBlock StatusLabel;
+
+		private bool _contentLoaded;
+
+		public mode currentMode
+		{
+			get
+			{
+				return _currentMode;
+			}
+			set
+			{
+				_currentMode = value;
+				TextBlockVisibility = ((value != mode.Connected) ? Visibility.Hidden : Visibility.Visible);
+				TextBoxVisibility = ((value == mode.Connected) ? Visibility.Hidden : Visibility.Visible);
+				if (value == mode.Editing && SessionInfo.Instance.ConnectedToServerSuccessfully)
+				{
+					stackPanelStatus.Visibility = Visibility.Hidden;
+				}
+				switch (value)
+				{
+				case mode.Editing:
+					CurrentButtonText = Strings.URLVALIDATOR_CONNECT;
+					buttonConnect.ToolTip = Strings.TOOLTIP_CONNECT;
+					break;
+				case mode.Connecting:
+					CurrentButtonText = Strings.CANCEL;
+					buttonConnect.ToolTip = Strings.TOOLTIP_CANCEL_CONNECTING;
+					break;
+				case mode.Connected:
+					CurrentButtonText = Strings.SHAREURLVALIDATOR_EDIT;
+					buttonConnect.ToolTip = Strings.TOOLTIP_EDIT;
+					break;
+				}
+				if (value != mode.Connected)
+				{
+					SessionInfo.Instance.ConnectedToServerSuccessfully = false;
+				}
+			}
+		}
+
+		public bool CancelFadeOut { get; set; }
+
+		public Visibility TextBlockVisibility
+		{
+			get
+			{
+				return (Visibility)GetValue(TextBlockVisibilityProperty);
+			}
+			set
+			{
+				SetValue(TextBlockVisibilityProperty, value);
+			}
+		}
+
+		public Visibility TextBoxVisibility
+		{
+			get
+			{
+				return (Visibility)GetValue(TextBoxVisibilityProperty);
+			}
+			set
+			{
+				SetValue(TextBoxVisibilityProperty, value);
+			}
+		}
+
+		public string CurrentButtonText
+		{
+			get
+			{
+				return (string)GetValue(CurrentButtonTextProperty);
+			}
+			set
+			{
+				SetValue(CurrentButtonTextProperty, value);
+			}
+		}
+
+		public ShareURLValidator()
+		{
+			InitializeComponent();
+			if (!string.IsNullOrWhiteSpace(SessionInfo.Instance.ServerURL))
+			{
+				base.CurrentURL = SessionInfo.Instance.ServerURL;
+			}
+			else
+			{
+				base.CurrentURL = "";
+			}
+			connectWorker = new BackgroundWorker();
+			connectWorker.DoWork += base.connectToServer;
+			connectWorker.RunWorkerCompleted += afterConnectToServer;
+			connectWorker.WorkerSupportsCancellation = true;
+		}
+
+		private void CancelWorker()
+		{
+			connectWorker.CancelAsync();
+			connectWorker.DoWork -= base.connectToServer;
+			connectWorker.RunWorkerCompleted -= afterConnectToServer;
+			connectWorker = null;
+			connectWorker = new BackgroundWorker();
+			connectWorker.DoWork += base.connectToServer;
+			connectWorker.RunWorkerCompleted += afterConnectToServer;
+			connectWorker.WorkerSupportsCancellation = true;
+		}
+
+		private void buttonConnect_Click(object sender, RoutedEventArgs e)
+		{
+			switch (currentMode)
+			{
+			case mode.Editing:
+				triggerAsyncConnect();
+				currentMode = mode.Connecting;
+				break;
+			case mode.Connected:
+				currentMode = mode.Editing;
+				break;
+			case mode.Connecting:
+				CancelWorker();
+				if (base.requestState != null && base.requestState.request != null)
+				{
+					base.requestState.request.Abort();
+				}
+				currentMode = mode.Editing;
+				stackPanelStatus.Visibility = Visibility.Hidden;
+				ServerNameTextBox.IsEnabled = true;
+				break;
+			}
+		}
+
+		private void triggerAsyncConnect()
+		{
+			if (connectWorker.IsBusy)
+			{
+				connectWorker.CancelAsync();
+				if (base.requestState != null && base.requestState.request != null)
+				{
+					base.requestState.request.Abort();
+				}
+				waitForWorkerToFinish = true;
+				return;
+			}
+			_AppVersion = (SessionInfo.Instance.IsLoaded ? SessionInfo.Instance.ApplicationVersion : null);
+			_AppHostName = (SessionInfo.Instance.IsLoaded ? SessionInfo.Instance.HostApplicationName : null);
+			ServerNameTextBox.IsEnabled = false;
+			base.CurrentImage = StatusImages.spinner;
+			base.CurrentStatusMessage = Strings.URLVALIDATOR_CONNECTING;
+			base.CurrentStatusColor = Brushes.Gray;
+			StatusImages.Spin(StatusImage);
+			CancelFadeOut = true;
+			stackPanelStatus.BeginAnimation(UIElement.OpacityProperty, null);
+			stackPanelStatus.Visibility = Visibility.Visible;
+			stackPanelStatus.Opacity = 1.0;
+			connectWorker.RunWorkerAsync(base.CurrentURL);
+		}
+
+		private void afterConnectToServer(object sender, RunWorkerCompletedEventArgs e)
+		{
+			ServerNameTextBox.IsEnabled = true;
+			StatusImage.RenderTransform = null;
+			if (!e.Cancelled && (e.Error != null || !ConnectedSuccessfully))
+			{
+				switch (connectStatus)
+				{
+				case ConnectStatus.URLISMALFORMATTED:
+					base.CurrentStatusMessage = Strings.URLVALIDATOR_MALFORMATTED_URL;
+					break;
+				case ConnectStatus.USERHASACCESS:
+					if (!_serverVersionIsValid)
+					{
+						base.CurrentStatusMessage = Strings.URLVALIDATOR_CANNOT_CONNECT_BAD_VERSION;
+					}
+					else if (!_serverSimVersionIsValid)
+					{
+						base.CurrentStatusMessage = SessionInfo.Instance.HostApplicationName + " " + Strings.URLVALIDATOR_CANNOT_CONNECT_BAD_SIMVERSION;
+					}
+					else
+					{
+						base.CurrentStatusMessage = Strings.URLVALIDATOR_CANNOT_CONNECT_DEFAULT;
+					}
+					break;
+				case ConnectStatus.SERVERHASSHARE:
+					base.CurrentStatusMessage = Strings.URLVALIDATOR_CANNOT_CONNECT_UNAUTHORIZED;
+					break;
+				case ConnectStatus.SERVERISA1:
+					base.CurrentStatusMessage = Strings.URLVALIDATOR_CANNOT_CONNECT_NO_SHARE;
+					break;
+				case ConnectStatus.SERVEREXISTS:
+					base.CurrentStatusMessage = Strings.URLVALIDATOR_CANNOT_CONNECT_NOT_A1_SERVER;
+					break;
+				default:
+					switch (connectionStatusCode)
+					{
+					case HttpStatusCode.NotFound:
+						base.CurrentStatusMessage = Strings.URLVALIDATOR_CANNOT_CONNECT_SERVER_NOT_FOUND;
+						break;
+					case HttpStatusCode.Unauthorized:
+						base.CurrentStatusMessage = Strings.URLVALIDATOR_CANNOT_CONNECT_UNAUTHORIZED;
+						break;
+					default:
+						base.CurrentStatusMessage = Strings.URLVALIDATOR_CANNOT_CONNECT_DEFAULT;
+						break;
+					}
+					break;
+				}
+				SessionInfo.Instance.Owner = null;
+				SessionInfo.Instance.ServerURL = base.CurrentURL;
+				SessionInfo.Instance.ActiveUserProfile = null;
+				SessionInfo.Instance.ConnectedToServerSuccessfully = false;
+				base.CurrentStatusColor = Palette.RedStatus;
+				base.CurrentImage = StatusImages.redX;
+				currentMode = mode.Editing;
+			}
+			else if (!e.Cancelled)
+			{
+				base.CurrentStatusMessage = Strings.URLVALIDATOR_CONNECTED;
+				string[] array = base.Owner.Account.Split('\\');
+				SessionInfo.Instance.ActiveUserProfile = new Profile((array.Length > 0) ? array[0] : string.Empty, (array.Length > 1) ? array[1] : string.Empty, base.Owner.EMail, base.Owner.DisplayName);
+				SessionInfo.Instance.Owner = base.Owner;
+				SessionInfo.Instance.ServerURL = base.CurrentURL;
+				SessionInfo.Instance.ConnectedToServerSuccessfully = true;
+				base.CurrentStatusColor = Palette.GreenStatus;
+				base.CurrentImage = StatusImages.greenCheckMark;
+				ShareConfiguration.Set(ConfigurationSetting.URLSetting, base.CurrentURL, trySetDefault: true);
+				fadeOutLabel(3);
+				currentMode = mode.Connected;
+			}
+			else if (e.Cancelled)
+			{
+				base.CurrentStatusMessage = "";
+				stackPanelStatus.Visibility = Visibility.Hidden;
+			}
+			buttonConnect.IsEnabled = true;
+			if (waitForWorkerToFinish)
+			{
+				waitForWorkerToFinish = false;
+				triggerAsyncConnect();
+			}
+		}
+
+		private void ServerNameTextBox_KeyDown(object sender, KeyEventArgs e)
+		{
+			Key key = e.Key;
+			if (key == Key.Return)
+			{
+				buttonConnect.Focus();
+				triggerAsyncConnect();
+				currentMode = mode.Connecting;
+			}
+		}
+
+		private void fadeOutLabel(int fadeDuration)
+		{
+			CancelFadeOut = false;
+			DoubleAnimation doubleAnimation = new DoubleAnimation();
+			doubleAnimation.From = 1.0;
+			doubleAnimation.To = 0.0;
+			doubleAnimation.Duration = new Duration(TimeSpan.FromSeconds(fadeDuration));
+			doubleAnimation.Completed += delegate
+			{
+				if (!CancelFadeOut)
+				{
+					stackPanelStatus.Visibility = Visibility.Hidden;
+					stackPanelStatus.Opacity = 1.0;
+				}
+			};
+			doubleAnimation.FillBehavior = FillBehavior.Stop;
+			stackPanelStatus.BeginAnimation(UIElement.OpacityProperty, doubleAnimation);
+		}
+
+		private void ShareURLValidator_Loaded(object sender, RoutedEventArgs e)
+		{
+			ShareConfiguration.InitialConfigurationFile();
+			if (FirstLoad)
+			{
+				buttonConnect.Focus();
+				triggerAsyncConnect();
+				currentMode = mode.Connecting;
+			}
+			FirstLoad = false;
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/AspenTech.AspenONEShare;component/url%20validators/shareurlvalidator.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[DebuggerNonUserCode]
+		internal Delegate _CreateDelegate(Type delegateType, string handler)
+		{
+			return Delegate.CreateDelegate(delegateType, this, handler);
+		}
+
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[DebuggerNonUserCode]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			switch (connectionId)
+			{
+			case 1:
+				ServerNameTextBox = (TextBox)target;
+				ServerNameTextBox.KeyDown += ServerNameTextBox_KeyDown;
+				break;
+			case 2:
+				ServerNameTextBlock = (TextBlock)target;
+				break;
+			case 3:
+				buttonConnect = (Button)target;
+				buttonConnect.Click += buttonConnect_Click;
+				break;
+			case 4:
+				stackPanelStatus = (StackPanel)target;
+				break;
+			case 5:
+				StatusImage = (Image)target;
+				break;
+			case 6:
+				StatusLabel = (TextBlock)target;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+	public class Utilities
+	{
+		private static readonly string shareTrackingKey = "SLM_TR_ALL_aONE_Share";
+
+		private static readonly string[] _validHYSYSExtensions = new string[2] { ".hsc", ".hscz" };
+
+		private static readonly string[] _validAspenPlusExtensions = new string[1] { ".apwz" };
+
+		private static readonly string RelativeShareUrl = "aspenONESimulation/service/Share.svc";
+
+		private static string Unzip(string zipToUnpack, string unzipDirectory)
+		{
+			string empty = string.Empty;
+			int num = 0;
+			if (zipToUnpack.IndexOf(".zip", StringComparison.OrdinalIgnoreCase) > -1)
+			{
+				num = zipToUnpack.IndexOf(".zip/", StringComparison.OrdinalIgnoreCase) + 4;
+			}
+			if (num == 0 && zipToUnpack.IndexOf(".apwz", StringComparison.OrdinalIgnoreCase) > -1)
+			{
+				num = zipToUnpack.IndexOf(".apwz/", StringComparison.OrdinalIgnoreCase) + 5;
+			}
+			if (num == 0 && zipToUnpack.IndexOf(".hscz", StringComparison.OrdinalIgnoreCase) > -1)
+			{
+				num = zipToUnpack.IndexOf(".hscz/", StringComparison.OrdinalIgnoreCase) + 5;
+			}
+			string result = string.Empty;
+			ZipFile val = ZipFile.Read(zipToUnpack);
+			try
+			{
+				int num2 = 0;
+				string text = System.IO.Path.GetExtension(zipToUnpack).ToLower();
+				for (int i = 0; i < val.Count; i++)
+				{
+					ZipEntry val2 = val[i];
+					if (val2.FileName.EndsWith("/"))
+					{
+						continue;
+					}
+					string text2 = System.IO.Path.GetExtension(val2.FileName).ToLower();
+					if (text.Equals(".apwz") || text.Equals(".hscz"))
+					{
+						if (!text2.Equals(".bkp") && !text2.Equals(".apw") && !text2.Equals(".hsc"))
+						{
+							continue;
+						}
+						_ = val2.FileName;
+						int num3 = val2.FileName.LastIndexOf("/");
+						string empty2 = string.Empty;
+						if (num3 > 0)
+						{
+							empty2 = val2.FileName.Remove(0, num3);
+							val2.FileName = num2 + empty2;
+							num2++;
+						}
+					}
+					else if (text.Equals(".zip") && empty != val2.FileName)
+					{
+						continue;
+					}
+					string text3 = val2.FileName.Replace("/", "\\");
+					result = ((!text3.StartsWith("\\")) ? (unzipDirectory + "\\" + text3) : (unzipDirectory + text3));
+					val2.Extract(unzipDirectory, (ExtractExistingFileAction)1);
+				}
+				return result;
+			}
+			finally
+			{
+				((IDisposable)val)?.Dispose();
+			}
+		}
+
+		public static string GetSimulationFileFromZip(string zipFilePath, string directory)
+		{
+			return Unzip(zipFilePath, directory);
+		}
+
+		public static string GenerateZipTempDirectory()
+		{
+			string randomFileName = System.IO.Path.GetRandomFileName();
+			DirectoryInfo directoryInfo = Directory.CreateDirectory(System.IO.Path.Combine(System.IO.Path.GetTempPath(), randomFileName));
+			directoryInfo.Attributes &= ~FileAttributes.ReadOnly;
+			return directoryInfo.FullName;
+		}
+
+		private static string checkoutTrackingLicense(ISecServer secServer)
+		{
+			int cookie = 0;
+			string empty = string.Empty;
+			try
+			{
+				if (secServer != null)
+				{
+					empty = secServer.CheckoutLicense(shareTrackingKey, "", out cookie, null, LicenseImportance_enum.liNotCritical);
+					string.IsNullOrWhiteSpace(empty);
+					if (cookie > 0)
+					{
+						return cookie.ToString();
+					}
+				}
+				return "0";
+			}
+			catch (Exception)
+			{
+				return "0";
+			}
+		}
+
+		private static void checkinTrackingLicense(int licenseNubmer, ISecServer secServer)
+		{
+			try
+			{
+				if (secServer != null && licenseNubmer != 0)
+				{
+					secServer.ReleaseLicense(licenseNubmer);
+				}
+			}
+			catch (Exception)
+			{
+			}
+		}
+
+		private static void Track()
+		{
+			BackgroundWorker backgroundWorker = new BackgroundWorker();
+			backgroundWorker.DoWork += delegate
+			{
+				try
+				{
+					SecServer secServer = (SecServer)Activator.CreateInstance(Marshal.GetTypeFromCLSID(new Guid("1460FDB4-752B-11D4-B067-0090271CF383")));
+					int.TryParse(checkoutTrackingLicense(secServer), out var result);
+					checkinTrackingLicense(result, secServer);
+					Marshal.FinalReleaseComObject(secServer);
+					secServer = null;
+				}
+				catch (Exception)
+				{
+				}
+			};
+			backgroundWorker.RunWorkerAsync();
+		}
+
+		public static ModelDetail RequestModelDetail(SessionInfo caseInfo)
+		{
+			ModelDetail result = null;
+			try
+			{
+				string relativeServerURL = caseInfo.RelativeServerURL;
+				string activeDocumentFilePath = caseInfo.ActiveDocumentFilePath;
+				if (!string.IsNullOrEmpty(activeDocumentFilePath) && caseInfo.Owner != null)
+				{
+					using ShareClient shareClient = ShareServiceHelper.CreateClient(relativeServerURL);
+					result = shareClient.GetModelDetail(caseInfo.Owner.Account, System.IO.Path.GetFileName(activeDocumentFilePath));
+				}
+			}
+			catch (Exception)
+			{
+				result = null;
+			}
+			return result;
+		}
+
+		private static ModelStatus RequestModelStatus(string ServerURL, string FullFilePath, ShareUser Owner)
+		{
+			ModelStatus result = ModelStatus.ERROR;
+			try
+			{
+				if (Owner == null)
+				{
+					return ModelStatus.ERROR;
+				}
+				string account = Owner.Account;
+				if (!string.IsNullOrEmpty(FullFilePath))
+				{
+					using ShareClient shareClient = ShareServiceHelper.CreateClient(ServerURL);
+					string fileName = System.IO.Path.GetFileName(FullFilePath);
+					result = shareClient.GetModelStatus(account, fileName);
+				}
+			}
+			catch (Exception)
+			{
+				result = ModelStatus.ERROR;
+			}
+			return result;
+		}
+
+		private static void triggerPollModelStatus(object sender, DoWorkEventArgs e)
+		{
+			object[] array = (e.Argument as RunWorkerCompletedEventArgs).Result as object[];
+			ModelStatus desiredStatus = (ModelStatus)array[0];
+			SessionInfo caseInfo = array[1] as SessionInfo;
+			e.Result = pollModelStatus(desiredStatus, caseInfo);
+		}
+
+		private static ModelStatus pollModelStatus(ModelStatus desiredStatus, SessionInfo caseInfo)
+		{
+			ModelStatus modelStatus = RequestModelStatus(caseInfo.RelativeServerURL, caseInfo.ActiveDocumentFilePath, caseInfo.Owner);
+			for (int i = 0; i < 10; i++)
+			{
+				if (modelStatus == desiredStatus)
+				{
+					break;
+				}
+				Thread.Sleep(5000);
+				modelStatus = RequestModelStatus(caseInfo.RelativeServerURL, caseInfo.ActiveDocumentFilePath, caseInfo.Owner);
+				if (modelStatus == ModelStatus.ERROR || modelStatus == ModelStatus.INTERRUPTED)
+				{
+					break;
+				}
+			}
+			return modelStatus;
+		}
+
+		public static void ShareCase(SessionInfo caseInfo, EventHandler OnComplete)
+		{
+			Track();
+			BackgroundWorker backgroundWorker = new BackgroundWorker();
+			backgroundWorker.DoWork += sendFile;
+			backgroundWorker.RunWorkerCompleted += delegate(object sender2, RunWorkerCompletedEventArgs e2)
+			{
+				BackgroundWorker backgroundWorker2 = new BackgroundWorker();
+				backgroundWorker2.DoWork += triggerPollModelStatus;
+				backgroundWorker2.RunWorkerCompleted += OnComplete.Invoke;
+				backgroundWorker2.RunWorkerAsync(e2);
+			};
+			backgroundWorker.RunWorkerAsync(caseInfo);
+		}
+
+		public static void UnShareCase(SessionInfo caseInfo, EventHandler OnComplete)
+		{
+			BackgroundWorker backgroundWorker = new BackgroundWorker();
+			backgroundWorker.DoWork += deleteFile;
+			backgroundWorker.RunWorkerCompleted += delegate(object sender2, RunWorkerCompletedEventArgs e2)
+			{
+				BackgroundWorker backgroundWorker2 = new BackgroundWorker();
+				backgroundWorker2.DoWork += triggerPollModelStatus;
+				backgroundWorker2.RunWorkerCompleted += OnComplete.Invoke;
+				backgroundWorker2.RunWorkerAsync(e2);
+			};
+			backgroundWorker.RunWorkerAsync(caseInfo);
+		}
+
+		private static void deleteFile(object sender, DoWorkEventArgs e)
+		{
+			if (!(e.Argument is SessionInfo sessionInfo))
+			{
+				return;
+			}
+			try
+			{
+				string activeDocumentFilePath = sessionInfo.ActiveDocumentFilePath;
+				string relativeServerURL = sessionInfo.RelativeServerURL;
+				ShareUser owner = sessionInfo.Owner;
+				if (!string.IsNullOrEmpty(activeDocumentFilePath))
+				{
+					using ShareClient shareClient = ShareServiceHelper.CreateClient(relativeServerURL);
+					shareClient.DeleteModel(owner.Account, System.IO.Path.GetFileName(activeDocumentFilePath));
+				}
+			}
+			catch (Exception)
+			{
+				e.Result = new object[2]
+				{
+					ModelStatus.ERROR,
+					sessionInfo
+				};
+			}
+			e.Result = new object[2]
+			{
+				ModelStatus.COMPLETED,
+				sessionInfo
+			};
+		}
+
+		private static void sendFile(object sender, DoWorkEventArgs e)
+		{
+			if (!(e.Argument is SessionInfo { Owner: var owner, AddedProfiles: var addedProfiles, ActiveDocumentFilePath: var activeDocumentFilePath } sessionInfo))
+			{
+				return;
+			}
+			string text = sessionInfo.ActiveUserProfile.FullName + " has shared the model \"" + sessionInfo.ActiveDocumentName + "\" with you.";
+			if (sessionInfo.OptionalEmailContent != Strings.SHAREWINDOW_EMAIL_BODY_INSTRUCTIONS)
+			{
+				text = text + Environment.NewLine + Environment.NewLine + sessionInfo.OptionalEmailContent;
+			}
+			text = text.Replace("<", "&lt;");
+			text = text.Replace(">", "&gt;");
+			text = text.Replace(Environment.NewLine, "<br/>");
+			string relativeServerURL = sessionInfo.RelativeServerURL;
+			List<ShareUser> list = new List<ShareUser>();
+			foreach (Profile item in addedProfiles)
+			{
+				if (item.IsValid)
+				{
+					list.Add(new ShareUser
+					{
+						Account = item.Domain + "\\" + item.UserName,
+						EMail = (string.IsNullOrWhiteSpace(item.EmailAddress) ? "NULL" : item.EmailAddress),
+						DisplayName = item.FullName
+					});
+				}
+			}
+			FileInfo fileInfo = new FileInfo(activeDocumentFilePath);
+			using ShareClient shareClient = ShareServiceHelper.CreateClient(relativeServerURL);
+			try
+			{
+				ShareUser shareUser = new ShareUser();
+				shareUser.Account = owner.Account;
+				shareUser.DisplayName = owner.DisplayName;
+				shareUser.EMail = owner.EMail;
+				ShareUser owner2 = shareUser;
+				bool shareUsersCanDownload = SessionInfo.Instance.ShareUsersCanDownload;
+				if (shareClient.PublishModel(shareUsersCanDownload, System.IO.Path.GetFileName(activeDocumentFilePath), owner2, fileInfo.CreationTime, fileInfo.LastWriteTime, list.ToArray(), text, File.ReadAllBytes(activeDocumentFilePath)))
+				{
+					e.Result = new object[2]
+					{
+						ModelStatus.COMPLETED,
+						sessionInfo
+					};
+				}
+				else
+				{
+					e.Result = new object[2]
+					{
+						ModelStatus.ERROR,
+						sessionInfo
+					};
+				}
+			}
+			catch (FaultException<SecurityAccessDeniedException>)
+			{
+				e.Result = new object[2]
+				{
+					ModelStatus.ERROR,
+					sessionInfo
+				};
+			}
+		}
+
+		public static bool VerifyExtension(string ActiveDocumentName)
+		{
+			if (string.IsNullOrWhiteSpace(ActiveDocumentName))
+			{
+				return false;
+			}
+			string hostApplicationName = SessionInfo.Instance.HostApplicationName;
+			if (string.IsNullOrWhiteSpace(hostApplicationName))
+			{
+				return false;
+			}
+			bool result = false;
+			string empty = string.Empty;
+			try
+			{
+				empty = System.IO.Path.GetExtension(ActiveDocumentName);
+			}
+			catch (ArgumentException)
+			{
+				return false;
+			}
+			if (string.Compare("Aspen Plus", hostApplicationName, StringComparison.OrdinalIgnoreCase) == 0)
+			{
+				result = _validAspenPlusExtensions.Contains(empty);
+			}
+			else if (string.Compare("Aspen HYSYS", hostApplicationName, StringComparison.OrdinalIgnoreCase) == 0)
+			{
+				result = _validHYSYSExtensions.Contains(empty);
+			}
+			return result;
+		}
+
+		public static string GetRelativeShareUrl(string urlString)
+		{
+			if (string.IsNullOrEmpty(urlString))
+			{
+				return null;
+			}
+			try
+			{
+				new Uri(urlString);
+				return (urlString.EndsWith("/") ? urlString.Substring(0, urlString.Length - 1) : urlString) + "/" + RelativeShareUrl;
+			}
+			catch (UriFormatException)
+			{
+			}
+			return (urlString.EndsWith("/") ? urlString.Substring(0, urlString.Length - 1) : urlString) + "/" + RelativeShareUrl;
+		}
+
+		public static string GetConfigDriveURL()
+		{
+			return ShareConfiguration.Get(ConfigurationSetting.URLSetting);
+		}
+
+		public static void OpenMyDrive(string url)
+		{
+			if (!string.IsNullOrWhiteSpace(url))
+			{
+				try
+				{
+					Process.Start(url + "/aspenone.html#Search?models");
+				}
+				catch (Exception e)
+				{
+					ShareLog.LogException("Failure launching A1Drive", e);
+				}
+			}
+		}
+	}
+	public sealed class ConfigurationSetting
+	{
+		private readonly string value;
+
+		public static readonly ConfigurationSetting DialogSetting = new ConfigurationSetting("//setting[@name = \"ShowRemoveUserDialog\"]");
+
+		public static readonly ConfigurationSetting URLSetting = new ConfigurationSetting("//setting[@name = \"SharePointURL\"]");
+
+		public static readonly ConfigurationSetting DirSetting = new ConfigurationSetting("//setting[@name = \"WorkDir\"]");
+
+		public static readonly ConfigurationSetting ScriptSetting = new ConfigurationSetting("//setting[@name = \"SuppressScriptErrors\"]");
+
+		private ConfigurationSetting(string value)
+		{
+			this.value = value;
+		}
+
+		public override string ToString()
+		{
+			return value;
+		}
+	}
+	public class ShareConfiguration
+	{
+		private const string VersionNumber = "1.0.1";
+
+		private const string RootFolder = "AspenTech";
+
+		private const string UserSubFolder = "Denver";
+
+		private const string SilentInstallSubFolder = "aspenONE";
+
+		private const string ConfigureFileName = "DenverConfiguration.xml";
+
+		private static string UserConfigFile => System.IO.Path.Combine(GetConfigFolder(), "DenverConfiguration.xml");
+
+		private static string ProgramDataConfigFile => System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "AspenTech", "aspenONE", "DenverConfiguration.xml");
+
+		private static string GetConfigFolder()
+		{
+			string folderPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+			string text = System.IO.Path.Combine(folderPath, "AspenTech");
+			if (!Directory.Exists(text))
+			{
+				Directory.CreateDirectory(text);
+			}
+			text = System.IO.Path.Combine(text, "Denver");
+			if (!Directory.Exists(text))
+			{
+				Directory.CreateDirectory(text);
+			}
+			text = System.IO.Path.Combine(text, "1.0.1");
+			if (!Directory.Exists(text))
+			{
+				Directory.CreateDirectory(text);
+			}
+			return text;
+		}
+
+		private static bool IsConfigMissingSettings(string filepath)
+		{
+			bool flag = false;
+			XmlDocument xmlDocument = new XmlDocument();
+			try
+			{
+				xmlDocument.Load(filepath);
+				return xmlDocument.SelectSingleNode(ConfigurationSetting.DialogSetting.ToString()) == null || xmlDocument.SelectSingleNode(ConfigurationSetting.URLSetting.ToString()) == null || xmlDocument.SelectSingleNode(ConfigurationSetting.DirSetting.ToString()) == null || xmlDocument.SelectSingleNode(ConfigurationSetting.ScriptSetting.ToString()) == null;
+			}
+			catch (Exception e)
+			{
+				ShareLog.LogException("Error loading config file.", e);
+				return true;
+			}
+		}
+
+		public static void InitialConfigurationFile()
+		{
+			string[] array = new string[2] { UserConfigFile, ProgramDataConfigFile };
+			foreach (string text in array)
+			{
+				if (File.Exists(text) && IsConfigMissingSettings(text))
+				{
+					ShareLog.LogWarning("Config file at " + text + " is missing one or more expected settings. Attempting to write a new user config file...");
+					string sharePointURL = "";
+					string workDir = "";
+					string suppressScriptErrors = "";
+					string showRemoveUserDialog = "";
+					ReadSavedConfigSettings(text, out showRemoveUserDialog, out sharePointURL, out workDir, out suppressScriptErrors);
+					try
+					{
+						File.WriteAllText(text, Resources.DenverConfiguration, Encoding.Default);
+						WriteSavedConfigSettings(text, showRemoveUserDialog, sharePointURL, workDir, suppressScriptErrors);
+						ShareLog.LogInfo("Successfully wrote new user config file.");
+					}
+					catch (Exception e)
+					{
+						ShareLog.LogException("Error writing new config file.", e);
+					}
+				}
+			}
+			if (!File.Exists(UserConfigFile))
+			{
+				ShareLog.LogInfo("User config file does not exist.");
+				try
+				{
+					if (File.Exists(ProgramDataConfigFile))
+					{
+						File.Copy(ProgramDataConfigFile, UserConfigFile);
+					}
+					else
+					{
+						File.WriteAllText(UserConfigFile, Resources.DenverConfiguration, Encoding.Default);
+					}
+					ShareLog.LogInfo("Successfully wrote user config file.");
+				}
+				catch (Exception e2)
+				{
+					ShareLog.LogException("Error writing user config file.", e2);
+				}
+			}
+			if (!File.Exists(ProgramDataConfigFile))
+			{
+				ShareLog.LogInfo("ProgramData config file does not exist. Attempting to write new ProgramData config file...");
+				try
+				{
+					File.WriteAllText(ProgramDataConfigFile, Resources.DenverConfiguration, Encoding.Default);
+					ShareLog.LogInfo("Successfully wrote new ProgramData config file.");
+				}
+				catch (Exception e3)
+				{
+					ShareLog.LogException("Error writing new ProgramData config file.", e3);
+				}
+			}
+		}
+
+		private static void WriteSavedConfigSettings(string filepath, string showRemoveUserDialog, string sharePointURL, string workDir, string suppressScriptErrors)
+		{
+			try
+			{
+				XmlDocument xmlDocument = new XmlDocument();
+				xmlDocument.Load(filepath);
+				xmlDocument.SelectSingleNode(ConfigurationSetting.DialogSetting.ToString()).InnerText = showRemoveUserDialog;
+				xmlDocument.SelectSingleNode(ConfigurationSetting.URLSetting.ToString()).InnerText = sharePointURL;
+				xmlDocument.SelectSingleNode(ConfigurationSetting.DirSetting.ToString()).InnerText = workDir;
+				xmlDocument.SelectSingleNode(ConfigurationSetting.ScriptSetting.ToString()).InnerText = suppressScriptErrors;
+				xmlDocument.Save(filepath);
+			}
+			catch (Exception e)
+			{
+				ShareLog.LogException("Error writing saved settings to new config file.", e);
+			}
+		}
+
+		private static void ReadSavedConfigSettings(string filepath, out string showRemoveUserDialog, out string sharePointURL, out string workDir, out string suppressScriptErrors)
+		{
+			sharePointURL = "";
+			workDir = "";
+			suppressScriptErrors = "False";
+			showRemoveUserDialog = "True";
+			XmlDocument xmlDocument = new XmlDocument();
+			try
+			{
+				xmlDocument.Load(filepath);
+			}
+			catch (Exception e)
+			{
+				ShareLog.LogException("Error reading saved config settings", e);
+				return;
+			}
+			try
+			{
+				showRemoveUserDialog = xmlDocument.SelectSingleNode(ConfigurationSetting.DialogSetting.ToString()).InnerText;
+			}
+			catch (Exception)
+			{
+			}
+			try
+			{
+				sharePointURL = xmlDocument.SelectSingleNode(ConfigurationSetting.URLSetting.ToString()).InnerText;
+			}
+			catch (Exception)
+			{
+			}
+			try
+			{
+				workDir = xmlDocument.SelectSingleNode(ConfigurationSetting.DirSetting.ToString()).InnerText;
+			}
+			catch (Exception)
+			{
+			}
+			try
+			{
+				suppressScriptErrors = xmlDocument.SelectSingleNode(ConfigurationSetting.ScriptSetting.ToString()).InnerText;
+			}
+			catch (Exception)
+			{
+			}
+		}
+
+		private static string GetSetting(string filepath, ConfigurationSetting key)
+		{
+			string text = null;
+			XmlDocument xmlDocument = new XmlDocument();
+			try
+			{
+				xmlDocument.Load(filepath);
+				text = xmlDocument.SelectSingleNode(key.ToString()).InnerText;
+			}
+			catch (Exception)
+			{
+				ShareLog.LogWarning(string.Concat("Unable to read setting '", key, "' from config file at ", filepath));
+			}
+			if (text == string.Empty)
+			{
+				text = null;
+			}
+			return text;
+		}
+
+		public static string Get(ConfigurationSetting key)
+		{
+			return GetSetting(UserConfigFile, key) ?? GetSetting(ProgramDataConfigFile, key);
+		}
+
+		public static void Set(ConfigurationSetting key, string value, bool trySetDefault = false)
+		{
+			XmlDocument xmlDocument = new XmlDocument();
+			try
+			{
+				xmlDocument.Load(UserConfigFile);
+				xmlDocument.SelectSingleNode(key.ToString()).InnerText = value;
+				xmlDocument.Save(UserConfigFile);
+			}
+			catch (Exception e)
+			{
+				ShareLog.LogException("Error writing to config file at " + UserConfigFile, e);
+			}
+			if (!trySetDefault)
+			{
+				return;
+			}
+			if (!File.Exists(ProgramDataConfigFile))
+			{
+				try
+				{
+					File.WriteAllText(ProgramDataConfigFile, Resources.DenverConfiguration, Encoding.Default);
+				}
+				catch (Exception e2)
+				{
+					ShareLog.LogException("Error writing config file at " + ProgramDataConfigFile, e2);
+				}
+			}
+			try
+			{
+				xmlDocument.Load(ProgramDataConfigFile);
+				XmlNode xmlNode = xmlDocument.SelectSingleNode(key.ToString());
+				if (string.IsNullOrEmpty(xmlNode.InnerText))
+				{
+					xmlNode.InnerText = value;
+				}
+				xmlDocument.Save(ProgramDataConfigFile);
+			}
+			catch (Exception e3)
+			{
+				ShareLog.LogException("Error writing to config file at " + ProgramDataConfigFile, e3);
+			}
+		}
+	}
+	public class StatusImages
+	{
+		private static ImageSource _greenCheckMark = new BitmapImage(new Uri("../Resources/GreenCheckMark.png", UriKind.RelativeOrAbsolute));
+
+		private static ImageSource _redX = new BitmapImage(new Uri("../Resources/RedX.png", UriKind.RelativeOrAbsolute));
+
+		private static ImageSource _spinner = new BitmapImage(new Uri("../Resources/Spinner.png", UriKind.RelativeOrAbsolute));
+
+		public static ImageSource greenCheckMark => _greenCheckMark;
+
+		public static ImageSource redX => _redX;
+
+		public static ImageSource spinner => _spinner;
+
+		public static void Spin(Image image)
+		{
+			image.RenderTransformOrigin = new Point(0.5, 0.5);
+			DoubleAnimation doubleAnimation = new DoubleAnimation();
+			doubleAnimation.From = 0.0;
+			doubleAnimation.To = 360.0;
+			doubleAnimation.Duration = new Duration(TimeSpan.FromSeconds(3.0));
+			doubleAnimation.RepeatBehavior = RepeatBehavior.Forever;
+			RotateTransform rotateTransform = (RotateTransform)(image.RenderTransform = new RotateTransform());
+			rotateTransform.BeginAnimation(RotateTransform.AngleProperty, doubleAnimation);
+		}
+	}
+	public class Palette
+	{
+		private static Brush _RedStatus = (SolidColorBrush)new BrushConverter().ConvertFrom("#AF3737");
+
+		private static Brush _GreenStatus = (SolidColorBrush)new BrushConverter().ConvertFrom("#269345");
+
+		public static Brush RedStatus => _RedStatus;
+
+		public static Brush GreenStatus => _GreenStatus;
+	}
+	public class OpacityConverter : IValueConverter
+	{
+		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			if ((bool)value)
+			{
+				return 1;
+			}
+			return 0.6;
+		}
+
+		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			if ((int)value == 1)
+			{
+				return true;
+			}
+			return false;
+		}
+	}
+	public class VisibilityConverter : IValueConverter
+	{
+		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			if ((bool)value)
+			{
+				return Visibility.Visible;
+			}
+			return Visibility.Hidden;
+		}
+
+		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			if ((Visibility)value == Visibility.Visible)
+			{
+				return true;
+			}
+			return false;
+		}
+	}
+	public class ImageConverter : IValueConverter
+	{
+		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			if (!(value is Profile profile))
+			{
+				return null;
+			}
+			if (profile.IsValid && !profile.IsActiveUser)
+			{
+				return new BitmapImage(new Uri("../Resources/blue_x_icon.png", UriKind.RelativeOrAbsolute));
+			}
+			return null;
+		}
+
+		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			throw new NotImplementedException();
+		}
+	}
+	public enum FileActionType
+	{
+		INGESTION,
+		DELETE
+	}
+	public class IntroWindow : UserControl, IComponentConnector
+	{
+		private static readonly string aspenONEDriveURL = "www.aspentech.com/aspenonedrive";
+
+		internal TextBlock RequirementsBlock;
+
+		internal IntroURLValidator introURLValidator;
+
+		private bool _contentLoaded;
+
+		public IntroWindow()
+		{
+			InitializeComponent();
+		}
+
+		private void IntroWindow_Loaded(object sender, RoutedEventArgs e)
+		{
+			if (RequirementsBlock != null && introURLValidator != null)
+			{
+				RequirementsBlock.Text = ((SessionInfo.Instance.HostApplicationName == "Aspen Plus") ? Strings.INTROWINDOW_APWZ_REQUIRED : Strings.INTROWINDOW_HSC_REQUIRED);
+			}
+		}
+
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[DebuggerNonUserCode]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/AspenTech.AspenONEShare;component/controls/introwindow.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[DebuggerNonUserCode]
+		internal Delegate _CreateDelegate(Type delegateType, string handler)
+		{
+			return Delegate.CreateDelegate(delegateType, this, handler);
+		}
+
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		[DebuggerNonUserCode]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			switch (connectionId)
+			{
+			case 1:
+				((IntroWindow)target).Loaded += IntroWindow_Loaded;
+				break;
+			case 2:
+				RequirementsBlock = (TextBlock)target;
+				break;
+			case 3:
+				introURLValidator = (IntroURLValidator)target;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+	public class ShareContainer : UserControl, IComponentConnector
+	{
+		public enum ShareProperty
+		{
+			IsDirty,
+			ActiveDocumentFilePath,
+			ActiveDocumentName,
+			HostApplicationName,
+			IsCompoundFileFormat,
+			CompoundFilePath,
+			ApplicationVersion,
+			DoSave
+		}
+
+		public class ShareInfoUpdateEventArgs : EventArgs
+		{
+			public ShareProperty Property;
+		}
+
+		public delegate void ShareInfoUpdateEventHandler(ShareInfoUpdateEventArgs e);
+
+		private bool _simulatorConnectionLoaded;
+
+		private bool ActionComplete = true;
+
+		private Version _applicationVersion;
+
+		private bool _IsDirty;
+
+		private string _ActiveDocumentName;
+
+		private string _ActiveDocumentFilePath;
+
+		private string _HostApplicationName;
+
+		private bool _contentLoaded;
+
+		public bool SimulatorConnectionLoaded
+		{
+			get
+			{
+				return _simulatorConnectionLoaded;
+			}
+			set
+			{
+				_simulatorConnectionLoaded = value;
+				if (_simulatorConnectionLoaded)
+				{
+					GetDenverConfig();
+				}
+			}
+		}
+
+		public Version ApplicationVersion
+		{
+			get
+			{
+				try
+				{
+					ShareInfoUpdateEventArgs e = new ShareInfoUpdateEventArgs();
+					e.Property = ShareProperty.ApplicationVersion;
+					OnInfoUpdated(e);
+				}
+				catch
+				{
+				}
+				return _applicationVersion;
+			}
+		}
+
+		public bool IsDirty
+		{
+			get
+			{
+				try
+				{
+					ShareInfoUpdateEventArgs e = new ShareInfoUpdateEventArgs();
+					e.Property = ShareProperty.IsDirty;
+					OnInfoUpdated(e);
+				}
+				catch
+				{
+				}
+				return _IsDirty;
+			}
+		}
+
+		public string ActiveDocumentName
+		{
+			get
+			{
+				try
+				{
+					ShareInfoUpdateEventArgs e = new ShareInfoUpdateEventArgs();
+					e.Property = ShareProperty.ActiveDocumentName;
+					OnInfoUpdated(e);
+				}
+				catch
+				{
+				}
+				return _ActiveDocumentName;
+			}
+		}
+
+		public string ActiveDocumentFilePath
+		{
+			get
+			{
+				try
+				{
+					ShareInfoUpdateEventArgs e = new ShareInfoUpdateEventArgs();
+					e.Property = ShareProperty.ActiveDocumentFilePath;
+					OnInfoUpdated(e);
+				}
+				catch
+				{
+				}
+				return _ActiveDocumentFilePath;
+			}
+		}
+
+		public string HostApplicationName
+		{
+			get
+			{
+				try
+				{
+					ShareInfoUpdateEventArgs e = new ShareInfoUpdateEventArgs();
+					e.Property = ShareProperty.HostApplicationName;
+					OnInfoUpdated(e);
+				}
+				catch
+				{
+				}
+				return _HostApplicationName;
+			}
+		}
+
+		public event ShareInfoUpdateEventHandler RequestInfo;
+
+		public void PropertyUpdated(ShareProperty Action, object value)
+		{
+			switch (Action)
+			{
+			case ShareProperty.IsDirty:
+				_IsDirty = (bool)value;
+				break;
+			case ShareProperty.ActiveDocumentName:
+				_ActiveDocumentName = (string)value;
+				break;
+			case ShareProperty.ActiveDocumentFilePath:
+				_ActiveDocumentFilePath = (string)value;
+				break;
+			case ShareProperty.HostApplicationName:
+				_HostApplicationName = (string)value;
+				break;
+			case ShareProperty.ApplicationVersion:
+				_applicationVersion = value as Version;
+				if (_applicationVersion == null)
+				{
+					_applicationVersion = Assembly.GetExecutingAssembly().GetName().Version;
+				}
+				break;
+			case ShareProperty.DoSave:
+				ActionComplete = true;
+				break;
+			case ShareProperty.IsCompoundFileFormat:
+			case ShareProperty.CompoundFilePath:
+				break;
+			}
+		}
+
+		protected virtual void OnInfoUpdated(ShareInfoUpdateEventArgs e)
+		{
+			if (this.RequestInfo != null)
+			{
+				this.RequestInfo(e);
+			}
+		}
+
+		public bool DoSave()
+		{
+			try
+			{
+				ActionComplete = false;
+				ShareInfoUpdateEventArgs e = new ShareInfoUpdateEventArgs();
+				e.Property = ShareProperty.DoSave;
+				OnInfoUpdated(e);
+			}
+			catch
+			{
+			}
+			return ActionComplete;
+		}
+
+		public ShareContainer()
+		{
+			InitializeComponent();
+			SessionInfo.Instance.Message += SessionInfo_MessageReceived;
+			base.Loaded += Container_Loaded;
+			SessionInfo.Instance.SetShareContainer(this);
+		}
+
+		private void Container_Loaded(object sender, RoutedEventArgs e)
+		{
+			if (_simulatorConnectionLoaded)
+			{
+				GetDenverConfig();
+				SessionInfo.Instance.UpdateCaseFromSimulator();
+			}
+		}
+
+		private void SessionInfo_MessageReceived(object sender, SessionInfo.SessionMessageArgs e)
+		{
+			if (e.Message == "ConnectedToServerSuccessfully" && base.Content is IntroWindow)
+			{
+				fadeOutCurrentControl(1);
+				SessionInfo.Instance.TriggerSimUpdate();
+			}
+		}
+
+		private void GetDenverConfig()
+		{
+			SessionInfo.Instance.ServerURL = ShareConfiguration.Get(ConfigurationSetting.URLSetting);
+			setInitialControl(SessionInfo.Instance.ServerURL);
+		}
+
+		private void setInitialControl(string storedServerValue)
+		{
+			if (!string.IsNullOrEmpty(storedServerValue))
+			{
+				DriveWindow driveWindow = base.Content as DriveWindow;
+				if (driveWindow == null)
+				{
+					base.Content = new DriveWindow();
+				}
+			}
+			else
+			{
+				IntroWindow introWindow = base.Content as IntroWindow;
+				if (introWindow == null)
+				{
+					base.Content = new IntroWindow();
+				}
+			}
+		}
+
+		private void fadeOutCurrentControl(int fadeDuration)
+		{
+			DoubleAnimation doubleAnimation = new DoubleAnimation();
+			doubleAnimation.From = 1.0;
+			doubleAnimation.To = 0.0;
+			doubleAnimation.Duration = new Duration(TimeSpan.FromSeconds(fadeDuration));
+			DriveWindow DriveContent = new DriveWindow();
+			doubleAnimation.Completed += delegate
+			{
+				(base.Content as Control).Visibility = Visibility.Hidden;
+				(base.Content as Control).Opacity = 1.0;
+				base.Content = DriveContent;
+				fadeInNextControl(fadeDuration);
+			};
+			doubleAnimation.FillBehavior = FillBehavior.Stop;
+			(base.Content as Control).BeginAnimation(UIElement.OpacityProperty, doubleAnimation);
+		}
+
+		private void fadeInNextControl(int fadeDuration)
+		{
+			(base.Content as Control).Visibility = Visibility.Visible;
+			DoubleAnimation doubleAnimation = new DoubleAnimation();
+			doubleAnimation.From = 0.0;
+			doubleAnimation.To = 1.0;
+			doubleAnimation.Duration = new Duration(TimeSpan.FromSeconds(fadeDuration));
+			(base.Content as Control).BeginAnimation(UIElement.OpacityProperty, doubleAnimation);
+		}
+
+		private void TransitionButton_Click(object sender, RoutedEventArgs e)
+		{
+			fadeOutCurrentControl(1);
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/AspenTech.AspenONEShare;component/controls/sharecontainer.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			_contentLoaded = true;
+		}
+	}
+	public class IntroURLValidator : BasicURL, IComponentConnector
+	{
+		private const string UsernameListQueryString = "isUsernameListRequest";
+
+		private const string FileStatusQueryString = "isFileStatusRequest";
+
+		private const string SendFileQueryString = "isSendFile";
+
+		private BackgroundWorker connectWorker;
+
+		private bool waitForWorkerToFinish;
+
+		private mode _currentMode;
+
+		public static readonly DependencyProperty IntroURLButtonTextProperty = DependencyProperty.Register("IntroURLButtonText", typeof(string), typeof(IntroURLValidator), new PropertyMetadata(Strings.URLVALIDATOR_CONNECT));
+
+		internal TextBox ServerNameTextBox;
+
+		internal Button buttonConnect;
+
+		internal StackPanel stackPanelStatus;
+
+		internal Image StatusImage;
+
+		internal Label StatusLabel;
+
+		private bool _contentLoaded;
+
+		public mode currentMode
+		{
+			get
+			{
+				return _currentMode;
+			}
+			set
+			{
+				_currentMode = value;
+				switch (value)
+				{
+				case mode.Editing:
+					IntroURLButtonText = Strings.URLVALIDATOR_CONNECT;
+					buttonConnect.ToolTip = Strings.TOOLTIP_CONNECT;
+					break;
+				case mode.Connecting:
+					IntroURLButtonText = Strings.CANCEL;
+					buttonConnect.ToolTip = Strings.TOOLTIP_CANCEL_CONNECTING;
+					break;
+				}
+			}
+		}
+
+		public string IntroURLButtonText
+		{
+			get
+			{
+				return (string)GetValue(IntroURLButtonTextProperty);
+			}
+			set
+			{
+				SetValue(IntroURLButtonTextProperty, value);
+			}
+		}
+
+		public IntroURLValidator()
+		{
+			InitializeComponent();
+			ServerNameTextBox.Text = "";
+			connectWorker = new BackgroundWorker();
+			connectWorker.DoWork += base.connectToServer;
+			connectWorker.RunWorkerCompleted += afterConnectToServer;
+			connectWorker.WorkerSupportsCancellation = true;
+		}
+
+		private void CancelWorker()
+		{
+			connectWorker.CancelAsync();
+			connectWorker.DoWork -= base.connectToServer;
+			connectWorker.RunWorkerCompleted -= afterConnectToServer;
+			connectWorker = null;
+			connectWorker = new BackgroundWorker();
+			connectWorker.DoWork += base.connectToServer;
+			connectWorker.RunWorkerCompleted += afterConnectToServer;
+			connectWorker.WorkerSupportsCancellation = true;
+		}
+
+		private void buttonConnect_Click(object sender, RoutedEventArgs e)
+		{
+			switch (currentMode)
+			{
+			case mode.Editing:
+				triggerAsyncConnect();
+				currentMode = mode.Connecting;
+				break;
+			case mode.Connecting:
+				CancelWorker();
+				if (base.requestState != null && base.requestState.request != null)
+				{
+					base.requestState.request.Abort();
+				}
+				currentMode = mode.Editing;
+				stackPanelStatus.Visibility = Visibility.Hidden;
+				ServerNameTextBox.IsEnabled = true;
+				break;
+			}
+		}
+
+		private void triggerAsyncConnect()
+		{
+			if (connectWorker.IsBusy)
+			{
+				connectWorker.CancelAsync();
+				if (base.requestState != null && base.requestState.request != null)
+				{
+					base.requestState.request.Abort();
+				}
+				waitForWorkerToFinish = true;
+			}
+			else
+			{
+				_AppVersion = (SessionInfo.Instance.IsLoaded ? SessionInfo.Instance.ApplicationVersion : null);
+				_AppHostName = (SessionInfo.Instance.IsLoaded ? SessionInfo.Instance.HostApplicationName : null);
+				ServerNameTextBox.IsEnabled = false;
+				base.CurrentImage = StatusImages.spinner;
+				base.CurrentStatusMessage = Strings.URLVALIDATOR_CONNECTING;
+				base.CurrentStatusColor = Brushes.Gray;
+				StatusImages.Spin(StatusImage);
+				stackPanelStatus.Visibility = Visibility.Visible;
+				connectWorker.RunWorkerAsync(base.CurrentURL);
+			}
+		}
+
+		private void afterConnectToServer(object sender, RunWorkerCompletedEventArgs e)
+		{
+			ServerNameTextBox.IsEnabled = true;
+			StatusImage.RenderTransform = null;
+			if (!e.Cancelled && (e.Error != null || !ConnectedSuccessfully))
+			{
+				switch (connectStatus)
+				{
+				case ConnectStatus.URLISMALFORMATTED:
+					base.CurrentStatusMessage = Strings.URLVALIDATOR_MALFORMATTED_URL;
+					break;
+				case ConnectStatus.USERHASACCESS:
+					if (!_serverVersionIsValid)
+					{
+						base.CurrentStatusMessage = Strings.URLVALIDATOR_CANNOT_CONNECT_BAD_VERSION;
+					}
+					else if (!_serverSimVersionIsValid)
+					{
+						base.CurrentStatusMessage = SessionInfo.Instance.HostApplicationName + " " + Strings.URLVALIDATOR_CANNOT_CONNECT_BAD_SIMVERSION;
+					}
+					else
+					{
+						base.CurrentStatusMessage = Strings.URLVALIDATOR_CANNOT_CONNECT_DEFAULT;
+					}
+					break;
+				case ConnectStatus.SERVERHASSHARE:
+					base.CurrentStatusMessage = Strings.URLVALIDATOR_CANNOT_CONNECT_UNAUTHORIZED;
+					break;
+				case ConnectStatus.SERVERISA1:
+					base.CurrentStatusMessage = Strings.URLVALIDATOR_CANNOT_CONNECT_NO_SHARE;
+					break;
+				case ConnectStatus.SERVEREXISTS:
+					base.CurrentStatusMessage = Strings.URLVALIDATOR_CANNOT_CONNECT_NOT_A1_SERVER;
+					break;
+				default:
+					switch (connectionStatusCode)
+					{
+					case HttpStatusCode.NotFound:
+						base.CurrentStatusMessage = Strings.URLVALIDATOR_CANNOT_CONNECT_SERVER_NOT_FOUND;
+						break;
+					case HttpStatusCode.Unauthorized:
+						base.CurrentStatusMessage = Strings.URLVALIDATOR_CANNOT_CONNECT_UNAUTHORIZED;
+						break;
+					default:
+						base.CurrentStatusMessage = Strings.URLVALIDATOR_CANNOT_CONNECT_DEFAULT;
+						break;
+					}
+					break;
+				}
+				SessionInfo.Instance.Owner = null;
+				SessionInfo.Instance.ServerURL = base.CurrentURL;
+				SessionInfo.Instance.ConnectedToServerSuccessfully = false;
+				base.CurrentStatusColor = Palette.RedStatus;
+				base.CurrentImage = StatusImages.redX;
+				currentMode = mode.Editing;
+			}
+			else if (!e.Cancelled)
+			{
+				base.CurrentStatusMessage = Strings.URLVALIDATOR_CONNECTED;
+				string[] array = base.Owner.Account.Split('\\');
+				SessionInfo.Instance.ActiveUserProfile = new Profile((array.Length > 0) ? array[0] : string.Empty, (array.Length > 1) ? array[1] : string.Empty, base.Owner.EMail, base.Owner.DisplayName);
+				SessionInfo.Instance.Owner = base.Owner;
+				SessionInfo.Instance.ServerURL = base.CurrentURL;
+				SessionInfo.Instance.ConnectedToServerSuccessfully = true;
+				base.CurrentStatusColor = Palette.GreenStatus;
+				base.CurrentImage = StatusImages.greenCheckMark;
+				ShareConfiguration.Set(ConfigurationSetting.URLSetting, base.CurrentURL, trySetDefault: true);
+			}
+			else if (e.Cancelled)
+			{
+				base.CurrentStatusMessage = "";
+				stackPanelStatus.Visibility = Visibility.Hidden;
+			}
+			buttonConnect.IsEnabled = true;
+			if (waitForWorkerToFinish)
+			{
+				waitForWorkerToFinish = false;
+				triggerAsyncConnect();
+			}
+		}
+
+		private void ServerNameTextBox_TextChanged(object sender, TextChangedEventArgs e)
+		{
+			if (SessionInfo.Instance.ConnectedToServerSuccessfully)
+			{
+				SessionInfo.Instance.ConnectedToServerSuccessfully = false;
+			}
+			buttonConnect.IsEnabled = !string.IsNullOrEmpty(ServerNameTextBox.Text);
+			stackPanelStatus.Visibility = Visibility.Hidden;
+		}
+
+		private void IntroURLValidator_Loaded(object sender, RoutedEventArgs e)
+		{
+			ShareConfiguration.InitialConfigurationFile();
+		}
+
+		private void ServerNameTextBox_KeyDown(object sender, KeyEventArgs e)
+		{
+			Key key = e.Key;
+			if (key == Key.Return)
+			{
+				buttonConnect.Focus();
+				triggerAsyncConnect();
+				currentMode = mode.Connecting;
+			}
+		}
+
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[DebuggerNonUserCode]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/AspenTech.AspenONEShare;component/url%20validators/introurlvalidator.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		internal Delegate _CreateDelegate(Type delegateType, string handler)
+		{
+			return Delegate.CreateDelegate(delegateType, this, handler);
+		}
+
+		[DebuggerNonUserCode]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			switch (connectionId)
+			{
+			case 1:
+				ServerNameTextBox = (TextBox)target;
+				ServerNameTextBox.TextChanged += ServerNameTextBox_TextChanged;
+				ServerNameTextBox.KeyDown += ServerNameTextBox_KeyDown;
+				break;
+			case 2:
+				buttonConnect = (Button)target;
+				buttonConnect.Click += buttonConnect_Click;
+				break;
+			case 3:
+				stackPanelStatus = (StackPanel)target;
+				break;
+			case 4:
+				StatusImage = (Image)target;
+				break;
+			case 5:
+				StatusLabel = (Label)target;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+	public class ShareControl : UserControl, IWeakEventListener, IComponentConnector, IStyleConnector
+	{
+		private ProfileListDisplay AddedProfiles = new ProfileListDisplay();
+
+		private bool _suppressUpdates;
+
+		internal ShareControl myShareControl;
+
+		internal Label ShareStatusLabel;
+
+		internal Label ModelStatusLabel;
+
+		internal Label LastSharedLabel;
+
+		internal Button UnshareButton;
+
+		internal ProfileTextBox EmailTextBox;
+
+		internal Button AddButton;
+
+		internal DataGrid SharedUsersDataGrid;
+
+		internal Image DeleteAllImage;
+
+		internal TextBox mailContent;
+
+		internal CheckBox CanDownloadCheckBox;
+
+		internal Button ShareButton;
+
+		internal Image ShareOpStatusImage;
+
+		internal TextBlock ShareOpStatusBlock;
+
+		private bool _contentLoaded;
+
+		public ShareControl()
+		{
+			InitializeComponent();
+			SessionInfoEventManager.AddListener(SessionInfo.Instance, this);
+			AddedProfiles.ListChanged += _addedProfiles_ListChanged;
+			EmailTextBox.Profiles.ListChanged += PendingProfiles_ListChanged;
+			SharedUsersDataGrid.ItemsSource = AddedProfiles;
+		}
+
+		private void ShareControl_Loaded(object sender, RoutedEventArgs e)
+		{
+			UpdateUI();
+		}
+
+		private void AddButton_Click(object sender, RoutedEventArgs e)
+		{
+			if (AddButton != null && SharedUsersDataGrid != null)
+			{
+				AddProfilesFromTypeAhead();
+			}
+		}
+
+		private void EmailTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+		{
+			Key key = e.Key;
+			if (key == Key.Return)
+			{
+				AddProfilesFromTypeAhead();
+				e.Handled = true;
+			}
+		}
+
+		private void ShareButton_Click(object sender, RoutedEventArgs e)
+		{
+			ShareActiveCase();
+		}
+
+		private void UnshareButton_Click(object sender, RoutedEventArgs e)
+		{
+			UnShareActiveCase();
+		}
+
+		private void mailContent_TextChanged(object sender, TextChangedEventArgs e)
+		{
+			if (mailContent != null)
+			{
+				SessionInfo.Instance.OptionalEmailContent = mailContent.Text;
+				if (mailContent.Text != Strings.SHAREWINDOW_EMAIL_BODY_INSTRUCTIONS)
+				{
+					mailContent.Foreground = Brushes.Black;
+					mailContent.FontStyle = FontStyles.Normal;
+				}
+				else
+				{
+					mailContent.Foreground = Brushes.Silver;
+					mailContent.FontStyle = FontStyles.Italic;
+				}
+			}
+		}
+
+		private void mailContent_GotFocus(object sender, RoutedEventArgs e)
+		{
+			if (mailContent != null)
+			{
+				OnGotFocus(e);
+				if (mailContent.Text == Strings.SHAREWINDOW_EMAIL_BODY_INSTRUCTIONS)
+				{
+					mailContent.Text = string.Empty;
+				}
+			}
+		}
+
+		private void mailContent_LostFocus(object sender, RoutedEventArgs e)
+		{
+			if (mailContent != null)
+			{
+				base.OnLostFocus(e);
+				if (string.IsNullOrWhiteSpace(mailContent.Text))
+				{
+					mailContent.Text = Strings.SHAREWINDOW_EMAIL_BODY_INSTRUCTIONS;
+				}
+			}
+		}
+
+		private void CheckBox_Changed(object sender, RoutedEventArgs e)
+		{
+			SessionInfo.Instance.ShareUsersCanDownload = CanDownloadCheckBox.IsChecked ?? false;
+			SessionInfo.Instance.ModelModified = true;
+		}
+
+		private void DeleteImage_MouseUp(object sender, MouseButtonEventArgs e)
+		{
+			int selectedIndex = SharedUsersDataGrid.SelectedIndex;
+			if (selectedIndex == -1)
+			{
+				return;
+			}
+			if (SharedUsersDataGrid.Items[selectedIndex] is Profile { IsActiveUser: not false })
+			{
+				MessageBox.Show(Strings.SHAREWINDOW_CANNOT_REMOVE_ACTIVE_USER, SessionInfo.Instance.HostApplicationName, MessageBoxButton.OK, MessageBoxImage.Asterisk);
+				return;
+			}
+			bool result = true;
+			bool.TryParse(ShareConfiguration.Get(ConfigurationSetting.DialogSetting), out result);
+			bool? flag = null;
+			if (result)
+			{
+				RemoveUserDialog removeUserDialog = new RemoveUserDialog(Window.GetWindow(this), SessionInfo.Instance.HostApplicationName);
+				flag = removeUserDialog.ShowDialog();
+			}
+			if (!result || (flag.HasValue && flag.Value))
+			{
+				AddedProfiles.RemoveAt(selectedIndex);
+			}
+			SharedUsersDataGrid.ItemsSource = null;
+			SharedUsersDataGrid.ItemsSource = AddedProfiles;
+		}
+
+		private void DeleteAllImage_MouseDown(object sender, MouseButtonEventArgs e)
+		{
+			MessageBoxResult messageBoxResult = MessageBox.Show(Strings.SHAREWINDOW_DIALOG_REMOVE_ALL, SessionInfo.Instance.HostApplicationName, MessageBoxButton.OKCancel, MessageBoxImage.None, MessageBoxResult.No);
+			if (messageBoxResult == MessageBoxResult.OK)
+			{
+				ClearProfiles();
+			}
+		}
+
+		private void ClearProfiles()
+		{
+			AddedProfiles.Clear();
+			SharedUsersDataGrid.ItemsSource = null;
+			if (SessionInfo.Instance.ActiveUserProfile != null)
+			{
+				AddedProfiles.Add(SessionInfo.Instance.ActiveUserProfile);
+			}
+			SharedUsersDataGrid.ItemsSource = AddedProfiles;
+		}
+
+		private void PendingProfiles_ListChanged(object sender, ListChangedEventArgs e)
+		{
+			if (EmailTextBox == null || EmailTextBox.Profiles == null)
+			{
+				AddButton.IsEnabled = false;
+			}
+			else if (EmailTextBox.Profiles.Count > 0)
+			{
+				AddButton.IsEnabled = true;
+			}
+			else
+			{
+				AddButton.IsEnabled = false;
+			}
+		}
+
+		private void _addedProfiles_ListChanged(object sender, ListChangedEventArgs e)
+		{
+			SharedUsersDataGrid.ItemsSource = null;
+			SharedUsersDataGrid.ItemsSource = AddedProfiles;
+			SessionInfo instance = SessionInfo.Instance;
+			instance.AddedProfiles = AddedProfiles;
+			if (!instance.ModelHasBeenShared)
+			{
+				return;
+			}
+			bool flag = false;
+			int num = 0;
+			foreach (Profile addedProfile in AddedProfiles)
+			{
+				if (addedProfile.IsValid)
+				{
+					num++;
+					if (!instance.SharedWithProfiles.Contains(addedProfile))
+					{
+						flag = true;
+						break;
+					}
+				}
+			}
+			flag |= num != instance.SharedWithProfiles.Count;
+			instance.ModelModified = flag || Math.Abs((instance.LatestDetail.LastModified.ToLocalTime() - File.GetLastWriteTime(instance.ActiveDocumentFilePath)).TotalMilliseconds) > 1.0;
+		}
+
+		private void SessionInfo_MessageReceived(object sender, SessionInfo.SessionMessageArgs e)
+		{
+			switch (e.Message)
+			{
+			case "ActionComplete":
+				OnActionComplete();
+				break;
+			case "ActiveUserProfile":
+				if (SessionInfo.Instance.ActiveUserProfile != null)
+				{
+					SessionInfo.Instance.ActiveUserProfile.IsActiveUser = true;
+					if (!AddedProfiles.Contains(SessionInfo.Instance.ActiveUserProfile))
+					{
+						AddedProfiles.Add(SessionInfo.Instance.ActiveUserProfile);
+					}
+				}
+				break;
+			case "SimUpdate":
+				ClearProfiles();
+				ProcessSharedProfiles();
+				UpdateUI();
+				ShareOpStatusBlock.Visibility = Visibility.Hidden;
+				ShareOpStatusImage.Visibility = Visibility.Hidden;
+				break;
+			case "ServerURL":
+			case "ConnectedToServerSuccessfully":
+			case "ModelDetails":
+				ClearProfiles();
+				ProcessSharedProfiles();
+				UpdateUI();
+				break;
+			case "ModelModified":
+				UpdateUI();
+				break;
+			}
+		}
+
+		private void UpdateUI()
+		{
+			if (_suppressUpdates)
+			{
+				return;
+			}
+			if (string.IsNullOrWhiteSpace(SessionInfo.Instance.ActiveDocumentFilePath))
+			{
+				ShareStatusLabel.Content = Strings.SHAREWINDOW_OPEN_A_MODEL;
+				LastSharedLabel.Content = Strings.SHAREWINDOW_NA;
+				ModelStatusLabel.Content = string.Empty;
+				ShareButton.IsEnabled = false;
+				UnshareButton.IsEnabled = false;
+				EmailTextBox.IsEnabled = false;
+				return;
+			}
+			if (!SessionInfo.Instance.FileExtensionIsValid)
+			{
+				if (SessionInfo.Instance.HostApplicationName == "Aspen Plus")
+				{
+					ShareStatusLabel.Content = Strings.SHAREWINDOW_STATUS_UNSUPPORTED_FILE_APLUS;
+				}
+				else if (SessionInfo.Instance.HostApplicationName == "Aspen HYSYS")
+				{
+					ShareStatusLabel.Content = Strings.SHAREWINDOW_STATUS_UNSUPPORTED_FILE_HYSYS;
+				}
+				LastSharedLabel.Content = Strings.SHAREWINDOW_NA;
+				ModelStatusLabel.Content = string.Empty;
+				ShareButton.IsEnabled = false;
+				UnshareButton.IsEnabled = false;
+				EmailTextBox.IsEnabled = false;
+				return;
+			}
+			if (!SessionInfo.Instance.ConnectedToServerSuccessfully)
+			{
+				ShareStatusLabel.Content = Strings.SHAREWINDOW_STATUS_NOT_CONNECTED;
+				LastSharedLabel.Content = Strings.SHAREWINDOW_NA;
+				ModelStatusLabel.Content = string.Empty;
+				ShareButton.IsEnabled = false;
+				UnshareButton.IsEnabled = false;
+				EmailTextBox.IsEnabled = false;
+				return;
+			}
+			EmailTextBox.IsEnabled = true;
+			if (SessionInfo.Instance.ModelShareStatus == ModelStatus.PROCESSING)
+			{
+				UnshareButton.IsEnabled = false;
+				ShareButton.IsEnabled = true;
+				ShareStatusLabel.Content = Strings.SHAREWINDOW_STATUS_QUEUED;
+			}
+			else if (SessionInfo.Instance.ModelHasBeenShared)
+			{
+				ShareStatusLabel.Content = Strings.SHAREWINDOW_STATUS_SHARED;
+				UnshareButton.IsEnabled = true;
+				if (!SessionInfo.Instance.ModelShareTime.HasValue)
+				{
+					LastSharedLabel.Content = Strings.SHAREWINDOW_NA;
+				}
+				else if (SessionInfo.Instance.ModelShareTime == DateTime.MinValue)
+				{
+					LastSharedLabel.Content = DateTime.Now.ToString("MMMM dd, yyyy") + " - " + DateTime.Now.ToShortTimeString();
+				}
+				else
+				{
+					LastSharedLabel.Content = SessionInfo.Instance.ModelShareTime.Value.ToString("MMMM dd, yyyy") + " - " + SessionInfo.Instance.ModelShareTime.Value.ToShortTimeString();
+				}
+				CanDownloadCheckBox.IsChecked = SessionInfo.Instance.ShareUsersCanDownload;
+				if (SessionInfo.Instance.ModelModified)
+				{
+					ShareButton.IsEnabled = true;
+					ModelStatusLabel.Content = Strings.SHAREWINDOW_STATUS_MODIFIED;
+				}
+				else
+				{
+					ShareButton.IsEnabled = false;
+					ModelStatusLabel.Content = string.Empty;
+				}
+			}
+			else
+			{
+				UnshareButton.IsEnabled = false;
+				ShareButton.IsEnabled = true;
+				LastSharedLabel.Content = Strings.SHAREWINDOW_NA;
+				ModelStatusLabel.Content = string.Empty;
+				ShareStatusLabel.Content = Strings.SHAREWINDOW_STATUS_NOT_SHARED;
+			}
+		}
+
+		private void ProcessSharedProfiles()
+		{
+			BindingList<Profile> sharedWithProfiles = SessionInfo.Instance.SharedWithProfiles;
+			if (sharedWithProfiles == null)
+			{
+				return;
+			}
+			foreach (Profile item in sharedWithProfiles)
+			{
+				if (!AddedProfiles.Contains(item))
+				{
+					if (item != null && item.Equals(SessionInfo.Instance.ActiveUserProfile))
+					{
+						item.IsActiveUser = true;
+					}
+					AddedProfiles.Add(item);
+				}
+			}
+		}
+
+		private void PrepopulateUserDatagrid(ShareUser[] sharedUsers)
+		{
+			SharedUsersDataGrid.ItemsSource = null;
+			AddedProfiles.Clear();
+			if (SessionInfo.Instance.ActiveUserProfile != null)
+			{
+				AddedProfiles.Add(SessionInfo.Instance.ActiveUserProfile);
+			}
+			foreach (ShareUser shareUser in sharedUsers)
+			{
+				string[] array = shareUser.Account.Split('\\');
+				Profile profile = new Profile(array[0], array[1], shareUser.EMail, shareUser.DisplayName);
+				if (!profile.Equals(SessionInfo.Instance.ActiveUserProfile))
+				{
+					AddedProfiles.Add(profile);
+				}
+			}
+			SharedUsersDataGrid.ItemsSource = AddedProfiles;
+		}
+
+		private void AddProfilesFromTypeAhead()
+		{
+			if (EmailTextBox == null || EmailTextBox.Profiles == null)
+			{
+				return;
+			}
+			foreach (Profile profile in EmailTextBox.Profiles)
+			{
+				if (profile.IsValid && !AddedProfiles.Contains(profile))
+				{
+					AddedProfiles.Add(profile);
+				}
+			}
+			EmailTextBox.ClearAfterAdd();
+			SharedUsersDataGrid.Focus();
+			EmailTextBox.Focus();
+		}
+
+		private void OnActionComplete()
+		{
+			try
+			{
+				_suppressUpdates = true;
+				if (SessionInfo.Instance.ConnectedToServerSuccessfully && SessionInfo.Instance.ModelShareStatus == ModelStatus.COMPLETED && SessionInfo.Instance.FileActionType == FileActionType.INGESTION)
+				{
+					ShareOpStatusImage.Source = StatusImages.greenCheckMark;
+					ShareOpStatusImage.RenderTransform = null;
+					ShareOpStatusBlock.Foreground = Palette.GreenStatus;
+					ShareOpStatusBlock.Text = Strings.SHAREWINDOW_STATUS_SHARED;
+					FadeOut(ShareOpStatusBlock, 2);
+					FadeOut(ShareOpStatusImage, 2);
+				}
+				else if (SessionInfo.Instance.ConnectedToServerSuccessfully && SessionInfo.Instance.ModelShareStatus == ModelStatus.PROCESSING && SessionInfo.Instance.FileActionType == FileActionType.INGESTION)
+				{
+					ShareOpStatusBlock.Text = Strings.SHAREWINDOW_STATUS_QUEUED_INFO;
+					ShareOpStatusImage.RenderTransform = null;
+					ShareOpStatusBlock.Foreground = Palette.GreenStatus;
+					FadeOut(ShareOpStatusImage, 2);
+				}
+				else if (SessionInfo.Instance.FileActionType == FileActionType.INGESTION)
+				{
+					ShareOpStatusImage.Source = StatusImages.redX;
+					ShareOpStatusImage.RenderTransform = null;
+					ShareOpStatusBlock.Foreground = Palette.RedStatus;
+					ShareOpStatusBlock.Text = Strings.SHAREWINDOW_UNABLE_TO_SHARE;
+				}
+				else
+				{
+					ShareOpStatusImage.Source = StatusImages.greenCheckMark;
+					ShareOpStatusImage.RenderTransform = null;
+					ShareOpStatusBlock.Foreground = Palette.GreenStatus;
+					ShareOpStatusBlock.Text = Strings.SHAREWINDOW_STATUS_NOT_SHARED;
+					FadeOut(ShareOpStatusBlock, 2);
+					FadeOut(ShareOpStatusImage, 2);
+				}
+			}
+			finally
+			{
+				_suppressUpdates = false;
+			}
+			UpdateUI();
+		}
+
+		private void UnShareActiveCase()
+		{
+			MessageBoxResult messageBoxResult = MessageBox.Show(Strings.SHAREWINDOW_DIALOG_UNSHARE, SessionInfo.Instance.HostApplicationName, MessageBoxButton.OKCancel, MessageBoxImage.None, MessageBoxResult.No);
+			if (messageBoxResult == MessageBoxResult.OK)
+			{
+				UnshareButton.IsEnabled = false;
+				ShareOpStatusImage.Source = StatusImages.spinner;
+				ShareOpStatusBlock.Foreground = Brushes.Black;
+				ShareOpStatusBlock.Text = Strings.SHAREWINDOW_STATUS_UNSHARING;
+				StatusImages.Spin(ShareOpStatusImage);
+				ShareButton.IsEnabled = false;
+				ShareOpStatusBlock.Visibility = Visibility.Visible;
+				ShareOpStatusImage.Visibility = Visibility.Visible;
+				Cursor overrideCursor = Mouse.OverrideCursor;
+				try
+				{
+					Mouse.OverrideCursor = Cursors.Wait;
+					SessionInfo.Instance.UnShareCase();
+				}
+				finally
+				{
+					Mouse.OverrideCursor = overrideCursor;
+				}
+			}
+		}
+
+		private void ShareActiveCase()
+		{
+			if (SessionInfo.Instance.IsDirty)
+			{
+				MessageBoxResult messageBoxResult = MessageBox.Show(Strings.SHAREWINDOW_DIALOG_SAVE_AND_SHARE, SessionInfo.Instance.HostApplicationName, MessageBoxButton.OKCancel, MessageBoxImage.None, MessageBoxResult.Yes);
+				if (messageBoxResult != MessageBoxResult.OK)
+				{
+					return;
+				}
+				SessionInfo.Instance.SaveCase();
+			}
+			ShareOpStatusImage.Source = StatusImages.spinner;
+			ShareOpStatusBlock.Foreground = Brushes.Black;
+			ShareOpStatusBlock.Text = Strings.SHAREWINDOW_STATUS_SHARING;
+			StatusImages.Spin(ShareOpStatusImage);
+			ShareButton.IsEnabled = false;
+			ShareOpStatusBlock.Visibility = Visibility.Visible;
+			ShareOpStatusImage.Visibility = Visibility.Visible;
+			Cursor overrideCursor = Mouse.OverrideCursor;
+			try
+			{
+				Mouse.OverrideCursor = Cursors.Wait;
+				SessionInfo.Instance.ShareCase();
+			}
+			finally
+			{
+				Mouse.OverrideCursor = overrideCursor;
+			}
+		}
+
+		private static void FadeOut(UIElement control, int fadeDuration)
+		{
+			DoubleAnimation doubleAnimation = new DoubleAnimation();
+			doubleAnimation.From = 1.0;
+			doubleAnimation.To = 0.0;
+			doubleAnimation.Duration = new Duration(TimeSpan.FromSeconds(fadeDuration));
+			doubleAnimation.Completed += delegate
+			{
+				control.Visibility = Visibility.Hidden;
+				control.Opacity = 1.0;
+			};
+			doubleAnimation.FillBehavior = FillBehavior.Stop;
+			control.BeginAnimation(UIElement.OpacityProperty, doubleAnimation);
+		}
+
+		public bool ReceiveWeakEvent(Type managerType, object sender, EventArgs e)
+		{
+			if (managerType == typeof(SessionInfoEventManager))
+			{
+				SessionInfo_MessageReceived(sender, (SessionInfo.SessionMessageArgs)e);
+			}
+			return true;
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/AspenTech.AspenONEShare;component/controls/sharecontrol.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[DebuggerNonUserCode]
+		internal Delegate _CreateDelegate(Type delegateType, string handler)
+		{
+			return Delegate.CreateDelegate(delegateType, this, handler);
+		}
+
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[DebuggerNonUserCode]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			switch (connectionId)
+			{
+			case 1:
+				myShareControl = (ShareControl)target;
+				myShareControl.Loaded += ShareControl_Loaded;
+				break;
+			case 2:
+				ShareStatusLabel = (Label)target;
+				break;
+			case 3:
+				ModelStatusLabel = (Label)target;
+				break;
+			case 4:
+				LastSharedLabel = (Label)target;
+				break;
+			case 5:
+				UnshareButton = (Button)target;
+				UnshareButton.Click += UnshareButton_Click;
+				break;
+			case 6:
+				EmailTextBox = (ProfileTextBox)target;
+				break;
+			case 7:
+				AddButton = (Button)target;
+				AddButton.Click += AddButton_Click;
+				break;
+			case 8:
+				SharedUsersDataGrid = (DataGrid)target;
+				break;
+			case 9:
+				DeleteAllImage = (Image)target;
+				DeleteAllImage.MouseDown += DeleteAllImage_MouseDown;
+				break;
+			case 11:
+				mailContent = (TextBox)target;
+				mailContent.TextChanged += mailContent_TextChanged;
+				mailContent.GotFocus += mailContent_GotFocus;
+				mailContent.LostFocus += mailContent_LostFocus;
+				break;
+			case 12:
+				CanDownloadCheckBox = (CheckBox)target;
+				CanDownloadCheckBox.Checked += CheckBox_Changed;
+				CanDownloadCheckBox.Unchecked += CheckBox_Changed;
+				break;
+			case 13:
+				ShareButton = (Button)target;
+				ShareButton.Click += ShareButton_Click;
+				break;
+			case 14:
+				ShareOpStatusImage = (Image)target;
+				break;
+			case 15:
+				ShareOpStatusBlock = (TextBlock)target;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		void IStyleConnector.Connect(int connectionId, object target)
+		{
+			if (connectionId == 10)
+			{
+				((Image)target).MouseUp += DeleteImage_MouseUp;
+			}
+		}
+	}
+}
+namespace AspenTech.AspenONEShare.Properties
+{
+	[GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
+	[CompilerGenerated]
+	[DebuggerNonUserCode]
+	public class Resources
+	{
+		private static ResourceManager resourceMan;
+
+		private static CultureInfo resourceCulture;
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		public static ResourceManager ResourceManager
+		{
+			get
+			{
+				if (object.ReferenceEquals(resourceMan, null))
+				{
+					ResourceManager resourceManager = new ResourceManager("AspenTech.AspenONEShare.Properties.Resources", typeof(Resources).Assembly);
+					resourceMan = resourceManager;
+				}
+				return resourceMan;
+			}
+		}
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		public static CultureInfo Culture
+		{
+			get
+			{
+				return resourceCulture;
+			}
+			set
+			{
+				resourceCulture = value;
+			}
+		}
+
+		public static string DenverConfiguration => ResourceManager.GetString("DenverConfiguration", resourceCulture);
+
+		internal Resources()
+		{
+		}
+	}
+	[CompilerGenerated]
+	[GeneratedCode("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "12.0.0.0")]
+	internal sealed class Settings : ApplicationSettingsBase
+	{
+		private static Settings defaultInstance = (Settings)SettingsBase.Synchronized(new Settings());
+
+		public static Settings Default => defaultInstance;
+	}
+}
+namespace XamlGeneratedNamespace
+{
+	[EditorBrowsable(EditorBrowsableState.Never)]
+	[DebuggerNonUserCode]
+	[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+	public sealed class GeneratedInternalTypeHelper : InternalTypeHelper
+	{
+		protected override object CreateInstance(Type type, CultureInfo culture)
+		{
+			return Activator.CreateInstance(type, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.CreateInstance, null, null, culture);
+		}
+
+		protected override object GetPropertyValue(PropertyInfo propertyInfo, object target, CultureInfo culture)
+		{
+			return propertyInfo.GetValue(target, BindingFlags.Default, null, null, culture);
+		}
+
+		protected override void SetPropertyValue(PropertyInfo propertyInfo, object target, object value, CultureInfo culture)
+		{
+			propertyInfo.SetValue(target, value, BindingFlags.Default, null, null, culture);
+		}
+
+		protected override Delegate CreateDelegate(Type delegateType, object target, string handler)
+		{
+			return (Delegate)target.GetType().InvokeMember("_CreateDelegate", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.InvokeMethod, null, target, new object[2] { delegateType, handler }, null);
+		}
+
+		protected override void AddEventHandler(EventInfo eventInfo, object target, Delegate handler)
+		{
+			eventInfo.AddEventHandler(target, handler);
+		}
+	}
+}
+namespace Interop.SECSERVEROBJECTLib
+{
+	[ComImport]
+	[Guid("A61D34E7-943C-4B91-A7CB-EFEC599ED919")]
+	[CompilerGenerated]
+	[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+	[TypeIdentifier]
+	public interface ISecServer : ISecServer4, ISecServer3, ISecServer2, _ISecServer
+	{
+		[return: MarshalAs(UnmanagedType.BStr)]
+		string CheckoutLicense([In][MarshalAs(UnmanagedType.BStr)] string license, [In][MarshalAs(UnmanagedType.BStr)] string licversion, out int cookie, [Optional][In][MarshalAs(UnmanagedType.Interface)] ISecCallback lostLicenseCallback, [Optional][In] LicenseImportance_enum importance);
+
+		void _VtblGap1_2();
+
+		void ReleaseLicense([In] int cookie);
+	}
+	[ComImport]
+	[Guid("1460FDB6-752B-11D4-B067-0090271CF383")]
+	[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+	[TypeIdentifier]
+	[CompilerGenerated]
+	public interface ISecCallback
+	{
+	}
+	[CompilerGenerated]
+	[TypeIdentifier("1460FDB3-752B-11D4-B067-0090271CF383", "Interop.SECSERVEROBJECTLib.LicenseImportance_enum")]
+	public enum LicenseImportance_enum
+	{
+		liNotCritical,
+		liCritical
+	}
+	[ComImport]
+	[Guid("A61D34E7-943C-4B91-A7CB-EFEC599ED919")]
+	[TypeIdentifier]
+	[CoClass(typeof(object))]
+	[CompilerGenerated]
+	public interface SecServer : ISecServer, ISecServer4, ISecServer3, ISecServer2, _ISecServer
+	{
+	}
+	[ComImport]
+	[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+	[Guid("AE942D5A-12E1-42F9-AA95-B77631A4F6DE")]
+	[CompilerGenerated]
+	[TypeIdentifier]
+	public interface ISecServer4 : ISecServer3, ISecServer2, _ISecServer
+	{
+	}
+	[ComImport]
+	[TypeIdentifier]
+	[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+	[Guid("A09377DA-340B-4BBC-8DF5-F8A100055DD9")]
+	[CompilerGenerated]
+	public interface ISecServer3 : ISecServer2, _ISecServer
+	{
+	}
+	[ComImport]
+	[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+	[Guid("69C4BC11-E968-4190-A674-F1E0928C63F0")]
+	[CompilerGenerated]
+	[TypeIdentifier]
+	public interface ISecServer2 : _ISecServer
+	{
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("1460FDB5-752B-11D4-B067-0090271CF383")]
+	[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+	[TypeIdentifier]
+	public interface _ISecServer
+	{
+	}
+	[ComImport]
+	[Guid("1460FDB8-752B-11D4-B067-0090271CF383")]
+	[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+	[CompilerGenerated]
+	[TypeIdentifier]
+	public interface ICSSUtility
+	{
+	}
+	[ComImport]
+	[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+	[TypeIdentifier]
+	[Guid("1460FDB9-752B-11D4-B067-0090271CF383")]
+	[CompilerGenerated]
+	public interface ICSSCommute
+	{
+	}
+	[ComImport]
+	[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+	[Guid("3E6C4247-BD41-438E-A69B-E1F1043E8CF9")]
+	[CompilerGenerated]
+	[TypeIdentifier]
+	public interface ISLMUsageLog
+	{
+	}
+	[ComImport]
+	[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+	[TypeIdentifier]
+	[Guid("F7FE9DD9-33C2-4C84-9BDA-C084DC25E1D3")]
+	[CompilerGenerated]
+	public interface ISLMUsageLog2
+	{
+	}
+	[ComImport]
+	[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+	[TypeIdentifier]
+	[Guid("073332CC-C51A-47BB-8857-CAD41A1AEC36")]
+	[CompilerGenerated]
+	public interface ISMID
+	{
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+	[TypeIdentifier]
+	[Guid("198817B0-D833-40AA-9CCF-174EF6C1957C")]
+	public interface ISLMUtility
+	{
+	}
+	[ComImport]
+	[Guid("D3414F2B-E63F-42A9-981E-62837FE522BB")]
+	[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+	[CompilerGenerated]
+	[TypeIdentifier]
+	public interface ISLMUtility2 : ISLMUtility
+	{
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+	[Guid("2C9D2F90-5B26-498E-BED0-347159791DE8")]
+	[TypeIdentifier]
+	public interface ISLMUtility3 : ISLMUtility2, ISLMUtility
+	{
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+	[TypeIdentifier]
+	[Guid("E19E9BB6-B6BF-45C5-B846-A99A641561BB")]
+	public interface ISLMLicenseVersion
+	{
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[TypeIdentifier]
+	[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+	[Guid("E415DA75-C9BB-4004-B921-34E04FEDD907")]
+	public interface ISLMSoftUtility
+	{
+	}
+	[ComImport]
+	[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+	[Guid("87658F6F-6A91-43D4-9395-6A112360D15D")]
+	[CompilerGenerated]
+	[TypeIdentifier]
+	public interface IComponentVersionString
+	{
+	}
+	[ComImport]
+	[TypeIdentifier]
+	[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+	[Guid("D5AB2E10-B746-4312-9E5A-A2955A21FD01")]
+	[CompilerGenerated]
+	public interface ISLMIdleTime
+	{
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+	[TypeIdentifier]
+	[Guid("4E4B2046-FA3D-45F3-846B-6AB2D52D0195")]
+	public interface IStochastic
+	{
+	}
+	[ComImport]
+	[Guid("48B3FD7B-3D5F-4DF4-B45B-BE351CC9CEFE")]
+	[TypeIdentifier]
+	[CompilerGenerated]
+	[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+	public interface ITimedLicense
+	{
+	}
+	[ComImport]
+	[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+	[CompilerGenerated]
+	[TypeIdentifier]
+	[Guid("E40228D4-8D72-4FFD-85B6-AA875DD5FC65")]
+	public interface ISLMInstalltime
+	{
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

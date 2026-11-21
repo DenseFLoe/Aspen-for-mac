@@ -1,0 +1,2351 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using AspenTech.APED.Core.DBconfigs;
+using AspenTech.NGP.DatabaseManagement;
+using AspenTech.NGP.Document;
+using AspenTech.NGP.Infrastructure;
+using AspenTech.NGP.PhysicalProperties;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: ComVisible(false)]
+[assembly: Guid("82fa8aa0-42bd-45eb-86a8-5aa4d1e0c499")]
+[assembly: AssemblyTitle("Calculation Service")]
+[assembly: AssemblyFileVersion("41.0.0.39")]
+[assembly: AssemblyProduct("Plex Data Management (NGP)")]
+[assembly: AssemblyCopyright("Copyright © AspenTech Corporation 2025")]
+[assembly: AssemblyTrademark("AspenTech is a registered trademark of AspenTech Corporation")]
+[assembly: AssemblyCompany("AspenTech Corporation")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: TargetFramework(".NETCoreApp,Version=v8.0", FrameworkDisplayName = ".NET 8.0")]
+[assembly: AssemblyVersion("41.0.0.0")]
+[module: RefSafetyRules(11)]
+namespace AspenTech.NGP
+{
+	public class AssemblyInfo
+	{
+		public const string ProductName = "Plex Data Management (NGP)";
+
+		public const string CompanyName = "AspenTech Corporation";
+
+		public const string LegalTrademark = "AspenTech is a registered trademark of AspenTech Corporation";
+
+		public const string LegalCopyright = "Copyright © AspenTech Corporation 2025";
+
+		public const string DeveloperVersion = "41.0";
+
+		public const string DllVersion = "41.0.0.39";
+
+		public const string ReleaseVersion = "V15";
+
+		public const string Name = "";
+
+		public const string Title = "";
+
+		public const string Description = "";
+
+		public const string ProductNameAndVersion = "Plex Data Management (NGP) V15";
+
+		public const short AssemblyCopyrightFrom = 2013;
+
+		public const short AssemblyCopyrightTo = 2025;
+
+		public const string AssemblyCopyrightFrom_string = "2013";
+
+		public const string AssemblyCopyrightTo_string = "2025";
+	}
+}
+namespace AspenTech.NGP.CalculationService
+{
+	internal class CalculationService : ICalculationService, IDisposable
+	{
+		internal readonly IPlexDocument PlexDocument;
+
+		private readonly ILogger NGPLogger;
+
+		private readonly FileReporter _FileReporter;
+
+		private string _OutputDirectory;
+
+		private string _RunId;
+
+		private string _APEDErrors;
+
+		private List<string> _PropertyMethods;
+
+		private List<string> _DefaultDatabanks;
+
+		private IList<IComponentResult> _AllComponents;
+
+		private IList<IComponentResult> _ComponentsFromDatabank;
+
+		private IDBConfiguration dBConfiguration;
+
+		private double RMISS = 1E+35;
+
+		public IComponentManager ComponentManager => PlexDocument.ComponentManager;
+
+		public int FileNumber { get; private set; }
+
+		public IFileReporter FileReporter => _FileReporter;
+
+		public IFlashRetentionSize FlashRetenSize { get; private set; }
+
+		public IOptionSetManager OptionSetManager => PlexDocument.OptionSetManager;
+
+		public List<string> PropertyMethods => _PropertyMethods;
+
+		public List<string> DefaultDatabanks => _DefaultDatabanks;
+
+		public IList<IComponentResult> AllComponents => _AllComponents;
+
+		public string APEDErrors => _APEDErrors;
+
+		public IList<IComponentResult> ComponentsFromDatabank => _ComponentsFromDatabank;
+
+		public string OutputDirectory
+		{
+			get
+			{
+				if (string.IsNullOrWhiteSpace(_OutputDirectory))
+				{
+					_OutputDirectory = Directory.GetCurrentDirectory();
+				}
+				return _OutputDirectory;
+			}
+			set
+			{
+				if (Status == BeadStatus.Uninitialized)
+				{
+					try
+					{
+						Directory.CreateDirectory(value);
+						_OutputDirectory = value;
+						return;
+					}
+					catch (Exception)
+					{
+						throw;
+					}
+				}
+				throw new InvalidOperationException("Cannot edit OutputDirectory after initialization.");
+			}
+		}
+
+		public IParameterManager ParameterManager => PlexDocument.ParameterManager;
+
+		public IParagraphManager ParagraphManager => PlexDocument.ParagraphManager;
+
+		public string RunId
+		{
+			get
+			{
+				if (string.IsNullOrWhiteSpace(_RunId))
+				{
+					_RunId = DateTime.Now.ToString("yyyy.MM.dd.HHmmssfff");
+				}
+				return _RunId;
+			}
+			set
+			{
+				if (Status == BeadStatus.Uninitialized)
+				{
+					if (value.Length <= 255)
+					{
+						_RunId = value;
+						return;
+					}
+					throw new ArgumentOutOfRangeException($"RunId must be <= 255 characters: {value} ({value.Length} )");
+				}
+				throw new InvalidOperationException("Cannot edit RunId after initialization.");
+			}
+		}
+
+		public ILegacyAspenSettings AspenPlusEngineSettings { get; private set; }
+
+		public BeadStatus Status => PlexDocument.Status;
+
+		private bool AlreadyDisposed { get; set; }
+
+		[DllImport("AspenTech_NGP_Managed2Unmanaged", CharSet = CharSet.Ansi, SetLastError = true)]
+		private static extern int M2UnmBridgeAPI_Init(string pszAprSysLocation, string pszOomfLocation, string pszIfortLocation);
+
+		[DllImport("AspenTech_NGP_Managed2Unmanaged")]
+		private static extern void M2UnmBridgeAPI_ClosePDF();
+
+		[DllImport("AspenTech_NGP_Managed2Unmanaged")]
+		private static extern void M2UnmBridgeAPI_SetNCC(long NCC);
+
+		[DllImport("AspenTech_NGP_Managed2Unmanaged")]
+		private static extern long M2UnmBridgeAPI_GetNCC();
+
+		[DllImport("AspenTech_NGP_Managed2Unmanaged")]
+		private static extern void M2UnmBridgeAPI_GetRetentionSizes(out int NRETN, out int NIRETN, out int MRL, out int MRS, out int MRD);
+
+		[DllImport("AspenTech_NGP_Managed2Unmanaged", CharSet = CharSet.Ansi, SetLastError = true)]
+		private static extern void M2UnmBridgeAPI_Initialize(string RUNID, string HISFILE, string REPFILE, long NHIS, long NREP);
+
+		[DllImport("AspenTech_NGP_Managed2Unmanaged")]
+		private static extern void M2UnmBridgeAPI_ReleasePropertiesFromMemory();
+
+		[DllImport("AspenTech_NGP_Managed2Unmanaged")]
+		private static extern void M2UnmBridgeAPI_SetFPControl(long IFLAG);
+
+		public CalculationService(int fileNumber, IDBConfiguration dbConfiguration = null)
+		{
+			dBConfiguration = dbConfiguration;
+			FileNumber = fileNumber;
+			string text = string.Empty;
+			string text2 = string.Empty;
+			string text3 = string.Empty;
+			string text4 = string.Empty;
+			bool num = Environment.OSVersion.Platform == PlatformID.Win32NT;
+			if (num)
+			{
+				text3 = Helper.IFortDirectoryPath();
+				text = Helper.AprSysDirectoryPath(GlobalSpecs.MM);
+				text2 = Helper.OomfDirectoryPath(GlobalSpecs.MM);
+				if (!Directory.Exists(text))
+				{
+					throw new DirectoryNotFoundException("Required directory not found: " + text);
+				}
+				if (!Directory.Exists(text2))
+				{
+					throw new DirectoryNotFoundException("Required directory not found: " + text2);
+				}
+				if (!Directory.Exists(text3))
+				{
+					throw new DirectoryNotFoundException("Required directory not found: " + text3);
+				}
+			}
+			else
+			{
+				text4 = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+			}
+			if (num)
+			{
+				if (Directory.Exists(text) && Directory.Exists(text3) && Directory.Exists(text2))
+				{
+					M2UnmBridgeAPI_Init(text, text2, text3);
+				}
+			}
+			else if (Directory.Exists(text4))
+			{
+				M2UnmBridgeAPI_Init(text4, text4, text4);
+			}
+			AspenPlusEngineSettings = new LegacyAspenSettings();
+			PlexDocument = DocumentFactory.Instance.GetDocument(FileNumber, dbConfiguration);
+			_FileReporter = new FileReporter(fileNumber);
+		}
+
+		public CalculationService(int fileNumber, ILogger ngpLogger = null, IDBConfiguration dbConfiguration = null)
+		{
+			dBConfiguration = dbConfiguration;
+			if (ngpLogger != null)
+			{
+				NGPLogger = ngpLogger;
+			}
+			else
+			{
+				NGPLogger = NullLogger.Instance;
+			}
+			NGPLogger.LogInformation("Start Base CalculationService Constructor for file number {fileNumber}", fileNumber.ToString());
+			FileNumber = fileNumber;
+			string text = string.Empty;
+			string text2 = string.Empty;
+			string text3 = string.Empty;
+			string text4 = string.Empty;
+			bool flag = Environment.OSVersion.Platform == PlatformID.Win32NT;
+			if (flag)
+			{
+				text3 = Helper.IFortDirectoryPath();
+				NGPLogger.LogInformation("IFORT Path set to: \n      { ifortPath }", text3);
+				text = Helper.AprSysDirectoryPath(GlobalSpecs.MM);
+				NGPLogger.LogInformation("APRSYS Path set to: \n       { aprsysPath }", text);
+				text2 = Helper.OomfDirectoryPath(GlobalSpecs.MM);
+				NGPLogger.LogInformation("OOMF Path set to: \n      { oomfPath }", text2);
+				if (!Directory.Exists(text))
+				{
+					NGPLogger.LogCritical("Required directory not found: \n       " + text);
+					throw new DirectoryNotFoundException("Required directory not found: " + text);
+				}
+				if (!Directory.Exists(text2))
+				{
+					throw new DirectoryNotFoundException("Required directory not found: " + text2);
+				}
+				if (!Directory.Exists(text3))
+				{
+					NGPLogger.LogCritical("Required directory not found: \n       " + text3);
+					throw new DirectoryNotFoundException("Required directory not found: " + text3);
+				}
+			}
+			else
+			{
+				text4 = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+			}
+			if (flag)
+			{
+				if (Directory.Exists(text) && Directory.Exists(text3) && Directory.Exists(text2))
+				{
+					int num = M2UnmBridgeAPI_Init(text, text2, text3);
+					NGPLogger.LogInformation("Load ManagedToUnManagedBridge with status: " + num);
+					Console.WriteLine("The last Win32 Error was: " + Marshal.GetLastWin32Error());
+				}
+			}
+			else if (Directory.Exists(text4))
+			{
+				M2UnmBridgeAPI_Init(text4, text4, text4);
+			}
+			NGPLogger.LogInformation("Load Settings");
+			AspenPlusEngineSettings = new LegacyAspenSettings();
+			NGPLogger.LogInformation("Load Document");
+			PlexDocument = DocumentFactory.Instance.GetDocument(FileNumber);
+			NGPLogger.LogInformation("Load FileReporter");
+			_FileReporter = new FileReporter(fileNumber);
+			NGPLogger.LogInformation("End Base CalculationService Constructor");
+		}
+
+		~CalculationService()
+		{
+			Dispose(disposing: false);
+		}
+
+		public string InitializeAPEDDatabases()
+		{
+			_APEDErrors = Helper.FindDatabaseErrors((ILogger)null, (ILogger)null, (IDBConfiguration)null);
+			return _APEDErrors;
+		}
+
+		public string InitializeAPEDDatabases(bool generateDefaultForSimpleApp = false)
+		{
+			if (generateDefaultForSimpleApp)
+			{
+				IDBConfiguration iDBConfiguration = Helper.DefaultDBConfigurationForSimpleApp(true);
+				_APEDErrors = Helper.FindDatabaseErrors((ILogger)null, (ILogger)null, iDBConfiguration);
+			}
+			else
+			{
+				_APEDErrors = Helper.FindDatabaseErrors((ILogger)null, (ILogger)null, (IDBConfiguration)null);
+			}
+			return _APEDErrors;
+		}
+
+		public string InitializeAPEDDatabases(ILogger logger = null, IDBConfiguration dBConfiguration = null)
+		{
+			_APEDErrors = Helper.FindDatabaseErrors(logger, (ILogger)null, dBConfiguration);
+			return _APEDErrors;
+		}
+
+		public IList<IComponentResult> GetAllComponents()
+		{
+			if (!string.IsNullOrEmpty(_APEDErrors))
+			{
+				return null;
+			}
+			_AllComponents = Helper.GetAllComponents(NGPLogger, dBConfiguration);
+			return _AllComponents;
+		}
+
+		public List<string> GetPropertyMethods()
+		{
+			if (_AllComponents != null && _AllComponents.Count > 0)
+			{
+				_PropertyMethods = (from _ in ApedHelperFns.GetPropertyMethods("", "", "")
+					select _.OptionSetName).ToList();
+				return _PropertyMethods;
+			}
+			return null;
+		}
+
+		public List<string> GetDefaultDatabanks()
+		{
+			if (_AllComponents != null && _AllComponents.Count > 0)
+			{
+				_DefaultDatabanks = Helper.GetDefaultDatabanks();
+				return _DefaultDatabanks;
+			}
+			return null;
+		}
+
+		public IList<IComponentResult> GetAllComponents(string databaseName, string databankName)
+		{
+			if (!string.IsNullOrEmpty(_APEDErrors))
+			{
+				return null;
+			}
+			Helper.GetAllComponents(databaseName, databankName, ref _ComponentsFromDatabank, (ILogger)null, (IDBConfiguration)null);
+			return _ComponentsFromDatabank;
+		}
+
+		public void Dispose()
+		{
+			Dispose(disposing: true);
+			GC.SuppressFinalize(this);
+		}
+
+		public void Initialize()
+		{
+			long num = M2UnmBridgeAPI_GetNCC();
+			Console.WriteLine("M2UnmBridgeAPI_GetNCC:" + num);
+			if ((BeadStatus.Modified == Status || num > 0) && Status != BeadStatus.Uninitialized && Status != BeadStatus.Ready)
+			{
+				Console.WriteLine("old engine release from Initialize");
+				M2UnmBridgeAPI_ClosePDF();
+			}
+			if (Status != BeadStatus.Ready)
+			{
+				_FileReporter.Initialize(RunId, OutputDirectory);
+				PrintComponentsTable(PrintToFile.ReportAndHistory);
+				Console.WriteLine("before Generate Beads");
+				PlexDocument.GenerateBeads();
+				Console.WriteLine("After Generate Beads");
+				M2UnmBridgeAPI_SetNCC(ComponentManager.Count);
+				Console.WriteLine("After 2UnmBridgeAPI_SetNCC");
+				M2UnmBridgeAPI_GetRetentionSizes(out var NRETN, out var NIRETN, out var MRL, out var MRS, out var MRD);
+				Console.WriteLine("GetRetentionSizes" + NRETN + NIRETN + MRL + MRS);
+				FlashRetenSize = new FlashRetentionSize(NRETN, NIRETN, MRL, MRS, MRD);
+				Console.WriteLine("Before M2UnmBridgeAPI_Initialize");
+				M2UnmBridgeAPI_Initialize(RunId, FileReporter.HistoryFile, FileReporter.ReportFile, -_FileReporter.HistoryChannel, -_FileReporter.ReportChannel);
+				Console.WriteLine("After M2UnmBridgeAPI_Initialize");
+			}
+		}
+
+		public void SetFloatingPointControl(FloatingPointControl value)
+		{
+			M2UnmBridgeAPI_SetFPControl((long)value);
+		}
+
+		internal void CheckStatus()
+		{
+			if (BeadStatus.Ready != Status)
+			{
+				if (Status != BeadStatus.Uninitialized && BeadStatus.Modified != Status)
+				{
+					throw new NotImplementedException($"Unknown managed PLEX status {Status}.");
+				}
+				Initialize();
+			}
+		}
+
+		protected virtual void Dispose(bool disposing)
+		{
+			if (!AlreadyDisposed)
+			{
+				ReleaseUnmanagedResources();
+				if (disposing)
+				{
+					ReleaseManagedResources();
+				}
+				AlreadyDisposed = true;
+			}
+		}
+
+		private void CheckDimension(IList<int> componentIDX, params IList<double>[] composition)
+		{
+			CheckDimension(componentIDX);
+			for (int i = 0; i < composition.Length; i++)
+			{
+				if (composition[i].Count != componentIDX.Count)
+				{
+					NGPLogger.LogWarning("Composition and IDX must have equal dimensions.");
+				}
+			}
+		}
+
+		private void CheckDimension(IList<int> componentIDX)
+		{
+			if (ComponentManager.Count < componentIDX.Count)
+			{
+				NGPLogger.LogWarning("IDX size cannot be larger than the number of components.");
+			}
+		}
+
+		private KeySinglePhase KeyPhase(ValidPhases validPhases)
+		{
+			if (ValidPhases.VaporLiquid == validPhases || ValidPhases.VaporLiquidLiquid == validPhases || ValidPhases.VaporLiquidFreeWater == validPhases || ValidPhases.VaporLiquidDirtyWater == validPhases)
+			{
+				return KeySinglePhase.Ignore;
+			}
+			if (ValidPhases.LiquidLiquid == validPhases)
+			{
+				return KeySinglePhase.NoVapor;
+			}
+			if (ValidPhases.LiquidOnly == validPhases)
+			{
+				return KeySinglePhase.Liquid;
+			}
+			if (ValidPhases.VaporOnly == validPhases)
+			{
+				return KeySinglePhase.Vapor;
+			}
+			throw new ArgumentException($"Unknown value for {"ValidPhases"}: {validPhases}?");
+		}
+
+		private int PhaseNumber(ValidPhases validPhases)
+		{
+			if (ValidPhases.VaporLiquid == validPhases || ValidPhases.LiquidLiquid == validPhases)
+			{
+				return 2;
+			}
+			if (ValidPhases.VaporLiquidLiquid == validPhases)
+			{
+				return 3;
+			}
+			if (ValidPhases.LiquidOnly == validPhases || ValidPhases.VaporOnly == validPhases)
+			{
+				return 1;
+			}
+			if (ValidPhases.VaporLiquidFreeWater == validPhases)
+			{
+				return 12;
+			}
+			if (ValidPhases.VaporLiquidDirtyWater == validPhases)
+			{
+				return 22;
+			}
+			throw new ArgumentException("PhaseNumber", $"Unknown valid phase definition = {validPhases}");
+		}
+
+		private void PrintComponentsTable(PrintToFile printTo)
+		{
+			string text = string.Format("{0,-11}{1,-15}{2,-15}{3,-35}", "ID", "Type", "Alias", "Name");
+			FileReporter.WriteLine(printTo, Environment.NewLine + " " + text);
+			foreach (IComponent component in ComponentManager.Components)
+			{
+				text = $"{component.EngineId,-11}{component.ComponentType,-15}{component.Descriptor,-15}{component.Ids.Name,-35}";
+				FileReporter.WriteLine(printTo, " " + text);
+			}
+			FileReporter.WriteLine(printTo, new string('_', FileReporter.PageWidth));
+		}
+
+		private void ReleaseManagedResources()
+		{
+			M2UnmBridgeAPI_ReleasePropertiesFromMemory();
+			M2UnmBridgeAPI_ClosePDF();
+			PlexDocument.Dispose();
+			CalculationServiceFactory.Remove(FileNumber);
+		}
+
+		public void ReinitializePlexDocument()
+		{
+			PlexDocument.ReinitializeNewRun();
+		}
+
+		private void ReleaseUnmanagedResources()
+		{
+		}
+
+		public void SetDataSources(List<string> sources)
+		{
+			List<IDataSource> list = new List<IDataSource>();
+			foreach (string source in sources)
+			{
+				string[] array = source.Trim().ToUpper().Split(' ');
+				if (array.Length == 2)
+				{
+					list.Add(Factories.CreateDataSource(array[0], array[1]));
+				}
+			}
+			if (list.Count > 0)
+			{
+				ParameterManager.DataSources.AddRange(list);
+			}
+		}
+
+		public void SetComponents(List<string> components)
+		{
+			List<IComponent> list = new List<IComponent>();
+			foreach (string component in components)
+			{
+				string[] array = component.Trim().ToUpper().Split(' ');
+				string text = array[0];
+				string text2 = ((array.Length == 2) ? array[1] : text);
+				list.Add(Factories.CreateComponentByAlias(text2, text));
+			}
+			if (list.Count > 0)
+			{
+				ComponentManager.Components.AddRange(list);
+			}
+		}
+
+		public void SetHenryComponents(string Henryid, List<string> henrycomponents)
+		{
+			string henryid = Henryid.Trim().ToUpper();
+			List<string> list = new List<string>();
+			foreach (string henrycomponent in henrycomponents)
+			{
+				string text = henrycomponent.Trim().ToUpper();
+				foreach (IComponent component in ComponentManager.Components)
+				{
+					if (text == component.UserSuppliedName)
+					{
+						list.Add(component.UserSuppliedName);
+						break;
+					}
+				}
+			}
+			if (list.Count > 0)
+			{
+				ComponentManager.CreateHenryList(henryid, list);
+			}
+		}
+
+		public void SetProperties(List<string> propnames)
+		{
+			List<string> list = new List<string>();
+			foreach (string propname in propnames)
+			{
+				string item = propname.Trim().ToUpper();
+				list.Add(item);
+			}
+			if (list.Count > 0)
+			{
+				OptionSetManager.Properties(list);
+			}
+		}
+
+		public void SetGlobalOptionSets(string Propid, string Henryid, string Chemid, int truecomp, string Freewater, int soluwater)
+		{
+			string propMethod = Propid.Trim().ToUpper();
+			string henryId = Henryid.Trim().ToUpper();
+			string chemistry = Chemid.Trim().ToUpper();
+			string freeWaterPropMethod = Freewater.Trim().ToUpper();
+			OptionSetManager.SetGlobalOpSets(propMethod, henryId, chemistry, truecomp, freeWaterPropMethod, soluwater);
+		}
+
+		public IList<int> GetGlobalOptionSets()
+		{
+			IList<int> list = new List<int>(new int[6]);
+			IList<int> globalOpSets = OptionSetManager.GetGlobalOpSets();
+			for (int i = 0; i < 6; i++)
+			{
+				list[i] = globalOpSets[i];
+			}
+			return list;
+		}
+
+		public void SetCurrentOptionSets(string Propid, string Henryid, string Chemid, int truecomp, string Freewater, int soluwater)
+		{
+			string propMethod = Propid.Trim().ToUpper();
+			string henryId = Henryid.Trim().ToUpper();
+			string chemistry = Chemid.Trim().ToUpper();
+			string freeWaterPropMethod = Freewater.Trim().ToUpper();
+			OptionSetManager.SetCurrentOpSets(propMethod, henryId, chemistry, truecomp, freeWaterPropMethod, soluwater);
+		}
+
+		public IList<int> GetCurrentOptionSets()
+		{
+			IList<int> list = new List<int>(new int[6]);
+			IList<int> currentOpSets = OptionSetManager.GetCurrentOpSets();
+			for (int i = 0; i < 6; i++)
+			{
+				list[i] = currentOpSets[i];
+			}
+			return list;
+		}
+
+		public IList<int> MakeOptionSets(string Propid, string Henryid, string Chemid, int truecomp, string Freewater, int soluwater)
+		{
+			string propMethod = Propid.Trim().ToUpper();
+			string henryId = Henryid.Trim().ToUpper();
+			string chemistry = Chemid.Trim().ToUpper();
+			string freeWaterPropMethod = Freewater.Trim().ToUpper();
+			return OptionSetManager.MakeOpSets(propMethod, henryId, chemistry, truecomp, freeWaterPropMethod, soluwater);
+		}
+
+		public IList<int> GetComponentIDXsbyCompID(List<string> compIDs)
+		{
+			IList<int> list = new List<int>();
+			foreach (string compID in compIDs)
+			{
+				string text = compID.Trim().ToUpper();
+				foreach (IComponent component in ComponentManager.Components)
+				{
+					if (text == component.UserSuppliedName)
+					{
+						list.Add(component.Index);
+						break;
+					}
+				}
+			}
+			return list;
+		}
+
+		public IList<int> GetComponentIDXs()
+		{
+			return ComponentManager.Indexes;
+		}
+
+		[DllImport("AspenTech_NGP_Managed2Unmanaged")]
+		private static extern long M2UnmBridgeAPI_EnthC(double TIN, double PIN, double VF, double LF, double BETA, double SF, int N, [In][Out] double[] lstY, [In][Out] double[] lstX, [In][Out] double[] lstS, [In][Out] double[] lstX1, [In][Out] double[] lstX2, [In][Out] long[] lstIDX, [In][Out] long[] lstNBOPST, int LPMSG, int KBASE, out double HMX);
+
+		[DllImport("AspenTech_NGP_Managed2Unmanaged")]
+		private static extern long M2UnmBridgeAPI_EnthL(double TIN, double PIN, double[] lstX, int N, long[] lstIDX, long[] lstNBOPST, int KDIAG, int KBASE, int KKH, out double HMXL, out double DHMXL);
+
+		[DllImport("AspenTech_NGP_Managed2Unmanaged")]
+		private static extern long M2UnmBridgeAPI_EnthS(double TIN, double PIN, double[] lstS, int N, long[] lstIDX, long[] lstNBOPST, int KDIAG, int KBASE, int KKH, out double HMXS, out double DHMXS);
+
+		[DllImport("AspenTech_NGP_Managed2Unmanaged")]
+		private static extern long M2UnmBridgeAPI_EnthV(double TIN, double PIN, double[] lstY, int N, long[] lstIDX, long[] lstNBOPST, int KDIAG, int KBASE, int KKH, out double HMXV, out double DHMXV);
+
+		public void Enthalpy(IFlashResult flashResult, out double propertyValue)
+		{
+			List<double> compositionS = new List<double>(new double[flashResult.X.Count]);
+			Enthalpy(flashResult.Temperature, flashResult.Pressure, flashResult.VaporFraction, 1.0 - flashResult.VaporFraction, flashResult.Beta, 0.0, flashResult.Y, flashResult.X, compositionS, flashResult.X1, flashResult.X2, flashResult.ComponentIDX, flashResult.NBPOST, AspenPlusEngineSettings.CalculationDiagnosticsLevel, FunctionBase.Elemental, out propertyValue);
+		}
+
+		public void Enthalpy(IFlashResult flashResult, out double propertyValue, out double temperatureDerivative)
+		{
+			EnthalpyLiquid(flashResult, out var propertyValue2, out var temperatureDerivative2);
+			EnthalpyVapor(flashResult, out var propertyValue3, out var temperatureDerivative3);
+			propertyValue = (1.0 - flashResult.VaporFraction) * propertyValue2 + flashResult.VaporFraction * propertyValue3;
+			temperatureDerivative = (1.0 - flashResult.VaporFraction) * temperatureDerivative2 + flashResult.VaporFraction * temperatureDerivative3;
+		}
+
+		internal void Enthalpy(double temperature, double pressure, double vaporFraction, double liquidFraction, double betaFraction, double solidFraction, IList<double> compositionY, IList<double> compositionX, IList<double> compositionS, IList<double> compositionX1, IList<double> compositionX2, IList<int> IDX, IList<int> NBOPST, DiagnosticsLevel diagnosticsLevel, FunctionBase functionBase, out double propertyValue)
+		{
+			propertyValue = 0.0;
+			try
+			{
+				CheckStatus();
+				CheckDimension(IDX, compositionX, compositionS, compositionX1, compositionX2);
+				M2UnmBridgeAPI_EnthC(temperature, pressure, vaporFraction, liquidFraction, betaFraction, solidFraction, IDX.Count, compositionY.ToArray(), compositionX.ToArray(), compositionS.ToArray(), compositionX1.ToArray(), compositionX2.ToArray(), IDX.Select((int num) => Convert.ToInt64(num)).ToArray(), NBOPST.Select((int num) => Convert.ToInt64(num)).ToArray(), (int)diagnosticsLevel, (int)functionBase, out propertyValue);
+			}
+			catch (Exception)
+			{
+			}
+		}
+
+		public void EnthalpyLiquid(IFlashResult flashResult, out double propertyValue)
+		{
+			EnthalpyLiquid(flashResult.Temperature, flashResult.Pressure, flashResult.X, flashResult.ComponentIDX, flashResult.NBPOST, AspenPlusEngineSettings.CalculationDiagnosticsLevel, FunctionBase.Elemental, Calculate.PropertyValue, out propertyValue, out var _);
+		}
+
+		public void EnthalpyLiquid(IFlashResult flashResult, out double propertyValue, out double temperatureDerivative)
+		{
+			EnthalpyLiquid(flashResult.Temperature, flashResult.Pressure, flashResult.X, flashResult.ComponentIDX, flashResult.NBPOST, AspenPlusEngineSettings.CalculationDiagnosticsLevel, FunctionBase.Elemental, Calculate.ValueAndDerivative, out propertyValue, out temperatureDerivative);
+		}
+
+		public void EnthalpyLiquid1(IFlashResult flashResult, out double propertyValue, out double temperatureDerivative)
+		{
+			EnthalpyLiquid(flashResult.Temperature, flashResult.Pressure, flashResult.X1, flashResult.ComponentIDX, flashResult.NBPOST, AspenPlusEngineSettings.CalculationDiagnosticsLevel, FunctionBase.Elemental, Calculate.ValueAndDerivative, out propertyValue, out temperatureDerivative);
+		}
+
+		public void EnthalpyLiquid2(IFlashResult flashResult, out double propertyValue, out double temperatureDerivative)
+		{
+			EnthalpyLiquid(flashResult.Temperature, flashResult.Pressure, flashResult.X2, flashResult.ComponentIDX, flashResult.NBPOST, AspenPlusEngineSettings.CalculationDiagnosticsLevel, FunctionBase.Elemental, Calculate.ValueAndDerivative, out propertyValue, out temperatureDerivative);
+		}
+
+		internal void EnthalpyLiquid(double temperature, double pressure, IList<double> compositionX, IList<int> IDX, IList<int> NBOPST, DiagnosticsLevel diagnosticsLevel, FunctionBase functionBase, Calculate calculate, out double propertyValue, out double temperatureDerivative)
+		{
+			propertyValue = 0.0;
+			temperatureDerivative = 0.0;
+			try
+			{
+				CheckStatus();
+				CheckDimension(IDX, compositionX);
+				M2UnmBridgeAPI_EnthL(temperature, pressure, compositionX.ToArray(), IDX.Count, IDX.Select((int num) => Convert.ToInt64(num)).ToArray(), NBOPST.Select((int num) => Convert.ToInt64(num)).ToArray(), (int)diagnosticsLevel, (int)functionBase, (int)calculate, out propertyValue, out temperatureDerivative);
+			}
+			catch (Exception)
+			{
+			}
+		}
+
+		internal void EnthalpySolid(double temperature, double pressure, IList<double> compositionS, IList<int> IDX, IList<int> NBOPST, DiagnosticsLevel diagnosticsLevel, FunctionBase functionBase, Calculate calculate, out double propertyValue, out double temperatureDerivative)
+		{
+			propertyValue = 0.0;
+			temperatureDerivative = 0.0;
+			try
+			{
+				CheckStatus();
+				CheckDimension(IDX, compositionS);
+				M2UnmBridgeAPI_EnthS(temperature, pressure, compositionS.ToArray(), IDX.Count, IDX.Select((int num) => Convert.ToInt64(num)).ToArray(), NBOPST.Select((int num) => Convert.ToInt64(num)).ToArray(), (int)diagnosticsLevel, (int)functionBase, (int)calculate, out propertyValue, out temperatureDerivative);
+			}
+			catch (Exception)
+			{
+			}
+		}
+
+		public void EnthalpyVapor(IFlashResult flashResult, out double propertyValue)
+		{
+			EnthalpyVapor(flashResult.Temperature, flashResult.Pressure, flashResult.Y, flashResult.ComponentIDX, flashResult.NBPOST, AspenPlusEngineSettings.CalculationDiagnosticsLevel, FunctionBase.Elemental, Calculate.PropertyValue, out propertyValue, out var _);
+		}
+
+		public void EnthalpyVapor(IFlashResult flashResult, out double propertyValue, out double temperatureDerivative)
+		{
+			EnthalpyVapor(flashResult.Temperature, flashResult.Pressure, flashResult.Y, flashResult.ComponentIDX, flashResult.NBPOST, AspenPlusEngineSettings.CalculationDiagnosticsLevel, FunctionBase.Elemental, Calculate.ValueAndDerivative, out propertyValue, out temperatureDerivative);
+		}
+
+		internal void EnthalpyVapor(double temperature, double pressure, IList<double> compositionY, IList<int> IDX, IList<int> NBOPST, DiagnosticsLevel diagnosticsLevel, FunctionBase functionBase, Calculate calculate, out double propertyValue, out double temperatureDerivative)
+		{
+			propertyValue = 0.0;
+			temperatureDerivative = 0.0;
+			try
+			{
+				CheckStatus();
+				CheckDimension(IDX, compositionY);
+				M2UnmBridgeAPI_EnthV(temperature, pressure, compositionY.ToArray(), IDX.Count, IDX.Select((int num) => Convert.ToInt64(num)).ToArray(), NBOPST.Select((int num) => Convert.ToInt64(num)).ToArray(), (int)diagnosticsLevel, (int)functionBase, (int)calculate, out propertyValue, out temperatureDerivative);
+			}
+			catch (Exception)
+			{
+			}
+		}
+
+		[DllImport("AspenTech_NGP_Managed2Unmanaged", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, SetLastError = true)]
+		private static extern long M2UnmBridgeAPI_PFlash(int KODE, double SPEC1, double SPEC2, [In][Out] double[] lstF, long NCP, [In][Out] long[] lstIDX, int NPKODE, int KPHASE, int MXIT, double TOL, [In][Out] long[] lstNBOPST, int LODIAG, int LPMSG, int KBASE, out double TEMP, out double PRES, out double HTOTAL, out double VFRAC, out double BETA, [In][Out] double[] lstX, [In][Out] ref int nlstX, [In][Out] double[] lstX1, [In][Out] ref int nstX1, [In][Out] double[] lstX2, [In][Out] ref int nlstX2, [In][Out] double[] lstY, [In][Out] ref int nlstY, [In][Out] double[] XKVL, [In][Out] ref int nXKVL, [In][Out] double[] lstXKVL2, [In][Out] ref int nlstXKVL2, int KRSTRT, [In][Out] double[] lstRETEN, [In][Out] ref int nlstRETEN, [In][Out] long[] lstIRETEN, [In][Out] ref int nlstIRETEN);
+
+		[DllImport("AspenTech_NGP_Managed2Unmanaged")]
+		private static extern void M2UnmBridgeAPI_ZEFlash2(int NB, int NISCP, [In][Out] long[] lstISCP, int NIDS, [In][Out] long[] lstIDS, int NPO, [In][Out] long[] lstNBOPST, int NWDIR, [In][Out] long[] lstIWDIR, int NINT, [In][Out] long[] lstINT, int NREAL, [In][Out] double[] lstReal, int NSIN, [In][Out] long[] NBSIN, int NSOUT, [In][Out] long[] NBSOUT, int NINFI, int NINFO, int NIREP, [In][Out] long[] IREP, int NSIZE, [In][Out] double[] lstSize);
+
+		[DllImport("AspenTech_NGP_Managed2Unmanaged")]
+		private static extern void M2UnmBridgeAPI_PFlashProps(out double SFRAC, out double LFRAC, out double HV, out double HL, out double HL1, out double HL2, out double SV, out double SL, out double SL1, out double SL2, out double VV, out double VL, out double VL1, out double VL2, out double XMWV, out double XMWL, out double XMWL1, out double XMWL2);
+
+		private void Flash(FlashSpec spec, double spec1, double spec2, IList<double> composition, IList<int> IDX, IList<int> NBOPST, ValidPhases validPhases, out IFlashResult results)
+		{
+			results = null;
+			FlashResult flashResult = new FlashResult();
+			int kPHASE = 1;
+			int nPKODE = PhaseNumber(validPhases);
+			int calculationDiagnosticsLevel = (int)AspenPlusEngineSettings.CalculationDiagnosticsLevel;
+			int propertiesDiagnosticsLevel = (int)AspenPlusEngineSettings.PropertiesDiagnosticsLevel;
+			int kBASE = 1;
+			int maxFlashIterations = AspenPlusEngineSettings.MaxFlashIterations;
+			int kRSTRT = 0;
+			double flashTolerance = AspenPlusEngineSettings.FlashTolerance;
+			int count = IDX.Count;
+			double[] array = new double[count];
+			double[] array2 = new double[count];
+			double[] array3 = new double[count];
+			double[] array4 = new double[count];
+			double[] array5 = new double[count];
+			double[] array6 = new double[count];
+			int nlstXKVL = count;
+			int nXKVL = count;
+			int nlstY = count;
+			int nlstX = count;
+			int nstX = count;
+			int nlstX2 = count;
+			_ = FlashRetenSize.RealDimension;
+			Console.WriteLine($".RealDimension: {FlashRetenSize.RealDimension}");
+			Console.WriteLine($"Creating realReten array with size: {FlashRetenSize.RealDimension}");
+			double[] array7 = new double[FlashRetenSize.RealDimension];
+			Console.WriteLine($"Creating intReten array with size: {FlashRetenSize.IntegerDimension}");
+			long[] array8 = new long[FlashRetenSize.IntegerDimension];
+			int nlstRETEN = FlashRetenSize.RealDimension;
+			int nlstIRETEN = FlashRetenSize.IntegerDimension;
+			double[] lstF = composition.ToArray();
+			long[] array9 = IDX.Select((int num) => Convert.ToInt64(num)).ToArray();
+			long[] array10 = NBOPST.Select((int num) => Convert.ToInt64(num)).ToArray();
+			try
+			{
+				CheckStatus();
+				CheckDimension(IDX, composition);
+				M2UnmBridgeAPI_PFlash((int)spec, spec1, spec2, lstF, IDX.Count, array9, nPKODE, kPHASE, maxFlashIterations, flashTolerance, array10, calculationDiagnosticsLevel, propertiesDiagnosticsLevel, kBASE, out var TEMP, out var PRES, out var HTOTAL, out var VFRAC, out var BETA, array, ref nlstX2, array2, ref nstX, array3, ref nlstX, array4, ref nlstY, array5, ref nXKVL, array6, ref nlstXKVL, kRSTRT, array7, ref nlstRETEN, array8, ref nlstIRETEN);
+				results = new FlashResult();
+				flashResult.NBPOST = array10.Select((long num) => (int)num).ToList();
+				flashResult.ComponentIDX = array9.Select((long num) => (int)num).ToList();
+				flashResult.Temperature = TEMP;
+				flashResult.Pressure = PRES;
+				flashResult.Enthalpy = HTOTAL;
+				flashResult.VaporFraction = VFRAC;
+				flashResult.Beta = BETA;
+				flashResult.X = array;
+				flashResult.Y = array4;
+				flashResult.X1 = array2;
+				flashResult.X2 = array3;
+				flashResult.KVL = array5;
+				flashResult.KVL2 = array6;
+				flashResult.Reten = array7.Take(nlstRETEN).ToList();
+				flashResult.IReten = array8.Select((long num) => (int)num).ToList();
+				results = flashResult;
+			}
+			catch (Exception)
+			{
+			}
+		}
+
+		private void Flash(FlashSpec spec, double spec1, double spec2, IList<double> composition, IList<int> IDXs, IList<int> NBOPST, ValidPhases validPhases, out IFlashResultPhaseProps results)
+		{
+			Flash(spec, spec1, spec2, composition, IDXs, NBOPST, validPhases, out IFlashResult results2);
+			M2UnmBridgeAPI_PFlashProps(out var SFRAC, out var LFRAC, out var HV, out var HL, out var HL2, out var HL3, out var SV, out var SL, out var SL2, out var SL3, out var VV, out var VL, out var VL2, out var VL3, out var XMWV, out var XMWL, out var XMWL2, out var XMWL3);
+			results = new FlashResultPhaseProps
+			{
+				NBPOST = NBOPST,
+				ComponentIDX = IDXs,
+				Temperature = results2.Temperature,
+				Pressure = results2.Pressure,
+				Enthalpy = results2.Enthalpy,
+				VaporFraction = results2.VaporFraction,
+				Beta = results2.Beta,
+				X = results2.X,
+				Y = results2.Y,
+				X1 = results2.X1,
+				X2 = results2.X2,
+				KVL = results2.KVL,
+				KVL2 = results2.KVL2,
+				Reten = results2.Reten,
+				IReten = results2.IReten,
+				SFRAC = SFRAC,
+				LFRAC = LFRAC,
+				HMXV = HV,
+				HMXL = HL,
+				HMXL1 = HL2,
+				HMXL2 = HL3,
+				SMXV = SV,
+				SMXL = SL,
+				SMXL1 = SL2,
+				SMXL2 = SL3,
+				VMXV = VV,
+				VMXL = VL,
+				VMXL1 = VL2,
+				VMXL2 = VL3,
+				MWMXV = XMWV,
+				MWMXL = XMWL,
+				MWMXL1 = XMWL2,
+				MWMXL2 = XMWL3
+			};
+			Add_Extra_Properties(ref results);
+		}
+
+		private void Add_Extra_Properties(ref IFlashResultPhaseProps results)
+		{
+			Add_MoleDensity(ref results);
+			Add_MassDensity(ref results);
+			Add_SpecificHeat(ref results);
+			Add_Viscosity(ref results);
+			Add_Conductivity(ref results);
+			Add_SurfaceTension(ref results);
+		}
+
+		private void Add_MoleDensity(ref IFlashResultPhaseProps results)
+		{
+			results.RhoV = RMISS;
+			results.RhoL = RMISS;
+			results.RhoL1 = RMISS;
+			results.RhoL2 = RMISS;
+			if (results.VMXV > 0.0 && results.VMXV != RMISS)
+			{
+				results.RhoV = 1.0 / results.VMXV;
+			}
+			if (results.VMXL > 0.0 && results.VMXL != RMISS)
+			{
+				results.RhoL = 1.0 / results.VMXL;
+			}
+			if (results.Beta < 1.0)
+			{
+				if (results.VMXL1 > 0.0 && results.VMXL1 != RMISS)
+				{
+					results.RhoL1 = 1.0 / results.VMXL1;
+				}
+				if (results.VMXL2 > 0.0 && results.VMXL2 != RMISS)
+				{
+					results.RhoL2 = 1.0 / results.VMXL2;
+				}
+			}
+		}
+
+		private void Add_MassDensity(ref IFlashResultPhaseProps results)
+		{
+			results.MassRhoV = RMISS;
+			results.MassRhoL = RMISS;
+			results.MassRhoL1 = RMISS;
+			results.MassRhoL2 = RMISS;
+			if (results.VMXV > 0.0 && results.VMXV != RMISS)
+			{
+				results.MassRhoV = results.MWMXV / results.VMXV;
+			}
+			if (results.VMXL > 0.0 && results.VMXL != RMISS)
+			{
+				results.MassRhoL = results.MWMXL / results.VMXL;
+			}
+			if (results.Beta < 1.0)
+			{
+				if (results.VMXL1 > 0.0 && results.VMXL1 != RMISS)
+				{
+					results.MassRhoL1 = results.MWMXL1 / results.VMXL1;
+				}
+				if (results.VMXL2 > 0.0 && results.VMXL2 != RMISS)
+				{
+					results.MassRhoL2 = results.MWMXL2 / results.VMXL2;
+				}
+			}
+		}
+
+		private void Add_SpecificHeat(ref IFlashResultPhaseProps results)
+		{
+			EnthalpyVapor(results, out var propertyValue, out var temperatureDerivative);
+			results.CpV = temperatureDerivative;
+			EnthalpyLiquid(results, out propertyValue, out temperatureDerivative);
+			results.CpL = temperatureDerivative;
+			if (results.Beta < 1.0)
+			{
+				EnthalpyLiquid1(results, out propertyValue, out temperatureDerivative);
+				results.CpL1 = temperatureDerivative;
+				EnthalpyLiquid2(results, out propertyValue, out temperatureDerivative);
+				results.CpL2 = temperatureDerivative;
+			}
+		}
+
+		private void Add_Viscosity(ref IFlashResultPhaseProps results)
+		{
+			ViscosityVapor(results, out var propertyValue);
+			results.MUV = propertyValue;
+			ViscosityLiquid(results, out propertyValue);
+			results.MUL = propertyValue;
+		}
+
+		private void Add_Conductivity(ref IFlashResultPhaseProps results)
+		{
+			ThermalConductivityVapor(results, out var propertyValue);
+			results.KV = propertyValue;
+			ThermalConductivityLiquid(results, out propertyValue);
+			results.KL = propertyValue;
+		}
+
+		private void Add_SurfaceTension(ref IFlashResultPhaseProps results)
+		{
+			SurfaceTensionVapor(results, out var propertyValue);
+			results.SIGMAV = propertyValue;
+			SurfaceTensionLiquid(results, out propertyValue);
+			results.SIGMAL = propertyValue;
+		}
+
+		public void Flash3PV(double pressure, double vaporFraction, IList<double> composition, out IFlashResult result)
+		{
+			Flash3PV(pressure, vaporFraction, composition, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), out result);
+		}
+
+		public void Flash3PV(double pressure, double vaporFraction, IList<double> composition, IList<int> IDX, IList<int> NBOPST, out IFlashResult result)
+		{
+			Flash(FlashSpec.PressVaporFrac, pressure, vaporFraction, composition, IDX, NBOPST, ValidPhases.VaporLiquidLiquid, out result);
+		}
+
+		public void Flash3PV(double pressure, double vaporFraction, IList<double> composition, out IFlashResultPhaseProps result)
+		{
+			Flash3PV(pressure, vaporFraction, composition, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), out result);
+		}
+
+		public void Flash3PV(double pressure, double vaporFraction, IList<double> composition, IList<int> IDX, IList<int> NBOPST, out IFlashResultPhaseProps result)
+		{
+			Flash(FlashSpec.PressVaporFrac, pressure, vaporFraction, composition, IDX, NBOPST, ValidPhases.VaporLiquidLiquid, out result);
+		}
+
+		public void FlashPV(double pressure, double vaporFraction, IList<double> composition, out IFlashResult result)
+		{
+			FlashPV(pressure, vaporFraction, composition, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), out result);
+		}
+
+		public void FlashPV(double pressure, double vaporFraction, IList<double> composition, IList<int> IDX, IList<int> NBOPST, out IFlashResult result)
+		{
+			Flash(FlashSpec.PressVaporFrac, pressure, vaporFraction, composition, IDX, NBOPST, ValidPhases.VaporLiquid, out result);
+		}
+
+		public void FlashPV(double pressure, double vaporFraction, IList<double> composition, out IFlashResultPhaseProps result)
+		{
+			FlashPV(pressure, vaporFraction, composition, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), out result);
+		}
+
+		public void FlashPV(double pressure, double vaporFraction, IList<double> composition, IList<int> IDX, IList<int> NBOPST, out IFlashResultPhaseProps result)
+		{
+			Flash(FlashSpec.PressVaporFrac, pressure, vaporFraction, composition, IDX, NBOPST, ValidPhases.VaporLiquid, out result);
+		}
+
+		public void Flash3PH(double pressure, double enthalpy, IList<double> composition, out IFlashResult result)
+		{
+			Flash3PH(pressure, enthalpy, composition, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), out result);
+		}
+
+		public void Flash3PH(double pressure, double enthalpy, IList<double> composition, IList<int> IDX, IList<int> NBOPST, out IFlashResult result)
+		{
+			Flash(FlashSpec.PressEnthalpy, pressure, enthalpy, composition, IDX, NBOPST, ValidPhases.VaporLiquidLiquid, out result);
+		}
+
+		public void Flash3PH(double pressure, double enthalpy, IList<double> composition, out IFlashResultPhaseProps result)
+		{
+			Flash3PH(pressure, enthalpy, composition, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), out result);
+		}
+
+		public void Flash3PH(double pressure, double enthalpy, IList<double> composition, IList<int> IDX, IList<int> NBOPST, out IFlashResultPhaseProps result)
+		{
+			Flash(FlashSpec.PressEnthalpy, pressure, enthalpy, composition, IDX, NBOPST, ValidPhases.VaporLiquidLiquid, out result);
+		}
+
+		public void FlashPH(double pressure, double enthalpy, IList<double> composition, out IFlashResult result)
+		{
+			FlashPH(pressure, enthalpy, composition, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), out result);
+		}
+
+		public void FlashPH(double pressure, double enthalpy, IList<double> composition, IList<int> IDX, IList<int> NBOPST, out IFlashResult result)
+		{
+			Flash(FlashSpec.PressEnthalpy, pressure, enthalpy, composition, IDX, NBOPST, ValidPhases.VaporLiquid, out result);
+		}
+
+		public void FlashPH(double pressure, double enthalpy, IList<double> composition, out IFlashResultPhaseProps result)
+		{
+			FlashPH(pressure, enthalpy, composition, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), out result);
+		}
+
+		public void FlashPH(double pressure, double enthalpy, IList<double> composition, IList<int> IDX, IList<int> NBOPST, out IFlashResultPhaseProps result)
+		{
+			Flash(FlashSpec.PressEnthalpy, pressure, enthalpy, composition, IDX, NBOPST, ValidPhases.VaporLiquid, out result);
+		}
+
+		public void Flash3PT(double pressure, double temperature, IList<double> composition, out IFlashResult result)
+		{
+			Flash3PT(pressure, temperature, composition, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), out result);
+		}
+
+		public void Flash3PT(double pressure, double temperature, IList<double> composition, IList<int> IDX, IList<int> NBOPST, out IFlashResult result)
+		{
+			Flash(FlashSpec.PressTemp, temperature, pressure, composition, IDX, NBOPST, ValidPhases.VaporLiquidLiquid, out result);
+		}
+
+		public void Flash3PT(double pressure, double temperature, IList<double> composition, out IFlashResultPhaseProps result)
+		{
+			Flash3PT(pressure, temperature, composition, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), out result);
+		}
+
+		public void Flash3PT(double pressure, double temperature, IList<double> composition, IList<int> IDX, IList<int> NBOPST, out IFlashResultPhaseProps result)
+		{
+			Flash(FlashSpec.PressTemp, temperature, pressure, composition, IDX, NBOPST, ValidPhases.VaporLiquidLiquid, out result);
+		}
+
+		public void FlashPT(double pressure, double temperature, IList<double> composition, out IFlashResult result)
+		{
+			FlashPT(pressure, temperature, composition, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), out result);
+		}
+
+		public void FlashPT(double pressure, double temperature, IList<double> composition, IList<int> IDX, IList<int> NBOPST, out IFlashResult result)
+		{
+			Flash(FlashSpec.PressTemp, temperature, pressure, composition, IDX, NBOPST, ValidPhases.VaporLiquid, out result);
+		}
+
+		public void FlashPT(double pressure, double temperature, IList<double> composition, out IFlashResultPhaseProps result)
+		{
+			FlashPT(pressure, temperature, composition, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), out result);
+		}
+
+		public void FlashPT(double pressure, double temperature, IList<double> composition, IList<int> IDX, IList<int> NBOPST, out IFlashResultPhaseProps result)
+		{
+			Flash(FlashSpec.PressTemp, temperature, pressure, composition, IDX, NBOPST, ValidPhases.VaporLiquid, out result);
+		}
+
+		public void Flash3TH(double temperature, double enthalpy, IList<double> composition, out IFlashResult result)
+		{
+			Flash3TH(temperature, enthalpy, composition, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), out result);
+		}
+
+		public void Flash3TH(double temperature, double enthalpy, IList<double> composition, IList<int> IDX, IList<int> NBOPST, out IFlashResult result)
+		{
+			Flash(FlashSpec.TempEnthalpy, temperature, enthalpy, composition, IDX, NBOPST, ValidPhases.VaporLiquidLiquid, out result);
+		}
+
+		public void Flash3TH(double temperature, double enthalpy, IList<double> composition, out IFlashResultPhaseProps result)
+		{
+			Flash3TH(temperature, enthalpy, composition, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), out result);
+		}
+
+		public void Flash3TH(double temperature, double enthalpy, IList<double> composition, IList<int> IDX, IList<int> NBOPST, out IFlashResultPhaseProps result)
+		{
+			Flash(FlashSpec.TempEnthalpy, temperature, enthalpy, composition, IDX, NBOPST, ValidPhases.VaporLiquidLiquid, out result);
+		}
+
+		public void FlashTH(double temperature, double enthalpy, IList<double> composition, out IFlashResult result)
+		{
+			FlashTH(temperature, enthalpy, composition, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), out result);
+		}
+
+		public void FlashTH(double temperature, double enthalpy, IList<double> composition, IList<int> IDX, IList<int> NBOPST, out IFlashResult result)
+		{
+			Flash(FlashSpec.TempEnthalpy, temperature, enthalpy, composition, IDX, NBOPST, ValidPhases.VaporLiquid, out result);
+		}
+
+		public void FlashTH(double temperature, double enthalpy, IList<double> composition, out IFlashResultPhaseProps result)
+		{
+			FlashTH(temperature, enthalpy, composition, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), out result);
+		}
+
+		public void FlashTH(double temperature, double enthalpy, IList<double> composition, IList<int> IDX, IList<int> NBOPST, out IFlashResultPhaseProps result)
+		{
+			Flash(FlashSpec.TempEnthalpy, temperature, enthalpy, composition, IDX, NBOPST, ValidPhases.VaporLiquid, out result);
+		}
+
+		public void Flash3TV(double temperature, double vaporFraction, IList<double> composition, out IFlashResult result)
+		{
+			Flash3TV(temperature, vaporFraction, composition, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), out result);
+		}
+
+		public void Flash3TV(double temperature, double vaporFraction, IList<double> composition, IList<int> IDX, IList<int> NBOPST, out IFlashResult result)
+		{
+			Flash(FlashSpec.TempVaporFrac, temperature, vaporFraction, composition, IDX, NBOPST, ValidPhases.VaporLiquidLiquid, out result);
+		}
+
+		public void Flash3TV(double temperature, double vaporFraction, IList<double> composition, out IFlashResultPhaseProps result)
+		{
+			Flash3TV(temperature, vaporFraction, composition, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), out result);
+		}
+
+		public void Flash3TV(double temperature, double vaporFraction, IList<double> composition, IList<int> IDX, IList<int> NBOPST, out IFlashResultPhaseProps result)
+		{
+			Flash(FlashSpec.TempVaporFrac, temperature, vaporFraction, composition, IDX, NBOPST, ValidPhases.VaporLiquidLiquid, out result);
+		}
+
+		public void FlashTV(double temperature, double vaporFraction, IList<double> composition, out IFlashResult result)
+		{
+			FlashTV(temperature, vaporFraction, composition, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), out result);
+		}
+
+		public void FlashTV(double temperature, double vaporFraction, IList<double> composition, IList<int> IDX, IList<int> NBOPST, out IFlashResult result)
+		{
+			Flash(FlashSpec.TempVaporFrac, temperature, vaporFraction, composition, IDX, NBOPST, ValidPhases.VaporLiquid, out result);
+		}
+
+		public void FlashTV(double temperature, double vaporFraction, IList<double> composition, out IFlashResultPhaseProps result)
+		{
+			FlashTV(temperature, vaporFraction, composition, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), out result);
+		}
+
+		public void FlashTV(double temperature, double vaporFraction, IList<double> composition, IList<int> IDX, IList<int> NBOPST, out IFlashResultPhaseProps result)
+		{
+			Flash(FlashSpec.TempVaporFrac, temperature, vaporFraction, composition, IDX, NBOPST, ValidPhases.VaporLiquid, out result);
+		}
+
+		[DllImport("AspenTech_NGP_Managed2Unmanaged")]
+		private static extern void M2UnmBridgeAPI_TConL(double TIN, double PIN, double[] lstX, int N, long[] lstIDX, long[] lstNBOPST, int KDIAG, out double KMXL);
+
+		[DllImport("AspenTech_NGP_Managed2Unmanaged")]
+		private static extern void M2UnmBridgeAPI_TConS(double TIN, double PIN, double[] lstS, int N, long[] lstIDX, long[] lstNBOPST, int KDIAG, out double KMXS);
+
+		[DllImport("AspenTech_NGP_Managed2Unmanaged")]
+		private static extern void M2UnmBridgeAPI_TConV(double TIN, double PIN, double[] lstY, int N, long[] lstIDX, long[] lstNBOPST, int KDIAG, out double KMXV);
+
+		[DllImport("AspenTech_NGP_Managed2Unmanaged")]
+		private static extern void M2UnmBridgeAPI_SrftnY(double TIN, double PIN, double[] lstX, double[] lstY, int N, long[] lstIDX, long[] lstNBOPST, int KDIAG, out double SIGMXL);
+
+		[DllImport("AspenTech_NGP_Managed2Unmanaged")]
+		private static extern void M2UnmBridgeAPI_ViscL(double TIN, double PIN, double[] lstX, int N, long[] lstIDX, long[] lstNBOPST, int KDIAG, out double MULMX);
+
+		[DllImport("AspenTech_NGP_Managed2Unmanaged")]
+		private static extern void M2UnmBridgeAPI_ViscPL(double TIN, double PIN, int N, long[] lstIDX, long[] lstNBOPST, int KDIAG, [In][Out] ref double[] lstMUL, out int nlstMUL);
+
+		[DllImport("AspenTech_NGP_Managed2Unmanaged")]
+		private static extern void M2UnmBridgeAPI_ViscV(double TIN, double PIN, double[] lstY, int N, long[] lstIDX, long[] lstNBOPST, int KDIAG, out double MUVMX);
+
+		public void ThermalConductivityLiquid(IFlashResult flashResult, out double propertyValue)
+		{
+			ThermalConductivityLiquid(flashResult.Temperature, flashResult.Pressure, flashResult.X, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), AspenPlusEngineSettings.CalculationDiagnosticsLevel, out propertyValue);
+		}
+
+		internal void ThermalConductivityLiquid(double temperature, double pressure, IList<double> compositionX, IList<int> IDX, IList<int> NBOPST, DiagnosticsLevel diagnosticsLevel, out double propertyValue)
+		{
+			propertyValue = 0.0;
+			try
+			{
+				M2UnmBridgeAPI_TConL(temperature, pressure, compositionX.ToArray(), IDX.Count, IDX.Select((int num) => Convert.ToInt64(num)).ToArray(), NBOPST.Select((int num) => Convert.ToInt64(num)).ToArray(), (int)diagnosticsLevel, out propertyValue);
+			}
+			catch (Exception)
+			{
+			}
+		}
+
+		internal void ThermalConductivitySolid(double temperature, double pressure, IList<double> compositionS, IList<int> IDX, IList<int> NBOPST, DiagnosticsLevel diagnosticsLevel, out double propertyValue)
+		{
+			propertyValue = 0.0;
+			try
+			{
+				M2UnmBridgeAPI_TConS(temperature, pressure, compositionS.ToArray(), IDX.Count, IDX.Select((int num) => Convert.ToInt64(num)).ToArray(), NBOPST.Select((int num) => Convert.ToInt64(num)).ToArray(), (int)diagnosticsLevel, out propertyValue);
+			}
+			catch (Exception)
+			{
+			}
+		}
+
+		public void ThermalConductivityVapor(IFlashResult flashResult, out double propertyValue)
+		{
+			ThermalConductivityVapor(flashResult.Temperature, flashResult.Pressure, flashResult.Y, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), AspenPlusEngineSettings.CalculationDiagnosticsLevel, out propertyValue);
+		}
+
+		internal void ThermalConductivityVapor(double temperature, double pressure, IList<double> compositionY, IList<int> IDX, IList<int> NBOPST, DiagnosticsLevel diagnosticsLevel, out double propertyValue)
+		{
+			propertyValue = 0.0;
+			try
+			{
+				M2UnmBridgeAPI_TConV(temperature, pressure, compositionY.ToArray(), IDX.Count, IDX.Select((int num) => Convert.ToInt64(num)).ToArray(), NBOPST.Select((int num) => Convert.ToInt64(num)).ToArray(), (int)diagnosticsLevel, out propertyValue);
+			}
+			catch (Exception)
+			{
+			}
+		}
+
+		public void SurfaceTensionLiquid(IFlashResult flashResult, out double propertyValue)
+		{
+			IList<double> compositionY = new List<double>(new double[flashResult.X.Count]);
+			SurfaceTension(flashResult.Temperature, flashResult.Pressure, flashResult.X, compositionY, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), AspenPlusEngineSettings.CalculationDiagnosticsLevel, out propertyValue);
+		}
+
+		public void SurfaceTensionVapor(IFlashResult flashResult, out double propertyValue)
+		{
+			IList<double> compositionY = new List<double>(new double[flashResult.Y.Count]);
+			SurfaceTension(flashResult.Temperature, flashResult.Pressure, flashResult.Y, compositionY, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), AspenPlusEngineSettings.CalculationDiagnosticsLevel, out propertyValue);
+		}
+
+		internal void SurfaceTension(double temperature, double pressure, IList<double> compositionX, IList<double> compositionY, IList<int> IDX, IList<int> NBOPST, DiagnosticsLevel diagnosticsLevel, out double propertyValue)
+		{
+			propertyValue = 0.0;
+			try
+			{
+				CheckStatus();
+				CheckDimension(IDX, compositionX, compositionY);
+				M2UnmBridgeAPI_SrftnY(temperature, pressure, compositionX.ToArray(), compositionY.ToArray(), IDX.Count, IDX.Select((int num) => Convert.ToInt64(num)).ToArray(), NBOPST.Select((int num) => Convert.ToInt64(num)).ToArray(), (int)diagnosticsLevel, out propertyValue);
+			}
+			catch (Exception)
+			{
+			}
+		}
+
+		public void ViscosityLiquid(IFlashResult flashResult, out double propertyValue)
+		{
+			ViscosityLiquid(flashResult.Temperature, flashResult.Pressure, flashResult.X, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), AspenPlusEngineSettings.CalculationDiagnosticsLevel, out propertyValue);
+		}
+
+		internal void ViscosityLiquid(double temperature, double pressure, IList<double> compositionX, IList<int> IDX, IList<int> NBOPST, DiagnosticsLevel diagnosticsLevel, out double propertyValue)
+		{
+			propertyValue = 0.0;
+			try
+			{
+				CheckStatus();
+				CheckDimension(IDX, compositionX);
+				M2UnmBridgeAPI_ViscL(temperature, pressure, compositionX.ToArray(), IDX.Count, IDX.Select((int num) => Convert.ToInt64(num)).ToArray(), NBOPST.Select((int num) => Convert.ToInt64(num)).ToArray(), (int)diagnosticsLevel, out propertyValue);
+			}
+			catch (Exception)
+			{
+			}
+		}
+
+		public void ViscosityPure(double temperature, double pressure, IComponent component, out double propertyValue)
+		{
+			ViscosityPure(temperature, pressure, new List<int> { component.Index }, OptionSetManager.GetNBOPST(), AspenPlusEngineSettings.CalculationDiagnosticsLevel, out var propertyValues);
+			propertyValue = propertyValues[0];
+		}
+
+		internal void ViscosityPure(double temperature, double pressure, IList<int> IDX, IList<int> NBOPST, DiagnosticsLevel diagnosticsLevel, out IList<double> propertyValues)
+		{
+			propertyValues = null;
+			double[] lstMUL = new double[200];
+			try
+			{
+				CheckStatus();
+				CheckDimension(IDX);
+				M2UnmBridgeAPI_ViscPL(temperature, pressure, IDX.Count, IDX.Select((int num) => Convert.ToInt64(num)).ToArray(), NBOPST.Select((int num) => Convert.ToInt64(num)).ToArray(), (int)diagnosticsLevel, ref lstMUL, out var _);
+			}
+			catch (Exception)
+			{
+			}
+			propertyValues = lstMUL.ToList();
+		}
+
+		public void ViscosityVapor(IFlashResult flashResult, out double propertyValue)
+		{
+			ViscosityVapor(flashResult.Temperature, flashResult.Pressure, flashResult.Y, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), AspenPlusEngineSettings.CalculationDiagnosticsLevel, out propertyValue);
+		}
+
+		internal void ViscosityVapor(double temperature, double pressure, IList<double> compositionY, IList<int> IDX, IList<int> NBOPST, DiagnosticsLevel diagnosticsLevel, out double propertyValue)
+		{
+			propertyValue = 0.0;
+			try
+			{
+				CheckStatus();
+				CheckDimension(IDX, compositionY);
+				M2UnmBridgeAPI_ViscV(temperature, pressure, compositionY.ToArray(), IDX.Count, IDX.Select((int num) => Convert.ToInt64(num)).ToArray(), NBOPST.Select((int num) => Convert.ToInt64(num)).ToArray(), (int)diagnosticsLevel, out propertyValue);
+			}
+			catch (Exception)
+			{
+			}
+		}
+
+		[DllImport("AspenTech_NGP_Managed2Unmanaged")]
+		private static extern void M2UnmBridgeAPI_VolC(double TIN, double PIN, double VF, double LF, double BETA, double SF, int N, double[] lstY, double[] lstX, double[] lstS, double[] lstX1, double[] lstX2, long[] lstIDX, long[] lstNBOPST, int LPMSG, out double VMX);
+
+		[DllImport("AspenTech_NGP_Managed2Unmanaged")]
+		private static extern void M2UnmBridgeAPI_VolL(double TIN, double PIN, double[] lstX, int N, long[] lstIDX, long[] lstNBOPST, int KDIAG, int KKH, out double VMXL, out double DVMXL);
+
+		[DllImport("AspenTech_NGP_Managed2Unmanaged")]
+		private static extern void M2UnmBridgeAPI_VolS(double TIN, double PIN, double[] lstS, int N, long[] lstIDX, long[] lstNBOPST, int KDIAG, int KKH, out double VMXS, out double DVMXS);
+
+		[DllImport("AspenTech_NGP_Managed2Unmanaged")]
+		private static extern void M2UnmBridgeAPI_VolV(double TIN, double PIN, double[] lstY, int N, long[] lstIDX, long[] lstNBOPST, int KDIAG, int KKH, out double VMXV, out double DVMXV);
+
+		public void Volume(IFlashResult flashResult, out double propertyValue)
+		{
+			List<double> compositionS = new List<double>(new double[flashResult.X.Count]);
+			Volume(flashResult.Temperature, flashResult.Pressure, flashResult.VaporFraction, 1.0 - flashResult.VaporFraction, flashResult.Beta, 0.0, flashResult.Y, flashResult.X, compositionS, flashResult.X1, flashResult.X2, flashResult.ComponentIDX, flashResult.NBPOST, AspenPlusEngineSettings.CalculationDiagnosticsLevel, out propertyValue);
+		}
+
+		internal void Volume(double temperature, double pressure, double vaporFraction, double liquidFraction, double betaFraction, double solidFraction, IList<double> compositionY, IList<double> compositionX, IList<double> compositionS, IList<double> compositionX1, IList<double> compositionX2, IList<int> IDX, IList<int> NBOPST, DiagnosticsLevel diagnosticsLevel, out double propertyValue)
+		{
+			propertyValue = 0.0;
+			try
+			{
+				CheckStatus();
+				CheckDimension(IDX, compositionX, compositionS, compositionX1, compositionX2);
+				M2UnmBridgeAPI_VolC(temperature, pressure, vaporFraction, liquidFraction, betaFraction, solidFraction, IDX.Count, compositionY.ToArray(), compositionX.ToArray(), compositionS.ToArray(), compositionX1.ToArray(), compositionX2.ToArray(), IDX.Select((int num) => Convert.ToInt64(num)).ToArray(), NBOPST.Select((int num) => Convert.ToInt64(num)).ToArray(), (int)diagnosticsLevel, out propertyValue);
+			}
+			catch (Exception)
+			{
+			}
+		}
+
+		public void VolumeLiquid(IFlashResult flashResult, out double propertyValue)
+		{
+			VolumeLiquid(flashResult.Temperature, flashResult.Pressure, flashResult.X, flashResult.ComponentIDX, OptionSetManager.GetNBOPST(), AspenPlusEngineSettings.CalculationDiagnosticsLevel, Calculate.PropertyValue, out propertyValue, out var _);
+		}
+
+		public void VolumeLiquid(IFlashResult flashResult, out double propertyValue, out double temperatureDerivative)
+		{
+			VolumeLiquid(flashResult.Temperature, flashResult.Pressure, flashResult.X, flashResult.ComponentIDX, OptionSetManager.GetNBOPST(), AspenPlusEngineSettings.CalculationDiagnosticsLevel, Calculate.ValueAndDerivative, out propertyValue, out temperatureDerivative);
+		}
+
+		public void VolumeLiquid(double temperature, double pressure, IList<double> composition, out double propertyValue)
+		{
+			VolumeLiquid(temperature, pressure, composition, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), AspenPlusEngineSettings.CalculationDiagnosticsLevel, Calculate.PropertyValue, out propertyValue, out var _);
+		}
+
+		public void VolumeLiquid(double temperature, double pressure, IList<double> composition, out double propertyValue, out double temperatureDerivative)
+		{
+			VolumeLiquid(temperature, pressure, composition, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), AspenPlusEngineSettings.CalculationDiagnosticsLevel, Calculate.ValueAndDerivative, out propertyValue, out temperatureDerivative);
+		}
+
+		internal void VolumeLiquid(double temperature, double pressure, IList<double> compositionX, IList<int> IDX, IList<int> NBOPST, DiagnosticsLevel diagnosticsLevel, Calculate calculate, out double propertyValue, out double temperatureDerivative)
+		{
+			propertyValue = 0.0;
+			temperatureDerivative = 0.0;
+			try
+			{
+				M2UnmBridgeAPI_VolL(temperature, pressure, compositionX.ToArray(), IDX.Count, IDX.Select((int num) => Convert.ToInt64(num)).ToArray(), NBOPST.Select((int num) => Convert.ToInt64(num)).ToArray(), (int)diagnosticsLevel, (int)calculate, out propertyValue, out temperatureDerivative);
+			}
+			catch (Exception)
+			{
+			}
+		}
+
+		internal void VolumeSolid(double temperature, double pressure, IList<double> compositionS, IList<int> IDX, IList<int> NBOPST, DiagnosticsLevel diagnosticsLevel, Calculate calculate, out double propertyValue, out double temperatureDerivative)
+		{
+			propertyValue = 0.0;
+			temperatureDerivative = 0.0;
+			try
+			{
+				M2UnmBridgeAPI_VolS(temperature, pressure, compositionS.ToArray(), IDX.Count, IDX.Select((int num) => Convert.ToInt64(num)).ToArray(), NBOPST.Select((int num) => Convert.ToInt64(num)).ToArray(), (int)diagnosticsLevel, (int)calculate, out propertyValue, out temperatureDerivative);
+			}
+			catch (Exception)
+			{
+			}
+		}
+
+		public void VolumeVapor(IFlashResult flashResult, out double propertyValue)
+		{
+			VolumeVapor(flashResult.Temperature, flashResult.Pressure, flashResult.Y, flashResult.ComponentIDX, flashResult.NBPOST, AspenPlusEngineSettings.CalculationDiagnosticsLevel, Calculate.PropertyValue, out propertyValue, out var _);
+		}
+
+		public void VolumeVapor(IFlashResult flashResult, out double propertyValue, out double temperatureDerivative)
+		{
+			VolumeVapor(flashResult.Temperature, flashResult.Pressure, flashResult.Y, flashResult.ComponentIDX, flashResult.NBPOST, AspenPlusEngineSettings.CalculationDiagnosticsLevel, Calculate.ValueAndDerivative, out propertyValue, out temperatureDerivative);
+		}
+
+		internal void VolumeVapor(double temperature, double pressure, IList<double> compositionY, IList<int> IDX, IList<int> NBOPST, DiagnosticsLevel diagnosticsLevel, Calculate calculate, out double propertyValue, out double temperatureDerivative)
+		{
+			propertyValue = 0.0;
+			temperatureDerivative = 0.0;
+			try
+			{
+				M2UnmBridgeAPI_VolV(temperature, pressure, compositionY.ToArray(), IDX.Count, IDX.Select((int num) => Convert.ToInt64(num)).ToArray(), NBOPST.Select((int num) => Convert.ToInt64(num)).ToArray(), (int)diagnosticsLevel, (int)calculate, out propertyValue, out temperatureDerivative);
+			}
+			catch (Exception)
+			{
+			}
+		}
+
+		public void VolumeVapor(double temperature, double pressure, IList<double> compositionY, out double propertyValue, out double temperatureDerivative)
+		{
+			VolumeVapor(temperature, pressure, compositionY, ComponentManager.Indexes, OptionSetManager.GetNBOPST(), AspenPlusEngineSettings.CalculationDiagnosticsLevel, Calculate.ValueAndDerivative, out propertyValue, out temperatureDerivative);
+		}
+
+		private long[] RetrieveIntBead(IBeadData bead, int off, int len)
+		{
+			long[] array = new long[len];
+			for (int i = off; i < off + len; i++)
+			{
+				array[i - off] = bead[i];
+			}
+			return array;
+		}
+
+		public void UOSFlash2(IBeadData blockBead)
+		{
+			CheckStatus();
+			IList<int> nBOPST = OptionSetManager.GetNBOPST();
+			int rawNumber = blockBead.Id.RawNumber;
+			int num = (int)(long)blockBead[4];
+			int off = (int)(long)blockBead[5];
+			long[] lstISCP = RetrieveIntBead(blockBead, off, num);
+			int num2 = (int)(long)blockBead[6];
+			int off2 = (int)(long)blockBead[7];
+			long[] lstIDS = RetrieveIntBead(blockBead, off2, num2);
+			int nPO = 6;
+			_ = (long)blockBead[9];
+			long[] lstNBOPST = nBOPST.Select((int value) => Convert.ToInt64(value)).ToArray();
+			int num3 = (int)(long)blockBead[10];
+			int off3 = (int)(long)blockBead[11];
+			long[] lstIWDIR = RetrieveIntBead(blockBead, off3, num3);
+			int num4 = (int)(long)blockBead[12];
+			int off4 = (int)(long)blockBead[13];
+			long[] lstINT = RetrieveIntBead(blockBead, off4, num4);
+			int num5 = (int)(long)blockBead[14];
+			IBeadRealData beadRealData = (IBeadRealData)blockBead;
+			double[] array = new double[num5];
+			for (int num6 = 0; num6 < num5; num6++)
+			{
+				array[num6] = beadRealData[num6];
+			}
+			int num7 = (int)(long)blockBead[16];
+			int off5 = (int)(long)blockBead[17];
+			long[] nBSIN = RetrieveIntBead(blockBead, off5, num7);
+			int num8 = (int)(long)blockBead[18];
+			int off6 = (int)(long)blockBead[19];
+			long[] nBSOUT = RetrieveIntBead(blockBead, off6, num8);
+			int nINFI = (int)(long)blockBead[21];
+			int nINFO = (int)(long)blockBead[22];
+			int num9 = (int)(long)blockBead[23];
+			int off7 = (int)(long)blockBead[24];
+			long[] iREP = RetrieveIntBead(blockBead, off7, num9);
+			int num10 = (int)(long)blockBead[25];
+			double[] array2 = new double[num10];
+			for (int num11 = num5; num11 < num5 + num10; num11++)
+			{
+				array2[num11 - num5] = beadRealData[num11];
+			}
+			try
+			{
+				M2UnmBridgeAPI_ZEFlash2(rawNumber, num, lstISCP, num2, lstIDS, nPO, lstNBOPST, num3, lstIWDIR, num4, lstINT, num5, array, num7, nBSIN, num8, nBSOUT, nINFI, nINFO, num9, iREP, num10, array2);
+				Console.WriteLine("The last Win32 Error was: " + Marshal.GetLastWin32Error());
+			}
+			catch (Exception)
+			{
+			}
+		}
+
+		public void SetPropertyPackage(List<ICalculationService.DatasourcesDto> dataSources, List<string> compAliases, List<string> propertyMethods)
+		{
+			IPlexDocument plexDocument = PlexDocument;
+			IPlexDocument obj = ((plexDocument is PlexDocument) ? plexDocument : null);
+			((PlexDocument)obj).PostDS(dataSources);
+			((PlexDocument)obj).PostCL(compAliases);
+			((PlexDocument)obj).PostOpsets(propertyMethods);
+			Initialize();
+		}
+
+		public void SetPropertyPackage(ICalculationService.PropertyPackageDto dtoPP)
+		{
+			IPlexDocument plexDocument = PlexDocument;
+			IPlexDocument obj = ((plexDocument is PlexDocument) ? plexDocument : null);
+			((PlexDocument)obj).PostDS(dtoPP.datasources.ToList());
+			((PlexDocument)obj).PostCL(dtoPP.compaliases.ToList());
+			((PlexDocument)obj).PostOpsets(dtoPP.propertymethods.ToList());
+			Initialize();
+		}
+
+		public void SetPropertyPackage(string ppJson)
+		{
+			try
+			{
+				PlexDocument.SetPropertyPackage(ppJson);
+				Initialize();
+			}
+			catch (Exception)
+			{
+			}
+		}
+	}
+	public class FlashPTDto
+	{
+		public IList<string> compaliases { get; set; }
+
+		public IList<string> propertymethods { get; set; }
+
+		public IList<ICalculationService.DatasourcesDto> datasources { get; set; }
+
+		public double pressure { get; set; }
+
+		public double temperature { get; set; }
+
+		public IList<double> composition { get; set; }
+
+		public bool includephaseprops { get; set; }
+
+		public bool threephase { get; set; }
+	}
+	public class FlashPVDto
+	{
+		public IList<string> compaliases { get; set; }
+
+		public IList<string> propertymethods { get; set; }
+
+		public IList<ICalculationService.DatasourcesDto> datasources { get; set; }
+
+		public double pressure { get; set; }
+
+		public double vaporfraction { get; set; }
+
+		public IList<double> composition { get; set; }
+
+		public bool includephaseprops { get; set; }
+
+		public bool threephase { get; set; }
+	}
+	public class FlashTVDto
+	{
+		public IList<string> compaliases { get; set; }
+
+		public IList<string> propertymethods { get; set; }
+
+		public IList<ICalculationService.DatasourcesDto> datasources { get; set; }
+
+		public double temperature { get; set; }
+
+		public double vaporfraction { get; set; }
+
+		public IList<double> composition { get; set; }
+
+		public bool includephaseprops { get; set; }
+
+		public bool threephase { get; set; }
+	}
+	public class FlashPHDto
+	{
+		public IList<string> compaliases { get; set; }
+
+		public IList<string> propertymethods { get; set; }
+
+		public IList<ICalculationService.DatasourcesDto> datasources { get; set; }
+
+		public double pressure { get; set; }
+
+		public double enthalpy { get; set; }
+
+		public IList<double> composition { get; set; }
+
+		public bool includephaseprops { get; set; }
+
+		public bool threephase { get; set; }
+	}
+	public class FlashTHDto
+	{
+		public IList<string> compaliases { get; set; }
+
+		public IList<string> propertymethods { get; set; }
+
+		public IList<ICalculationService.DatasourcesDto> datasources { get; set; }
+
+		public double temperature { get; set; }
+
+		public double enthalpy { get; set; }
+
+		public IList<double> composition { get; set; }
+
+		public bool includephaseprops { get; set; }
+
+		public bool threephase { get; set; }
+	}
+	public class Range
+	{
+		public double? min { get; set; }
+
+		public double? max { get; set; }
+	}
+	public class RangeValIncr
+	{
+		public IList<double> values { get; set; }
+
+		public Range? range { get; set; }
+
+		public int? npoints { get; set; }
+
+		public double? interval { get; set; }
+	}
+	public class PropCalcDto
+	{
+		public IList<string> compaliases { get; set; }
+
+		public IList<string> propertymethods { get; set; }
+
+		public IList<ICalculationService.DatasourcesDto> datasources { get; set; }
+
+		public double pressure { get; set; }
+
+		public double temperature { get; set; }
+
+		public IList<IList<double>> composition { get; set; }
+
+		public bool includephaseprops { get; set; }
+
+		public bool threephase { get; set; }
+
+		public PhysicalPropertiesTypes enumphysicalprop { get; set; }
+	}
+	public class FlashPTListDto
+	{
+		public IList<string> compaliases { get; set; }
+
+		public IList<string> propertymethods { get; set; }
+
+		public IList<ICalculationService.DatasourcesDto> datasources { get; set; }
+
+		public RangeValIncr pressure { get; set; }
+
+		public RangeValIncr temperature { get; set; }
+
+		public IList<IList<double>> composition { get; set; }
+
+		public bool includephaseprops { get; set; }
+
+		public bool threephase { get; set; }
+
+		public bool isinputpair { get; set; }
+	}
+	public class FlashPVListDto
+	{
+		public IList<string> compaliases { get; set; }
+
+		public IList<string> propertymethods { get; set; }
+
+		public IList<ICalculationService.DatasourcesDto> datasources { get; set; }
+
+		public RangeValIncr pressure { get; set; }
+
+		public RangeValIncr vaporfraction { get; set; }
+
+		public IList<IList<double>> composition { get; set; }
+
+		public bool includephaseprops { get; set; }
+
+		public bool threephase { get; set; }
+
+		public bool isinputpair { get; set; }
+	}
+	public class FlashTVListDto
+	{
+		public IList<string> compaliases { get; set; }
+
+		public IList<string> propertymethods { get; set; }
+
+		public IList<ICalculationService.DatasourcesDto> datasources { get; set; }
+
+		public RangeValIncr temperature { get; set; }
+
+		public RangeValIncr vaporfraction { get; set; }
+
+		public IList<IList<double>> composition { get; set; }
+
+		public bool includephaseprops { get; set; }
+
+		public bool threephase { get; set; }
+
+		public bool isinputpair { get; set; }
+	}
+	public class FlashPHListDto
+	{
+		public IList<string> compaliases { get; set; }
+
+		public IList<string> propertymethods { get; set; }
+
+		public IList<ICalculationService.DatasourcesDto> datasources { get; set; }
+
+		public RangeValIncr pressure { get; set; }
+
+		public RangeValIncr enthalpy { get; set; }
+
+		public IList<IList<double>> composition { get; set; }
+
+		public bool includephaseprops { get; set; }
+
+		public bool threephase { get; set; }
+
+		public bool isinputpair { get; set; }
+	}
+	public class FlashTHListDto
+	{
+		public IList<string> compaliases { get; set; }
+
+		public IList<string> propertymethods { get; set; }
+
+		public IList<ICalculationService.DatasourcesDto> datasources { get; set; }
+
+		public RangeValIncr temperature { get; set; }
+
+		public RangeValIncr enthalpy { get; set; }
+
+		public IList<IList<double>> composition { get; set; }
+
+		public bool includephaseprops { get; set; }
+
+		public bool threephase { get; set; }
+
+		public bool isinputpair { get; set; }
+	}
+	public class PropCalcListDto
+	{
+		public IList<string> compaliases { get; set; }
+
+		public IList<string> propertymethods { get; set; }
+
+		public IList<ICalculationService.DatasourcesDto> datasources { get; set; }
+
+		public RangeValIncr pressure { get; set; }
+
+		public RangeValIncr temperature { get; set; }
+
+		public IList<IList<double>> composition { get; set; }
+
+		public bool includephaseprops { get; set; }
+
+		public bool threephase { get; set; }
+
+		public PhysicalPropertiesTypes enumphysicalprop { get; set; }
+	}
+	public enum PhysicalPropertiesTypes
+	{
+		TotalMolarEnthalpy,
+		MolarLiquidPhaseEnthalpy,
+		MolarVaporPhaseEnthalpy,
+		Entropy,
+		MixtureMolarVolume,
+		liquidMolarVolume,
+		Density,
+		Molecularweight
+	}
+	public class PropValandDerivative
+	{
+		public double propertyvalue { get; set; }
+
+		public double temperatureDerivative { get; set; }
+	}
+	public static class CalculationServiceFactory
+	{
+		private static readonly object _lockingObject = new object();
+
+		private static readonly Dictionary<int, ICalculationService> CalcServiceById = new Dictionary<int, ICalculationService>();
+
+		private static CalculationService Instantiater(int id, IDBConfiguration dbConfiguration = null)
+		{
+			return new CalculationService(id, dbConfiguration);
+		}
+
+		private static CalculationService Instantiater(int id, ILogger ngpLogger, IDBConfiguration dbConfiguration = null)
+		{
+			return new CalculationService(id, ngpLogger, dbConfiguration);
+		}
+
+		public static ICalculationService GetOrCreate(int fileNumber, IDBConfiguration dbConfiguration = null)
+		{
+			lock (_lockingObject)
+			{
+				if (CalcServiceById.TryGetValue(fileNumber, out var value))
+				{
+					return value;
+				}
+				CalcServiceById.Add(fileNumber, Instantiater(fileNumber, dbConfiguration));
+				return CalcServiceById[fileNumber];
+			}
+		}
+
+		public static ICalculationService CreateOrOverwrite(int fileNumber, IDBConfiguration dbConfiguration = null)
+		{
+			lock (_lockingObject)
+			{
+				if (CalcServiceById.TryGetValue(fileNumber, out var _))
+				{
+					CalcServiceById[fileNumber] = Instantiater(fileNumber, dbConfiguration);
+					return CalcServiceById[fileNumber];
+				}
+				CalcServiceById.Add(fileNumber, Instantiater(fileNumber, dbConfiguration));
+				return CalcServiceById[fileNumber];
+			}
+		}
+
+		public static ICalculationService GetOrCreate(int fileNumber, ILogger ngpLogger, IDBConfiguration dbConfiguration = null)
+		{
+			lock (_lockingObject)
+			{
+				if (CalcServiceById.TryGetValue(fileNumber, out var value))
+				{
+					return value;
+				}
+				CalcServiceById.Add(fileNumber, Instantiater(fileNumber, ngpLogger, dbConfiguration));
+				return CalcServiceById[fileNumber];
+			}
+		}
+
+		internal static void Remove(int fileNumber)
+		{
+			CalcServiceById.Remove(fileNumber);
+		}
+
+		public static void Reset()
+		{
+			lock (_lockingObject)
+			{
+				CalcServiceById.Clear();
+			}
+		}
+	}
+	public class ComponentList
+	{
+		public string ID { get; set; }
+
+		public string Alias { get; set; }
+
+		public string formula { get; set; }
+	}
+	internal enum Calculate
+	{
+		DoNothing,
+		PropertyValue,
+		TemperatureDerivative,
+		ValueAndDerivative
+	}
+	public enum FlashRetention
+	{
+		NoRestart,
+		Save,
+		UseAndSave,
+		UseGuessAndSave,
+		UseOnly
+	}
+	public enum FlashSpec
+	{
+		Undefined,
+		PressEnthalpy,
+		PressTemp,
+		PressVaporFrac,
+		TempEnthalpy,
+		TempVaporFrac
+	}
+	public enum FloatingPointControl
+	{
+		Default,
+		TriggerButNotAPED,
+		AlwaysTrigger
+	}
+	internal enum FunctionBase
+	{
+		Component = 0,
+		Elemental = 1,
+		Default = 1
+	}
+	public enum KeySinglePhase
+	{
+		NoVapor = -1,
+		Ignore,
+		Vapor,
+		Liquid,
+		Solid
+	}
+	public enum ValidPhases
+	{
+		VaporOnly = 1,
+		LiquidOnly = 10,
+		VaporLiquid = 2,
+		LiquidLiquid = 20,
+		VaporLiquidLiquid = 3,
+		VaporLiquidFreeWater = 12,
+		VaporLiquidDirtyWater = 22
+	}
+	internal class FileReporter : IFileReporter
+	{
+		internal readonly int FileNumber;
+
+		private const int C_MAX_LEN = 80;
+
+		public string HistoryFile { get; private set; }
+
+		private bool Initialized { get; set; }
+
+		public string OutputDirectory { get; private set; }
+
+		public int PageWidth => 80;
+
+		public string ReportFile { get; private set; }
+
+		public string RunId { get; private set; }
+
+		internal int HistoryChannel { get; private set; }
+
+		internal int ReportChannel { get; private set; }
+
+		[DllImport("AspenTech_NGP_Managed2Unmanaged")]
+		private static extern void M2UnmBridgeAPI_RunPhysicalPropertyReport(long IPRINT);
+
+		[DllImport("AspenTech_NGP_Managed2Unmanaged")]
+		private static extern void M2UnmBridgeAPI_RunPhysicalPropertyParametersReport(long CHANNEL);
+
+		[DllImport("AspenTech_NGP_Managed2Unmanaged")]
+		private static extern void M2UnmBridgeAPI_WriteLineToFile(long CHANNEL, string MSG);
+
+		public FileReporter(int fileNumber)
+		{
+			FileNumber = fileNumber;
+		}
+
+		public void ReportPhysicalPropertiesDef()
+		{
+			if (ReportChannel > 0)
+			{
+				M2UnmBridgeAPI_RunPhysicalPropertyReport(ReportChannel);
+				return;
+			}
+			throw new ArgumentException("The PLEX must be initialized before running reports.");
+		}
+
+		public void ReportPropertyParameters()
+		{
+			if (ReportChannel > 0)
+			{
+				M2UnmBridgeAPI_RunPhysicalPropertyParametersReport(ReportChannel);
+				return;
+			}
+			throw new ArgumentException("The PLEX must be initialized before running reports.");
+		}
+
+		public void WriteLine(PrintToFile printTo, string message)
+		{
+			CheckFiles();
+			List<int> list = new List<int>();
+			List<string> list2 = new List<string>();
+			switch (printTo)
+			{
+			case PrintToFile.HistoryOnly:
+				list.Add(HistoryChannel);
+				list2.Add(HistoryFile);
+				break;
+			case PrintToFile.ReportOnly:
+				list.Add(ReportChannel);
+				list2.Add(ReportFile);
+				break;
+			case PrintToFile.ReportAndHistory:
+				list.Add(ReportChannel);
+				list.Add(HistoryChannel);
+				list2.Add(ReportFile);
+				list2.Add(HistoryFile);
+				break;
+			default:
+				throw new NotImplementedException($"Unhandled print-to-file option {printTo}.");
+			case PrintToFile.None:
+				break;
+			}
+			for (int i = 0; i < list.Count; i++)
+			{
+				try
+				{
+					using StreamWriter streamWriter = new StreamWriter(list2[i], append: true);
+					streamWriter.WriteLine(message);
+					streamWriter.Flush();
+					streamWriter.Close();
+				}
+				catch
+				{
+					try
+					{
+						M2UnmBridgeAPI_WriteLineToFile(list[i], message);
+					}
+					catch (Exception)
+					{
+						throw;
+					}
+				}
+			}
+		}
+
+		internal void Initialize(string runId, string outputDirectory)
+		{
+			RunId = runId;
+			HistoryChannel = 9000 + (FileNumber - 1) * 2;
+			ReportChannel = HistoryChannel + 1;
+			try
+			{
+				Directory.CreateDirectory(outputDirectory);
+				OutputDirectory = outputDirectory;
+				HistoryFile = Path.Combine(OutputDirectory, RunId + ".his");
+				ReportFile = Path.Combine(OutputDirectory, RunId + ".rep");
+				File.Create(HistoryFile).Close();
+				File.Create(ReportFile).Close();
+			}
+			catch (IOException)
+			{
+			}
+			catch (Exception)
+			{
+				throw;
+			}
+			Initialized = true;
+			PrintFileHeader(PrintToFile.ReportAndHistory);
+		}
+
+		private void CheckFiles()
+		{
+			if (!Initialized)
+			{
+				throw new Exception("You must initialize before writing to a file.");
+			}
+		}
+
+		private void PrintFileHeader(PrintToFile printTo)
+		{
+			string text = "Aspen Properties Component Service (PCS)";
+			int num = (int)Math.Round((double)(80 - text.Length) * 0.5, MidpointRounding.AwayFromZero);
+			int count = 80 - num - text.Length - 2;
+			string message = "+" + new string('=', 78) + "+";
+			string message2 = "|" + new string(' ', 78) + "|";
+			string message3 = "|" + new string(' ', num) + text + new string(' ', count) + "|";
+			WriteLine(printTo, message);
+			WriteLine(printTo, message2);
+			WriteLine(printTo, message3);
+			WriteLine(printTo, message2);
+			WriteLine(printTo, message);
+		}
+	}
+	internal class FlashResult : IFlashResult
+	{
+		public IList<int> NBPOST { get; internal set; }
+
+		public IList<int> ComponentIDX { get; internal set; }
+
+		public double Temperature { get; internal set; }
+
+		public double Pressure { get; internal set; }
+
+		public double Enthalpy { get; internal set; }
+
+		public double VaporFraction { get; internal set; }
+
+		public double Beta { get; internal set; }
+
+		public IList<double> X { get; internal set; }
+
+		public IList<double> Y { get; internal set; }
+
+		public IList<double> X1 { get; internal set; }
+
+		public IList<double> X2 { get; internal set; }
+
+		public IList<double> KVL { get; internal set; }
+
+		public IList<double> KVL2 { get; internal set; }
+
+		public IList<double> Reten { get; internal set; }
+
+		public IList<int> IReten { get; internal set; }
+	}
+	internal class FlashResultPhaseProps : FlashResult, IFlashResultPhaseProps, IFlashResult
+	{
+		public double SFRAC { get; set; }
+
+		public double LFRAC { get; set; }
+
+		public double HMXV { get; set; }
+
+		public double HMXL { get; set; }
+
+		public double HMXL1 { get; set; }
+
+		public double HMXL2 { get; set; }
+
+		public double SMXV { get; set; }
+
+		public double SMXL { get; set; }
+
+		public double SMXL1 { get; set; }
+
+		public double SMXL2 { get; set; }
+
+		public double VMXV { get; set; }
+
+		public double VMXL { get; set; }
+
+		public double VMXL1 { get; set; }
+
+		public double VMXL2 { get; set; }
+
+		public double MWMXV { get; set; }
+
+		public double MWMXL { get; set; }
+
+		public double MWMXL1 { get; set; }
+
+		public double MWMXL2 { get; set; }
+
+		public double MassRhoV { get; set; }
+
+		public double MassRhoL { get; set; }
+
+		public double MassRhoL1 { get; set; }
+
+		public double MassRhoL2 { get; set; }
+
+		public double RhoV { get; set; }
+
+		public double RhoL { get; set; }
+
+		public double RhoL1 { get; set; }
+
+		public double RhoL2 { get; set; }
+
+		public double CpV { get; set; }
+
+		public double CpL { get; set; }
+
+		public double CpL1 { get; set; }
+
+		public double CpL2 { get; set; }
+
+		public double SpEnthV { get; set; }
+
+		public double SpEntL { get; set; }
+
+		public double SpEntL1 { get; set; }
+
+		public double SpEntL2 { get; set; }
+
+		public double MUV { get; set; }
+
+		public double MUL { get; set; }
+
+		public double KV { get; set; }
+
+		public double KL { get; set; }
+
+		public double SIGMAV { get; set; }
+
+		public double SIGMAL { get; set; }
+	}
+	internal class FlashRetentionSize : IFlashRetentionSize
+	{
+		private readonly int _RealSize;
+
+		private readonly int _IntegerSize;
+
+		private readonly int _ChemistrySizeEquil;
+
+		private readonly int _ChemistrySizeSalt;
+
+		private readonly int _ChemistrySizeDiss;
+
+		public int RealDimension => _RealSize;
+
+		public int IntegerDimension => _IntegerSize;
+
+		public int MaxChemistryEquil => _ChemistrySizeEquil;
+
+		public int MaxChemistrySalt => _ChemistrySizeSalt;
+
+		public int MaxChemistryDiss => _ChemistrySizeDiss;
+
+		public FlashRetentionSize(int realSize, int integerSize, int chemistrySizeEquil, int chemistrySizeSalt, int chemistrySizeDiss)
+		{
+			_RealSize = realSize;
+			_IntegerSize = integerSize;
+			_ChemistrySizeEquil = chemistrySizeEquil;
+			_ChemistrySizeSalt = chemistrySizeSalt;
+			_ChemistrySizeDiss = chemistrySizeDiss;
+		}
+	}
+	public class LegacyAspenSettings : ILegacyAspenSettings
+	{
+		private int _maxFlashIterations = 30;
+
+		private double _flashTolerance = 0.0001;
+
+		private DiagnosticsLevel _propertiesDiagnosticsLevel = DiagnosticsLevel.Default;
+
+		private DiagnosticsLevel _calculationDiagnosticsLevel = DiagnosticsLevel.Default;
+
+		public int MaxFlashIterations
+		{
+			get
+			{
+				return _maxFlashIterations;
+			}
+			set
+			{
+				if (0 < value && value < 10000)
+				{
+					_maxFlashIterations = value;
+					return;
+				}
+				throw new ArgumentOutOfRangeException("MaxFlashIterations", "Value must be between 1 and 9999.");
+			}
+		}
+
+		public double FlashTolerance
+		{
+			get
+			{
+				return _flashTolerance;
+			}
+			set
+			{
+				if (1E-10 <= value && value < 1.0)
+				{
+					_flashTolerance = value;
+					return;
+				}
+				throw new ArgumentOutOfRangeException("FlashTolerance", "Value must be between 1E-10 and 1.");
+			}
+		}
+
+		public DiagnosticsLevel CalculationDiagnosticsLevel
+		{
+			get
+			{
+				return _calculationDiagnosticsLevel;
+			}
+			set
+			{
+				if (value >= DiagnosticsLevel.Minimum && value <= DiagnosticsLevel.Maximum)
+				{
+					_calculationDiagnosticsLevel = value;
+					return;
+				}
+				throw new ArgumentOutOfRangeException("MaxFlashIterations", $"Diagnostics level must between {0} and {10}.");
+			}
+		}
+
+		public DiagnosticsLevel PropertiesDiagnosticsLevel
+		{
+			get
+			{
+				return _propertiesDiagnosticsLevel;
+			}
+			set
+			{
+				if (value >= DiagnosticsLevel.Minimum && value <= DiagnosticsLevel.Maximum)
+				{
+					_propertiesDiagnosticsLevel = value;
+					return;
+				}
+				throw new ArgumentOutOfRangeException("MaxFlashIterations", $"Diagnostics level must between {0} and {10}.");
+			}
+		}
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

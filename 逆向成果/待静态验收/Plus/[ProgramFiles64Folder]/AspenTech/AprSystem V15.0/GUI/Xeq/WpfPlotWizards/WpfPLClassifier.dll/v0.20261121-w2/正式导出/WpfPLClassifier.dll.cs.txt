@@ -1,0 +1,1376 @@
+using System;
+using System.CodeDom.Compiler;
+using System.Collections;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Drawing;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Resources;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Text;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Markup;
+using AspenTech.AspenPlus.Happ;
+using AspenTech.AspenPlus.Infrastructure;
+using AspenTech.AspenPlus.Localization.WpfPlotWizards;
+using WpfPLControls;
+using WpfPlotWizardsHelper;
+using WpfPlotwizard;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyFileVersion("41.0.0.614")]
+[assembly: AssemblyTitle("WpfPLScreen")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("Aspen Technology, INC.")]
+[assembly: AssemblyProduct("WpfPLScreen")]
+[assembly: AssemblyCopyright("Copyright © Aspen Technology, INC. 2012 - 2024")]
+[assembly: AssemblyTrademark("")]
+[assembly: ComVisible(false)]
+[assembly: Guid("c6ddfb08-7487-490d-bcbc-06936aacfb0e")]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.614")]
+namespace WpfPLClassifier
+{
+	[ProgId("WpfPLClassifier.RibbonPlotWizardMgr")]
+	public class RibbonPlotWizardMgr : IRibbonPlotWizardMgr
+	{
+		private static string[] supportedTypes = new string[2] { "PSD", "Separation Eff" };
+
+		private IHNode _hnode;
+
+		private IHWizardPlot _wizardPlot;
+
+		private static List<PWRPlotType> _lspwrTypes = new List<PWRPlotType>();
+
+		private PWRParser _pwrParser = new PWRParser();
+
+		private Assembly _asm;
+
+		private Dictionary<string, IRibbonPlotWizardType> _dicTagIdToPlotType;
+
+		private IHWizardPlot _tempWizard = (CHWizardPlot)Activator.CreateInstance(Marshal.GetTypeFromCLSID(new Guid("9E14C11F-6706-4067-8112-35CE9468F3A5")));
+
+		public RibbonPlotWizardMgr()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			Initialize();
+		}
+
+		long IRibbonPlotWizardMgr.SupportedPlotTypes(ref List<string> lsTagIds)
+		{
+			lsTagIds.Clear();
+			for (int i = 0; i < _lspwrTypes.Count; i++)
+			{
+				PWRPlotType val = _lspwrTypes[i];
+				IRibbonPlotWizardType iplotType = null;
+				_tempWizard.Clear();
+				_pwrParser.FillDefaultPlotVal(val, ref _hnode, ref _tempWizard);
+				if (DoesPlotTypeHaveData(val.TagId, ref iplotType, ref _tempWizard))
+				{
+					lsTagIds.Add(val.TagId);
+				}
+			}
+			return _lspwrTypes.Count;
+		}
+
+		long IRibbonPlotWizardMgr.GetPlotType(string sTagId, ref IRibbonPlotWizardType plwType)
+		{
+			if (_dicTagIdToPlotType.ContainsKey(sTagId))
+			{
+				plwType = _dicTagIdToPlotType[sTagId];
+				if (plwType == null)
+				{
+					return 0L;
+				}
+				PWRPlotType val = null;
+				_pwrParser.FindPlotType(sTagId, ref _lspwrTypes, ref val);
+				_pwrParser.FillDefaultPlotVal(val, ref _hnode, ref _wizardPlot);
+			}
+			return 0L;
+		}
+
+		void IRibbonPlotWizardMgr.SetContext(object oNode, ref object oWizard)
+		{
+			_hnode = oNode as IHNode;
+			_wizardPlot = oWizard as IHWizardPlot;
+		}
+
+		void IRibbonPlotWizardMgr.ShowInputDialog(string sPlotName)
+		{
+		}
+
+		private void InitializeWizardPlot()
+		{
+		}
+
+		private void Initialize()
+		{
+			_asm = Assembly.GetExecutingAssembly();
+			StreamReader streamReader = new StreamReader(Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLClassifier.Text.Classifierpwr.txt"));
+			_lspwrTypes.Clear();
+			_pwrParser.ParsePwrFile(streamReader, ref _lspwrTypes);
+			_dicTagIdToPlotType = new Dictionary<string, IRibbonPlotWizardType>();
+			string[] array = supportedTypes;
+			foreach (string text in array)
+			{
+				if (text == supportedTypes[0])
+				{
+					IRibbonPlotWizardType value = (IRibbonPlotWizardType)(object)new PSD();
+					_dicTagIdToPlotType.Add(text, value);
+				}
+				else if (text == supportedTypes[1])
+				{
+					IRibbonPlotWizardType value2 = (IRibbonPlotWizardType)(object)new SepEff();
+					_dicTagIdToPlotType.Add(text, value2);
+				}
+			}
+		}
+
+		private bool DoesPlotTypeHaveData(string sTagId, ref IRibbonPlotWizardType iplotType, ref IHWizardPlot iWizardPlot)
+		{
+			int num = 0;
+			if (_dicTagIdToPlotType.ContainsKey(sTagId))
+			{
+				iplotType = _dicTagIdToPlotType[sTagId];
+				if (iplotType == null)
+				{
+					return false;
+				}
+				object obj = iWizardPlot;
+				iplotType.Context((object)_hnode, ref obj, ref num);
+				if (num == 0)
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+	}
+	[RibbonPlotWizardMgr("WpfPLCLASSIFIER.RibbonPlotWizardMgr", typeof(RibbonPlotWizardMgr))]
+	public class ClassifierPlotWizardModule : PlotModuleBase
+	{
+	}
+	[ProgId("WpfPLClassifier.PSD")]
+	public class PSD : UserControl, IRibbonPlotWizardType, IPlotWizardTemplate, IComponentConnector
+	{
+		private IHNode _context;
+
+		private IHWizardPlot2 _wizardPlot;
+
+		private PlotwizardHelper _help = new PlotwizardHelper();
+
+		private string _uniqueId = "PSD";
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private System.Drawing.Image _imgBitmap;
+
+		private bool _bHasInputDialog;
+
+		private string _unitString = string.Empty;
+
+		private string[] _portName;
+
+		private readonly string _plotType = WpfPLDiscurvesResources.PSDPlotType;
+
+		private readonly string _massFrac = WpfPLDiscurvesResources.PSDPlotType_Mass_Fraction;
+
+		private readonly string _cumMassFrac = WpfPLDiscurvesResources.PSDPlotType_Cumulative_Mass_Fraction;
+
+		private readonly string _massDensityDist = WpfPLDiscurvesResources.PSDPlotType_Mass_Density_Distribution;
+
+		private readonly string _rrsb = "RRSB";
+
+		private string _currentPlotType = string.Empty;
+
+		private string _currentConfigValue = string.Empty;
+
+		private string[] _varNames;
+
+		private string[] type;
+
+		private int _globalXScale;
+
+		public static RoutedCommand OKCommand = new RoutedCommand();
+
+		public static RoutedCommand CancelCommand = new RoutedCommand();
+
+		private bool _bCheckDataOnly;
+
+		internal CurvesSelectorControl SubStreamList;
+
+		internal CurvesSelectorControl StreamList;
+
+		private bool _contentLoaded;
+
+		public string TooltipContentForRibbonItem => WpfPLDiscurvesResources.PSDTooltip;
+
+		public string TooltipHeaderForRibbonItem => WpfPLDiscurvesResources.PSDTooltip;
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot2;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgBitmap;
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => _help.GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => _help.GetHelpID();
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string> { _plotType };
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string>();
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		public PSD()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			InitializeComponent();
+			_bHasInputDialog = true;
+			type = new string[4]
+			{
+				WpfPLDiscurvesResources.PSDPlotType_Mass_Fraction,
+				WpfPLDiscurvesResources.PSDPlotType_Cumulative_Mass_Fraction,
+				WpfPLDiscurvesResources.PSDPlotType_Mass_Density_Distribution,
+				"RRSB"
+			};
+			if (_imgBitmap == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLClassifier.Images.PSD.ico");
+				_imgBitmap = new Bitmap(manifestResourceStream);
+			}
+			CommandBinding commandBinding = new CommandBinding(OKCommand, ExecuteOKCommand, CanExecuteOKCommand);
+			CommandBinding commandBinding2 = new CommandBinding(CancelCommand, ExecuteCancelCommand);
+			base.CommandBindings.Add(commandBinding);
+			base.CommandBindings.Add(commandBinding2);
+			_portName = new string[3] { "Ports/F(IN)", "Ports/P(OUT)", "Ports/S(OUT)" };
+			_varNames = new string[2] { "../../Results Summary/Stream-Sum/Dist-Curve/Output/SUBS-ATTR/", "../../Results Summary/Stream-Sum/Dist-Curve/Output/MAXIMUM" };
+		}
+
+		public void SetCaption(ref string caption)
+		{
+			caption = "PSD";
+		}
+
+		public void SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 350.0;
+		}
+
+		public void SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 300.0;
+		}
+
+		public void SetMinHeight(ref double minHeight)
+		{
+			minHeight = 350.0;
+		}
+
+		public void SetMinWidth(ref double minWidth)
+		{
+			minWidth = 300.0;
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(_plotType) == 0)
+			{
+				return new List<string> { _massFrac, _cumMassFrac, _massDensityDist, _rrsb };
+			}
+			return null;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(_plotType) == 0)
+			{
+				sCurrentVal = _currentPlotType;
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(_plotType) == 0)
+			{
+				_currentPlotType = sValue;
+			}
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sField)
+		{
+			if (sField.CompareTo(_plotType) != 0)
+			{
+				return (RibbonControlType)0;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+			sConfigValue = _currentConfigValue;
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+			_currentConfigValue = sValue;
+		}
+
+		void IRibbonPlotWizardType.Context(object HNode, ref object HWizardPlot, ref int ierror)
+		{
+			if (HWizardPlot == null || HNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			_context = HNode as IHNode;
+			_wizardPlot = HWizardPlot as IHWizardPlot2;
+			IHNode iHNode = null;
+			if (_currentPlotType == string.Empty)
+			{
+				_currentPlotType = type[1];
+				iHNode = _context.Application.Tree.FindNode("Settings/psdplottype");
+				if (iHNode != null)
+				{
+					_currentPlotType = type[(int)(dynamic)iHNode.get_Value(Type.Missing)];
+				}
+			}
+			iHNode = _context.Application.Tree.FindNode("Settings/psdxscale");
+			if (iHNode != null)
+			{
+				_globalXScale = (dynamic)iHNode.get_Value(Type.Missing);
+			}
+			List<string> list = new List<string>();
+			for (int i = 0; i < _portName.Count(); i++)
+			{
+				IHNode iHNode2 = _context.FindNode(_portName[i]);
+				if (iHNode2 != null && iHNode2.Elements.Count > 0)
+				{
+					for (int j = 0; j < iHNode2.Elements.Count; j++)
+					{
+						list.Add(iHNode2.Elements.get_Label(0, j, Type.Missing));
+					}
+				}
+			}
+			if (list.Count() <= 0)
+			{
+				ierror = 1;
+				return;
+			}
+			IHNode iHNode3 = _context.FindNode(_varNames[0]);
+			if (iHNode3 == null || iHNode3.Elements.Count <= 0)
+			{
+				if (_context.FindNode("Stream Results/Display") == null)
+				{
+					ierror = 1;
+					return;
+				}
+				iHNode3 = _context.FindNode(_varNames[0]);
+				if (iHNode3 == null || iHNode3.Elements.Count <= 0)
+				{
+					ierror = 1;
+					return;
+				}
+			}
+			List<string> list2 = new List<string>();
+			for (int k = 0; k < iHNode3.Elements.Count; k++)
+			{
+				string item = iHNode3.Elements.get_Label(0, k, Type.Missing);
+				list2.Add(item);
+			}
+			SubStreamList.SetCurves(list2.ToArray());
+			SubStreamList.Header = WpfPLDiscurvesResources.PSDSubstream;
+			if (string.IsNullOrEmpty(_currentConfigValue))
+			{
+				List<string> list3 = new List<string>();
+				list3.Add(list2[0].ToString());
+				SubStreamList.SetSelectedCurves(list3.ToArray());
+			}
+			if (list2.Count == 1)
+			{
+				SubStreamList.IsCheckAll = true;
+			}
+			IHNode iHNode4 = iHNode3.Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing];
+			if (iHNode4 == null || iHNode4.Elements.Count <= 0)
+			{
+				ierror = 1;
+				return;
+			}
+			List<string> list4 = new List<string>();
+			for (int l = 0; l < iHNode4.Elements.Count; l++)
+			{
+				string text = iHNode4.Elements.get_Label(0, l, Type.Missing);
+				for (int m = 0; m < list.Count; m++)
+				{
+					if (!list4.Contains(text) && text.CompareTo(list[m]) == 0)
+					{
+						list4.Add(text);
+						break;
+					}
+				}
+			}
+			StreamList.SetCurves(list4.ToArray());
+			StreamList.Header = WpfPLDiscurvesResources.PSDStream;
+			StreamList.IsCheckAll = true;
+			_bHasInputDialog = false;
+			if (!string.IsNullOrEmpty(_currentConfigValue))
+			{
+				SubStreamList.IsCheckAll = false;
+				StreamList.IsCheckAll = false;
+				RestoreConfigValue(_currentConfigValue);
+				_bHasInputDialog = true;
+			}
+		}
+
+		public void UpdateWizardData()
+		{
+			_wizardPlot.RemoveAllDependentVariable();
+			List<string> list = new List<string>(StreamList.GetSelectedCurves());
+			List<string> list2 = new List<string>(SubStreamList.GetSelectedCurves());
+			if (list.Count <= 0 || list2.Count <= 0)
+			{
+				return;
+			}
+			IHNode iHNode = _context.FindNode(_varNames[0]);
+			IHNode iHNode2 = _context.FindNode(_varNames[1]);
+			if (iHNode != null && iHNode.Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null && iHNode.Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing] != null)
+			{
+				_wizardPlot.RemoveAllIndependentVariable();
+				_ = iHNode2.Elements[0, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements.Count;
+				_wizardPlot.PlotVal.NVariables = 0;
+				_wizardPlot.PlotVal.NXVariables = 0;
+				_help.SetXData(_context, _wizardPlot, list2, _varNames[1], _currentPlotType);
+				_help.SetYData(_context, _wizardPlot, _currentPlotType, list, list2, _varNames);
+				((IHPlotVal)_wizardPlot.PlotVal).set_AxisScale(0, _globalXScale);
+				if (_currentPlotType == _rrsb)
+				{
+					((IHPlotVal)_wizardPlot.PlotVal).set_AxisScale(0, 1);
+					((IHPlotVal)_wizardPlot.PlotVal).set_AxisScale(1, 4);
+				}
+				_currentConfigValue = SaveConfigValue();
+				_bHasInputDialog = true;
+			}
+		}
+
+		private void ExecuteOKCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			UpdateWizardData();
+			_help.CloseForm((UserControl)this, (bool?)true);
+		}
+
+		private void CanExecuteOKCommand(object sender, CanExecuteRoutedEventArgs e)
+		{
+			int num = StreamList.GetSelectedCurves().Count();
+			int num2 = SubStreamList.GetSelectedCurves().Count();
+			e.CanExecute = ((num != 0 && num2 != 0) ? true : false);
+		}
+
+		private void ExecuteCancelCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			_help.CloseForm((UserControl)this, (bool?)false);
+		}
+
+		private string SaveConfigValue()
+		{
+			_ = string.Empty;
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.Append("SubStreamSelection=");
+			List<string> list = new List<string>(SubStreamList.GetSelectedCurves());
+			int count = list.Count;
+			for (int i = 0; i < count; i++)
+			{
+				if (i > 0)
+				{
+					stringBuilder.Append(",");
+				}
+				stringBuilder.Append(list[i]);
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("CheckAll=");
+			stringBuilder.Append(SubStreamList.IsCheckAll);
+			stringBuilder.Append(";");
+			stringBuilder.Append("StreamSelection=");
+			List<string> list2 = new List<string>(StreamList.GetSelectedCurves());
+			count = list2.Count;
+			for (int j = 0; j < count; j++)
+			{
+				if (j > 0)
+				{
+					stringBuilder.Append(",");
+				}
+				stringBuilder.Append(list2[j]);
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("CheckAll=");
+			stringBuilder.Append(StreamList.IsCheckAll);
+			stringBuilder.Append(";");
+			return stringBuilder.ToString();
+		}
+
+		private void RestoreConfigValue(string ConfigString)
+		{
+			string[] array = ConfigString.Split(';');
+			int num = 0;
+			string text = array[num].Substring(array[num].IndexOf('=') + 1);
+			string[] array2 = text.Split(',');
+			List<string> list = new List<string>();
+			string[] array3 = array2;
+			foreach (string item in array3)
+			{
+				list.Add(item);
+			}
+			SubStreamList.SetSelectedCurves(list.ToArray());
+			num++;
+			text = array[num].Substring(array[num].IndexOf('=') + 1);
+			SubStreamList.IsCheckAll = Convert.ToBoolean(text);
+			num++;
+			text = array[num].Substring(array[num].IndexOf('=') + 1);
+			string[] array4 = text.Split(',');
+			List<string> list2 = new List<string>();
+			array3 = array4;
+			foreach (string item2 in array3)
+			{
+				list2.Add(item2);
+			}
+			StreamList.SetSelectedCurves(list2.ToArray());
+			num++;
+			text = array[num].Substring(array[num].IndexOf('=') + 1);
+			StreamList.IsCheckAll = Convert.ToBoolean(text);
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLClassifier;component/psd.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			switch (connectionId)
+			{
+			case 1:
+				SubStreamList = (CurvesSelectorControl)target;
+				break;
+			case 2:
+				StreamList = (CurvesSelectorControl)target;
+				break;
+			default:
+				_contentLoaded = true;
+				break;
+			}
+		}
+	}
+	[ProgId("WpfPLClassifier.SepEff")]
+	public class SepEff : UserControl, IRibbonPlotWizardType, IPlotWizardTemplate, IComponentConnector
+	{
+		private IHNode _context;
+
+		private IHWizardPlot2 _wizardPlot;
+
+		private PlotwizardHelper _help = new PlotwizardHelper();
+
+		private string _uniqueId = WpfPLDiscurvesResources.SepEffID;
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private string _currentLengthUnit = string.Empty;
+
+		private System.Drawing.Image _imgBitmap;
+
+		private bool _bHasInputDialog;
+
+		private string _currentConfigValue = string.Empty;
+
+		private static string _CancelValue = string.Empty;
+
+		private readonly string _lengthUnitFieldId = WpfPLRPlugResources.Length;
+
+		public static RoutedCommand OKCommand = new RoutedCommand();
+
+		public static RoutedCommand CancelCommand = new RoutedCommand();
+
+		private bool _bCheckDataOnly;
+
+		internal CurvesSelectorControl SubStreamList;
+
+		private bool _contentLoaded;
+
+		public string TooltipContentForRibbonItem => WpfPLDiscurvesResources.SepEff;
+
+		public string TooltipHeaderForRibbonItem => WpfPLDiscurvesResources.SepEff;
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot2;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		System.Drawing.Image IRibbonPlotWizardType.ImageIcon => _imgBitmap;
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => _help.GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => _help.GetHelpID();
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string> { _lengthUnitFieldId };
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string>();
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		public SepEff()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			InitializeComponent();
+			_bHasInputDialog = true;
+			if (_imgBitmap == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLClassifier.Images.SepEff.ico");
+				_imgBitmap = new Bitmap(manifestResourceStream);
+			}
+			_CancelValue = _currentConfigValue;
+			CommandBinding commandBinding = new CommandBinding(OKCommand, ExecuteOKCommand, CanExecuteOKCommand);
+			CommandBinding commandBinding2 = new CommandBinding(CancelCommand, ExecuteCancelCommand);
+			base.CommandBindings.Add(commandBinding);
+			base.CommandBindings.Add(commandBinding2);
+		}
+
+		public void SetCaption(ref string caption)
+		{
+			caption = WpfPLDiscurvesResources.SepEff;
+			Window.GetWindow(this).Closing += RollBack;
+		}
+
+		public void SetDefaultHeight(ref double defaultHeight)
+		{
+			defaultHeight = 350.0;
+		}
+
+		public void SetDefaultWidth(ref double defaultWidth)
+		{
+			defaultWidth = 300.0;
+		}
+
+		public void SetMinHeight(ref double minHeight)
+		{
+			minHeight = 350.0;
+		}
+
+		public void SetMinWidth(ref double minWidth)
+		{
+			minWidth = 300.0;
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.CompareTo(_lengthUnitFieldId) == 0)
+			{
+				List<string> list = new List<string>();
+				_help.LoadXUnitsList(_context.Application.Tree, (IHWizardPlot)_wizardPlot, list);
+				return list;
+			}
+			return null;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.CompareTo(_lengthUnitFieldId) == 0)
+			{
+				sCurrentVal = _help.GetXUnitString(_context.Application.Tree, (IHWizardPlot)_wizardPlot);
+			}
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+			if (sFieldName.CompareTo(_lengthUnitFieldId) == 0)
+			{
+				_currentLengthUnit = sValue;
+			}
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sField)
+		{
+			if (sField.CompareTo(_lengthUnitFieldId) != 0)
+			{
+				return (RibbonControlType)0;
+			}
+			return (RibbonControlType)1;
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+			sConfigValue = _currentConfigValue;
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+			_currentConfigValue = sValue;
+		}
+
+		void IRibbonPlotWizardType.Context(object HNode, ref object HWizardPlot, ref int ierror)
+		{
+			if (HWizardPlot == null || HNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			_context = HNode as IHNode;
+			_wizardPlot = HWizardPlot as IHWizardPlot2;
+			List<string> list = new List<string>();
+			IHNode iHNode = _context.FindNode("Output/SEP_EFF");
+			if (iHNode == null || iHNode.Elements.Count <= 0)
+			{
+				ierror = 1;
+				return;
+			}
+			int count = iHNode.Elements.Count;
+			for (int i = 0; i < count; i++)
+			{
+				string item = iHNode.Elements.get_Label(0, i, Type.Missing);
+				list.Add(item);
+			}
+			SubStreamList.SetCurves(list.ToArray());
+			SubStreamList.Header = WpfPLDiscurvesResources.PSDSubstream;
+			if (string.IsNullOrEmpty(_currentConfigValue))
+			{
+				List<string> list2 = new List<string>();
+				list2.Add(list[0].ToString());
+				SubStreamList.SetSelectedCurves(list2.ToArray());
+			}
+			if (list.Count == 1)
+			{
+				SubStreamList.IsCheckAll = true;
+				_bHasInputDialog = false;
+			}
+			iHNode = iHNode.Elements[list[0].ToString(), Type.Missing, Type.Missing, Type.Missing, Type.Missing];
+			if (iHNode == null || iHNode.Elements.Count <= 0)
+			{
+				ierror = 1;
+				return;
+			}
+			if (!string.IsNullOrEmpty(_currentConfigValue))
+			{
+				SubStreamList.IsCheckAll = false;
+				RestoreConfigValue(_currentConfigValue);
+				_bHasInputDialog = true;
+			}
+			_wizardPlot.SetIndependentVariable(_context, "Output/PART_DIAM");
+		}
+
+		public void UpdateWizardData()
+		{
+			_wizardPlot.RemoveAllDependentVariable();
+			IHNode iHNode = _context.FindNode("Output/PART_DIAM");
+			if (iHNode == null || iHNode.Elements.Count <= 0)
+			{
+				return;
+			}
+			List<string> list = new List<string>(SubStreamList.GetSelectedCurves());
+			if (list.Count <= 0)
+			{
+				return;
+			}
+			_wizardPlot.RemoveAllIndependentVariable();
+			string text = "Output/PART_DIAM/";
+			string text2 = "Output/SEP_EFF/";
+			try
+			{
+				for (int i = 0; i < list.Count; i++)
+				{
+					string indepvar = text + list[i];
+					_wizardPlot.SetMultIndependentVariables(_context, indepvar);
+					string depvar = text2 + list[i];
+					_wizardPlot.AddDependentVariable(_context, depvar);
+					string label = list[i];
+					((IHPlotVal)_wizardPlot.PlotVal).set_Label(i, label);
+				}
+				_help.SaveXUnitsComboText(_context.Application.Tree, (IHWizardPlot)_wizardPlot, _currentLengthUnit);
+				string xUnitString = _help.GetXUnitString(_context.Application.Tree, (IHWizardPlot)_wizardPlot);
+				string xAxisTitle = WpfPLDiscurvesResources.SepEff_XAxisTitle + " " + xUnitString;
+				_wizardPlot.PlotVal.XAxisTitle = xAxisTitle;
+			}
+			catch
+			{
+			}
+			_currentConfigValue = SaveConfigValue();
+			_bHasInputDialog = true;
+		}
+
+		private void ExecuteOKCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			UpdateWizardData();
+			SubStreamList.UpdateCurvesStatus();
+			_CancelValue = _currentConfigValue;
+			_help.CloseForm((UserControl)this, (bool?)true);
+		}
+
+		private void CanExecuteOKCommand(object sender, CanExecuteRoutedEventArgs e)
+		{
+			int num = SubStreamList.GetSelectedCurves().Count();
+			_CancelValue = _currentConfigValue;
+			e.CanExecute = num != 0;
+		}
+
+		private void ExecuteCancelCommand(object sender, ExecutedRoutedEventArgs e)
+		{
+			RollBack(null, null);
+			_help.CloseForm((UserControl)this, (bool?)false);
+		}
+
+		private string SaveConfigValue()
+		{
+			_ = string.Empty;
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.Append("SubStreamSelection=");
+			List<string> list = new List<string>(SubStreamList.GetSelectedCurves());
+			int count = list.Count;
+			for (int i = 0; i < count; i++)
+			{
+				if (i > 0)
+				{
+					stringBuilder.Append(",");
+				}
+				stringBuilder.Append(list[i]);
+			}
+			stringBuilder.Append(";");
+			stringBuilder.Append("CheckAll=");
+			stringBuilder.Append(SubStreamList.IsCheckAll);
+			stringBuilder.Append(";");
+			return stringBuilder.ToString();
+		}
+
+		private void RestoreConfigValue(string ConfigString)
+		{
+			string[] array = ConfigString.Split(';');
+			int num = 0;
+			string text = array[num].Substring(array[num].IndexOf('=') + 1);
+			string[] array2 = text.Split(',');
+			List<string> list = new List<string>();
+			string[] array3 = array2;
+			foreach (string item in array3)
+			{
+				list.Add(item);
+			}
+			SubStreamList.SetSelectedCurves(list.ToArray());
+			num++;
+			text = array[num].Substring(array[num].IndexOf('=') + 1);
+			SubStreamList.IsCheckAll = Convert.ToBoolean(text);
+		}
+
+		public void RollBack(object sender, CancelEventArgs e)
+		{
+			SubStreamList.CancelCurvesSelection();
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		public void InitializeComponent()
+		{
+			if (!_contentLoaded)
+			{
+				_contentLoaded = true;
+				Uri resourceLocator = new Uri("/WpfPLClassifier;component/sepeff.xaml", UriKind.Relative);
+				Application.LoadComponent(this, resourceLocator);
+			}
+		}
+
+		[DebuggerNonUserCode]
+		[GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		void IComponentConnector.Connect(int connectionId, object target)
+		{
+			if (connectionId == 1)
+			{
+				SubStreamList = (CurvesSelectorControl)target;
+			}
+			else
+			{
+				_contentLoaded = true;
+			}
+		}
+	}
+}
+namespace WpfPLClassifier.Properties
+{
+	[GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
+	[DebuggerNonUserCode]
+	[CompilerGenerated]
+	internal class Resources
+	{
+		private static ResourceManager resourceMan;
+
+		private static CultureInfo resourceCulture;
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		internal static ResourceManager ResourceManager
+		{
+			get
+			{
+				if (resourceMan == null)
+				{
+					resourceMan = new ResourceManager("WpfPLClassifier.Properties.Resources", typeof(Resources).Assembly);
+				}
+				return resourceMan;
+			}
+		}
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		internal static CultureInfo Culture
+		{
+			get
+			{
+				return resourceCulture;
+			}
+			set
+			{
+				resourceCulture = value;
+			}
+		}
+
+		internal Resources()
+		{
+		}
+	}
+}
+namespace AspenTech.AspenPlus.Happ
+{
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("11677780-B72B-11D0-A943-0000C0A118DB")]
+	[CoClass(typeof(object))]
+	[TypeIdentifier]
+	public interface CHPlotVal : IHPlotVal
+	{
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("8008C730-1A3E-11D1-8A4D-0000C0237DF9")]
+	[CoClass(typeof(object))]
+	[TypeIdentifier]
+	public interface CHWizardPlot : IHWizardPlot
+	{
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("8E567522-F9BA-11CF-90B2-0000C0A810C4")]
+	[TypeIdentifier]
+	public interface IHNode
+	{
+		[DispId(1610743808)]
+		IHapp Application
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743808)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+
+		void _VtblGap1_5();
+
+		[DispId(1610743814)]
+		object Value
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743814)]
+			[return: MarshalAs(UnmanagedType.Struct)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743814)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.Struct)]
+			set;
+		}
+
+		void _VtblGap2_10();
+
+		[DispId(1610743826)]
+		IHNodeCol Elements
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743826)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+
+		void _VtblGap3_8();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743835)]
+		[return: MarshalAs(UnmanagedType.Interface)]
+		IHNode FindNode([In][MarshalAs(UnmanagedType.BStr)] string path);
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("89E81F60-019A-11D0-9BE7-0000C05375D5")]
+	[TypeIdentifier]
+	public interface IHNodeCol : IEnumerable
+	{
+		void _VtblGap1_2();
+
+		[DispId(1610743810)]
+		int Count
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743810)]
+			get;
+		}
+
+		void _VtblGap2_3();
+
+		[DispId(0)]
+		IHNode this[[In][MarshalAs(UnmanagedType.Struct)] object loc_or_name, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name2, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name3, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name4, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name5]
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(0)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+
+		void _VtblGap3_2();
+
+		[DispId(1610743817)]
+		string Label
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743817)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743817)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.BStr)]
+			set;
+		}
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("11677780-B72B-11D0-A943-0000C0A118DB")]
+	[TypeIdentifier]
+	public interface IHPlotVal
+	{
+		void _VtblGap1_5();
+
+		[DispId(1610743813)]
+		string XAxisTitle
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743813)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743813)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.BStr)]
+			set;
+		}
+
+		void _VtblGap2_1();
+
+		void _VtblGap3_3();
+
+		[DispId(1610743819)]
+		string Label
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743819)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743819)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.BStr)]
+			set;
+		}
+
+		void _VtblGap4_1();
+
+		void _VtblGap5_2();
+
+		[DispId(1610743824)]
+		int NVariables
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743824)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743824)]
+			[param: In]
+			set;
+		}
+
+		[DispId(1610743826)]
+		int NXVariables
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743826)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743826)]
+			[param: In]
+			set;
+		}
+
+		void _VtblGap6_47();
+
+		[DispId(1610743875)]
+		int AxisScale
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743875)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743875)]
+			[param: In]
+			set;
+		}
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("8008C730-1A3E-11D1-8A4D-0000C0237DF9")]
+	[TypeIdentifier]
+	public interface IHWizardPlot
+	{
+		void _VtblGap1_15();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743823)]
+		void Clear();
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("5DA88FB5-5B29-4EAE-ACDF-E45DE2319D99")]
+	[TypeIdentifier]
+	public interface IHWizardPlot2 : IHWizardPlot
+	{
+		[DispId(1610743808)]
+		CHPlotVal PlotVal
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743808)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+
+		void _VtblGap1_6();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743815)]
+		void SetIndependentVariable([In][MarshalAs(UnmanagedType.Interface)] IHNode pContext, [In][MarshalAs(UnmanagedType.BStr)] string indepvar);
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743816)]
+		void AddDependentVariable([In][MarshalAs(UnmanagedType.Interface)] IHNode pContext, [In][MarshalAs(UnmanagedType.BStr)] string depvar);
+
+		void _VtblGap2_1();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743818)]
+		void RemoveAllDependentVariable();
+
+		void _VtblGap3_17();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610809344)]
+		void SetMultIndependentVariables([In][MarshalAs(UnmanagedType.Interface)] IHNode pContext, [In][MarshalAs(UnmanagedType.BStr)] string indepvar);
+
+		void _VtblGap4_1();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610809346)]
+		void RemoveAllIndependentVariable();
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[DefaultMember("Name")]
+	[Guid("8E567521-F9BA-11CF-90B2-0000C0A810C4")]
+	[TypeIdentifier]
+	public interface IHapp
+	{
+		void _VtblGap1_3();
+
+		[DispId(0)]
+		string Name
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(0)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+		}
+
+		void _VtblGap2_7();
+
+		[DispId(1610743819)]
+		IHNode Tree
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743819)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

@@ -1,0 +1,1787 @@
+using System;
+using System.Collections;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using System.Reflection;
+using System.Resources;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Text;
+using System.Threading;
+using FxResources.Microsoft.Extensions.Logging;
+using Microsoft.CodeAnalysis;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: TargetFramework(".NETFramework,Version=v4.6.2", FrameworkDisplayName = ".NET Framework 4.6.2")]
+[assembly: AssemblyMetadata("Serviceable", "True")]
+[assembly: AssemblyMetadata("PreferInbox", "True")]
+[assembly: AssemblyDefaultAlias("Microsoft.Extensions.Logging")]
+[assembly: NeutralResourcesLanguage("en-US")]
+[assembly: CLSCompliant(true)]
+[assembly: AssemblyMetadata("IsTrimmable", "True")]
+[assembly: DefaultDllImportSearchPaths(DllImportSearchPath.System32 | DllImportSearchPath.AssemblyDirectory)]
+[assembly: AssemblyCompany("Microsoft Corporation")]
+[assembly: AssemblyCopyright("© Microsoft Corporation. All rights reserved.")]
+[assembly: AssemblyDescription("Logging infrastructure default implementation for Microsoft.Extensions.Logging.")]
+[assembly: AssemblyFileVersion("8.0.23.53103")]
+[assembly: AssemblyInformationalVersion("8.0.0+5535e31a712343a63f5d7d796cd874e563e5ac14")]
+[assembly: AssemblyProduct("Microsoft® .NET")]
+[assembly: AssemblyTitle("Microsoft.Extensions.Logging")]
+[assembly: AssemblyMetadata("RepositoryUrl", "https://github.com/dotnet/runtime")]
+[assembly: AssemblyVersion("8.0.0.0")]
+[assembly: TypeForwardedTo(typeof(ILoggingBuilder))]
+[module: System.Runtime.CompilerServices.RefSafetyRules(11)]
+[module: System.Runtime.CompilerServices.NullablePublicOnly(false)]
+namespace Microsoft.CodeAnalysis
+{
+	[CompilerGenerated]
+	[Microsoft.CodeAnalysis.Embedded]
+	internal sealed class EmbeddedAttribute : Attribute
+	{
+	}
+}
+namespace System.Runtime.CompilerServices
+{
+	[CompilerGenerated]
+	[Microsoft.CodeAnalysis.Embedded]
+	internal sealed class IsReadOnlyAttribute : Attribute
+	{
+	}
+	[CompilerGenerated]
+	[Microsoft.CodeAnalysis.Embedded]
+	[AttributeUsage(AttributeTargets.Class | AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Event | AttributeTargets.Parameter | AttributeTargets.ReturnValue | AttributeTargets.GenericParameter, AllowMultiple = false, Inherited = false)]
+	internal sealed class NullableAttribute : Attribute
+	{
+		public readonly byte[] NullableFlags;
+
+		public NullableAttribute(byte P_0)
+		{
+			NullableFlags = new byte[1] { P_0 };
+		}
+
+		public NullableAttribute(byte[] P_0)
+		{
+			NullableFlags = P_0;
+		}
+	}
+	[CompilerGenerated]
+	[Microsoft.CodeAnalysis.Embedded]
+	[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Method | AttributeTargets.Interface | AttributeTargets.Delegate, AllowMultiple = false, Inherited = false)]
+	internal sealed class NullableContextAttribute : Attribute
+	{
+		public readonly byte Flag;
+
+		public NullableContextAttribute(byte P_0)
+		{
+			Flag = P_0;
+		}
+	}
+	[CompilerGenerated]
+	[Microsoft.CodeAnalysis.Embedded]
+	[AttributeUsage(AttributeTargets.Module, AllowMultiple = false, Inherited = false)]
+	internal sealed class NullablePublicOnlyAttribute : Attribute
+	{
+		public readonly bool IncludesInternals;
+
+		public NullablePublicOnlyAttribute(bool P_0)
+		{
+			IncludesInternals = P_0;
+		}
+	}
+	[CompilerGenerated]
+	[Microsoft.CodeAnalysis.Embedded]
+	[AttributeUsage(AttributeTargets.Module, AllowMultiple = false, Inherited = false)]
+	internal sealed class RefSafetyRulesAttribute : Attribute
+	{
+		public readonly int Version;
+
+		public RefSafetyRulesAttribute(int P_0)
+		{
+			Version = P_0;
+		}
+	}
+}
+namespace FxResources.Microsoft.Extensions.Logging
+{
+	internal static class SR
+	{
+	}
+}
+namespace System
+{
+	internal static class ThrowHelper
+	{
+		internal static void ThrowIfNull(object argument, [System.Runtime.CompilerServices.CallerArgumentExpression("argument")] string paramName = null)
+		{
+			if (argument == null)
+			{
+				Throw(paramName);
+			}
+		}
+
+		private static void Throw(string paramName)
+		{
+			throw new ArgumentNullException(paramName);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static string IfNullOrWhitespace(string argument, [System.Runtime.CompilerServices.CallerArgumentExpression("argument")] string paramName = "")
+		{
+			if (argument == null)
+			{
+				throw new ArgumentNullException(paramName);
+			}
+			if (string.IsNullOrWhiteSpace(argument))
+			{
+				if (argument == null)
+				{
+					throw new ArgumentNullException(paramName);
+				}
+				throw new ArgumentException(paramName, "Argument is whitespace");
+			}
+			return argument;
+		}
+	}
+	internal static class SR
+	{
+		private static readonly bool s_usingResourceKeys = AppContext.TryGetSwitch("System.Resources.UseSystemResourceKeys", out var isEnabled) && isEnabled;
+
+		private static ResourceManager s_resourceManager;
+
+		internal static ResourceManager ResourceManager => s_resourceManager ?? (s_resourceManager = new ResourceManager(typeof(SR)));
+
+		internal static string InvalidActivityTrackingOptions => GetResourceString("InvalidActivityTrackingOptions");
+
+		internal static string MoreThanOneWildcard => GetResourceString("MoreThanOneWildcard");
+
+		internal static bool UsingResourceKeys()
+		{
+			return s_usingResourceKeys;
+		}
+
+		private static string GetResourceString(string resourceKey)
+		{
+			if (UsingResourceKeys())
+			{
+				return resourceKey;
+			}
+			string result = null;
+			try
+			{
+				result = ResourceManager.GetString(resourceKey);
+			}
+			catch (MissingManifestResourceException)
+			{
+			}
+			return result;
+		}
+
+		private static string GetResourceString(string resourceKey, string defaultString)
+		{
+			string resourceString = GetResourceString(resourceKey);
+			if (!(resourceKey == resourceString) && resourceString != null)
+			{
+				return resourceString;
+			}
+			return defaultString;
+		}
+
+		internal static string Format(string resourceFormat, object p1)
+		{
+			if (UsingResourceKeys())
+			{
+				return string.Join(", ", resourceFormat, p1);
+			}
+			return string.Format(resourceFormat, p1);
+		}
+
+		internal static string Format(string resourceFormat, object p1, object p2)
+		{
+			if (UsingResourceKeys())
+			{
+				return string.Join(", ", resourceFormat, p1, p2);
+			}
+			return string.Format(resourceFormat, p1, p2);
+		}
+
+		internal static string Format(string resourceFormat, object p1, object p2, object p3)
+		{
+			if (UsingResourceKeys())
+			{
+				return string.Join(", ", resourceFormat, p1, p2, p3);
+			}
+			return string.Format(resourceFormat, p1, p2, p3);
+		}
+
+		internal static string Format(string resourceFormat, params object[] args)
+		{
+			if (args != null)
+			{
+				if (UsingResourceKeys())
+				{
+					return resourceFormat + ", " + string.Join(", ", args);
+				}
+				return string.Format(resourceFormat, args);
+			}
+			return resourceFormat;
+		}
+
+		internal static string Format(IFormatProvider provider, string resourceFormat, object p1)
+		{
+			if (UsingResourceKeys())
+			{
+				return string.Join(", ", resourceFormat, p1);
+			}
+			return string.Format(provider, resourceFormat, p1);
+		}
+
+		internal static string Format(IFormatProvider provider, string resourceFormat, object p1, object p2)
+		{
+			if (UsingResourceKeys())
+			{
+				return string.Join(", ", resourceFormat, p1, p2);
+			}
+			return string.Format(provider, resourceFormat, p1, p2);
+		}
+
+		internal static string Format(IFormatProvider provider, string resourceFormat, object p1, object p2, object p3)
+		{
+			if (UsingResourceKeys())
+			{
+				return string.Join(", ", resourceFormat, p1, p2, p3);
+			}
+			return string.Format(provider, resourceFormat, p1, p2, p3);
+		}
+
+		internal static string Format(IFormatProvider provider, string resourceFormat, params object[] args)
+		{
+			if (args != null)
+			{
+				if (UsingResourceKeys())
+				{
+					return resourceFormat + ", " + string.Join(", ", args);
+				}
+				return string.Format(provider, resourceFormat, args);
+			}
+			return resourceFormat;
+		}
+	}
+}
+namespace System.Diagnostics.CodeAnalysis
+{
+	[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter, Inherited = false)]
+	internal sealed class AllowNullAttribute : Attribute
+	{
+	}
+	[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter, Inherited = false)]
+	internal sealed class DisallowNullAttribute : Attribute
+	{
+	}
+	[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.ReturnValue, Inherited = false)]
+	internal sealed class MaybeNullAttribute : Attribute
+	{
+	}
+	[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.ReturnValue, Inherited = false)]
+	internal sealed class NotNullAttribute : Attribute
+	{
+	}
+	[AttributeUsage(AttributeTargets.Parameter, Inherited = false)]
+	internal sealed class MaybeNullWhenAttribute : Attribute
+	{
+		public bool ReturnValue { get; }
+
+		public MaybeNullWhenAttribute(bool returnValue)
+		{
+			ReturnValue = returnValue;
+		}
+	}
+	[AttributeUsage(AttributeTargets.Parameter, Inherited = false)]
+	internal sealed class NotNullWhenAttribute : Attribute
+	{
+		public bool ReturnValue { get; }
+
+		public NotNullWhenAttribute(bool returnValue)
+		{
+			ReturnValue = returnValue;
+		}
+	}
+	[AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter | AttributeTargets.ReturnValue, AllowMultiple = true, Inherited = false)]
+	internal sealed class NotNullIfNotNullAttribute : Attribute
+	{
+		public string ParameterName { get; }
+
+		public NotNullIfNotNullAttribute(string parameterName)
+		{
+			ParameterName = parameterName;
+		}
+	}
+	[AttributeUsage(AttributeTargets.Method, Inherited = false)]
+	internal sealed class DoesNotReturnAttribute : Attribute
+	{
+	}
+	[AttributeUsage(AttributeTargets.Parameter, Inherited = false)]
+	internal sealed class DoesNotReturnIfAttribute : Attribute
+	{
+		public bool ParameterValue { get; }
+
+		public DoesNotReturnIfAttribute(bool parameterValue)
+		{
+			ParameterValue = parameterValue;
+		}
+	}
+	[AttributeUsage(AttributeTargets.Method | AttributeTargets.Property, Inherited = false, AllowMultiple = true)]
+	internal sealed class MemberNotNullAttribute : Attribute
+	{
+		public string[] Members { get; }
+
+		public MemberNotNullAttribute(string member)
+		{
+			Members = new string[1] { member };
+		}
+
+		public MemberNotNullAttribute(params string[] members)
+		{
+			Members = members;
+		}
+	}
+	[AttributeUsage(AttributeTargets.Method | AttributeTargets.Property, Inherited = false, AllowMultiple = true)]
+	internal sealed class MemberNotNullWhenAttribute : Attribute
+	{
+		public bool ReturnValue { get; }
+
+		public string[] Members { get; }
+
+		public MemberNotNullWhenAttribute(bool returnValue, string member)
+		{
+			ReturnValue = returnValue;
+			Members = new string[1] { member };
+		}
+
+		public MemberNotNullWhenAttribute(bool returnValue, params string[] members)
+		{
+			ReturnValue = returnValue;
+			Members = members;
+		}
+	}
+}
+namespace System.Runtime.InteropServices
+{
+	[AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
+	internal sealed class LibraryImportAttribute : Attribute
+	{
+		public string LibraryName { get; }
+
+		public string EntryPoint { get; set; }
+
+		public System.Runtime.InteropServices.StringMarshalling StringMarshalling { get; set; }
+
+		public Type StringMarshallingCustomType { get; set; }
+
+		public bool SetLastError { get; set; }
+
+		public LibraryImportAttribute(string libraryName)
+		{
+			LibraryName = libraryName;
+		}
+	}
+	internal enum StringMarshalling
+	{
+		Custom,
+		Utf8,
+		Utf16
+	}
+}
+namespace System.Runtime.CompilerServices
+{
+	[AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
+	internal sealed class CallerArgumentExpressionAttribute : Attribute
+	{
+		public string ParameterName { get; }
+
+		public CallerArgumentExpressionAttribute(string parameterName)
+		{
+			ParameterName = parameterName;
+		}
+	}
+}
+namespace Microsoft.Extensions.DependencyInjection
+{
+	public static class LoggingServiceCollectionExtensions
+	{
+		public static IServiceCollection AddLogging(this IServiceCollection services)
+		{
+			return services.AddLogging(delegate
+			{
+			});
+		}
+
+		public static IServiceCollection AddLogging(this IServiceCollection services, Action<ILoggingBuilder> configure)
+		{
+			System.ThrowHelper.ThrowIfNull(services, "services");
+			services.AddOptions();
+			services.TryAdd(ServiceDescriptor.Singleton<ILoggerFactory, LoggerFactory>());
+			services.TryAdd(ServiceDescriptor.Singleton(typeof(ILogger<>), typeof(Logger<>)));
+			services.TryAddEnumerable(ServiceDescriptor.Singleton((IConfigureOptions<LoggerFilterOptions>)new DefaultLoggerLevelConfigureOptions(LogLevel.Information)));
+			configure(new LoggingBuilder(services));
+			return services;
+		}
+	}
+}
+namespace Microsoft.Extensions.Logging
+{
+	[Flags]
+	public enum ActivityTrackingOptions
+	{
+		None = 0,
+		SpanId = 1,
+		TraceId = 2,
+		ParentId = 4,
+		TraceState = 8,
+		TraceFlags = 0x10,
+		Tags = 0x20,
+		Baggage = 0x40
+	}
+	internal sealed class DefaultLoggerLevelConfigureOptions : ConfigureOptions<LoggerFilterOptions>
+	{
+		public DefaultLoggerLevelConfigureOptions(LogLevel level)
+			: base((Action<LoggerFilterOptions>?)delegate(LoggerFilterOptions options)
+			{
+				options.MinLevel = level;
+			})
+		{
+		}
+	}
+	public static class FilterLoggingBuilderExtensions
+	{
+		public static ILoggingBuilder AddFilter(this ILoggingBuilder builder, Func<string?, string?, LogLevel, bool> filter)
+		{
+			return builder.ConfigureFilter(delegate(LoggerFilterOptions options)
+			{
+				options.AddFilter(filter);
+			});
+		}
+
+		public static ILoggingBuilder AddFilter(this ILoggingBuilder builder, Func<string?, LogLevel, bool> categoryLevelFilter)
+		{
+			return builder.ConfigureFilter(delegate(LoggerFilterOptions options)
+			{
+				options.AddFilter(categoryLevelFilter);
+			});
+		}
+
+		public static ILoggingBuilder AddFilter<T>(this ILoggingBuilder builder, Func<string?, LogLevel, bool> categoryLevelFilter) where T : ILoggerProvider
+		{
+			return builder.ConfigureFilter(delegate(LoggerFilterOptions options)
+			{
+				options.AddFilter<T>(categoryLevelFilter);
+			});
+		}
+
+		public static ILoggingBuilder AddFilter(this ILoggingBuilder builder, Func<LogLevel, bool> levelFilter)
+		{
+			return builder.ConfigureFilter(delegate(LoggerFilterOptions options)
+			{
+				options.AddFilter(levelFilter);
+			});
+		}
+
+		public static ILoggingBuilder AddFilter<T>(this ILoggingBuilder builder, Func<LogLevel, bool> levelFilter) where T : ILoggerProvider
+		{
+			return builder.ConfigureFilter(delegate(LoggerFilterOptions options)
+			{
+				options.AddFilter<T>(levelFilter);
+			});
+		}
+
+		public static ILoggingBuilder AddFilter(this ILoggingBuilder builder, string? category, LogLevel level)
+		{
+			return builder.ConfigureFilter(delegate(LoggerFilterOptions options)
+			{
+				options.AddFilter(category, level);
+			});
+		}
+
+		public static ILoggingBuilder AddFilter<T>(this ILoggingBuilder builder, string? category, LogLevel level) where T : ILoggerProvider
+		{
+			return builder.ConfigureFilter(delegate(LoggerFilterOptions options)
+			{
+				options.AddFilter<T>(category, level);
+			});
+		}
+
+		public static ILoggingBuilder AddFilter(this ILoggingBuilder builder, string? category, Func<LogLevel, bool> levelFilter)
+		{
+			return builder.ConfigureFilter(delegate(LoggerFilterOptions options)
+			{
+				options.AddFilter(category, levelFilter);
+			});
+		}
+
+		public static ILoggingBuilder AddFilter<T>(this ILoggingBuilder builder, string? category, Func<LogLevel, bool> levelFilter) where T : ILoggerProvider
+		{
+			return builder.ConfigureFilter(delegate(LoggerFilterOptions options)
+			{
+				options.AddFilter<T>(category, levelFilter);
+			});
+		}
+
+		public static LoggerFilterOptions AddFilter(this LoggerFilterOptions builder, Func<string?, string?, LogLevel, bool> filter)
+		{
+			return AddRule(builder, null, null, null, filter);
+		}
+
+		public static LoggerFilterOptions AddFilter(this LoggerFilterOptions builder, Func<string?, LogLevel, bool> categoryLevelFilter)
+		{
+			return AddRule(builder, null, null, null, (string type, string name, LogLevel level) => categoryLevelFilter(name, level));
+		}
+
+		public static LoggerFilterOptions AddFilter<T>(this LoggerFilterOptions builder, Func<string?, LogLevel, bool> categoryLevelFilter) where T : ILoggerProvider
+		{
+			return AddRule(builder, typeof(T).FullName, null, null, (string type, string name, LogLevel level) => categoryLevelFilter(name, level));
+		}
+
+		public static LoggerFilterOptions AddFilter(this LoggerFilterOptions builder, Func<LogLevel, bool> levelFilter)
+		{
+			return AddRule(builder, null, null, null, (string type, string name, LogLevel level) => levelFilter(level));
+		}
+
+		public static LoggerFilterOptions AddFilter<T>(this LoggerFilterOptions builder, Func<LogLevel, bool> levelFilter) where T : ILoggerProvider
+		{
+			return AddRule(builder, typeof(T).FullName, null, null, (string type, string name, LogLevel level) => levelFilter(level));
+		}
+
+		public static LoggerFilterOptions AddFilter(this LoggerFilterOptions builder, string? category, LogLevel level)
+		{
+			return AddRule(builder, null, category, level);
+		}
+
+		public static LoggerFilterOptions AddFilter<T>(this LoggerFilterOptions builder, string? category, LogLevel level) where T : ILoggerProvider
+		{
+			return AddRule(builder, typeof(T).FullName, category, level);
+		}
+
+		public static LoggerFilterOptions AddFilter(this LoggerFilterOptions builder, string? category, Func<LogLevel, bool> levelFilter)
+		{
+			return AddRule(builder, null, category, null, (string type, string name, LogLevel level) => levelFilter(level));
+		}
+
+		public static LoggerFilterOptions AddFilter<T>(this LoggerFilterOptions builder, string? category, Func<LogLevel, bool> levelFilter) where T : ILoggerProvider
+		{
+			return AddRule(builder, typeof(T).FullName, category, null, (string type, string name, LogLevel level) => levelFilter(level));
+		}
+
+		private static ILoggingBuilder ConfigureFilter(this ILoggingBuilder builder, Action<LoggerFilterOptions> configureOptions)
+		{
+			builder.Services.Configure(configureOptions);
+			return builder;
+		}
+
+		private static LoggerFilterOptions AddRule(LoggerFilterOptions options, string type = null, string category = null, LogLevel? level = null, Func<string, string, LogLevel, bool> filter = null)
+		{
+			options.Rules.Add(new LoggerFilterRule(type, category, level, filter));
+			return options;
+		}
+	}
+	[DebuggerDisplay("{DebuggerToString(),nq}")]
+	[DebuggerTypeProxy(typeof(LoggerDebugView))]
+	internal sealed class Logger : ILogger
+	{
+		private sealed class LoggerDebugView(Logger logger)
+		{
+			public string Name => logger._categoryName;
+
+			public List<LoggerProviderDebugView> Providers
+			{
+				get
+				{
+					List<LoggerProviderDebugView> list = new List<LoggerProviderDebugView>();
+					for (int i = 0; i < logger.Loggers.Length; i++)
+					{
+						LoggerInformation loggerInfo = logger.Loggers[i];
+						string providerName = ProviderAliasUtilities.GetAlias(loggerInfo.ProviderType) ?? loggerInfo.ProviderType.Name;
+						MessageLogger? messageLogger = logger.MessageLoggers?.FirstOrDefault((MessageLogger messageLogger2) => messageLogger2.Logger == loggerInfo.Logger);
+						list.Add(new LoggerProviderDebugView(providerName, messageLogger));
+					}
+					return list;
+				}
+			}
+
+			public List<object> Scopes
+			{
+				get
+				{
+					IExternalScopeProvider externalScopeProvider = logger.ScopeLoggers?.FirstOrDefault().ExternalScopeProvider;
+					if (externalScopeProvider == null)
+					{
+						return null;
+					}
+					List<object> list = new List<object>();
+					externalScopeProvider.ForEachScope(delegate(object scope, List<object> scopes)
+					{
+						scopes.Add(scope);
+					}, list);
+					return list;
+				}
+			}
+
+			public LogLevel? MinLevel => Microsoft.Extensions.Logging.DebuggerDisplayFormatting.CalculateEnabledLogLevel(logger);
+
+			public bool Enabled => Microsoft.Extensions.Logging.DebuggerDisplayFormatting.CalculateEnabledLogLevel(logger).HasValue;
+		}
+
+		[DebuggerDisplay("{DebuggerToString(),nq}")]
+		private sealed class LoggerProviderDebugView(string providerName, MessageLogger? messageLogger)
+		{
+			public string Name => providerName;
+
+			public LogLevel LogLevel => CalculateEnabledLogLevel(messageLogger) ?? LogLevel.None;
+
+			private static LogLevel? CalculateEnabledLogLevel(MessageLogger? logger)
+			{
+				if (!logger.HasValue)
+				{
+					return null;
+				}
+				Span<LogLevel> span = stackalloc LogLevel[6]
+				{
+					LogLevel.Critical,
+					LogLevel.Error,
+					LogLevel.Warning,
+					LogLevel.Information,
+					LogLevel.Debug,
+					LogLevel.Trace
+				};
+				ReadOnlySpan<LogLevel> readOnlySpan = span;
+				LogLevel? result = null;
+				ReadOnlySpan<LogLevel> readOnlySpan2 = readOnlySpan;
+				for (int i = 0; i < readOnlySpan2.Length; i++)
+				{
+					LogLevel logLevel = readOnlySpan2[i];
+					if (!logger.Value.IsEnabled(logLevel))
+					{
+						break;
+					}
+					result = logLevel;
+				}
+				return result;
+			}
+
+			private string DebuggerToString()
+			{
+				return $"Name = \"{providerName}\", LogLevel = {LogLevel}";
+			}
+		}
+
+		private sealed class Scope : IDisposable
+		{
+			private bool _isDisposed;
+
+			private IDisposable _disposable0;
+
+			private IDisposable _disposable1;
+
+			private readonly IDisposable[] _disposable;
+
+			public Scope(int count)
+			{
+				if (count > 2)
+				{
+					_disposable = new IDisposable[count - 2];
+				}
+			}
+
+			public void SetDisposable(int index, IDisposable disposable)
+			{
+				switch (index)
+				{
+				case 0:
+					_disposable0 = disposable;
+					break;
+				case 1:
+					_disposable1 = disposable;
+					break;
+				default:
+					_disposable[index - 2] = disposable;
+					break;
+				}
+			}
+
+			public void Dispose()
+			{
+				if (_isDisposed)
+				{
+					return;
+				}
+				_disposable0?.Dispose();
+				_disposable1?.Dispose();
+				if (_disposable != null)
+				{
+					int num = _disposable.Length;
+					for (int i = 0; i != num; i++)
+					{
+						_disposable[i]?.Dispose();
+					}
+				}
+				_isDisposed = true;
+			}
+		}
+
+		private readonly string _categoryName;
+
+		public LoggerInformation[] Loggers { get; set; }
+
+		public MessageLogger[] MessageLoggers { get; set; }
+
+		public ScopeLogger[] ScopeLoggers { get; set; }
+
+		public Logger(string categoryName, LoggerInformation[] loggers)
+		{
+			_categoryName = categoryName;
+			Loggers = loggers;
+		}
+
+		public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+		{
+			MessageLogger[] messageLoggers = MessageLoggers;
+			if (messageLoggers == null)
+			{
+				return;
+			}
+			List<Exception> exceptions = null;
+			for (int i = 0; i < messageLoggers.Length; i++)
+			{
+				ref MessageLogger reference = ref messageLoggers[i];
+				if (reference.IsEnabled(logLevel))
+				{
+					LoggerLog(logLevel, eventId, reference.Logger, exception, formatter, ref exceptions, in state);
+				}
+			}
+			if (exceptions != null && exceptions.Count > 0)
+			{
+				ThrowLoggingError(exceptions);
+			}
+			static void LoggerLog(LogLevel logLevel2, EventId eventId2, ILogger logger, Exception exception2, Func<TState, Exception, string> formatter2, ref List<Exception> reference3, in TState reference2)
+			{
+				try
+				{
+					logger.Log(logLevel2, eventId2, reference2, exception2, formatter2);
+				}
+				catch (Exception item)
+				{
+					if (reference3 == null)
+					{
+						reference3 = new List<Exception>();
+					}
+					reference3.Add(item);
+				}
+			}
+		}
+
+		public bool IsEnabled(LogLevel logLevel)
+		{
+			MessageLogger[] messageLoggers = MessageLoggers;
+			if (messageLoggers == null)
+			{
+				return false;
+			}
+			List<Exception> exceptions = null;
+			int i;
+			for (i = 0; i < messageLoggers.Length; i++)
+			{
+				ref MessageLogger reference = ref messageLoggers[i];
+				if (reference.IsEnabled(logLevel) && LoggerIsEnabled(logLevel, reference.Logger, ref exceptions))
+				{
+					break;
+				}
+			}
+			if (exceptions != null && exceptions.Count > 0)
+			{
+				ThrowLoggingError(exceptions);
+			}
+			return i < messageLoggers.Length;
+			static bool LoggerIsEnabled(LogLevel logLevel2, ILogger logger, ref List<Exception> reference2)
+			{
+				try
+				{
+					if (logger.IsEnabled(logLevel2))
+					{
+						return true;
+					}
+				}
+				catch (Exception item)
+				{
+					if (reference2 == null)
+					{
+						reference2 = new List<Exception>();
+					}
+					reference2.Add(item);
+				}
+				return false;
+			}
+		}
+
+		public IDisposable BeginScope<TState>(TState state)
+		{
+			ScopeLogger[] scopeLoggers = ScopeLoggers;
+			if (scopeLoggers == null)
+			{
+				return Microsoft.Extensions.Logging.NullScope.Instance;
+			}
+			if (scopeLoggers.Length == 1)
+			{
+				return scopeLoggers[0].CreateScope(state);
+			}
+			Scope scope = new Scope(scopeLoggers.Length);
+			List<Exception> list = null;
+			for (int i = 0; i < scopeLoggers.Length; i++)
+			{
+				ref ScopeLogger reference = ref scopeLoggers[i];
+				try
+				{
+					scope.SetDisposable(i, reference.CreateScope(state));
+				}
+				catch (Exception item)
+				{
+					if (list == null)
+					{
+						list = new List<Exception>();
+					}
+					list.Add(item);
+				}
+			}
+			if (list != null && list.Count > 0)
+			{
+				ThrowLoggingError(list);
+			}
+			return scope;
+		}
+
+		private static void ThrowLoggingError(List<Exception> exceptions)
+		{
+			throw new AggregateException("An error occurred while writing to logger(s).", exceptions);
+		}
+
+		internal string DebuggerToString()
+		{
+			return Microsoft.Extensions.Logging.DebuggerDisplayFormatting.DebuggerToString(_categoryName, this);
+		}
+	}
+	[DebuggerDisplay("{DebuggerToString(),nq}")]
+	[DebuggerTypeProxy(typeof(LoggerFactoryDebugView))]
+	public class LoggerFactory : ILoggerFactory, IDisposable
+	{
+		private struct ProviderRegistration
+		{
+			public ILoggerProvider Provider;
+
+			public bool ShouldDispose;
+		}
+
+		private sealed class DisposingLoggerFactory : ILoggerFactory, IDisposable
+		{
+			private readonly ILoggerFactory _loggerFactory;
+
+			private readonly ServiceProvider _serviceProvider;
+
+			public DisposingLoggerFactory(ILoggerFactory loggerFactory, ServiceProvider serviceProvider)
+			{
+				_loggerFactory = loggerFactory;
+				_serviceProvider = serviceProvider;
+			}
+
+			public void Dispose()
+			{
+				_serviceProvider.Dispose();
+			}
+
+			public ILogger CreateLogger(string categoryName)
+			{
+				return _loggerFactory.CreateLogger(categoryName);
+			}
+
+			public void AddProvider(ILoggerProvider provider)
+			{
+				_loggerFactory.AddProvider(provider);
+			}
+		}
+
+		private sealed class LoggerFactoryDebugView(LoggerFactory loggerFactory)
+		{
+			public List<ILoggerProvider> Providers => loggerFactory._providerRegistrations.Select((ProviderRegistration r) => r.Provider).ToList();
+
+			public bool Disposed => loggerFactory._disposed;
+
+			public LoggerFilterOptions FilterOptions => loggerFactory._filterOptions;
+		}
+
+		private readonly ConcurrentDictionary<string, Logger> _loggers = new ConcurrentDictionary<string, Logger>(StringComparer.Ordinal);
+
+		private readonly List<ProviderRegistration> _providerRegistrations = new List<ProviderRegistration>();
+
+		private readonly object _sync = new object();
+
+		private volatile bool _disposed;
+
+		private readonly IDisposable _changeTokenRegistration;
+
+		private LoggerFilterOptions _filterOptions;
+
+		private IExternalScopeProvider _scopeProvider;
+
+		private readonly LoggerFactoryOptions _factoryOptions;
+
+		public LoggerFactory()
+			: this(Array.Empty<ILoggerProvider>())
+		{
+		}
+
+		public LoggerFactory(IEnumerable<ILoggerProvider> providers)
+			: this(providers, new StaticFilterOptionsMonitor(new LoggerFilterOptions()))
+		{
+		}
+
+		public LoggerFactory(IEnumerable<ILoggerProvider> providers, LoggerFilterOptions filterOptions)
+			: this(providers, new StaticFilterOptionsMonitor(filterOptions))
+		{
+		}
+
+		public LoggerFactory(IEnumerable<ILoggerProvider> providers, IOptionsMonitor<LoggerFilterOptions> filterOption)
+			: this(providers, filterOption, null)
+		{
+		}
+
+		public LoggerFactory(IEnumerable<ILoggerProvider> providers, IOptionsMonitor<LoggerFilterOptions> filterOption, IOptions<LoggerFactoryOptions>? options)
+			: this(providers, filterOption, options, null)
+		{
+		}
+
+		public LoggerFactory(IEnumerable<ILoggerProvider> providers, IOptionsMonitor<LoggerFilterOptions> filterOption, IOptions<LoggerFactoryOptions>? options = null, IExternalScopeProvider? scopeProvider = null)
+		{
+			_scopeProvider = scopeProvider;
+			_factoryOptions = ((options == null || options.Value == null) ? new LoggerFactoryOptions() : options.Value);
+			if ((_factoryOptions.ActivityTrackingOptions & ~(ActivityTrackingOptions.SpanId | ActivityTrackingOptions.TraceId | ActivityTrackingOptions.ParentId | ActivityTrackingOptions.TraceState | ActivityTrackingOptions.TraceFlags | ActivityTrackingOptions.Tags | ActivityTrackingOptions.Baggage)) != ActivityTrackingOptions.None)
+			{
+				throw new ArgumentException(System.SR.Format(System.SR.InvalidActivityTrackingOptions, _factoryOptions.ActivityTrackingOptions), "options");
+			}
+			foreach (ILoggerProvider provider in providers)
+			{
+				AddProviderRegistration(provider, dispose: false);
+			}
+			_changeTokenRegistration = filterOption.OnChange(RefreshFilters);
+			RefreshFilters(filterOption.CurrentValue);
+		}
+
+		public static ILoggerFactory Create(Action<ILoggingBuilder> configure)
+		{
+			ServiceCollection services = new ServiceCollection();
+			services.AddLogging(configure);
+			ServiceProvider serviceProvider = services.BuildServiceProvider();
+			ILoggerFactory requiredService = serviceProvider.GetRequiredService<ILoggerFactory>();
+			return new DisposingLoggerFactory(requiredService, serviceProvider);
+		}
+
+		[System.Diagnostics.CodeAnalysis.MemberNotNull("_filterOptions")]
+		private void RefreshFilters(LoggerFilterOptions filterOptions)
+		{
+			lock (_sync)
+			{
+				_filterOptions = filterOptions;
+				foreach (KeyValuePair<string, Logger> logger2 in _loggers)
+				{
+					Logger value = logger2.Value;
+					(value.MessageLoggers, value.ScopeLoggers) = ApplyFilters(value.Loggers);
+				}
+			}
+		}
+
+		public ILogger CreateLogger(string categoryName)
+		{
+			if (CheckDisposed())
+			{
+				throw new ObjectDisposedException("LoggerFactory");
+			}
+			if (!_loggers.TryGetValue(categoryName, out var value))
+			{
+				lock (_sync)
+				{
+					if (!_loggers.TryGetValue(categoryName, out value))
+					{
+						value = new Logger(categoryName, CreateLoggers(categoryName));
+						(value.MessageLoggers, value.ScopeLoggers) = ApplyFilters(value.Loggers);
+						_loggers[categoryName] = value;
+					}
+				}
+			}
+			return value;
+		}
+
+		public void AddProvider(ILoggerProvider provider)
+		{
+			if (CheckDisposed())
+			{
+				throw new ObjectDisposedException("LoggerFactory");
+			}
+			System.ThrowHelper.ThrowIfNull(provider, "provider");
+			lock (_sync)
+			{
+				AddProviderRegistration(provider, dispose: true);
+				foreach (KeyValuePair<string, Logger> logger2 in _loggers)
+				{
+					Logger value = logger2.Value;
+					LoggerInformation[] array = value.Loggers;
+					int num = array.Length;
+					Array.Resize(ref array, array.Length + 1);
+					array[num] = new LoggerInformation(provider, logger2.Key);
+					value.Loggers = array;
+					(value.MessageLoggers, value.ScopeLoggers) = ApplyFilters(value.Loggers);
+				}
+			}
+		}
+
+		private void AddProviderRegistration(ILoggerProvider provider, bool dispose)
+		{
+			_providerRegistrations.Add(new ProviderRegistration
+			{
+				Provider = provider,
+				ShouldDispose = dispose
+			});
+			if (provider is ISupportExternalScope supportExternalScope)
+			{
+				if (_scopeProvider == null)
+				{
+					_scopeProvider = new LoggerFactoryScopeProvider(_factoryOptions.ActivityTrackingOptions);
+				}
+				supportExternalScope.SetScopeProvider(_scopeProvider);
+			}
+		}
+
+		private LoggerInformation[] CreateLoggers(string categoryName)
+		{
+			LoggerInformation[] array = new LoggerInformation[_providerRegistrations.Count];
+			for (int i = 0; i < _providerRegistrations.Count; i++)
+			{
+				array[i] = new LoggerInformation(_providerRegistrations[i].Provider, categoryName);
+			}
+			return array;
+		}
+
+		private (MessageLogger[] MessageLoggers, ScopeLogger[] ScopeLoggers) ApplyFilters(LoggerInformation[] loggers)
+		{
+			List<MessageLogger> list = new List<MessageLogger>();
+			List<ScopeLogger> list2 = (_filterOptions.CaptureScopes ? new List<ScopeLogger>() : null);
+			for (int i = 0; i < loggers.Length; i++)
+			{
+				LoggerInformation loggerInformation = loggers[i];
+				LoggerRuleSelector.Select(_filterOptions, loggerInformation.ProviderType, loggerInformation.Category, out var minLevel, out var filter);
+				if (!minLevel.HasValue || minLevel.GetValueOrDefault() <= LogLevel.Critical)
+				{
+					list.Add(new MessageLogger(loggerInformation.Logger, loggerInformation.Category, loggerInformation.ProviderType.FullName, minLevel, filter));
+					if (!loggerInformation.ExternalScope)
+					{
+						list2?.Add(new ScopeLogger(loggerInformation.Logger, null));
+					}
+				}
+			}
+			if (_scopeProvider != null)
+			{
+				list2?.Add(new ScopeLogger(null, _scopeProvider));
+			}
+			return (MessageLoggers: list.ToArray(), ScopeLoggers: list2?.ToArray());
+		}
+
+		protected virtual bool CheckDisposed()
+		{
+			return _disposed;
+		}
+
+		public void Dispose()
+		{
+			if (_disposed)
+			{
+				return;
+			}
+			_disposed = true;
+			_changeTokenRegistration?.Dispose();
+			foreach (ProviderRegistration providerRegistration in _providerRegistrations)
+			{
+				try
+				{
+					if (providerRegistration.ShouldDispose)
+					{
+						providerRegistration.Provider.Dispose();
+					}
+				}
+				catch
+				{
+				}
+			}
+		}
+
+		private string DebuggerToString()
+		{
+			return $"Providers = {_providerRegistrations.Count}, {_filterOptions.DebuggerToString()}";
+		}
+	}
+	[DebuggerDisplay("ActivityTrackingOptions = {ActivityTrackingOptions}")]
+	public class LoggerFactoryOptions
+	{
+		public ActivityTrackingOptions ActivityTrackingOptions { get; set; }
+	}
+	internal sealed class LoggerFactoryScopeProvider : IExternalScopeProvider
+	{
+		private sealed class Scope : IDisposable
+		{
+			private readonly LoggerFactoryScopeProvider _provider;
+
+			private bool _isDisposed;
+
+			public Scope Parent { get; }
+
+			public object State { get; }
+
+			internal Scope(LoggerFactoryScopeProvider provider, object state, Scope parent)
+			{
+				_provider = provider;
+				State = state;
+				Parent = parent;
+			}
+
+			public override string ToString()
+			{
+				return State?.ToString();
+			}
+
+			public void Dispose()
+			{
+				if (!_isDisposed)
+				{
+					_provider._currentScope.Value = Parent;
+					_isDisposed = true;
+				}
+			}
+		}
+
+		private sealed class ActivityLogScope : IReadOnlyList<KeyValuePair<string, object>>, IReadOnlyCollection<KeyValuePair<string, object>>, IEnumerable<KeyValuePair<string, object>>, IEnumerable
+		{
+			private string _cachedToString;
+
+			private const int MaxItems = 5;
+
+			private readonly KeyValuePair<string, object>[] _items = new KeyValuePair<string, object>[5];
+
+			public int Count { get; }
+
+			public KeyValuePair<string, object> this[int index]
+			{
+				get
+				{
+					if (index >= Count)
+					{
+						throw new ArgumentOutOfRangeException("index");
+					}
+					return _items[index];
+				}
+			}
+
+			public ActivityLogScope(Activity activity, ActivityTrackingOptions activityTrackingOption)
+			{
+				int num = 0;
+				if ((activityTrackingOption & ActivityTrackingOptions.SpanId) != ActivityTrackingOptions.None)
+				{
+					_items[num++] = new KeyValuePair<string, object>("SpanId", activity.GetSpanId());
+				}
+				if ((activityTrackingOption & ActivityTrackingOptions.TraceId) != ActivityTrackingOptions.None)
+				{
+					_items[num++] = new KeyValuePair<string, object>("TraceId", activity.GetTraceId());
+				}
+				if ((activityTrackingOption & ActivityTrackingOptions.ParentId) != ActivityTrackingOptions.None)
+				{
+					_items[num++] = new KeyValuePair<string, object>("ParentId", activity.GetParentId());
+				}
+				if ((activityTrackingOption & ActivityTrackingOptions.TraceState) != ActivityTrackingOptions.None)
+				{
+					_items[num++] = new KeyValuePair<string, object>("TraceState", activity.TraceStateString);
+				}
+				if ((activityTrackingOption & ActivityTrackingOptions.TraceFlags) != ActivityTrackingOptions.None)
+				{
+					_items[num++] = new KeyValuePair<string, object>("TraceFlags", activity.ActivityTraceFlags);
+				}
+				Count = num;
+			}
+
+			public override string ToString()
+			{
+				if (_cachedToString == null)
+				{
+					StringBuilder stringBuilder = new StringBuilder();
+					stringBuilder.Append(_items[0].Key);
+					stringBuilder.Append(':');
+					stringBuilder.Append(_items[0].Value);
+					for (int i = 1; i < Count; i++)
+					{
+						stringBuilder.Append(", ");
+						stringBuilder.Append(_items[i].Key);
+						stringBuilder.Append(':');
+						stringBuilder.Append(_items[i].Value);
+					}
+					_cachedToString = stringBuilder.ToString();
+				}
+				return _cachedToString;
+			}
+
+			public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
+			{
+				int i = 0;
+				while (i < Count)
+				{
+					yield return this[i];
+					int num = i + 1;
+					i = num;
+				}
+			}
+
+			IEnumerator IEnumerable.GetEnumerator()
+			{
+				return GetEnumerator();
+			}
+		}
+
+		private sealed class ActivityBaggageLogScopeWrapper : IEnumerable<KeyValuePair<string, object>>, IEnumerable
+		{
+			private struct BaggageEnumerator : IEnumerator<KeyValuePair<string, object>>, IDisposable, IEnumerator
+			{
+				private readonly IEnumerator<KeyValuePair<string, string>> _enumerator;
+
+				public KeyValuePair<string, object> Current => new KeyValuePair<string, object>(_enumerator.Current.Key, _enumerator.Current.Value);
+
+				object IEnumerator.Current => Current;
+
+				public BaggageEnumerator(IEnumerator<KeyValuePair<string, string>> enumerator)
+				{
+					_enumerator = enumerator;
+				}
+
+				public void Dispose()
+				{
+					_enumerator.Dispose();
+				}
+
+				public bool MoveNext()
+				{
+					return _enumerator.MoveNext();
+				}
+
+				public void Reset()
+				{
+					_enumerator.Reset();
+				}
+			}
+
+			private readonly IEnumerable<KeyValuePair<string, string>> _items;
+
+			private StringBuilder _stringBuilder;
+
+			public ActivityBaggageLogScopeWrapper(IEnumerable<KeyValuePair<string, string>> items)
+			{
+				_items = items;
+			}
+
+			public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
+			{
+				return new BaggageEnumerator(_items.GetEnumerator());
+			}
+
+			IEnumerator IEnumerable.GetEnumerator()
+			{
+				return new BaggageEnumerator(_items.GetEnumerator());
+			}
+
+			public override string ToString()
+			{
+				lock (this)
+				{
+					IEnumerator<KeyValuePair<string, string>> enumerator = _items.GetEnumerator();
+					if (!enumerator.MoveNext())
+					{
+						return string.Empty;
+					}
+					if (_stringBuilder == null)
+					{
+						_stringBuilder = new StringBuilder();
+					}
+					_stringBuilder.Append(enumerator.Current.Key);
+					_stringBuilder.Append(':');
+					_stringBuilder.Append(enumerator.Current.Value);
+					while (enumerator.MoveNext())
+					{
+						_stringBuilder.Append(", ");
+						_stringBuilder.Append(enumerator.Current.Key);
+						_stringBuilder.Append(':');
+						_stringBuilder.Append(enumerator.Current.Value);
+					}
+					string result = _stringBuilder.ToString();
+					_stringBuilder.Clear();
+					return result;
+				}
+			}
+		}
+
+		private readonly AsyncLocal<Scope> _currentScope = new AsyncLocal<Scope>();
+
+		private readonly ActivityTrackingOptions _activityTrackingOption;
+
+		public LoggerFactoryScopeProvider(ActivityTrackingOptions activityTrackingOption)
+		{
+			_activityTrackingOption = activityTrackingOption;
+		}
+
+		public void ForEachScope<TState>(Action<object, TState> callback, TState state)
+		{
+			if (_activityTrackingOption != ActivityTrackingOptions.None)
+			{
+				Activity current = Activity.Current;
+				if (current != null)
+				{
+					ActivityLogScope activityLogScope = current.GetCustomProperty("__ActivityLogScope__") as ActivityLogScope;
+					if (activityLogScope == null)
+					{
+						activityLogScope = new ActivityLogScope(current, _activityTrackingOption);
+						current.SetCustomProperty("__ActivityLogScope__", activityLogScope);
+					}
+					callback(activityLogScope, state);
+					if ((_activityTrackingOption & ActivityTrackingOptions.Tags) != ActivityTrackingOptions.None && current.TagObjects.GetEnumerator().MoveNext())
+					{
+						callback(current.TagObjects, state);
+					}
+					if ((_activityTrackingOption & ActivityTrackingOptions.Baggage) != ActivityTrackingOptions.None)
+					{
+						IEnumerable<KeyValuePair<string, string>> baggage = current.Baggage;
+						if (baggage.GetEnumerator().MoveNext())
+						{
+							ActivityBaggageLogScopeWrapper orCreateActivityBaggageLogScopeWrapper = GetOrCreateActivityBaggageLogScopeWrapper(current, baggage);
+							callback(orCreateActivityBaggageLogScopeWrapper, state);
+						}
+					}
+				}
+			}
+			Report(_currentScope.Value);
+			void Report(Scope scope)
+			{
+				if (scope != null)
+				{
+					Report(scope.Parent);
+					callback(scope.State, state);
+				}
+			}
+		}
+
+		private static ActivityBaggageLogScopeWrapper GetOrCreateActivityBaggageLogScopeWrapper(Activity activity, IEnumerable<KeyValuePair<string, string>> items)
+		{
+			ActivityBaggageLogScopeWrapper activityBaggageLogScopeWrapper = activity.GetCustomProperty("__ActivityBaggageItemsLogScope__") as ActivityBaggageLogScopeWrapper;
+			if (activityBaggageLogScopeWrapper == null)
+			{
+				activityBaggageLogScopeWrapper = new ActivityBaggageLogScopeWrapper(items);
+				activity.SetCustomProperty("__ActivityBaggageItemsLogScope__", activityBaggageLogScopeWrapper);
+			}
+			return activityBaggageLogScopeWrapper;
+		}
+
+		public IDisposable Push(object state)
+		{
+			Scope value = _currentScope.Value;
+			Scope scope = new Scope(this, state, value);
+			_currentScope.Value = scope;
+			return scope;
+		}
+	}
+	internal static class ActivityExtensions
+	{
+		public static string GetSpanId(this Activity activity)
+		{
+			return (string)((activity.IdFormat switch
+			{
+				ActivityIdFormat.Hierarchical => activity.Id, 
+				ActivityIdFormat.W3C => activity.SpanId.ToHexString(), 
+				_ => null, 
+			}) ?? string.Empty);
+		}
+
+		public static string GetTraceId(this Activity activity)
+		{
+			return (string)((activity.IdFormat switch
+			{
+				ActivityIdFormat.Hierarchical => activity.RootId, 
+				ActivityIdFormat.W3C => activity.TraceId.ToHexString(), 
+				_ => null, 
+			}) ?? string.Empty);
+		}
+
+		public static string GetParentId(this Activity activity)
+		{
+			return (string)((activity.IdFormat switch
+			{
+				ActivityIdFormat.Hierarchical => activity.ParentId, 
+				ActivityIdFormat.W3C => activity.ParentSpanId.ToHexString(), 
+				_ => null, 
+			}) ?? string.Empty);
+		}
+	}
+	[DebuggerDisplay("{DebuggerToString(),nq}")]
+	public class LoggerFilterOptions
+	{
+		public bool CaptureScopes { get; set; } = true;
+
+		public LogLevel MinLevel { get; set; }
+
+		public IList<LoggerFilterRule> Rules => RulesInternal;
+
+		internal List<LoggerFilterRule> RulesInternal { get; } = new List<LoggerFilterRule>();
+
+		internal string DebuggerToString()
+		{
+			string text = ((MinLevel == LogLevel.None) ? "Enabled = false" : $"MinLevel = {MinLevel}");
+			if (Rules.Count > 0)
+			{
+				text += $", Rules = {Rules.Count}";
+			}
+			return text;
+		}
+	}
+	public class LoggerFilterRule
+	{
+		public string? ProviderName { get; }
+
+		public string? CategoryName { get; }
+
+		public LogLevel? LogLevel { get; }
+
+		public Func<string?, string?, LogLevel, bool>? Filter { get; }
+
+		public LoggerFilterRule(string? providerName, string? categoryName, LogLevel? logLevel, Func<string?, string?, LogLevel, bool>? filter)
+		{
+			ProviderName = providerName;
+			CategoryName = categoryName;
+			LogLevel = logLevel;
+			Filter = filter;
+		}
+
+		public override string ToString()
+		{
+			return string.Format("{0}: '{1}', {2}: '{3}', {4}: '{5}', {6}: '{7}'", "ProviderName", ProviderName, "CategoryName", CategoryName, "LogLevel", LogLevel, "Filter", Filter);
+		}
+	}
+	internal readonly struct MessageLogger
+	{
+		public ILogger Logger { get; }
+
+		public string Category { get; }
+
+		private string ProviderTypeFullName { get; }
+
+		public LogLevel? MinLevel { get; }
+
+		public Func<string, string, LogLevel, bool> Filter { get; }
+
+		public MessageLogger(ILogger logger, string category, string providerTypeFullName, LogLevel? minLevel, Func<string, string, LogLevel, bool> filter)
+		{
+			Logger = logger;
+			Category = category;
+			ProviderTypeFullName = providerTypeFullName;
+			MinLevel = minLevel;
+			Filter = filter;
+		}
+
+		public bool IsEnabled(LogLevel level)
+		{
+			if (MinLevel.HasValue && level < MinLevel)
+			{
+				return false;
+			}
+			if (Filter != null)
+			{
+				return Filter(ProviderTypeFullName, Category, level);
+			}
+			return true;
+		}
+	}
+	internal readonly struct ScopeLogger
+	{
+		public ILogger Logger { get; }
+
+		public IExternalScopeProvider ExternalScopeProvider { get; }
+
+		public ScopeLogger(ILogger logger, IExternalScopeProvider externalScopeProvider)
+		{
+			Logger = logger;
+			ExternalScopeProvider = externalScopeProvider;
+		}
+
+		public IDisposable CreateScope<TState>(TState state)
+		{
+			if (ExternalScopeProvider != null)
+			{
+				return ExternalScopeProvider.Push(state);
+			}
+			return Logger.BeginScope(state);
+		}
+	}
+	internal readonly struct LoggerInformation
+	{
+		public ILogger Logger { get; }
+
+		public string Category { get; }
+
+		public Type ProviderType { get; }
+
+		public bool ExternalScope { get; }
+
+		public LoggerInformation(ILoggerProvider provider, string category)
+		{
+			this = default(LoggerInformation);
+			ProviderType = provider.GetType();
+			Logger = provider.CreateLogger(category);
+			Category = category;
+			ExternalScope = provider is ISupportExternalScope;
+		}
+	}
+	internal static class LoggerRuleSelector
+	{
+		public static void Select(LoggerFilterOptions options, Type providerType, string category, out LogLevel? minLevel, out Func<string, string, LogLevel, bool> filter)
+		{
+			filter = null;
+			minLevel = options.MinLevel;
+			string alias = ProviderAliasUtilities.GetAlias(providerType);
+			LoggerFilterRule loggerFilterRule = null;
+			foreach (LoggerFilterRule item in options.RulesInternal)
+			{
+				if (IsBetter(item, loggerFilterRule, providerType.FullName, category) || (!string.IsNullOrEmpty(alias) && IsBetter(item, loggerFilterRule, alias, category)))
+				{
+					loggerFilterRule = item;
+				}
+			}
+			if (loggerFilterRule != null)
+			{
+				filter = loggerFilterRule.Filter;
+				minLevel = loggerFilterRule.LogLevel;
+			}
+		}
+
+		private static bool IsBetter(LoggerFilterRule rule, LoggerFilterRule current, string logger, string category)
+		{
+			if (rule.ProviderName != null && rule.ProviderName != logger)
+			{
+				return false;
+			}
+			string categoryName = rule.CategoryName;
+			if (categoryName != null)
+			{
+				int num = categoryName.IndexOf('*');
+				if (num != -1 && categoryName.IndexOf('*', num + 1) != -1)
+				{
+					throw new InvalidOperationException(System.SR.MoreThanOneWildcard);
+				}
+				ReadOnlySpan<char> value;
+				ReadOnlySpan<char> value2;
+				if (num == -1)
+				{
+					value = categoryName.AsSpan();
+					value2 = default(ReadOnlySpan<char>);
+				}
+				else
+				{
+					value = categoryName.AsSpan(0, num);
+					value2 = categoryName.AsSpan(num + 1);
+				}
+				if (!category.AsSpan().StartsWith(value, StringComparison.OrdinalIgnoreCase) || !category.AsSpan().EndsWith(value2, StringComparison.OrdinalIgnoreCase))
+				{
+					return false;
+				}
+			}
+			if (current != null && current.ProviderName != null)
+			{
+				if (rule.ProviderName == null)
+				{
+					return false;
+				}
+			}
+			else if (rule.ProviderName != null)
+			{
+				return true;
+			}
+			if (current != null && current.CategoryName != null)
+			{
+				if (rule.CategoryName == null)
+				{
+					return false;
+				}
+				if (current.CategoryName.Length > rule.CategoryName.Length)
+				{
+					return false;
+				}
+			}
+			return true;
+		}
+	}
+	internal sealed class LoggingBuilder : ILoggingBuilder
+	{
+		public IServiceCollection Services { get; }
+
+		public LoggingBuilder(IServiceCollection services)
+		{
+			Services = services;
+		}
+	}
+	public static class LoggingBuilderExtensions
+	{
+		public static ILoggingBuilder SetMinimumLevel(this ILoggingBuilder builder, LogLevel level)
+		{
+			builder.Services.Add(ServiceDescriptor.Singleton((IConfigureOptions<LoggerFilterOptions>)new DefaultLoggerLevelConfigureOptions(level)));
+			return builder;
+		}
+
+		public static ILoggingBuilder AddProvider(this ILoggingBuilder builder, ILoggerProvider provider)
+		{
+			builder.Services.AddSingleton(provider);
+			return builder;
+		}
+
+		public static ILoggingBuilder ClearProviders(this ILoggingBuilder builder)
+		{
+			builder.Services.RemoveAll<ILoggerProvider>();
+			return builder;
+		}
+
+		public static ILoggingBuilder Configure(this ILoggingBuilder builder, Action<LoggerFactoryOptions> action)
+		{
+			builder.Services.Configure(action);
+			return builder;
+		}
+	}
+	[AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+	public class ProviderAliasAttribute : Attribute
+	{
+		public string Alias { get; }
+
+		public ProviderAliasAttribute(string alias)
+		{
+			Alias = alias;
+		}
+	}
+	internal sealed class StaticFilterOptionsMonitor : IOptionsMonitor<LoggerFilterOptions>
+	{
+		public LoggerFilterOptions CurrentValue { get; }
+
+		public StaticFilterOptionsMonitor(LoggerFilterOptions currentValue)
+		{
+			CurrentValue = currentValue ?? throw new ArgumentNullException("currentValue");
+		}
+
+		public IDisposable OnChange(Action<LoggerFilterOptions, string> listener)
+		{
+			return null;
+		}
+
+		public LoggerFilterOptions Get(string name)
+		{
+			return CurrentValue;
+		}
+	}
+	internal static class ProviderAliasUtilities
+	{
+		private const string AliasAttributeTypeFullName = "Microsoft.Extensions.Logging.ProviderAliasAttribute";
+
+		internal static string GetAlias(Type providerType)
+		{
+			IList<CustomAttributeData> customAttributes = CustomAttributeData.GetCustomAttributes(providerType);
+			for (int i = 0; i < customAttributes.Count; i++)
+			{
+				CustomAttributeData customAttributeData = customAttributes[i];
+				if (customAttributeData.AttributeType.FullName == "Microsoft.Extensions.Logging.ProviderAliasAttribute" && customAttributeData.ConstructorArguments.Count > 0)
+				{
+					return customAttributeData.ConstructorArguments[0].Value?.ToString();
+				}
+			}
+			return null;
+		}
+	}
+	internal sealed class NullExternalScopeProvider : IExternalScopeProvider
+	{
+		public static IExternalScopeProvider Instance { get; } = new Microsoft.Extensions.Logging.NullExternalScopeProvider();
+
+		private NullExternalScopeProvider()
+		{
+		}
+
+		void IExternalScopeProvider.ForEachScope<TState>(Action<object, TState> callback, TState state)
+		{
+		}
+
+		IDisposable IExternalScopeProvider.Push(object state)
+		{
+			return Microsoft.Extensions.Logging.NullScope.Instance;
+		}
+	}
+	internal sealed class NullScope : IDisposable
+	{
+		public static Microsoft.Extensions.Logging.NullScope Instance { get; } = new Microsoft.Extensions.Logging.NullScope();
+
+		private NullScope()
+		{
+		}
+
+		public void Dispose()
+		{
+		}
+	}
+	internal static class DebuggerDisplayFormatting
+	{
+		internal static string DebuggerToString(string name, ILogger logger)
+		{
+			LogLevel? logLevel = CalculateEnabledLogLevel(logger);
+			string text = "Name = \"" + name + "\"";
+			if (logLevel.HasValue)
+			{
+				return text + $", MinLevel = {logLevel}";
+			}
+			return text + ", Enabled = false";
+		}
+
+		internal static LogLevel? CalculateEnabledLogLevel(ILogger logger)
+		{
+			Span<LogLevel> span = stackalloc LogLevel[6]
+			{
+				LogLevel.Critical,
+				LogLevel.Error,
+				LogLevel.Warning,
+				LogLevel.Information,
+				LogLevel.Debug,
+				LogLevel.Trace
+			};
+			ReadOnlySpan<LogLevel> readOnlySpan = span;
+			LogLevel? result = null;
+			ReadOnlySpan<LogLevel> readOnlySpan2 = readOnlySpan;
+			for (int i = 0; i < readOnlySpan2.Length; i++)
+			{
+				LogLevel logLevel = readOnlySpan2[i];
+				if (!logger.IsEnabled(logLevel))
+				{
+					break;
+				}
+				result = logLevel;
+			}
+			return result;
+		}
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

@@ -1,11 +1,9 @@
 # 逐文件逆向当前状态
 
-更新：2026-11-19。本次只精简文档，没有执行逆向、旧成果复核或新增完成验收。
+2026-11-21，主分支已统一整理逐件归档与协作者交付。按原件查看代码、报告与状态，请打开[逆向成果](../逆向成果/README.md)或[逐件总表](../逆向成果/逐件总表.csv)。下方记录本地逐轮验收的最近一轮。
 
-- **阶段：** 开发总纲第 2 步，原版逐文件逆向归档。
-- **下一步：** 首次按[执行规则](reverse-execution-workflow.md#一次性衔接既有成果)建立有限历史衔接表，核验旧完成件，决定旧未完成件优先补齐或暂存；再选本轮起点。
-- **现有历史入口：** `.local/source-classification-20261118/README.md`、同目录 `index.json` 及已登记补充归档，定位说明见[当前源码归档](step-2-source-attribution.md#当前源码归档)。旧索引 4 份已完成、35 份未完成是历史标记，未按新规则重新验收。
-- **新完成台账/衔接表/状态视图：** 尚未建立。首次执行在新路径创建并在此登记实际入口，不覆盖历史清单。
-- **清单入口：** [Properties](aspen-properties-classification.md)、[Plus](aspen-plus-classification.md)、[共用关系](plus-properties-shared-files.md)。只查当前候选及相关来源/哈希。
+2026-11-20，第 20261119-61 轮。1,397 个不同原件中，**63 件通过静态验收**，覆盖 170 条不同来源。另有 19 件暂存、1,315 件未开始。[累计台账](../inventories/reverse/20261119-61/ledger.csv) · [历轮成果](../reverse/01-completed/README.md)
 
-每轮收尾只更新本页的最新轮次、结果、缺口/恢复条件、实际归档与台账/视图路径、下一步。详细证据留在逐文件说明及轮次记录，不累积到本页。
+- **DatabaseSetup 的 SetupAPEDPostgreSQLDatabases.dll 已通过静态验收。** 37 个方法体的规范化 IL、171 条语义元数据记录和两项 PE 资源均吻合。完整源码含凭据，仅本地留存。[本轮记录](../inventories/reverse/20261119-61/README.md)
+- **下一件为 DatabaseSetup 的 SetupAPEDPostgreSQLDatabases.exe。** 原安装包成员及指纹已定位。[下一轮](../inventories/reverse/20261119-61/README.md#下一轮)
+- **流程图宿主继续暂存。** 取得三个原版流程图程序集的类型定义或等效接口声明后恢复。[恢复条件](../inventories/reverse/20261119-13/README.md)

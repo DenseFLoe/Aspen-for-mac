@@ -1,0 +1,6186 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
+using System.Runtime.Versioning;
+using System.Security;
+using System.Security.Cryptography;
+using System.Security.Cryptography.Xml;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Xml;
+using AspenTech.CompositeDoc;
+using Microsoft.Win32;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyFileVersion("41.0.0.613")]
+[assembly: InternalsVisibleTo("AspenCustomModelManager")]
+[assembly: AssemblyTitle("ACMExpUtilities")]
+[assembly: AssemblyDescription("Utilities for Aspen Custom Modeler exported models")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("Aspen Technology, Inc.")]
+[assembly: AssemblyProduct("ACMExpUtilities")]
+[assembly: AssemblyCopyright("Copyright ©  2015")]
+[assembly: AssemblyTrademark("")]
+[assembly: ComVisible(false)]
+[assembly: Guid("fc810f9e-9cfb-4c36-b72c-e993adf8ce33")]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.0")]
+namespace AspenTech.Modeler.ACMExpUtilities;
+
+internal class ACMBuiltIn : ACMExpResourceHelper, IACMExpModel
+{
+	private string location;
+
+	public bool ReadOnly => true;
+
+	public bool Show { get; set; }
+
+	public string Name { get; set; }
+
+	public string Display { get; set; }
+
+	public string Description { get; set; }
+
+	public string Compiled { get; set; }
+
+	public string Version { get; private set; }
+
+	private double VersionNumber { get; set; }
+
+	public string RevisionGuid => null;
+
+	public string Timestamp => null;
+
+	public string[] LibraryCategories { get; set; }
+
+	public ACMExEntryType ClassType => ACMExEntryType.ACMBLOCKBUILTIN;
+
+	public IACMGridForm[] GridForms
+	{
+		get
+		{
+			if (gridForms == null)
+			{
+				return null;
+			}
+			return gridForms.ToArray();
+		}
+	}
+
+	public IACMCustomFormFolder[] CustomForms
+	{
+		get
+		{
+			if (customFormFolders == null)
+			{
+				return null;
+			}
+			return customFormFolders.ToArray();
+		}
+	}
+
+	public string PortDefinition
+	{
+		get
+		{
+			return portDefXml;
+		}
+		set
+		{
+		}
+	}
+
+	public string ReactionConfiguration
+	{
+		get
+		{
+			if (xmlReactionConfig == null)
+			{
+				return null;
+			}
+			return xmlReactionConfig.InnerXml;
+		}
+		set
+		{
+		}
+	}
+
+	public string StyleSheet
+	{
+		get
+		{
+			if (xmlStyleSheet == null)
+			{
+				return null;
+			}
+			return xmlStyleSheet.InnerXml;
+		}
+		set
+		{
+		}
+	}
+
+	public string CustomFormsXML
+	{
+		get
+		{
+			if (xmlCustomForms == null)
+			{
+				return null;
+			}
+			return xmlCustomForms.InnerXml;
+		}
+		set
+		{
+		}
+	}
+
+	public string[] Scripts
+	{
+		get
+		{
+			return null;
+		}
+		set
+		{
+		}
+	}
+
+	public string ModelDefinition
+	{
+		get
+		{
+			return null;
+		}
+		set
+		{
+		}
+	}
+
+	public string[] Procedures
+	{
+		get
+		{
+			return null;
+		}
+		set
+		{
+		}
+	}
+
+	public string Help
+	{
+		get
+		{
+			return null;
+		}
+		set
+		{
+		}
+	}
+
+	public string Plots
+	{
+		get
+		{
+			return null;
+		}
+		set
+		{
+		}
+	}
+
+	public string SolverSettings
+	{
+		get
+		{
+			return null;
+		}
+		set
+		{
+		}
+	}
+
+	public string CustomModeling
+	{
+		get
+		{
+			return null;
+		}
+		set
+		{
+		}
+	}
+
+	public ACMBuiltIn(string id, string version, string dll, string category)
+	{
+		Name = id;
+		Display = id;
+		Version = version;
+		location = dll;
+		Show = true;
+		double result = 0.0;
+		double.TryParse(version, NumberStyles.Any, CultureInfo.InvariantCulture, out result);
+		VersionNumber = result;
+		LibraryCategories = new string[1] { category };
+		LoadResources(location, Name, reaction: false);
+	}
+
+	public string CreationCommand(bool EO, bool fixedInlets, bool noCheck)
+	{
+		return $"fixconnectedinletports=yes,model={location}";
+	}
+
+	public bool CheckValid()
+	{
+		return true;
+	}
+
+	public void SetClassType(ACMExEntryType newVal)
+	{
+	}
+
+	public void GetIconDef(out int length, out byte[] stream)
+	{
+		length = ((iconDef != null) ? iconDef.Length : 0);
+		stream = iconDef;
+	}
+
+	public void GetAPTemplate(out int length, out byte[] stream)
+	{
+		length = ((apTemplate != null) ? apTemplate.Length : 0);
+		stream = apTemplate;
+	}
+
+	public void SaveTo(string savePath, bool overwrite)
+	{
+		throw new NotImplementedException();
+	}
+
+	public void SetIconDef(int i, byte[] b)
+	{
+		throw new NotImplementedException();
+	}
+
+	public void SetAPTemplate(int i, byte[] b)
+	{
+		throw new NotImplementedException();
+	}
+}
+internal class ACMExpAssignmentWriter : IACMExpAssignmentWriter
+{
+	public ACMExpExpressionWriter Assignment { get; set; }
+
+	public ACMExpAssignmentWriter(ACMExpExpressionWriter expression)
+	{
+		Assignment = expression;
+	}
+
+	public void Write(XmlDocument document, XmlNode parent)
+	{
+		XmlNode xmlNode = null;
+		xmlNode = ((Assignment.Type != 21) ? document.CreateElement("assign") : document.CreateElement("connect"));
+		Assignment.Write(document, xmlNode);
+		parent?.AppendChild(xmlNode);
+	}
+}
+public class ACMExpCustomForm : IACMCustomForm
+{
+	public bool Tabbed { get; private set; }
+
+	public string FormType { get; private set; }
+
+	public string ProgId { get; private set; }
+
+	public Guid Clsid { get; private set; }
+
+	private ACMExpCustomForm()
+	{
+	}
+
+	public static IACMCustomForm Create(XmlNode src)
+	{
+		ACMExpCustomForm aCMExpCustomForm = new ACMExpCustomForm();
+		XmlNode namedItem = src.Attributes.GetNamedItem("Tabbed");
+		if (namedItem != null)
+		{
+			aCMExpCustomForm.Tabbed = Convert.ToBoolean(namedItem.Value, CultureInfo.InvariantCulture);
+		}
+		namedItem = src.Attributes.GetNamedItem("Type");
+		if (namedItem != null)
+		{
+			aCMExpCustomForm.FormType = namedItem.Value;
+		}
+		XmlNamespaceManager xmlNamespaceManager = new XmlNamespaceManager(src.OwnerDocument.NameTable);
+		xmlNamespaceManager.AddNamespace("acm", "urn:acmcustomforms");
+		XmlNode xmlNode = src.SelectSingleNode("acm:Progid", xmlNamespaceManager);
+		if (xmlNode != null)
+		{
+			aCMExpCustomForm.ProgId = xmlNode.InnerText;
+		}
+		XmlNode xmlNode2 = src.SelectSingleNode("acm:Clsid", xmlNamespaceManager);
+		if (xmlNode2 != null)
+		{
+			aCMExpCustomForm.Clsid = new Guid(xmlNode2.InnerText);
+		}
+		return aCMExpCustomForm;
+	}
+}
+public class ACMExpCustomFormGroup : IACMCustomFormGroup
+{
+	private List<IACMCustomForm> forms;
+
+	public string Id { get; private set; }
+
+	public string DisplayName { get; private set; }
+
+	public IACMCustomForm[] Forms => forms.ToArray();
+
+	private ACMExpCustomFormGroup()
+	{
+		forms = new List<IACMCustomForm>();
+	}
+
+	public static IACMCustomFormGroup Create(XmlNode src)
+	{
+		ACMExpCustomFormGroup aCMExpCustomFormGroup = new ACMExpCustomFormGroup();
+		XmlNode namedItem = src.Attributes.GetNamedItem("Id");
+		if (namedItem != null)
+		{
+			aCMExpCustomFormGroup.Id = namedItem.Value;
+		}
+		namedItem = src.Attributes.GetNamedItem("DisplayName");
+		if (namedItem != null)
+		{
+			aCMExpCustomFormGroup.DisplayName = namedItem.Value;
+		}
+		namedItem = src.Attributes.GetNamedItem("DisplayName");
+		XmlNamespaceManager xmlNamespaceManager = new XmlNamespaceManager(src.OwnerDocument.NameTable);
+		xmlNamespaceManager.AddNamespace("acm", "urn:acmcustomforms");
+		foreach (XmlNode item in src.SelectNodes("acm:Form", xmlNamespaceManager))
+		{
+			aCMExpCustomFormGroup.forms.Add(ACMExpCustomForm.Create(item));
+		}
+		return aCMExpCustomFormGroup;
+	}
+}
+public class ACMExpCustomFormFolder : IACMCustomFormFolder
+{
+	private List<IACMCustomFormGroup> groups;
+
+	public string Id { get; private set; }
+
+	public string DisplayName { get; private set; }
+
+	public IACMCustomFormGroup[] Groups => groups.ToArray();
+
+	private ACMExpCustomFormFolder()
+	{
+		groups = new List<IACMCustomFormGroup>();
+	}
+
+	public static IACMCustomFormFolder Create(XmlNode src)
+	{
+		ACMExpCustomFormFolder aCMExpCustomFormFolder = new ACMExpCustomFormFolder();
+		XmlNode namedItem = src.Attributes.GetNamedItem("DefaultFormGroupId");
+		if (namedItem != null)
+		{
+			aCMExpCustomFormFolder.Id = namedItem.Value;
+		}
+		namedItem = src.Attributes.GetNamedItem("DisplayName");
+		if (namedItem != null)
+		{
+			aCMExpCustomFormFolder.DisplayName = namedItem.Value;
+		}
+		XmlNamespaceManager xmlNamespaceManager = new XmlNamespaceManager(src.OwnerDocument.NameTable);
+		xmlNamespaceManager.AddNamespace("acm", "urn:acmcustomforms");
+		foreach (XmlNode item in src.SelectNodes("acm:FormGroup", xmlNamespaceManager))
+		{
+			aCMExpCustomFormFolder.groups.Add(ACMExpCustomFormGroup.Create(item));
+		}
+		return aCMExpCustomFormFolder;
+	}
+}
+internal class ACMExpEquationWriter : IACMExpEquationWriter
+{
+	public string Label { get; set; }
+
+	public ACMExpExpressionWriter Equation { get; set; }
+
+	public ACMExpEquationWriter(string label, ACMExpExpressionWriter expression)
+	{
+		Label = label;
+		Equation = expression;
+	}
+
+	public void Write(XmlDocument document, XmlNode parent)
+	{
+		XmlNode xmlNode = null;
+		xmlNode = ((Equation.Type != 21) ? document.CreateElement("equation") : document.CreateElement("connect"));
+		XmlNode xmlNode2 = document.CreateAttribute("name");
+		xmlNode2.Value = Label;
+		xmlNode.Attributes.SetNamedItem(xmlNode2);
+		Equation.Write(document, xmlNode);
+		parent?.AppendChild(xmlNode);
+	}
+}
+public class ACMExpGridForm : IACMGridForm
+{
+	private List<Tuple<string, string>> entries;
+
+	public string Id { get; private set; }
+
+	public string Mode { get; private set; }
+
+	public string GridType { get; private set; }
+
+	public bool Default { get; private set; }
+
+	public string View { get; private set; }
+
+	public string Name { get; private set; }
+
+	public bool Autosave { get; private set; }
+
+	public string[] Keys => entries.Select((Tuple<string, string> t) => t.Item1).ToArray();
+
+	public string[] Values => entries.Select((Tuple<string, string> t) => t.Item2).ToArray();
+
+	private ACMExpGridForm()
+	{
+		entries = new List<Tuple<string, string>>();
+	}
+
+	public static IACMGridForm Create(XmlNode src)
+	{
+		ACMExpGridForm aCMExpGridForm = new ACMExpGridForm();
+		XmlNode namedItem = src.Attributes.GetNamedItem("Id");
+		if (namedItem != null)
+		{
+			aCMExpGridForm.Id = namedItem.Value;
+		}
+		namedItem = src.Attributes.GetNamedItem("Mode");
+		if (namedItem != null)
+		{
+			aCMExpGridForm.Mode = namedItem.Value;
+		}
+		namedItem = src.Attributes.GetNamedItem("Type");
+		if (namedItem != null)
+		{
+			aCMExpGridForm.GridType = namedItem.Value;
+		}
+		namedItem = src.Attributes.GetNamedItem("Default");
+		if (namedItem != null)
+		{
+			aCMExpGridForm.Default = Convert.ToBoolean(namedItem.Value, CultureInfo.InvariantCulture);
+		}
+		namedItem = src.Attributes.GetNamedItem("View");
+		if (namedItem != null)
+		{
+			aCMExpGridForm.View = namedItem.Value;
+		}
+		namedItem = src.Attributes.GetNamedItem("Name");
+		if (namedItem != null)
+		{
+			aCMExpGridForm.Name = namedItem.Value;
+		}
+		namedItem = src.Attributes.GetNamedItem("Autosave");
+		if (namedItem != null)
+		{
+			aCMExpGridForm.Autosave = Convert.ToBoolean(namedItem.Value, CultureInfo.InvariantCulture);
+		}
+		XmlNamespaceManager xmlNamespaceManager = new XmlNamespaceManager(src.OwnerDocument.NameTable);
+		xmlNamespaceManager.AddNamespace("acm", "urn:acmsheets");
+		foreach (XmlNode item in src.SelectNodes("acm:Entry", xmlNamespaceManager))
+		{
+			string text = item.SelectSingleNode("acm:Key", xmlNamespaceManager)?.InnerText;
+			string text2 = item.SelectSingleNode("acm:Value", xmlNamespaceManager)?.InnerText;
+			if (!string.IsNullOrEmpty(text) && !string.IsNullOrEmpty(text2))
+			{
+				aCMExpGridForm.entries.Add(new Tuple<string, string>(text, text2));
+			}
+		}
+		return aCMExpGridForm;
+	}
+}
+internal class ACMExpModelPort : IACMExpModelPort
+{
+	public enum DirectionType
+	{
+		input,
+		output
+	}
+
+	public string Name { get; set; }
+
+	public string BaseType { get; set; }
+
+	public string PortType { get; set; }
+
+	public string Description { get; set; }
+
+	public bool MultiPort { get; set; }
+
+	public int Direction { get; set; }
+
+	public int MinimumConnections { get; set; }
+
+	public int MaximumConnections { get; set; }
+
+	public ACMExpModelPort(string name, string baseType, string description, string variableType, int direction)
+	{
+		Name = name;
+		BaseType = baseType;
+		PortType = variableType;
+		Description = description;
+		Direction = direction;
+	}
+
+	public string WriteCfg()
+	{
+		throw new NotImplementedException();
+	}
+
+	public string WritePortdef()
+	{
+		throw new NotImplementedException();
+	}
+
+	public void Write(XmlDocument document, XmlNode parent)
+	{
+		XmlNode xmlNode = document.CreateElement(PortType);
+		XmlNode xmlNode2 = document.CreateAttribute("name");
+		xmlNode2.Value = Name;
+		xmlNode.Attributes.SetNamedItem(xmlNode2);
+		if (!string.IsNullOrEmpty(PortType))
+		{
+			xmlNode2 = document.CreateAttribute("port");
+			xmlNode2.Value = PortType;
+			xmlNode.Attributes.SetNamedItem(xmlNode2);
+		}
+		if (!string.IsNullOrEmpty(Description))
+		{
+			xmlNode2 = document.CreateAttribute("description");
+			xmlNode2.Value = Description;
+			xmlNode.Attributes.SetNamedItem(xmlNode2);
+		}
+		xmlNode2 = document.CreateAttribute("dir");
+		if (Direction == 0)
+		{
+			xmlNode2.Value = "input";
+		}
+		else if (Direction == 1)
+		{
+			xmlNode2.Value = "output";
+		}
+		xmlNode.Attributes.SetNamedItem(xmlNode2);
+		parent?.AppendChild(xmlNode);
+	}
+}
+internal class ACMExpModelProperty : IACMExpModelProperty
+{
+	public enum PropType
+	{
+		Normal,
+		Array,
+		Distribution,
+		ArrayOfDistribution,
+		Port,
+		External,
+		Global,
+		ExternalArray,
+		ExternalReference,
+		VirtualReference,
+		VirtualReferenceArray,
+		ArrayOfRef
+	}
+
+	public enum PortType
+	{
+		unset,
+		molefraction,
+		polymer,
+		information,
+		usertype,
+		solid
+	}
+
+	private List<ACMExpExpressionWriter> Dims = new List<ACMExpExpressionWriter>();
+
+	private List<Tuple<string, string>> externals = new List<Tuple<string, string>>();
+
+	public string Name { get; set; }
+
+	public string BaseType { get; set; }
+
+	public string DistributionType { get; set; }
+
+	public SpecType spec { get; set; }
+
+	public string Description { get; set; }
+
+	public string Of { get; set; }
+
+	public string Xdomain { get; set; }
+
+	public string Ydomain { get; set; }
+
+	public string Zdomain { get; set; }
+
+	public PropType Type { get; set; }
+
+	public string Dir { get; set; }
+
+	public int Porttype { get; set; }
+
+	public string UseUomOf { get; set; }
+
+	public string Default { get; set; }
+
+	public ACMExpModelProperty(string name, string baseType, string description)
+	{
+		Name = name;
+		BaseType = baseType;
+		Description = description;
+		Type = PropType.Normal;
+	}
+
+	public ACMExpModelProperty(string name, string baseType, string description, string of)
+	{
+		Name = name;
+		BaseType = baseType;
+		Description = description;
+		Of = of;
+		Type = PropType.Array;
+	}
+
+	public ACMExpModelProperty(string name, string baseType, string description, string dir, int porttype)
+	{
+		Name = name;
+		BaseType = baseType;
+		Description = description;
+		Dir = dir;
+		Porttype = porttype;
+		Type = PropType.Port;
+	}
+
+	public ACMExpModelProperty(string name, int dim, string description, string of, string xdomain, string ydomain, string zdomain)
+	{
+		Name = name;
+		switch (dim)
+		{
+		default:
+			BaseType = "d1";
+			break;
+		case 2:
+			BaseType = "d2";
+			break;
+		case 3:
+			BaseType = "d3";
+			break;
+		}
+		Description = description;
+		Of = of;
+		Xdomain = xdomain;
+		Ydomain = ydomain;
+		Zdomain = zdomain;
+		Type = PropType.Distribution;
+	}
+
+	public ACMExpModelProperty(string name, string baseType, int dim, string description, string of, string xdomain, string ydomain, string zdomain)
+	{
+		Name = name;
+		BaseType = baseType;
+		switch (dim)
+		{
+		default:
+			DistributionType = "d1";
+			break;
+		case 2:
+			DistributionType = "d2";
+			break;
+		case 3:
+			DistributionType = "d3";
+			break;
+		}
+		Description = description;
+		Of = of;
+		Xdomain = xdomain;
+		Ydomain = ydomain;
+		Zdomain = zdomain;
+		Type = PropType.ArrayOfDistribution;
+	}
+
+	public IACMExpExpressionWriter CreateDefault()
+	{
+		return new ACMExpExpressionWriter(null, null, 0);
+	}
+
+	public void AddDim(ACMExpExpressionWriter dim)
+	{
+		Dims.Add(dim);
+	}
+
+	public void MapExternal(string variable, string source)
+	{
+		externals.Add(new Tuple<string, string>(variable, source));
+	}
+
+	public void Write(XmlDocument document, XmlNode parent)
+	{
+		XmlNode xmlNode = document.CreateElement(BaseType);
+		if (Type == PropType.ExternalReference)
+		{
+			xmlNode = document.CreateElement("external");
+			XmlNode xmlNode2 = document.CreateAttribute("type");
+			xmlNode2.Value = BaseType;
+			xmlNode.Attributes.SetNamedItem(xmlNode2);
+		}
+		else if (Type == PropType.Global)
+		{
+			xmlNode = document.CreateElement("global");
+			XmlNode xmlNode3 = document.CreateAttribute("type");
+			xmlNode3.Value = BaseType;
+			xmlNode.Attributes.SetNamedItem(xmlNode3);
+		}
+		if (Type == PropType.External)
+		{
+			xmlNode = document.CreateElement("external_var");
+			XmlNode xmlNode4 = document.CreateAttribute("type");
+			xmlNode4.Value = BaseType;
+			xmlNode.Attributes.SetNamedItem(xmlNode4);
+		}
+		else if (Type == PropType.ExternalArray)
+		{
+			xmlNode = document.CreateElement("external_array");
+			XmlNode xmlNode5 = document.CreateAttribute("type");
+			xmlNode5.Value = Of;
+			xmlNode.Attributes.SetNamedItem(xmlNode5);
+			XmlNode xmlNode6 = document.CreateAttribute("atype");
+			xmlNode6.Value = BaseType;
+			xmlNode.Attributes.SetNamedItem(xmlNode6);
+		}
+		if (Type == PropType.VirtualReference)
+		{
+			xmlNode = document.CreateElement("virtual");
+			XmlNode xmlNode7 = document.CreateAttribute("type");
+			xmlNode7.Value = BaseType;
+			xmlNode.Attributes.SetNamedItem(xmlNode7);
+		}
+		else if (Type == PropType.VirtualReferenceArray)
+		{
+			xmlNode = document.CreateElement("virt_array");
+			XmlNode xmlNode8 = document.CreateAttribute("of");
+			xmlNode8.Value = Of;
+			xmlNode.Attributes.SetNamedItem(xmlNode8);
+			XmlNode xmlNode9 = document.CreateAttribute("atype");
+			xmlNode9.Value = BaseType;
+			xmlNode.Attributes.SetNamedItem(xmlNode9);
+			for (int i = 0; i < Dims.Count(); i++)
+			{
+				XmlNode xmlNode10 = document.CreateElement("dim");
+				Dims[i].Write(document, xmlNode10);
+				xmlNode.AppendChild(xmlNode10);
+			}
+		}
+		XmlNode xmlNode11 = document.CreateAttribute("name");
+		xmlNode11.Value = Name;
+		xmlNode.Attributes.SetNamedItem(xmlNode11);
+		if (!string.IsNullOrEmpty(Description))
+		{
+			xmlNode11 = document.CreateAttribute("description");
+			xmlNode11.Value = Description;
+			xmlNode.Attributes.SetNamedItem(xmlNode11);
+		}
+		if (!string.IsNullOrEmpty(UseUomOf))
+		{
+			xmlNode11 = document.CreateAttribute("useuomof");
+			xmlNode11.Value = UseUomOf;
+			xmlNode.Attributes.SetNamedItem(xmlNode11);
+		}
+		if (spec != SpecType.Unknown)
+		{
+			xmlNode11 = document.CreateAttribute("spec");
+			xmlNode11.Value = Description;
+			xmlNode.Attributes.SetNamedItem(xmlNode11);
+		}
+		if (!string.IsNullOrEmpty(Default))
+		{
+			xmlNode11 = document.CreateAttribute("default");
+			xmlNode11.Value = Default;
+			xmlNode.Attributes.SetNamedItem(xmlNode11);
+		}
+		if (Type == PropType.Array || Type == PropType.ArrayOfRef)
+		{
+			if (!string.IsNullOrEmpty(Of))
+			{
+				xmlNode11 = ((Type != PropType.Array) ? document.CreateAttribute("ref") : document.CreateAttribute("of"));
+				xmlNode11.Value = Of;
+				xmlNode.Attributes.SetNamedItem(xmlNode11);
+			}
+			for (int j = 0; j < Dims.Count(); j++)
+			{
+				XmlNode xmlNode12 = document.CreateElement("dim");
+				Dims[j].Write(document, xmlNode12);
+				xmlNode.AppendChild(xmlNode12);
+			}
+		}
+		else if (Type == PropType.Distribution)
+		{
+			if (!string.IsNullOrEmpty(Of))
+			{
+				xmlNode11 = document.CreateAttribute("of");
+				xmlNode11.Value = Of;
+				xmlNode.Attributes.SetNamedItem(xmlNode11);
+			}
+			if (!string.IsNullOrEmpty(Xdomain))
+			{
+				xmlNode11 = document.CreateAttribute("x");
+				xmlNode11.Value = Xdomain;
+				xmlNode.Attributes.SetNamedItem(xmlNode11);
+			}
+			if (!string.IsNullOrEmpty(Ydomain))
+			{
+				xmlNode11 = document.CreateAttribute("y");
+				xmlNode11.Value = Ydomain;
+				xmlNode.Attributes.SetNamedItem(xmlNode11);
+			}
+			if (!string.IsNullOrEmpty(Zdomain))
+			{
+				xmlNode11 = document.CreateAttribute("z");
+				xmlNode11.Value = Zdomain;
+				xmlNode.Attributes.SetNamedItem(xmlNode11);
+			}
+		}
+		else if (Type == PropType.ArrayOfDistribution)
+		{
+			XmlNode xmlNode13 = document.CreateElement("of");
+			XmlNode xmlNode14 = document.CreateElement(DistributionType);
+			if (!string.IsNullOrEmpty(Of))
+			{
+				xmlNode11 = document.CreateAttribute("of");
+				xmlNode11.Value = Of;
+				xmlNode14.Attributes.SetNamedItem(xmlNode11);
+			}
+			if (!string.IsNullOrEmpty(Xdomain))
+			{
+				xmlNode11 = document.CreateAttribute("x");
+				xmlNode11.Value = Xdomain;
+				xmlNode14.Attributes.SetNamedItem(xmlNode11);
+			}
+			if (!string.IsNullOrEmpty(Ydomain))
+			{
+				xmlNode11 = document.CreateAttribute("y");
+				xmlNode11.Value = Ydomain;
+				xmlNode14.Attributes.SetNamedItem(xmlNode11);
+			}
+			if (!string.IsNullOrEmpty(Zdomain))
+			{
+				xmlNode11 = document.CreateAttribute("z");
+				xmlNode11.Value = Zdomain;
+				xmlNode14.Attributes.SetNamedItem(xmlNode11);
+			}
+			xmlNode13.AppendChild(xmlNode14);
+			xmlNode.AppendChild(xmlNode13);
+			for (int k = 0; k < Dims.Count(); k++)
+			{
+				XmlNode xmlNode15 = document.CreateElement("dim");
+				Dims[k].Write(document, xmlNode15);
+				xmlNode.AppendChild(xmlNode15);
+			}
+		}
+		else if (Type == PropType.Port)
+		{
+			if (!string.IsNullOrEmpty(Dir))
+			{
+				xmlNode11 = document.CreateAttribute("dir");
+				xmlNode11.Value = Dir;
+				xmlNode.Attributes.SetNamedItem(xmlNode11);
+			}
+			xmlNode11 = document.CreateAttribute("port");
+			xmlNode11.Value = ((PortType)Porttype/*cast due to .constrained prefix*/).ToString(CultureInfo.InvariantCulture);
+			xmlNode.Attributes.SetNamedItem(xmlNode11);
+		}
+		List<Tuple<string, string>> list = externals;
+		if (list != null && list.Count() > 0)
+		{
+			XmlNode xmlNode16 = document.CreateElement("external_map");
+			foreach (Tuple<string, string> external in externals)
+			{
+				XmlNode xmlNode17 = document.CreateElement("entry");
+				xmlNode11 = document.CreateAttribute("var");
+				xmlNode11.Value = external.Item1;
+				xmlNode17.Attributes.SetNamedItem(xmlNode11);
+				xmlNode11 = document.CreateAttribute("src");
+				xmlNode11.Value = external.Item2;
+				xmlNode17.Attributes.SetNamedItem(xmlNode11);
+				xmlNode16.AppendChild(xmlNode17);
+			}
+			xmlNode.AppendChild(xmlNode16);
+		}
+		parent?.AppendChild(xmlNode);
+	}
+}
+internal class ACMExpProcCallWriter : IACMExpProcCallWriter
+{
+	public string Label { get; set; }
+
+	public string Callname { get; set; }
+
+	public string Proccallname { get; set; }
+
+	public int Id { get; set; }
+
+	public int? Workspace { get; set; }
+
+	public List<ACMExpExpressionWriter> Args { get; set; }
+
+	public HashSet<string> AddedArgs { get; set; }
+
+	public ACMExpExpressionWriter CompList { get; set; }
+
+	public string CompListKey { get; set; }
+
+	public bool Fort { get; set; }
+
+	public ACMExpProcCallWriter(string label, string proccallname, int id, bool fort)
+	{
+		Label = label;
+		Proccallname = proccallname;
+		Id = id;
+		CompList = null;
+		Args = new List<ACMExpExpressionWriter>();
+		AddedArgs = new HashSet<string>();
+		Fort = fort;
+	}
+
+	public void AddArg(string argkey, ACMExpExpressionWriter Arg)
+	{
+		if (!AddedArgs.Contains(argkey))
+		{
+			Args.Add(Arg);
+			AddedArgs.Add(argkey);
+		}
+	}
+
+	public void SetCompList(string complistkey, ACMExpExpressionWriter complist)
+	{
+		CompList = complist;
+		CompListKey = complistkey;
+	}
+
+	public void SetCallName(string callname)
+	{
+		Callname = callname;
+	}
+
+	public void SetWorkspace(int workspace)
+	{
+		Workspace = workspace;
+	}
+
+	public void Write(XmlDocument document, XmlNode parent)
+	{
+		XmlNode xmlNode = document.CreateElement("call");
+		XmlNode xmlNode2 = document.CreateAttribute("name");
+		xmlNode2.Value = Callname;
+		xmlNode.Attributes.SetNamedItem(xmlNode2);
+		xmlNode2 = document.CreateAttribute("proc");
+		xmlNode2.Value = Proccallname;
+		xmlNode.Attributes.SetNamedItem(xmlNode2);
+		xmlNode2 = document.CreateAttribute("id");
+		xmlNode2.Value = Id.ToString(CultureInfo.InvariantCulture);
+		xmlNode.Attributes.SetNamedItem(xmlNode2);
+		if (Fort)
+		{
+			xmlNode2 = document.CreateAttribute("fort");
+			xmlNode2.Value = Fort.ToString();
+			xmlNode.Attributes.SetNamedItem(xmlNode2);
+		}
+		if ((Workspace ?? 0) > 0)
+		{
+			xmlNode2 = document.CreateAttribute("ws");
+			xmlNode2.Value = Workspace.Value.ToString(CultureInfo.InvariantCulture);
+			xmlNode.Attributes.SetNamedItem(xmlNode2);
+		}
+		if (CompList != null)
+		{
+			XmlNode xmlNode3 = document.CreateElement("complist");
+			CompList.Write(document, xmlNode3);
+			xmlNode.AppendChild(xmlNode3);
+		}
+		for (int i = 0; i < Args.Count; i++)
+		{
+			XmlNode xmlNode4 = document.CreateElement("arg");
+			Args[i].Write(document, xmlNode4);
+			xmlNode.AppendChild(xmlNode4);
+		}
+		parent?.AppendChild(xmlNode);
+	}
+}
+internal class ResourceCache
+{
+	public List<IACMGridForm> gridForms { get; set; }
+
+	public List<IACMCustomFormFolder> customFormFolders { get; set; }
+
+	public XmlDocument xmlReactionConfig { get; set; }
+
+	public byte[] iconDef { get; set; }
+
+	public uint iconDefReadSize { get; set; }
+
+	public string portDefXml { get; set; }
+
+	public byte[] apTemplate { get; set; }
+
+	public uint apTemplateReadSize { get; set; }
+
+	public XmlDocument xmlStyleSheet { get; set; }
+
+	public XmlDocument xmlCustomForms { get; set; }
+}
+internal class ACMExpResourceHelper
+{
+	[ComImport]
+	[Guid("0000000c-0000-0000-C000-000000000046")]
+	[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+	private interface IStream
+	{
+		int Read([Out][MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] val, uint cb, out uint cbRead);
+
+		int Write([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] val, uint cb, out uint cbWritten);
+
+		int Seek(long libMove, int origin, out ulong libNewPosition);
+
+		int SetSize(ulong libNewSize);
+
+		int CopyTo(IStream destination, ulong cb, out ulong cbRead, out ulong cbWritten);
+
+		int Commit(int grfCommitFlags);
+
+		int Revert();
+
+		int LockRegion(ulong libOffset, ulong cb, int dwLockType);
+
+		int UnlockRegion(ulong libOffset, ulong cb, int dwLockType);
+
+		int Stat(out System.Runtime.InteropServices.ComTypes.STATSTG statstg, int grfStatFlag);
+
+		int Clone(out IStream clone);
+	}
+
+	[ComImport]
+	[Guid("0000000d-0000-0000-C000-000000000046")]
+	[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+	private interface IEnumSTATSTG
+	{
+		int Next(uint celt, [Out][MarshalAs(UnmanagedType.LPArray)] System.Runtime.InteropServices.ComTypes.STATSTG[] rgelt, out uint celtFetched);
+
+		int Skip(uint celt);
+
+		int Reset();
+
+		int Clone(out IEnumSTATSTG clone);
+	}
+
+	[StructLayout(LayoutKind.Explicit, CharSet = CharSet.Unicode)]
+	public struct STGOPTIONS
+	{
+		[FieldOffset(0)]
+		public ushort usVersion;
+
+		[FieldOffset(2)]
+		public ushort reserved;
+
+		[FieldOffset(4)]
+		public uint ulSectorSize;
+
+		[FieldOffset(8)]
+		[MarshalAs(UnmanagedType.LPWStr)]
+		public string wcsTemplateFile;
+	}
+
+	[ComImport]
+	[Guid("0000000b-0000-0000-C000-000000000046")]
+	[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+	private interface IStorage
+	{
+		int CreateStream([MarshalAs(UnmanagedType.LPWStr)] string wcsName, int grfMode, int reserved1, int reserved2, out IStream stm);
+
+		int OpenStream([MarshalAs(UnmanagedType.LPWStr)] string wcsName, IntPtr reserved1, int grfMode, int reserved2, out IStream stm);
+
+		int CreateStorage([MarshalAs(UnmanagedType.LPWStr)] string wcsName, int grfMode, int reserved1, int reserved2, out IStorage stg);
+
+		int OpenStorage([MarshalAs(UnmanagedType.LPWStr)] string wcsName, IStorage stgPriority, int grfMode, IntPtr snbExclude, int reserved, out IStorage stg);
+
+		int CopyTo(int ciidExclude, Guid rgiidExclude, IntPtr snbExclude, IStorage stgDest);
+
+		int MoveElementTo([MarshalAs(UnmanagedType.LPWStr)] string wcsName, IStorage stgDest, [MarshalAs(UnmanagedType.LPWStr)] string wcsNewName);
+
+		int Commit(int grfCommitFlags);
+
+		int Revert();
+
+		int EnumElements(int reserved1, IntPtr reserved2, int reserved3, out IEnumSTATSTG enumStatstg);
+
+		int DestroyElement([MarshalAs(UnmanagedType.LPWStr)] string wcsName);
+
+		int RenameElement([MarshalAs(UnmanagedType.LPWStr)] string wcsOldName, [MarshalAs(UnmanagedType.LPWStr)] string wcsMewName);
+
+		int SetElementTimes([MarshalAs(UnmanagedType.LPWStr)] string wcsName, System.Runtime.InteropServices.ComTypes.FILETIME ctime, System.Runtime.InteropServices.ComTypes.FILETIME atime, System.Runtime.InteropServices.ComTypes.FILETIME mtime);
+
+		int SetClass(Guid clsid);
+
+		int SetStateBits(int grfStateBits, int grfMask);
+
+		int Stat(out System.Runtime.InteropServices.ComTypes.STATSTG statstg, int grfStatFlag);
+	}
+
+	private static Dictionary<string, ResourceCache> cache = new Dictionary<string, ResourceCache>();
+
+	protected List<IACMGridForm> gridForms;
+
+	protected List<IACMCustomFormFolder> customFormFolders;
+
+	protected XmlDocument xmlReactionConfig;
+
+	protected byte[] iconDef;
+
+	private uint iconDefReadSize;
+
+	protected string portDefXml;
+
+	protected byte[] apTemplate;
+
+	private uint apTemplateReadSize;
+
+	protected XmlDocument xmlStyleSheet;
+
+	protected XmlDocument xmlCustomForms;
+
+	[DllImport("kernel32", CharSet = CharSet.Ansi, SetLastError = true)]
+	private static extern IntPtr LoadLibraryEx([MarshalAs(UnmanagedType.LPStr)] string lpFileName, IntPtr hFile, int flags);
+
+	[DllImport("kernel32", CharSet = CharSet.Ansi, SetLastError = true)]
+	private static extern bool FreeLibrary(IntPtr hModule);
+
+	[DllImport("kernel32", CharSet = CharSet.Ansi, SetLastError = true)]
+	private static extern IntPtr FindResource(IntPtr hModule, [MarshalAs(UnmanagedType.LPStr)] string lpName, [MarshalAs(UnmanagedType.LPStr)] string lpType);
+
+	[DllImport("kernel32.dll", SetLastError = true)]
+	private static extern IntPtr LoadResource(IntPtr hModule, IntPtr hResInfo);
+
+	[DllImport("kernel32.dll", SetLastError = true)]
+	private static extern uint SizeofResource(IntPtr hModule, IntPtr hResInfo);
+
+	[DllImport("ole32.dll", CharSet = CharSet.Unicode)]
+	private static extern int StgIsStorageFile([MarshalAs(UnmanagedType.LPWStr)] string pwcsName);
+
+	[DllImport("ole32.dll", CharSet = CharSet.Unicode)]
+	private static extern int StgOpenStorage([MarshalAs(UnmanagedType.LPWStr)] string pwcsName, IStorage stgPriority, int grfMode, IntPtr snbExclude, int reserved, out IStorage stgOpen);
+
+	[DllImport("ole32.dll")]
+	private static extern int StgOpenStorageEx([MarshalAs(UnmanagedType.LPWStr)] string pwcsName, uint grfMode, uint stgfmt, uint grfAttrs, IntPtr StgOptions, IntPtr reserved2, ref Guid riid, [MarshalAs(UnmanagedType.IUnknown)] out object pObjectOpen);
+
+	protected void LoadResources(string dll, string blockName, bool reaction)
+	{
+		if (cache.ContainsKey(dll))
+		{
+			ResourceCache resourceCache = cache[dll];
+			gridForms = resourceCache.gridForms;
+			customFormFolders = resourceCache.customFormFolders;
+			xmlReactionConfig = resourceCache.xmlReactionConfig;
+			iconDef = resourceCache.iconDef;
+			iconDefReadSize = resourceCache.iconDefReadSize;
+			portDefXml = resourceCache.portDefXml;
+			apTemplate = resourceCache.apTemplate;
+			apTemplateReadSize = resourceCache.apTemplateReadSize;
+			xmlStyleSheet = resourceCache.xmlStyleSheet;
+			return;
+		}
+		IntPtr intPtr = LoadLibraryEx(dll, IntPtr.Zero, 2);
+		if (!(intPtr != IntPtr.Zero))
+		{
+			return;
+		}
+		IntPtr intPtr2 = FindResource(intPtr, "XML", "CONTENT");
+		if (intPtr2 != IntPtr.Zero)
+		{
+			IntPtr source = LoadResource(intPtr, intPtr2);
+			uint num = SizeofResource(intPtr, intPtr2);
+			if (num != 0)
+			{
+				byte[] array = new byte[num];
+				Marshal.Copy(source, array, 0, Convert.ToInt32(num));
+				string xml = Encoding.UTF8.GetString(array, 0, array.Length);
+				XmlDocument xmlDocument = null;
+				try
+				{
+					xmlDocument = new XmlDocument();
+					xmlDocument.LoadXml(xml);
+				}
+				catch
+				{
+					xmlDocument = null;
+				}
+				if (xmlDocument != null)
+				{
+					XmlNode xmlNode = xmlDocument.SelectSingleNode($"//Model[@Name='{blockName}']/Entry[@Name='APM']");
+					if (xmlNode != null)
+					{
+						XmlNode namedItem = xmlNode.Attributes.GetNamedItem("ResSection");
+						XmlNode namedItem2 = xmlNode.Attributes.GetNamedItem("ResID");
+						if (namedItem != null && namedItem2 != null)
+						{
+							IntPtr hResInfo = FindResource(intPtr, namedItem2.Value, namedItem.Value);
+							IntPtr source2 = LoadResource(intPtr, hResInfo);
+							uint num2 = SizeofResource(intPtr, hResInfo);
+							if (num2 != 0)
+							{
+								byte[] array2 = new byte[num2];
+								Marshal.Copy(source2, array2, 0, Convert.ToInt32(num2));
+								try
+								{
+									string tempFileName = Path.GetTempFileName();
+									using (Stream stream = File.OpenWrite(tempFileName))
+									{
+										stream.Write(array2, 0, Convert.ToInt32(num2));
+									}
+									if (StgIsStorageFile(tempFileName) == 0)
+									{
+										uint grfMode = 32u;
+										object pObjectOpen = null;
+										STGOPTIONS sTGOPTIONS = new STGOPTIONS
+										{
+											usVersion = 2
+										};
+										Guid riid = new Guid("0000000b-0000-0000-C000-000000000046");
+										uint stgfmt = 0u;
+										uint grfAttrs = 0u;
+										if (StgOpenStorageEx(tempFileName, grfMode, stgfmt, grfAttrs, IntPtr.Zero, IntPtr.Zero, ref riid, out pObjectOpen) == 0)
+										{
+											IStorage obj2 = pObjectOpen as IStorage;
+											IStorage stg = null;
+											int grfMode2 = 16;
+											if (obj2.OpenStorage(blockName, null, grfMode2, IntPtr.Zero, 0, out stg) == 0)
+											{
+												string wcsName = "CONTENTS";
+												System.Runtime.InteropServices.ComTypes.STATSTG statstg;
+												if (stg.OpenStream(wcsName, IntPtr.Zero, grfMode2, 0, out var stm) == 0)
+												{
+													stm.Stat(out statstg, 1);
+													if (statstg.cbSize > 0)
+													{
+														iconDef = new byte[statstg.cbSize];
+														stm.Read(iconDef, Convert.ToUInt32(statstg.cbSize), out iconDefReadSize);
+													}
+													Marshal.ReleaseComObject(stm);
+												}
+												wcsName = "PORTDEF";
+												if (stg.OpenStream(wcsName, IntPtr.Zero, grfMode2, 0, out stm) == 0)
+												{
+													stm.Stat(out statstg, 1);
+													if (statstg.cbSize > 0)
+													{
+														byte[] array3 = new byte[statstg.cbSize];
+														stm.Read(array3, Convert.ToUInt32(statstg.cbSize), out var cbRead);
+														portDefXml = Encoding.ASCII.GetString(array3, 0, Convert.ToInt32(cbRead));
+														XmlDocument xmlDocument2 = new XmlDocument();
+														try
+														{
+															xmlDocument2.LoadXml(portDefXml);
+														}
+														catch
+														{
+															portDefXml = null;
+														}
+													}
+													Marshal.ReleaseComObject(stm);
+												}
+												wcsName = "TEMPLATE";
+												if (stg.OpenStream(wcsName, IntPtr.Zero, grfMode2, 0, out stm) == 0)
+												{
+													stm.Stat(out statstg, 1);
+													if (statstg.cbSize > 0)
+													{
+														apTemplate = new byte[statstg.cbSize];
+														stm.Read(apTemplate, Convert.ToUInt32(statstg.cbSize), out apTemplateReadSize);
+													}
+													Marshal.ReleaseComObject(stm);
+												}
+												Marshal.ReleaseComObject(stg);
+											}
+											Marshal.ReleaseComObject(pObjectOpen);
+										}
+									}
+									File.Delete(tempFileName);
+								}
+								catch
+								{
+								}
+							}
+						}
+					}
+					XmlNode xmlNode2 = xmlDocument.SelectSingleNode($"//Model[@Name='{blockName}']/Entry[@Name='STYLESHEET']");
+					if (xmlNode2 != null)
+					{
+						XmlNode namedItem3 = xmlNode2.Attributes.GetNamedItem("ResSection");
+						XmlNode namedItem4 = xmlNode2.Attributes.GetNamedItem("ResID");
+						if (namedItem3 != null && namedItem4 != null)
+						{
+							IntPtr hResInfo2 = FindResource(intPtr, namedItem4.Value, namedItem3.Value);
+							IntPtr source3 = LoadResource(intPtr, hResInfo2);
+							uint num3 = SizeofResource(intPtr, hResInfo2);
+							if (num3 != 0)
+							{
+								array = new byte[num3];
+								Marshal.Copy(source3, array, 0, Convert.ToInt32(num3));
+								xml = Encoding.UTF8.GetString(array, 0, array.Length);
+								try
+								{
+									XmlDocument xmlDocument3 = new XmlDocument();
+									xmlDocument3.LoadXml(xml);
+									xmlStyleSheet = xmlDocument3;
+									XmlNamespaceManager xmlNamespaceManager = new XmlNamespaceManager(xmlDocument3.NameTable);
+									xmlNamespaceManager.AddNamespace("acm", "urn:acmsheets");
+									XmlNodeList xmlNodeList = xmlDocument3.SelectNodes("//acm:Stylesheet", xmlNamespaceManager);
+									gridForms = new List<IACMGridForm>();
+									foreach (XmlNode item in xmlNodeList)
+									{
+										gridForms.Add(ACMExpGridForm.Create(item));
+									}
+								}
+								catch
+								{
+								}
+							}
+						}
+					}
+					XmlNode xmlNode3 = xmlDocument.SelectSingleNode($"//Model[@Name='{blockName}']/Entry[@Name='CUSTOMFORM']");
+					if (xmlNode3 != null)
+					{
+						XmlNode namedItem5 = xmlNode3.Attributes.GetNamedItem("ResSection");
+						XmlNode namedItem6 = xmlNode3.Attributes.GetNamedItem("ResID");
+						if (namedItem5 != null && namedItem6 != null)
+						{
+							IntPtr hResInfo3 = FindResource(intPtr, namedItem6.Value, namedItem5.Value);
+							IntPtr source4 = LoadResource(intPtr, hResInfo3);
+							uint num4 = SizeofResource(intPtr, hResInfo3);
+							if (num4 != 0)
+							{
+								array = new byte[num4];
+								Marshal.Copy(source4, array, 0, Convert.ToInt32(num4));
+								xml = Encoding.UTF8.GetString(array, 0, array.Length);
+								try
+								{
+									xmlCustomForms = new XmlDocument();
+									xmlCustomForms.LoadXml(xml);
+									XmlNamespaceManager xmlNamespaceManager2 = new XmlNamespaceManager(xmlCustomForms.NameTable);
+									xmlNamespaceManager2.AddNamespace("acm", "urn:acmcustomforms");
+									XmlNodeList xmlNodeList2 = xmlCustomForms.SelectNodes("//acm:FormFolder", xmlNamespaceManager2);
+									customFormFolders = new List<IACMCustomFormFolder>();
+									foreach (XmlNode item2 in xmlNodeList2)
+									{
+										customFormFolders.Add(ACMExpCustomFormFolder.Create(item2));
+									}
+								}
+								catch
+								{
+								}
+							}
+						}
+					}
+					if (reaction)
+					{
+						XmlNode xmlNode4 = xmlDocument.SelectSingleNode($"//Model[@Name='{blockName}']/Entry[@Name='REACTIONVARIABLES']");
+						if (xmlNode4 != null)
+						{
+							XmlNode namedItem7 = xmlNode4.Attributes.GetNamedItem("ResSection");
+							XmlNode namedItem8 = xmlNode4.Attributes.GetNamedItem("ResID");
+							if (namedItem7 != null && namedItem8 != null)
+							{
+								IntPtr hResInfo4 = FindResource(intPtr, namedItem8.Value, namedItem7.Value);
+								IntPtr source5 = LoadResource(intPtr, hResInfo4);
+								uint num5 = SizeofResource(intPtr, hResInfo4);
+								if (num5 != 0)
+								{
+									array = new byte[num5];
+									Marshal.Copy(source5, array, 0, Convert.ToInt32(num5));
+									xml = Encoding.UTF8.GetString(array, 0, array.Length);
+									try
+									{
+										xmlReactionConfig = new XmlDocument();
+										xmlReactionConfig.LoadXml(xml);
+									}
+									catch
+									{
+										xmlReactionConfig = null;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		FreeLibrary(intPtr);
+		cache.Add(dll, new ResourceCache
+		{
+			apTemplate = apTemplate,
+			apTemplateReadSize = apTemplateReadSize,
+			customFormFolders = customFormFolders,
+			gridForms = gridForms,
+			iconDef = iconDef,
+			iconDefReadSize = iconDefReadSize,
+			portDefXml = portDefXml,
+			xmlReactionConfig = xmlReactionConfig,
+			xmlStyleSheet = xmlStyleSheet,
+			xmlCustomForms = xmlCustomForms
+		});
+	}
+}
+public class ACMExpExpressionWriter : IACMExpExpressionWriter
+{
+	public int Type { get; set; }
+
+	public ACMExpExpressionWriter Left { get; set; }
+
+	public ACMExpExpressionWriter Right { get; set; }
+
+	public ACMExpExpressionWriter Stream { get; set; }
+
+	public List<ACMExpExpressionWriter> Over { get; set; }
+
+	public string Property { get; set; }
+
+	public double RealVal { get; set; }
+
+	public bool BoolVal { get; set; }
+
+	public int IntVal { get; set; }
+
+	public List<int> IntSet { get; set; }
+
+	public List<string> StringSet { get; set; }
+
+	public string StringVal { get; set; }
+
+	public ACMExpOpCode OpCode { get; set; }
+
+	public int lowlimit { get; set; }
+
+	public int uplimit { get; set; }
+
+	public ACMExpExpressionWriter(ACMExpExpressionWriter left, ACMExpExpressionWriter right, int type)
+	{
+		Left = left;
+		Right = right;
+		Type = type;
+		IntSet = new List<int>();
+		StringSet = new List<string>();
+		Over = new List<ACMExpExpressionWriter>();
+	}
+
+	public void RealLiteral(double val)
+	{
+		RealVal = val;
+	}
+
+	public void IntegerLiteral(int val)
+	{
+		IntVal = val;
+	}
+
+	public void StringLiteral(string val)
+	{
+		StringVal = val;
+	}
+
+	public void BooleanLiteral(bool val)
+	{
+		BoolVal = val;
+	}
+
+	public void AddIntegerSetValue(int val)
+	{
+		if (val != -999999 && !IntSet.Contains(val))
+		{
+			IntSet.Add(val);
+		}
+	}
+
+	public void AddIntegerSetRange(int lower, int upper)
+	{
+		lowlimit = lower;
+		uplimit = upper;
+	}
+
+	public void AddStringSetValue(string val)
+	{
+		if (!string.IsNullOrEmpty(val) && !StringSet.Contains(val))
+		{
+			StringSet.Add(val);
+		}
+	}
+
+	public void PropertyPath(string path)
+	{
+		Property = path;
+	}
+
+	public void Operation(int opCode)
+	{
+		OpCode = (ACMExpOpCode)opCode;
+	}
+
+	public void Operation(ACMExpOpCode opCode)
+	{
+		OpCode = opCode;
+	}
+
+	public IACMExpExpressionWriter CreateRHS()
+	{
+		Right = new ACMExpExpressionWriter(null, null, 0);
+		return Right;
+	}
+
+	public IACMExpExpressionWriter CreateLHS()
+	{
+		Left = new ACMExpExpressionWriter(null, null, 0);
+		return Left;
+	}
+
+	public IACMExpExpressionWriter CreateRHSExp(ACMExpExpressionWriter RightExp)
+	{
+		Right = RightExp;
+		return Right;
+	}
+
+	public IACMExpExpressionWriter CreateLHSExp(ACMExpExpressionWriter LeftExp)
+	{
+		Left = LeftExp;
+		return Left;
+	}
+
+	public void AddArraySlice(ACMExpExpressionWriter overset)
+	{
+		Over.Add(overset);
+	}
+
+	public string Write(XmlDocument document, XmlNode parent)
+	{
+		if (Over.Count > 0)
+		{
+			for (int i = 0; i < Over.Count(); i++)
+			{
+				XmlNode xmlNode = document.CreateElement("over");
+				Over[i].Write(document, xmlNode);
+				parent.AppendChild(xmlNode);
+			}
+		}
+		if (Type == 20)
+		{
+			if (Property.StartsWith("AM_VSI", StringComparison.InvariantCultureIgnoreCase))
+			{
+				string text = "l*" + Property.Substring(6);
+				parent.InnerXml += text;
+			}
+			else
+			{
+				string text2 = "p*" + Property;
+				parent.InnerXml += text2;
+			}
+		}
+		else if (Type == 2)
+		{
+			string innerXml = "i*" + IntVal.ToString(CultureInfo.InvariantCulture);
+			parent.InnerXml = innerXml;
+		}
+		else if (Type == 3)
+		{
+			string innerXml2 = "b*" + BoolVal.ToString(CultureInfo.InvariantCulture);
+			parent.InnerXml = innerXml2;
+		}
+		else if (Type == 4)
+		{
+			string innerXml3 = "r*" + RealVal.ToString(CultureInfo.InvariantCulture);
+			parent.InnerXml = innerXml3;
+		}
+		else if (Type == 5)
+		{
+			string innerText = "s*" + StringVal;
+			parent.InnerText = innerText;
+		}
+		else if (Type == 10)
+		{
+			string text3 = "j*";
+			for (int j = 0; j < IntSet.Count; j++)
+			{
+				text3 = text3 + IntSet[j].ToString(CultureInfo.InvariantCulture) + "&quot;";
+			}
+			parent.InnerXml += text3;
+		}
+		else if (Type == 13)
+		{
+			string text4 = "t*";
+			for (int k = 0; k < StringSet.Count; k++)
+			{
+				text4 = text4 + StringSet[k] + "\"";
+			}
+			parent.InnerText += text4;
+		}
+		else if (Type == 17)
+		{
+			int opCode = (int)OpCode;
+			XmlNode xmlNode2 = document.CreateAttribute("op");
+			xmlNode2.Value = opCode.ToString(CultureInfo.InvariantCulture);
+			parent.Attributes.SetNamedItem(xmlNode2);
+		}
+		else if (Type == 19)
+		{
+			string text5 = "[" + lowlimit.ToString(CultureInfo.InvariantCulture) + "&quot;:" + uplimit.ToString(CultureInfo.InvariantCulture) + "&quot;]";
+			parent.InnerXml += text5;
+		}
+		else
+		{
+			if (Type == 21)
+			{
+				if (Left != null)
+				{
+					XmlNode xmlNode3 = document.CreateElement("source");
+					Left.Write(document, xmlNode3);
+					parent.AppendChild(xmlNode3);
+				}
+				if (Right != null)
+				{
+					XmlNode xmlNode4 = document.CreateElement("dest");
+					Right.Write(document, xmlNode4);
+					parent.AppendChild(xmlNode4);
+				}
+				if (Stream != null)
+				{
+					XmlNode xmlNode5 = document.CreateElement("stream");
+					Stream.Write(document, xmlNode5);
+					parent.AppendChild(xmlNode5);
+				}
+				return parent.InnerXml;
+			}
+			if (Type == 22)
+			{
+				parent.InnerText += "m*";
+			}
+		}
+		if (Left != null)
+		{
+			XmlNode xmlNode6 = document.CreateElement("l");
+			Left.Write(document, xmlNode6);
+			parent.AppendChild(xmlNode6);
+		}
+		if (Right != null)
+		{
+			XmlNode xmlNode7 = document.CreateElement("r");
+			Right.Write(document, xmlNode7);
+			parent.AppendChild(xmlNode7);
+		}
+		return parent.InnerXml;
+	}
+}
+internal class ACMExpVariableType : IACMExpVariableType
+{
+	public string Name { get; set; }
+
+	public string Uses { get; set; }
+
+	public string Description { get; set; }
+
+	public int BaseType { get; set; }
+
+	private string physQuant { get; set; }
+
+	private string uom { get; set; }
+
+	private double? upper { get; set; }
+
+	private double? lower { get; set; }
+
+	private string defaultVal { get; set; }
+
+	private int? col { get; set; }
+
+	private int? row { get; set; }
+
+	private string validSet { get; set; }
+
+	public ACMExpVariableType(string name)
+	{
+		Name = name;
+		BaseType = 0;
+	}
+
+	public void SetUses(string usesname)
+	{
+		Uses = usesname;
+	}
+
+	public void SetPropertyDefaultInteger(string propertyName, int newval)
+	{
+		if (propertyName == "VALUE")
+		{
+			defaultVal = "i*" + newval.ToString(CultureInfo.InvariantCulture);
+		}
+		switch (propertyName)
+		{
+		case "PQCol":
+			col = newval;
+			break;
+		case "PQRow":
+			row = newval;
+			break;
+		case "col":
+			col = newval;
+			break;
+		case "row":
+			row = newval;
+			break;
+		}
+	}
+
+	public void SetPropertyDefaultBoolean(string propertyName, bool newval)
+	{
+		if (propertyName == "VALUE")
+		{
+			defaultVal = "i*" + newval.ToString(CultureInfo.InvariantCulture);
+		}
+	}
+
+	public void SetPropertyDefaultReal(string propertyName, double newval)
+	{
+		switch (propertyName)
+		{
+		case "VALUE":
+			defaultVal = "r*" + newval.ToString(CultureInfo.InvariantCulture);
+			break;
+		case "UPPER":
+			upper = newval;
+			break;
+		case "LOWER":
+			lower = newval;
+			break;
+		}
+	}
+
+	public void SetPropertyDefaultString(string propertyName, string newval)
+	{
+		switch (propertyName)
+		{
+		case "DESCRIPTION":
+			Description = newval;
+			break;
+		case "VALUE":
+			defaultVal = "s*" + newval.ToString(CultureInfo.InvariantCulture);
+			break;
+		case "PHYSICALQUANTITY":
+			physQuant = newval;
+			break;
+		case "uom":
+			uom = newval;
+			break;
+		}
+	}
+
+	public void AddPropertyDefaultIntSet(string propertyName, int newval)
+	{
+		if (propertyName == "VALUE")
+		{
+			if (defaultVal == null)
+			{
+				defaultVal = "j*";
+			}
+			defaultVal = defaultVal + newval.ToString(CultureInfo.InvariantCulture) + "\"";
+		}
+	}
+
+	public void AddPropertyDefaultStringSet(string propertyName, string newval)
+	{
+		if (propertyName == "VALUE")
+		{
+			if (defaultVal == null)
+			{
+				defaultVal = "t*";
+			}
+			defaultVal = defaultVal + newval + "\"";
+		}
+		else if (propertyName == "VALID")
+		{
+			if (validSet == null)
+			{
+				validSet = "t*";
+			}
+			validSet = validSet + newval + "\"";
+		}
+	}
+
+	public void AddVarNode(XmlDocument document, XmlNode parent)
+	{
+		if (NewModelWriter.exportedTypes != null)
+		{
+			if (NewModelWriter.exportedTypes.Contains(Name))
+			{
+				return;
+			}
+			NewModelWriter.exportedTypes.Add(Name);
+		}
+		XmlNode xmlNode = document.CreateElement("variable");
+		XmlNode xmlNode2 = document.CreateAttribute("name");
+		xmlNode2.Value = Name;
+		xmlNode.Attributes.SetNamedItem(xmlNode2);
+		if (!string.IsNullOrEmpty(Uses))
+		{
+			xmlNode2 = document.CreateAttribute("uses");
+			xmlNode2.Value = Uses;
+			xmlNode.Attributes.SetNamedItem(xmlNode2);
+		}
+		if (!string.IsNullOrEmpty(Description))
+		{
+			xmlNode2 = document.CreateAttribute("desc");
+			xmlNode2.Value = Description;
+			xmlNode.Attributes.SetNamedItem(xmlNode2);
+		}
+		if (!string.IsNullOrEmpty(physQuant))
+		{
+			xmlNode2 = document.CreateAttribute("physQuant");
+			xmlNode2.Value = physQuant;
+			xmlNode.Attributes.SetNamedItem(xmlNode2);
+		}
+		if (!string.IsNullOrEmpty(uom))
+		{
+			xmlNode2 = document.CreateAttribute("uom");
+			xmlNode2.Value = uom;
+			xmlNode.Attributes.SetNamedItem(xmlNode2);
+		}
+		if (upper.HasValue)
+		{
+			xmlNode2 = document.CreateAttribute("upper");
+			xmlNode2.Value = upper.Value.ToString(CultureInfo.InvariantCulture);
+			xmlNode.Attributes.SetNamedItem(xmlNode2);
+		}
+		if (lower.HasValue)
+		{
+			xmlNode2 = document.CreateAttribute("lower");
+			xmlNode2.Value = lower.Value.ToString(CultureInfo.InvariantCulture);
+			xmlNode.Attributes.SetNamedItem(xmlNode2);
+		}
+		if (defaultVal != null)
+		{
+			xmlNode2 = document.CreateAttribute("default");
+			xmlNode2.Value = defaultVal;
+			xmlNode.Attributes.SetNamedItem(xmlNode2);
+		}
+		if (validSet != null)
+		{
+			xmlNode2 = document.CreateAttribute("valid");
+			xmlNode2.Value = validSet;
+			xmlNode.Attributes.SetNamedItem(xmlNode2);
+		}
+		if (col.HasValue)
+		{
+			xmlNode2 = document.CreateAttribute("col");
+			xmlNode2.Value = col.Value.ToString(CultureInfo.InvariantCulture);
+			xmlNode.Attributes.SetNamedItem(xmlNode2);
+		}
+		if (row.HasValue)
+		{
+			xmlNode2 = document.CreateAttribute("row");
+			xmlNode2.Value = row.Value.ToString(CultureInfo.InvariantCulture);
+			xmlNode.Attributes.SetNamedItem(xmlNode2);
+		}
+		if (BaseType != 0)
+		{
+			xmlNode2 = document.CreateAttribute("base");
+			xmlNode2.Value = BaseType.ToString(CultureInfo.InvariantCulture);
+			xmlNode.Attributes.SetNamedItem(xmlNode2);
+		}
+		parent.AppendChild(xmlNode);
+	}
+}
+internal class ACMProcWriter : IACMProcWriter
+{
+	public string Name { get; set; }
+
+	public string Proc { get; set; }
+
+	public string Dll { get; set; }
+
+	public string Language { get; set; }
+
+	public bool Derivs { get; set; }
+
+	public bool Properties { get; set; }
+
+	public bool AlwaysCall { get; set; }
+
+	public int Compat { get; set; }
+
+	public List<Tuple<int, int, bool>> Input { get; set; }
+
+	public List<Tuple<int, int, bool>> Output { get; set; }
+
+	public string Source { get; set; }
+
+	public bool Precall { get; set; }
+
+	public bool Postcall { get; set; }
+
+	public ACMProcWriter(string name, string proc, string dll, string language, bool derivs, bool properties, bool alwayscall, int compat, string source)
+	{
+		Name = name;
+		Proc = proc;
+		Dll = dll;
+		Language = language;
+		Derivs = derivs;
+		Properties = properties;
+		AlwaysCall = alwayscall;
+		Compat = compat;
+		Input = new List<Tuple<int, int, bool>>();
+		Output = new List<Tuple<int, int, bool>>();
+		Source = source;
+	}
+
+	public void AddInput(int type, int dim, bool var)
+	{
+		Input.Add(Tuple.Create(type, dim, var));
+	}
+
+	public void AddOutput(int type, int dim, bool var)
+	{
+		Output.Add(Tuple.Create(type, dim, var));
+	}
+
+	public void Write(XmlDocument document, XmlNode parent)
+	{
+		XmlNode xmlNode = document.CreateElement("proc");
+		XmlNode xmlNode2 = document.CreateAttribute("name");
+		xmlNode2.Value = Name;
+		xmlNode.Attributes.SetNamedItem(xmlNode2);
+		xmlNode2 = document.CreateAttribute("proc");
+		xmlNode2.Value = Proc;
+		xmlNode.Attributes.SetNamedItem(xmlNode2);
+		xmlNode2 = document.CreateAttribute("dll");
+		xmlNode2.Value = Dll;
+		xmlNode.Attributes.SetNamedItem(xmlNode2);
+		xmlNode2 = document.CreateAttribute("language");
+		xmlNode2.Value = Language;
+		xmlNode.Attributes.SetNamedItem(xmlNode2);
+		xmlNode2 = document.CreateAttribute("derivs");
+		xmlNode2.Value = Derivs.ToString(CultureInfo.InvariantCulture);
+		xmlNode.Attributes.SetNamedItem(xmlNode2);
+		xmlNode2 = document.CreateAttribute("properties");
+		xmlNode2.Value = Properties.ToString();
+		xmlNode.Attributes.SetNamedItem(xmlNode2);
+		if (AlwaysCall)
+		{
+			xmlNode2 = document.CreateAttribute("alwayscall");
+			xmlNode2.Value = AlwaysCall.ToString(CultureInfo.InvariantCulture);
+			xmlNode.Attributes.SetNamedItem(xmlNode2);
+		}
+		if (Precall)
+		{
+			xmlNode2 = document.CreateAttribute("precall");
+			xmlNode2.Value = Precall.ToString(CultureInfo.InvariantCulture);
+			xmlNode.Attributes.SetNamedItem(xmlNode2);
+		}
+		if (Postcall)
+		{
+			xmlNode2 = document.CreateAttribute("postcall");
+			xmlNode2.Value = Postcall.ToString(CultureInfo.InvariantCulture);
+			xmlNode.Attributes.SetNamedItem(xmlNode2);
+		}
+		xmlNode2 = document.CreateAttribute("compat");
+		xmlNode2.Value = Compat.ToString(CultureInfo.InvariantCulture);
+		xmlNode.Attributes.SetNamedItem(xmlNode2);
+		XmlNode xmlNode3 = document.CreateElement("inputs");
+		XmlNode xmlNode4 = document.CreateElement("outputs");
+		for (int i = 0; i < Input.Count; i++)
+		{
+			XmlNode xmlNode5 = document.CreateElement("arg");
+			xmlNode2 = document.CreateAttribute("type");
+			xmlNode2.Value = Input[i].Item1.ToString(CultureInfo.InvariantCulture);
+			xmlNode5.Attributes.SetNamedItem(xmlNode2);
+			xmlNode2 = document.CreateAttribute("dim");
+			xmlNode2.Value = Input[i].Item2.ToString(CultureInfo.InvariantCulture);
+			xmlNode5.Attributes.SetNamedItem(xmlNode2);
+			xmlNode2 = document.CreateAttribute("var");
+			xmlNode2.Value = Input[i].Item3.ToString(CultureInfo.InvariantCulture);
+			xmlNode5.Attributes.SetNamedItem(xmlNode2);
+			xmlNode3.AppendChild(xmlNode5);
+		}
+		for (int j = 0; j < Output.Count; j++)
+		{
+			XmlNode xmlNode6 = document.CreateElement("arg");
+			xmlNode2 = document.CreateAttribute("type");
+			xmlNode2.Value = Output[j].Item1.ToString(CultureInfo.InvariantCulture);
+			xmlNode6.Attributes.SetNamedItem(xmlNode2);
+			xmlNode2 = document.CreateAttribute("dim");
+			xmlNode2.Value = Output[j].Item2.ToString(CultureInfo.InvariantCulture);
+			xmlNode6.Attributes.SetNamedItem(xmlNode2);
+			xmlNode2 = document.CreateAttribute("var");
+			xmlNode2.Value = Output[j].Item3.ToString(CultureInfo.InvariantCulture);
+			xmlNode6.Attributes.SetNamedItem(xmlNode2);
+			xmlNode4.AppendChild(xmlNode6);
+		}
+		xmlNode.AppendChild(xmlNode3);
+		xmlNode.AppendChild(xmlNode4);
+		if (!string.IsNullOrEmpty(Source))
+		{
+			XmlNode xmlNode7 = document.CreateElement("source");
+			xmlNode7.InnerText = Source;
+			xmlNode.AppendChild(xmlNode7);
+		}
+		parent.AppendChild(xmlNode);
+	}
+}
+[ComVisible(true)]
+[Guid("DB9E84D8-23C4-4840-A9FD-E4B394E70410")]
+[ProgId("AspenTech.Modeler.ACMExpHelper.41.0")]
+public class HelperFuncs
+{
+	private SymmetricAlgorithm alg;
+
+	public HelperFuncs()
+	{
+		byte[] array = new byte[15];
+		byte[] array2 = new byte[4];
+		array[3] = 52;
+		array[0] = 103;
+		array[6] = 152;
+		array2[3] = 118;
+		array[11] = 18;
+		array[7] = 165;
+		array[9] = 149;
+		array[14] = 118;
+		array2[0] = 8;
+		array2[1] = 181;
+		array[2] = 244;
+		int iterations = 2735;
+		array[8] = 115;
+		array[12] = 38;
+		array[1] = 222;
+		int num = 256;
+		array2[3] = 75;
+		array[5] = 31;
+		array[4] = 135;
+		array[10] = 5;
+		array[13] = 66;
+		alg = Aes.Create();
+		alg.KeySize = 256;
+		using Rfc2898DeriveBytes rfc2898DeriveBytes = new Rfc2898DeriveBytes("acmpexp", array, iterations);
+		alg.Key = rfc2898DeriveBytes.GetBytes(num / 8);
+		alg.GenerateIV();
+	}
+
+	public void EncodeModel(string input, string indentifier)
+	{
+		try
+		{
+			XmlDocument xmlDocument = new XmlDocument();
+			xmlDocument.PreserveWhitespace = true;
+			xmlDocument.Load(input);
+			XmlNode xmlNode = xmlDocument.SelectSingleNode("//library");
+			if (xmlNode != null)
+			{
+				ProcessModel(xmlNode as XmlElement, "encLibrary", alg, indentifier);
+			}
+			xmlDocument.Save(input);
+		}
+		catch (Exception)
+		{
+		}
+	}
+
+	public void ExposeModel(ref XmlDocument root, string indentifier)
+	{
+		if (root.GetElementsByTagName("EncryptedData")[0] is XmlElement xmlElement && xmlElement.GetElementsByTagName("CipherData")[0] is XmlElement && xmlElement.GetElementsByTagName("CipherValue")[0] is XmlElement xmlElement2)
+		{
+			byte[] bytes = Encoding.UTF8.GetBytes(xmlElement2.InnerText);
+			if (bytes.Length > 16)
+			{
+				byte[] array = new byte[16];
+				Buffer.BlockCopy(bytes, 0, array, 0, 16);
+				alg.IV = array;
+			}
+			EncryptedData encryptedData = new EncryptedData();
+			encryptedData.LoadXml(xmlElement);
+			EncryptedXml encryptedXml = new EncryptedXml();
+			byte[] array2 = encryptedXml.DecryptData(encryptedData, alg);
+			byte[] array3 = new byte[array2.Length - 16];
+			Buffer.BlockCopy(array2, 16, array3, 0, array3.Length);
+			encryptedXml.ReplaceData(xmlElement, array3);
+		}
+	}
+
+	private void ProcessModel(XmlElement tag, string elementId, SymmetricAlgorithm Alg, string identifier)
+	{
+		if (tag == null)
+		{
+			return;
+		}
+		try
+		{
+			byte[] array = new EncryptedXml().EncryptData(tag, Alg, content: false);
+			byte[] array2 = new byte[array.Length + 16];
+			alg.IV.CopyTo(array2, 0);
+			array.CopyTo(array2, 16);
+			EncryptedData encryptedData = new EncryptedData();
+			encryptedData.Type = "http://www.w3.org/2001/04/xmlenc#Element";
+			encryptedData.Id = elementId;
+			encryptedData.EncryptionMethod = new EncryptionMethod("http://www.w3.org/2001/04/xmlenc#aes256-cbc");
+			encryptedData.CipherData.CipherValue = array2;
+			EncryptedXml.ReplaceElement(tag, encryptedData, content: false);
+		}
+		catch (Exception)
+		{
+		}
+	}
+}
+[ComVisible(true)]
+[Guid("F05B4EB2-DC22-4FE0-A158-0BA9BE718DAA")]
+public interface IACMExpAssignmentWriter
+{
+	ACMExpExpressionWriter Assignment { get; set; }
+
+	void Write(XmlDocument document, XmlNode parent);
+}
+[ComVisible(true)]
+[Guid("E1A7FFCF-2F2E-45FC-B3D1-B48566E4520D")]
+public interface IACMExpEquationWriter
+{
+	string Label { get; set; }
+
+	ACMExpExpressionWriter Equation { get; set; }
+
+	void Write(XmlDocument document, XmlNode parent);
+}
+[ComVisible(true)]
+public enum ACMExpOpCode
+{
+	Noop,
+	Terminal,
+	VecAcc,
+	SubId,
+	Not,
+	And,
+	Or,
+	Xor,
+	Eq,
+	Gt,
+	Lt,
+	Ge,
+	Le,
+	Ne,
+	UPlus,
+	UMinus,
+	Float,
+	Round,
+	Trunc,
+	Add,
+	Sub,
+	Mul,
+	Div,
+	Mod,
+	Pow,
+	Slice,
+	Sin,
+	Cos,
+	Tan,
+	ArcSin,
+	ArcCos,
+	ArcTan,
+	Sinh,
+	Cosh,
+	Tanh,
+	Sqrt,
+	Exp,
+	Loge,
+	Log10,
+	Abs,
+	Sqr,
+	Sign,
+	DeRef,
+	Deriv,
+	Sigma,
+	Prod,
+	SPmax,
+	SPmin,
+	Transpose,
+	Union,
+	Diff,
+	Intersect,
+	SymDiff,
+	In,
+	SizeOfSet,
+	SPTime,
+	RunMode,
+	SPDelay,
+	Matmul,
+	Concat,
+	ForEach,
+	AssignOp,
+	ConvertOp,
+	UnionFn,
+	DiffFn,
+	IntersectFn,
+	SymDiffFn,
+	InProcR,
+	InProcS,
+	InProcI,
+	InProcEnd,
+	OutProcR,
+	OutProcS,
+	OutProcI,
+	OutProcEnd,
+	UserFunR,
+	UserFunS,
+	UserFunI,
+	EqS,
+	GtS,
+	LtS,
+	GeS,
+	LeS,
+	NeS,
+	EqI,
+	GtI,
+	LtI,
+	GeI,
+	LeI,
+	NeI,
+	UPlusI,
+	UMinusI,
+	AddI,
+	SubI,
+	MulI,
+	AbsI,
+	SqrI,
+	SysFun,
+	MaxOf2,
+	MinOf2,
+	UniformRandom,
+	NormalRandom,
+	TerminalI,
+	TerminalS,
+	Conv2R,
+	Conv2S,
+	Conv2I,
+	DeRefS,
+	DeRefI
+}
+[ComVisible(true)]
+[Guid("51D1D3F2-315C-4B53-93C3-5DF48500504F")]
+public interface IACMExpExpressionWriter
+{
+	void RealLiteral(double val);
+
+	void IntegerLiteral(int val);
+
+	void BooleanLiteral(bool val);
+
+	void StringLiteral(string val);
+
+	void AddIntegerSetValue(int val);
+
+	void AddIntegerSetRange(int lower, int upper);
+
+	void AddStringSetValue(string val);
+
+	void PropertyPath(string path);
+
+	void Operation(ACMExpOpCode opCode);
+
+	void Operation(int opCode);
+
+	IACMExpExpressionWriter CreateRHS();
+
+	IACMExpExpressionWriter CreateLHS();
+
+	IACMExpExpressionWriter CreateRHSExp(ACMExpExpressionWriter RightExp);
+
+	IACMExpExpressionWriter CreateLHSExp(ACMExpExpressionWriter LeftExp);
+
+	void AddArraySlice(ACMExpExpressionWriter overset);
+
+	string Write(XmlDocument document, XmlNode parent);
+}
+[ComVisible(true)]
+public enum ACMExEntryType
+{
+	ACMBLOCK,
+	ACMREACTION,
+	AOSSOLVER,
+	ACMBLOCKBUILTIN,
+	NEWACMBLOCK,
+	NEWACMSTRUCTURE,
+	NEWACMREACTION,
+	ACMFLOWSHEET
+}
+[ComVisible(true)]
+[Guid("F0019593-F452-4723-9C78-B714464E73BE")]
+public interface IACMExpModelInfo
+{
+	ACMExEntryType ClassType { get; }
+
+	string Name { get; }
+
+	string Version { get; }
+
+	string Description { get; }
+
+	string RevisionGuid { get; }
+
+	string Timestamp { get; }
+
+	string Category { get; }
+
+	string Display { get; }
+
+	bool Show { get; }
+
+	IACMExpModel Model { get; }
+
+	bool Locked { get; }
+
+	string Compiled { get; }
+}
+[ComVisible(true)]
+[Guid("CAF36116-AEF7-4F61-924A-CF895AA6F707")]
+public interface IACMExpModel
+{
+	ACMExEntryType ClassType { get; }
+
+	bool ReadOnly { get; }
+
+	bool Show { get; set; }
+
+	string Name { get; set; }
+
+	string Version { get; }
+
+	string Display { get; set; }
+
+	string Description { get; set; }
+
+	string Compiled { get; set; }
+
+	string RevisionGuid { get; }
+
+	string Timestamp { get; }
+
+	string[] LibraryCategories { get; set; }
+
+	IACMGridForm[] GridForms { get; }
+
+	IACMCustomFormFolder[] CustomForms { get; }
+
+	string PortDefinition { get; set; }
+
+	string ReactionConfiguration { get; set; }
+
+	string StyleSheet { get; set; }
+
+	string CustomFormsXML { get; set; }
+
+	string ModelDefinition { get; set; }
+
+	string[] Scripts { get; set; }
+
+	string Plots { get; set; }
+
+	string Help { get; set; }
+
+	string[] Procedures { get; set; }
+
+	string SolverSettings { get; set; }
+
+	string CustomModeling { get; set; }
+
+	string CreationCommand(bool EO, bool fixedInlets, bool noCheck);
+
+	bool CheckValid();
+
+	void GetIconDef(out int length, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] out byte[] stream);
+
+	void SetIconDef(int length, byte[] stream);
+
+	void GetAPTemplate(out int length, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] out byte[] stream);
+
+	void SetAPTemplate(int length, byte[] stream);
+
+	void SaveTo(string savePath, bool overwrite);
+
+	void SetClassType(ACMExEntryType newVal);
+}
+[ComVisible(true)]
+[Guid("DC25B924-5CA7-4D1E-99CF-15EB48C689C6")]
+public interface IACMExpModelPort
+{
+	string Name { get; set; }
+
+	string BaseType { get; set; }
+
+	string PortType { get; set; }
+
+	string Description { get; set; }
+
+	bool MultiPort { get; set; }
+
+	int MinimumConnections { get; set; }
+
+	int MaximumConnections { get; set; }
+
+	string WriteCfg();
+
+	string WritePortdef();
+
+	void Write(XmlDocument document, XmlNode parent);
+}
+[ComVisible(true)]
+public enum SpecType
+{
+	Unknown,
+	Calculated,
+	Initial,
+	Fixed,
+	RateInitial,
+	Objective,
+	Vary
+}
+[ComVisible(true)]
+[Guid("CDFD3674-96B4-4813-938A-EFD9233A5551")]
+public interface IACMExpModelProperty
+{
+	string Name { get; set; }
+
+	string BaseType { get; set; }
+
+	SpecType spec { get; set; }
+
+	string Description { get; set; }
+
+	string Default { get; set; }
+
+	string Of { get; set; }
+
+	IACMExpExpressionWriter CreateDefault();
+
+	void AddDim(ACMExpExpressionWriter dim);
+
+	void Write(XmlDocument document, XmlNode parent);
+
+	void MapExternal(string variable, string source);
+}
+[ComVisible(true)]
+[Guid("072CCDD1-5F1B-434E-B0C0-A4AC71A7D4B4")]
+public interface IACMExpModelWriter
+{
+	string Name { get; set; }
+
+	string Uses { get; set; }
+
+	bool Structure { get; set; }
+
+	int Type { get; set; }
+
+	bool Reaction { get; set; }
+
+	string Description { get; set; }
+
+	string Author { get; set; }
+
+	string Copywrite { get; set; }
+
+	string ExportedVersion { get; set; }
+
+	string Display { get; set; }
+
+	void WriteApmlz(string fileName);
+
+	void WriteXml(string fileName, bool makePrivate);
+
+	string GenerateGUID();
+
+	void AddLibraryDependency(string libraryName);
+
+	IACMExpModelWriter CreateSubModel(string modelType);
+
+	IACMExpModelWriter CreateStructure(string modelname);
+
+	IACMExpModelWriter CreateUserPort(string portname, string usesname);
+
+	IACMExpModelWriter CreateStream(string streamname);
+
+	void AddSubModelWriter(IACMExpModelWriter SubModel);
+
+	void SetType(int type);
+
+	void SetUses(string usesname);
+
+	IACMExpModelProperty AddProperty(string name, string baseType, string description);
+
+	IACMExpModelProperty AddArray(string name, string baseType, string description, string of);
+
+	IACMExpModelProperty AddLibraryPort(string name, string baseType, string description, string dir, int porttype);
+
+	void AddDim(string propkey, string dimkey);
+
+	IACMExpModelProperty AddGlobal(string name, string referencedType, string description);
+
+	IACMExpModelPort AddPortProperty(string name, string baseType, string description, string variableType, int direction);
+
+	IACMExpEquationWriter AddEquation(string label, string Expressionkey);
+
+	void AddProcCallName(string label);
+
+	IACMProcWriter AddProc(string name, string proc, string dll, string language, bool derivs, bool properties, bool alwayscall, int compat, string source);
+
+	void AddProcInputArg(string name, int type, int dim, bool var);
+
+	void AddProcOutputArg(string name, int type, int dim, bool var);
+
+	IACMExpProcCallWriter AddProcCall(string label, string procname, int id, bool fort);
+
+	void AddProcCallArg(string label, string argkey);
+
+	void SetProcCallCompList(string label, string complistkey);
+
+	void SetProcCallName(string label, string callname);
+
+	IACMExpAssignmentWriter AddAssignment(string assignmentkey);
+
+	void CopyExpression(string newkey, string oldkey);
+
+	IACMExpExpressionWriter AddEmptyExpression(string key);
+
+	IACMExpExpressionWriter AddPropExpression(string key, int type, string propertypath);
+
+	IACMExpExpressionWriter AddIntvalExpression(string key, int type, int intval);
+
+	IACMExpExpressionWriter AddRealvalExpression(string key, int type, double realval);
+
+	IACMExpExpressionWriter AddBoolvalExpression(string key, int type, bool boolval);
+
+	IACMExpExpressionWriter AddStringvalExpression(string key, int type, string stringval);
+
+	IACMExpExpressionWriter AddIntsetExpression(string key, int type, int intsetval);
+
+	IACMExpExpressionWriter AddStringsetExpression(string key, int type, string stringsetval);
+
+	IACMExpExpressionWriter AddOpExpression(string key, int type, int OpCode);
+
+	void AddArraySliceExpression(string key, int type, string slicekey);
+
+	IACMExpExpressionWriter AddIntsetrangeExpression(string key, int type, int lowlimit, int hilimit);
+
+	void SetLRExpression(string key, string keyleft, string keyright);
+
+	int ExpressionSize();
+
+	void AddEquationRuntimeIf(string condname, string condexpkey);
+
+	void AddEquationStructuralIf(string condname, string condexpkey);
+
+	void AddAssignmentStructuralIf(string condname, string condexpkey);
+
+	void AddEquationElse();
+
+	void AddAssignmentElse();
+
+	void AddEquationEndIf();
+
+	void AddAssignmentEndIf();
+
+	void AddEquationFor(string element, string forexpkey);
+
+	void AddAssignmentFor(string element, string forexpkey);
+
+	void AddEquationEndFor();
+
+	void AddAssignmentEndFor();
+
+	IACMExpModelWriter AddLocalModelType(string name);
+
+	void AddScript(string name, string script);
+
+	void AddModelNode(XmlDocument document, XmlNode parent);
+
+	string WriteModel(bool makePrivate);
+
+	IACMExpModelProperty AddDistribution(string name, int dim, string description, string of, string xlen, string ylen, string zlen);
+
+	IACMExpModelProperty AddDistributionArray(string name, string baseType, int dim, string description, string of, string xlen, string ylen, string zlen);
+
+	void AddSourceLanguage(string model, int hashcode, string language);
+
+	IACMExpModelProperty AddExternal(string name, string referencedType, string description);
+
+	IACMExpModelProperty AddExternalArray(string name, string baseType, string description, string of);
+
+	IACMExpModelProperty AddExternalReference(string name, string referencedType, string description);
+
+	IACMExpVariableType AddVariableType(string name);
+
+	IACMExpExpressionWriter AddConnectionExpression(string key, int type);
+
+	void SetConnectionParts(string key, string keystream, string keysource, string keydest);
+
+	IACMExpModelProperty AddVirtualReference(string name, string referencedType, string description);
+
+	IACMExpModelProperty AddVirtualReferenceArray(string name, string baseType, string description, string of);
+
+	IACMExpExpressionWriter AddMTSetExpression(string key, int type);
+
+	void AddComponentsDereference(string key);
+
+	IACMExpModelProperty AddStructRefArray(string name, string baseType, string description, string of);
+
+	void SetProcCallWorkspace(string label, int workspace);
+
+	void SetProcPrecall(string label);
+
+	void SetProcPostcall(string label);
+
+	IACMExpModelProperty AddPropertyWithUsesUOM(string name, string baseType, string description, string usesuom);
+}
+public interface IACMExpProcCallWriter
+{
+	string Label { get; set; }
+
+	string Callname { get; set; }
+
+	string Proccallname { get; set; }
+
+	int Id { get; set; }
+
+	List<ACMExpExpressionWriter> Args { get; set; }
+
+	ACMExpExpressionWriter CompList { get; set; }
+
+	void AddArg(string argkey, ACMExpExpressionWriter Arg);
+
+	void SetCompList(string complistkey, ACMExpExpressionWriter complist);
+
+	void SetCallName(string callname);
+
+	void Write(XmlDocument document, XmlNode parent);
+}
+[ComVisible(true)]
+[Guid("D474F054-DEA1-4729-81BD-76579A7ABB66")]
+public interface IACMExpVariableType
+{
+	string Name { get; set; }
+
+	string Uses { get; set; }
+
+	string Description { get; set; }
+
+	int BaseType { get; set; }
+
+	void SetUses(string usesname);
+
+	void SetPropertyDefaultInteger(string propertyName, int newval);
+
+	void SetPropertyDefaultBoolean(string propertyName, bool newval);
+
+	void SetPropertyDefaultReal(string propertyName, double newval);
+
+	void SetPropertyDefaultString(string propertyName, string newval);
+
+	void AddPropertyDefaultIntSet(string propertyName, int newval);
+
+	void AddPropertyDefaultStringSet(string propertyName, string newval);
+
+	void AddVarNode(XmlDocument document, XmlNode parent);
+}
+public interface IACMProcWriter
+{
+	string Name { get; set; }
+
+	string Proc { get; set; }
+
+	string Dll { get; set; }
+
+	string Language { get; set; }
+
+	bool Derivs { get; set; }
+
+	bool Properties { get; set; }
+
+	bool AlwaysCall { get; set; }
+
+	int Compat { get; set; }
+
+	List<Tuple<int, int, bool>> Input { get; set; }
+
+	List<Tuple<int, int, bool>> Output { get; set; }
+
+	bool Precall { get; set; }
+
+	bool Postcall { get; set; }
+
+	void AddInput(int type, int dim, bool var);
+
+	void AddOutput(int type, int dim, bool var);
+
+	void Write(XmlDocument document, XmlNode parent);
+}
+internal class InterfaceVersion
+{
+	public const double VersionNumber = 41.0;
+
+	public const string VersionString = "41.0";
+
+	public const string GuidSuffix = "0410";
+}
+[ComVisible(true)]
+[Guid("232F03B2-AA13-438F-A159-D0291EDA0410")]
+public interface IModelLibraryManager
+{
+	string CompatableWith { get; set; }
+
+	string CompatableWithMinor { get; set; }
+
+	string[] ACMModels { get; }
+
+	string[] ACMReactions { get; }
+
+	string[] ACMBuitIns { get; }
+
+	event EventHandler LibrariesChanged;
+
+	IACMExpModel CreateModel(string name, string version, bool overwrite);
+
+	void Refresh();
+
+	IACMExpModelInfo FindModelInfo(string model);
+
+	IACMExpModelInfo FindModelInfo(string name, string version);
+
+	IACMExpModelInfo FindReactionInfo(string model);
+
+	IACMExpModel FindModel(string model);
+
+	IACMExpModel FindModel(string name, string version);
+
+	IACMExpModel FindReaction(string model);
+
+	bool InstallNewLibrary(string pathToLibrary, bool overwrite);
+
+	bool UninstallLibrary(string Name, string Version);
+
+	IACMExpModelWriter CreateNewModel(string modelTye);
+
+	IACMExpModel OpenModelFile(string sPkgFile);
+
+	bool CloseModel(string sModelName);
+
+	void UnlockModel(string sModelName);
+
+	void Close();
+
+	IACMExpModelInfo GetModelFileInfo(string sPkgFile);
+
+	void CloseModelFile(IACMExpModel oModel);
+}
+[ComVisible(true)]
+[Guid("F956B434-2C1B-43EA-9C81-BF63CA3FE06D")]
+public interface IACMGridForm
+{
+	string Id { get; }
+
+	string Mode { get; }
+
+	string GridType { get; }
+
+	bool Default { get; }
+
+	string View { get; }
+
+	string Name { get; }
+
+	bool Autosave { get; }
+
+	string[] Keys { get; }
+
+	string[] Values { get; }
+}
+[ComVisible(true)]
+[Guid("7D0FB9DB-1591-42B7-8700-BCC95824E96D")]
+public interface IACMCustomFormFolder
+{
+	string Id { get; }
+
+	string DisplayName { get; }
+
+	IACMCustomFormGroup[] Groups { get; }
+}
+[ComVisible(true)]
+[Guid("5E40DDD1-D996-47D8-A386-376B4150AF8F")]
+public interface IACMCustomFormGroup
+{
+	string Id { get; }
+
+	string DisplayName { get; }
+
+	IACMCustomForm[] Forms { get; }
+}
+[ComVisible(true)]
+[Guid("9FE4E51B-2D5F-4379-8663-1CD77579589D")]
+public interface IACMCustomForm
+{
+	bool Tabbed { get; }
+
+	string FormType { get; }
+
+	string ProgId { get; }
+
+	Guid Clsid { get; }
+}
+[ComVisible(true)]
+[Guid("CF61646E-7B86-4377-8BF8-928008960410")]
+[ProgId("AspenTech.Modeler.ACMExpLibManager.41.0")]
+[ClassInterface(ClassInterfaceType.AutoDispatch)]
+public class ModelLibraryManager : IModelLibraryManager
+{
+	private Dictionary<Tuple<string, string>, string> InstalledLibraries = new Dictionary<Tuple<string, string>, string>();
+
+	private Dictionary<Tuple<string, string>, string> WorkingLibraries = new Dictionary<Tuple<string, string>, string>();
+
+	private List<Tuple<string, string>> OpenLibraries = new List<Tuple<string, string>>();
+
+	private string installPath;
+
+	private string workingPath;
+
+	internal const decimal EarliestSupportedVerion = 37.0m;
+
+	private static List<ACMExpModelInfo> allModels = null;
+
+	private static bool initialized = false;
+
+	private static bool unexpectedBuiltin = false;
+
+	public string CompatableWith { get; set; }
+
+	public string CompatableWithMinor { get; set; }
+
+	public string[] ACMModels
+	{
+		get
+		{
+			if (!initialized)
+			{
+				Refresh();
+			}
+			if (allModels == null)
+			{
+				return null;
+			}
+			return (from x in allModels
+				where x.Show && (x.ClassType == ACMExEntryType.ACMBLOCK || x.ClassType == ACMExEntryType.NEWACMBLOCK || x.ClassType == ACMExEntryType.NEWACMSTRUCTURE)
+				select x.Display).ToArray();
+		}
+	}
+
+	public string[] ACMReactions
+	{
+		get
+		{
+			if (!initialized)
+			{
+				Refresh();
+			}
+			if (allModels == null)
+			{
+				return null;
+			}
+			return (from x in allModels
+				where x.Show && (x.ClassType == ACMExEntryType.ACMREACTION || x.ClassType == ACMExEntryType.NEWACMREACTION)
+				select x.Display).ToArray();
+		}
+	}
+
+	public string[] ACMBuitIns
+	{
+		get
+		{
+			if (!initialized)
+			{
+				Refresh();
+			}
+			if (allModels == null)
+			{
+				return null;
+			}
+			return (from x in allModels
+				where x.Show && x.ClassType == ACMExEntryType.ACMBLOCKBUILTIN
+				select x.Display).ToArray();
+		}
+	}
+
+	public event EventHandler LibrariesChanged;
+
+	public ModelLibraryManager()
+	{
+		CompatableWith = "41.0";
+		CompatableWithMinor = "1";
+		string folderPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+		installPath = Path.Combine(folderPath, "AspenTech\\AM Models");
+		if (!Directory.Exists(installPath) && installPath.IndexOf("..\\") < 0 && installPath.IndexOf("\\..") < 0)
+		{
+			try
+			{
+				Directory.CreateDirectory(installPath);
+			}
+			catch (IOException)
+			{
+				installPath = null;
+			}
+		}
+		Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+		workingPath = Path.Combine(folderPath, "Temp\\AspenTech\\AM Models");
+		if (!Directory.Exists(workingPath) && workingPath.IndexOf("..\\") < 0 && workingPath.IndexOf("\\..") < 0)
+		{
+			try
+			{
+				Directory.CreateDirectory(workingPath);
+			}
+			catch (IOException)
+			{
+			}
+		}
+		if (!initialized)
+		{
+			Refresh();
+		}
+	}
+
+	public IACMExpModel CreateModel(string name, string version, bool overwrite)
+	{
+		if (string.IsNullOrEmpty(workingPath))
+		{
+			return null;
+		}
+		string text = Path.Combine(Path.Combine(workingPath, version), name);
+		Tuple<string, string> tuple = Tuple.Create(name, version);
+		if (!overwrite && (InstalledLibraries.ContainsKey(tuple) || WorkingLibraries.ContainsKey(tuple)))
+		{
+			return null;
+		}
+		if (WorkingLibraries.ContainsKey(tuple) && Directory.Exists(text))
+		{
+			try
+			{
+				Directory.Delete(text, recursive: true);
+			}
+			catch
+			{
+			}
+		}
+		if (!Directory.Exists(text))
+		{
+			try
+			{
+				Directory.CreateDirectory(text);
+			}
+			catch (IOException)
+			{
+				return null;
+			}
+		}
+		if (!WorkingLibraries.ContainsKey(tuple))
+		{
+			WorkingLibraries.Add(tuple, text);
+		}
+		if (!OpenLibraries.Contains(tuple))
+		{
+			OpenLibraries.Add(tuple);
+		}
+		NewACMExpModel result = new NewACMExpModel(name, version, null);
+		OnLibrariesChanged();
+		return result;
+	}
+
+	public bool InstallNewLibrary(string pathToLibrary, bool overwrite)
+	{
+		//IL_0030: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0036: Expected O, but got Unknown
+		if (pathToLibrary.IndexOf("..\\") >= 0 || pathToLibrary.IndexOf("\\..") >= 0)
+		{
+			return false;
+		}
+		string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AspenTech\\AES\\AM Models\\");
+		AspenPackage val = new AspenPackage();
+		if (!val.Open(pathToLibrary, FileMode.Open))
+		{
+			return false;
+		}
+		byte[] bytes = val.GetRootPart().SaveToData();
+		val.Close();
+		val = null;
+		string xml = Encoding.ASCII.GetString(bytes);
+		XmlDocument xmlDocument = new XmlDocument();
+		xmlDocument.LoadXml(xml);
+		XmlNode xmlNode = xmlDocument.SelectSingleNode("/ATMLZ");
+		string value = xmlNode.Attributes["Name"].Value;
+		string value2 = xmlNode.Attributes["Version"].Value;
+		decimal result = 0.0m;
+		if (!decimal.TryParse(value2, NumberStyles.Any, CultureInfo.InvariantCulture, out result))
+		{
+			return false;
+		}
+		decimal result2 = 0.0m;
+		decimal.TryParse(CompatableWith, NumberStyles.Any, CultureInfo.InvariantCulture, out result2);
+		if (result >= 37.0m && result <= result2)
+		{
+			if (value.ToUpper() == "BATCHSEP" || value.ToUpper() == "ARTRXNCONTAINER" || value.ToUpper() == "VALVE" || value.ToUpper() == "RCSTR3" || value.ToUpper() == "RPLUGPDE")
+			{
+				return false;
+			}
+			string text = Path.Combine(path, value2);
+			if (text.IndexOf("\\..") >= 0 || text.IndexOf("..\\") >= 0)
+			{
+				return false;
+			}
+			if (!Directory.Exists(text))
+			{
+				Directory.CreateDirectory(text);
+			}
+			string text2 = Path.Combine(text, value + ".atmlz");
+			if (text2.IndexOf("\\..") >= 0 || text2.IndexOf("..\\") >= 0)
+			{
+				return false;
+			}
+			bool flag = false;
+			try
+			{
+				CloseModelVersion(value, value2);
+				File.Copy(pathToLibrary, text2, overwrite);
+				flag = true;
+			}
+			catch (IOException)
+			{
+				flag = false;
+			}
+			if (flag)
+			{
+				Refresh();
+			}
+			return flag;
+		}
+		return false;
+	}
+
+	public bool UninstallLibrary(string Name, string Version)
+	{
+		bool result = false;
+		Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "AspenTech\\AES\\apmodelcatalog.xml");
+		string text = Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AspenTech\\AES\\AM Models\\"), Path.Combine(Version, Name + ".atmlz"));
+		double result2 = 0.0;
+		double.TryParse(Version, NumberStyles.Any, CultureInfo.InvariantCulture, out result2);
+		if (result2 >= 35.0)
+		{
+			if (!File.Exists(text) || text.IndexOf("\\..") >= 0 || text.IndexOf("..\\") >= 0)
+			{
+				return false;
+			}
+			try
+			{
+				CloseModelVersion(Name, Version);
+				File.Delete(text);
+				result = true;
+			}
+			catch
+			{
+			}
+		}
+		Refresh();
+		return result;
+	}
+
+	public IACMExpModel OpenModelFile(string sPkgFile)
+	{
+		IACMExpModel result = null;
+		if (string.Compare(Path.GetExtension(sPkgFile), ".dll", ignoreCase: true) == 0)
+		{
+			result = new OldACMExpModel(Path.GetFileNameWithoutExtension(sPkgFile), CompatableWith, sPkgFile);
+		}
+		else
+		{
+			ACMExpModelInfo aCMExpModelInfo = new ACMExpModelInfo(ACMExEntryType.NEWACMBLOCK);
+			if (aCMExpModelInfo.InitFromPackage(sPkgFile))
+			{
+				result = aCMExpModelInfo.Model;
+			}
+		}
+		return result;
+	}
+
+	public IACMExpModelInfo GetModelFileInfo(string sPkgFile)
+	{
+		IACMExpModelInfo result = null;
+		ACMExpModelInfo aCMExpModelInfo = new ACMExpModelInfo(ACMExEntryType.NEWACMBLOCK);
+		if (aCMExpModelInfo.InitFromPackage(sPkgFile))
+		{
+			result = aCMExpModelInfo;
+		}
+		return result;
+	}
+
+	public bool CloseModel(string sModelName)
+	{
+		IACMExpModelInfo iACMExpModelInfo = FindModelInfo(sModelName);
+		if (iACMExpModelInfo == null || iACMExpModelInfo.Model == null)
+		{
+			return true;
+		}
+		ACMExpModelInfo aCMExpModelInfo = iACMExpModelInfo as ACMExpModelInfo;
+		allModels.Remove(aCMExpModelInfo);
+		aCMExpModelInfo.Locked = false;
+		aCMExpModelInfo.Model = null;
+		return true;
+	}
+
+	public void CloseModelFile(IACMExpModel oModel)
+	{
+		if (oModel is NewACMExpModel newACMExpModel)
+		{
+			newACMExpModel.Close();
+		}
+	}
+
+	private bool CloseModelVersion(string sModelName, string version)
+	{
+		IACMExpModelInfo iACMExpModelInfo = FindModelInfo(sModelName, version);
+		if (iACMExpModelInfo == null || iACMExpModelInfo.Model == null)
+		{
+			return true;
+		}
+		ACMExpModelInfo aCMExpModelInfo = iACMExpModelInfo as ACMExpModelInfo;
+		allModels.Remove(aCMExpModelInfo);
+		aCMExpModelInfo.Locked = false;
+		aCMExpModelInfo.Model = null;
+		return true;
+	}
+
+	public void Refresh()
+	{
+		allModels = new List<ACMExpModelInfo>();
+		Dictionary<string, double> duplicateModelNames = new Dictionary<string, double>();
+		InstalledLibraries = new Dictionary<Tuple<string, string>, string>();
+		WorkingLibraries = new Dictionary<Tuple<string, string>, string>();
+		string text = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AspenTech\\AES\\AM Models");
+		if (!Directory.Exists(text) && text.IndexOf("\\..") < 0 && text.IndexOf("..\\") < 0)
+		{
+			Directory.CreateDirectory(text);
+		}
+		decimal result = 0.0m;
+		decimal.TryParse(CompatableWith, NumberStyles.Any, CultureInfo.InvariantCulture, out result);
+		string[] files = Directory.GetFiles(text, "*.atmlz", SearchOption.AllDirectories);
+		foreach (string text2 in files)
+		{
+			string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(text2);
+			string name = new DirectoryInfo(Path.GetDirectoryName(text2)).Name;
+			decimal result2 = 0.0m;
+			if (!decimal.TryParse(name, NumberStyles.Any, CultureInfo.InvariantCulture, out result2) || result2 < 37.0m || result2 > result)
+			{
+				continue;
+			}
+			Tuple<string, string> tuple = new Tuple<string, string>(fileNameWithoutExtension, name);
+			if (string.Compare(tuple.Item1, "BatchSep", ignoreCase: true) == 0 || string.Compare(tuple.Item1, "ARTRXNCONTAINER", ignoreCase: true) == 0 || string.Compare(tuple.Item1, "Valve", ignoreCase: true) == 0 || string.Compare(tuple.Item1, "RCSTR3", ignoreCase: true) == 0 || string.Compare(tuple.Item1, "RplugPDE", ignoreCase: true) == 0)
+			{
+				if (!unexpectedBuiltin)
+				{
+					unexpectedBuiltin = true;
+				}
+				continue;
+			}
+			InstalledLibraries.Add(tuple, text2);
+			WorkingLibraries.Add(tuple, text2);
+			ACMExpModelInfo aCMExpModelInfo = new ACMExpModelInfo(ACMExEntryType.NEWACMBLOCK);
+			if (!aCMExpModelInfo.InitFromPackage(text2))
+			{
+				continue;
+			}
+			allModels.Add(aCMExpModelInfo);
+			double dVersion = aCMExpModelInfo.DVersion;
+			if (duplicateModelNames.ContainsKey(aCMExpModelInfo.Name))
+			{
+				if (dVersion > duplicateModelNames[aCMExpModelInfo.Name])
+				{
+					duplicateModelNames[aCMExpModelInfo.Name] = dVersion;
+				}
+			}
+			else
+			{
+				duplicateModelNames.Add(aCMExpModelInfo.Name, dVersion);
+			}
+		}
+		string text3 = string.Empty;
+		RegistryKey registryKey = Registry.LocalMachine.OpenSubKey("Software\\AspenTech\\AMSystem\\" + CompatableWith + "\\Dir");
+		if (registryKey != null)
+		{
+			object value = registryKey.GetValue("Bin");
+			if (value != null)
+			{
+				text3 = value.ToString() + "\\";
+			}
+		}
+		ACMExpModelInfo aCMExpModelInfo2 = new ACMExpModelInfo(ACMExEntryType.ACMBLOCKBUILTIN);
+		aCMExpModelInfo2.Name = "BatchSep";
+		aCMExpModelInfo2.Version = CompatableWith;
+		aCMExpModelInfo2.PackageFile = text3 + "BatchSep.dll";
+		aCMExpModelInfo2.Category = "Batch Models";
+		allModels.Add(aCMExpModelInfo2);
+		string[] array = CompatableWith.Split('.');
+		if (array.Length > 1)
+		{
+			string text4 = $"Modeler{array[0]}{array[1]}_{CompatableWithMinor}.dll";
+			ACMExpModelInfo aCMExpModelInfo3 = new ACMExpModelInfo(ACMExEntryType.ACMBLOCKBUILTIN);
+			aCMExpModelInfo3.Name = "ARTRXNCONTAINER";
+			aCMExpModelInfo3.Version = CompatableWith;
+			aCMExpModelInfo3.PackageFile = text3 + text4;
+			aCMExpModelInfo3.Category = string.Empty;
+			aCMExpModelInfo3.Show = false;
+			allModels.Add(aCMExpModelInfo3);
+		}
+		foreach (ACMExpModelInfo item in allModels.Where((ACMExpModelInfo m) => duplicateModelNames.ContainsKey(m.Name) && m.DVersion < duplicateModelNames[m.Name]))
+		{
+			string arg = ((item.Name.Length > 24) ? item.Name.Substring(0, 24) : item.Name);
+			item.Display = $"{arg} v{item.Version.Replace('.', '_')}";
+		}
+		initialized = true;
+	}
+
+	public IACMExpModelInfo FindModelInfo(string name)
+	{
+		if (!initialized)
+		{
+			Refresh();
+		}
+		if (allModels == null)
+		{
+			return null;
+		}
+		return allModels.FirstOrDefault((ACMExpModelInfo x) => string.Equals(x.Display, name, StringComparison.OrdinalIgnoreCase) && (x.ClassType == ACMExEntryType.ACMBLOCK || x.ClassType == ACMExEntryType.NEWACMBLOCK || x.ClassType == ACMExEntryType.NEWACMSTRUCTURE || x.ClassType == ACMExEntryType.ACMBLOCKBUILTIN));
+	}
+
+	public IACMExpModel FindModel(string name)
+	{
+		IACMExpModelInfo iACMExpModelInfo = FindModelInfo(name);
+		if (iACMExpModelInfo == null || iACMExpModelInfo.Model == null)
+		{
+			return null;
+		}
+		(iACMExpModelInfo as ACMExpModelInfo).Locked = true;
+		return iACMExpModelInfo.Model;
+	}
+
+	public void UnlockModel(string name)
+	{
+		IACMExpModelInfo iACMExpModelInfo = FindModelInfo(name);
+		if (iACMExpModelInfo != null && iACMExpModelInfo.Model != null)
+		{
+			(iACMExpModelInfo as ACMExpModelInfo).Locked = false;
+		}
+	}
+
+	public IACMExpModelInfo FindModelInfo(string name, string version)
+	{
+		if (!initialized)
+		{
+			Refresh();
+		}
+		if (allModels == null)
+		{
+			return null;
+		}
+		return allModels.FirstOrDefault((ACMExpModelInfo x) => string.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase) && x.Version == version && (x.ClassType == ACMExEntryType.ACMBLOCK || x.ClassType == ACMExEntryType.NEWACMBLOCK || x.ClassType == ACMExEntryType.NEWACMSTRUCTURE || x.ClassType == ACMExEntryType.ACMBLOCKBUILTIN));
+	}
+
+	public IACMExpModel FindModel(string name, string version)
+	{
+		IACMExpModelInfo iACMExpModelInfo = FindModelInfo(name, version);
+		if (iACMExpModelInfo == null || iACMExpModelInfo.Model == null)
+		{
+			return null;
+		}
+		(iACMExpModelInfo as ACMExpModelInfo).Locked = true;
+		return iACMExpModelInfo.Model;
+	}
+
+	public IACMExpModelInfo FindReactionInfo(string name)
+	{
+		if (!initialized)
+		{
+			Refresh();
+		}
+		if (allModels == null)
+		{
+			return null;
+		}
+		return allModels.FirstOrDefault((ACMExpModelInfo x) => string.Equals(x.Display, name, StringComparison.OrdinalIgnoreCase) && (x.ClassType == ACMExEntryType.ACMREACTION || x.ClassType == ACMExEntryType.NEWACMREACTION));
+	}
+
+	public IACMExpModel FindReaction(string name)
+	{
+		IACMExpModelInfo iACMExpModelInfo = FindReactionInfo(name);
+		if (iACMExpModelInfo == null || iACMExpModelInfo.Model == null)
+		{
+			return null;
+		}
+		(iACMExpModelInfo as ACMExpModelInfo).Locked = true;
+		return iACMExpModelInfo.Model;
+	}
+
+	public IACMExpModelWriter CreateNewModel(string modelTye)
+	{
+		return new NewModelWriter(this)
+		{
+			Name = modelTye
+		};
+	}
+
+	protected virtual void OnLibrariesChanged()
+	{
+		if (this.LibrariesChanged != null)
+		{
+			this.LibrariesChanged(this, EventArgs.Empty);
+		}
+	}
+
+	public void Close()
+	{
+	}
+}
+public class ACMExpModelInfo : IACMExpModelInfo
+{
+	private string _Display;
+
+	private IACMExpModel _Model;
+
+	private FileStream _fsLock;
+
+	public ACMExEntryType ClassType { get; internal set; }
+
+	public string Name { get; internal set; }
+
+	public string Version { get; internal set; }
+
+	public string RevisionGuid { get; internal set; }
+
+	public string Timestamp { get; internal set; }
+
+	public string Description { get; internal set; }
+
+	public string PackageFile { get; internal set; }
+
+	public string Category { get; internal set; }
+
+	public bool Show { get; internal set; }
+
+	public string Display
+	{
+		get
+		{
+			if (string.IsNullOrEmpty(_Display))
+			{
+				return Name;
+			}
+			return _Display;
+		}
+		internal set
+		{
+			_Display = value;
+		}
+	}
+
+	public double DVersion
+	{
+		get
+		{
+			double result = 0.0;
+			double.TryParse(Version, NumberStyles.Any, CultureInfo.InvariantCulture, out result);
+			return result;
+		}
+	}
+
+	public IACMExpModel Model
+	{
+		get
+		{
+			if (_Model != null)
+			{
+				return _Model;
+			}
+			switch (ClassType)
+			{
+			case ACMExEntryType.ACMBLOCK:
+				_Model = new OldACMExpModel(Name, Version, PackageFile);
+				break;
+			case ACMExEntryType.NEWACMBLOCK:
+				_Model = new NewACMExpModel(Name, Version, PackageFile);
+				break;
+			case ACMExEntryType.NEWACMSTRUCTURE:
+				_Model = new NewACMExpModel(Name, Version, PackageFile);
+				break;
+			case ACMExEntryType.ACMBLOCKBUILTIN:
+				_Model = new ACMBuiltIn(Name, Version, PackageFile, Category);
+				break;
+			case ACMExEntryType.ACMREACTION:
+				_Model = new OldACMExpReaction(Name, Version, PackageFile);
+				break;
+			case ACMExEntryType.NEWACMREACTION:
+				_Model = new NewACMExpModel(Name, Version, PackageFile);
+				break;
+			}
+			if (_Model != null)
+			{
+				_Model.Show = Show;
+			}
+			return _Model;
+		}
+		internal set
+		{
+			_Model = value;
+		}
+	}
+
+	public bool Locked
+	{
+		get
+		{
+			return _fsLock != null;
+		}
+		internal set
+		{
+			if (ClassType == ACMExEntryType.NEWACMBLOCK)
+			{
+				if (value && _fsLock == null)
+				{
+					_fsLock = File.Open(PackageFile, FileMode.Open, FileAccess.Read, FileShare.Read);
+				}
+				if (!value && _fsLock != null)
+				{
+					_fsLock.Dispose();
+					_fsLock = null;
+				}
+			}
+		}
+	}
+
+	public string Compiled { get; internal set; }
+
+	public ACMExpModelInfo(ACMExEntryType type)
+	{
+		ClassType = type;
+		Show = true;
+	}
+
+	public bool InitFromPackage(string sPkgFile)
+	{
+		//IL_0009: Unknown result type (might be due to invalid IL or missing references)
+		//IL_000e: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0017: Unknown result type (might be due to invalid IL or missing references)
+		bool result = false;
+		PackageFile = sPkgFile;
+		try
+		{
+			AspenPackage val = new AspenPackage();
+			val.Open(sPkgFile, FileMode.Open);
+			byte[] bytes = val.GetRootPart().SaveToData();
+			val.Close();
+			string xml = Encoding.ASCII.GetString(bytes);
+			XmlDocument xmlDocument = new XmlDocument();
+			xmlDocument.LoadXml(xml);
+			XmlNode xmlNode = xmlDocument.SelectSingleNode("/ATMLZ");
+			Name = xmlNode.Attributes["Name"].Value;
+			Version = xmlNode.Attributes["Version"].Value;
+			RevisionGuid = xmlNode.Attributes["GUID"].Value;
+			Timestamp = xmlNode.Attributes["Timestamp"].Value;
+			Category = xmlNode.Attributes["LibraryCategory"].Value;
+			if (xmlNode.Attributes["Description"] != null)
+			{
+				Description = xmlNode.Attributes["Description"].Value;
+			}
+			if (xmlNode.Attributes["Compiled"] != null)
+			{
+				Compiled = xmlNode.Attributes["Compiled"].Value;
+			}
+			string value = xmlNode.Attributes["Class"].Value;
+			int result2 = 0;
+			if (int.TryParse(value, out result2))
+			{
+				ACMExEntryType aCMExEntryType = (ACMExEntryType)result2;
+				if (aCMExEntryType == ACMExEntryType.NEWACMBLOCK || aCMExEntryType == ACMExEntryType.NEWACMREACTION || aCMExEntryType == ACMExEntryType.NEWACMSTRUCTURE)
+				{
+					ClassType = aCMExEntryType;
+				}
+			}
+			result = true;
+		}
+		catch
+		{
+		}
+		return result;
+	}
+}
+internal class NewACMExpModel : IACMExpModel
+{
+	public string installedLocation;
+
+	public string WorkingFolder;
+
+	public bool isOpen;
+
+	private string sGuid = string.Empty;
+
+	private string sTimestamp = string.Empty;
+
+	private string[] sLibraryCategory;
+
+	private static int count;
+
+	private string _compiled;
+
+	private string _description;
+
+	public bool ReadOnly => true;
+
+	public bool Show { get; set; }
+
+	public string Name { get; set; }
+
+	public string Display { get; set; }
+
+	public string Compiled
+	{
+		get
+		{
+			return _compiled;
+		}
+		set
+		{
+			_compiled = value;
+			UpdateInfo();
+		}
+	}
+
+	public string Description
+	{
+		get
+		{
+			return _description;
+		}
+		set
+		{
+			_description = value;
+			UpdateInfo();
+		}
+	}
+
+	public string Version { get; private set; }
+
+	private double VersionNumber { get; set; }
+
+	public string RevisionGuid => sGuid;
+
+	public string Timestamp => sTimestamp;
+
+	public string[] LibraryCategories
+	{
+		get
+		{
+			if (sLibraryCategory == null)
+			{
+				return ClassType switch
+				{
+					ACMExEntryType.NEWACMREACTION => new string[1] { "ACM Reactions" }, 
+					ACMExEntryType.NEWACMSTRUCTURE => new string[1] { "ACM Global Structures" }, 
+					_ => new string[1] { "ACM Models" }, 
+				};
+			}
+			return sLibraryCategory;
+		}
+		set
+		{
+			sLibraryCategory = value;
+			UpdateInfo();
+		}
+	}
+
+	public string SolverSettings
+	{
+		get
+		{
+			string text = Path.Combine(WorkingFolder, Path.Combine("SolverSettings", Name + "_SolverSettings.xml"));
+			if (File.Exists(text))
+			{
+				XmlDocument xmlDocument = new XmlDocument();
+				xmlDocument.Load(text);
+				return xmlDocument.InnerXml;
+			}
+			return null;
+		}
+		set
+		{
+			string text = Path.Combine(WorkingFolder, "SolverSettings");
+			if (!Directory.Exists(text))
+			{
+				Directory.CreateDirectory(text);
+			}
+			string text2 = Path.Combine(text, Name + "_SolverSettings.xml");
+			if (File.Exists(text2))
+			{
+				File.Delete(text2);
+			}
+			string xml = value.Substring(0, value.LastIndexOf(">") + 1);
+			XmlDocument xmlDocument = new XmlDocument();
+			xmlDocument.LoadXml(xml);
+			xmlDocument.Save(text2);
+			UpdateInfo();
+		}
+	}
+
+	public string CustomModeling
+	{
+		get
+		{
+			if (!Directory.Exists(Path.Combine(WorkingFolder, "CustomModeling")))
+			{
+				return null;
+			}
+			string[] files = Directory.GetFiles(Path.Combine(WorkingFolder, "CustomModeling"), "*.acmf", SearchOption.TopDirectoryOnly);
+			if (files.Length == 0)
+			{
+				return null;
+			}
+			return Path.Combine(WorkingFolder, Path.Combine("CustomModeling", files[0]));
+		}
+		set
+		{
+			if (!Directory.Exists(Path.Combine(WorkingFolder, "CustomModeling")))
+			{
+				Directory.CreateDirectory(Path.Combine(WorkingFolder, "CustomModeling"));
+			}
+			File.Copy(value, Path.Combine(WorkingFolder, Path.Combine("CustomModeling", Path.GetFileName(value))), overwrite: true);
+			UpdateInfo();
+		}
+	}
+
+	public ACMExEntryType ClassType { get; set; }
+
+	public IACMGridForm[] GridForms
+	{
+		get
+		{
+			List<IACMGridForm> list = new List<IACMGridForm>();
+			try
+			{
+				XmlDocument xmlDocument = new XmlDocument();
+				xmlDocument.LoadXml(StyleSheet);
+				XmlNamespaceManager xmlNamespaceManager = new XmlNamespaceManager(xmlDocument.NameTable);
+				xmlNamespaceManager.AddNamespace("acm", "urn:acmsheets");
+				foreach (XmlNode item in xmlDocument.SelectNodes("//acm:Stylesheet", xmlNamespaceManager))
+				{
+					list.Add(ACMExpGridForm.Create(item));
+				}
+			}
+			catch
+			{
+			}
+			return list?.ToArray();
+		}
+		set
+		{
+			throw new NotImplementedException();
+		}
+	}
+
+	public IACMCustomFormFolder[] CustomForms
+	{
+		get
+		{
+			throw new NotImplementedException();
+		}
+		set
+		{
+			throw new NotImplementedException();
+		}
+	}
+
+	public string CustomFormsXML
+	{
+		get
+		{
+			string text = Path.Combine(WorkingFolder, Path.Combine("Forms", Name + "_CustomForms.xml"));
+			if (File.Exists(text))
+			{
+				XmlDocument xmlDocument = new XmlDocument();
+				xmlDocument.Load(text);
+				return xmlDocument.InnerXml;
+			}
+			return null;
+		}
+		set
+		{
+			string text = Path.Combine(WorkingFolder, "Forms");
+			if (!Directory.Exists(text))
+			{
+				Directory.CreateDirectory(text);
+			}
+			string text2 = Path.Combine(text, Name + "_CustomForms.xml");
+			if (File.Exists(text2))
+			{
+				File.Delete(text2);
+			}
+			XmlDocument xmlDocument = new XmlDocument();
+			xmlDocument.LoadXml(value);
+			xmlDocument.Save(text2);
+			UpdateInfo();
+		}
+	}
+
+	public string PortDefinition
+	{
+		get
+		{
+			if (File.Exists(Path.Combine(WorkingFolder, Path.Combine("PortDef", Name + "_PortDef.xml"))))
+			{
+				XmlDocument xmlDocument = new XmlDocument();
+				xmlDocument.Load(Path.Combine(WorkingFolder, Path.Combine("PortDef", Name + "_PortDef.xml")));
+				return xmlDocument.InnerXml;
+			}
+			return null;
+		}
+		set
+		{
+			if (!Directory.Exists(Path.Combine(WorkingFolder, "PortDef")))
+			{
+				Directory.CreateDirectory(Path.Combine(WorkingFolder, "PortDef"));
+			}
+			if (File.Exists(Path.Combine(WorkingFolder, Path.Combine("PortDef", Name + "_PortDef.xml"))))
+			{
+				File.Delete(Path.Combine(WorkingFolder, Path.Combine("PortDef", Name + "_PortDef.xml")));
+			}
+			XmlDocument xmlDocument = new XmlDocument();
+			xmlDocument.LoadXml(value);
+			xmlDocument.Save(Path.Combine(WorkingFolder, Path.Combine("PortDef", Name + "_PortDef.xml")));
+			UpdateInfo();
+		}
+	}
+
+	public string[] Procedures
+	{
+		get
+		{
+			if (!Directory.Exists(Path.Combine(WorkingFolder, "Procedures")))
+			{
+				return null;
+			}
+			return Directory.GetFiles(Path.Combine(WorkingFolder, "Procedures"), "*.dll");
+		}
+		set
+		{
+			if (!Directory.Exists(Path.Combine(WorkingFolder, "Procedures")))
+			{
+				Directory.CreateDirectory(Path.Combine(WorkingFolder, "Procedures"));
+			}
+			foreach (string text in value)
+			{
+				File.Copy(text, Path.Combine(WorkingFolder, Path.Combine("Procedures", Path.GetFileName(text))), overwrite: true);
+			}
+			UpdateInfo();
+		}
+	}
+
+	public string StyleSheet
+	{
+		get
+		{
+			if (File.Exists(Path.Combine(WorkingFolder, Path.Combine("Forms", Name + "_Forms.xml"))))
+			{
+				XmlDocument xmlDocument = new XmlDocument();
+				xmlDocument.Load(Path.Combine(WorkingFolder, Path.Combine("Forms", Name + "_Forms.xml")));
+				return xmlDocument.InnerXml;
+			}
+			return null;
+		}
+		set
+		{
+			if (!Directory.Exists(Path.Combine(WorkingFolder, "Forms")))
+			{
+				Directory.CreateDirectory(Path.Combine(WorkingFolder, "Forms"));
+			}
+			if (File.Exists(Path.Combine(WorkingFolder, Path.Combine("Forms", Name + "_Forms.xml"))))
+			{
+				File.Delete(Path.Combine(WorkingFolder, Path.Combine("Forms", Name + "_Forms.xml")));
+			}
+			XmlDocument xmlDocument = new XmlDocument();
+			xmlDocument.LoadXml(value);
+			xmlDocument.Save(Path.Combine(WorkingFolder, Path.Combine("Forms", Name + "_Forms.xml")));
+			UpdateInfo();
+		}
+	}
+
+	public string ReactionConfiguration
+	{
+		get
+		{
+			if (File.Exists(Path.Combine(WorkingFolder, Path.Combine("ReactionConfig", Name + "-RXNVars.xml"))))
+			{
+				XmlDocument xmlDocument = new XmlDocument();
+				xmlDocument.Load(Path.Combine(WorkingFolder, Path.Combine("ReactionConfig", Name + "-RXNVars.xml")));
+				return xmlDocument.InnerXml;
+			}
+			return null;
+		}
+		set
+		{
+			if (!Directory.Exists(Path.Combine(WorkingFolder, "ReactionConfig")))
+			{
+				Directory.CreateDirectory(Path.Combine(WorkingFolder, "ReactionConfig"));
+			}
+			if (File.Exists(Path.Combine(WorkingFolder, Path.Combine("ReactionConfig", Name + "-RXNVars.xml"))))
+			{
+				File.Delete(Path.Combine(WorkingFolder, Path.Combine("ReactionConfig", Name + "-RXNVars.xml")));
+			}
+			string xml = value.Substring(0, value.LastIndexOf(">") + 1);
+			XmlDocument xmlDocument = new XmlDocument();
+			xmlDocument.LoadXml(xml);
+			xmlDocument.Save(Path.Combine(WorkingFolder, Path.Combine("ReactionConfig", Name + "-RXNVars.xml")));
+			UpdateInfo();
+		}
+	}
+
+	public string[] Scripts
+	{
+		get
+		{
+			if (!Directory.Exists(Path.Combine(WorkingFolder, "Scripts")))
+			{
+				return null;
+			}
+			return Directory.GetFiles(Path.Combine(WorkingFolder, "Scripts"), Name + "_Script_*.dll");
+		}
+		set
+		{
+			if (!Directory.Exists(Path.Combine(WorkingFolder, "Scripts")))
+			{
+				Directory.CreateDirectory(Path.Combine(WorkingFolder, "Scripts"));
+			}
+			foreach (string text in value)
+			{
+				File.Copy(text, Path.Combine(WorkingFolder, Path.Combine("Scripts", Name + "_Script_" + Path.GetFileNameWithoutExtension(text) + ".dll")), overwrite: true);
+			}
+			UpdateInfo();
+		}
+	}
+
+	public string ModelDefinition
+	{
+		get
+		{
+			if (File.Exists(Path.Combine(WorkingFolder, Path.Combine("ModelDef", Name + "_Export.xml"))))
+			{
+				XmlDocument xmlDocument = new XmlDocument();
+				xmlDocument.Load(Path.Combine(WorkingFolder, Path.Combine("ModelDef", Name + "_Export.xml")));
+				return xmlDocument.InnerXml;
+			}
+			return null;
+		}
+		set
+		{
+			if (!Directory.Exists(Path.Combine(WorkingFolder, "ModelDef")))
+			{
+				Directory.CreateDirectory(Path.Combine(WorkingFolder, "ModelDef"));
+			}
+			string path = Path.Combine(WorkingFolder, Path.Combine("ModelDef", Name + "_Export.xml"));
+			if (File.Exists(path))
+			{
+				File.Delete(path);
+			}
+			File.WriteAllText(path, value);
+			UpdateInfo();
+		}
+	}
+
+	public string Plots
+	{
+		get
+		{
+			if (File.Exists(Path.Combine(WorkingFolder, Path.Combine("Plots", Name + "_Plots.xml"))))
+			{
+				XmlDocument xmlDocument = new XmlDocument();
+				xmlDocument.Load(Path.Combine(WorkingFolder, Path.Combine("Plots", Name + "_Plots.xml")));
+				return xmlDocument.InnerXml;
+			}
+			return null;
+		}
+		set
+		{
+			if (!Directory.Exists(Path.Combine(WorkingFolder, "Plots")))
+			{
+				Directory.CreateDirectory(Path.Combine(WorkingFolder, "Plots"));
+			}
+			if (File.Exists(Path.Combine(WorkingFolder, Path.Combine("Plots", Name + "_Plots.xml"))))
+			{
+				File.Delete(Path.Combine(WorkingFolder, Path.Combine("Plots", Name + "_Plots.xml")));
+			}
+			XmlDocument xmlDocument = new XmlDocument();
+			xmlDocument.LoadXml(value);
+			xmlDocument.Save(Path.Combine(WorkingFolder, Path.Combine("Plots", Name + "_Plots.xml")));
+			UpdateInfo();
+		}
+	}
+
+	public string Help
+	{
+		get
+		{
+			if (!Directory.Exists(Path.Combine(WorkingFolder, "Help")))
+			{
+				return null;
+			}
+			string[] files = Directory.GetFiles(Path.Combine(WorkingFolder, "Help"), Name + "_Help.*");
+			if (files.Length < 1)
+			{
+				return null;
+			}
+			return files[0];
+		}
+		set
+		{
+			if (!Directory.Exists(Path.Combine(WorkingFolder, "Help")))
+			{
+				Directory.CreateDirectory(Path.Combine(WorkingFolder, "Help"));
+			}
+			File.Copy(value, Path.Combine(WorkingFolder, Path.Combine("Help", Name + "_Help" + Path.GetExtension(value))), overwrite: true);
+			UpdateInfo();
+		}
+	}
+
+	public NewACMExpModel(string _name, string _version, string installLoc)
+	{
+		ClassType = ACMExEntryType.NEWACMBLOCK;
+		Name = _name;
+		Display = _name;
+		Version = _version;
+		Show = true;
+		double result = 0.0;
+		double.TryParse(Version, NumberStyles.Any, CultureInfo.InvariantCulture, out result);
+		VersionNumber = result;
+		isOpen = false;
+		string path = Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Temp\\ACM_Models"), Path.Combine(Version, Name));
+		WorkingFolder = Path.Combine(path, Path.GetRandomFileName());
+		try
+		{
+			while (Directory.Exists(WorkingFolder))
+			{
+				WorkingFolder = Path.Combine(path, Path.GetRandomFileName());
+			}
+			if (WorkingFolder.IndexOf("\\..") < 0 && WorkingFolder.IndexOf("..\\") < 0)
+			{
+				Directory.CreateDirectory(WorkingFolder);
+			}
+		}
+		catch
+		{
+		}
+		installedLocation = installLoc;
+		Open();
+	}
+
+	~NewACMExpModel()
+	{
+		Close();
+	}
+
+	public string CreationCommand(bool EO, bool fixedInlets, bool noCheck)
+	{
+		string text = "";
+		if (EO)
+		{
+			text += "eomodel=yes,";
+		}
+		if (fixedInlets)
+		{
+			text += "fixconnectedinletports=yes,";
+		}
+		if (noCheck)
+		{
+			text += "checktype=no,";
+		}
+		int num = (int)(VersionNumber + 0.001) * 10;
+		string text2 = $"acmotf{num}";
+		string text3 = Path.Combine(WorkingFolder, Path.Combine("ModelDef", Name + "_Export.xml"));
+		bool flag = File.Exists(text3);
+		string[] procedures = Procedures;
+		string text4 = "";
+		if (procedures != null)
+		{
+			string[] array = procedures;
+			foreach (string text5 in array)
+			{
+				if (string.Compare(text5.Substring(text5.LastIndexOf("\\") + 1), Name + ".dll", ignoreCase: true) == 0)
+				{
+					text4 = text5;
+				}
+			}
+		}
+		if (!string.IsNullOrEmpty(text4))
+		{
+			return text + "model=" + text4;
+		}
+		if (flag)
+		{
+			if (ClassType == ACMExEntryType.NEWACMSTRUCTURE)
+			{
+				return text + "library=" + text2 + ",model=acmotfst,cfg=" + text3 + ",create=" + Name;
+			}
+			return text + "model=" + text2 + ",cfg=" + text3 + ",create=" + Name;
+		}
+		return null;
+	}
+
+	public bool CheckValid()
+	{
+		if (string.IsNullOrEmpty(installedLocation))
+		{
+			return false;
+		}
+		try
+		{
+			if (File.Exists(installedLocation))
+			{
+				return true;
+			}
+		}
+		catch (Exception)
+		{
+		}
+		return false;
+	}
+
+	public void SetClassType(ACMExEntryType newVal)
+	{
+		ClassType = newVal;
+	}
+
+	public void GetIconDef(out int length, out byte[] stream)
+	{
+		length = 0;
+		stream = null;
+		using FileStream fileStream = new FileStream(Path.Combine(WorkingFolder, Path.Combine("Icon", Name + ".dat")), FileMode.Open, FileAccess.Read);
+		length = (int)fileStream.Length;
+		stream = new byte[length];
+		fileStream.Read(stream, 0, length);
+		fileStream.Dispose();
+	}
+
+	public void SetIconDef(int length, byte[] stream)
+	{
+		if (!Directory.Exists(Path.Combine(WorkingFolder, "Icon")))
+		{
+			Directory.CreateDirectory(Path.Combine(WorkingFolder, "Icon"));
+		}
+		if (File.Exists(Path.Combine(WorkingFolder, Path.Combine("Icon", Name + ".dat"))))
+		{
+			File.Delete(Path.Combine(WorkingFolder, Path.Combine("Icon", Name + ".dat")));
+		}
+		using FileStream fileStream = new FileStream(Path.Combine(WorkingFolder, Path.Combine("Icon", Name + ".dat")), FileMode.Create, FileAccess.Write);
+		fileStream.Write(stream, 0, stream.Length);
+	}
+
+	public void GetAPTemplate(out int length, out byte[] stream)
+	{
+		length = 0;
+		stream = null;
+		if (!File.Exists(Path.Combine(WorkingFolder, Path.Combine("APTemplate", Name + ".dat"))))
+		{
+			return;
+		}
+		using FileStream fileStream = new FileStream(Path.Combine(WorkingFolder, Path.Combine("APTemplate", Name + ".dat")), FileMode.Open, FileAccess.Read);
+		length = (int)fileStream.Length;
+		stream = new byte[length];
+		fileStream.Read(stream, 0, length);
+		fileStream.Dispose();
+	}
+
+	public void SetAPTemplate(int length, byte[] stream)
+	{
+		if (!Directory.Exists(Path.Combine(WorkingFolder, "APTemplate")))
+		{
+			Directory.CreateDirectory(Path.Combine(WorkingFolder, "APTemplate"));
+		}
+		if (File.Exists(Path.Combine(WorkingFolder, Path.Combine("APTemplate", Name + ".dat"))))
+		{
+			File.Delete(Path.Combine(WorkingFolder, Path.Combine("APTemplate", Name + ".dat")));
+		}
+		using FileStream fileStream = new FileStream(Path.Combine(WorkingFolder, Path.Combine("APTemplate", Name + ".dat")), FileMode.Create, FileAccess.Write);
+		fileStream.Write(stream, 0, stream.Length);
+	}
+
+	public void SaveTo(string savePath, bool overwrite)
+	{
+		//IL_0011: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0017: Expected O, but got Unknown
+		if (File.Exists(savePath) && overwrite)
+		{
+			File.Delete(savePath);
+		}
+		AspenPackage val = new AspenPackage();
+		val.Open(savePath, FileMode.CreateNew);
+		val.CreateRootPartWithSpecifiedUri("Info.xml", WorkingFolder + "\\Info.xml", "Text");
+		foreach (string item in Directory.EnumerateDirectories(WorkingFolder))
+		{
+			foreach (string item2 in Directory.EnumerateFiles(item))
+			{
+				_ = item + "\\" + item2;
+				string text = new DirectoryInfo(item).Name + "\\" + Path.GetFileName(item2);
+				val.CreatePartWithSpecifiedUri(text, item2, "Text", true);
+			}
+		}
+		val.Close();
+	}
+
+	private void UpdateInfo()
+	{
+		sGuid = Guid.NewGuid().ToString();
+		string text = "yyyy.M.d.H.m.s";
+		sTimestamp = DateTime.Now.ToString(text);
+		string text2 = "";
+		if (Description != "")
+		{
+			text2 = SecurityElement.Escape(Description);
+		}
+		string text3 = "<ATMLZ Name=\"" + Name + "\" Version=\"" + Version + "\" Timestamp=\"" + sTimestamp + "\" GUID=\"" + sGuid + "\" Class=\"" + ((int)ClassType).ToString(CultureInfo.InvariantCulture) + "\" LibraryCategory=\"" + LibraryCategories[0] + "\" Description=\"" + text2 + "\" Compiled=\"" + Compiled + "\" />";
+		string[] contents = new string[1] { text3 };
+		File.WriteAllLines(Path.Combine(WorkingFolder, "Info.xml"), contents);
+	}
+
+	public void Open()
+	{
+		//IL_002f: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0035: Expected O, but got Unknown
+		if (Name == "TwoVarIf")
+		{
+			count++;
+			_ = count;
+		}
+		if (installedLocation != null)
+		{
+			try
+			{
+				AspenPackage val = new AspenPackage();
+				val.Open(installedLocation, FileMode.Open);
+				IPart[] parts = val.GetParts();
+				foreach (IPart val2 in parts)
+				{
+					if (!Directory.Exists(Path.Combine(WorkingFolder, val2.FilePath)))
+					{
+						Directory.CreateDirectory(Path.Combine(WorkingFolder, val2.FilePath));
+					}
+					val2.SaveToFile(Path.Combine(WorkingFolder, Path.Combine(val2.FilePath, val2.Name)));
+					File.SetAttributes(Path.Combine(WorkingFolder, Path.Combine(val2.FilePath, val2.Name)), FileAttributes.Normal);
+				}
+				val.Close();
+				string text = Path.Combine(WorkingFolder, "Info.xml");
+				if (File.Exists(text))
+				{
+					XmlDocument xmlDocument = new XmlDocument();
+					xmlDocument.Load(text);
+					XmlNode xmlNode = xmlDocument.SelectSingleNode("/ATMLZ");
+					sTimestamp = xmlNode.Attributes["Timestamp"].Value;
+					sGuid = xmlNode.Attributes["GUID"].Value;
+					if (xmlNode.Attributes["Class"] != null)
+					{
+						string value = xmlNode.Attributes["Class"].Value;
+						int result = 0;
+						if (int.TryParse(value, out result))
+						{
+							ACMExEntryType aCMExEntryType = (ACMExEntryType)result;
+							if (aCMExEntryType == ACMExEntryType.NEWACMBLOCK || aCMExEntryType == ACMExEntryType.NEWACMREACTION || aCMExEntryType == ACMExEntryType.NEWACMSTRUCTURE)
+							{
+								ClassType = aCMExEntryType;
+							}
+						}
+					}
+					if (xmlNode.Attributes["LibraryCategory"] != null && xmlNode.Attributes["LibraryCategory"].Value != "")
+					{
+						sLibraryCategory = new string[1] { xmlNode.Attributes["LibraryCategory"].Value };
+					}
+					if (xmlNode.Attributes["Description"] != null && xmlNode.Attributes["Description"].Value != "")
+					{
+						_description = WebUtility.HtmlDecode(xmlNode.Attributes["Description"].Value);
+					}
+					if (xmlNode.Attributes["Compiled"] != null && xmlNode.Attributes["Compiled"].Value != "")
+					{
+						_compiled = WebUtility.HtmlDecode(xmlNode.Attributes["Compiled"].Value);
+					}
+				}
+				isOpen = true;
+				return;
+			}
+			catch
+			{
+				return;
+			}
+		}
+		UpdateInfo();
+	}
+
+	public void Close()
+	{
+		if (isOpen)
+		{
+			if (Name == "TwoVarIf")
+			{
+				count--;
+				_ = count;
+			}
+			try
+			{
+				Directory.Delete(WorkingFolder, recursive: true);
+			}
+			catch
+			{
+			}
+			isOpen = false;
+		}
+	}
+}
+internal class NewModelWriter : IACMExpModelWriter
+{
+	private enum StatementTypes
+	{
+		AssignType,
+		EquationType,
+		StructuralifType,
+		RuntimeifType,
+		ElseType,
+		EndifType,
+		ForType,
+		EndforType,
+		ProcType
+	}
+
+	private enum ModelTypes
+	{
+		Model,
+		Structure,
+		Port,
+		Stream
+	}
+
+	private ModelLibraryManager manager;
+
+	private Dictionary<string, string> scripts = new Dictionary<string, string>();
+
+	private List<string> libraries = new List<string>();
+
+	private List<IACMExpModelWriter> localmodels = new List<IACMExpModelWriter>();
+
+	private List<IACMExpVariableType> localtypes = new List<IACMExpVariableType>();
+
+	private Dictionary<string, ACMProcWriter> procs = new Dictionary<string, ACMProcWriter>();
+
+	private List<ACMExpModelPort> ports = new List<ACMExpModelPort>();
+
+	private Dictionary<string, ACMExpModelProperty> properties = new Dictionary<string, ACMExpModelProperty>();
+
+	private Dictionary<string, ACMExpProcCallWriter> proccalls = new Dictionary<string, ACMExpProcCallWriter>();
+
+	private List<Tuple<int, string, string>> assignments = new List<Tuple<int, string, string>>();
+
+	private List<Tuple<int, string, string>> equations = new List<Tuple<int, string, string>>();
+
+	private Dictionary<string, ACMExpExpressionWriter> expressions = new Dictionary<string, ACMExpExpressionWriter>();
+
+	internal static List<string> exportedModels;
+
+	internal static List<string> exportedTypes;
+
+	private Dictionary<string, Tuple<int, string>> acmf = new Dictionary<string, Tuple<int, string>>();
+
+	public string Name { get; set; }
+
+	public bool Structure { get; set; }
+
+	public int Type { get; set; }
+
+	public bool Reaction { get; set; }
+
+	public string Description { get; set; }
+
+	public string Author { get; set; }
+
+	public string Copywrite { get; set; }
+
+	public string ExportedVersion { get; set; }
+
+	public string Uses { get; set; }
+
+	public string Acmf { get; set; }
+
+	public string Display { get; set; }
+
+	public NewModelWriter(ModelLibraryManager creator)
+	{
+		manager = creator;
+		Type = 0;
+	}
+
+	public void WriteApmlz(string fileName)
+	{
+		throw new NotImplementedException();
+	}
+
+	public void WriteXml(string fileName, bool makePrivate)
+	{
+		exportedModels = new List<string>();
+		exportedTypes = new List<string>();
+		XmlDocument xmlDocument = new XmlDocument();
+		XmlDeclaration xmlDeclaration = xmlDocument.CreateXmlDeclaration("1.0", null, null);
+		xmlDeclaration.Encoding = "UTF-8";
+		xmlDeclaration.Standalone = "yes";
+		xmlDocument.AppendChild(xmlDeclaration);
+		XmlNode xmlNode = xmlDocument.CreateElement("library");
+		XmlNode xmlNode2 = xmlDocument.CreateAttribute("version");
+		if (string.IsNullOrEmpty(ExportedVersion))
+		{
+			xmlNode2.Value = "35.0";
+		}
+		else
+		{
+			xmlNode2.Value = ExportedVersion;
+		}
+		xmlNode.Attributes.SetNamedItem(xmlNode2);
+		xmlNode2 = xmlDocument.CreateAttribute("guid");
+		xmlNode2.Value = Guid.NewGuid().ToString();
+		xmlNode.Attributes.SetNamedItem(xmlNode2);
+		xmlNode2 = xmlDocument.CreateAttribute("exposes");
+		xmlNode2.Value = Name;
+		xmlNode.Attributes.SetNamedItem(xmlNode2);
+		AddModelNode(xmlDocument, xmlNode);
+		exportedModels = null;
+		exportedTypes = null;
+		xmlDocument.AppendChild(xmlNode);
+		xmlDocument.Save(fileName);
+		if (makePrivate)
+		{
+			new HelperFuncs().EncodeModel(fileName, "acmexp");
+		}
+	}
+
+	public string GenerateGUID()
+	{
+		return Guid.NewGuid().ToString();
+	}
+
+	public void AddLibraryDependency(string libraryName)
+	{
+		if (!libraries.Contains(libraryName))
+		{
+			libraries.Add(libraryName);
+		}
+	}
+
+	public IACMExpModelWriter CreateSubModel(string modelname)
+	{
+		NewModelWriter newModelWriter = new NewModelWriter(manager);
+		newModelWriter.Name = modelname;
+		newModelWriter.Type = 0;
+		localmodels.Add(newModelWriter);
+		return newModelWriter;
+	}
+
+	public IACMExpModelWriter CreateStructure(string modelname)
+	{
+		NewModelWriter newModelWriter = new NewModelWriter(manager);
+		newModelWriter.Name = modelname;
+		newModelWriter.Type = 1;
+		localmodels.Add(newModelWriter);
+		return newModelWriter;
+	}
+
+	public IACMExpModelWriter CreateUserPort(string portname, string usesname)
+	{
+		NewModelWriter newModelWriter = new NewModelWriter(manager);
+		newModelWriter.Name = portname;
+		newModelWriter.Type = 2;
+		newModelWriter.Uses = usesname;
+		localmodels.Add(newModelWriter);
+		return newModelWriter;
+	}
+
+	public IACMExpModelWriter CreateStream(string streamname)
+	{
+		NewModelWriter newModelWriter = new NewModelWriter(manager);
+		newModelWriter.Name = streamname;
+		newModelWriter.Type = 3;
+		localmodels.Add(newModelWriter);
+		return newModelWriter;
+	}
+
+	public void AddSubModelWriter(IACMExpModelWriter SubModel)
+	{
+		localmodels.Add(SubModel);
+	}
+
+	public IACMExpVariableType AddVariableType(string name)
+	{
+		ACMExpVariableType aCMExpVariableType = new ACMExpVariableType(name);
+		localtypes.Add(aCMExpVariableType);
+		return aCMExpVariableType;
+	}
+
+	public void SetType(int type)
+	{
+		Type = type;
+	}
+
+	public void SetUses(string usesname)
+	{
+		Uses = usesname;
+	}
+
+	public IACMExpModelProperty AddProperty(string name, string baseType, string description)
+	{
+		ACMExpModelProperty aCMExpModelProperty = new ACMExpModelProperty(name, baseType, description);
+		if (!properties.ContainsKey(name))
+		{
+			properties.Add(name, aCMExpModelProperty);
+		}
+		return aCMExpModelProperty;
+	}
+
+	public IACMExpModelProperty AddPropertyWithUsesUOM(string name, string baseType, string description, string usesuom)
+	{
+		ACMExpModelProperty aCMExpModelProperty = new ACMExpModelProperty(name, baseType, description)
+		{
+			UseUomOf = usesuom
+		};
+		if (!properties.ContainsKey(name))
+		{
+			properties.Add(name, aCMExpModelProperty);
+		}
+		return aCMExpModelProperty;
+	}
+
+	public IACMExpModelProperty AddArray(string name, string baseType, string description, string of)
+	{
+		ACMExpModelProperty aCMExpModelProperty = new ACMExpModelProperty(name, baseType, description, of);
+		if (!properties.ContainsKey(name))
+		{
+			properties.Add(name, aCMExpModelProperty);
+		}
+		return aCMExpModelProperty;
+	}
+
+	public IACMExpModelProperty AddStructRefArray(string name, string baseType, string description, string of)
+	{
+		ACMExpModelProperty aCMExpModelProperty = new ACMExpModelProperty(name, baseType, description, of)
+		{
+			Type = ACMExpModelProperty.PropType.ArrayOfRef
+		};
+		if (!properties.ContainsKey(name))
+		{
+			properties.Add(name, aCMExpModelProperty);
+		}
+		return aCMExpModelProperty;
+	}
+
+	public IACMExpModelProperty AddLibraryPort(string name, string baseType, string description, string dir, int porttype)
+	{
+		ACMExpModelProperty aCMExpModelProperty = new ACMExpModelProperty(name, baseType, description, dir, porttype);
+		if (!properties.ContainsKey(name))
+		{
+			properties.Add(name, aCMExpModelProperty);
+		}
+		return aCMExpModelProperty;
+	}
+
+	public IACMExpModelProperty AddDistribution(string name, int dim, string description, string of, string xlen, string ylen, string zlen)
+	{
+		ACMExpModelProperty aCMExpModelProperty = new ACMExpModelProperty(name, dim, description, of, xlen, ylen, zlen);
+		if (!properties.ContainsKey(name))
+		{
+			properties.Add(name, aCMExpModelProperty);
+		}
+		return aCMExpModelProperty;
+	}
+
+	public IACMExpModelProperty AddDistributionArray(string name, string baseType, int dim, string description, string of, string xlen, string ylen, string zlen)
+	{
+		ACMExpModelProperty aCMExpModelProperty = new ACMExpModelProperty(name, baseType, dim, description, of, xlen, ylen, zlen);
+		if (!properties.ContainsKey(name))
+		{
+			properties.Add(name, aCMExpModelProperty);
+		}
+		return aCMExpModelProperty;
+	}
+
+	public void AddDim(string propkey, string dimkey)
+	{
+		if (properties.ContainsKey(propkey) && expressions.ContainsKey(dimkey))
+		{
+			properties[propkey].AddDim(expressions[dimkey]);
+		}
+	}
+
+	public IACMExpModelProperty AddGlobal(string name, string referencedType, string description)
+	{
+		ACMExpModelProperty aCMExpModelProperty = new ACMExpModelProperty(name, referencedType, description)
+		{
+			Type = ACMExpModelProperty.PropType.Global
+		};
+		if (!properties.ContainsKey(name))
+		{
+			properties.Add(name, aCMExpModelProperty);
+		}
+		return aCMExpModelProperty;
+	}
+
+	public IACMExpModelProperty AddExternal(string name, string referencedType, string description)
+	{
+		ACMExpModelProperty aCMExpModelProperty = new ACMExpModelProperty(name, referencedType, description)
+		{
+			Type = ACMExpModelProperty.PropType.External
+		};
+		if (!properties.ContainsKey(name))
+		{
+			properties.Add(name, aCMExpModelProperty);
+		}
+		return aCMExpModelProperty;
+	}
+
+	public IACMExpModelProperty AddExternalArray(string name, string baseType, string description, string of)
+	{
+		ACMExpModelProperty aCMExpModelProperty = new ACMExpModelProperty(name, baseType, description, of)
+		{
+			Type = ACMExpModelProperty.PropType.ExternalArray
+		};
+		if (!properties.ContainsKey(name))
+		{
+			properties.Add(name, aCMExpModelProperty);
+		}
+		return aCMExpModelProperty;
+	}
+
+	public IACMExpModelProperty AddExternalReference(string name, string referencedType, string description)
+	{
+		ACMExpModelProperty aCMExpModelProperty = new ACMExpModelProperty(name, referencedType, description)
+		{
+			Type = ACMExpModelProperty.PropType.ExternalReference
+		};
+		if (!properties.ContainsKey(name))
+		{
+			properties.Add(name, aCMExpModelProperty);
+		}
+		return aCMExpModelProperty;
+	}
+
+	public IACMExpModelProperty AddVirtualReference(string name, string referencedType, string description)
+	{
+		ACMExpModelProperty aCMExpModelProperty = new ACMExpModelProperty(name, referencedType, description)
+		{
+			Type = ACMExpModelProperty.PropType.VirtualReference
+		};
+		if (!properties.ContainsKey(name))
+		{
+			properties.Add(name, aCMExpModelProperty);
+		}
+		return aCMExpModelProperty;
+	}
+
+	public IACMExpModelProperty AddVirtualReferenceArray(string name, string baseType, string description, string of)
+	{
+		ACMExpModelProperty aCMExpModelProperty = new ACMExpModelProperty(name, baseType, description, of)
+		{
+			Type = ACMExpModelProperty.PropType.VirtualReferenceArray
+		};
+		if (!properties.ContainsKey(name))
+		{
+			properties.Add(name, aCMExpModelProperty);
+		}
+		return aCMExpModelProperty;
+	}
+
+	public IACMExpModelPort AddPortProperty(string name, string baseType, string description, string variableType, int direction)
+	{
+		ACMExpModelPort aCMExpModelPort = new ACMExpModelPort(name, baseType, description, variableType, direction);
+		ports.Add(aCMExpModelPort);
+		return aCMExpModelPort;
+	}
+
+	public IACMExpEquationWriter AddEquation(string label, string Expressionkey)
+	{
+		ACMExpEquationWriter result = new ACMExpEquationWriter(label, expressions[Expressionkey]);
+		equations.Add(Tuple.Create(1, label, Expressionkey));
+		return result;
+	}
+
+	public IACMProcWriter AddProc(string name, string proc, string dll, string language, bool derivs, bool properties, bool alwayscall, int compat, string source)
+	{
+		ACMProcWriter aCMProcWriter = new ACMProcWriter(name, proc, dll, language, derivs, properties, alwayscall, compat, source);
+		procs.Add(name, aCMProcWriter);
+		return aCMProcWriter;
+	}
+
+	public void AddProcInputArg(string name, int type, int dim, bool var)
+	{
+		if (procs.ContainsKey(name))
+		{
+			procs[name].AddInput(type, dim, var);
+		}
+	}
+
+	public void AddProcOutputArg(string name, int type, int dim, bool var)
+	{
+		if (procs.ContainsKey(name))
+		{
+			procs[name].AddOutput(type, dim, var);
+		}
+	}
+
+	public void AddProcCallName(string label)
+	{
+		equations.Add(Tuple.Create(8, label, ""));
+	}
+
+	public IACMExpProcCallWriter AddProcCall(string label, string procname, int id, bool fort)
+	{
+		ACMExpProcCallWriter aCMExpProcCallWriter = new ACMExpProcCallWriter(label, procname, id, fort);
+		if (!proccalls.ContainsKey(label))
+		{
+			proccalls.Add(label, aCMExpProcCallWriter);
+		}
+		else
+		{
+			proccalls[label] = aCMExpProcCallWriter;
+		}
+		return aCMExpProcCallWriter;
+	}
+
+	public void AddProcCallArg(string label, string argkey)
+	{
+		if (proccalls.ContainsKey(label) && expressions.ContainsKey(argkey))
+		{
+			proccalls[label].AddArg(argkey, expressions[argkey]);
+		}
+	}
+
+	public void SetProcCallCompList(string label, string complistkey)
+	{
+		if (proccalls.ContainsKey(label) && expressions.ContainsKey(complistkey))
+		{
+			proccalls[label].SetCompList(complistkey, expressions[complistkey]);
+		}
+	}
+
+	public void SetProcCallName(string label, string callname)
+	{
+		if (proccalls.ContainsKey(label))
+		{
+			proccalls[label].SetCallName(callname);
+		}
+	}
+
+	public void SetProcCallWorkspace(string label, int workspace)
+	{
+		if (proccalls.ContainsKey(label))
+		{
+			proccalls[label].SetWorkspace(workspace);
+		}
+	}
+
+	public void SetProcPrecall(string label)
+	{
+		if (procs.ContainsKey(label))
+		{
+			procs[label].Precall = true;
+		}
+	}
+
+	public void SetProcPostcall(string label)
+	{
+		if (procs.ContainsKey(label))
+		{
+			procs[label].Postcall = true;
+		}
+	}
+
+	public IACMExpAssignmentWriter AddAssignment(string assignmentkey)
+	{
+		ACMExpAssignmentWriter result = new ACMExpAssignmentWriter(expressions[assignmentkey]);
+		assignments.Add(Tuple.Create(0, "", assignmentkey));
+		return result;
+	}
+
+	public void AddEquationStructuralIf(string condname, string condexpkey)
+	{
+		equations.Add(Tuple.Create(2, condname, condexpkey));
+	}
+
+	public void AddAssignmentStructuralIf(string condname, string condexpkey)
+	{
+		assignments.Add(Tuple.Create(2, condname, condexpkey));
+	}
+
+	public void AddEquationRuntimeIf(string condname, string condexpkey)
+	{
+		equations.Add(Tuple.Create(3, condname, condexpkey));
+	}
+
+	public void AddEquationElse()
+	{
+		equations.Add(Tuple.Create(4, "", ""));
+	}
+
+	public void AddAssignmentElse()
+	{
+		assignments.Add(Tuple.Create(4, "", ""));
+	}
+
+	public void AddEquationEndIf()
+	{
+		equations.Add(Tuple.Create(5, "", ""));
+	}
+
+	public void AddAssignmentEndIf()
+	{
+		assignments.Add(Tuple.Create(5, "", ""));
+	}
+
+	public void AddEquationFor(string element, string forexpkey)
+	{
+		equations.Add(Tuple.Create(6, element, forexpkey));
+	}
+
+	public void AddAssignmentFor(string element, string forexpkey)
+	{
+		assignments.Add(Tuple.Create(6, element, forexpkey));
+	}
+
+	public void AddEquationEndFor()
+	{
+		equations.Add(Tuple.Create(7, "", ""));
+	}
+
+	public void AddAssignmentEndFor()
+	{
+		assignments.Add(Tuple.Create(7, "", ""));
+	}
+
+	public IACMExpModelWriter AddLocalModelType(string name)
+	{
+		throw new NotImplementedException();
+	}
+
+	public void SetLRExpression(string key, string keyleft, string keyright)
+	{
+		ACMExpExpressionWriter aCMExpExpressionWriter = expressions[key];
+		if (!string.IsNullOrEmpty(keyleft) && expressions.ContainsKey(keyleft))
+		{
+			ACMExpExpressionWriter left = expressions[keyleft];
+			aCMExpExpressionWriter.Left = left;
+		}
+		if (!string.IsNullOrEmpty(keyright) && expressions.ContainsKey(keyright))
+		{
+			ACMExpExpressionWriter right = expressions[keyright];
+			aCMExpExpressionWriter.Right = right;
+		}
+	}
+
+	public void CopyExpression(string newkey, string oldkey)
+	{
+		if (expressions.ContainsKey(oldkey))
+		{
+			if (!expressions.ContainsKey(newkey))
+			{
+				expressions.Add(newkey, expressions[oldkey]);
+			}
+			else
+			{
+				expressions[newkey] = expressions[oldkey];
+			}
+		}
+	}
+
+	public IACMExpExpressionWriter AddIntvalExpression(string key, int type, int intval)
+	{
+		ACMExpExpressionWriter aCMExpExpressionWriter = new ACMExpExpressionWriter(null, null, type);
+		aCMExpExpressionWriter.IntegerLiteral(intval);
+		if (!expressions.ContainsKey(key))
+		{
+			expressions.Add(key, aCMExpExpressionWriter);
+		}
+		else
+		{
+			expressions[key] = aCMExpExpressionWriter;
+		}
+		return aCMExpExpressionWriter;
+	}
+
+	public IACMExpExpressionWriter AddPropExpression(string key, int type, string propertypath)
+	{
+		ACMExpExpressionWriter aCMExpExpressionWriter = new ACMExpExpressionWriter(null, null, type);
+		aCMExpExpressionWriter.PropertyPath(propertypath);
+		if (!expressions.ContainsKey(key))
+		{
+			expressions.Add(key, aCMExpExpressionWriter);
+		}
+		else
+		{
+			expressions[key] = aCMExpExpressionWriter;
+		}
+		return aCMExpExpressionWriter;
+	}
+
+	public IACMExpExpressionWriter AddRealvalExpression(string key, int type, double realval)
+	{
+		ACMExpExpressionWriter aCMExpExpressionWriter = new ACMExpExpressionWriter(null, null, type);
+		aCMExpExpressionWriter.RealLiteral(realval);
+		if (!expressions.ContainsKey(key))
+		{
+			expressions.Add(key, aCMExpExpressionWriter);
+		}
+		else
+		{
+			expressions[key] = aCMExpExpressionWriter;
+		}
+		return aCMExpExpressionWriter;
+	}
+
+	public IACMExpExpressionWriter AddBoolvalExpression(string key, int type, bool boolval)
+	{
+		ACMExpExpressionWriter aCMExpExpressionWriter = new ACMExpExpressionWriter(null, null, type);
+		aCMExpExpressionWriter.BooleanLiteral(boolval);
+		if (!expressions.ContainsKey(key))
+		{
+			expressions.Add(key, aCMExpExpressionWriter);
+		}
+		else
+		{
+			expressions[key] = aCMExpExpressionWriter;
+		}
+		return aCMExpExpressionWriter;
+	}
+
+	public IACMExpExpressionWriter AddStringvalExpression(string key, int type, string stringval)
+	{
+		ACMExpExpressionWriter aCMExpExpressionWriter = new ACMExpExpressionWriter(null, null, type);
+		aCMExpExpressionWriter.StringLiteral(stringval);
+		if (!expressions.ContainsKey(key))
+		{
+			expressions.Add(key, aCMExpExpressionWriter);
+		}
+		else
+		{
+			expressions[key] = aCMExpExpressionWriter;
+		}
+		return aCMExpExpressionWriter;
+	}
+
+	public IACMExpExpressionWriter AddIntsetExpression(string key, int type, int intsetval)
+	{
+		ACMExpExpressionWriter aCMExpExpressionWriter;
+		if (!expressions.ContainsKey(key))
+		{
+			aCMExpExpressionWriter = new ACMExpExpressionWriter(null, null, type);
+			aCMExpExpressionWriter.AddIntegerSetValue(intsetval);
+			expressions.Add(key, aCMExpExpressionWriter);
+		}
+		else
+		{
+			aCMExpExpressionWriter = expressions[key];
+			aCMExpExpressionWriter.AddIntegerSetValue(intsetval);
+		}
+		return aCMExpExpressionWriter;
+	}
+
+	public IACMExpExpressionWriter AddStringsetExpression(string key, int type, string stringsetval)
+	{
+		ACMExpExpressionWriter aCMExpExpressionWriter;
+		if (!expressions.ContainsKey(key))
+		{
+			aCMExpExpressionWriter = new ACMExpExpressionWriter(null, null, type);
+			aCMExpExpressionWriter.AddStringSetValue(stringsetval);
+			expressions.Add(key, aCMExpExpressionWriter);
+		}
+		else
+		{
+			aCMExpExpressionWriter = expressions[key];
+			aCMExpExpressionWriter.AddStringSetValue(stringsetval);
+		}
+		return aCMExpExpressionWriter;
+	}
+
+	public IACMExpExpressionWriter AddMTSetExpression(string key, int type)
+	{
+		ACMExpExpressionWriter aCMExpExpressionWriter;
+		if (!expressions.ContainsKey(key))
+		{
+			aCMExpExpressionWriter = new ACMExpExpressionWriter(null, null, type);
+			expressions.Add(key, aCMExpExpressionWriter);
+		}
+		else
+		{
+			aCMExpExpressionWriter = expressions[key];
+		}
+		return aCMExpExpressionWriter;
+	}
+
+	public IACMExpExpressionWriter AddOpExpression(string key, int type, int OpCode)
+	{
+		ACMExpExpressionWriter aCMExpExpressionWriter = new ACMExpExpressionWriter(null, null, type);
+		aCMExpExpressionWriter.Operation(OpCode);
+		if (!expressions.ContainsKey(key))
+		{
+			expressions.Add(key, aCMExpExpressionWriter);
+		}
+		else
+		{
+			expressions[key] = aCMExpExpressionWriter;
+		}
+		return aCMExpExpressionWriter;
+	}
+
+	public void AddArraySliceExpression(string key, int type, string slicekey)
+	{
+		if (!expressions.ContainsKey(key))
+		{
+			ACMExpExpressionWriter aCMExpExpressionWriter = new ACMExpExpressionWriter(null, null, type);
+			aCMExpExpressionWriter.AddArraySlice(expressions[slicekey]);
+			expressions.Add(key, aCMExpExpressionWriter);
+		}
+		else
+		{
+			expressions[key].AddArraySlice(expressions[slicekey]);
+		}
+	}
+
+	public IACMExpExpressionWriter AddIntsetrangeExpression(string key, int type, int lowlimit, int hilimit)
+	{
+		ACMExpExpressionWriter aCMExpExpressionWriter = new ACMExpExpressionWriter(null, null, type);
+		aCMExpExpressionWriter.AddIntegerSetRange(lowlimit, hilimit);
+		if (!expressions.ContainsKey(key))
+		{
+			expressions.Add(key, aCMExpExpressionWriter);
+		}
+		else
+		{
+			expressions[key] = aCMExpExpressionWriter;
+		}
+		return aCMExpExpressionWriter;
+	}
+
+	public IACMExpExpressionWriter AddEmptyExpression(string key)
+	{
+		ACMExpExpressionWriter aCMExpExpressionWriter = new ACMExpExpressionWriter(null, null, 0);
+		if (!expressions.ContainsKey(key))
+		{
+			expressions.Add(key, aCMExpExpressionWriter);
+		}
+		else
+		{
+			expressions[key] = aCMExpExpressionWriter;
+		}
+		return aCMExpExpressionWriter;
+	}
+
+	public IACMExpExpressionWriter AddConnectionExpression(string key, int type)
+	{
+		ACMExpExpressionWriter aCMExpExpressionWriter = new ACMExpExpressionWriter(null, null, type);
+		if (!expressions.ContainsKey(key))
+		{
+			expressions.Add(key, aCMExpExpressionWriter);
+		}
+		else
+		{
+			expressions[key] = aCMExpExpressionWriter;
+		}
+		return aCMExpExpressionWriter;
+	}
+
+	public void SetConnectionParts(string key, string keystream, string keysource, string keydest)
+	{
+		ACMExpExpressionWriter aCMExpExpressionWriter = expressions[key];
+		if (!string.IsNullOrEmpty(keystream) && expressions.ContainsKey(keystream))
+		{
+			ACMExpExpressionWriter stream = expressions[keystream];
+			aCMExpExpressionWriter.Stream = stream;
+		}
+		if (!string.IsNullOrEmpty(keysource) && expressions.ContainsKey(keysource))
+		{
+			ACMExpExpressionWriter left = expressions[keysource];
+			aCMExpExpressionWriter.Left = left;
+		}
+		if (!string.IsNullOrEmpty(keydest) && expressions.ContainsKey(keydest))
+		{
+			ACMExpExpressionWriter right = expressions[keydest];
+			aCMExpExpressionWriter.Right = right;
+		}
+	}
+
+	public void AddComponentsDereference(string key)
+	{
+		expressions.ContainsKey(key);
+		ACMExpExpressionWriter left = expressions[key];
+		ACMExpExpressionWriter aCMExpExpressionWriter = new ACMExpExpressionWriter(null, null, 17)
+		{
+			OpCode = ACMExpOpCode.SubId
+		};
+		ACMExpExpressionWriter right = new ACMExpExpressionWriter(null, null, 20)
+		{
+			Property = "COMPONENTS"
+		};
+		expressions[key] = aCMExpExpressionWriter;
+		aCMExpExpressionWriter.Left = left;
+		aCMExpExpressionWriter.Right = right;
+	}
+
+	public void AddScript(string name, string script)
+	{
+		if (!scripts.ContainsKey(name))
+		{
+			scripts.Add(name, script);
+		}
+	}
+
+	public int ExpressionSize()
+	{
+		return expressions.Count();
+	}
+
+	public void AddSourceLanguage(string model, int hashcode, string language)
+	{
+		if (!acmf.ContainsKey(model))
+		{
+			acmf.Add(model, new Tuple<int, string>(hashcode, language));
+		}
+	}
+
+	public string WriteModel(bool makePrivate)
+	{
+		XmlDocument xmlDocument = new XmlDocument();
+		AddModelNode(xmlDocument, null);
+		return xmlDocument.InnerXml;
+	}
+
+	public void AddModelNode(XmlDocument document, XmlNode parent)
+	{
+		if (exportedModels != null)
+		{
+			if (exportedModels.Contains(Name))
+			{
+				return;
+			}
+			exportedModels.Add(Name);
+		}
+		XmlNode xmlNode = ((Type == 0) ? document.CreateElement("model") : ((Type == 1) ? document.CreateElement("struct") : ((Type == 2) ? document.CreateElement("port") : ((Type != 3) ? document.CreateElement("Undefined") : document.CreateElement("stream")))));
+		XmlNode xmlNode2 = document.CreateAttribute("name");
+		xmlNode2.Value = Name;
+		xmlNode.Attributes.SetNamedItem(xmlNode2);
+		if (!string.IsNullOrEmpty(Display) && Display != Name)
+		{
+			xmlNode2 = document.CreateAttribute("display");
+			xmlNode2.Value = Display;
+			xmlNode.Attributes.SetNamedItem(xmlNode2);
+		}
+		if (!string.IsNullOrEmpty(Uses))
+		{
+			xmlNode2 = document.CreateAttribute("uses");
+			xmlNode2.Value = Uses;
+			xmlNode.Attributes.SetNamedItem(xmlNode2);
+		}
+		foreach (KeyValuePair<string, ACMProcWriter> proc in procs)
+		{
+			proc.Value.Write(document, xmlNode);
+		}
+		XmlNode xmlNode3 = document.CreateElement("properties");
+		foreach (ACMExpModelPort port in ports)
+		{
+			port.Write(document, xmlNode3);
+		}
+		foreach (KeyValuePair<string, ACMExpModelProperty> property in properties)
+		{
+			property.Value.Write(document, xmlNode3);
+		}
+		xmlNode.AppendChild(xmlNode3);
+		XmlNode xmlNode4 = document.CreateElement("assignments");
+		for (int i = 0; i < assignments.Count(); i++)
+		{
+			Tuple<int, string, string> tuple = assignments[i];
+			switch (tuple.Item1)
+			{
+			case 0:
+				if (expressions.ContainsKey(tuple.Item3))
+				{
+					new ACMExpAssignmentWriter(expressions[tuple.Item3]).Write(document, xmlNode4);
+				}
+				break;
+			case 2:
+				if (expressions.ContainsKey(tuple.Item3))
+				{
+					ACMExpExpressionWriter aCMExpExpressionWriter2 = expressions[tuple.Item3];
+					XmlNode xmlNode7 = document.CreateElement("stif");
+					xmlNode2 = document.CreateAttribute("name");
+					xmlNode2.Value = tuple.Item2;
+					xmlNode7.Attributes.SetNamedItem(xmlNode2);
+					aCMExpExpressionWriter2.Write(document, xmlNode7);
+					xmlNode4.AppendChild(xmlNode7);
+				}
+				break;
+			case 4:
+			{
+				XmlNode newChild3 = document.CreateElement("else");
+				xmlNode4.AppendChild(newChild3);
+				break;
+			}
+			case 5:
+			{
+				XmlNode newChild2 = document.CreateElement("endif");
+				xmlNode4.AppendChild(newChild2);
+				break;
+			}
+			case 6:
+				if (expressions.ContainsKey(tuple.Item3))
+				{
+					ACMExpExpressionWriter aCMExpExpressionWriter = expressions[tuple.Item3];
+					XmlNode xmlNode5 = document.CreateElement("for");
+					xmlNode2 = document.CreateAttribute("element");
+					xmlNode2.Value = tuple.Item2;
+					xmlNode5.Attributes.SetNamedItem(xmlNode2);
+					XmlNode xmlNode6 = document.CreateElement("in");
+					aCMExpExpressionWriter.Write(document, xmlNode6);
+					xmlNode5.AppendChild(xmlNode6);
+					xmlNode4.AppendChild(xmlNode5);
+				}
+				break;
+			case 7:
+			{
+				XmlNode newChild = document.CreateElement("endfor");
+				xmlNode4.AppendChild(newChild);
+				break;
+			}
+			}
+		}
+		xmlNode.AppendChild(xmlNode4);
+		XmlNode xmlNode8 = document.CreateElement("equations");
+		for (int j = 0; j < equations.Count(); j++)
+		{
+			Tuple<int, string, string> tuple2 = equations[j];
+			switch (tuple2.Item1)
+			{
+			case 1:
+				if (expressions.ContainsKey(tuple2.Item3))
+				{
+					ACMExpExpressionWriter expression = expressions[tuple2.Item3];
+					new ACMExpEquationWriter(tuple2.Item2, expression).Write(document, xmlNode8);
+				}
+				break;
+			case 2:
+				if (expressions.ContainsKey(tuple2.Item3))
+				{
+					ACMExpExpressionWriter aCMExpExpressionWriter4 = expressions[tuple2.Item3];
+					XmlNode xmlNode11 = document.CreateElement("stif");
+					xmlNode2 = document.CreateAttribute("name");
+					xmlNode2.Value = tuple2.Item2;
+					xmlNode11.Attributes.SetNamedItem(xmlNode2);
+					aCMExpExpressionWriter4.Write(document, xmlNode11);
+					xmlNode8.AppendChild(xmlNode11);
+				}
+				break;
+			case 3:
+				if (expressions.ContainsKey(tuple2.Item3))
+				{
+					ACMExpExpressionWriter aCMExpExpressionWriter5 = expressions[tuple2.Item3];
+					XmlNode xmlNode12 = document.CreateElement("rtif");
+					xmlNode2 = document.CreateAttribute("name");
+					xmlNode2.Value = tuple2.Item2;
+					xmlNode12.Attributes.SetNamedItem(xmlNode2);
+					aCMExpExpressionWriter5.Write(document, xmlNode12);
+					xmlNode8.AppendChild(xmlNode12);
+				}
+				break;
+			case 4:
+			{
+				XmlNode newChild6 = document.CreateElement("else");
+				xmlNode8.AppendChild(newChild6);
+				break;
+			}
+			case 5:
+			{
+				XmlNode newChild5 = document.CreateElement("endif");
+				xmlNode8.AppendChild(newChild5);
+				break;
+			}
+			case 6:
+				if (expressions.ContainsKey(tuple2.Item3))
+				{
+					ACMExpExpressionWriter aCMExpExpressionWriter3 = expressions[tuple2.Item3];
+					XmlNode xmlNode9 = document.CreateElement("for");
+					xmlNode2 = document.CreateAttribute("element");
+					xmlNode2.Value = tuple2.Item2;
+					xmlNode9.Attributes.SetNamedItem(xmlNode2);
+					XmlNode xmlNode10 = document.CreateElement("in");
+					aCMExpExpressionWriter3.Write(document, xmlNode10);
+					xmlNode9.AppendChild(xmlNode10);
+					xmlNode8.AppendChild(xmlNode9);
+				}
+				break;
+			case 7:
+			{
+				XmlNode newChild4 = document.CreateElement("endfor");
+				xmlNode8.AppendChild(newChild4);
+				break;
+			}
+			case 8:
+				if (proccalls.ContainsKey(tuple2.Item2))
+				{
+					proccalls[tuple2.Item2].Write(document, xmlNode8);
+				}
+				break;
+			}
+		}
+		xmlNode.AppendChild(xmlNode8);
+		XmlNode xmlNode13 = document.CreateElement("references");
+		foreach (string library in libraries)
+		{
+			XmlNode xmlNode14 = document.CreateElement("lib");
+			xmlNode14.InnerText = library;
+			xmlNode13.AppendChild(xmlNode14);
+		}
+		xmlNode.AppendChild(xmlNode13);
+		XmlNode xmlNode15 = document.CreateElement("scripts");
+		foreach (KeyValuePair<string, string> script in scripts)
+		{
+			XmlNode xmlNode16 = document.CreateElement("script");
+			xmlNode2 = document.CreateAttribute("name");
+			xmlNode2.Value = script.Key;
+			xmlNode16.Attributes.SetNamedItem(xmlNode2);
+			xmlNode16.InnerText = script.Value;
+			xmlNode15.AppendChild(xmlNode16);
+		}
+		xmlNode.AppendChild(xmlNode15);
+		if (acmf.Count > 0)
+		{
+			XmlNode xmlNode17 = document.CreateElement("sources");
+			foreach (KeyValuePair<string, Tuple<int, string>> item in acmf)
+			{
+				XmlNode xmlNode18 = document.CreateElement("source");
+				xmlNode2 = document.CreateAttribute("name");
+				xmlNode2.Value = item.Key + " " + item.Value.Item1.ToString(CultureInfo.InvariantCulture);
+				xmlNode18.Attributes.SetNamedItem(xmlNode2);
+				XmlCDataSection newChild7 = document.CreateCDataSection(item.Value.Item2);
+				xmlNode18.AppendChild(newChild7);
+				xmlNode17.AppendChild(xmlNode18);
+			}
+			xmlNode.AppendChild(xmlNode17);
+		}
+		if (parent == null)
+		{
+			document.AppendChild(xmlNode);
+			return;
+		}
+		parent.AppendChild(xmlNode);
+		foreach (IACMExpModelWriter localmodel in localmodels)
+		{
+			localmodel.AddModelNode(document, parent);
+		}
+		foreach (IACMExpVariableType localtype in localtypes)
+		{
+			localtype.AddVarNode(document, parent);
+		}
+	}
+}
+internal class OldACMExpModel : ACMExpResourceHelper, IACMExpModel
+{
+	private string location;
+
+	public bool ReadOnly => true;
+
+	public bool Show { get; set; }
+
+	public string Name { get; set; }
+
+	public string Display { get; set; }
+
+	public string Description { get; set; }
+
+	public string Compiled { get; set; }
+
+	public string Version { get; private set; }
+
+	private double VersionNumber { get; set; }
+
+	public string RevisionGuid => null;
+
+	public string Timestamp { get; private set; }
+
+	public string[] LibraryCategories
+	{
+		get
+		{
+			return new string[1] { "ACM Models" };
+		}
+		set
+		{
+		}
+	}
+
+	public ACMExEntryType ClassType => ACMExEntryType.ACMBLOCK;
+
+	public IACMGridForm[] GridForms
+	{
+		get
+		{
+			if (gridForms == null)
+			{
+				return null;
+			}
+			return gridForms.ToArray();
+		}
+	}
+
+	public IACMCustomFormFolder[] CustomForms
+	{
+		get
+		{
+			if (customFormFolders == null)
+			{
+				return null;
+			}
+			return customFormFolders.ToArray();
+		}
+	}
+
+	public string CustomFormsXML
+	{
+		get
+		{
+			if (xmlCustomForms == null)
+			{
+				return null;
+			}
+			return xmlCustomForms.InnerXml;
+		}
+		set
+		{
+		}
+	}
+
+	public string PortDefinition
+	{
+		get
+		{
+			return portDefXml;
+		}
+		set
+		{
+		}
+	}
+
+	public string ReactionConfiguration
+	{
+		get
+		{
+			if (xmlReactionConfig == null)
+			{
+				return null;
+			}
+			return xmlReactionConfig.InnerXml;
+		}
+		set
+		{
+		}
+	}
+
+	public string StyleSheet
+	{
+		get
+		{
+			if (xmlStyleSheet == null)
+			{
+				return null;
+			}
+			return xmlStyleSheet.InnerXml;
+		}
+		set
+		{
+		}
+	}
+
+	public string[] Scripts
+	{
+		get
+		{
+			return null;
+		}
+		set
+		{
+		}
+	}
+
+	public string ModelDefinition
+	{
+		get
+		{
+			return null;
+		}
+		set
+		{
+		}
+	}
+
+	public string[] Procedures
+	{
+		get
+		{
+			return null;
+		}
+		set
+		{
+		}
+	}
+
+	public string Help
+	{
+		get
+		{
+			return null;
+		}
+		set
+		{
+		}
+	}
+
+	public string Plots
+	{
+		get
+		{
+			return null;
+		}
+		set
+		{
+		}
+	}
+
+	public string SolverSettings
+	{
+		get
+		{
+			return null;
+		}
+		set
+		{
+		}
+	}
+
+	public string CustomModeling
+	{
+		get
+		{
+			return null;
+		}
+		set
+		{
+		}
+	}
+
+	internal OldACMExpModel(string id, string version, string dll)
+	{
+		Name = id;
+		Display = id;
+		Version = version;
+		location = dll;
+		Show = true;
+		double result = 0.0;
+		double.TryParse(version, NumberStyles.Any, CultureInfo.InvariantCulture, out result);
+		VersionNumber = result;
+		LoadResources(location, Name, reaction: false);
+		if (apTemplate != null)
+		{
+			string input = Encoding.ASCII.GetString(apTemplate);
+			DateTime.TryParseExact(new Regex("[A-Za-z]+ \\d+ \\d+:\\d+:\\d+ \\d+").Match(input).Value, "MMM d H:m:s yyyy", null, DateTimeStyles.AssumeLocal, out var result2);
+			Timestamp = result2.ToString("yyyy.M.d.H.m.s");
+		}
+	}
+
+	public static OldACMExpModel Create(XmlNode catalogNode, ModelLibraryManager manager)
+	{
+		XmlNode namedItem = catalogNode.Attributes.GetNamedItem("Id");
+		if (namedItem == null)
+		{
+			return null;
+		}
+		string value = namedItem.Value;
+		namedItem = catalogNode.Attributes.GetNamedItem("Version");
+		if (namedItem == null)
+		{
+			return null;
+		}
+		string value2 = namedItem.Value;
+		double result = 0.0;
+		if (!double.TryParse(value2, NumberStyles.Any, CultureInfo.InvariantCulture, out result))
+		{
+			return null;
+		}
+		if (result < 37.0)
+		{
+			return null;
+		}
+		namedItem = catalogNode.Attributes.GetNamedItem("DLLName");
+		if (namedItem == null)
+		{
+			return null;
+		}
+		string value3 = namedItem.Value;
+		return new OldACMExpModel(value, value2, value3);
+	}
+
+	public string CreationCommand(bool EO, bool fixedInlets, bool noCheck)
+	{
+		string text = "";
+		if (EO)
+		{
+			text += "eomodel=yes,";
+		}
+		if (fixedInlets)
+		{
+			text += "fixconnectedinletports=yes,";
+		}
+		if (noCheck)
+		{
+			text += "checktype=no,";
+		}
+		return text + $"model={location}";
+	}
+
+	public bool CheckValid()
+	{
+		if (string.IsNullOrEmpty(location))
+		{
+			return false;
+		}
+		try
+		{
+			if (File.Exists(location))
+			{
+				return true;
+			}
+		}
+		catch (Exception)
+		{
+		}
+		return false;
+	}
+
+	public void SetClassType(ACMExEntryType newVal)
+	{
+	}
+
+	public void GetIconDef(out int length, out byte[] stream)
+	{
+		length = ((iconDef != null) ? iconDef.Length : 0);
+		stream = iconDef;
+	}
+
+	public void GetAPTemplate(out int length, out byte[] stream)
+	{
+		length = ((apTemplate != null) ? apTemplate.Length : 0);
+		stream = apTemplate;
+	}
+
+	public void SetIconDef(int i, byte[] b)
+	{
+		throw new NotImplementedException();
+	}
+
+	public void SaveTo(string savePath, bool overwrite)
+	{
+		throw new NotImplementedException();
+	}
+
+	public void SetAPTemplate(int i, byte[] b)
+	{
+		throw new NotImplementedException();
+	}
+}
+internal class OldACMExpReaction : ACMExpResourceHelper, IACMExpModel
+{
+	private string location;
+
+	public bool ReadOnly => true;
+
+	public bool Show { get; set; }
+
+	public string Name { get; set; }
+
+	public string Display { get; set; }
+
+	public string Description { get; set; }
+
+	public string Compiled { get; set; }
+
+	public string Version { get; private set; }
+
+	private double VersionNumber { get; set; }
+
+	public string RevisionGuid => null;
+
+	public string Timestamp => null;
+
+	public string[] LibraryCategories
+	{
+		get
+		{
+			return new string[1] { "ACM Reactions" };
+		}
+		set
+		{
+		}
+	}
+
+	public ACMExEntryType ClassType => ACMExEntryType.ACMREACTION;
+
+	public IACMGridForm[] GridForms
+	{
+		get
+		{
+			if (gridForms == null)
+			{
+				return null;
+			}
+			return gridForms.ToArray();
+		}
+	}
+
+	public IACMCustomFormFolder[] CustomForms
+	{
+		get
+		{
+			if (customFormFolders == null)
+			{
+				return null;
+			}
+			return customFormFolders.ToArray();
+		}
+	}
+
+	public string CustomFormsXML
+	{
+		get
+		{
+			if (xmlCustomForms == null)
+			{
+				return null;
+			}
+			return xmlCustomForms.InnerXml;
+		}
+		set
+		{
+		}
+	}
+
+	public string PortDefinition
+	{
+		get
+		{
+			return portDefXml;
+		}
+		set
+		{
+		}
+	}
+
+	public string ReactionConfiguration
+	{
+		get
+		{
+			if (xmlReactionConfig == null)
+			{
+				return null;
+			}
+			return xmlReactionConfig.InnerXml;
+		}
+		set
+		{
+		}
+	}
+
+	public string StyleSheet
+	{
+		get
+		{
+			if (xmlStyleSheet == null)
+			{
+				return null;
+			}
+			return xmlStyleSheet.InnerXml;
+		}
+		set
+		{
+		}
+	}
+
+	public string[] Scripts
+	{
+		get
+		{
+			return null;
+		}
+		set
+		{
+		}
+	}
+
+	public string ModelDefinition
+	{
+		get
+		{
+			return null;
+		}
+		set
+		{
+		}
+	}
+
+	public string[] Procedures
+	{
+		get
+		{
+			return null;
+		}
+		set
+		{
+		}
+	}
+
+	public string Help
+	{
+		get
+		{
+			return null;
+		}
+		set
+		{
+		}
+	}
+
+	public string Plots
+	{
+		get
+		{
+			return null;
+		}
+		set
+		{
+		}
+	}
+
+	public string SolverSettings
+	{
+		get
+		{
+			return null;
+		}
+		set
+		{
+		}
+	}
+
+	public string CustomModeling
+	{
+		get
+		{
+			return null;
+		}
+		set
+		{
+		}
+	}
+
+	public OldACMExpReaction(string id, string version, string dll)
+	{
+		Name = id;
+		Display = id;
+		Version = version;
+		location = dll;
+		Show = true;
+		double result = 0.0;
+		double.TryParse(version, NumberStyles.Any, CultureInfo.InvariantCulture, out result);
+		VersionNumber = result;
+		LoadResources(location, Name, reaction: true);
+	}
+
+	public static OldACMExpReaction Create(XmlNode catalogNode, ModelLibraryManager manager)
+	{
+		XmlNode namedItem = catalogNode.Attributes.GetNamedItem("Id");
+		if (namedItem == null)
+		{
+			return null;
+		}
+		string value = namedItem.Value;
+		namedItem = catalogNode.Attributes.GetNamedItem("Version");
+		if (namedItem == null)
+		{
+			return null;
+		}
+		string value2 = namedItem.Value;
+		double result = 0.0;
+		if (!double.TryParse(value2, NumberStyles.Any, CultureInfo.InvariantCulture, out result))
+		{
+			return null;
+		}
+		if (result < 37.0)
+		{
+			return null;
+		}
+		namedItem = catalogNode.Attributes.GetNamedItem("DLLName");
+		if (namedItem == null)
+		{
+			return null;
+		}
+		string value3 = namedItem.Value;
+		return new OldACMExpReaction(value, value2, value3);
+	}
+
+	public string CreationCommand(bool EO, bool fixedInlets, bool noCheck)
+	{
+		return $"fixconnectedinletports=yes,model={location}";
+	}
+
+	public bool CheckValid()
+	{
+		if (string.IsNullOrEmpty(location))
+		{
+			return false;
+		}
+		try
+		{
+			if (File.Exists(location))
+			{
+				return true;
+			}
+		}
+		catch (Exception)
+		{
+		}
+		return false;
+	}
+
+	public void SetClassType(ACMExEntryType newVal)
+	{
+	}
+
+	private static double GetVersionRequirement(string appVersion)
+	{
+		double result = 35.0;
+		double.TryParse(appVersion, NumberStyles.Any, CultureInfo.InvariantCulture, out result);
+		if (result >= 35.0)
+		{
+			return 35.0;
+		}
+		return result;
+	}
+
+	public void GetIconDef(out int length, out byte[] stream)
+	{
+		length = ((iconDef != null) ? iconDef.Length : 0);
+		stream = iconDef;
+	}
+
+	public void GetAPTemplate(out int length, out byte[] stream)
+	{
+		length = ((apTemplate != null) ? apTemplate.Length : 0);
+		stream = apTemplate;
+	}
+
+	public void SetIconDef(int i, byte[] b)
+	{
+		throw new NotImplementedException();
+	}
+
+	public void SaveTo(string savePath, bool overwrite)
+	{
+		throw new NotImplementedException();
+	}
+
+	public void SetAPTemplate(int i, byte[] b)
+	{
+		throw new NotImplementedException();
+	}
+}
+internal class OpenSolverModel : IACMExpModel
+{
+	private string location;
+
+	public bool ReadOnly => true;
+
+	public bool Show { get; set; }
+
+	public string Name { get; set; }
+
+	public string Display { get; set; }
+
+	public string Description { get; set; }
+
+	public string Compiled { get; set; }
+
+	public string Version { get; private set; }
+
+	public string RevisionGuid => null;
+
+	public string Timestamp => null;
+
+	public string[] LibraryCategories
+	{
+		get
+		{
+			return null;
+		}
+		set
+		{
+		}
+	}
+
+	public ACMExEntryType ClassType => ACMExEntryType.AOSSOLVER;
+
+	public IACMGridForm[] GridForms => null;
+
+	public IACMCustomFormFolder[] CustomForms => null;
+
+	public string CustomFormsXML
+	{
+		get
+		{
+			return null;
+		}
+		set
+		{
+		}
+	}
+
+	public string PortDefinition
+	{
+		get
+		{
+			return null;
+		}
+		set
+		{
+		}
+	}
+
+	public string ReactionConfiguration
+	{
+		get
+		{
+			return null;
+		}
+		set
+		{
+		}
+	}
+
+	public string StyleSheet
+	{
+		get
+		{
+			return null;
+		}
+		set
+		{
+		}
+	}
+
+	public string[] Scripts
+	{
+		get
+		{
+			return null;
+		}
+		set
+		{
+		}
+	}
+
+	public string ModelDefinition
+	{
+		get
+		{
+			return null;
+		}
+		set
+		{
+		}
+	}
+
+	public string[] Procedures
+	{
+		get
+		{
+			return null;
+		}
+		set
+		{
+		}
+	}
+
+	public string Help
+	{
+		get
+		{
+			return null;
+		}
+		set
+		{
+		}
+	}
+
+	public string Plots
+	{
+		get
+		{
+			return null;
+		}
+		set
+		{
+		}
+	}
+
+	public string SolverSettings
+	{
+		get
+		{
+			return null;
+		}
+		set
+		{
+		}
+	}
+
+	public string CustomModeling
+	{
+		get
+		{
+			return null;
+		}
+		set
+		{
+		}
+	}
+
+	private OpenSolverModel(string id, string version, string dll)
+	{
+		Name = id;
+		Display = id;
+		Version = version;
+		location = dll;
+		Show = true;
+	}
+
+	public static OpenSolverModel Create(XmlNode catalogNode)
+	{
+		XmlNode namedItem = catalogNode.Attributes.GetNamedItem("Id");
+		if (namedItem == null)
+		{
+			return null;
+		}
+		string value = namedItem.Value;
+		namedItem = catalogNode.Attributes.GetNamedItem("Version");
+		if (namedItem == null)
+		{
+			return null;
+		}
+		string value2 = namedItem.Value;
+		namedItem = catalogNode.Attributes.GetNamedItem("DLLName");
+		if (namedItem == null)
+		{
+			return null;
+		}
+		string value3 = namedItem.Value;
+		return new OpenSolverModel(value, value2, value3);
+	}
+
+	public string CreationCommand(bool EO, bool fixedInlets, bool noCheck)
+	{
+		return null;
+	}
+
+	public bool CheckValid()
+	{
+		if (string.IsNullOrEmpty(location))
+		{
+			return false;
+		}
+		try
+		{
+			if (File.Exists(location))
+			{
+				return true;
+			}
+		}
+		catch (Exception)
+		{
+		}
+		return false;
+	}
+
+	private void LoadResources()
+	{
+	}
+
+	public void GetIconDef(out int length, out byte[] stream)
+	{
+		length = 0;
+		stream = new byte[0];
+	}
+
+	public void GetAPTemplate(out int length, out byte[] stream)
+	{
+		length = 0;
+		stream = new byte[0];
+	}
+
+	public void SetIconDef(int i, byte[] b)
+	{
+		throw new NotImplementedException();
+	}
+
+	public void SaveTo(string savePath, bool overwrite)
+	{
+		throw new NotImplementedException();
+	}
+
+	public void SetAPTemplate(int i, byte[] b)
+	{
+		throw new NotImplementedException();
+	}
+
+	public void SetClassType(ACMExEntryType newVal)
+	{
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

@@ -114,7 +114,7 @@
 
 本表按当前文件检索，无需每轮全文读取。最新轮次和下一步先看[当前状态](reverse-work-status.md)，处理流程按[精简执行规则](reverse-execution-workflow.md)。下列数量是历史归档快照；首次执行先核查既有成果，通过新规则验收后才同步新完成台账及清单视图，不自动继承目录名对应的完成结论。
 
-归档入口为本机的 `.local/source-classification-20261118/README.md`。`index.json` 记录原版绝对路径、版本、SHA-256、归档文件指纹和选取范围。完整反编译资料仅在本机保存。
+历史归档入口为本机的 `.local/source-classification-20261118/README.md`。`index.json` 记录原版绝对路径、版本、SHA-256、归档文件指纹和选取范围。已复验的完成件见仓库的[已完成逆向目录](../reverse/01-completed/README.md)。
 
 以下为既有归档快照。后续每轮反编译或编译均按[第 1.1 项：每轮成果分类与逐文件说明](development-requirements.md#11-每轮成果分类与逐文件说明)执行：已完成与未完成两类中的每个成果文件，都须在同目录配套独立的同名 `.md` 说明，目录级 `README.md` 仅作汇总。新增归档使用新路径，保留既有快照与说明。
 

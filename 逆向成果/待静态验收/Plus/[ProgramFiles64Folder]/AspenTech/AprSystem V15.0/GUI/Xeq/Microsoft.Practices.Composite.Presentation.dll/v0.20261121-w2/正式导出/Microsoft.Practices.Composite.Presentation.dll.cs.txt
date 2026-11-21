@@ -1,0 +1,2632 @@
+using System;
+using System.CodeDom.Compiler;
+using System.Collections;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Linq;
+using System.Reflection;
+using System.Resources;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
+using System.Runtime.Versioning;
+using System.Threading;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
+using System.Windows.Input;
+using System.Windows.Markup;
+using System.Windows.Threading;
+using Microsoft.Practices.Composite.Events;
+using Microsoft.Practices.Composite.Presentation.Events;
+using Microsoft.Practices.Composite.Presentation.Properties;
+using Microsoft.Practices.Composite.Presentation.Regions.Behaviors;
+using Microsoft.Practices.Composite.Regions;
+using Microsoft.Practices.ServiceLocation;
+
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: ComVisible(false)]
+[assembly: CompilationRelaxations(8)]
+[assembly: TargetFramework(".NETFramework,Version=v4.5", FrameworkDisplayName = ".NET Framework 4.5")]
+[assembly: AssemblyTitle("Microsoft.Practices.Composite.Presentation")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("Microsoft Corporation")]
+[assembly: AssemblyProduct("Composite Application Library")]
+[assembly: AssemblyCopyright("Copyright (c) 2008,2009 Microsoft Corporation.  All rights reserved.")]
+[assembly: AssemblyTrademark("")]
+[assembly: Guid("adcc6807-23eb-45fe-b21c-e11fb16cb66e")]
+[assembly: AssemblyFileVersion("2.0.1.0")]
+[assembly: CLSCompliant(true)]
+[assembly: XmlnsDefinition("http://www.codeplex.com/CompositeWPF", "Microsoft.Practices.Composite.Presentation.Regions")]
+[assembly: NeutralResourcesLanguage("en")]
+[assembly: SuppressMessage("Microsoft.Design", "CA1020:AvoidNamespacesWithFewTypes", Scope = "namespace", Target = "Microsoft.Practices.Composite.Presentation.Commands")]
+[assembly: SuppressMessage("Microsoft.Design", "CA1020:AvoidNamespacesWithFewTypes", Scope = "namespace", Target = "Microsoft.Practices.Composite.Presentation.Events")]
+[assembly: SuppressMessage("Microsoft.Design", "CA2210:AssembliesShouldHaveValidStrongNames")]
+[assembly: SuppressMessage("Microsoft.Design", "CA1020:AvoidNamespacesWithFewTypes", Scope = "namespace", Target = "Microsoft.Practices.Composite.Presentation")]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyVersion("2.0.1.0")]
+namespace Microsoft.Practices.Composite.Presentation.Commands
+{
+	public class DelegateCommand<T> : ICommand, IActiveAware
+	{
+		private readonly Action<T> executeMethod;
+
+		private readonly Func<T, bool> canExecuteMethod;
+
+		private List<WeakReference> _canExecuteChangedHandlers;
+
+		private bool _isActive;
+
+		public bool IsActive
+		{
+			get
+			{
+				return _isActive;
+			}
+			set
+			{
+				if (_isActive != value)
+				{
+					_isActive = value;
+					OnIsActiveChanged();
+				}
+			}
+		}
+
+		public event EventHandler CanExecuteChanged
+		{
+			add
+			{
+				WeakEventHandlerManager.AddWeakReferenceHandler(ref _canExecuteChangedHandlers, value, 2);
+			}
+			remove
+			{
+				WeakEventHandlerManager.RemoveWeakReferenceHandler(_canExecuteChangedHandlers, value);
+			}
+		}
+
+		public event EventHandler IsActiveChanged;
+
+		public DelegateCommand(Action<T> executeMethod)
+			: this(executeMethod, (Func<T, bool>)null)
+		{
+		}
+
+		public DelegateCommand(Action<T> executeMethod, Func<T, bool> canExecuteMethod)
+		{
+			if (executeMethod == null && canExecuteMethod == null)
+			{
+				throw new ArgumentNullException("executeMethod", Resources.DelegateCommandDelegatesCannotBeNull);
+			}
+			this.executeMethod = executeMethod;
+			this.canExecuteMethod = canExecuteMethod;
+		}
+
+		public bool CanExecute(T parameter)
+		{
+			if (canExecuteMethod == null)
+			{
+				return true;
+			}
+			return canExecuteMethod(parameter);
+		}
+
+		public void Execute(T parameter)
+		{
+			if (executeMethod != null)
+			{
+				executeMethod(parameter);
+			}
+		}
+
+		bool ICommand.CanExecute(object parameter)
+		{
+			return CanExecute((T)parameter);
+		}
+
+		void ICommand.Execute(object parameter)
+		{
+			Execute((T)parameter);
+		}
+
+		protected virtual void OnCanExecuteChanged()
+		{
+			WeakEventHandlerManager.CallWeakReferenceHandlers(this, _canExecuteChangedHandlers);
+		}
+
+		[SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate")]
+		public void RaiseCanExecuteChanged()
+		{
+			OnCanExecuteChanged();
+		}
+
+		protected virtual void OnIsActiveChanged()
+		{
+			this.IsActiveChanged?.Invoke(this, EventArgs.Empty);
+		}
+	}
+	public class CompositeCommand : ICommand
+	{
+		private readonly List<ICommand> registeredCommands = new List<ICommand>();
+
+		private List<WeakReference> _canExecuteChangedHandlers;
+
+		private readonly bool monitorCommandActivity;
+
+		private readonly EventHandler onRegisteredCommandCanExecuteChangedHandler;
+
+		public IList<ICommand> RegisteredCommands
+		{
+			get
+			{
+				lock (registeredCommands)
+				{
+					return registeredCommands.ToList();
+				}
+			}
+		}
+
+		public event EventHandler CanExecuteChanged
+		{
+			add
+			{
+				WeakEventHandlerManager.AddWeakReferenceHandler(ref _canExecuteChangedHandlers, value, 2);
+			}
+			remove
+			{
+				WeakEventHandlerManager.RemoveWeakReferenceHandler(_canExecuteChangedHandlers, value);
+			}
+		}
+
+		public CompositeCommand()
+		{
+			onRegisteredCommandCanExecuteChangedHandler = OnRegisteredCommandCanExecuteChanged;
+		}
+
+		public CompositeCommand(bool monitorCommandActivity)
+			: this()
+		{
+			this.monitorCommandActivity = monitorCommandActivity;
+		}
+
+		public virtual void RegisterCommand(ICommand command)
+		{
+			if (command == this)
+			{
+				throw new ArgumentException(Resources.CannotRegisterCompositeCommandInItself);
+			}
+			lock (registeredCommands)
+			{
+				if (registeredCommands.Contains(command))
+				{
+					throw new InvalidOperationException(Resources.CannotRegisterSameCommandTwice);
+				}
+				registeredCommands.Add(command);
+			}
+			command.CanExecuteChanged += onRegisteredCommandCanExecuteChangedHandler;
+			OnCanExecuteChanged();
+			if (monitorCommandActivity && command is IActiveAware activeAware)
+			{
+				activeAware.IsActiveChanged += Command_IsActiveChanged;
+			}
+		}
+
+		public virtual void UnregisterCommand(ICommand command)
+		{
+			bool flag;
+			lock (registeredCommands)
+			{
+				flag = registeredCommands.Remove(command);
+			}
+			if (flag)
+			{
+				command.CanExecuteChanged -= onRegisteredCommandCanExecuteChangedHandler;
+				OnCanExecuteChanged();
+				if (monitorCommandActivity && command is IActiveAware activeAware)
+				{
+					activeAware.IsActiveChanged -= Command_IsActiveChanged;
+				}
+			}
+		}
+
+		private void OnRegisteredCommandCanExecuteChanged(object sender, EventArgs e)
+		{
+			OnCanExecuteChanged();
+		}
+
+		public virtual bool CanExecute(object parameter)
+		{
+			bool result = false;
+			ICommand[] array;
+			lock (registeredCommands)
+			{
+				array = registeredCommands.ToArray();
+			}
+			ICommand[] array2 = array;
+			foreach (ICommand command in array2)
+			{
+				if (ShouldExecute(command))
+				{
+					if (!command.CanExecute(parameter))
+					{
+						return false;
+					}
+					result = true;
+				}
+			}
+			return result;
+		}
+
+		public virtual void Execute(object parameter)
+		{
+			Queue<ICommand> queue;
+			lock (registeredCommands)
+			{
+				queue = new Queue<ICommand>(registeredCommands.Where(ShouldExecute).ToList());
+			}
+			while (queue.Count > 0)
+			{
+				ICommand command = queue.Dequeue();
+				command.Execute(parameter);
+			}
+		}
+
+		protected virtual bool ShouldExecute(ICommand command)
+		{
+			IActiveAware activeAware = command as IActiveAware;
+			if (monitorCommandActivity && activeAware != null)
+			{
+				return activeAware.IsActive;
+			}
+			return true;
+		}
+
+		protected virtual void OnCanExecuteChanged()
+		{
+			WeakEventHandlerManager.CallWeakReferenceHandlers(this, _canExecuteChangedHandlers);
+		}
+
+		private void Command_IsActiveChanged(object sender, EventArgs e)
+		{
+			OnCanExecuteChanged();
+		}
+	}
+}
+namespace Microsoft.Practices.Composite.Presentation.Events
+{
+	public class DispatcherEventSubscription<TPayload> : EventSubscription<TPayload>
+	{
+		private readonly IDispatcherFacade dispatcher;
+
+		public DispatcherEventSubscription(IDelegateReference actionReference, IDelegateReference filterReference, IDispatcherFacade dispatcher)
+			: base(actionReference, filterReference)
+		{
+			this.dispatcher = dispatcher;
+		}
+
+		public override void InvokeAction(Action<TPayload> action, TPayload argument)
+		{
+			dispatcher.BeginInvoke(action, argument);
+		}
+	}
+	public class CompositePresentationEvent<TPayload> : EventBase
+	{
+		private IDispatcherFacade uiDispatcher;
+
+		private IDispatcherFacade UIDispatcher
+		{
+			get
+			{
+				if (uiDispatcher == null)
+				{
+					uiDispatcher = new DefaultDispatcher();
+				}
+				return uiDispatcher;
+			}
+		}
+
+		public SubscriptionToken Subscribe(Action<TPayload> action)
+		{
+			return Subscribe(action, ThreadOption.PublisherThread);
+		}
+
+		public SubscriptionToken Subscribe(Action<TPayload> action, ThreadOption threadOption)
+		{
+			return Subscribe(action, threadOption, keepSubscriberReferenceAlive: false);
+		}
+
+		public SubscriptionToken Subscribe(Action<TPayload> action, bool keepSubscriberReferenceAlive)
+		{
+			return Subscribe(action, ThreadOption.PublisherThread, keepSubscriberReferenceAlive);
+		}
+
+		public SubscriptionToken Subscribe(Action<TPayload> action, ThreadOption threadOption, bool keepSubscriberReferenceAlive)
+		{
+			return Subscribe(action, threadOption, keepSubscriberReferenceAlive, null);
+		}
+
+		public virtual SubscriptionToken Subscribe(Action<TPayload> action, ThreadOption threadOption, bool keepSubscriberReferenceAlive, Predicate<TPayload> filter)
+		{
+			IDelegateReference actionReference = new DelegateReference(action, keepSubscriberReferenceAlive);
+			IDelegateReference filterReference = ((filter == null) ? new DelegateReference((Predicate<TPayload>)((TPayload param0) => true), keepReferenceAlive: true) : new DelegateReference(filter, keepSubscriberReferenceAlive));
+			return base.InternalSubscribe(threadOption switch
+			{
+				ThreadOption.PublisherThread => new EventSubscription<TPayload>(actionReference, filterReference), 
+				ThreadOption.BackgroundThread => new BackgroundEventSubscription<TPayload>(actionReference, filterReference), 
+				ThreadOption.UIThread => new DispatcherEventSubscription<TPayload>(actionReference, filterReference, UIDispatcher), 
+				_ => new EventSubscription<TPayload>(actionReference, filterReference), 
+			});
+		}
+
+		public virtual void Publish(TPayload payload)
+		{
+			base.InternalPublish(payload);
+		}
+
+		public virtual void Unsubscribe(Action<TPayload> subscriber)
+		{
+			lock (base.Subscriptions)
+			{
+				IEventSubscription eventSubscription = base.Subscriptions.Cast<EventSubscription<TPayload>>().FirstOrDefault((EventSubscription<TPayload> evt) => evt.Action == subscriber);
+				if (eventSubscription != null)
+				{
+					base.Subscriptions.Remove(eventSubscription);
+				}
+			}
+		}
+
+		public virtual bool Contains(Action<TPayload> subscriber)
+		{
+			IEventSubscription eventSubscription;
+			lock (base.Subscriptions)
+			{
+				eventSubscription = base.Subscriptions.Cast<EventSubscription<TPayload>>().FirstOrDefault((EventSubscription<TPayload> evt) => evt.Action == subscriber);
+			}
+			return eventSubscription != null;
+		}
+	}
+	public enum ThreadOption
+	{
+		PublisherThread,
+		UIThread,
+		BackgroundThread
+	}
+}
+namespace Microsoft.Practices.Composite.Presentation.Regions
+{
+	public class Region : IRegion, INotifyPropertyChanged
+	{
+		private ObservableCollection<ItemMetadata> itemMetadataCollection;
+
+		private string name;
+
+		private IViewsCollection views;
+
+		private IViewsCollection activeViews;
+
+		private object context;
+
+		private IRegionManager regionManager;
+
+		public IRegionBehaviorCollection Behaviors { get; private set; }
+
+		public object Context
+		{
+			get
+			{
+				return context;
+			}
+			set
+			{
+				if (context != value)
+				{
+					context = value;
+					OnPropertyChanged("Context");
+				}
+			}
+		}
+
+		public string Name
+		{
+			get
+			{
+				return name;
+			}
+			set
+			{
+				if (name != null && name != value)
+				{
+					throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture, Resources.CannotChangeRegionNameException, new object[1] { name }));
+				}
+				if (string.IsNullOrEmpty(value))
+				{
+					throw new ArgumentException(Resources.RegionNameCannotBeEmptyException);
+				}
+				name = value;
+				OnPropertyChanged("Name");
+			}
+		}
+
+		public virtual IViewsCollection Views
+		{
+			get
+			{
+				if (views == null)
+				{
+					views = new ViewsCollection(ItemMetadataCollection, (ItemMetadata x) => true);
+				}
+				return views;
+			}
+		}
+
+		public virtual IViewsCollection ActiveViews
+		{
+			get
+			{
+				if (activeViews == null)
+				{
+					activeViews = new ViewsCollection(ItemMetadataCollection, (ItemMetadata x) => x.IsActive);
+				}
+				return activeViews;
+			}
+		}
+
+		public IRegionManager RegionManager
+		{
+			get
+			{
+				return regionManager;
+			}
+			set
+			{
+				if (regionManager != value)
+				{
+					regionManager = value;
+					OnPropertyChanged("RegionManager");
+				}
+			}
+		}
+
+		protected virtual ObservableCollection<ItemMetadata> ItemMetadataCollection
+		{
+			get
+			{
+				if (itemMetadataCollection == null)
+				{
+					itemMetadataCollection = new ObservableCollection<ItemMetadata>();
+				}
+				return itemMetadataCollection;
+			}
+		}
+
+		public event PropertyChangedEventHandler PropertyChanged;
+
+		public Region()
+		{
+			Behaviors = new RegionBehaviorCollection(this);
+		}
+
+		public IRegionManager Add(object view)
+		{
+			return Add(view, null, createRegionManagerScope: false);
+		}
+
+		public IRegionManager Add(object view, string viewName)
+		{
+			if (string.IsNullOrEmpty(viewName))
+			{
+				throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, Resources.StringCannotBeNullOrEmpty, new object[1] { "viewName" }));
+			}
+			return Add(view, viewName, createRegionManagerScope: false);
+		}
+
+		public virtual IRegionManager Add(object view, string viewName, bool createRegionManagerScope)
+		{
+			IRegionManager regionManager = (createRegionManagerScope ? RegionManager.CreateRegionManager() : RegionManager);
+			InnerAdd(view, viewName, regionManager);
+			return regionManager;
+		}
+
+		public virtual void Remove(object view)
+		{
+			ItemMetadata itemMetadataOrThrow = GetItemMetadataOrThrow(view);
+			ItemMetadataCollection.Remove(itemMetadataOrThrow);
+			if (view is DependencyObject dependencyObject && Microsoft.Practices.Composite.Presentation.Regions.RegionManager.GetRegionManager(dependencyObject) == RegionManager)
+			{
+				dependencyObject.ClearValue(Microsoft.Practices.Composite.Presentation.Regions.RegionManager.RegionManagerProperty);
+			}
+		}
+
+		public virtual void Activate(object view)
+		{
+			ItemMetadata itemMetadataOrThrow = GetItemMetadataOrThrow(view);
+			if (!itemMetadataOrThrow.IsActive)
+			{
+				itemMetadataOrThrow.IsActive = true;
+			}
+		}
+
+		public virtual void Deactivate(object view)
+		{
+			ItemMetadata itemMetadataOrThrow = GetItemMetadataOrThrow(view);
+			if (itemMetadataOrThrow.IsActive)
+			{
+				itemMetadataOrThrow.IsActive = false;
+			}
+		}
+
+		public virtual object GetView(string viewName)
+		{
+			if (string.IsNullOrEmpty(viewName))
+			{
+				throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, Resources.StringCannotBeNullOrEmpty, new object[1] { "viewName" }));
+			}
+			return ItemMetadataCollection.FirstOrDefault((ItemMetadata x) => x.Name == viewName)?.Item;
+		}
+
+		private void InnerAdd(object view, string viewName, IRegionManager scopedRegionManager)
+		{
+			if (ItemMetadataCollection.FirstOrDefault((ItemMetadata x) => x.Item == view) != null)
+			{
+				throw new InvalidOperationException(Resources.RegionViewExistsException);
+			}
+			ItemMetadata itemMetadata = new ItemMetadata(view);
+			if (!string.IsNullOrEmpty(viewName))
+			{
+				if (ItemMetadataCollection.FirstOrDefault((ItemMetadata x) => x.Name == viewName) != null)
+				{
+					throw new InvalidOperationException(string.Format(CultureInfo.InvariantCulture, Resources.RegionViewNameExistsException, new object[1] { viewName }));
+				}
+				itemMetadata.Name = viewName;
+			}
+			if (view is DependencyObject target)
+			{
+				Microsoft.Practices.Composite.Presentation.Regions.RegionManager.SetRegionManager(target, scopedRegionManager);
+			}
+			ItemMetadataCollection.Add(itemMetadata);
+		}
+
+		private ItemMetadata GetItemMetadataOrThrow(object view)
+		{
+			if (view == null)
+			{
+				throw new ArgumentNullException("view");
+			}
+			ItemMetadata itemMetadata = ItemMetadataCollection.FirstOrDefault((ItemMetadata x) => x.Item == view);
+			if (itemMetadata == null)
+			{
+				throw new ArgumentException(Resources.ViewNotInRegionException, "view");
+			}
+			return itemMetadata;
+		}
+
+		private void OnPropertyChanged(string propertyName)
+		{
+			this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+		}
+	}
+	public class AllActiveRegion : Region
+	{
+		public override IViewsCollection ActiveViews => Views;
+
+		public override void Deactivate(object view)
+		{
+			throw new InvalidOperationException(Resources.DeactiveNotPossibleException);
+		}
+	}
+}
+namespace Microsoft.Practices.Composite.Presentation.Regions.Behaviors
+{
+	public class RegionActiveAwareBehavior : IRegionBehavior
+	{
+		public const string BehaviorKey = "ActiveAware";
+
+		public IRegion Region { get; set; }
+
+		public void Attach()
+		{
+			INotifyCollectionChanged collection = GetCollection();
+			if (collection != null)
+			{
+				collection.CollectionChanged += OnCollectionChanged;
+			}
+		}
+
+		public void Detach()
+		{
+			INotifyCollectionChanged collection = GetCollection();
+			if (collection != null)
+			{
+				collection.CollectionChanged -= OnCollectionChanged;
+			}
+		}
+
+		private static void OnCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+		{
+			if (e.Action == NotifyCollectionChangedAction.Add)
+			{
+				foreach (object newItem in e.NewItems)
+				{
+					if (newItem is IActiveAware activeAware)
+					{
+						activeAware.IsActive = true;
+					}
+				}
+				return;
+			}
+			if (e.Action != NotifyCollectionChangedAction.Remove)
+			{
+				return;
+			}
+			foreach (object oldItem in e.OldItems)
+			{
+				if (oldItem is IActiveAware activeAware2)
+				{
+					activeAware2.IsActive = false;
+				}
+			}
+		}
+
+		private INotifyCollectionChanged GetCollection()
+		{
+			return Region.ActiveViews;
+		}
+	}
+}
+namespace Microsoft.Practices.Composite.Presentation.Regions
+{
+	public class ItemMetadata : DependencyObject
+	{
+		public static readonly DependencyProperty NameProperty = DependencyProperty.Register("Name", typeof(string), typeof(ItemMetadata), null);
+
+		public static readonly DependencyProperty IsActiveProperty = DependencyProperty.Register("IsActive", typeof(bool), typeof(ItemMetadata), new PropertyMetadata(DependencyPropertyChanged));
+
+		public object Item { get; private set; }
+
+		public string Name
+		{
+			get
+			{
+				return (string)GetValue(NameProperty);
+			}
+			set
+			{
+				SetValue(NameProperty, value);
+			}
+		}
+
+		public bool IsActive
+		{
+			get
+			{
+				return (bool)GetValue(IsActiveProperty);
+			}
+			set
+			{
+				SetValue(IsActiveProperty, value);
+			}
+		}
+
+		public event EventHandler MetadataChanged;
+
+		public ItemMetadata(object item)
+		{
+			Item = item;
+		}
+
+		public void InvokeMetadataChanged()
+		{
+			this.MetadataChanged?.Invoke(this, EventArgs.Empty);
+		}
+
+		private static void DependencyPropertyChanged(DependencyObject dependencyObject, DependencyPropertyChangedEventArgs args)
+		{
+			if (dependencyObject is ItemMetadata itemMetadata)
+			{
+				itemMetadata.InvokeMetadataChanged();
+			}
+		}
+	}
+	public abstract class RegionAdapterBase<T> : IRegionAdapter where T : class
+	{
+		protected IRegionBehaviorFactory RegionBehaviorFactory { get; set; }
+
+		protected RegionAdapterBase(IRegionBehaviorFactory regionBehaviorFactory)
+		{
+			RegionBehaviorFactory = regionBehaviorFactory;
+		}
+
+		public IRegion Initialize(T regionTarget, string regionName)
+		{
+			if (regionName == null)
+			{
+				throw new ArgumentNullException("regionName");
+			}
+			IRegion region = CreateRegion();
+			region.Name = regionName;
+			SetObservableRegionOnHostingControl(region, regionTarget);
+			Adapt(region, regionTarget);
+			AttachBehaviors(region, regionTarget);
+			AttachDefaultBehaviors(region, regionTarget);
+			return region;
+		}
+
+		IRegion IRegionAdapter.Initialize(object regionTarget, string regionName)
+		{
+			return Initialize(GetCastedObject(regionTarget), regionName);
+		}
+
+		protected virtual void AttachDefaultBehaviors(IRegion region, T regionTarget)
+		{
+			IRegionBehaviorFactory regionBehaviorFactory = RegionBehaviorFactory;
+			if (regionBehaviorFactory == null)
+			{
+				return;
+			}
+			DependencyObject dependencyObject = regionTarget as DependencyObject;
+			foreach (string item in regionBehaviorFactory)
+			{
+				if (!region.Behaviors.ContainsKey(item))
+				{
+					IRegionBehavior regionBehavior = regionBehaviorFactory.CreateFromKey(item);
+					if (dependencyObject != null && regionBehavior is IHostAwareRegionBehavior hostAwareRegionBehavior)
+					{
+						hostAwareRegionBehavior.HostControl = dependencyObject;
+					}
+					region.Behaviors.Add(item, regionBehavior);
+				}
+			}
+		}
+
+		protected virtual void AttachBehaviors(IRegion region, T regionTarget)
+		{
+		}
+
+		protected abstract void Adapt(IRegion region, T regionTarget);
+
+		protected abstract IRegion CreateRegion();
+
+		private static T GetCastedObject(object regionTarget)
+		{
+			if (regionTarget == null)
+			{
+				throw new ArgumentNullException("regionTarget");
+			}
+			if (!(regionTarget is T result))
+			{
+				throw new InvalidOperationException(string.Format(CultureInfo.InvariantCulture, Resources.AdapterInvalidTypeException, new object[1] { typeof(T).Name }));
+			}
+			return result;
+		}
+
+		private static void SetObservableRegionOnHostingControl(IRegion region, T regionTarget)
+		{
+			if (regionTarget is DependencyObject view)
+			{
+				RegionManager.GetObservableRegion(view).Value = region;
+			}
+		}
+	}
+	public class RegionAdapterMappings
+	{
+		private readonly Dictionary<Type, IRegionAdapter> mappings = new Dictionary<Type, IRegionAdapter>();
+
+		public void RegisterMapping(Type controlType, IRegionAdapter adapter)
+		{
+			if (controlType == null)
+			{
+				throw new ArgumentNullException("controlType");
+			}
+			if (adapter == null)
+			{
+				throw new ArgumentNullException("adapter");
+			}
+			if (mappings.ContainsKey(controlType))
+			{
+				throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture, Resources.MappingExistsException, new object[1] { controlType.Name }));
+			}
+			mappings.Add(controlType, adapter);
+		}
+
+		public IRegionAdapter GetMapping(Type controlType)
+		{
+			Type type = controlType;
+			while (type != null)
+			{
+				if (mappings.ContainsKey(type))
+				{
+					return mappings[type];
+				}
+				type = type.BaseType;
+			}
+			throw new KeyNotFoundException("controlType");
+		}
+	}
+	public class RegionManager : IRegionManager
+	{
+		private class RegionCollection : IRegionCollection, IEnumerable<IRegion>, IEnumerable
+		{
+			private readonly IRegionManager regionManager;
+
+			private readonly List<IRegion> regions;
+
+			public IRegion this[string regionName]
+			{
+				get
+				{
+					UpdateRegions();
+					IRegion regionByName = GetRegionByName(regionName);
+					if (regionByName == null)
+					{
+						throw new KeyNotFoundException(string.Format(CultureInfo.CurrentUICulture, Resources.RegionNotInRegionManagerException, new object[1] { regionName }));
+					}
+					return regionByName;
+				}
+			}
+
+			public RegionCollection(IRegionManager regionManager)
+			{
+				this.regionManager = regionManager;
+				regions = new List<IRegion>();
+			}
+
+			public IEnumerator<IRegion> GetEnumerator()
+			{
+				UpdateRegions();
+				return regions.GetEnumerator();
+			}
+
+			IEnumerator IEnumerable.GetEnumerator()
+			{
+				return GetEnumerator();
+			}
+
+			public void Add(IRegion region)
+			{
+				UpdateRegions();
+				if (region.Name == null)
+				{
+					throw new InvalidOperationException(Resources.RegionNameCannotBeEmptyException);
+				}
+				if (GetRegionByName(region.Name) != null)
+				{
+					throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, Resources.RegionNameExistsException, new object[1] { region.Name }));
+				}
+				regions.Add(region);
+				region.RegionManager = regionManager;
+			}
+
+			public bool Remove(string regionName)
+			{
+				UpdateRegions();
+				bool result = false;
+				IRegion regionByName = GetRegionByName(regionName);
+				if (regionByName != null)
+				{
+					result = true;
+					regions.Remove(regionByName);
+					regionByName.RegionManager = null;
+				}
+				return result;
+			}
+
+			public bool ContainsRegionWithName(string regionName)
+			{
+				UpdateRegions();
+				return GetRegionByName(regionName) != null;
+			}
+
+			private IRegion GetRegionByName(string regionName)
+			{
+				return regions.FirstOrDefault((IRegion r) => r.Name == regionName);
+			}
+		}
+
+		private static readonly WeakDelegatesManager updatingRegionsListeners = new WeakDelegatesManager();
+
+		public static readonly DependencyProperty RegionNameProperty = DependencyProperty.RegisterAttached("RegionName", typeof(string), typeof(RegionManager), new PropertyMetadata(OnSetRegionNameCallback));
+
+		private static readonly DependencyProperty ObservableRegionProperty = DependencyProperty.RegisterAttached("ObservableRegion", typeof(ObservableObject<IRegion>), typeof(RegionManager), null);
+
+		public static readonly DependencyProperty RegionManagerProperty = DependencyProperty.RegisterAttached("RegionManager", typeof(IRegionManager), typeof(RegionManager), null);
+
+		public static readonly DependencyProperty RegionContextProperty = DependencyProperty.RegisterAttached("RegionContext", typeof(object), typeof(RegionManager), new PropertyMetadata(OnRegionContextChanged));
+
+		private readonly RegionCollection regionCollection;
+
+		public IRegionCollection Regions => regionCollection;
+
+		public static event EventHandler UpdatingRegions
+		{
+			add
+			{
+				updatingRegionsListeners.AddListener(value);
+			}
+			remove
+			{
+				updatingRegionsListeners.RemoveListener(value);
+			}
+		}
+
+		public static void SetRegionName(DependencyObject regionTarget, string regionName)
+		{
+			regionTarget.SetValue(RegionNameProperty, regionName);
+		}
+
+		public static string GetRegionName(DependencyObject regionTarget)
+		{
+			return regionTarget.GetValue(RegionNameProperty) as string;
+		}
+
+		public static ObservableObject<IRegion> GetObservableRegion(DependencyObject view)
+		{
+			ObservableObject<IRegion> observableObject = view.GetValue(ObservableRegionProperty) as ObservableObject<IRegion>;
+			if (observableObject == null)
+			{
+				observableObject = new ObservableObject<IRegion>();
+				view.SetValue(ObservableRegionProperty, observableObject);
+			}
+			return observableObject;
+		}
+
+		private static void OnSetRegionNameCallback(DependencyObject element, DependencyPropertyChangedEventArgs args)
+		{
+			if (!IsInDesignMode(element))
+			{
+				CreateRegion(element);
+			}
+		}
+
+		private static void CreateRegion(DependencyObject element)
+		{
+			IServiceLocator current = ServiceLocator.Current;
+			DelayedRegionCreationBehavior instance = current.GetInstance<DelayedRegionCreationBehavior>();
+			instance.TargetElement = element;
+			instance.Attach();
+		}
+
+		public static IRegionManager GetRegionManager(DependencyObject target)
+		{
+			return (IRegionManager)target.GetValue(RegionManagerProperty);
+		}
+
+		public static void SetRegionManager(DependencyObject target, IRegionManager value)
+		{
+			target.SetValue(RegionManagerProperty, value);
+		}
+
+		private static void OnRegionContextChanged(DependencyObject depObj, DependencyPropertyChangedEventArgs e)
+		{
+			if (RegionContext.GetObservableContext(depObj).Value != e.NewValue)
+			{
+				RegionContext.GetObservableContext(depObj).Value = e.NewValue;
+			}
+		}
+
+		public static object GetRegionContext(DependencyObject target)
+		{
+			return target.GetValue(RegionContextProperty);
+		}
+
+		public static void SetRegionContext(DependencyObject target, object value)
+		{
+			target.SetValue(RegionContextProperty, value);
+		}
+
+		public static void UpdateRegions()
+		{
+			try
+			{
+				updatingRegionsListeners.Raise(null, EventArgs.Empty);
+			}
+			catch (TargetInvocationException ex)
+			{
+				Exception rootException = ex.GetRootException();
+				throw new UpdateRegionsException(string.Format(CultureInfo.CurrentCulture, Resources.UpdateRegionException, new object[1] { rootException }), ex.InnerException);
+			}
+		}
+
+		private static bool IsInDesignMode(DependencyObject element)
+		{
+			if (!DesignerProperties.GetIsInDesignMode(element) && Application.Current != null)
+			{
+				return Application.Current.GetType() == typeof(Application);
+			}
+			return true;
+		}
+
+		public RegionManager()
+		{
+			regionCollection = new RegionCollection(this);
+		}
+
+		public IRegionManager CreateRegionManager()
+		{
+			return new RegionManager();
+		}
+	}
+	public class SingleActiveRegion : Region
+	{
+		public override void Activate(object view)
+		{
+			object obj = ActiveViews.FirstOrDefault();
+			if (obj != null && obj != view && Views.Contains(obj))
+			{
+				base.Deactivate(obj);
+			}
+			base.Activate(view);
+		}
+	}
+	public class ViewsCollection : IViewsCollection, IEnumerable<object>, IEnumerable, INotifyCollectionChanged
+	{
+		private readonly ObservableCollection<ItemMetadata> subjectCollection;
+
+		private readonly Predicate<ItemMetadata> filter;
+
+		private readonly List<object> filteredCollection = new List<object>();
+
+		public event NotifyCollectionChangedEventHandler CollectionChanged;
+
+		public ViewsCollection(ObservableCollection<ItemMetadata> list, Predicate<ItemMetadata> filter)
+		{
+			subjectCollection = list;
+			this.filter = filter;
+			Initialize();
+			subjectCollection.CollectionChanged += UnderlyingCollection_CollectionChanged;
+		}
+
+		public bool Contains(object value)
+		{
+			return filteredCollection.Contains(value);
+		}
+
+		public IEnumerator<object> GetEnumerator()
+		{
+			return filteredCollection.GetEnumerator();
+		}
+
+		IEnumerator IEnumerable.GetEnumerator()
+		{
+			return GetEnumerator();
+		}
+
+		private void AddAndNotify(object item)
+		{
+			AddAndNotify(new List<object>(1) { item });
+		}
+
+		private void RemoveAndNotify(object item)
+		{
+			RemoveAndNotify(new List<object>(1) { item });
+		}
+
+		private void OnCollectionChanged(NotifyCollectionChangedEventArgs e)
+		{
+			this.CollectionChanged?.Invoke(this, e);
+		}
+
+		private void Reset()
+		{
+			foreach (ItemMetadata item in subjectCollection)
+			{
+				item.MetadataChanged -= itemMetadata_MetadataChanged;
+			}
+			filteredCollection.Clear();
+			Initialize();
+			OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+		}
+
+		private void Initialize()
+		{
+			foreach (ItemMetadata item in subjectCollection)
+			{
+				item.MetadataChanged += itemMetadata_MetadataChanged;
+				if (filter(item))
+				{
+					filteredCollection.Add(item.Item);
+				}
+			}
+		}
+
+		private void UnderlyingCollection_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+		{
+			List<object> list = new List<object>();
+			switch (e.Action)
+			{
+			case NotifyCollectionChangedAction.Add:
+				foreach (ItemMetadata newItem in e.NewItems)
+				{
+					newItem.MetadataChanged += itemMetadata_MetadataChanged;
+					if (filter(newItem))
+					{
+						list.Add(newItem.Item);
+					}
+				}
+				AddAndNotify(list);
+				break;
+			case NotifyCollectionChangedAction.Remove:
+				foreach (ItemMetadata oldItem in e.OldItems)
+				{
+					oldItem.MetadataChanged -= itemMetadata_MetadataChanged;
+					if (filteredCollection.Contains(oldItem.Item))
+					{
+						list.Add(oldItem.Item);
+					}
+				}
+				RemoveAndNotify(list);
+				break;
+			default:
+				Reset();
+				break;
+			}
+		}
+
+		private void itemMetadata_MetadataChanged(object sender, EventArgs e)
+		{
+			ItemMetadata itemMetadata = (ItemMetadata)sender;
+			if (filteredCollection.Contains(itemMetadata.Item))
+			{
+				if (!filter(itemMetadata))
+				{
+					RemoveAndNotify(itemMetadata.Item);
+				}
+			}
+			else if (filter(itemMetadata))
+			{
+				AddAndNotify(itemMetadata.Item);
+			}
+		}
+
+		private void AddAndNotify(IList items)
+		{
+			if (items.Count > 0)
+			{
+				filteredCollection.AddRange(items.Cast<object>());
+				OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, items));
+			}
+		}
+
+		private void RemoveAndNotify(IList items)
+		{
+			if (items.Count <= 0)
+			{
+				return;
+			}
+			int startingIndex = -1;
+			if (items.Count == 1)
+			{
+				startingIndex = filteredCollection.IndexOf(items[0]);
+			}
+			foreach (object item in items)
+			{
+				filteredCollection.Remove(item);
+			}
+			OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, items, startingIndex));
+		}
+	}
+}
+namespace Microsoft.Practices.Composite.Presentation.Commands
+{
+	public class CommandBehaviorBase<T> where T : Control
+	{
+		private ICommand command;
+
+		private object commandParameter;
+
+		private readonly WeakReference targetObject;
+
+		private readonly EventHandler commandCanExecuteChangedHandler;
+
+		public ICommand Command
+		{
+			get
+			{
+				return command;
+			}
+			set
+			{
+				if (command != null)
+				{
+					command.CanExecuteChanged -= commandCanExecuteChangedHandler;
+				}
+				command = value;
+				if (command != null)
+				{
+					command.CanExecuteChanged += commandCanExecuteChangedHandler;
+					UpdateEnabledState();
+				}
+			}
+		}
+
+		public object CommandParameter
+		{
+			get
+			{
+				return commandParameter;
+			}
+			set
+			{
+				if (commandParameter != value)
+				{
+					commandParameter = value;
+					UpdateEnabledState();
+				}
+			}
+		}
+
+		protected T TargetObject => targetObject.Target as T;
+
+		public CommandBehaviorBase(T targetObject)
+		{
+			this.targetObject = new WeakReference(targetObject);
+			commandCanExecuteChangedHandler = CommandCanExecuteChanged;
+		}
+
+		protected virtual void UpdateEnabledState()
+		{
+			if (TargetObject == null)
+			{
+				Command = null;
+				CommandParameter = null;
+			}
+			else if (Command != null)
+			{
+				T val = TargetObject;
+				val.IsEnabled = Command.CanExecute(CommandParameter);
+			}
+		}
+
+		private void CommandCanExecuteChanged(object sender, EventArgs e)
+		{
+			UpdateEnabledState();
+		}
+
+		protected virtual void ExecuteCommand()
+		{
+			if (Command != null)
+			{
+				Command.Execute(CommandParameter);
+			}
+		}
+	}
+	public class ButtonBaseClickCommandBehavior : CommandBehaviorBase<ButtonBase>
+	{
+		public ButtonBaseClickCommandBehavior(ButtonBase clickableObject)
+			: base(clickableObject)
+		{
+			clickableObject.Click += OnClick;
+		}
+
+		private void OnClick(object sender, RoutedEventArgs e)
+		{
+			ExecuteCommand();
+		}
+	}
+	public static class Click
+	{
+		private static readonly DependencyProperty ClickCommandBehaviorProperty = DependencyProperty.RegisterAttached("ClickCommandBehavior", typeof(ButtonBaseClickCommandBehavior), typeof(Click), null);
+
+		public static readonly DependencyProperty CommandProperty = DependencyProperty.RegisterAttached("Command", typeof(ICommand), typeof(Click), new PropertyMetadata(OnSetCommandCallback));
+
+		public static readonly DependencyProperty CommandParameterProperty = DependencyProperty.RegisterAttached("CommandParameter", typeof(object), typeof(Click), new PropertyMetadata(OnSetCommandParameterCallback));
+
+		[SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", Justification = "Only works for buttonbase")]
+		public static void SetCommand(ButtonBase buttonBase, ICommand command)
+		{
+			buttonBase.SetValue(CommandProperty, command);
+		}
+
+		[SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", Justification = "Only works for buttonbase")]
+		public static ICommand GetCommand(ButtonBase buttonBase)
+		{
+			return buttonBase.GetValue(CommandProperty) as ICommand;
+		}
+
+		[SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", Justification = "Only works for buttonbase")]
+		public static void SetCommandParameter(ButtonBase buttonBase, object parameter)
+		{
+			buttonBase.SetValue(CommandParameterProperty, parameter);
+		}
+
+		[SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", Justification = "Only works for buttonbase")]
+		public static object GetCommandParameter(ButtonBase buttonBase)
+		{
+			return buttonBase.GetValue(CommandParameterProperty);
+		}
+
+		private static void OnSetCommandCallback(DependencyObject dependencyObject, DependencyPropertyChangedEventArgs e)
+		{
+			if (dependencyObject is ButtonBase buttonBase)
+			{
+				ButtonBaseClickCommandBehavior orCreateBehavior = GetOrCreateBehavior(buttonBase);
+				orCreateBehavior.Command = e.NewValue as ICommand;
+			}
+		}
+
+		private static void OnSetCommandParameterCallback(DependencyObject dependencyObject, DependencyPropertyChangedEventArgs e)
+		{
+			if (dependencyObject is ButtonBase buttonBase)
+			{
+				ButtonBaseClickCommandBehavior orCreateBehavior = GetOrCreateBehavior(buttonBase);
+				orCreateBehavior.CommandParameter = e.NewValue;
+			}
+		}
+
+		private static ButtonBaseClickCommandBehavior GetOrCreateBehavior(ButtonBase buttonBase)
+		{
+			ButtonBaseClickCommandBehavior buttonBaseClickCommandBehavior = buttonBase.GetValue(ClickCommandBehaviorProperty) as ButtonBaseClickCommandBehavior;
+			if (buttonBaseClickCommandBehavior == null)
+			{
+				buttonBaseClickCommandBehavior = new ButtonBaseClickCommandBehavior(buttonBase);
+				buttonBase.SetValue(ClickCommandBehaviorProperty, buttonBaseClickCommandBehavior);
+			}
+			return buttonBaseClickCommandBehavior;
+		}
+	}
+	internal static class WeakEventHandlerManager
+	{
+		private class DispatcherProxy
+		{
+			private Dispatcher innerDispatcher;
+
+			private DispatcherProxy(Dispatcher dispatcher)
+			{
+				innerDispatcher = dispatcher;
+			}
+
+			public static DispatcherProxy CreateDispatcher()
+			{
+				DispatcherProxy dispatcherProxy = null;
+				if (Application.Current == null)
+				{
+					return null;
+				}
+				return new DispatcherProxy(Application.Current.Dispatcher);
+			}
+
+			public bool CheckAccess()
+			{
+				return innerDispatcher.CheckAccess();
+			}
+
+			public DispatcherOperation BeginInvoke(Delegate method, params object[] args)
+			{
+				return innerDispatcher.BeginInvoke(method, DispatcherPriority.Normal, args);
+			}
+		}
+
+		public static void CallWeakReferenceHandlers(object sender, List<WeakReference> handlers)
+		{
+			if (handlers != null)
+			{
+				EventHandler[] array = new EventHandler[handlers.Count];
+				int count = 0;
+				count = CleanupOldHandlers(handlers, array, count);
+				for (int i = 0; i < count; i++)
+				{
+					CallHandler(sender, array[i]);
+				}
+			}
+		}
+
+		private static void CallHandler(object sender, EventHandler eventHandler)
+		{
+			DispatcherProxy dispatcherProxy = DispatcherProxy.CreateDispatcher();
+			if (eventHandler != null)
+			{
+				if (dispatcherProxy != null && !dispatcherProxy.CheckAccess())
+				{
+					dispatcherProxy.BeginInvoke(new Action<object, EventHandler>(CallHandler), sender, eventHandler);
+				}
+				else
+				{
+					eventHandler(sender, EventArgs.Empty);
+				}
+			}
+		}
+
+		private static int CleanupOldHandlers(List<WeakReference> handlers, EventHandler[] callees, int count)
+		{
+			for (int num = handlers.Count - 1; num >= 0; num--)
+			{
+				WeakReference weakReference = handlers[num];
+				if (!(weakReference.Target is EventHandler eventHandler))
+				{
+					handlers.RemoveAt(num);
+				}
+				else
+				{
+					callees[count] = eventHandler;
+					count++;
+				}
+			}
+			return count;
+		}
+
+		public static void AddWeakReferenceHandler(ref List<WeakReference> handlers, EventHandler handler, int defaultListSize)
+		{
+			if (handlers == null)
+			{
+				handlers = ((defaultListSize > 0) ? new List<WeakReference>(defaultListSize) : new List<WeakReference>());
+			}
+			handlers.Add(new WeakReference(handler));
+		}
+
+		public static void RemoveWeakReferenceHandler(List<WeakReference> handlers, EventHandler handler)
+		{
+			if (handlers == null)
+			{
+				return;
+			}
+			for (int num = handlers.Count - 1; num >= 0; num--)
+			{
+				WeakReference weakReference = handlers[num];
+				if (!(weakReference.Target is EventHandler eventHandler) || eventHandler == handler)
+				{
+					handlers.RemoveAt(num);
+				}
+			}
+		}
+	}
+}
+namespace Microsoft.Practices.Composite.Presentation.Events
+{
+	public interface IDispatcherFacade
+	{
+		void BeginInvoke(Delegate method, object arg);
+	}
+	public class DefaultDispatcher : IDispatcherFacade
+	{
+		public void BeginInvoke(Delegate method, object arg)
+		{
+			if (Application.Current != null)
+			{
+				Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, method, arg);
+			}
+		}
+	}
+	internal class WeakDelegatesManager
+	{
+		private readonly List<DelegateReference> listeners = new List<DelegateReference>();
+
+		public void AddListener(Delegate listener)
+		{
+			listeners.Add(new DelegateReference(listener, keepReferenceAlive: false));
+		}
+
+		public void RemoveListener(Delegate listener)
+		{
+			listeners.RemoveAll(delegate(DelegateReference reference)
+			{
+				Delegate target = reference.Target;
+				return listener.Equals(target) || (object)target == null;
+			});
+		}
+
+		public void Raise(params object[] args)
+		{
+			listeners.RemoveAll((DelegateReference listener) => (object)listener.Target == null);
+			foreach (Delegate item in from listener in listeners.ToList()
+				select listener.Target into listener
+				where (object)listener != null
+				select listener)
+			{
+				item.DynamicInvoke(args);
+			}
+		}
+	}
+}
+namespace Microsoft.Practices.Composite.Presentation.Properties
+{
+	[CompilerGenerated]
+	[DebuggerNonUserCode]
+	[GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
+	internal class Resources
+	{
+		private static ResourceManager resourceMan;
+
+		private static CultureInfo resourceCulture;
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		internal static ResourceManager ResourceManager
+		{
+			get
+			{
+				if (object.ReferenceEquals(resourceMan, null))
+				{
+					ResourceManager resourceManager = new ResourceManager("Microsoft.Practices.Composite.Presentation.Properties.Resources", typeof(Resources).Assembly);
+					resourceMan = resourceManager;
+				}
+				return resourceMan;
+			}
+		}
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		internal static CultureInfo Culture
+		{
+			get
+			{
+				return resourceCulture;
+			}
+			set
+			{
+				resourceCulture = value;
+			}
+		}
+
+		internal static string AdapterInvalidTypeException => ResourceManager.GetString("AdapterInvalidTypeException", resourceCulture);
+
+		internal static string CannotChangeRegionNameException => ResourceManager.GetString("CannotChangeRegionNameException", resourceCulture);
+
+		internal static string CannotRegisterCompositeCommandInItself => ResourceManager.GetString("CannotRegisterCompositeCommandInItself", resourceCulture);
+
+		internal static string CannotRegisterSameCommandTwice => ResourceManager.GetString("CannotRegisterSameCommandTwice", resourceCulture);
+
+		internal static string CanOnlyAddTypesThatInheritIFromRegionBehavior => ResourceManager.GetString("CanOnlyAddTypesThatInheritIFromRegionBehavior", resourceCulture);
+
+		internal static string ContentControlHasContentException => ResourceManager.GetString("ContentControlHasContentException", resourceCulture);
+
+		internal static string DeactiveNotPossibleException => ResourceManager.GetString("DeactiveNotPossibleException", resourceCulture);
+
+		internal static string DelegateCommandDelegatesCannotBeNull => ResourceManager.GetString("DelegateCommandDelegatesCannotBeNull", resourceCulture);
+
+		internal static string HostControlCannotBeNull => ResourceManager.GetString("HostControlCannotBeNull", resourceCulture);
+
+		internal static string HostControlCannotBeSetAfterAttach => ResourceManager.GetString("HostControlCannotBeSetAfterAttach", resourceCulture);
+
+		internal static string HostControlMustBeATabControl => ResourceManager.GetString("HostControlMustBeATabControl", resourceCulture);
+
+		internal static string ItemsControlHasItemsSourceException => ResourceManager.GetString("ItemsControlHasItemsSourceException", resourceCulture);
+
+		internal static string MappingExistsException => ResourceManager.GetString("MappingExistsException", resourceCulture);
+
+		internal static string OnViewRegisteredException => ResourceManager.GetString("OnViewRegisteredException", resourceCulture);
+
+		internal static string RegionBehaviorAttachCannotBeCallWithNullRegion => ResourceManager.GetString("RegionBehaviorAttachCannotBeCallWithNullRegion", resourceCulture);
+
+		internal static string RegionBehaviorRegionCannotBeSetAfterAttach => ResourceManager.GetString("RegionBehaviorRegionCannotBeSetAfterAttach", resourceCulture);
+
+		internal static string RegionCreationException => ResourceManager.GetString("RegionCreationException", resourceCulture);
+
+		internal static string RegionNameCannotBeEmptyException => ResourceManager.GetString("RegionNameCannotBeEmptyException", resourceCulture);
+
+		internal static string RegionNameExistsException => ResourceManager.GetString("RegionNameExistsException", resourceCulture);
+
+		internal static string RegionNotInRegionManagerException => ResourceManager.GetString("RegionNotInRegionManagerException", resourceCulture);
+
+		internal static string RegionViewExistsException => ResourceManager.GetString("RegionViewExistsException", resourceCulture);
+
+		internal static string RegionViewNameExistsException => ResourceManager.GetString("RegionViewNameExistsException", resourceCulture);
+
+		internal static string StringCannotBeNullOrEmpty => ResourceManager.GetString("StringCannotBeNullOrEmpty", resourceCulture);
+
+		internal static string TypeWithKeyNotRegistered => ResourceManager.GetString("TypeWithKeyNotRegistered", resourceCulture);
+
+		internal static string UpdateRegionException => ResourceManager.GetString("UpdateRegionException", resourceCulture);
+
+		internal static string ValueNotFound => ResourceManager.GetString("ValueNotFound", resourceCulture);
+
+		internal static string ViewNotInRegionException => ResourceManager.GetString("ViewNotInRegionException", resourceCulture);
+
+		[SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
+		internal Resources()
+		{
+		}
+	}
+}
+namespace Microsoft.Practices.Composite.Presentation.Regions
+{
+	public abstract class RegionBehavior : IRegionBehavior
+	{
+		private IRegion region;
+
+		public IRegion Region
+		{
+			get
+			{
+				return region;
+			}
+			set
+			{
+				if (IsAttached)
+				{
+					throw new InvalidOperationException(Resources.RegionBehaviorRegionCannotBeSetAfterAttach);
+				}
+				region = value;
+			}
+		}
+
+		public bool IsAttached { get; private set; }
+
+		public void Attach()
+		{
+			if (region == null)
+			{
+				throw new InvalidOperationException(Resources.RegionBehaviorAttachCannotBeCallWithNullRegion);
+			}
+			IsAttached = true;
+			OnAttach();
+		}
+
+		protected abstract void OnAttach();
+	}
+}
+namespace Microsoft.Practices.Composite.Presentation.Regions.Behaviors
+{
+	public class AutoPopulateRegionBehavior : RegionBehavior
+	{
+		public const string BehaviorKey = "AutoPopulate";
+
+		private readonly IRegionViewRegistry regionViewRegistry;
+
+		public AutoPopulateRegionBehavior(IRegionViewRegistry regionViewRegistry)
+		{
+			this.regionViewRegistry = regionViewRegistry;
+		}
+
+		protected override void OnAttach()
+		{
+			if (string.IsNullOrEmpty(base.Region.Name))
+			{
+				base.Region.PropertyChanged += Region_PropertyChanged;
+			}
+			else
+			{
+				StartPopulatingContent();
+			}
+		}
+
+		private void StartPopulatingContent()
+		{
+			foreach (object item in CreateViewsToAutoPopulate())
+			{
+				AddViewIntoRegion(item);
+			}
+			regionViewRegistry.ContentRegistered += OnViewRegistered;
+		}
+
+		protected virtual IEnumerable<object> CreateViewsToAutoPopulate()
+		{
+			return regionViewRegistry.GetContents(base.Region.Name);
+		}
+
+		protected virtual void AddViewIntoRegion(object viewToAdd)
+		{
+			base.Region.Add(viewToAdd);
+		}
+
+		private void Region_PropertyChanged(object sender, PropertyChangedEventArgs e)
+		{
+			if (e.PropertyName == "Name" && !string.IsNullOrEmpty(base.Region.Name))
+			{
+				base.Region.PropertyChanged -= Region_PropertyChanged;
+				StartPopulatingContent();
+			}
+		}
+
+		[SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", Justification = "This has to be public in order to work with weak references in partial trust or Silverlight environments.")]
+		public virtual void OnViewRegistered(object sender, ViewRegisteredEventArgs e)
+		{
+			if (e.RegionName == base.Region.Name)
+			{
+				AddViewIntoRegion(e.GetView());
+			}
+		}
+	}
+}
+namespace Microsoft.Practices.Composite.Presentation.Regions
+{
+	public interface IRegionManagerAccessor
+	{
+		event EventHandler UpdatingRegions;
+
+		string GetRegionName(DependencyObject element);
+
+		IRegionManager GetRegionManager(DependencyObject element);
+	}
+	internal class DefaultRegionManagerAccessor : IRegionManagerAccessor
+	{
+		public event EventHandler UpdatingRegions
+		{
+			add
+			{
+				RegionManager.UpdatingRegions += value;
+			}
+			remove
+			{
+				RegionManager.UpdatingRegions -= value;
+			}
+		}
+
+		public string GetRegionName(DependencyObject element)
+		{
+			return element.GetValue(RegionManager.RegionNameProperty) as string;
+		}
+
+		public IRegionManager GetRegionManager(DependencyObject element)
+		{
+			return element.GetValue(RegionManager.RegionManagerProperty) as IRegionManager;
+		}
+	}
+}
+namespace Microsoft.Practices.Composite.Presentation.Regions.Behaviors
+{
+	[Serializable]
+	public class RegionCreationException : Exception
+	{
+		public RegionCreationException()
+		{
+		}
+
+		public RegionCreationException(string message)
+			: base(message)
+		{
+		}
+
+		public RegionCreationException(string message, Exception inner)
+			: base(message, inner)
+		{
+		}
+
+		protected RegionCreationException(SerializationInfo info, StreamingContext context)
+			: base(info, context)
+		{
+		}
+	}
+	public interface IHostAwareRegionBehavior : IRegionBehavior
+	{
+		DependencyObject HostControl { get; set; }
+	}
+	public class SelectorItemsSourceSyncBehavior : RegionBehavior, IHostAwareRegionBehavior, IRegionBehavior
+	{
+		public static readonly string BehaviorKey = "SelectorItemsSourceSyncBehavior";
+
+		private bool updatingActiveViewsInHostControlSelectionChanged;
+
+		private Selector hostControl;
+
+		public DependencyObject HostControl
+		{
+			get
+			{
+				return hostControl;
+			}
+			set
+			{
+				hostControl = value as Selector;
+			}
+		}
+
+		protected override void OnAttach()
+		{
+			if (hostControl.ItemsSource != null || BindingOperations.GetBinding(hostControl, ItemsControl.ItemsSourceProperty) != null)
+			{
+				throw new InvalidOperationException(Resources.ItemsControlHasItemsSourceException);
+			}
+			SynchronizeItems();
+			hostControl.SelectionChanged += HostControlSelectionChanged;
+			base.Region.ActiveViews.CollectionChanged += ActiveViews_CollectionChanged;
+			base.Region.Views.CollectionChanged += Views_CollectionChanged;
+		}
+
+		private void Views_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+		{
+			if (e.Action == NotifyCollectionChangedAction.Add)
+			{
+				foreach (object newItem in e.NewItems)
+				{
+					hostControl.Items.Add(newItem);
+				}
+				return;
+			}
+			if (e.Action != NotifyCollectionChangedAction.Remove)
+			{
+				return;
+			}
+			foreach (object oldItem in e.OldItems)
+			{
+				hostControl.Items.Remove(oldItem);
+			}
+		}
+
+		private void SynchronizeItems()
+		{
+			List<object> list = new List<object>();
+			foreach (object item in (IEnumerable)hostControl.Items)
+			{
+				list.Add(item);
+			}
+			foreach (object view in base.Region.Views)
+			{
+				hostControl.Items.Add(view);
+			}
+			foreach (object item2 in list)
+			{
+				base.Region.Add(item2);
+			}
+		}
+
+		private void ActiveViews_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+		{
+			if (updatingActiveViewsInHostControlSelectionChanged)
+			{
+				return;
+			}
+			if (e.Action == NotifyCollectionChangedAction.Add)
+			{
+				if (hostControl.SelectedItem != null && hostControl.SelectedItem != e.NewItems[0] && base.Region.ActiveViews.Contains(hostControl.SelectedItem))
+				{
+					base.Region.Deactivate(hostControl.SelectedItem);
+				}
+				hostControl.SelectedItem = e.NewItems[0];
+			}
+			else if (e.Action == NotifyCollectionChangedAction.Remove && e.OldItems.Contains(hostControl.SelectedItem))
+			{
+				hostControl.SelectedItem = null;
+			}
+		}
+
+		private void HostControlSelectionChanged(object sender, SelectionChangedEventArgs e)
+		{
+			try
+			{
+				updatingActiveViewsInHostControlSelectionChanged = true;
+				object originalSource = e.OriginalSource;
+				if (originalSource != sender)
+				{
+					return;
+				}
+				foreach (object removedItem in e.RemovedItems)
+				{
+					if (base.Region.Views.Contains(removedItem) && base.Region.ActiveViews.Contains(removedItem))
+					{
+						base.Region.Deactivate(removedItem);
+					}
+				}
+				foreach (object addedItem in e.AddedItems)
+				{
+					if (base.Region.Views.Contains(addedItem) && !base.Region.ActiveViews.Contains(addedItem))
+					{
+						base.Region.Activate(addedItem);
+					}
+				}
+			}
+			finally
+			{
+				updatingActiveViewsInHostControlSelectionChanged = false;
+			}
+		}
+	}
+	public class RegionManagerRegistrationBehavior : RegionBehavior, IHostAwareRegionBehavior, IRegionBehavior
+	{
+		public static readonly string BehaviorKey = "RegionManagerRegistration";
+
+		private WeakReference attachedRegionManagerWeakReference;
+
+		private DependencyObject hostControl;
+
+		public IRegionManagerAccessor RegionManagerAccessor { get; set; }
+
+		public DependencyObject HostControl
+		{
+			get
+			{
+				return hostControl;
+			}
+			set
+			{
+				if (base.IsAttached)
+				{
+					throw new InvalidOperationException(Resources.HostControlCannotBeSetAfterAttach);
+				}
+				hostControl = value;
+			}
+		}
+
+		public RegionManagerRegistrationBehavior()
+		{
+			RegionManagerAccessor = new DefaultRegionManagerAccessor();
+		}
+
+		protected override void OnAttach()
+		{
+			if (string.IsNullOrEmpty(base.Region.Name))
+			{
+				base.Region.PropertyChanged += Region_PropertyChanged;
+			}
+			else
+			{
+				StartMonitoringRegionManager();
+			}
+		}
+
+		private void Region_PropertyChanged(object sender, PropertyChangedEventArgs e)
+		{
+			if (e.PropertyName == "Name" && !string.IsNullOrEmpty(base.Region.Name))
+			{
+				base.Region.PropertyChanged -= Region_PropertyChanged;
+				StartMonitoringRegionManager();
+			}
+		}
+
+		private void StartMonitoringRegionManager()
+		{
+			RegionManagerAccessor.UpdatingRegions += OnUpdatingRegions;
+			TryRegisterRegion();
+		}
+
+		private void TryRegisterRegion()
+		{
+			DependencyObject dependencyObject = HostControl;
+			if (!dependencyObject.CheckAccess())
+			{
+				return;
+			}
+			IRegionManager regionManager = FindRegionManager(dependencyObject);
+			IRegionManager attachedRegionManager = GetAttachedRegionManager();
+			if (regionManager != attachedRegionManager)
+			{
+				if (attachedRegionManager != null)
+				{
+					attachedRegionManagerWeakReference = null;
+					attachedRegionManager.Regions.Remove(base.Region.Name);
+				}
+				if (regionManager != null)
+				{
+					attachedRegionManagerWeakReference = new WeakReference(regionManager);
+					regionManager.Regions.Add(base.Region);
+				}
+			}
+		}
+
+		[SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", Justification = "This has to be public in order to work with weak references in partial trust or Silverlight environments.")]
+		public void OnUpdatingRegions(object sender, EventArgs e)
+		{
+			TryRegisterRegion();
+		}
+
+		private IRegionManager FindRegionManager(DependencyObject dependencyObject)
+		{
+			IRegionManager regionManager = RegionManagerAccessor.GetRegionManager(dependencyObject);
+			if (regionManager != null)
+			{
+				return regionManager;
+			}
+			DependencyObject dependencyObject2 = null;
+			dependencyObject2 = LogicalTreeHelper.GetParent(dependencyObject);
+			if (dependencyObject2 != null)
+			{
+				return FindRegionManager(dependencyObject2);
+			}
+			return null;
+		}
+
+		private IRegionManager GetAttachedRegionManager()
+		{
+			if (attachedRegionManagerWeakReference != null)
+			{
+				return attachedRegionManagerWeakReference.Target as IRegionManager;
+			}
+			return null;
+		}
+	}
+}
+namespace Microsoft.Practices.Composite.Presentation.Regions
+{
+	public class ContentControlRegionAdapter : RegionAdapterBase<ContentControl>
+	{
+		public ContentControlRegionAdapter(IRegionBehaviorFactory regionBehaviorFactory)
+			: base(regionBehaviorFactory)
+		{
+		}
+
+		protected override void Adapt(IRegion region, ContentControl regionTarget)
+		{
+			if (regionTarget.Content != null || BindingOperations.GetBinding(regionTarget, ContentControl.ContentProperty) != null)
+			{
+				throw new InvalidOperationException(Resources.ContentControlHasContentException);
+			}
+			region.ActiveViews.CollectionChanged += delegate
+			{
+				regionTarget.Content = region.ActiveViews.FirstOrDefault();
+			};
+			region.Views.CollectionChanged += delegate(object sender, NotifyCollectionChangedEventArgs e)
+			{
+				if (e.Action == NotifyCollectionChangedAction.Add && region.ActiveViews.Count() == 0)
+				{
+					region.Activate(e.NewItems[0]);
+				}
+			};
+		}
+
+		protected override IRegion CreateRegion()
+		{
+			return new SingleActiveRegion();
+		}
+	}
+	[Serializable]
+	public class UpdateRegionsException : Exception
+	{
+		public UpdateRegionsException()
+		{
+		}
+
+		public UpdateRegionsException(string message)
+			: base(message)
+		{
+		}
+
+		public UpdateRegionsException(string message, Exception inner)
+			: base(message, inner)
+		{
+		}
+
+		protected UpdateRegionsException(SerializationInfo info, StreamingContext context)
+			: base(info, context)
+		{
+		}
+	}
+	[Serializable]
+	public class ViewRegistrationException : Exception
+	{
+		protected ViewRegistrationException(SerializationInfo info, StreamingContext context)
+			: base(info, context)
+		{
+		}
+
+		public ViewRegistrationException()
+		{
+		}
+
+		public ViewRegistrationException(string message)
+			: base(message)
+		{
+		}
+
+		public ViewRegistrationException(string message, Exception inner)
+			: base(message, inner)
+		{
+		}
+	}
+	[SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "It is more of a factory than a collection")]
+	public interface IRegionBehaviorFactory : IEnumerable<string>, IEnumerable
+	{
+		void AddIfMissing(string behaviorKey, Type behaviorType);
+
+		bool ContainsKey(string behaviorKey);
+
+		IRegionBehavior CreateFromKey(string key);
+	}
+	[SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "It is more of a factory than a collection")]
+	public class RegionBehaviorFactory : IRegionBehaviorFactory, IEnumerable<string>, IEnumerable
+	{
+		private readonly IServiceLocator serviceLocator;
+
+		private readonly Dictionary<string, Type> registeredBehaviors = new Dictionary<string, Type>();
+
+		public RegionBehaviorFactory(IServiceLocator serviceLocator)
+		{
+			this.serviceLocator = serviceLocator;
+		}
+
+		public void AddIfMissing(string behaviorKey, Type behaviorType)
+		{
+			if (behaviorKey == null)
+			{
+				throw new ArgumentNullException("behaviorKey");
+			}
+			if (behaviorType == null)
+			{
+				throw new ArgumentNullException("behaviorType");
+			}
+			if (!typeof(IRegionBehavior).IsAssignableFrom(behaviorType))
+			{
+				throw new ArgumentException(string.Format(Thread.CurrentThread.CurrentCulture, Resources.CanOnlyAddTypesThatInheritIFromRegionBehavior, new object[1] { behaviorType.Name }), "behaviorType");
+			}
+			if (!registeredBehaviors.ContainsKey(behaviorKey))
+			{
+				registeredBehaviors.Add(behaviorKey, behaviorType);
+			}
+		}
+
+		public IRegionBehavior CreateFromKey(string key)
+		{
+			if (!ContainsKey(key))
+			{
+				throw new ArgumentException(string.Format(Thread.CurrentThread.CurrentCulture, Resources.TypeWithKeyNotRegistered, new object[1] { key }), "key");
+			}
+			return (IRegionBehavior)serviceLocator.GetInstance(registeredBehaviors[key]);
+		}
+
+		public IEnumerator<string> GetEnumerator()
+		{
+			return registeredBehaviors.Keys.GetEnumerator();
+		}
+
+		IEnumerator IEnumerable.GetEnumerator()
+		{
+			return GetEnumerator();
+		}
+
+		public bool ContainsKey(string behaviorKey)
+		{
+			return registeredBehaviors.ContainsKey(behaviorKey);
+		}
+	}
+	public class ItemsControlRegionAdapter : RegionAdapterBase<ItemsControl>
+	{
+		public ItemsControlRegionAdapter(IRegionBehaviorFactory regionBehaviorFactory)
+			: base(regionBehaviorFactory)
+		{
+		}
+
+		protected override void Adapt(IRegion region, ItemsControl regionTarget)
+		{
+			if (regionTarget.ItemsSource != null || BindingOperations.GetBinding(regionTarget, ItemsControl.ItemsSourceProperty) != null)
+			{
+				throw new InvalidOperationException(Resources.ItemsControlHasItemsSourceException);
+			}
+			if (regionTarget.Items.Count > 0)
+			{
+				foreach (object item in (IEnumerable)regionTarget.Items)
+				{
+					region.Add(item);
+				}
+				regionTarget.Items.Clear();
+			}
+			regionTarget.ItemsSource = region.Views;
+		}
+
+		protected override IRegion CreateRegion()
+		{
+			return new AllActiveRegion();
+		}
+	}
+	public class RegionBehaviorCollection : IRegionBehaviorCollection, IEnumerable<KeyValuePair<string, IRegionBehavior>>, IEnumerable
+	{
+		private readonly IRegion region;
+
+		private readonly Dictionary<string, IRegionBehavior> behaviors = new Dictionary<string, IRegionBehavior>();
+
+		public IRegionBehavior this[string key] => behaviors[key];
+
+		public RegionBehaviorCollection(IRegion region)
+		{
+			this.region = region;
+		}
+
+		public void Add(string key, IRegionBehavior regionBehavior)
+		{
+			if (key == null)
+			{
+				throw new ArgumentNullException("key");
+			}
+			if (regionBehavior == null)
+			{
+				throw new ArgumentNullException("regionBehavior");
+			}
+			if (behaviors.ContainsKey(key))
+			{
+				throw new ArgumentException("Could not add duplicate behavior with same key.", "key");
+			}
+			behaviors.Add(key, regionBehavior);
+			regionBehavior.Region = region;
+			regionBehavior.Attach();
+		}
+
+		public bool ContainsKey(string key)
+		{
+			return behaviors.ContainsKey(key);
+		}
+
+		public IEnumerator<KeyValuePair<string, IRegionBehavior>> GetEnumerator()
+		{
+			return behaviors.GetEnumerator();
+		}
+
+		IEnumerator IEnumerable.GetEnumerator()
+		{
+			return behaviors.GetEnumerator();
+		}
+	}
+	public class RegionViewRegistry : IRegionViewRegistry
+	{
+		private readonly IServiceLocator locator;
+
+		private readonly ListDictionary<string, Func<object>> registeredContent = new ListDictionary<string, Func<object>>();
+
+		private readonly WeakDelegatesManager contentRegisteredListeners = new WeakDelegatesManager();
+
+		public event EventHandler<ViewRegisteredEventArgs> ContentRegistered
+		{
+			add
+			{
+				contentRegisteredListeners.AddListener(value);
+			}
+			remove
+			{
+				contentRegisteredListeners.RemoveListener(value);
+			}
+		}
+
+		public RegionViewRegistry(IServiceLocator locator)
+		{
+			this.locator = locator;
+		}
+
+		public IEnumerable<object> GetContents(string regionName)
+		{
+			List<object> list = new List<object>();
+			foreach (Func<object> item in registeredContent[regionName])
+			{
+				list.Add(item());
+			}
+			return list;
+		}
+
+		public void RegisterViewWithRegion(string regionName, Type viewType)
+		{
+			RegisterViewWithRegion(regionName, () => CreateInstance(viewType));
+		}
+
+		public void RegisterViewWithRegion(string regionName, Func<object> getContentDelegate)
+		{
+			registeredContent.Add(regionName, getContentDelegate);
+			OnContentRegistered(new ViewRegisteredEventArgs(regionName, getContentDelegate));
+		}
+
+		protected virtual object CreateInstance(Type type)
+		{
+			return locator.GetInstance(type);
+		}
+
+		private void OnContentRegistered(ViewRegisteredEventArgs e)
+		{
+			try
+			{
+				contentRegisteredListeners.Raise(this, e);
+			}
+			catch (TargetInvocationException ex)
+			{
+				Exception ex2 = ((ex.InnerException == null) ? ex.GetRootException() : ex.InnerException.GetRootException());
+				throw new ViewRegistrationException(string.Format(CultureInfo.CurrentCulture, Resources.OnViewRegisteredException, new object[2] { e.RegionName, ex2 }), ex.InnerException);
+			}
+		}
+	}
+}
+namespace Microsoft.Practices.Composite.Presentation.Regions.Behaviors
+{
+	public class BindRegionContextToDependencyObjectBehavior : IRegionBehavior
+	{
+		public const string BehaviorKey = "ContextToDependencyObject";
+
+		public IRegion Region { get; set; }
+
+		public void Attach()
+		{
+			Region.Views.CollectionChanged += Views_CollectionChanged;
+			Region.PropertyChanged += Region_PropertyChanged;
+			SetContextToViews(Region.Views, Region.Context);
+			AttachNotifyChangeEvent(Region.Views);
+		}
+
+		private static void SetContextToViews(IEnumerable views, object context)
+		{
+			foreach (object view2 in views)
+			{
+				if (view2 is DependencyObject view)
+				{
+					ObservableObject<object> observableContext = RegionContext.GetObservableContext(view);
+					observableContext.Value = context;
+				}
+			}
+		}
+
+		private void AttachNotifyChangeEvent(IEnumerable views)
+		{
+			foreach (object view2 in views)
+			{
+				if (view2 is DependencyObject view)
+				{
+					ObservableObject<object> observableContext = RegionContext.GetObservableContext(view);
+					observableContext.PropertyChanged += ViewRegionContext_OnPropertyChangedEvent;
+				}
+			}
+		}
+
+		private void DetachNotifyChangeEvent(IEnumerable views)
+		{
+			foreach (object view2 in views)
+			{
+				if (view2 is DependencyObject view)
+				{
+					ObservableObject<object> observableContext = RegionContext.GetObservableContext(view);
+					observableContext.PropertyChanged -= ViewRegionContext_OnPropertyChangedEvent;
+				}
+			}
+		}
+
+		private void ViewRegionContext_OnPropertyChangedEvent(object sender, PropertyChangedEventArgs args)
+		{
+			if (args.PropertyName == "Value")
+			{
+				ObservableObject<object> observableObject = (ObservableObject<object>)sender;
+				Region.Context = observableObject.Value;
+			}
+		}
+
+		private void Views_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+		{
+			if (e.Action == NotifyCollectionChangedAction.Add)
+			{
+				SetContextToViews(e.NewItems, Region.Context);
+				AttachNotifyChangeEvent(e.NewItems);
+			}
+			else if (e.Action == NotifyCollectionChangedAction.Remove && Region.Context != null)
+			{
+				SetContextToViews(e.OldItems, null);
+				DetachNotifyChangeEvent(e.OldItems);
+			}
+		}
+
+		private void Region_PropertyChanged(object sender, PropertyChangedEventArgs e)
+		{
+			if (e.PropertyName == "Context")
+			{
+				SetContextToViews(Region.Views, Region.Context);
+			}
+		}
+	}
+	public class DelayedRegionCreationBehavior
+	{
+		private readonly RegionAdapterMappings regionAdapterMappings;
+
+		private WeakReference elementWeakReference;
+
+		private bool regionCreated;
+
+		public IRegionManagerAccessor RegionManagerAccessor { get; set; }
+
+		public DependencyObject TargetElement
+		{
+			get
+			{
+				if (elementWeakReference == null)
+				{
+					return null;
+				}
+				return elementWeakReference.Target as DependencyObject;
+			}
+			set
+			{
+				elementWeakReference = new WeakReference(value);
+			}
+		}
+
+		public DelayedRegionCreationBehavior(RegionAdapterMappings regionAdapterMappings)
+		{
+			this.regionAdapterMappings = regionAdapterMappings;
+			RegionManagerAccessor = new DefaultRegionManagerAccessor();
+		}
+
+		public void Attach()
+		{
+			RegionManagerAccessor.UpdatingRegions += OnUpdatingRegions;
+			WireUpTargetElement();
+		}
+
+		public void Detach()
+		{
+			RegionManagerAccessor.UpdatingRegions -= OnUpdatingRegions;
+			UnWireTargetElement();
+		}
+
+		[SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", Justification = "This has to be public in order to work with weak references in partial trust or Silverlight environments.")]
+		public void OnUpdatingRegions(object sender, EventArgs e)
+		{
+			TryCreateRegion();
+		}
+
+		private void TryCreateRegion()
+		{
+			DependencyObject targetElement = TargetElement;
+			if (targetElement == null)
+			{
+				Detach();
+			}
+			else if (targetElement.CheckAccess())
+			{
+				Detach();
+				if (!regionCreated)
+				{
+					string regionName = RegionManagerAccessor.GetRegionName(targetElement);
+					CreateRegion(targetElement, regionName);
+					regionCreated = true;
+				}
+			}
+		}
+
+		protected virtual IRegion CreateRegion(DependencyObject targetElement, string regionName)
+		{
+			try
+			{
+				IRegionAdapter mapping = regionAdapterMappings.GetMapping(targetElement.GetType());
+				return mapping.Initialize(targetElement, regionName);
+			}
+			catch (Exception ex)
+			{
+				throw new RegionCreationException(string.Format(CultureInfo.CurrentCulture, Resources.RegionCreationException, new object[2] { regionName, ex }), ex);
+			}
+		}
+
+		private void ElementLoaded(object sender, RoutedEventArgs e)
+		{
+			UnWireTargetElement();
+			TryCreateRegion();
+		}
+
+		private void WireUpTargetElement()
+		{
+			if (TargetElement is FrameworkElement frameworkElement)
+			{
+				frameworkElement.Loaded += ElementLoaded;
+			}
+		}
+
+		private void UnWireTargetElement()
+		{
+			if (TargetElement is FrameworkElement frameworkElement)
+			{
+				frameworkElement.Loaded -= ElementLoaded;
+			}
+		}
+	}
+}
+namespace Microsoft.Practices.Composite.Presentation.Regions
+{
+	public static class RegionContext
+	{
+		private static readonly DependencyProperty ObservableRegionContextProperty = DependencyProperty.RegisterAttached("ObservableRegionContext", typeof(ObservableObject<object>), typeof(RegionContext), null);
+
+		public static ObservableObject<object> GetObservableContext(DependencyObject view)
+		{
+			ObservableObject<object> observableObject = view.GetValue(ObservableRegionContextProperty) as ObservableObject<object>;
+			if (observableObject == null)
+			{
+				observableObject = new ObservableObject<object>();
+				view.SetValue(ObservableRegionContextProperty, observableObject);
+			}
+			return observableObject;
+		}
+	}
+	public class SelectorRegionAdapter : RegionAdapterBase<Selector>
+	{
+		public SelectorRegionAdapter(IRegionBehaviorFactory regionBehaviorFactory)
+			: base(regionBehaviorFactory)
+		{
+		}
+
+		protected override void Adapt(IRegion region, Selector regionTarget)
+		{
+		}
+
+		protected override void AttachBehaviors(IRegion region, Selector regionTarget)
+		{
+			region.Behaviors.Add(SelectorItemsSourceSyncBehavior.BehaviorKey, new SelectorItemsSourceSyncBehavior
+			{
+				HostControl = regionTarget
+			});
+			base.AttachBehaviors(region, regionTarget);
+		}
+
+		protected override IRegion CreateRegion()
+		{
+			return new Region();
+		}
+	}
+}
+namespace Microsoft.Practices.Composite.Presentation
+{
+	public class ObservableObject<T> : FrameworkElement, INotifyPropertyChanged
+	{
+		[SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes", Justification = "This is the pattern for WPF dependency properties")]
+		public static readonly DependencyProperty ValueProperty = DependencyProperty.Register("Value", typeof(T), typeof(ObservableObject<T>), new PropertyMetadata(ValueChangedCallback));
+
+		[SuppressMessage("Microsoft.Naming", "CA1721:PropertyNamesShouldNotMatchGetMethods")]
+		public T Value
+		{
+			get
+			{
+				return (T)GetValue(ValueProperty);
+			}
+			set
+			{
+				SetValue(ValueProperty, value);
+			}
+		}
+
+		public event PropertyChangedEventHandler PropertyChanged;
+
+		private static void ValueChangedCallback(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			ObservableObject<T> observableObject = (ObservableObject<T>)d;
+			observableObject.PropertyChanged?.Invoke(observableObject, new PropertyChangedEventArgs("Value"));
+		}
+	}
+}
+namespace Microsoft.Practices.Composite.Presentation.Regions.Behaviors
+{
+	public class SyncRegionContextWithHostBehavior : RegionBehavior, IHostAwareRegionBehavior, IRegionBehavior
+	{
+		private const string RegionContextPropertyName = "Context";
+
+		private DependencyObject hostControl;
+
+		public static readonly string BehaviorKey = "SyncRegionContextWithHost";
+
+		private ObservableObject<object> HostControlRegionContext => RegionContext.GetObservableContext(hostControl);
+
+		public DependencyObject HostControl
+		{
+			get
+			{
+				return hostControl;
+			}
+			set
+			{
+				if (base.IsAttached)
+				{
+					throw new InvalidOperationException(Resources.HostControlCannotBeSetAfterAttach);
+				}
+				hostControl = value;
+			}
+		}
+
+		protected override void OnAttach()
+		{
+			if (HostControl != null)
+			{
+				SynchronizeRegionContext();
+				HostControlRegionContext.PropertyChanged += RegionContextObservableObject_PropertyChanged;
+				base.Region.PropertyChanged += Region_PropertyChanged;
+			}
+		}
+
+		private void Region_PropertyChanged(object sender, PropertyChangedEventArgs e)
+		{
+			if (e.PropertyName == "Context" && RegionManager.GetRegionContext(HostControl) != base.Region.Context)
+			{
+				RegionManager.SetRegionContext(hostControl, base.Region.Context);
+			}
+		}
+
+		private void RegionContextObservableObject_PropertyChanged(object sender, PropertyChangedEventArgs e)
+		{
+			if (e.PropertyName == "Value")
+			{
+				SynchronizeRegionContext();
+			}
+		}
+
+		private void SynchronizeRegionContext()
+		{
+			if (base.Region.Context != HostControlRegionContext.Value)
+			{
+				base.Region.Context = HostControlRegionContext.Value;
+			}
+			if (RegionManager.GetRegionContext(HostControl) != HostControlRegionContext.Value)
+			{
+				RegionManager.SetRegionContext(HostControl, HostControlRegionContext.Value);
+			}
+		}
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

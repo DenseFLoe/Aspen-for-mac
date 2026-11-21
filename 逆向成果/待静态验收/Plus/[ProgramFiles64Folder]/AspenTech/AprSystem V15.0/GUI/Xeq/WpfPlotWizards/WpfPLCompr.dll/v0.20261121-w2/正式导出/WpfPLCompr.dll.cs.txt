@@ -1,0 +1,888 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
+using System.IO;
+using System.Reflection;
+using System.Resources;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using AspenTech.AspenPlus.Happ;
+using AspenTech.AspenPlus.Infrastructure;
+using AspenTech.AspenPlus.Localization.WpfPlotWizards;
+using WpfPlotWizardsHelper;
+using WpfPlotwizard;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyFileVersion("41.0.0.614")]
+[assembly: AssemblyTitle("WpfPLCompr")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("Aspen Technology, Inc.")]
+[assembly: AssemblyProduct("WpfPLCompr")]
+[assembly: AssemblyCopyright("Copyright © Aspen Technology, INC. 2010 - 2024")]
+[assembly: AssemblyTrademark("")]
+[assembly: ComVisible(false)]
+[assembly: NeutralResourcesLanguage("en-US", UltimateResourceFallbackLocation.Satellite)]
+[assembly: Guid("73273138-20ca-4c2e-99cc-2c49d2f06488")]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.614")]
+namespace WpfPLCompr
+{
+	[ProgId("WpfPLCompr.RibbonPlotWizardMgr")]
+	public class RibbonPlotWizardMgr : IRibbonPlotWizardMgr
+	{
+		private static string[] supportedTypes = new string[2] { "Performance", "Efficiency" };
+
+		private IHNode _hnode;
+
+		private IHWizardPlot _wizardPlot;
+
+		private static List<PWRPlotType> _lspwrTypes = new List<PWRPlotType>();
+
+		private PWRParser _pwrParser = new PWRParser();
+
+		private Assembly _asm;
+
+		private Dictionary<string, IRibbonPlotWizardType> _dicTagIdToPlotType;
+
+		private IHWizardPlot _tempWizard = (CHWizardPlot)Activator.CreateInstance(Marshal.GetTypeFromCLSID(new Guid("9E14C11F-6706-4067-8112-35CE9468F3A5")));
+
+		public RibbonPlotWizardMgr()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			Initialize();
+		}
+
+		long IRibbonPlotWizardMgr.SupportedPlotTypes(ref List<string> lsTagIds)
+		{
+			lsTagIds.Clear();
+			for (int i = 0; i < _lspwrTypes.Count; i++)
+			{
+				PWRPlotType val = _lspwrTypes[i];
+				IRibbonPlotWizardType iplotType = null;
+				_tempWizard.Clear();
+				_pwrParser.FillDefaultPlotVal(val, ref _hnode, ref _tempWizard);
+				if (DoesPlotTypeHaveData(val.TagId, ref iplotType, ref _tempWizard))
+				{
+					lsTagIds.Add(val.TagId);
+				}
+			}
+			return _lspwrTypes.Count;
+		}
+
+		long IRibbonPlotWizardMgr.GetPlotType(string sTagId, ref IRibbonPlotWizardType plwType)
+		{
+			if (_dicTagIdToPlotType.ContainsKey(sTagId))
+			{
+				plwType = _dicTagIdToPlotType[sTagId];
+				if (plwType == null)
+				{
+					return 0L;
+				}
+				PWRPlotType val = null;
+				_pwrParser.FindPlotType(sTagId, ref _lspwrTypes, ref val);
+				_pwrParser.FillDefaultPlotVal(val, ref _hnode, ref _wizardPlot);
+			}
+			return 0L;
+		}
+
+		void IRibbonPlotWizardMgr.SetContext(object oNode, ref object oWizard)
+		{
+			_hnode = oNode as IHNode;
+			_wizardPlot = oWizard as IHWizardPlot;
+		}
+
+		void IRibbonPlotWizardMgr.ShowInputDialog(string sPlotName)
+		{
+		}
+
+		private void InitializeWizardPlot()
+		{
+		}
+
+		private void Initialize()
+		{
+			_asm = Assembly.GetExecutingAssembly();
+			StreamReader streamReader = new StreamReader(Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLCompr.Text.Comprpwr.txt"));
+			_lspwrTypes.Clear();
+			_pwrParser.ParsePwrFile(streamReader, ref _lspwrTypes);
+			_dicTagIdToPlotType = new Dictionary<string, IRibbonPlotWizardType>();
+			string[] array = supportedTypes;
+			foreach (string text in array)
+			{
+				if (text == supportedTypes[0])
+				{
+					IRibbonPlotWizardType value = (IRibbonPlotWizardType)(object)new Performance();
+					_dicTagIdToPlotType.Add(text, value);
+				}
+				else if (text == supportedTypes[1])
+				{
+					IRibbonPlotWizardType value2 = (IRibbonPlotWizardType)(object)new Efficiency();
+					_dicTagIdToPlotType.Add(text, value2);
+				}
+			}
+		}
+
+		private bool DoesPlotTypeHaveData(string sTagId, ref IRibbonPlotWizardType iplotType, ref IHWizardPlot iWizardPlot)
+		{
+			int num = 0;
+			if (_dicTagIdToPlotType.ContainsKey(sTagId))
+			{
+				iplotType = _dicTagIdToPlotType[sTagId];
+				if (iplotType == null)
+				{
+					return false;
+				}
+				object obj = iWizardPlot;
+				iplotType.Context((object)_hnode, ref obj, ref num);
+				if (num == 0)
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+	}
+	[ProgId("WpfPLCompr.Efficiency")]
+	public class Efficiency : IRibbonPlotWizardType
+	{
+		private IHNode _context;
+
+		private IHWizardPlot2 _wizardPlot;
+
+		private PlotwizardHelper _help = new PlotwizardHelper();
+
+		private int _nCurves;
+
+		private string _uniqueId = wpfPLComprResources.Efficiency_ID;
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private Image _imgBitmap;
+
+		private bool _bHasInputDialog;
+
+		private bool _bCheckDataOnly;
+
+		public string TooltipContentForRibbonItem => wpfPLComprResources.TooltipContentForRibbonItem_Efficiency;
+
+		public string TooltipHeaderForRibbonItem => wpfPLComprResources.TooltipHeaderForRibbonItem_Efficiency;
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot2;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		Image IRibbonPlotWizardType.ImageIcon => _imgBitmap;
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => _help.GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => _help.GetHelpID();
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string>();
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string>();
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		public Efficiency()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			_bHasInputDialog = false;
+			if (_imgBitmap == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLCompr.Images.Efficiency.ico");
+				_imgBitmap = new Bitmap(manifestResourceStream);
+			}
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			return null;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sField)
+		{
+			return (RibbonControlType)0;
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.Context(object HNode, ref object HWizardPlot, ref int ierror)
+		{
+			if (HWizardPlot == null || HNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			_context = HNode as IHNode;
+			_wizardPlot = HWizardPlot as IHWizardPlot2;
+			IHNode iHNode = _context.FindNode("Input/OPT_CFORMAT");
+			if (((dynamic)iHNode.get_Value(Type.Missing)).ToString().ToUpper() == "TABLE")
+			{
+				iHNode = _context.FindNode("Input/NCURVES");
+				_nCurves = ((int?)(dynamic)iHNode.get_Value(Type.Missing)) ?? 0;
+				iHNode = _context.FindNode("Input/EF_FLOW");
+				if (iHNode == null || iHNode.Elements.Count <= 0 || _nCurves <= 0)
+				{
+					ierror = 1;
+				}
+			}
+			else
+			{
+				ierror = 1;
+			}
+		}
+
+		public void UpdateWizardData()
+		{
+			IHNode iHNode = null;
+			string text = "";
+			_wizardPlot.RemoveAllIndependentVariable();
+			_wizardPlot.RemoveAllDependentVariable();
+			iHNode = _context.FindNode("Input/SPEC_MACHNO");
+			if (((dynamic)iHNode.get_Value(Type.Missing)).ToString().ToUpper() == "YES")
+			{
+				iHNode = _context.FindNode("Input/MACH_NO");
+				text = WpfPLMComprResources.Mach_No + " = ";
+			}
+			else
+			{
+				iHNode = _context.FindNode("Input/SHAFT_SPEED");
+				text = WpfPLMComprResources.Shaft_speed + " = ";
+			}
+			for (int i = 0; i < _nCurves; i++)
+			{
+				_wizardPlot.SetMultIndependentVariables(_context, "Input/EF_FLOW/" + (i + 1));
+				_wizardPlot.AddDependentVariable(_context, "Input/EFF_DATA/" + (i + 1));
+				if (_nCurves > 1)
+				{
+					string label = text + (dynamic)iHNode.Elements[i, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+					((IHPlotVal)_wizardPlot.PlotVal).set_Label(i, label);
+				}
+			}
+			string text2 = (dynamic)_context.FindNode("Input/EF_FLOW_UNIT").get_Value(Type.Missing);
+			_wizardPlot.PlotVal.Title = wpfPLComprResources.Efficiency_Title;
+			_wizardPlot.PlotVal.XAxisTitle = wpfPLComprResources.Performance_XAxisTitle;
+			if (!string.IsNullOrEmpty(text2))
+			{
+				CHPlotVal plotVal = _wizardPlot.PlotVal;
+				plotVal.XAxisTitle = plotVal.XAxisTitle + " " + text2.ToLower();
+			}
+			((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle((object)null, wpfPLComprResources.Efficiency_YAxisTitle);
+		}
+	}
+	[ProgId("WpfPLCompr.Performance")]
+	public class Performance : IRibbonPlotWizardType
+	{
+		private IHNode _context;
+
+		private IHWizardPlot2 _wizardPlot;
+
+		private PlotwizardHelper _help = new PlotwizardHelper();
+
+		private int _nCurves;
+
+		private string _uniqueId = wpfPLComprResources.Performance_ID;
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private Image _imgBitmap;
+
+		private bool _bHasInputDialog;
+
+		private bool _bCheckDataOnly;
+
+		public string TooltipContentForRibbonItem => wpfPLComprResources.TooltipContentForRibbonItem_Performance;
+
+		public string TooltipHeaderForRibbonItem => wpfPLComprResources.TooltipHeaderForRibbonItem_Performance;
+
+		string IRibbonPlotWizardType.TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		string IRibbonPlotWizardType.Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		object IRibbonPlotWizardType.WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot2;
+			}
+		}
+
+		object IRibbonPlotWizardType.CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		Image IRibbonPlotWizardType.ImageIcon => _imgBitmap;
+
+		bool IRibbonPlotWizardType.HasInputDialog => _bHasInputDialog;
+
+		string IRibbonPlotWizardType.HelpFile => _help.GetHelpFileName();
+
+		long IRibbonPlotWizardType.HelpID => _help.GetHelpID();
+
+		List<string> IRibbonPlotWizardType.SupportedDataFields => new List<string>();
+
+		List<string> IRibbonPlotWizardType.SupportedStyleFields => new List<string>();
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		public Performance()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			_bHasInputDialog = false;
+			if (_imgBitmap == null)
+			{
+				Assembly.GetExecutingAssembly();
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLCompr.Images.Performance.ico");
+				_imgBitmap = new Bitmap(manifestResourceStream);
+			}
+		}
+
+		List<string> IRibbonPlotWizardType.FieldDataOptionList(string sFieldName)
+		{
+			return null;
+		}
+
+		void IRibbonPlotWizardType.GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldData(string sFieldName, string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.ShowInputDialog()
+		{
+		}
+
+		RibbonControlType IRibbonPlotWizardType.GetFieldCtrlType(string sField)
+		{
+			return (RibbonControlType)0;
+		}
+
+		void IRibbonPlotWizardType.GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetFieldStyle(string sFieldName, string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.GetConfigData(ref string sConfigValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.SetConfigData(string sValue)
+		{
+		}
+
+		void IRibbonPlotWizardType.Context(object HNode, ref object HWizardPlot, ref int ierror)
+		{
+			if (HWizardPlot == null || HNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			_context = HNode as IHNode;
+			_wizardPlot = HWizardPlot as IHWizardPlot2;
+			bool flag = false;
+			IHNode iHNode = _context.FindNode("Input/OPT_CFORMAT");
+			if (((dynamic)iHNode.get_Value(Type.Missing)).ToString().ToUpper() == "TABLE")
+			{
+				iHNode = _context.FindNode("Input/NCURVES");
+				_nCurves = ((int?)(dynamic)iHNode.get_Value(Type.Missing)) ?? 0;
+				if (_nCurves > 0)
+				{
+					flag = true;
+				}
+			}
+			if (!flag)
+			{
+				ierror = 1;
+			}
+		}
+
+		public void UpdateWizardData()
+		{
+			string text = "";
+			IHNode iHNode = _context.FindNode("Input/SPEC_MACHNO");
+			if (((dynamic)iHNode.get_Value(Type.Missing)).ToString().ToUpper() == "YES")
+			{
+				iHNode = _context.FindNode("Input/MACH_NO");
+				text = WpfPLMComprResources.Mach_No + " = ";
+			}
+			else
+			{
+				iHNode = _context.FindNode("Input/SHAFT_SPEED");
+				text = WpfPLMComprResources.Shaft_speed + " = ";
+			}
+			_wizardPlot.RemoveAllIndependentVariable();
+			_wizardPlot.RemoveAllDependentVariable();
+			IHNode iHNode2 = _context.FindNode("Input/DEP_VAR");
+			string text2 = ((dynamic)iHNode2.get_Value(Type.Missing)).ToString().ToUpper();
+			for (int i = 0; i < _nCurves; i++)
+			{
+				string indepvar = "";
+				string depvar = "";
+				switch (text2)
+				{
+				case "HEAD":
+					indepvar = "Input/H_FLOW/" + (i + 1);
+					depvar = "Input/HEAD_DATA/" + (i + 1);
+					break;
+				case "HEAD-COEF":
+					indepvar = "Input/HC_FLOW/" + (i + 1);
+					depvar = "Input/HEADC_DATA/" + (i + 1);
+					break;
+				case "POWER":
+					indepvar = "Input/PW_FLOW/" + (i + 1);
+					depvar = "Input/POWER_DATA/" + (i + 1);
+					break;
+				case "PRES":
+					indepvar = "Input/P_FLOW/" + (i + 1);
+					depvar = "Input/PRES_DATA/" + (i + 1);
+					break;
+				case "PRAT":
+					indepvar = "Input/PR_FLOW/" + (i + 1);
+					depvar = "Input/PRATIO_DATA/" + (i + 1);
+					break;
+				case "DELP":
+					indepvar = "Input/DP_FLOW/" + (i + 1);
+					depvar = "Input/DELP_DATA/" + (i + 1);
+					break;
+				}
+				_wizardPlot.SetMultIndependentVariables(_context, indepvar);
+				_wizardPlot.AddDependentVariable(_context, depvar);
+				if (_nCurves > 1)
+				{
+					string label = text + (dynamic)iHNode.Elements[i, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+					((IHPlotVal)_wizardPlot.PlotVal).set_Label(i, label);
+				}
+			}
+			string title = "";
+			string text3 = wpfPLComprResources.Performance_XAxisTitle + " ";
+			string text4 = "";
+			string text5 = "";
+			switch (text2)
+			{
+			case "HEAD":
+			{
+				string text9 = (dynamic)_context.FindNode("Input/HEAD_UNITS").get_Value(Type.Missing);
+				text5 = (dynamic)_context.FindNode("Input/H_FLOW_UNIT").get_Value(Type.Missing);
+				title = wpfPLComprResources.Performance_Title_Head;
+				text4 = wpfPLComprResources.Performance_YAxisTitle_Head;
+				if (!string.IsNullOrEmpty(text9))
+				{
+					text4 = text4 + " " + text9.ToLower();
+				}
+				break;
+			}
+			case "HEAD-COEF":
+				text5 = (dynamic)_context.FindNode("Input/HC_FLOW_UNIT").get_Value(Type.Missing);
+				title = wpfPLComprResources.Performance_Title_HeadCoef;
+				text4 = wpfPLComprResources.Performance_YAxisTitle_HeadCoef;
+				break;
+			case "POWER":
+			{
+				string text8 = (dynamic)_context.FindNode("Input/POWER_UNITS").get_Value(Type.Missing);
+				text5 = (dynamic)_context.FindNode("Input/PW_FLOW_UNIT").get_Value(Type.Missing);
+				title = wpfPLComprResources.Performance_Title_Power;
+				text4 = wpfPLComprResources.Performance_YAxisTitle_Power;
+				if (!string.IsNullOrEmpty(text8))
+				{
+					text4 = text4 + " " + text8.ToLower();
+				}
+				break;
+			}
+			case "PRES":
+			{
+				string text7 = (dynamic)_context.FindNode("Input/PRES_UNITS").get_Value(Type.Missing);
+				text5 = (dynamic)_context.FindNode("Input/P_FLOW_UNIT").get_Value(Type.Missing);
+				title = wpfPLComprResources.Performance_Title_Press;
+				text4 = wpfPLComprResources.Performance_YAxisTitle_Press;
+				if (!string.IsNullOrEmpty(text7))
+				{
+					text4 = text4 + " " + text7.ToLower();
+				}
+				break;
+			}
+			case "PRAT":
+				text5 = (dynamic)_context.FindNode("Input/PR_FLOW_UNIT").get_Value(Type.Missing);
+				title = wpfPLComprResources.Performance_Title_PresRatio;
+				text4 = wpfPLComprResources.Performance_YAxisTitle_PressRatio;
+				break;
+			case "DELP":
+			{
+				string text6 = (dynamic)_context.FindNode("Input/DELP_UNITS").get_Value(Type.Missing);
+				text5 = (dynamic)_context.FindNode("Input/DP_FLOW_UNIT").get_Value(Type.Missing);
+				title = wpfPLComprResources.Performance_Title_DeltP;
+				text4 = wpfPLComprResources.Performance_YAxisTitle_DeltP;
+				if (!string.IsNullOrEmpty(text6))
+				{
+					text4 = text4 + " " + text6.ToLower();
+				}
+				break;
+			}
+			}
+			_wizardPlot.PlotVal.Title = title;
+			if (!string.IsNullOrEmpty(text5))
+			{
+				text3 += text5.ToLower();
+			}
+			_wizardPlot.PlotVal.XAxisTitle = text3;
+			((IHPlotVal)_wizardPlot.PlotVal).set_YAxisTitle((object)null, text4);
+		}
+	}
+	[RibbonPlotWizardMgr("WpfPLCOMPR.RibbonPlotWizardMgr", typeof(RibbonPlotWizardMgr))]
+	public class ComprPlotWizardModule : PlotModuleBase
+	{
+	}
+}
+namespace AspenTech.AspenPlus.Happ
+{
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("11677780-B72B-11D0-A943-0000C0A118DB")]
+	[CoClass(typeof(object))]
+	[TypeIdentifier]
+	public interface CHPlotVal : IHPlotVal
+	{
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("8008C730-1A3E-11D1-8A4D-0000C0237DF9")]
+	[CoClass(typeof(object))]
+	[TypeIdentifier]
+	public interface CHWizardPlot : IHWizardPlot
+	{
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("8E567522-F9BA-11CF-90B2-0000C0A810C4")]
+	[TypeIdentifier]
+	public interface IHNode
+	{
+		void _VtblGap1_6();
+
+		[DispId(1610743814)]
+		object Value
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743814)]
+			[return: MarshalAs(UnmanagedType.Struct)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743814)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.Struct)]
+			set;
+		}
+
+		void _VtblGap2_10();
+
+		[DispId(1610743826)]
+		IHNodeCol Elements
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743826)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+
+		void _VtblGap3_8();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743835)]
+		[return: MarshalAs(UnmanagedType.Interface)]
+		IHNode FindNode([In][MarshalAs(UnmanagedType.BStr)] string path);
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("89E81F60-019A-11D0-9BE7-0000C05375D5")]
+	[TypeIdentifier]
+	public interface IHNodeCol : IEnumerable
+	{
+		void _VtblGap1_2();
+
+		[DispId(1610743810)]
+		int Count
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743810)]
+			get;
+		}
+
+		void _VtblGap2_3();
+
+		[DispId(0)]
+		IHNode this[[In][MarshalAs(UnmanagedType.Struct)] object loc_or_name, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name2, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name3, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name4, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name5]
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(0)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("11677780-B72B-11D0-A943-0000C0A118DB")]
+	[TypeIdentifier]
+	public interface IHPlotVal
+	{
+		void _VtblGap1_2();
+
+		[DispId(1610743810)]
+		string Title
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743810)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743810)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.BStr)]
+			set;
+		}
+
+		void _VtblGap2_1();
+
+		[DispId(1610743813)]
+		string XAxisTitle
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743813)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743813)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.BStr)]
+			set;
+		}
+
+		void _VtblGap3_1();
+
+		[DispId(1610743816)]
+		string YAxisTitle
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743816)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743816)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.BStr)]
+			set;
+		}
+
+		void _VtblGap4_1();
+
+		[DispId(1610743819)]
+		string Label
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743819)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743819)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.BStr)]
+			set;
+		}
+
+		void _VtblGap5_1();
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("8008C730-1A3E-11D1-8A4D-0000C0237DF9")]
+	[TypeIdentifier]
+	public interface IHWizardPlot
+	{
+		void _VtblGap1_15();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743823)]
+		void Clear();
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("5DA88FB5-5B29-4EAE-ACDF-E45DE2319D99")]
+	[TypeIdentifier]
+	public interface IHWizardPlot2 : IHWizardPlot
+	{
+		[DispId(1610743808)]
+		CHPlotVal PlotVal
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743808)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+
+		void _VtblGap1_7();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743816)]
+		void AddDependentVariable([In][MarshalAs(UnmanagedType.Interface)] IHNode pContext, [In][MarshalAs(UnmanagedType.BStr)] string depvar);
+
+		void _VtblGap2_1();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743818)]
+		void RemoveAllDependentVariable();
+
+		void _VtblGap3_17();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610809344)]
+		void SetMultIndependentVariables([In][MarshalAs(UnmanagedType.Interface)] IHNode pContext, [In][MarshalAs(UnmanagedType.BStr)] string indepvar);
+
+		void _VtblGap4_1();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610809346)]
+		void RemoveAllIndependentVariable();
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

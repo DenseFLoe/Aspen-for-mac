@@ -1,0 +1,1287 @@
+using System;
+using System.Collections;
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Xml;
+using System.Xml.Schema;
+using System.Xml.Serialization;
+using AHResources;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyCompany("Aspen Technology, Inc.")]
+[assembly: AssemblyProduct("Aspen Hydraulics")]
+[assembly: AssemblyCopyright("Copyright © Aspen Technology, Inc. 2024")]
+[assembly: AssemblyTitle("")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyDelaySign(false)]
+[assembly: AssemblyKeyFile("..\\..\\..\\packages\\AspenTech.StrongName.SNK.1.0.0\\content\\AspenTech.snk")]
+[assembly: AssemblyKeyName("")]
+[assembly: AssemblyFileVersion("41.0.0.97")]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.0")]
+namespace AspenTech.Hydraulics.Data;
+
+[Guid("7B0E693F-3B54-421C-BD7F-7EAE9C6868F1")]
+public interface IBooleanProperty
+{
+	PropertyType Type { get; }
+
+	string Description { get; set; }
+
+	bool Value { get; set; }
+
+	bool IsValid { get; set; }
+
+	bool IsDirty { get; set; }
+
+	ValueState State { get; set; }
+
+	bool DefaultValue { get; set; }
+}
+[Guid("A39A40A3-857C-4069-B41F-C50B413930B2")]
+[ClassInterface(ClassInterfaceType.None)]
+public class BooleanProperty : Property, IBooleanProperty, IXmlSerializable
+{
+	private bool _value;
+
+	private bool _defaultValue;
+
+	public static readonly int EMPTY = -32767;
+
+	public bool DefaultValue
+	{
+		get
+		{
+			return _defaultValue;
+		}
+		set
+		{
+			_defaultValue = value;
+		}
+	}
+
+	public bool Value
+	{
+		get
+		{
+			return _value;
+		}
+		set
+		{
+			bool value2 = _value;
+			_value = value;
+			if (value2 != _value && this.AfterValueChanged != null)
+			{
+				this.AfterValueChanged(this, Convert.ToDouble(value2));
+			}
+		}
+	}
+
+	public event ValueChangeHandler AfterValueChanged;
+
+	public BooleanProperty()
+	{
+		_value = false;
+		_defaultValue = false;
+	}
+
+	public BooleanProperty(bool Value, bool DefaultValue)
+	{
+		_value = Value;
+		_defaultValue = DefaultValue;
+	}
+
+	public BooleanProperty(bool Value)
+	{
+		_value = Value;
+		_defaultValue = false;
+	}
+
+	public new void WriteXml(XmlWriter writer)
+	{
+		base.WriteXml(writer);
+		writer.WriteElementString("Value", _value.ToString());
+	}
+
+	public new XmlSchema GetSchema()
+	{
+		return null;
+	}
+
+	public new void ReadXml(XmlReader reader)
+	{
+	}
+}
+[Guid("F443D963-B601-4259-8F3B-6D8DD5E0509F")]
+public enum PropertyType
+{
+	Enumeration,
+	Real,
+	Integer,
+	Boolean,
+	String
+}
+[Guid("DBB4682E-EE42-48EA-9704-936B1AC9529D")]
+public enum PropertyCategory
+{
+	Standard,
+	Advanced
+}
+[Guid("EAE58482-2B68-4571-A802-C9430FF22141")]
+public enum ValueState
+{
+	None,
+	Unknown,
+	Error,
+	Calculated,
+	UserEntered,
+	DefaultValue
+}
+[Guid("FA563123-6A8B-45FA-8727-371336399E32")]
+public class OutOfBoundsException : ApplicationException
+{
+	private readonly double _originalValue;
+
+	public OutOfBoundsException(string Message)
+		: base(Message)
+	{
+	}
+
+	public OutOfBoundsException(string Message, long OldValue)
+		: base(Message)
+	{
+		_originalValue = OldValue;
+	}
+
+	public OutOfBoundsException(string Message, double OldValue)
+		: base(Message)
+	{
+		_originalValue = OldValue;
+	}
+
+	public OutOfBoundsException()
+		: base(Resources.ValueOutOfBounds)
+	{
+	}
+
+	public void GetOriginalValue(out long OriginalValue)
+	{
+		OriginalValue = (long)_originalValue;
+	}
+
+	public void GetOriginalValue(out double OriginalValue)
+	{
+		OriginalValue = _originalValue;
+	}
+}
+[Guid("A5E11058-5AA6-4D69-B191-7C859B345526")]
+public interface IEnumProperty
+{
+	PropertyType Type { get; }
+
+	string Description { get; set; }
+
+	int Value { get; set; }
+
+	bool IsValid { get; set; }
+
+	bool IsDirty { get; set; }
+
+	ValueState State { get; set; }
+
+	int DefaultValue { get; set; }
+
+	EnumValues EnumList { get; set; }
+
+	int Count { get; }
+
+	string EnumName(int Index);
+
+	int EnumValueAt(uint position);
+
+	string EnumNameAt(uint position);
+}
+[Guid("54111C33-9BC8-44FD-996D-9495DB7B122B")]
+[ClassInterface(ClassInterfaceType.None)]
+public class EnumProperty : Property, IEnumProperty, IXmlSerializable
+{
+	private EnumValues _enumValues;
+
+	private int _defaultValue;
+
+	private int _value;
+
+	public static readonly int EMPTY = 32767;
+
+	public int Value
+	{
+		get
+		{
+			return _value;
+		}
+		set
+		{
+			int value2 = _value;
+			if (_enumValues.Contains(value))
+			{
+				_value = value;
+				if (value2 != _value && this.AfterValueChanged != null)
+				{
+					this.AfterValueChanged(this, value2);
+				}
+				return;
+			}
+			throw new OutOfBoundsException(Resources.ValueOutOfBoundsEnum, value2);
+		}
+	}
+
+	public int DefaultValue
+	{
+		get
+		{
+			return _defaultValue;
+		}
+		set
+		{
+			int defaultValue = _defaultValue;
+			if (_enumValues.Contains(value))
+			{
+				_defaultValue = value;
+				return;
+			}
+			throw new OutOfBoundsException(Resources.ValueOutOfBoundsEnum, defaultValue);
+		}
+	}
+
+	public EnumValues EnumList
+	{
+		get
+		{
+			return _enumValues;
+		}
+		set
+		{
+			_enumValues = value;
+		}
+	}
+
+	public int Count
+	{
+		get
+		{
+			if (_enumValues == null)
+			{
+				return 0;
+			}
+			return _enumValues.Count;
+		}
+	}
+
+	public event ValueChangeHandler AfterValueChanged;
+
+	public EnumProperty()
+		: base(PropertyType.Enumeration)
+	{
+		_value = EMPTY;
+		_defaultValue = EMPTY;
+		_enumValues = new EnumValues();
+	}
+
+	public EnumProperty(EnumValues enumValues, int Value)
+		: base(PropertyType.Enumeration)
+	{
+		_enumValues = enumValues;
+		if (enumValues.Contains(Value))
+		{
+			_value = Value;
+			return;
+		}
+		throw new OutOfBoundsException(Resources.ValueOutOfBoundsEnum);
+	}
+
+	public EnumProperty(EnumValues enumValues, int Value, int DefaultValue)
+		: base(PropertyType.Enumeration)
+	{
+		_enumValues = enumValues;
+		if (enumValues.Contains(Value))
+		{
+			_value = Value;
+			if (enumValues.Contains(DefaultValue))
+			{
+				_defaultValue = Value;
+				return;
+			}
+			throw new OutOfBoundsException(Resources.DefaultValueOutOfBoundsEnum);
+		}
+		throw new OutOfBoundsException(Resources.ValueOutOfBoundsEnum);
+	}
+
+	public string EnumName(int Index)
+	{
+		string text = null;
+		if (_enumValues.Contains(Index))
+		{
+			return _enumValues[Index];
+		}
+		throw new IndexOutOfRangeException();
+	}
+
+	public string EnumNameAt(uint position)
+	{
+		string result = null;
+		uint num = 0u;
+		if (position < _enumValues.Count)
+		{
+			foreach (DictionaryEntry enumValue in _enumValues)
+			{
+				if (num == position)
+				{
+					return (string)enumValue.Value;
+				}
+				num++;
+			}
+			return result;
+		}
+		throw new IndexOutOfRangeException();
+	}
+
+	public int EnumValueAt(uint position)
+	{
+		int result = 0;
+		uint num = 0u;
+		if (position < _enumValues.Count)
+		{
+			foreach (DictionaryEntry enumValue in _enumValues)
+			{
+				if (num == position)
+				{
+					return (int)enumValue.Key;
+				}
+				num++;
+			}
+			return result;
+		}
+		throw new IndexOutOfRangeException();
+	}
+
+	public int ValueOffset()
+	{
+		int num = 0;
+		foreach (DictionaryEntry enumValue in _enumValues)
+		{
+			if ((int)enumValue.Key == _value)
+			{
+				return num;
+			}
+			num++;
+		}
+		return -1;
+	}
+
+	public new void WriteXml(XmlWriter writer)
+	{
+		EnumList.WriteXml(writer);
+		if (_value == EMPTY)
+		{
+			writer.WriteElementString("SelecetedOption", "Not Set");
+		}
+		else
+		{
+			writer.WriteElementString("SelecetedOption", _value.ToString());
+		}
+		if (_defaultValue == EMPTY)
+		{
+			writer.WriteElementString("DefaultOption", "Not Set");
+		}
+		else
+		{
+			writer.WriteElementString("DefaultOption", _defaultValue.ToString());
+		}
+	}
+
+	public new XmlSchema GetSchema()
+	{
+		return null;
+	}
+
+	public new void ReadXml(XmlReader reader)
+	{
+		throw new NotImplementedException();
+	}
+}
+[Guid("015ABCEC-792F-4C68-A097-08E183A44714")]
+public class EnumValues : DictionaryBase, IXmlSerializable
+{
+	public string this[int key]
+	{
+		get
+		{
+			return (string)base.Dictionary[key];
+		}
+		set
+		{
+			base.Dictionary[key] = value;
+		}
+	}
+
+	public ICollection Keys => base.Dictionary.Keys;
+
+	public void Add(int EnumValue, string EnumName)
+	{
+		base.Dictionary.Add(EnumValue, EnumName);
+	}
+
+	public bool Contains(int key)
+	{
+		return base.Dictionary.Contains(key);
+	}
+
+	public void WriteXml(XmlWriter writer)
+	{
+		writer.WriteStartElement("OptionList");
+		foreach (DictionaryEntry item in base.Dictionary)
+		{
+			writer.WriteElementString("Option_" + item.Key.ToString(), item.Value.ToString());
+		}
+		writer.WriteEndElement();
+	}
+
+	public XmlSchema GetSchema()
+	{
+		return null;
+	}
+
+	public void ReadXml(XmlReader reader)
+	{
+		reader.ReadStartElement();
+		reader.MoveToContent();
+		reader.ReadStartElement("OptionList");
+		reader.MoveToContent();
+		while (reader.NodeType != XmlNodeType.EndElement)
+		{
+			if (reader.NodeType == XmlNodeType.Element)
+			{
+				string key = reader.LocalName.Substring(2);
+				base.Dictionary[key] = reader.ReadElementString();
+			}
+			else
+			{
+				reader.Skip();
+			}
+			reader.MoveToContent();
+		}
+		reader.ReadEndElement();
+	}
+}
+[Guid("E762328F-D571-4CBD-BE89-F4B7392D0643")]
+public interface IIntegerProperty
+{
+	PropertyType Type { get; }
+
+	string Description { get; set; }
+
+	int Value { get; set; }
+
+	bool IsValid { get; set; }
+
+	bool IsDirty { get; set; }
+
+	ValueState State { get; set; }
+
+	int DefaultValue { get; set; }
+
+	double LBound { get; set; }
+
+	double UBound { get; set; }
+}
+[Guid("56EBE0D6-63A9-4A85-B60C-EF462A0BF9C6")]
+[ClassInterface(ClassInterfaceType.None)]
+public class IntegerProperty : Property, IIntegerProperty, IXmlSerializable
+{
+	private int _value;
+
+	private int _defaultValue;
+
+	private double _lBound;
+
+	private double _uBound;
+
+	public static readonly int EMPTY = -32767;
+
+	public int DefaultValue
+	{
+		get
+		{
+			return _defaultValue;
+		}
+		set
+		{
+			int defaultValue = _defaultValue;
+			_defaultValue = value;
+			if (_lBound != (double)EMPTY && (double)_defaultValue < _lBound)
+			{
+				throw new OutOfBoundsException(Resources.DefaultValueTooLow, defaultValue);
+			}
+			if (_uBound != (double)EMPTY && (double)_defaultValue > _uBound)
+			{
+				throw new OutOfBoundsException(Resources.DefaultValueTooHigh, defaultValue);
+			}
+		}
+	}
+
+	public int Value
+	{
+		get
+		{
+			return _value;
+		}
+		set
+		{
+			int value2 = _value;
+			if (value == EMPTY)
+			{
+				base.State = ValueState.None;
+			}
+			else
+			{
+				if (_lBound != (double)EMPTY && (double)value < _lBound)
+				{
+					throw new OutOfBoundsException(Resources.ValueTooLow, value2);
+				}
+				if (_uBound != (double)EMPTY && (double)value > _uBound)
+				{
+					throw new OutOfBoundsException(Resources.ValueTooHigh, value2);
+				}
+			}
+			_value = value;
+			if (value2 != _value && this.AfterValueChanged != null)
+			{
+				this.AfterValueChanged(this, value2);
+			}
+		}
+	}
+
+	public double LBound
+	{
+		get
+		{
+			return _lBound;
+		}
+		set
+		{
+			double lBound = _lBound;
+			_lBound = value;
+			if (_uBound != (double)EMPTY && _lBound > _uBound)
+			{
+				throw new OutOfBoundsException(Resources.LowerBoundGTUpperBound, lBound);
+			}
+		}
+	}
+
+	public double UBound
+	{
+		get
+		{
+			return _uBound;
+		}
+		set
+		{
+			double uBound = _uBound;
+			_uBound = value;
+			if (_lBound != (double)EMPTY && _uBound < _lBound)
+			{
+				throw new OutOfBoundsException(Resources.UpperBoundLTLowerBound, uBound);
+			}
+		}
+	}
+
+	public event ValueChangeHandler AfterValueChanged;
+
+	public IntegerProperty()
+		: base(PropertyType.Integer)
+	{
+		_value = EMPTY;
+		_defaultValue = EMPTY;
+		_type = PropertyType.Integer;
+		_lBound = EMPTY;
+		_uBound = EMPTY;
+	}
+
+	public IntegerProperty(int Value, int DefaultValue, double LowBound, double UpperBound)
+		: base(PropertyType.Integer)
+	{
+		_value = Value;
+		_defaultValue = DefaultValue;
+		_type = PropertyType.Integer;
+		_lBound = LowBound;
+		_uBound = UpperBound;
+		if (_lBound != (double)EMPTY && (double)_value < _lBound)
+		{
+			throw new OutOfBoundsException("Value is less than the low bound.");
+		}
+		if (_uBound != (double)EMPTY && (double)_value > _uBound)
+		{
+			throw new OutOfBoundsException("Value is higher than the upper bound.");
+		}
+		if (_lBound != (double)EMPTY && (double)_defaultValue < _lBound)
+		{
+			throw new OutOfBoundsException("Deafult value is less than the low bound.");
+		}
+		if (_uBound != (double)EMPTY && (double)_defaultValue > _uBound)
+		{
+			throw new OutOfBoundsException("Default value is higher than the upper bound.");
+		}
+	}
+
+	public IntegerProperty(int Value, int DefaultValue)
+		: base(PropertyType.Integer)
+	{
+		_value = Value;
+		_defaultValue = DefaultValue;
+		_type = PropertyType.Integer;
+		_lBound = EMPTY;
+		_uBound = EMPTY;
+	}
+
+	public IntegerProperty(int Value)
+		: base(PropertyType.Integer)
+	{
+		_value = Value;
+		_defaultValue = EMPTY;
+		_type = PropertyType.Integer;
+		_lBound = EMPTY;
+		_uBound = EMPTY;
+	}
+
+	public new void WriteXml(XmlWriter writer)
+	{
+		base.WriteXml(writer);
+		if (_value == EMPTY)
+		{
+			writer.WriteElementString("Value", "Not Set");
+		}
+		else
+		{
+			writer.WriteElementString("Value", _value.ToString());
+		}
+		if (_lBound == (double)EMPTY)
+		{
+			writer.WriteElementString("LowerBound", "Not Set");
+		}
+		else
+		{
+			writer.WriteElementString("LowerBound", _lBound.ToString());
+		}
+		if (_uBound == (double)EMPTY)
+		{
+			writer.WriteElementString("UpperBound", "Not Set");
+		}
+		else
+		{
+			writer.WriteElementString("UpperBound", _lBound.ToString());
+		}
+		if (_defaultValue == EMPTY)
+		{
+			writer.WriteElementString("DefaultValue", "Not Set");
+		}
+		else
+		{
+			writer.WriteElementString("DefaultValue", _defaultValue.ToString());
+		}
+	}
+
+	public new XmlSchema GetSchema()
+	{
+		return null;
+	}
+
+	public new void ReadXml(XmlReader reader)
+	{
+	}
+}
+[Guid("D7E0414C-0615-4DAE-AB0C-385E74E19B72")]
+public interface IProperties
+{
+	int ObjectCount { get; }
+
+	void Add(Property TheProperty);
+
+	void Remove(int Index);
+
+	Property GetItem(int Index);
+
+	void GetIDispatch(int Index, [MarshalAs(UnmanagedType.IDispatch)] ref object o);
+
+	object GetObject(int Index);
+}
+[Guid("82DF7755-D6E4-4E18-977B-82FFF96DB0BC")]
+[ClassInterface(ClassInterfaceType.None)]
+public class Properties : CollectionBase, IProperties, IEnumerable
+{
+	[Guid("E019C197-6918-4348-9B5B-AE52DD6AC252")]
+	public class PropertyEnumerator : IEnumerator
+	{
+		private int _position;
+
+		private readonly Properties _propertyCollection;
+
+		public Property Current => _propertyCollection[_position];
+
+		object IEnumerator.Current => _propertyCollection[_position];
+
+		public PropertyEnumerator(Properties PropertyCollection)
+		{
+			_propertyCollection = PropertyCollection;
+			_position = -1;
+		}
+
+		public bool MoveNext()
+		{
+			if (_position < _propertyCollection.Count - 1)
+			{
+				_position++;
+				return true;
+			}
+			return false;
+		}
+
+		public void Reset()
+		{
+			_position = -1;
+		}
+	}
+
+	public Property this[int Index]
+	{
+		get
+		{
+			if (Index < 0 || Index >= base.List.Count)
+			{
+				throw new IndexOutOfRangeException();
+			}
+			return (Property)base.List[Index];
+		}
+	}
+
+	public int ObjectCount => base.List.Count;
+
+	public new PropertyEnumerator GetEnumerator()
+	{
+		return new PropertyEnumerator(this);
+	}
+
+	IEnumerator IEnumerable.GetEnumerator()
+	{
+		return new PropertyEnumerator(this);
+	}
+
+	public void Add(Property TheProperty)
+	{
+		base.List.Add(TheProperty);
+	}
+
+	public void Remove(int Index)
+	{
+		if (Index > base.List.Count - 1 || Index < 0)
+		{
+			throw new IndexOutOfRangeException();
+		}
+		base.List.RemoveAt(Index);
+	}
+
+	public static Properties operator +(Properties LHS, Properties RHS)
+	{
+		for (int i = 0; i < RHS.Count; i++)
+		{
+			LHS.Add(RHS[i]);
+		}
+		return LHS;
+	}
+
+	public Property GetItem(int Index)
+	{
+		if (Index < 0 || Index >= base.List.Count)
+		{
+			return null;
+		}
+		return (Property)base.List[Index];
+	}
+
+	public void GetIDispatch(int Index, [MarshalAs(UnmanagedType.IDispatch)] ref object o)
+	{
+		if (Index < 0 || Index >= base.List.Count)
+		{
+			o = null;
+		}
+		else
+		{
+			o = base.List[Index];
+		}
+	}
+
+	public object GetObject(int Index)
+	{
+		if (Index < 0 || Index >= base.List.Count)
+		{
+			return null;
+		}
+		return (Property)base.List[Index];
+	}
+}
+[Guid("D685EA21-7CCC-4D77-B381-24F4E46AA422")]
+public interface IProperty
+{
+	PropertyType Type { get; }
+
+	string Description { get; set; }
+
+	bool IsValid { get; set; }
+
+	bool IsDirty { get; set; }
+
+	ValueState State { get; set; }
+
+	PropertyCategory Category { get; set; }
+
+	string VarType { get; set; }
+}
+[Guid("06E7852C-4510-4B05-8558-5832FB835B26")]
+public delegate void ValueChangeHandler(object Sender, double OldValue);
+[Guid("D6DABAE7-C88C-4D00-948D-263C3B05AF8D")]
+public delegate void ErrorHandler(object Sender, long ErrorNumber, string ErrorMessage);
+[Guid("316EBF5B-75B9-4718-BB9C-814C0B294569")]
+[ClassInterface(ClassInterfaceType.None)]
+[XmlInclude(typeof(RealProperty))]
+[XmlInclude(typeof(BooleanProperty))]
+[XmlInclude(typeof(IntegerProperty))]
+[XmlInclude(typeof(EnumProperty))]
+public class Property : IProperty, IXmlSerializable
+{
+	protected PropertyType _type;
+
+	private string _description;
+
+	private bool _isDirty;
+
+	private bool _isValid;
+
+	private ValueState _valueState;
+
+	private PropertyCategory _category;
+
+	private string _varType = "";
+
+	public PropertyType Type => _type;
+
+	public string Description
+	{
+		get
+		{
+			return _description;
+		}
+		set
+		{
+			_description = value;
+		}
+	}
+
+	[XmlIgnore]
+	public bool IsDirty
+	{
+		get
+		{
+			return _isDirty;
+		}
+		set
+		{
+			_isDirty = value;
+		}
+	}
+
+	[XmlIgnore]
+	public bool IsValid
+	{
+		get
+		{
+			return _isValid;
+		}
+		set
+		{
+			_isValid = value;
+		}
+	}
+
+	public ValueState State
+	{
+		get
+		{
+			return _valueState;
+		}
+		set
+		{
+			_valueState = value;
+		}
+	}
+
+	public string VarType
+	{
+		get
+		{
+			return _varType;
+		}
+		set
+		{
+			_varType = value;
+		}
+	}
+
+	public PropertyCategory Category
+	{
+		get
+		{
+			return _category;
+		}
+		set
+		{
+			_category = value;
+		}
+	}
+
+	public Property()
+	{
+		_valueState = ValueState.Unknown;
+		_isDirty = false;
+		_isValid = false;
+	}
+
+	public Property(PropertyType Type)
+	{
+		_type = Type;
+	}
+
+	public void WriteXml(XmlWriter writer)
+	{
+		writer.WriteElementString("Description", _description);
+		writer.WriteElementString("Category", _category.ToString());
+		writer.WriteElementString("ValueState", _valueState.ToString());
+	}
+
+	public XmlSchema GetSchema()
+	{
+		return null;
+	}
+
+	public void ReadXml(XmlReader reader)
+	{
+	}
+}
+[Guid("8E9CF26A-55E7-4F10-BD32-2F9A3C9E114B")]
+public interface IRealProperty
+{
+	PropertyType Type { get; }
+
+	string Description { get; set; }
+
+	double Value { get; set; }
+
+	bool IsValid { get; set; }
+
+	bool IsDirty { get; set; }
+
+	ValueState State { get; set; }
+
+	double DefaultValue { get; set; }
+
+	double LBound { get; set; }
+
+	double UBound { get; set; }
+}
+[Guid("31FBB393-DE7C-4199-AE45-1D7F34CF988C")]
+[ClassInterface(ClassInterfaceType.None)]
+public class RealProperty : Property, IRealProperty, IXmlSerializable
+{
+	private double _lBound;
+
+	private double _uBound;
+
+	private double _value;
+
+	private double _defaultValue;
+
+	public static readonly double EMPTY = -32767.0;
+
+	public double DefaultValue
+	{
+		get
+		{
+			return _defaultValue;
+		}
+		set
+		{
+			double defaultValue = _defaultValue;
+			_defaultValue = value;
+			if (_lBound != EMPTY && _defaultValue < _lBound)
+			{
+				throw new OutOfBoundsException(Resources.DefaultValueTooLow, defaultValue);
+			}
+			if (_uBound != EMPTY && _defaultValue > _uBound)
+			{
+				throw new OutOfBoundsException(Resources.DefaultValueTooHigh, defaultValue);
+			}
+		}
+	}
+
+	public double LBound
+	{
+		get
+		{
+			return _lBound;
+		}
+		set
+		{
+			double lBound = _lBound;
+			_lBound = value;
+			if (_uBound != EMPTY && _lBound > _uBound)
+			{
+				throw new OutOfBoundsException(Resources.LowerBoundGTUpperBound, lBound);
+			}
+		}
+	}
+
+	public double UBound
+	{
+		get
+		{
+			return _uBound;
+		}
+		set
+		{
+			double uBound = _uBound;
+			_uBound = value;
+			if (_lBound != EMPTY && _uBound < _lBound)
+			{
+				throw new OutOfBoundsException(Resources.UpperBoundLTLowerBound, uBound);
+			}
+		}
+	}
+
+	public double Value
+	{
+		get
+		{
+			return _value;
+		}
+		set
+		{
+			double value2 = _value;
+			if (value == EMPTY)
+			{
+				base.State = ValueState.None;
+			}
+			else
+			{
+				if (_lBound != EMPTY && value < _lBound)
+				{
+					throw new OutOfBoundsException(Resources.ValueTooLow, value2);
+				}
+				if (_uBound != EMPTY && value > _uBound)
+				{
+					throw new OutOfBoundsException(Resources.ValueTooHigh, value2);
+				}
+			}
+			_value = value;
+			if (value2 != _value && this.AfterValueChanged != null)
+			{
+				this.AfterValueChanged(this, value2);
+			}
+		}
+	}
+
+	public event ValueChangeHandler AfterValueChanged;
+
+	public RealProperty()
+		: base(PropertyType.Real)
+	{
+		_value = EMPTY;
+		_defaultValue = EMPTY;
+		_lBound = EMPTY;
+		_uBound = EMPTY;
+	}
+
+	public RealProperty(double Value, double DefaultValue, double LowBound, double UpperBound)
+		: base(PropertyType.Real)
+	{
+		_value = Value;
+		_defaultValue = DefaultValue;
+		_lBound = LowBound;
+		_uBound = UpperBound;
+		if (_lBound != EMPTY && _value < _lBound)
+		{
+			throw new OutOfBoundsException(Resources.ValueTooLow);
+		}
+		if (_uBound != EMPTY && _value > _uBound)
+		{
+			throw new OutOfBoundsException(Resources.ValueTooHigh);
+		}
+		if (_lBound != EMPTY && _defaultValue < _lBound)
+		{
+			throw new OutOfBoundsException(Resources.DefaultValueTooLow);
+		}
+		if (_uBound != EMPTY && _defaultValue > _uBound)
+		{
+			throw new OutOfBoundsException(Resources.DefaultValueTooHigh);
+		}
+	}
+
+	public RealProperty(double Value, double DefaultValue)
+		: base(PropertyType.Real)
+	{
+		_value = Value;
+		_defaultValue = DefaultValue;
+		_lBound = EMPTY;
+		_uBound = EMPTY;
+	}
+
+	public RealProperty(double Value)
+		: base(PropertyType.Real)
+	{
+		_value = Value;
+		_defaultValue = EMPTY;
+		_lBound = EMPTY;
+		_uBound = EMPTY;
+	}
+
+	public new void WriteXml(XmlWriter writer)
+	{
+		base.WriteXml(writer);
+		if (_value == EMPTY)
+		{
+			writer.WriteElementString("Value", "Not Set");
+		}
+		else
+		{
+			writer.WriteElementString("Value", _value.ToString());
+		}
+		if (_lBound == EMPTY)
+		{
+			writer.WriteElementString("LowerBound", "Not Set");
+		}
+		else
+		{
+			writer.WriteElementString("LowerBound", _lBound.ToString());
+		}
+		if (_uBound == EMPTY)
+		{
+			writer.WriteElementString("UpperBound", "Not Set");
+		}
+		else
+		{
+			writer.WriteElementString("UpperBound", _lBound.ToString());
+		}
+	}
+
+	public new XmlSchema GetSchema()
+	{
+		return null;
+	}
+
+	public new void ReadXml(XmlReader reader)
+	{
+	}
+}
+[Guid("A16A9D4D-F8BD-4816-8EA2-D1B754BB03F4")]
+public interface IStringProperty
+{
+	PropertyType Type { get; }
+
+	string Description { get; set; }
+
+	string Value { get; set; }
+
+	bool IsValid { get; set; }
+
+	bool IsDirty { get; set; }
+
+	ValueState State { get; set; }
+
+	string DefaultValue { get; set; }
+}
+[Guid("C6DEA428-1A19-4C82-AB6D-44D57A2676BC")]
+[ClassInterface(ClassInterfaceType.None)]
+public class StringProperty : Property, IStringProperty, IXmlSerializable
+{
+	private string _value;
+
+	private string _defaultValue;
+
+	public static readonly string EMPTY = "";
+
+	public string DefaultValue
+	{
+		get
+		{
+			return _defaultValue;
+		}
+		set
+		{
+			_defaultValue = value;
+		}
+	}
+
+	public string Value
+	{
+		get
+		{
+			return _value;
+		}
+		set
+		{
+			_value = value;
+		}
+	}
+
+	public event ValueChangeHandler AfterValueChanged;
+
+	public StringProperty()
+	{
+		_value = EMPTY;
+		_defaultValue = EMPTY;
+	}
+
+	public StringProperty(string Value, string DefaultValue)
+	{
+		_value = Value;
+		_defaultValue = DefaultValue;
+	}
+
+	public StringProperty(string Value)
+	{
+		_value = Value;
+		_defaultValue = EMPTY;
+		_type = PropertyType.String;
+	}
+
+	public new void WriteXml(XmlWriter writer)
+	{
+		base.WriteXml(writer);
+		writer.WriteElementString("Value", _value);
+	}
+
+	public new XmlSchema GetSchema()
+	{
+		return null;
+	}
+
+	public new void ReadXml(XmlReader reader)
+	{
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

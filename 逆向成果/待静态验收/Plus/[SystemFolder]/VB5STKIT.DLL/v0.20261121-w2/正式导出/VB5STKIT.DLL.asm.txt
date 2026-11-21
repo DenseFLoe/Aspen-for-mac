@@ -1,0 +1,5581 @@
+# TOOL IDA 9.5
+# ARCH metapc
+# BITS 32
+# BASE 0x10000000
+# SEGS 6
+# FUNCS 141
+FUNC 10001000 SyncShell
+  10001000: mov     eax, [esp+arg_4]
+  10001004: mov     ecx, [esp+lpCommandLine]
+  10001008: push    eax; int
+  10001009: push    ecx; lpCommandLine
+  1000100a: call    sub_10003725
+  1000100f: add     esp, 8
+  10001012: retn    8
+ENDFUNC
+FUNC 10001020 DLLSelfRegister
+  10001020: sub     esp, 14h
+  10001023: mov     edx, offset aDllregisterser; "DllRegisterServer"
+  10001028: lea     ecx, [esp+14h+ProcName]
+  1000102c: push    ebx
+  1000102d: push    esi
+  1000102e: mov     eax, [edx]
+  10001030: push    edi
+  10001031: xor     esi, esi
+  10001033: mov     ebx, [edx+4]
+  10001036: mov     edi, [edx+8]
+  10001039: mov     [ecx], eax
+  1000103b: mov     eax, [edx+0Ch]
+  1000103e: mov     dx, [edx+10h]
+  10001042: push    8000h; uMode
+  10001047: mov     [ecx+4], ebx
+  1000104a: mov     [ecx+8], edi
+  1000104d: mov     [ecx+0Ch], eax
+  10001050: mov     [ecx+10h], dx
+  10001054: call    ds:SetErrorMode; KERNEL32
+  1000105a: push    esi; pvReserved
+  1000105b: call    ds:OleInitialize; ole32
+  10001061: mov     edi, eax
+  10001063: test    edi, edi
+  10001065: jge     short loc_10001075
+  10001067: mov     eax, 2
+  1000106c: pop     edi
+  1000106d: pop     esi
+  1000106e: pop     ebx
+  1000106f: add     esp, 14h
+  10001072: retn    4
+  10001075: mov     eax, [esp+20h+lpLibFileName]
+  10001079: push    eax; lpLibFileName
+  1000107a: call    ds:LoadLibraryA; KERNEL32
+  10001080: mov     ebx, eax
+  10001082: test    ebx, ebx
+  10001084: jnz     short loc_1000108D
+  10001086: mov     esi, 3
+  1000108b: jmp     short loc_100010B6
+  1000108d: lea     eax, [esp+20h+ProcName]
+  10001091: push    eax; lpProcName
+  10001092: push    ebx; hModule
+  10001093: call    ds:GetProcAddress; KERNEL32
+  10001099: test    eax, eax
+  1000109b: jnz     short loc_100010A4
+  1000109d: mov     esi, 4
+  100010a2: jmp     short loc_100010AF
+  100010a4: call    eax
+  100010a6: test    eax, eax
+  100010a8: jge     short loc_100010AF
+  100010aa: mov     esi, 5
+  100010af: push    ebx; hLibModule
+  100010b0: call    ds:FreeLibrary; KERNEL32
+  100010b6: test    edi, edi
+  100010b8: jl      short loc_100010C0
+  100010ba: call    ds:OleUninitialize; ole32
+  100010c0: mov     eax, esi
+  100010c2: pop     edi
+  100010c3: pop     esi
+  100010c4: pop     ebx
+  100010c5: add     esp, 14h
+  100010c8: retn    4
+ENDFUNC
+FUNC 100010d0 RegisterTLB
+  100010d0: mov     eax, [esp+lpMultiByteStr]
+  100010d4: push    eax; lpMultiByteStr
+  100010d5: call    sub_100039B6
+  100010da: add     esp, 4
+  100010dd: cmp     eax, 1
+  100010e0: mov     eax, 0
+  100010e5: adc     eax, 0FFFFFFFFh
+  100010e8: retn    4
+ENDFUNC
+FUNC 100010f0 GetClsidFromActXFile
+  100010f0: mov     eax, [esp+arg_8]
+  100010f4: mov     ecx, [esp+lpString1]
+  100010f8: mov     edx, [esp+lpMultiByteStr]
+  100010fc: push    eax; LPSTR
+  100010fd: push    ecx; lpString1
+  100010fe: push    edx; lpMultiByteStr
+  100010ff: call    sub_10003A71
+  10001104: add     esp, 0Ch
+  10001107: retn    0Ch
+ENDFUNC
+FUNC 10001110 DISKSPACEFREE
+  10001110: sub     esp, 10h
+  10001113: lea     eax, [esp+10h+TotalNumberOfClusters]
+  10001117: push    esi
+  10001118: mov     esi, 0FFFFFFFFh
+  1000111d: push    eax; lpTotalNumberOfClusters
+  1000111e: lea     ecx, [esp+18h+NumberOfFreeClusters]
+  10001122: lea     edx, [esp+18h+BytesPerSector]
+  10001126: lea     eax, [esp+18h+SectorsPerCluster]
+  1000112a: push    ecx; lpNumberOfFreeClusters
+  1000112b: push    edx; lpBytesPerSector
+  1000112c: push    eax; lpSectorsPerCluster
+  1000112d: push    0; lpRootPathName
+  1000112f: call    ds:GetDiskFreeSpaceA; KERNEL32
+  10001135: test    eax, eax
+  10001137: jz      short loc_10001194
+  10001139: cmp     [esp+14h+NumberOfFreeClusters], 0
+  1000113e: jbe     short loc_10001192
+  10001140: mov     eax, 7FFFFFFFh
+  10001145: sub     edx, edx
+  10001147: div     [esp+14h+SectorsPerCluster]
+  1000114b: cmp     eax, [esp+14h+NumberOfFreeClusters]
+  1000114f: jnb     short loc_1000115B
+  10001151: mov     eax, 7FFFFFFFh
+  10001156: pop     esi
+  10001157: add     esp, 10h
+  1000115a: retn
+  1000115b: mov     ecx, [esp+14h+NumberOfFreeClusters]
+  1000115f: mov     eax, 7FFFFFFFh
+  10001164: imul    ecx, [esp+14h+SectorsPerCluster]
+  10001169: sub     edx, edx
+  1000116b: div     ecx
+  1000116d: cmp     eax, [esp+14h+BytesPerSector]
+  10001171: jnb     short loc_1000117D
+  10001173: mov     eax, 7FFFFFFFh
+  10001178: pop     esi
+  10001179: add     esp, 10h
+  1000117c: retn
+  1000117d: mov     esi, [esp+14h+NumberOfFreeClusters]
+  10001181: imul    esi, [esp+14h+BytesPerSector]
+  10001186: imul    esi, [esp+14h+SectorsPerCluster]
+  1000118b: mov     eax, esi
+  1000118d: pop     esi
+  1000118e: add     esp, 10h
+  10001191: retn
+  10001192: xor     esi, esi
+  10001194: mov     eax, esi
+  10001196: pop     esi
+  10001197: add     esp, 10h
+  1000119a: retn
+ENDFUNC
+FUNC 100011a0 SetTime
+  100011a0: sub     esp, 18h
+  100011a3: push    ebx
+  100011a4: push    esi
+  100011a5: push    edi
+  100011a6: mov     ebx, 0FFFFFFFFh
+  100011ab: push    ebp
+  100011ac: push    0; hTemplateFile
+  100011ae: mov     eax, [esp+2Ch+lpFileName]
+  100011b2: push    80h; dwFlagsAndAttributes
+  100011b7: push    3; dwCreationDisposition
+  100011b9: mov     edi, ds:CreateFileA; KERNEL32
+  100011bf: push    0; lpSecurityAttributes
+  100011c1: push    1; dwShareMode
+  100011c3: push    80000000h; dwDesiredAccess
+  100011c8: push    eax; lpFileName
+  100011c9: call    edi ; CreateFileA; KERNEL32
+  100011cb: cmp     eax, ebx
+  100011cd: mov     esi, eax
+  100011cf: jz      short loc_10001238
+  100011d1: lea     eax, [esp+28h+LastWriteTime]
+  100011d5: lea     ecx, [esp+28h+LastAccessTime]
+  100011d9: lea     edx, [esp+28h+CreationTime]
+  100011dd: push    eax; lpLastWriteTime
+  100011de: push    ecx; lpLastAccessTime
+  100011df: push    edx; lpCreationTime
+  100011e0: push    esi; hFile
+  100011e1: call    ds:GetFileTime; KERNEL32
+  100011e7: mov     ebp, eax
+  100011e9: push    esi; hObject
+  100011ea: mov     esi, ds:CloseHandle; KERNEL32
+  100011f0: call    esi ; CloseHandle; KERNEL32
+  100011f2: test    ebp, ebp
+  100011f4: jz      short loc_10001238
+  100011f6: mov     eax, [esp+28h+arg_4]
+  100011fa: push    0; hTemplateFile
+  100011fc: push    80h; dwFlagsAndAttributes
+  10001201: push    3; dwCreationDisposition
+  10001203: push    0; lpSecurityAttributes
+  10001205: push    1; dwShareMode
+  10001207: push    40000000h; dwDesiredAccess
+  1000120c: push    eax; lpFileName
+  1000120d: call    edi ; CreateFileA; KERNEL32
+  1000120f: cmp     eax, ebx
+  10001211: mov     edi, eax
+  10001213: mov     ebx, 0FFFFFFFFh
+  10001218: jz      short loc_10001238
+  1000121a: lea     eax, [esp+28h+LastWriteTime]
+  1000121e: lea     ecx, [esp+28h+LastAccessTime]
+  10001222: lea     edx, [esp+28h+CreationTime]
+  10001226: push    eax; lpLastWriteTime
+  10001227: push    ecx; lpLastAccessTime
+  10001228: push    edx; lpCreationTime
+  10001229: push    edi; hFile
+  1000122a: call    ds:SetFileTime; KERNEL32
+  10001230: push    edi; hObject
+  10001231: cmp     eax, 1
+  10001234: sbb     ebx, ebx
+  10001236: call    esi ; CloseHandle; KERNEL32
+  10001238: mov     eax, ebx
+  1000123a: pop     ebp
+  1000123b: pop     edi
+  1000123c: pop     esi
+  1000123d: pop     ebx
+  1000123e: add     esp, 18h
+  10001241: retn    8
+ENDFUNC
+FUNC 10001250 AllocUnit
+  10001250: sub     esp, 10h
+  10001253: lea     eax, [esp+10h+TotalNumberOfClusters]
+  10001257: push    esi
+  10001258: mov     esi, 0FFFFFFFFh
+  1000125d: push    eax; lpTotalNumberOfClusters
+  1000125e: lea     ecx, [esp+18h+NumberOfFreeClusters]
+  10001262: lea     edx, [esp+18h+BytesPerSector]
+  10001266: lea     eax, [esp+18h+SectorsPerCluster]
+  1000126a: push    ecx; lpNumberOfFreeClusters
+  1000126b: push    edx; lpBytesPerSector
+  1000126c: push    eax; lpSectorsPerCluster
+  1000126d: push    0; lpRootPathName
+  1000126f: call    ds:GetDiskFreeSpaceA; KERNEL32
+  10001275: test    eax, eax
+  10001277: jz      short loc_10001282
+  10001279: mov     esi, [esp+14h+BytesPerSector]
+  1000127d: imul    esi, [esp+14h+SectorsPerCluster]
+  10001282: mov     eax, esi
+  10001284: pop     esi
+  10001285: add     esp, 10h
+  10001288: retn
+ENDFUNC
+FUNC 10001290 j_GetWinPlatform
+  10001290: jmp     GetWinPlatform
+ENDFUNC
+FUNC 100012a0 j_fNTWithShell
+  100012a0: jmp     fNTWithShell
+ENDFUNC
+FUNC 100012b0 lmemcpy
+  100012b0: mov     eax, [esp+arg_8]
+  100012b4: push    esi
+  100012b5: mov     esi, [esp+4+arg_4]
+  100012b9: push    edi
+  100012ba: mov     edi, [esp+8+arg_0]
+  100012be: mov     ecx, eax
+  100012c0: shr     ecx, 2
+  100012c3: rep movsd
+  100012c5: mov     ecx, eax
+  100012c7: and     ecx, 3
+  100012ca: rep movsb
+  100012cc: pop     edi
+  100012cd: pop     esi
+  100012ce: retn    0Ch
+ENDFUNC
+FUNC 100012e0 fCreateShellFolder
+  100012e0: mov     eax, [esp+lpString]
+  100012e4: test    eax, eax
+  100012e6: jnz     short loc_100012ED
+  100012e8: xor     eax, eax
+  100012ea: retn    4
+  100012ed: push    eax; lpString
+  100012ee: call    sub_10003EF7
+  100012f3: add     esp, 4
+  100012f6: retn    4
+ENDFUNC
+FUNC 10001300 fCreateShellLink
+  10001300: mov     ecx, [esp+lpString]
+  10001304: test    ecx, ecx
+  10001306: jz      short loc_10001332
+  10001308: mov     edx, [esp+lpString2]
+  1000130c: test    edx, edx
+  1000130e: jz      short loc_10001332
+  10001310: mov     eax, [esp+arg_C]
+  10001314: test    eax, eax
+  10001316: jz      short loc_10001332
+  10001318: cmp     byte ptr [ecx], 0
+  1000131b: jnz     short loc_1000131F
+  1000131d: xor     ecx, ecx
+  1000131f: push    eax; int
+  10001320: mov     eax, [esp+4+arg_8]
+  10001324: push    eax; LPCSTR
+  10001325: push    edx; lpString2
+  10001326: push    ecx; lpString
+  10001327: call    sub_10003F7D
+  1000132c: add     esp, 10h
+  1000132f: retn    10h
+  10001332: xor     eax, eax
+  10001334: retn    10h
+ENDFUNC
+FUNC 10001340 fRemoveShellLink
+  10001340: mov     eax, [esp+lpString]
+  10001344: test    eax, eax
+  10001346: jz      short loc_1000135D
+  10001348: mov     ecx, [esp+lpString2]
+  1000134c: test    ecx, ecx
+  1000134e: jz      short loc_1000135D
+  10001350: push    ecx; lpString2
+  10001351: push    eax; lpString
+  10001352: call    sub_10004223
+  10001357: add     esp, 8
+  1000135a: retn    8
+  1000135d: xor     eax, eax
+  1000135f: retn    8
+ENDFUNC
+FUNC 10001370 GetLongPathName
+  10001370: mov     eax, [esp+arg_8]
+  10001374: mov     ecx, [esp+lpString1]
+  10001378: mov     edx, [esp+lpString]
+  1000137c: push    eax; int
+  1000137d: push    ecx; lpString1
+  1000137e: push    edx; lpString
+  1000137f: call    sub_100037C6
+  10001384: add     esp, 0Ch
+  10001387: retn    0Ch
+ENDFUNC
+FUNC 10001390 j_fWithinAction
+  10001390: jmp     fWithinAction
+ENDFUNC
+FUNC 100013a0 j_AbortAction
+  100013a0: jmp     AbortAction
+ENDFUNC
+FUNC 100013b0 AddActionNote
+  100013b0: mov     eax, [esp+lpString]
+  100013b4: push    eax; lpString
+  100013b5: call    sub_100046B7
+  100013ba: add     esp, 4
+  100013bd: retn    4
+ENDFUNC
+FUNC 100013c0 ChangeActionKey
+  100013c0: mov     eax, [esp+lpString]
+  100013c4: push    eax; lpString
+  100013c5: call    sub_10004711
+  100013ca: add     esp, 4
+  100013cd: retn    4
+ENDFUNC
+FUNC 100013d0 j_CommitAction
+  100013d0: jmp     CommitAction
+ENDFUNC
+FUNC 100013e0 LogError
+  100013e0: mov     eax, [esp+lpString]
+  100013e4: mov     ecx, [esp+arg_4]
+  100013e8: mov     edx, [esp+arg_0]
+  100013ec: push    eax; lpString
+  100013ed: push    ecx; int
+  100013ee: push    edx; int
+  100013ef: call    sub_100048EA
+  100013f4: add     esp, 0Ch
+  100013f7: retn    0Ch
+ENDFUNC
+FUNC 10001400 LogWarning
+  10001400: mov     eax, [esp+lpString]
+  10001404: mov     ecx, [esp+arg_4]
+  10001408: mov     edx, [esp+arg_0]
+  1000140c: push    eax; lpString
+  1000140d: push    ecx; int
+  1000140e: push    edx; int
+  1000140f: call    sub_100049BF
+  10001414: add     esp, 0Ch
+  10001417: retn    0Ch
+ENDFUNC
+FUNC 10001420 NewAction
+  10001420: mov     eax, [esp+arg_4]
+  10001424: mov     ecx, [esp+lpString]
+  10001428: push    eax; LPCSTR
+  10001429: push    ecx; lpString
+  1000142a: call    sub_100049D4
+  1000142f: add     esp, 8
+  10001432: retn    8
+ENDFUNC
+FUNC 10001440 EnableLogging
+  10001440: mov     eax, [esp+lpFileName]
+  10001444: push    eax; lpFileName
+  10001445: call    sub_10004A37
+  1000144a: add     esp, 4
+  1000144d: retn    4
+ENDFUNC
+FUNC 10001450 j_DisableLogging
+  10001450: jmp     DisableLogging
+ENDFUNC
+FUNC 10001460 LogNote
+  10001460: mov     eax, [esp+lpString]
+  10001464: push    eax; lpString
+  10001465: call    sub_10004B3B
+  1000146a: add     esp, 4
+  1000146d: retn    4
+ENDFUNC
+FUNC 10001470 LogConfig
+  10001470: mov     eax, [esp+arg_4]
+  10001474: mov     ecx, [esp+arg_0]
+  10001478: push    eax
+  10001479: push    ecx
+  1000147a: call    sub_10004AE5
+  1000147f: add     esp, 8
+  10001482: retn    8
+ENDFUNC
+FUNC 10001490 __CRT_INIT@12
+  10001490: mov     eax, [esp+arg_4]
+  10001494: cmp     eax, 1
+  10001497: jnz     loc_10001589
+  1000149d: call    ds:GetVersion; KERNEL32
+  100014a3: cmp     dword_10006058, 0
+  100014aa: mov     dword_10006060, eax
+  100014af: jnz     short loc_100014EF
+  100014b1: cmp     al, 3
+  100014b3: jnz     short loc_100014C6
+  100014b5: test    eax, 80000000h
+  100014ba: jz      short loc_100014C6
+  100014bc: push    2
+  100014be: call    sub_100024A0
+  100014c3: add     esp, 4
+  100014c6: push    offset ModuleName
+  100014cb: call    ds:GetModuleHandleA; KERNEL32
+  100014d1: test    eax, eax
+  100014d3: jz      short loc_100014EF
+  100014d5: push    offset ProcName
+  100014da: push    eax; hModule
+  100014db: call    ds:GetProcAddress; KERNEL32
+  100014e1: test    eax, eax
+  100014e3: jz      short loc_100014EF
+  100014e5: push    1
+  100014e7: call    sub_100024A0
+  100014ec: add     esp, 4
+  100014ef: call    __heap_init
+  100014f4: xor     ecx, ecx
+  100014f6: mov     edx, dword_10006060
+  100014fc: mov     cl, dh
+  100014fe: mov     eax, edx
+  10001500: and     eax, 0FFh
+  10001505: inc     ___proc_attached$S7845
+  1000150b: shr     edx, 10h
+  1000150e: mov     dword_1000606C, ecx
+  10001514: mov     dword_10006068, eax
+  10001519: mov     dword_10006060, edx
+  1000151f: shl     eax, 8
+  10001522: add     eax, ecx
+  10001524: mov     dword_10006064, eax
+  10001529: call    __mtinit
+  1000152e: test    eax, eax
+  10001530: jnz     short loc_1000153C
+  10001532: call    __heap_term
+  10001537: xor     eax, eax
+  10001539: retn    0Ch
+  1000153c: call    ds:GetCommandLineA; KERNEL32
+  10001542: mov     dword_10008694, eax
+  10001547: call    ___crtGetEnvironmentStringsA
+  1000154c: cmp     dword_10008694, 0
+  10001553: mov     Block, eax
+  10001558: jz      short loc_1000157F
+  1000155a: test    eax, eax
+  1000155c: jz      short loc_1000157F
+  1000155e: call    __ioinit
+  10001563: call    ___initmbctable
+  10001568: call    __setargv
+  1000156d: call    __setenvp
+  10001572: call    __cinit
+  10001577: mov     eax, 1
+  1000157c: retn    0Ch
+  1000157f: call    __heap_term
+  10001584: xor     eax, eax
+  10001586: retn    0Ch
+  10001589: test    eax, eax
+  1000158b: jnz     short loc_100015C6
+  1000158d: mov     eax, ___proc_attached$S7845
+  10001592: test    eax, eax
+  10001594: jle     short loc_100015C1
+  10001596: dec     eax
+  10001597: cmp     dword_10006098, 0
+  1000159e: mov     ___proc_attached$S7845, eax
+  100015a3: jnz     short loc_100015AA
+  100015a5: call    __cexit
+  100015aa: call    __ioterm
+  100015af: call    __mtterm
+  100015b4: call    __heap_term
+  100015b9: mov     eax, 1
+  100015be: retn    0Ch
+  100015c1: xor     eax, eax
+  100015c3: retn    0Ch
+  100015c6: cmp     eax, 3
+  100015c9: jnz     short loc_100015D5
+  100015cb: push    0; Block
+  100015cd: call    __freeptd
+  100015d2: add     esp, 4
+  100015d5: mov     eax, 1
+  100015da: retn    0Ch
+ENDFUNC
+FUNC 100015e0 DllEntryPoint
+  100015e0: push    ebx
+  100015e1: push    esi
+  100015e2: push    edi
+  100015e3: mov     ebx, 1
+  100015e8: mov     edi, [esp+0Ch+fdwReason]
+  100015ec: push    ebp
+  100015ed: cmp     edi, ebx
+  100015ef: jnz     short loc_1000161B
+  100015f1: add     ___proc_attached$S7845, ebx
+  100015f7: cmp     edi, 1
+  100015fa: jz      short loc_10001601
+  100015fc: cmp     edi, 2
+  100015ff: jnz     short loc_1000164D
+  10001601: mov     eax, __pRawDllMain
+  10001606: mov     esi, [esp+10h+lpReserved]
+  1000160a: test    eax, eax
+  1000160c: jz      short loc_10001639
+  1000160e: mov     ebp, [esp+10h+hinstDLL]
+  10001612: push    esi
+  10001613: push    edi
+  10001614: push    ebp
+  10001615: call    eax ; __pRawDllMain
+  10001617: mov     ebx, eax
+  10001619: jmp     short loc_1000163D
+  1000161b: test    edi, edi
+  1000161d: jnz     short loc_100015F7
+  1000161f: mov     eax, ___proc_attached$S7845
+  10001624: test    eax, eax
+  10001626: jle     short loc_10001630
+  10001628: dec     eax
+  10001629: mov     ___proc_attached$S7845, eax
+  1000162e: jmp     short loc_100015F7
+  10001630: xor     eax, eax
+  10001632: pop     ebp
+  10001633: pop     edi
+  10001634: pop     esi
+  10001635: pop     ebx
+  10001636: retn    0Ch
+  10001639: mov     ebp, [esp+10h+hinstDLL]
+  1000163d: test    ebx, ebx
+  1000163f: jz      short loc_10001663
+  10001641: push    esi
+  10001642: push    edi
+  10001643: push    ebp
+  10001644: call    _CRT_INIT(x,x,x)
+  10001649: mov     ebx, eax
+  1000164b: jmp     short loc_10001655
+  1000164d: mov     esi, [esp+10h+lpReserved]
+  10001651: mov     ebp, [esp+10h+hinstDLL]
+  10001655: test    ebx, ebx
+  10001657: jz      short loc_10001667
+  10001659: push    esi; lpvReserved
+  1000165a: push    edi; fdwReason
+  1000165b: push    ebp; hinstDLL
+  1000165c: call    DllMain(x,x,x)
+  10001661: mov     ebx, eax
+  10001663: test    ebx, ebx
+  10001665: jnz     short loc_10001676
+  10001667: cmp     edi, 1
+  1000166a: jnz     short loc_10001676
+  1000166c: call    __mtterm
+  10001671: call    __heap_term
+  10001676: test    edi, edi
+  10001678: jz      short loc_1000167F
+  1000167a: cmp     edi, 3
+  1000167d: jnz     short loc_100016A1
+  1000167f: push    esi
+  10001680: push    edi
+  10001681: push    ebp
+  10001682: call    _CRT_INIT(x,x,x)
+  10001687: test    eax, eax
+  10001689: jnz     short loc_1000168D
+  1000168b: xor     ebx, ebx
+  1000168d: test    ebx, ebx
+  1000168f: jz      short loc_100016A1
+  10001691: mov     eax, __pRawDllMain
+  10001696: test    eax, eax
+  10001698: jz      short loc_100016A1
+  1000169a: push    esi
+  1000169b: push    edi
+  1000169c: push    ebp
+  1000169d: call    eax ; __pRawDllMain
+  1000169f: mov     ebx, eax
+  100016a1: mov     eax, ebx
+  100016a3: pop     ebp
+  100016a4: pop     edi
+  100016a5: pop     esi
+  100016a6: pop     ebx
+  100016a7: retn    0Ch
+ENDFUNC
+FUNC 100016b0 __amsg_exit
+  100016b0: mov     eax, dword_10006054
+  100016b5: cmp     eax, 1
+  100016b8: jz      short loc_100016C7
+  100016ba: test    eax, eax
+  100016bc: jnz     short loc_100016CC
+  100016be: cmp     dword_10006058, 1
+  100016c5: jnz     short loc_100016CC
+  100016c7: call    __FF_MSGBANNER
+  100016cc: mov     eax, [esp+arg_0]
+  100016d0: push    eax
+  100016d1: call    __NMSG_WRITE
+  100016d6: add     esp, 4
+  100016d9: push    0FFh; Code
+  100016de: call    off_10006050
+  100016e4: add     esp, 4
+  100016e7: retn
+ENDFUNC
+FUNC 100016f0 __cinit
+  100016f0: mov     eax, dword_10008690
+  100016f5: test    eax, eax
+  100016f7: jz      short loc_100016FB
+  100016f9: call    eax ; dword_10008690
+  100016fb: push    offset Last; Last
+  10001700: push    offset First; First
+  10001705: call    __initterm
+  1000170a: add     esp, 8
+  1000170d: push    offset dword_10006004; Last
+  10001712: push    offset dword_10006000; First
+  10001717: call    __initterm
+  1000171c: add     esp, 8
+  1000171f: retn
+ENDFUNC
+FUNC 10001720 __exit
+  10001720: mov     eax, [esp+Code]
+  10001724: push    0; int
+  10001726: push    1; int
+  10001728: push    eax; uExitCode
+  10001729: call    _doexit
+  1000172e: add     esp, 0Ch
+  10001731: retn
+ENDFUNC
+FUNC 10001740 __cexit
+  10001740: push    1; int
+  10001742: push    0; int
+  10001744: push    0; uExitCode
+  10001746: call    _doexit
+  1000174b: add     esp, 0Ch
+  1000174e: retn
+ENDFUNC
+FUNC 10001750 _doexit
+  10001750: push    ebx
+  10001751: push    esi
+  10001752: push    edi
+  10001753: call    __lockexit
+  10001758: cmp     dword_1000609C, 1
+  1000175f: mov     esi, [esp+0Ch+uExitCode]
+  10001763: jnz     short loc_10001773
+  10001765: push    esi; uExitCode
+  10001766: call    ds:GetCurrentProcess; KERNEL32
+  1000176c: push    eax; hProcess
+  1000176d: call    ds:TerminateProcess; KERNEL32
+  10001773: mov     dword_10006098, 1
+  1000177d: cmp     [esp+0Ch+arg_4], 0
+  10001782: mov     ebx, [esp+0Ch+arg_8]
+  10001786: mov     byte_10006094, bl
+  1000178c: jnz     short loc_100017CD
+  1000178e: cmp     dword_1000868C, 0
+  10001795: jz      short loc_100017BB
+  10001797: mov     edi, dword_10008688
+  1000179d: sub     edi, 4
+  100017a0: cmp     dword_1000868C, edi
+  100017a6: ja      short loc_100017BB
+  100017a8: mov     eax, [edi]
+  100017aa: test    eax, eax
+  100017ac: jz      short loc_100017B0
+  100017ae: call    eax
+  100017b0: sub     edi, 4
+  100017b3: cmp     dword_1000868C, edi
+  100017b9: jbe     short loc_100017A8
+  100017bb: push    offset dword_1000601C; Last
+  100017c0: push    offset dword_10006014; First
+  100017c5: call    __initterm
+  100017ca: add     esp, 8
+  100017cd: push    offset dword_10006024; Last
+  100017d2: push    offset dword_10006020; First
+  100017d7: call    __initterm
+  100017dc: add     esp, 8
+  100017df: test    ebx, ebx
+  100017e1: jz      short loc_100017EC
+  100017e3: call    __unlockexit
+  100017e8: pop     edi
+  100017e9: pop     esi
+  100017ea: pop     ebx
+  100017eb: retn
+  100017ec: mov     dword_1000609C, 1
+  100017f6: push    esi; uExitCode
+  100017f7: call    ds:ExitProcess; KERNEL32
+ENDFUNC
+FUNC 10001810 __lockexit
+  10001810: push    0Dh
+  10001812: call    __lock
+  10001817: add     esp, 4
+  1000181a: retn
+ENDFUNC
+FUNC 10001820 __unlockexit
+  10001820: push    0Dh
+  10001822: call    __unlock
+  10001827: add     esp, 4
+  1000182a: retn
+ENDFUNC
+FUNC 10001830 __initterm
+  10001830: push    esi
+  10001831: push    edi
+  10001832: mov     edi, [esp+8+Last]
+  10001836: mov     esi, [esp+8+First]
+  1000183a: cmp     edi, esi
+  1000183c: jbe     short loc_1000184D
+  1000183e: mov     eax, [esi]
+  10001840: test    eax, eax
+  10001842: jz      short loc_10001846
+  10001844: call    eax
+  10001846: add     esi, 4
+  10001849: cmp     edi, esi
+  1000184b: ja      short loc_1000183E
+  1000184d: pop     edi
+  1000184e: pop     esi
+  1000184f: retn
+ENDFUNC
+FUNC 10001850 __mtinit
+  10001850: push    esi
+  10001851: call    __mtinitlocks
+  10001856: call    ds:TlsAlloc; KERNEL32
+  1000185c: mov     dwTlsIndex, eax
+  10001861: cmp     eax, 0FFFFFFFFh
+  10001864: jnz     short loc_1000186A
+  10001866: xor     eax, eax
+  10001868: pop     esi
+  10001869: retn
+  1000186a: push    74h ; 't'; Size
+  1000186c: push    1; Count
+  1000186e: call    _calloc
+  10001873: add     esp, 8
+  10001876: mov     esi, eax
+  10001878: test    esi, esi
+  1000187a: jz      short loc_100018AC
+  1000187c: push    esi; lpTlsValue
+  1000187d: mov     eax, dwTlsIndex
+  10001882: push    eax; dwTlsIndex
+  10001883: call    ds:TlsSetValue; KERNEL32
+  10001889: test    eax, eax
+  1000188b: jz      short loc_100018AC
+  1000188d: push    esi
+  1000188e: call    __initptd
+  10001893: add     esp, 4
+  10001896: call    ds:GetCurrentThreadId; KERNEL32
+  1000189c: mov     [esi], eax
+  1000189e: mov     eax, 1
+  100018a3: mov     dword ptr [esi+4], 0FFFFFFFFh
+  100018aa: pop     esi
+  100018ab: retn
+  100018ac: xor     eax, eax
+  100018ae: pop     esi
+  100018af: retn
+ENDFUNC
+FUNC 100018b0 __mtterm
+  100018b0: call    __mtdeletelocks
+  100018b5: mov     eax, dwTlsIndex
+  100018ba: cmp     eax, 0FFFFFFFFh
+  100018bd: jz      short locret_100018D0
+  100018bf: push    eax; dwTlsIndex
+  100018c0: call    ds:TlsFree; KERNEL32
+  100018c6: mov     dwTlsIndex, 0FFFFFFFFh
+  100018d0: retn
+ENDFUNC
+FUNC 100018e0 __initptd
+  100018e0: mov     eax, [esp+arg_0]
+  100018e4: mov     dword ptr [eax+50h], offset unk_10006440
+  100018eb: mov     dword ptr [eax+14h], 1
+  100018f2: retn
+ENDFUNC
+FUNC 10001900 __getptd
+  10001900: push    esi
+  10001901: push    edi
+  10001902: call    ds:GetLastError; KERNEL32
+  10001908: mov     esi, eax
+  1000190a: mov     eax, dwTlsIndex
+  1000190f: push    eax; dwTlsIndex
+  10001910: call    ds:TlsGetValue; KERNEL32
+  10001916: mov     edi, eax
+  10001918: test    edi, edi
+  1000191a: jnz     short loc_10001963
+  1000191c: push    74h ; 't'; Size
+  1000191e: push    1; Count
+  10001920: call    _calloc
+  10001925: add     esp, 8
+  10001928: mov     edi, eax
+  1000192a: test    edi, edi
+  1000192c: jz      short loc_10001959
+  1000192e: push    edi; lpTlsValue
+  1000192f: mov     eax, dwTlsIndex
+  10001934: push    eax; dwTlsIndex
+  10001935: call    ds:TlsSetValue; KERNEL32
+  1000193b: test    eax, eax
+  1000193d: jz      short loc_10001959
+  1000193f: push    edi
+  10001940: call    __initptd
+  10001945: add     esp, 4
+  10001948: call    ds:GetCurrentThreadId; KERNEL32
+  1000194e: mov     [edi], eax
+  10001950: mov     dword ptr [edi+4], 0FFFFFFFFh
+  10001957: jmp     short loc_10001963
+  10001959: push    10h
+  1000195b: call    __amsg_exit
+  10001960: add     esp, 4
+  10001963: push    esi; dwErrCode
+  10001964: call    ds:SetLastError; KERNEL32
+  1000196a: mov     eax, edi
+  1000196c: pop     edi
+  1000196d: pop     esi
+  1000196e: retn
+ENDFUNC
+FUNC 10001970 __freeptd
+  10001970: cmp     dwTlsIndex, 0FFFFFFFFh
+  10001977: push    esi
+  10001978: jz      loc_10001A0F
+  1000197e: mov     esi, [esp+4+Block]
+  10001982: test    esi, esi
+  10001984: jnz     short loc_10001998
+  10001986: mov     eax, dwTlsIndex
+  1000198b: push    eax; dwTlsIndex
+  1000198c: call    ds:TlsGetValue; KERNEL32
+  10001992: mov     esi, eax
+  10001994: test    esi, esi
+  10001996: jz      short loc_10001A01
+  10001998: mov     eax, [esi+24h]
+  1000199b: test    eax, eax
+  1000199d: jz      short loc_100019A8
+  1000199f: push    eax; Block
+  100019a0: call    _free
+  100019a5: add     esp, 4
+  100019a8: mov     eax, [esi+28h]
+  100019ab: test    eax, eax
+  100019ad: jz      short loc_100019B8
+  100019af: push    eax; Block
+  100019b0: call    _free
+  100019b5: add     esp, 4
+  100019b8: mov     eax, [esi+30h]
+  100019bb: test    eax, eax
+  100019bd: jz      short loc_100019C8
+  100019bf: push    eax; Block
+  100019c0: call    _free
+  100019c5: add     esp, 4
+  100019c8: mov     eax, [esi+38h]
+  100019cb: test    eax, eax
+  100019cd: jz      short loc_100019D8
+  100019cf: push    eax; Block
+  100019d0: call    _free
+  100019d5: add     esp, 4
+  100019d8: mov     eax, [esi+40h]
+  100019db: test    eax, eax
+  100019dd: jz      short loc_100019E8
+  100019df: push    eax; Block
+  100019e0: call    _free
+  100019e5: add     esp, 4
+  100019e8: mov     eax, [esi+44h]
+  100019eb: test    eax, eax
+  100019ed: jz      short loc_100019F8
+  100019ef: push    eax; Block
+  100019f0: call    _free
+  100019f5: add     esp, 4
+  100019f8: push    esi; Block
+  100019f9: call    _free
+  100019fe: add     esp, 4
+  10001a01: push    0; lpTlsValue
+  10001a03: mov     eax, dwTlsIndex
+  10001a08: push    eax; dwTlsIndex
+  10001a09: call    ds:TlsSetValue; KERNEL32
+  10001a0f: pop     esi
+  10001a10: retn
+ENDFUNC
+FUNC 10001a20 __heap_init
+  10001a20: push    0; dwMaximumSize
+  10001a22: push    1000h; dwInitialSize
+  10001a27: push    0; flOptions
+  10001a29: call    ds:HeapCreate; KERNEL32
+  10001a2f: mov     hHeap, eax
+  10001a34: retn
+ENDFUNC
+FUNC 10001a40 __heap_term
+  10001a40: mov     eax, hHeap
+  10001a45: push    eax; hHeap
+  10001a46: call    ds:HeapDestroy; KERNEL32
+  10001a4c: retn
+ENDFUNC
+FUNC 10001a50 __ioinit
+  10001a50: sub     esp, 44h
+  10001a53: push    ebx
+  10001a54: push    esi
+  10001a55: push    edi
+  10001a56: push    ebp
+  10001a57: push    480h; Size
+  10001a5c: call    _malloc
+  10001a61: add     esp, 4
+  10001a64: mov     esi, eax
+  10001a66: test    esi, esi
+  10001a68: jnz     short loc_10001A74
+  10001a6a: push    1Bh
+  10001a6c: call    __amsg_exit
+  10001a71: add     esp, 4
+  10001a74: lea     eax, [esi+480h]
+  10001a7a: mov     dword_10008580, esi
+  10001a80: mov     uNumber, 20h ; ' '
+  10001a8a: cmp     eax, esi
+  10001a8c: jbe     short loc_10001AB6
+  10001a8e: xor     ecx, ecx
+  10001a90: mov     edx, 0Ah
+  10001a95: mov     [esi+4], cl
+  10001a98: add     esi, 24h ; '$'
+  10001a9b: mov     dword ptr [esi-24h], 0FFFFFFFFh
+  10001aa2: mov     [esi-1Fh], dl
+  10001aa5: mov     [esi-1Ch], ecx
+  10001aa8: mov     eax, dword_10008580
+  10001aad: add     eax, 480h
+  10001ab2: cmp     eax, esi
+  10001ab4: ja      short loc_10001A95
+  10001ab6: lea     eax, [esp+54h+StartupInfo]
+  10001aba: push    eax; lpStartupInfo
+  10001abb: call    ds:GetStartupInfoA; KERNEL32
+  10001ac1: cmp     [esp+54h+StartupInfo.cbReserved2], 0
+  10001ac7: jz      loc_10001BA1
+  10001acd: cmp     [esp+54h+StartupInfo.lpReserved2], 0
+  10001ad2: jz      loc_10001BA1
+  10001ad8: mov     eax, [esp+54h+StartupInfo.lpReserved2]
+  10001adc: mov     ebp, [eax]
+  10001ade: lea     edi, [eax+4]
+  10001ae1: cmp     ebp, 800h
+  10001ae7: lea     ebx, [edi+ebp]
+  10001aea: jl      short loc_10001AF1
+  10001aec: mov     ebp, 800h
+  10001af1: cmp     ebp, uNumber
+  10001af7: jle     short loc_10001B57
+  10001af9: mov     esi, offset unk_10008584
+  10001afe: push    480h; Size
+  10001b03: call    _malloc
+  10001b08: add     esp, 4
+  10001b0b: test    eax, eax
+  10001b0d: jz      short loc_10001B51
+  10001b0f: lea     ecx, [eax+480h]
+  10001b15: mov     [esi], eax
+  10001b17: add     uNumber, 20h ; ' '
+  10001b1e: cmp     ecx, eax
+  10001b20: jbe     short loc_10001B44
+  10001b22: xor     ecx, ecx
+  10001b24: mov     [eax+4], cl
+  10001b27: add     eax, 24h ; '$'
+  10001b2a: mov     dword ptr [eax-24h], 0FFFFFFFFh
+  10001b31: mov     byte ptr [eax-1Fh], 0Ah
+  10001b35: mov     [eax-1Ch], ecx
+  10001b38: mov     edx, [esi]
+  10001b3a: add     edx, 480h
+  10001b40: cmp     edx, eax
+  10001b42: ja      short loc_10001B24
+  10001b44: add     esi, 4
+  10001b47: cmp     ebp, uNumber
+  10001b4d: jg      short loc_10001AFE
+  10001b4f: jmp     short loc_10001B57
+  10001b51: mov     ebp, uNumber
+  10001b57: xor     esi, esi
+  10001b59: test    ebp, ebp
+  10001b5b: jle     short loc_10001BA1
+  10001b5d: mov     eax, [ebx]
+  10001b5f: cmp     eax, 0FFFFFFFFh
+  10001b62: jz      short loc_10001B98
+  10001b64: test    byte ptr [edi], 1
+  10001b67: jz      short loc_10001B98
+  10001b69: push    eax; hFile
+  10001b6a: call    ds:GetFileType; KERNEL32
+  10001b70: test    eax, eax
+  10001b72: jz      short loc_10001B98
+  10001b74: mov     eax, esi
+  10001b76: mov     ecx, esi
+  10001b78: and     eax, 0FFFFFFE7h
+  10001b7b: and     ecx, 1Fh
+  10001b7e: sar     eax, 3
+  10001b81: shl     ecx, 2
+  10001b84: mov     edx, dword_10008580[eax]
+  10001b8a: mov     eax, [ebx]
+  10001b8c: lea     ecx, [ecx+ecx*8]
+  10001b8f: add     ecx, edx
+  10001b91: mov     [ecx], eax
+  10001b93: mov     dl, [edi]
+  10001b95: mov     [ecx+4], dl
+  10001b98: inc     esi
+  10001b99: inc     edi
+  10001b9a: add     ebx, 4
+  10001b9d: cmp     ebp, esi
+  10001b9f: jg      short loc_10001B5D
+  10001ba1: xor     esi, esi
+  10001ba3: xor     edi, edi
+  10001ba5: mov     ebx, dword_10008580
+  10001bab: add     ebx, esi
+  10001bad: cmp     dword ptr [ebx], 0FFFFFFFFh
+  10001bb0: jnz     short loc_10001C09
+  10001bb2: mov     eax, 0FFFFFFF6h
+  10001bb7: test    esi, esi
+  10001bb9: mov     byte ptr [ebx+4], 81h
+  10001bbd: jz      short loc_10001BCD
+  10001bbf: lea     eax, [edi-1]
+  10001bc2: cmp     eax, 1
+  10001bc5: mov     eax, 0FFFFFFF5h
+  10001bca: adc     eax, 0FFFFFFFFh
+  10001bcd: push    eax; nStdHandle
+  10001bce: call    ds:GetStdHandle; KERNEL32
+  10001bd4: cmp     eax, 0FFFFFFFFh
+  10001bd7: mov     ebp, eax
+  10001bd9: jz      short loc_10001C03
+  10001bdb: push    ebp; hFile
+  10001bdc: call    ds:GetFileType; KERNEL32
+  10001be2: test    eax, eax
+  10001be4: jz      short loc_10001C03
+  10001be6: and     eax, 0FFh
+  10001beb: mov     [ebx], ebp
+  10001bed: cmp     eax, 2
+  10001bf0: jnz     short loc_10001BF8
+  10001bf2: or      byte ptr [ebx+4], 40h
+  10001bf6: jmp     short loc_10001C0D
+  10001bf8: cmp     eax, 3
+  10001bfb: jnz     short loc_10001C0D
+  10001bfd: or      byte ptr [ebx+4], 8
+  10001c01: jmp     short loc_10001C0D
+  10001c03: or      byte ptr [ebx+4], 40h
+  10001c07: jmp     short loc_10001C0D
+  10001c09: or      byte ptr [ebx+4], 80h
+  10001c0d: add     esi, 24h ; '$'
+  10001c10: inc     edi
+  10001c11: cmp     esi, 6Ch ; 'l'
+  10001c14: jl      short loc_10001BA5
+  10001c16: mov     eax, uNumber
+  10001c1b: push    eax; uNumber
+  10001c1c: call    ds:SetHandleCount; KERNEL32
+  10001c22: pop     ebp
+  10001c23: pop     edi
+  10001c24: pop     esi
+  10001c25: pop     ebx
+  10001c26: add     esp, 44h
+  10001c29: retn
+ENDFUNC
+FUNC 10001c30 __ioterm
+  10001c30: push    ebx
+  10001c31: push    esi
+  10001c32: push    edi
+  10001c33: mov     esi, offset dword_10008580
+  10001c38: push    ebp
+  10001c39: mov     edi, ds:DeleteCriticalSection; KERNEL32
+  10001c3f: mov     ebx, [esi]
+  10001c41: test    ebx, ebx
+  10001c43: jz      short loc_10001C75
+  10001c45: lea     eax, [ebx+480h]
+  10001c4b: cmp     eax, ebx
+  10001c4d: jbe     short loc_10001C6A
+  10001c4f: xor     ebp, ebp
+  10001c51: cmp     [ebx+8], ebp
+  10001c54: jz      short loc_10001C5C
+  10001c56: lea     eax, [ebx+0Ch]
+  10001c59: push    eax; lpCriticalSection
+  10001c5a: call    edi ; DeleteCriticalSection; KERNEL32
+  10001c5c: add     ebx, 24h ; '$'
+  10001c5f: mov     eax, [esi]
+  10001c61: add     eax, 480h
+  10001c66: cmp     eax, ebx
+  10001c68: ja      short loc_10001C51
+  10001c6a: mov     eax, [esi]
+  10001c6c: push    eax; Block
+  10001c6d: call    _free
+  10001c72: add     esp, 4
+  10001c75: add     esi, 4
+  10001c78: cmp     esi, offset uNumber
+  10001c7e: jb      short loc_10001C3F
+  10001c80: pop     ebp
+  10001c81: pop     edi
+  10001c82: pop     esi
+  10001c83: pop     ebx
+  10001c84: retn
+ENDFUNC
+FUNC 10001c90 __setenvp
+  10001c90: sub     esp, 4
+  10001c93: xor     edx, edx
+  10001c95: push    ebx
+  10001c96: push    esi
+  10001c97: push    edi
+  10001c98: mov     esi, Block
+  10001c9e: push    ebp
+  10001c9f: mov     eax, esi
+  10001ca1: cmp     [esi], dl
+  10001ca3: jz      short loc_10001CBF
+  10001ca5: cmp     byte ptr [esi], 3Dh ; '='
+  10001ca8: jz      short loc_10001CAB
+  10001caa: inc     edx
+  10001cab: mov     edi, esi
+  10001cad: mov     ecx, 0FFFFFFFFh
+  10001cb2: sub     eax, eax
+  10001cb4: repne scasb
+  10001cb6: not     ecx
+  10001cb8: add     esi, ecx
+  10001cba: cmp     byte ptr [esi], 0
+  10001cbd: jnz     short loc_10001CA5
+  10001cbf: lea     eax, ds:4[edx*4]
+  10001cc6: push    eax; Size
+  10001cc7: call    _malloc
+  10001ccc: mov     dword_1000607C, eax
+  10001cd1: add     esp, 4
+  10001cd4: mov     ebx, eax
+  10001cd6: test    ebx, ebx
+  10001cd8: jnz     short loc_10001CE4
+  10001cda: push    9
+  10001cdc: call    __amsg_exit
+  10001ce1: add     esp, 4
+  10001ce4: mov     ebp, Block
+  10001cea: mov     eax, ebp
+  10001cec: cmp     byte ptr [ebp+0], 0
+  10001cf0: jz      short loc_10001D50
+  10001cf2: mov     edi, ebp
+  10001cf4: mov     ecx, 0FFFFFFFFh
+  10001cf9: sub     eax, eax
+  10001cfb: repne scasb
+  10001cfd: not     ecx
+  10001cff: mov     [esp+14h+var_4], ecx
+  10001d03: cmp     byte ptr [ebp+0], 3Dh ; '='
+  10001d07: jz      short loc_10001D46
+  10001d09: push    ecx; Size
+  10001d0a: call    _malloc
+  10001d0f: add     esp, 4
+  10001d12: mov     [ebx], eax
+  10001d14: test    eax, eax
+  10001d16: jnz     short loc_10001D22
+  10001d18: push    9
+  10001d1a: call    __amsg_exit
+  10001d1f: add     esp, 4
+  10001d22: mov     edi, ebp
+  10001d24: mov     ecx, 0FFFFFFFFh
+  10001d29: sub     eax, eax
+  10001d2b: repne scasb
+  10001d2d: not     ecx
+  10001d2f: sub     edi, ecx
+  10001d31: mov     eax, ecx
+  10001d33: shr     ecx, 2
+  10001d36: mov     esi, edi
+  10001d38: mov     edi, [ebx]
+  10001d3a: add     ebx, 4
+  10001d3d: rep movsd
+  10001d3f: mov     ecx, eax
+  10001d41: and     ecx, 3
+  10001d44: rep movsb
+  10001d46: add     ebp, [esp+14h+var_4]
+  10001d4a: cmp     byte ptr [ebp+0], 0
+  10001d4e: jnz     short loc_10001CF2
+  10001d50: mov     eax, Block
+  10001d55: push    eax; Block
+  10001d56: call    _free
+  10001d5b: add     esp, 4
+  10001d5e: mov     dword ptr [ebx], 0
+  10001d64: pop     ebp
+  10001d65: pop     edi
+  10001d66: pop     esi
+  10001d67: pop     ebx
+  10001d68: add     esp, 4
+  10001d6b: retn
+ENDFUNC
+FUNC 10001d70 __setargv
+  10001d70: sub     esp, 8
+  10001d73: push    esi
+  10001d74: push    edi
+  10001d75: push    104h; nSize
+  10001d7a: mov     esi, offset Filename
+  10001d7f: push    esi; lpFilename
+  10001d80: push    0; hModule
+  10001d82: call    ds:GetModuleFileNameA; KERNEL32
+  10001d88: mov     eax, dword_10008694
+  10001d8d: mov     dword_1000608C, esi
+  10001d93: cmp     byte ptr [eax], 0
+  10001d96: jz      short loc_10001D9E
+  10001d98: mov     esi, dword_10008694
+  10001d9e: lea     eax, [esp+10h+var_4]
+  10001da2: lea     ecx, [esp+10h+var_8]
+  10001da6: push    eax
+  10001da7: push    ecx
+  10001da8: push    0
+  10001daa: push    0
+  10001dac: push    esi
+  10001dad: call    _parse_cmdline
+  10001db2: mov     eax, [esp+24h+var_8]
+  10001db6: add     esp, 14h
+  10001db9: shl     eax, 2
+  10001dbc: add     eax, [esp+10h+var_4]
+  10001dc0: push    eax; Size
+  10001dc1: call    _malloc
+  10001dc6: add     esp, 4
+  10001dc9: mov     edi, eax
+  10001dcb: test    edi, edi
+  10001dcd: jnz     short loc_10001DD9
+  10001dcf: push    8
+  10001dd1: call    __amsg_exit
+  10001dd6: add     esp, 4
+  10001dd9: lea     eax, [esp+10h+var_4]
+  10001ddd: lea     ecx, [esp+10h+var_8]
+  10001de1: mov     edx, [esp+10h+var_8]
+  10001de5: push    eax
+  10001de6: push    ecx
+  10001de7: lea     eax, [edi+edx*4]
+  10001dea: push    eax
+  10001deb: push    edi
+  10001dec: push    esi
+  10001ded: call    _parse_cmdline
+  10001df2: mov     eax, [esp+24h+var_8]
+  10001df6: add     esp, 14h
+  10001df9: dec     eax
+  10001dfa: mov     dword_10006074, edi
+  10001e00: pop     edi
+  10001e01: mov     dword_10006070, eax
+  10001e06: pop     esi
+  10001e07: add     esp, 8
+  10001e0a: retn
+ENDFUNC
+FUNC 10001e10 _parse_cmdline
+  10001e10: mov     eax, [esp+arg_10]
+  10001e14: push    ebx
+  10001e15: mov     edx, [esp+4+arg_C]
+  10001e19: push    esi
+  10001e1a: mov     ecx, [esp+8+arg_0]
+  10001e1e: push    edi
+  10001e1f: mov     edi, [esp+0Ch+arg_8]
+  10001e23: push    ebp
+  10001e24: cmp     [esp+10h+arg_4], 0
+  10001e29: mov     dword ptr [eax], 0
+  10001e2f: mov     dword ptr [edx], 1
+  10001e35: jz      short loc_10001E42
+  10001e37: mov     edx, [esp+10h+arg_4]
+  10001e3b: add     [esp+10h+arg_4], 4
+  10001e40: mov     [edx], edi
+  10001e42: cmp     byte ptr [ecx], 22h ; '"'
+  10001e45: jz      short loc_10001E8D
+  10001e47: inc     dword ptr [eax]
+  10001e49: test    edi, edi
+  10001e4b: jz      short loc_10001E52
+  10001e4d: mov     dl, [ecx]
+  10001e4f: mov     [edi], dl
+  10001e51: inc     edi
+  10001e52: mov     dl, [ecx]
+  10001e54: inc     ecx
+  10001e55: xor     ebx, ebx
+  10001e57: mov     bl, dl
+  10001e59: test    byte_100060D1[ebx], 4
+  10001e60: jz      short loc_10001E6E
+  10001e62: inc     dword ptr [eax]
+  10001e64: test    edi, edi
+  10001e66: jz      short loc_10001E6D
+  10001e68: mov     bl, [ecx]
+  10001e6a: mov     [edi], bl
+  10001e6c: inc     edi
+  10001e6d: inc     ecx
+  10001e6e: cmp     dl, 20h ; ' '
+  10001e71: jz      short loc_10001E7C
+  10001e73: test    dl, dl
+  10001e75: jz      short loc_10001E80
+  10001e77: cmp     dl, 9
+  10001e7a: jnz     short loc_10001E47
+  10001e7c: test    dl, dl
+  10001e7e: jnz     short loc_10001E83
+  10001e80: dec     ecx
+  10001e81: jmp     short loc_10001ED3
+  10001e83: test    edi, edi
+  10001e85: jz      short loc_10001ED3
+  10001e87: mov     byte ptr [edi-1], 0
+  10001e8b: jmp     short loc_10001ED3
+  10001e8d: inc     ecx
+  10001e8e: cmp     byte ptr [ecx], 22h ; '"'
+  10001e91: jz      short loc_10001EC3
+  10001e93: mov     bl, [ecx]
+  10001e95: test    bl, bl
+  10001e97: jz      short loc_10001EC3
+  10001e99: xor     edx, edx
+  10001e9b: mov     dl, bl
+  10001e9d: test    byte_100060D1[edx], 4
+  10001ea4: jz      short loc_10001EB2
+  10001ea6: inc     dword ptr [eax]
+  10001ea8: test    edi, edi
+  10001eaa: jz      short loc_10001EB2
+  10001eac: mov     dl, [ecx]
+  10001eae: inc     ecx
+  10001eaf: mov     [edi], dl
+  10001eb1: inc     edi
+  10001eb2: inc     dword ptr [eax]
+  10001eb4: test    edi, edi
+  10001eb6: jz      short loc_10001EBD
+  10001eb8: mov     dl, [ecx]
+  10001eba: mov     [edi], dl
+  10001ebc: inc     edi
+  10001ebd: inc     ecx
+  10001ebe: cmp     byte ptr [ecx], 22h ; '"'
+  10001ec1: jnz     short loc_10001E93
+  10001ec3: inc     dword ptr [eax]
+  10001ec5: test    edi, edi
+  10001ec7: jz      short loc_10001ECD
+  10001ec9: mov     byte ptr [edi], 0
+  10001ecc: inc     edi
+  10001ecd: cmp     byte ptr [ecx], 22h ; '"'
+  10001ed0: jnz     short loc_10001ED3
+  10001ed2: inc     ecx
+  10001ed3: xor     esi, esi
+  10001ed5: cmp     byte ptr [ecx], 0
+  10001ed8: jz      loc_10001FC4
+  10001ede: mov     dl, [ecx]
+  10001ee0: cmp     dl, 20h ; ' '
+  10001ee3: jz      short loc_10001EEA
+  10001ee5: cmp     dl, 9
+  10001ee8: jnz     short loc_10001EED
+  10001eea: inc     ecx
+  10001eeb: jmp     short loc_10001EDE
+  10001eed: cmp     byte ptr [ecx], 0
+  10001ef0: jz      loc_10001FC4
+  10001ef6: cmp     [esp+10h+arg_4], 0
+  10001efb: jz      short loc_10001F08
+  10001efd: mov     edx, [esp+10h+arg_4]
+  10001f01: add     [esp+10h+arg_4], 4
+  10001f06: mov     [edx], edi
+  10001f08: mov     edx, [esp+10h+arg_C]
+  10001f0c: inc     dword ptr [edx]
+  10001f0e: mov     ebx, 1
+  10001f13: xor     edx, edx
+  10001f15: cmp     byte ptr [ecx], 5Ch ; '\'
+  10001f18: jnz     short loc_10001F21
+  10001f1a: inc     ecx
+  10001f1b: inc     edx
+  10001f1c: cmp     byte ptr [ecx], 5Ch ; '\'
+  10001f1f: jz      short loc_10001F1A
+  10001f21: cmp     byte ptr [ecx], 22h ; '"'
+  10001f24: jnz     short loc_10001F48
+  10001f26: test    dl, 1
+  10001f29: jnz     short loc_10001F45
+  10001f2b: test    esi, esi
+  10001f2d: jz      short loc_10001F3C
+  10001f2f: lea     ebp, [ecx+1]
+  10001f32: cmp     byte ptr [ebp+0], 22h ; '"'
+  10001f36: jnz     short loc_10001F3C
+  10001f38: mov     ecx, ebp
+  10001f3a: jmp     short loc_10001F3E
+  10001f3c: xor     ebx, ebx
+  10001f3e: cmp     esi, 1
+  10001f41: sbb     esi, esi
+  10001f43: neg     esi
+  10001f45: shr     edx, 1
+  10001f48: mov     ebp, edx
+  10001f4a: dec     edx
+  10001f4b: test    ebp, ebp
+  10001f4d: jz      short loc_10001F60
+  10001f4f: test    edi, edi
+  10001f51: jz      short loc_10001F57
+  10001f53: mov     byte ptr [edi], 5Ch ; '\'
+  10001f56: inc     edi
+  10001f57: mov     ebp, edx
+  10001f59: inc     dword ptr [eax]
+  10001f5b: dec     edx
+  10001f5c: test    ebp, ebp
+  10001f5e: jnz     short loc_10001F4F
+  10001f60: mov     dl, [ecx]
+  10001f62: test    dl, dl
+  10001f64: jz      short loc_10001FB5
+  10001f66: test    esi, esi
+  10001f68: jnz     short loc_10001F74
+  10001f6a: cmp     dl, 20h ; ' '
+  10001f6d: jz      short loc_10001FB5
+  10001f6f: cmp     dl, 9
+  10001f72: jz      short loc_10001FB5
+  10001f74: test    ebx, ebx
+  10001f76: jz      short loc_10001FAF
+  10001f78: test    edi, edi
+  10001f7a: jz      short loc_10001F9D
+  10001f7c: xor     ebx, ebx
+  10001f7e: mov     bl, dl
+  10001f80: test    byte_100060D1[ebx], 4
+  10001f87: jz      short loc_10001F8F
+  10001f89: mov     [edi], dl
+  10001f8b: inc     ecx
+  10001f8c: inc     edi
+  10001f8d: inc     dword ptr [eax]
+  10001f8f: mov     dl, [ecx]
+  10001f91: inc     edi
+  10001f92: inc     ecx
+  10001f93: mov     [edi-1], dl
+  10001f96: inc     dword ptr [eax]
+  10001f98: jmp     loc_10001F0E
+  10001f9d: xor     ebx, ebx
+  10001f9f: mov     bl, dl
+  10001fa1: test    byte_100060D1[ebx], 4
+  10001fa8: jz      short loc_10001FAD
+  10001faa: inc     ecx
+  10001fab: inc     dword ptr [eax]
+  10001fad: inc     dword ptr [eax]
+  10001faf: inc     ecx
+  10001fb0: jmp     loc_10001F0E
+  10001fb5: test    edi, edi
+  10001fb7: jz      short loc_10001FBD
+  10001fb9: mov     byte ptr [edi], 0
+  10001fbc: inc     edi
+  10001fbd: inc     dword ptr [eax]
+  10001fbf: jmp     loc_10001ED5
+  10001fc4: cmp     [esp+10h+arg_4], 0
+  10001fc9: jz      short loc_10001FD5
+  10001fcb: mov     edx, [esp+10h+arg_4]
+  10001fcf: mov     dword ptr [edx], 0
+  10001fd5: mov     edx, [esp+10h+arg_C]
+  10001fd9: pop     ebp
+  10001fda: pop     edi
+  10001fdb: pop     esi
+  10001fdc: pop     ebx
+  10001fdd: inc     dword ptr [edx]
+  10001fdf: retn
+ENDFUNC
+FUNC 10001fe0 __setmbcp
+  10001fe0: sub     esp, 18h
+  10001fe3: push    ebx
+  10001fe4: push    esi
+  10001fe5: push    edi
+  10001fe6: push    ebp
+  10001fe7: push    19h
+  10001fe9: call    __lock
+  10001fee: mov     eax, [esp+2Ch+CodePage]
+  10001ff2: add     esp, 4
+  10001ff5: push    eax
+  10001ff6: call    _getSystemCP
+  10001ffb: add     esp, 4
+  10001ffe: mov     ebp, eax
+  10002000: cmp     dword_100061D4, ebp
+  10002006: jnz     short loc_1000201C
+  10002008: push    19h
+  1000200a: call    __unlock
+  1000200f: add     esp, 4
+  10002012: xor     eax, eax
+  10002014: pop     ebp
+  10002015: pop     edi
+  10002016: pop     esi
+  10002017: pop     ebx
+  10002018: add     esp, 18h
+  1000201b: retn
+  1000201c: test    ebp, ebp
+  1000201e: jnz     short loc_10002039
+  10002020: call    _setSBCS
+  10002025: push    19h
+  10002027: call    __unlock
+  1000202c: add     esp, 4
+  1000202f: xor     eax, eax
+  10002031: pop     ebp
+  10002032: pop     edi
+  10002033: pop     esi
+  10002034: pop     ebx
+  10002035: add     esp, 18h
+  10002038: retn
+  10002039: mov     [esp+28h+var_18], 0
+  10002041: mov     eax, offset unk_100061F8
+  10002046: cmp     [eax], ebp
+  10002048: jz      loc_100020E9
+  1000204e: add     eax, 30h ; '0'
+  10002051: inc     [esp+28h+var_18]
+  10002055: cmp     eax, offset unk_100062E8
+  1000205a: jb      short loc_10002046
+  1000205c: lea     eax, [esp+28h+CPInfo]
+  10002060: push    eax; lpCPInfo
+  10002061: push    ebp; CodePage
+  10002062: call    ds:GetCPInfo; KERNEL32
+  10002068: cmp     eax, 1
+  1000206b: jnz     loc_100021CA
+  10002071: mov     edi, offset unk_100060D0
+  10002076: xor     eax, eax
+  10002078: mov     ecx, 40h ; '@'
+  1000207d: rep stosd
+  1000207f: stosb
+  10002080: cmp     [esp+28h+CPInfo.MaxCharSize], 1
+  10002085: jbe     loc_1000219B
+  1000208b: lea     esi, [esp+28h+CPInfo.LeadByte]
+  1000208f: cmp     [esp+28h+CPInfo.LeadByte], al
+  10002093: jz      short loc_100020C1
+  10002095: mov     cl, [esi+1]
+  10002098: test    cl, cl
+  1000209a: jz      short loc_100020C1
+  1000209c: xor     eax, eax
+  1000209e: xor     edx, edx
+  100020a0: mov     al, [esi]
+  100020a2: mov     dl, cl
+  100020a4: cmp     edx, eax
+  100020a6: jb      short loc_100020B9
+  100020a8: or      byte_100060D1[eax], 4
+  100020af: inc     eax
+  100020b0: xor     ecx, ecx
+  100020b2: mov     cl, [esi+1]
+  100020b5: cmp     ecx, eax
+  100020b7: jnb     short loc_100020A8
+  100020b9: add     esi, 2
+  100020bc: cmp     byte ptr [esi], 0
+  100020bf: jnz     short loc_10002095
+  100020c1: mov     eax, 1
+  100020c6: or      byte_100060D1[eax], 8
+  100020cd: inc     eax
+  100020ce: cmp     eax, 0FFh
+  100020d3: jb      short loc_100020C6
+  100020d5: push    ebp
+  100020d6: mov     dword_100061D4, ebp
+  100020dc: call    _CPtoLCID
+  100020e1: add     esp, 4
+  100020e4: jmp     loc_100021A2
+  100020e9: mov     edi, offset unk_100060D0
+  100020ee: xor     eax, eax
+  100020f0: mov     ecx, 40h ; '@'
+  100020f5: rep stosd
+  100020f7: stosb
+  100020f8: mov     ecx, [esp+28h+var_18]
+  100020fc: lea     edx, [ecx+ecx*2]
+  100020ff: lea     edi, ds:0[edx*2]
+  10002106: lea     ecx, [edi+eax]
+  10002109: lea     esi, unk_10006208[ecx*8]
+  10002110: cmp     byte ptr [esi], 0
+  10002113: jz      short loc_10002146
+  10002115: mov     cl, [esi+1]
+  10002118: test    cl, cl
+  1000211a: jz      short loc_10002146
+  1000211c: xor     edx, edx
+  1000211e: xor     ebx, ebx
+  10002120: mov     dl, [esi]
+  10002122: mov     bl, cl
+  10002124: cmp     ebx, edx
+  10002126: jb      short loc_1000213E
+  10002128: mov     cl, byte_100061F0[eax]
+  1000212e: or      byte_100060D1[edx], cl
+  10002134: inc     edx
+  10002135: xor     ebx, ebx
+  10002137: mov     bl, [esi+1]
+  1000213a: cmp     ebx, edx
+  1000213c: jnb     short loc_1000212E
+  1000213e: add     esi, 2
+  10002141: cmp     byte ptr [esi], 0
+  10002144: jnz     short loc_10002115
+  10002146: inc     eax
+  10002147: cmp     eax, 4
+  1000214a: jb      short loc_10002106
+  1000214c: push    ebp
+  1000214d: mov     dword_100061D4, ebp
+  10002153: call    _CPtoLCID
+  10002158: add     esp, 4
+  1000215b: mov     edx, offset dword_100061E0
+  10002160: mov     dword_100061D8, eax
+  10002165: mov     eax, [esp+28h+var_18]
+  10002169: shl     eax, 4
+  1000216c: mov     ebx, dword_10006200[eax+eax*2]
+  10002173: push    19h
+  10002175: lea     ecx, unk_100061FC[eax+eax*2]
+  1000217c: mov     eax, [ecx]
+  1000217e: mov     ecx, [ecx+8]
+  10002181: mov     [edx], eax
+  10002183: mov     [edx+4], ebx
+  10002186: mov     [edx+8], ecx
+  10002189: call    __unlock
+  1000218e: add     esp, 4
+  10002191: xor     eax, eax
+  10002193: pop     ebp
+  10002194: pop     edi
+  10002195: pop     esi
+  10002196: pop     ebx
+  10002197: add     esp, 18h
+  1000219a: retn
+  1000219b: xor     eax, eax
+  1000219d: mov     dword_100061D4, eax
+  100021a2: mov     ecx, offset dword_100061E0
+  100021a7: push    19h
+  100021a9: mov     dword_100061D8, eax
+  100021ae: xor     eax, eax
+  100021b0: mov     [ecx], eax
+  100021b2: mov     [ecx+4], eax
+  100021b5: mov     [ecx+8], eax
+  100021b8: call    __unlock
+  100021bd: add     esp, 4
+  100021c0: xor     eax, eax
+  100021c2: pop     ebp
+  100021c3: pop     edi
+  100021c4: pop     esi
+  100021c5: pop     ebx
+  100021c6: add     esp, 18h
+  100021c9: retn
+  100021ca: cmp     dword_100061EC, 0
+  100021d1: jz      short loc_100021EC
+  100021d3: call    _setSBCS
+  100021d8: push    19h
+  100021da: call    __unlock
+  100021df: add     esp, 4
+  100021e2: xor     eax, eax
+  100021e4: pop     ebp
+  100021e5: pop     edi
+  100021e6: pop     esi
+  100021e7: pop     ebx
+  100021e8: add     esp, 18h
+  100021eb: retn
+  100021ec: push    19h
+  100021ee: call    __unlock
+  100021f3: add     esp, 4
+  100021f6: mov     eax, 0FFFFFFFFh
+  100021fb: pop     ebp
+  100021fc: pop     edi
+  100021fd: pop     esi
+  100021fe: pop     ebx
+  100021ff: add     esp, 18h
+  10002202: retn
+ENDFUNC
+FUNC 10002210 _getSystemCP
+  10002210: mov     dword_100061EC, 0
+  1000221a: mov     eax, [esp+arg_0]
+  1000221e: cmp     eax, 0FFFFFFFEh
+  10002221: jnz     short loc_10002233
+  10002223: mov     dword_100061EC, 1
+  1000222d: jmp     ds:GetOEMCP; KERNEL32
+  10002233: cmp     eax, 0FFFFFFFDh
+  10002236: jnz     short loc_10002248
+  10002238: mov     dword_100061EC, 1
+  10002242: jmp     ds:GetACP; KERNEL32
+  10002248: cmp     eax, 0FFFFFFFCh
+  1000224b: jnz     short locret_1000225C
+  1000224d: mov     dword_100061EC, 1
+  10002257: mov     eax, dword_100064E0
+  1000225c: retn
+ENDFUNC
+FUNC 10002260 _CPtoLCID
+  10002260: mov     eax, [esp+arg_0]
+  10002264: sub     eax, 3A4h; switch 19 cases
+  10002269: cmp     eax, 12h
+  1000226c: ja      short def_10002276; jumptable 10002276 default case, cases 933-935,937-948
+  1000226e: xor     ecx, ecx
+  10002270: mov     cl, ds:byte_100022AC[eax]
+  10002276: jmp     ds:jpt_10002276[ecx*4]; switch jump
+  1000227d: xor     eax, eax; jumptable 10002276 default case, cases 933-935,937-948
+  1000227f: retn
+  10002280: mov     eax, 411h; jumptable 10002276 case 932
+  10002285: retn
+  10002286: mov     eax, 804h; jumptable 10002276 case 936
+  1000228b: retn
+  1000228c: mov     eax, 412h; jumptable 10002276 case 949
+  10002291: retn
+  10002292: mov     eax, 404h; jumptable 10002276 case 950
+  10002297: retn
+ENDFUNC
+FUNC 100022c0 _setSBCS
+  100022c0: push    edi
+  100022c1: xor     eax, eax
+  100022c3: mov     edi, offset unk_100060D0
+  100022c8: mov     ecx, 40h ; '@'
+  100022cd: rep stosd
+  100022cf: stosb
+  100022d0: mov     dword_100061E0, eax
+  100022d5: mov     ecx, offset dword_100061E0
+  100022da: pop     edi
+  100022db: mov     dword_100061D4, eax
+  100022e0: mov     dword_100061D8, eax
+  100022e5: mov     [ecx+4], eax
+  100022e8: mov     [ecx+8], eax
+  100022eb: retn
+ENDFUNC
+FUNC 100022f0 ___initmbctable
+  100022f0: push    0FFFFFFFDh; CodePage
+  100022f2: call    __setmbcp
+  100022f7: add     esp, 4
+  100022fa: retn
+ENDFUNC
+FUNC 10002300 ___crtGetEnvironmentStringsA
+  10002300: sub     esp, 4
+  10002303: cmp     dword_100062EC, 0
+  1000230a: push    ebx
+  1000230b: push    esi
+  1000230c: push    edi
+  1000230d: mov     esi, ds:GetEnvironmentStringsW; KERNEL32
+  10002313: push    ebp
+  10002314: jnz     short loc_10002350
+  10002316: call    esi ; GetEnvironmentStringsW; KERNEL32
+  10002318: mov     edi, eax
+  1000231a: test    edi, edi
+  1000231c: jz      short loc_1000232E
+  1000231e: mov     dword_100062EC, 1
+  10002328: mov     ebx, [esp+14h+penv]
+  1000232c: jmp     short loc_10002358
+  1000232e: call    ds:GetEnvironmentStrings; KERNEL32
+  10002334: mov     ebx, eax
+  10002336: test    ebx, ebx
+  10002338: jz      short loc_10002346
+  1000233a: mov     dword_100062EC, 2
+  10002344: jmp     short loc_10002358
+  10002346: xor     eax, eax
+  10002348: pop     ebp
+  10002349: pop     edi
+  1000234a: pop     esi
+  1000234b: pop     ebx
+  1000234c: add     esp, 4
+  1000234f: retn
+  10002350: mov     ebx, [esp+14h+penv]
+  10002354: mov     edi, [esp+14h+penv]
+  10002358: cmp     dword_100062EC, 1
+  1000235f: jnz     loc_10002407
+  10002365: test    edi, edi
+  10002367: jnz     short loc_1000237B
+  10002369: call    esi ; GetEnvironmentStringsW; KERNEL32
+  1000236b: mov     edi, eax
+  1000236d: test    edi, edi
+  1000236f: jnz     short loc_1000237B
+  10002371: xor     eax, eax
+  10002373: pop     ebp
+  10002374: pop     edi
+  10002375: pop     esi
+  10002376: pop     ebx
+  10002377: add     esp, 4
+  1000237a: retn
+  1000237b: cmp     word ptr [edi], 0
+  1000237f: mov     esi, edi
+  10002381: jz      short loc_10002395
+  10002383: add     esi, 2
+  10002386: cmp     word ptr [esi], 0
+  1000238a: jnz     short loc_10002383
+  1000238c: add     esi, 2
+  1000238f: cmp     word ptr [esi], 0
+  10002393: jnz     short loc_10002383
+  10002395: sub     esi, edi
+  10002397: push    0; lpUsedDefaultChar
+  10002399: sar     esi, 1
+  1000239c: push    0; lpDefaultChar
+  1000239e: inc     esi
+  1000239f: push    0; cbMultiByte
+  100023a1: push    0; lpMultiByteStr
+  100023a3: push    esi; cchWideChar
+  100023a4: push    edi; lpWideCharStr
+  100023a5: push    0; dwFlags
+  100023a7: push    0; CodePage
+  100023a9: call    ds:WideCharToMultiByte; KERNEL32
+  100023af: mov     ebp, eax
+  100023b1: test    ebp, ebp
+  100023b3: jz      short loc_100023F6
+  100023b5: push    ebp; Size
+  100023b6: call    _malloc
+  100023bb: add     esp, 4
+  100023be: mov     ebx, eax
+  100023c0: test    ebx, ebx
+  100023c2: jz      short loc_100023F6
+  100023c4: push    0; lpUsedDefaultChar
+  100023c6: push    0; lpDefaultChar
+  100023c8: push    ebp; cbMultiByte
+  100023c9: push    ebx; lpMultiByteStr
+  100023ca: push    esi; cchWideChar
+  100023cb: push    edi; lpWideCharStr
+  100023cc: push    0; dwFlags
+  100023ce: push    0; CodePage
+  100023d0: call    ds:WideCharToMultiByte; KERNEL32
+  100023d6: test    eax, eax
+  100023d8: jnz     short loc_100023E5
+  100023da: push    ebx; Block
+  100023db: call    _free
+  100023e0: add     esp, 4
+  100023e3: xor     ebx, ebx
+  100023e5: push    edi; penv
+  100023e6: call    ds:FreeEnvironmentStringsW; KERNEL32
+  100023ec: mov     eax, ebx
+  100023ee: pop     ebp
+  100023ef: pop     edi
+  100023f0: pop     esi
+  100023f1: pop     ebx
+  100023f2: add     esp, 4
+  100023f5: retn
+  100023f6: push    edi; penv
+  100023f7: call    ds:FreeEnvironmentStringsW; KERNEL32
+  100023fd: xor     eax, eax
+  100023ff: pop     ebp
+  10002400: pop     edi
+  10002401: pop     esi
+  10002402: pop     ebx
+  10002403: add     esp, 4
+  10002406: retn
+  10002407: cmp     dword_100062EC, 2
+  1000240e: jnz     short loc_1000248B
+  10002410: test    ebx, ebx
+  10002412: jnz     short loc_1000242A
+  10002414: call    ds:GetEnvironmentStrings; KERNEL32
+  1000241a: mov     ebx, eax
+  1000241c: test    ebx, ebx
+  1000241e: jnz     short loc_1000242A
+  10002420: xor     eax, eax
+  10002422: pop     ebp
+  10002423: pop     edi
+  10002424: pop     esi
+  10002425: pop     ebx
+  10002426: add     esp, 4
+  10002429: retn
+  1000242a: mov     ebp, ebx
+  1000242c: cmp     byte ptr [ebx], 0
+  1000242f: jz      short loc_1000243F
+  10002431: inc     ebp
+  10002432: cmp     byte ptr [ebp+0], 0
+  10002436: jnz     short loc_10002431
+  10002438: inc     ebp
+  10002439: cmp     byte ptr [ebp+0], 0
+  1000243d: jnz     short loc_10002431
+  1000243f: sub     ebp, ebx
+  10002441: inc     ebp
+  10002442: push    ebp; Size
+  10002443: call    _malloc
+  10002448: mov     [esp+18h+penv], eax
+  1000244c: add     esp, 4
+  1000244f: test    eax, eax
+  10002451: jnz     short loc_10002464
+  10002453: push    ebx; penv
+  10002454: call    ds:FreeEnvironmentStringsA; KERNEL32
+  1000245a: xor     eax, eax
+  1000245c: pop     ebp
+  1000245d: pop     edi
+  1000245e: pop     esi
+  1000245f: pop     ebx
+  10002460: add     esp, 4
+  10002463: retn
+  10002464: mov     edi, [esp+14h+penv]
+  10002468: mov     esi, ebx
+  1000246a: mov     ecx, ebp
+  1000246c: shr     ecx, 2
+  1000246f: rep movsd
+  10002471: mov     ecx, ebp
+  10002473: push    ebx; penv
+  10002474: and     ecx, 3
+  10002477: rep movsb
+  10002479: call    ds:FreeEnvironmentStringsA; KERNEL32
+  1000247f: mov     eax, [esp+14h+penv]
+  10002483: pop     ebp
+  10002484: pop     edi
+  10002485: pop     esi
+  10002486: pop     ebx
+  10002487: add     esp, 4
+  1000248a: retn
+  1000248b: xor     eax, eax
+  1000248d: pop     ebp
+  1000248e: pop     edi
+  1000248f: pop     esi
+  10002490: pop     ebx
+  10002491: add     esp, 4
+  10002494: retn
+ENDFUNC
+FUNC 100024a0 sub_100024A0
+  100024a0: mov     eax, [esp+arg_0]
+  100024a4: mov     dword_10006058, eax
+  100024a9: retn
+ENDFUNC
+FUNC 100024b0 _DllMain@12
+  100024b0: mov     eax, 1
+  100024b5: retn    0Ch
+ENDFUNC
+FUNC 100024c0 __FF_MSGBANNER
+  100024c0: mov     eax, dword_10006054
+  100024c5: cmp     eax, 1
+  100024c8: jz      short loc_100024D7
+  100024ca: test    eax, eax
+  100024cc: jnz     short locret_100024FC
+  100024ce: cmp     dword_10006058, 1
+  100024d5: jnz     short locret_100024FC
+  100024d7: push    0FCh
+  100024dc: call    __NMSG_WRITE
+  100024e1: add     esp, 4
+  100024e4: mov     eax, dword_10006378
+  100024e9: test    eax, eax
+  100024eb: jz      short loc_100024EF
+  100024ed: call    eax ; dword_10006378
+  100024ef: push    0FFh
+  100024f4: call    __NMSG_WRITE
+  100024f9: add     esp, 4
+  100024fc: retn
+ENDFUNC
+FUNC 10002500 __NMSG_WRITE
+  10002500: sub     esp, 1A8h
+  10002506: xor     ecx, ecx
+  10002508: mov     eax, offset dword_100062F0
+  1000250d: push    ebx
+  1000250e: mov     edx, [esp+1ACh+arg_0]
+  10002515: push    esi
+  10002516: push    edi
+  10002517: push    ebp
+  10002518: cmp     [eax], edx
+  1000251a: jz      short loc_10002527
+  1000251c: add     eax, 8
+  1000251f: inc     ecx
+  10002520: cmp     eax, offset dword_10006378
+  10002525: jb      short loc_10002518
+  10002527: cmp     dword_100062F0[ecx*8], edx
+  1000252e: lea     ebx, ds:0[ecx*8]
+  10002535: jnz     loc_100026E2
+  1000253b: cmp     dword_10006054, 1
+  10002542: jz      loc_100026A7
+  10002548: cmp     dword_10006054, 0
+  1000254f: jnz     short loc_1000255E
+  10002551: cmp     dword_10006058, 1
+  10002558: jz      loc_100026A7
+  1000255e: cmp     edx, 0FCh
+  10002564: jz      loc_100026E2
+  1000256a: lea     eax, [esp+1B8h+Filename]
+  10002571: push    104h; nSize
+  10002576: push    eax; lpFilename
+  10002577: mov     ebp, ds:GetModuleFileNameA; KERNEL32
+  1000257d: push    0; hModule
+  1000257f: call    ebp ; GetModuleFileNameA; KERNEL32
+  10002581: test    eax, eax
+  10002583: jnz     short loc_1000259B
+  10002585: mov     esi, offset aProgramNameUnk
+  1000258a: lea     edi, [esp+1B8h+Filename]
+  10002591: mov     ecx, 5
+  10002596: rep movsd
+  10002598: movsw
+  1000259a: movsb
+  1000259b: lea     ebp, [esp+1B8h+Filename]
+  100025a2: lea     edi, [esp+1B8h+Filename]
+  100025a9: mov     ecx, 0FFFFFFFFh
+  100025ae: sub     eax, eax
+  100025b0: repne scasb
+  100025b2: not     ecx
+  100025b4: cmp     ecx, 3Ch ; '<'
+  100025b7: jbe     short loc_100025DF
+  100025b9: lea     edi, [esp+1B8h+Filename]
+  100025c0: mov     ecx, 0FFFFFFFFh
+  100025c5: sub     eax, eax
+  100025c7: push    3; Count
+  100025c9: repne scasb
+  100025cb: not     ecx
+  100025cd: lea     ebp, [esp+ecx+1BCh+Destination]
+  100025d1: push    offset Source
+  100025d6: push    ebp; Destination
+  100025d7: call    _strncpy
+  100025dc: add     esp, 0Ch
+  100025df: mov     esi, offset aRuntimeErrorPr
+  100025e4: lea     edi, [esp+1B8h+var_1A4]
+  100025e8: mov     ecx, 6
+  100025ed: rep movsd
+  100025ef: movsw
+  100025f1: mov     edi, ebp
+  100025f3: mov     ecx, 0FFFFFFFFh
+  100025f8: sub     eax, eax
+  100025fa: repne scasb
+  100025fc: not     ecx
+  100025fe: sub     edi, ecx
+  10002600: mov     edx, ecx
+  10002602: mov     esi, edi
+  10002604: mov     ecx, 0FFFFFFFFh
+  10002609: lea     edi, [esp+1B8h+var_1A4]
+  1000260d: sub     eax, eax
+  1000260f: repne scasb
+  10002611: dec     edi
+  10002612: mov     ecx, edx
+  10002614: shr     ecx, 2
+  10002617: rep movsd
+  10002619: mov     ecx, edx
+  1000261b: and     ecx, 3
+  1000261e: rep movsb
+  10002620: mov     edi, offset asc_100052A4
+  10002625: mov     ecx, 0FFFFFFFFh
+  1000262a: sub     eax, eax
+  1000262c: repne scasb
+  1000262e: not     ecx
+  10002630: sub     edi, ecx
+  10002632: mov     edx, ecx
+  10002634: mov     esi, edi
+  10002636: mov     ecx, 0FFFFFFFFh
+  1000263b: lea     edi, [esp+1B8h+var_1A4]
+  1000263f: sub     eax, eax
+  10002641: repne scasb
+  10002643: dec     edi
+  10002644: mov     ecx, edx
+  10002646: shr     ecx, 2
+  10002649: rep movsd
+  1000264b: mov     ecx, edx
+  1000264d: and     ecx, 3
+  10002650: rep movsb
+  10002652: mov     edi, off_100062F4[ebx]
+  10002658: mov     ecx, 0FFFFFFFFh
+  1000265d: sub     eax, eax
+  1000265f: repne scasb
+  10002661: not     ecx
+  10002663: sub     edi, ecx
+  10002665: mov     esi, edi
+  10002667: mov     edx, ecx
+  10002669: lea     edi, [esp+1B8h+var_1A4]
+  1000266d: mov     ecx, 0FFFFFFFFh
+  10002672: sub     eax, eax
+  10002674: repne scasb
+  10002676: dec     edi
+  10002677: mov     ecx, edx
+  10002679: shr     ecx, 2
+  1000267c: rep movsd
+  1000267e: mov     ecx, edx
+  10002680: push    12010h
+  10002685: and     ecx, 3
+  10002688: push    offset aMicrosoftVisua
+  1000268d: rep movsb
+  1000268f: lea     eax, [esp+1C0h+var_1A4]
+  10002693: push    eax
+  10002694: call    ___crtMessageBoxA
+  10002699: add     esp, 0Ch
+  1000269c: pop     ebp
+  1000269d: pop     edi
+  1000269e: pop     esi
+  1000269f: pop     ebx
+  100026a0: add     esp, 1A8h
+  100026a6: retn
+  100026a7: mov     eax, dword_10008580
+  100026ac: mov     esi, [eax+48h]
+  100026af: cmp     esi, 0FFFFFFFFh
+  100026b2: jnz     short loc_100026BE
+  100026b4: push    0FFFFFFF4h; nStdHandle
+  100026b6: call    ds:GetStdHandle; KERNEL32
+  100026bc: mov     esi, eax
+  100026be: mov     edx, off_100062F4[ebx]
+  100026c4: push    0; lpOverlapped
+  100026c6: lea     eax, [esp+1BCh+NumberOfBytesWritten]
+  100026ca: mov     edi, edx
+  100026cc: push    eax; lpNumberOfBytesWritten
+  100026cd: mov     ecx, 0FFFFFFFFh
+  100026d2: sub     eax, eax
+  100026d4: repne scasb
+  100026d6: not     ecx
+  100026d8: dec     ecx
+  100026d9: push    ecx; nNumberOfBytesToWrite
+  100026da: push    edx; lpBuffer
+  100026db: push    esi; hFile
+  100026dc: call    ds:WriteFile; KERNEL32
+  100026e2: pop     ebp
+  100026e3: pop     edi
+  100026e4: pop     esi
+  100026e5: pop     ebx
+  100026e6: add     esp, 1A8h
+  100026ec: retn
+ENDFUNC
+FUNC 100026f0 __mtinitlocks
+  100026f0: push    esi
+  100026f1: mov     eax, lpCriticalSection
+  100026f6: push    eax; lpCriticalSection
+  100026f7: mov     esi, ds:InitializeCriticalSection; KERNEL32
+  100026fd: call    esi ; InitializeCriticalSection; KERNEL32
+  100026ff: mov     ecx, off_100063B4
+  10002705: push    ecx; lpCriticalSection
+  10002706: call    esi ; InitializeCriticalSection; KERNEL32
+  10002708: mov     eax, off_100063A4
+  1000270d: push    eax; lpCriticalSection
+  1000270e: call    esi ; InitializeCriticalSection; KERNEL32
+  10002710: mov     eax, off_10006384
+  10002715: push    eax; lpCriticalSection
+  10002716: call    esi ; InitializeCriticalSection; KERNEL32
+  10002718: pop     esi
+  10002719: retn
+ENDFUNC
+FUNC 10002720 __mtdeletelocks
+  10002720: push    ebx
+  10002721: push    esi
+  10002722: push    edi
+  10002723: mov     esi, ds:DeleteCriticalSection; KERNEL32
+  10002729: xor     edi, edi
+  1000272b: lea     ebx, dword_10006380[edi*4]
+  10002732: mov     eax, [ebx]
+  10002734: test    eax, eax
+  10002736: jz      short loc_1000275A
+  10002738: cmp     edi, 11h
+  1000273b: jz      short loc_1000275A
+  1000273d: cmp     edi, 0Dh
+  10002740: jz      short loc_1000275A
+  10002742: cmp     edi, 9
+  10002745: jz      short loc_1000275A
+  10002747: cmp     edi, 1
+  1000274a: jz      short loc_1000275A
+  1000274c: push    eax; lpCriticalSection
+  1000274d: call    esi ; DeleteCriticalSection; KERNEL32
+  1000274f: mov     eax, [ebx]
+  10002751: push    eax; Block
+  10002752: call    _free
+  10002757: add     esp, 4
+  1000275a: inc     edi
+  1000275b: cmp     edi, 30h ; '0'
+  1000275e: jl      short loc_1000272B
+  10002760: mov     eax, off_100063A4
+  10002765: push    eax; lpCriticalSection
+  10002766: call    esi ; DeleteCriticalSection; KERNEL32
+  10002768: mov     eax, off_100063B4
+  1000276d: push    eax; lpCriticalSection
+  1000276e: call    esi ; DeleteCriticalSection; KERNEL32
+  10002770: mov     eax, lpCriticalSection
+  10002775: push    eax; lpCriticalSection
+  10002776: call    esi ; DeleteCriticalSection; KERNEL32
+  10002778: mov     eax, off_10006384
+  1000277d: push    eax; lpCriticalSection
+  1000277e: call    esi ; DeleteCriticalSection; KERNEL32
+  10002780: pop     edi
+  10002781: pop     esi
+  10002782: pop     ebx
+  10002783: retn
+ENDFUNC
+FUNC 10002790 __lock
+  10002790: push    ebp
+  10002791: mov     eax, [esp+arg_0]
+  10002795: mov     ebp, esp
+  10002797: push    esi
+  10002798: push    edi
+  10002799: lea     edi, dword_10006380[eax*4]
+  100027a0: cmp     dword ptr [edi], 0
+  100027a3: jnz     short loc_100027EB
+  100027a5: push    18h; Size
+  100027a7: call    _malloc
+  100027ac: add     esp, 4
+  100027af: mov     esi, eax
+  100027b1: test    esi, esi
+  100027b3: jnz     short loc_100027BF
+  100027b5: push    11h
+  100027b7: call    __amsg_exit
+  100027bc: add     esp, 4
+  100027bf: push    11h
+  100027c1: call    __lock
+  100027c6: add     esp, 4
+  100027c9: cmp     dword ptr [edi], 0
+  100027cc: push    esi; Block
+  100027cd: jnz     short loc_100027D9
+  100027cf: call    ds:InitializeCriticalSection; KERNEL32
+  100027d5: mov     [edi], esi
+  100027d7: jmp     short loc_100027E1
+  100027d9: call    _free
+  100027de: add     esp, 4
+  100027e1: push    11h
+  100027e3: call    __unlock
+  100027e8: add     esp, 4
+  100027eb: mov     eax, [edi]
+  100027ed: push    eax; lpCriticalSection
+  100027ee: call    ds:EnterCriticalSection; KERNEL32
+  100027f4: pop     edi
+  100027f5: pop     esi
+  100027f6: pop     ebp
+  100027f7: retn
+ENDFUNC
+FUNC 10002800 __unlock
+  10002800: push    ebp
+  10002801: mov     eax, [esp+arg_0]
+  10002805: mov     ebp, esp
+  10002807: mov     ecx, dword_10006380[eax*4]
+  1000280e: push    ecx; lpCriticalSection
+  1000280f: call    ds:LeaveCriticalSection; KERNEL32
+  10002815: pop     ebp
+  10002816: retn
+ENDFUNC
+FUNC 10002820 __lock_file
+  10002820: push    ebp
+  10002821: mov     eax, [esp+Stream]
+  10002825: mov     ebp, esp
+  10002827: cmp     eax, offset off_100064F0
+  1000282c: jb      short loc_1000284A
+  1000282e: cmp     eax, offset unk_10006750
+  10002833: ja      short loc_1000284A
+  10002835: sub     eax, offset off_100064F0
+  1000283a: sar     eax, 5
+  1000283d: add     eax, 1Ch
+  10002840: push    eax
+  10002841: call    __lock
+  10002846: mov     esp, ebp
+  10002848: pop     ebp
+  10002849: retn
+  1000284a: add     eax, 20h ; ' '
+  1000284d: push    eax; lpCriticalSection
+  1000284e: call    ds:EnterCriticalSection; KERNEL32
+  10002854: pop     ebp
+  10002855: retn
+ENDFUNC
+FUNC 10002860 __lock_file2
+  10002860: push    ebp
+  10002861: mov     eax, [esp+arg_0]
+  10002865: mov     ebp, esp
+  10002867: cmp     eax, 14h
+  1000286a: jge     short loc_10002879
+  1000286c: add     eax, 1Ch
+  1000286f: push    eax
+  10002870: call    __lock
+  10002875: mov     esp, ebp
+  10002877: pop     ebp
+  10002878: retn
+  10002879: mov     eax, [ebp+arg_4]
+  1000287c: add     eax, 20h ; ' '
+  1000287f: push    eax; lpCriticalSection
+  10002880: call    ds:EnterCriticalSection; KERNEL32
+  10002886: pop     ebp
+  10002887: retn
+ENDFUNC
+FUNC 10002890 __unlock_file
+  10002890: push    ebp
+  10002891: mov     eax, [esp+Stream]
+  10002895: mov     ebp, esp
+  10002897: cmp     eax, offset off_100064F0
+  1000289c: jb      short loc_100028BA
+  1000289e: cmp     eax, offset stru_10006750
+  100028a3: ja      short loc_100028BA
+  100028a5: sub     eax, offset off_100064F0
+  100028aa: sar     eax, 5
+  100028ad: add     eax, 1Ch
+  100028b0: push    eax
+  100028b1: call    __unlock
+  100028b6: mov     esp, ebp
+  100028b8: pop     ebp
+  100028b9: retn
+  100028ba: add     eax, 20h ; ' '
+  100028bd: push    eax; lpCriticalSection
+  100028be: call    ds:LeaveCriticalSection; KERNEL32
+  100028c4: pop     ebp
+  100028c5: retn
+ENDFUNC
+FUNC 100028d0 __unlock_file2
+  100028d0: push    ebp
+  100028d1: mov     eax, [esp+arg_0]
+  100028d5: mov     ebp, esp
+  100028d7: cmp     eax, 14h
+  100028da: jge     short loc_100028E9
+  100028dc: add     eax, 1Ch
+  100028df: push    eax
+  100028e0: call    __unlock
+  100028e5: mov     esp, ebp
+  100028e7: pop     ebp
+  100028e8: retn
+  100028e9: mov     eax, [ebp+arg_4]
+  100028ec: add     eax, 20h ; ' '
+  100028ef: push    eax; lpCriticalSection
+  100028f0: call    ds:LeaveCriticalSection; KERNEL32
+  100028f6: pop     ebp
+  100028f7: retn
+ENDFUNC
+FUNC 10002900 _calloc
+  10002900: push    esi
+  10002901: push    edi
+  10002902: mov     edi, [esp+8+Size]
+  10002906: imul    edi, [esp+8+Count]
+  1000290b: test    edi, edi
+  1000290d: jnz     short loc_10002914
+  1000290f: mov     edi, 1
+  10002914: mov     eax, hHeap
+  10002919: mov     esi, ds:HeapAlloc; KERNEL32
+  1000291f: cmp     edi, 0FFFFFFE0h
+  10002922: jbe     short loc_10002928
+  10002924: xor     eax, eax
+  10002926: jmp     short loc_1000292E
+  10002928: push    edi; dwBytes
+  10002929: push    8; dwFlags
+  1000292b: push    eax; hHeap
+  1000292c: call    esi ; HeapAlloc; KERNEL32
+  1000292e: test    eax, eax
+  10002930: jnz     short loc_1000294F
+  10002932: cmp     dword_10006774, 0
+  10002939: jz      short loc_1000294F
+  1000293b: push    edi; Size
+  1000293c: call    __callnewh
+  10002941: add     esp, 4
+  10002944: test    eax, eax
+  10002946: mov     eax, hHeap
+  1000294b: jnz     short loc_1000291F
+  1000294d: xor     eax, eax
+  1000294f: pop     edi
+  10002950: pop     esi
+  10002951: retn
+ENDFUNC
+FUNC 10002960 _free
+  10002960: mov     eax, [esp+lpMem]
+  10002964: test    eax, eax
+  10002966: jz      short locret_10002977
+  10002968: push    eax; lpMem
+  10002969: push    0; dwFlags
+  1000296b: mov     eax, hHeap
+  10002970: push    eax; hHeap
+  10002971: call    ds:HeapFree; KERNEL32
+  10002977: retn
+ENDFUNC
+FUNC 10002980 _malloc
+  10002980: mov     eax, dword_10006774
+  10002985: mov     ecx, [esp+Size]
+  10002989: push    eax; int
+  1000298a: push    ecx; Size
+  1000298b: call    __nh_malloc
+  10002990: add     esp, 8
+  10002993: retn
+ENDFUNC
+FUNC 100029a0 __nh_malloc
+  100029a0: push    esi
+  100029a1: push    edi
+  100029a2: mov     esi, [esp+8+Size]
+  100029a6: cmp     esi, 0FFFFFFE0h
+  100029a9: jbe     short loc_100029B0
+  100029ab: xor     eax, eax
+  100029ad: pop     edi
+  100029ae: pop     esi
+  100029af: retn
+  100029b0: test    esi, esi
+  100029b2: jnz     short loc_100029B9
+  100029b4: mov     esi, 1
+  100029b9: mov     edi, [esp+8+arg_4]
+  100029bd: push    esi; dwBytes
+  100029be: call    __heap_alloc
+  100029c3: add     esp, 4
+  100029c6: test    eax, eax
+  100029c8: jnz     short loc_100029DD
+  100029ca: test    edi, edi
+  100029cc: jz      short loc_100029DD
+  100029ce: push    esi; Size
+  100029cf: call    __callnewh
+  100029d4: add     esp, 4
+  100029d7: test    eax, eax
+  100029d9: jnz     short loc_100029BD
+  100029db: xor     eax, eax
+  100029dd: pop     edi
+  100029de: pop     esi
+  100029df: retn
+ENDFUNC
+FUNC 100029e0 __heap_alloc
+  100029e0: mov     eax, [esp+dwBytes]
+  100029e4: mov     ecx, hHeap
+  100029ea: push    eax; dwBytes
+  100029eb: push    0; dwFlags
+  100029ed: push    ecx; hHeap
+  100029ee: call    ds:HeapAlloc; KERNEL32
+  100029f4: retn
+ENDFUNC
+FUNC 10002a00 ___crtMessageBoxA
+  10002a00: push    ebx
+  10002a01: push    esi
+  10002a02: push    edi
+  10002a03: xor     esi, esi
+  10002a05: cmp     dword_100064E4, esi
+  10002a0b: jnz     short loc_10002A4F
+  10002a0d: push    offset LibFileName
+  10002a12: call    ds:LoadLibraryA; KERNEL32
+  10002a18: mov     ebx, eax
+  10002a1a: test    ebx, ebx
+  10002a1c: jz      short loc_10002A8C
+  10002a1e: push    offset aMessageboxa
+  10002a23: mov     edi, ds:GetProcAddress; KERNEL32
+  10002a29: push    ebx; hModule
+  10002a2a: call    edi ; GetProcAddress; KERNEL32
+  10002a2c: mov     dword_100064E4, eax
+  10002a31: test    eax, eax
+  10002a33: jz      short loc_10002A8C
+  10002a35: push    offset aGetactivewindo
+  10002a3a: push    ebx; hModule
+  10002a3b: call    edi ; GetProcAddress; KERNEL32
+  10002a3d: push    offset aGetlastactivep
+  10002a42: mov     dword_100064E8, eax
+  10002a47: push    ebx; hModule
+  10002a48: call    edi ; GetProcAddress; KERNEL32
+  10002a4a: mov     dword_100064EC, eax
+  10002a4f: mov     eax, dword_100064E8
+  10002a54: test    eax, eax
+  10002a56: jz      short loc_10002A5C
+  10002a58: call    eax ; dword_100064E8
+  10002a5a: mov     esi, eax
+  10002a5c: test    esi, esi
+  10002a5e: jz      short loc_10002A72
+  10002a60: cmp     dword_100064EC, 0
+  10002a67: jz      short loc_10002A72
+  10002a69: push    esi
+  10002a6a: call    dword_100064EC
+  10002a70: mov     esi, eax
+  10002a72: mov     eax, [esp+0Ch+arg_8]
+  10002a76: mov     ecx, [esp+0Ch+arg_4]
+  10002a7a: mov     edx, [esp+0Ch+arg_0]
+  10002a7e: push    eax
+  10002a7f: push    ecx
+  10002a80: push    edx
+  10002a81: push    esi
+  10002a82: call    dword_100064E4
+  10002a88: pop     edi
+  10002a89: pop     esi
+  10002a8a: pop     ebx
+  10002a8b: retn
+  10002a8c: xor     eax, eax
+  10002a8e: pop     edi
+  10002a8f: pop     esi
+  10002a90: pop     ebx
+  10002a91: retn
+ENDFUNC
+FUNC 10002aa0 _strncpy
+  10002aa0: mov     ecx, [esp+Count]
+  10002aa4: push    edi
+  10002aa5: test    ecx, ecx
+  10002aa7: jz      short finish
+  10002aa9: push    esi
+  10002aaa: push    ebx
+  10002aab: mov     ebx, ecx
+  10002aad: mov     esi, [esp+0Ch+Source]
+  10002ab1: test    esi, 3
+  10002ab7: mov     edi, [esp+0Ch+Destination]
+  10002abb: jnz     short src_misaligned
+  10002abd: shr     ecx, 2
+  10002ac0: jnz     short main_loop_entrance
+  10002ac2: jmp     short copy_tail_loop
+  10002ac4: mov     al, [esi]
+  10002ac6: inc     esi
+  10002ac7: mov     [edi], al
+  10002ac9: inc     edi
+  10002aca: dec     ecx
+  10002acb: jz      short fill_tail_end1
+  10002acd: test    al, al
+  10002acf: jz      short align_dest
+  10002ad1: test    esi, 3
+  10002ad7: jnz     short src_misaligned
+  10002ad9: mov     ebx, ecx
+  10002adb: shr     ecx, 2
+  10002ade: jnz     short main_loop_entrance
+  10002ae0: and     ebx, 3
+  10002ae3: jz      short fill_tail_end1
+  10002ae5: mov     al, [esi]
+  10002ae7: inc     esi
+  10002ae8: mov     [edi], al
+  10002aea: inc     edi
+  10002aeb: test    al, al
+  10002aed: jz      short fill_tail_zero_bytes
+  10002aef: dec     ebx
+  10002af0: jnz     short copy_tail_loop
+  10002af2: mov     eax, [esp+0Ch+Destination]
+  10002af6: pop     ebx
+  10002af7: pop     esi
+  10002af8: pop     edi
+  10002af9: retn
+  10002afa: test    edi, 3
+  10002b00: jz      short dest_align_loop_end
+  10002b02: mov     [edi], al
+  10002b04: inc     edi
+  10002b05: dec     ecx
+  10002b06: jz      fill_tail_end
+  10002b0c: test    edi, 3
+  10002b12: jnz     short dest_align_loop
+  10002b14: mov     ebx, ecx
+  10002b16: shr     ecx, 2
+  10002b19: jnz     short fill_dwords_with_EOS
+  10002b1b: mov     [edi], al
+  10002b1d: inc     edi
+  10002b1e: dec     ebx
+  10002b1f: jnz     short finish_loop
+  10002b21: pop     ebx
+  10002b22: pop     esi
+  10002b23: mov     eax, [esp+4+Destination]
+  10002b27: pop     edi
+  10002b28: retn
+  10002b29: mov     [edi], edx
+  10002b2b: add     edi, 4
+  10002b2e: dec     ecx
+  10002b2f: jz      short tail_loop_start
+  10002b31: mov     edx, 7EFEFEFFh
+  10002b36: mov     eax, [esi]
+  10002b38: add     edx, eax
+  10002b3a: xor     eax, 0FFFFFFFFh
+  10002b3d: xor     eax, edx
+  10002b3f: mov     edx, [esi]
+  10002b41: add     esi, 4
+  10002b44: test    eax, 81010100h
+  10002b49: jz      short main_loop
+  10002b4b: test    dl, dl
+  10002b4d: jz      short _byte_0
+  10002b4f: test    dh, dh
+  10002b51: jz      short _byte_1
+  10002b53: test    edx, 0FF0000h
+  10002b59: jz      short _byte_2
+  10002b5b: test    edx, 0FF000000h
+  10002b61: jnz     short main_loop
+  10002b63: mov     [edi], edx
+  10002b65: jmp     short fill_with_EOS_dwords
+  10002b67: and     edx, 0FFFFh
+  10002b6d: mov     [edi], edx
+  10002b6f: jmp     short fill_with_EOS_dwords
+  10002b71: and     edx, 0FFh
+  10002b77: mov     [edi], edx
+  10002b79: jmp     short fill_with_EOS_dwords
+  10002b7b: xor     edx, edx
+  10002b7d: mov     [edi], edx
+  10002b7f: add     edi, 4
+  10002b82: xor     eax, eax
+  10002b84: dec     ecx
+  10002b85: jz      short fill_tail
+  10002b87: xor     eax, eax
+  10002b89: mov     [edi], eax
+  10002b8b: add     edi, 4
+  10002b8e: dec     ecx
+  10002b8f: jnz     short fill_with_EOS_loop
+  10002b91: and     ebx, 3
+  10002b94: jnz     short finish_loop
+  10002b96: mov     eax, [esp+0Ch+Destination]
+  10002b9a: pop     ebx
+  10002b9b: pop     esi
+  10002b9c: pop     edi
+  10002b9d: retn
+ENDFUNC
+FUNC 10002ba0 ___initstdio
+  10002ba0: cmp     Count, 0
+  10002ba7: push    esi
+  10002ba8: jnz     short loc_10002BB6
+  10002baa: mov     Count, 200h
+  10002bb4: jmp     short loc_10002BC9
+  10002bb6: cmp     Count, 14h
+  10002bbd: jge     short loc_10002BC9
+  10002bbf: mov     Count, 14h
+  10002bc9: push    4; Size
+  10002bcb: mov     eax, Count
+  10002bd0: push    eax; Count
+  10002bd1: call    _calloc
+  10002bd6: add     esp, 8
+  10002bd9: mov     dword_10007568, eax
+  10002bde: test    eax, eax
+  10002be0: jnz     short loc_10002C0B
+  10002be2: mov     Count, 14h
+  10002bec: push    4; Size
+  10002bee: push    14h; Count
+  10002bf0: call    _calloc
+  10002bf5: add     esp, 8
+  10002bf8: mov     dword_10007568, eax
+  10002bfd: test    eax, eax
+  10002bff: jnz     short loc_10002C0B
+  10002c01: push    1Ah
+  10002c03: call    __amsg_exit
+  10002c08: add     esp, 4
+  10002c0b: mov     ecx, offset off_100064F0
+  10002c10: xor     eax, eax
+  10002c12: mov     edx, dword_10007568
+  10002c18: add     eax, 4
+  10002c1b: mov     [edx+eax-4], ecx
+  10002c1f: add     ecx, 20h ; ' '
+  10002c22: cmp     eax, 50h ; 'P'
+  10002c25: jl      short loc_10002C12
+  10002c27: xor     esi, esi
+  10002c29: mov     edx, offset unk_10006500
+  10002c2e: mov     eax, esi
+  10002c30: mov     ecx, esi
+  10002c32: and     eax, 0FFFFFFE7h
+  10002c35: and     ecx, 1Fh
+  10002c38: sar     eax, 3
+  10002c3b: shl     ecx, 2
+  10002c3e: mov     eax, dword_10008580[eax]
+  10002c44: lea     ecx, [ecx+ecx*8]
+  10002c47: mov     eax, [eax+ecx]
+  10002c4a: cmp     eax, 0FFFFFFFFh
+  10002c4d: jz      short loc_10002C53
+  10002c4f: test    eax, eax
+  10002c51: jnz     short loc_10002C59
+  10002c53: mov     dword ptr [edx], 0FFFFFFFFh
+  10002c59: add     edx, 20h ; ' '
+  10002c5c: inc     esi
+  10002c5d: cmp     edx, offset unk_10006560
+  10002c63: jb      short loc_10002C2E
+  10002c65: pop     esi
+  10002c66: retn
+ENDFUNC
+FUNC 10002c70 ___endstdio
+  10002c70: call    __flushall
+  10002c75: cmp     byte_10006094, 0
+  10002c7c: jz      short locret_10002C83
+  10002c7e: jmp     __fcloseall
+  10002c83: retn
+ENDFUNC
+FUNC 10002c90 __callnewh
+  10002c90: push    9
+  10002c92: call    __lock
+  10002c97: add     esp, 4
+  10002c9a: mov     eax, dword_100070D8
+  10002c9f: test    eax, eax
+  10002ca1: jz      short loc_10002CC1
+  10002ca3: mov     ecx, [esp+Size]
+  10002ca7: push    ecx
+  10002ca8: call    eax ; dword_100070D8
+  10002caa: add     esp, 4
+  10002cad: test    eax, eax
+  10002caf: jz      short loc_10002CC1
+  10002cb1: push    9
+  10002cb3: call    __unlock
+  10002cb8: add     esp, 4
+  10002cbb: mov     eax, 1
+  10002cc0: retn
+  10002cc1: push    9
+  10002cc3: call    __unlock
+  10002cc8: add     esp, 4
+  10002ccb: xor     eax, eax
+  10002ccd: retn
+ENDFUNC
+FUNC 10002cd0 __fcloseall
+  10002cd0: push    ebx
+  10002cd1: push    esi
+  10002cd2: push    edi
+  10002cd3: xor     ebx, ebx
+  10002cd5: push    ebp
+  10002cd6: push    2
+  10002cd8: mov     ebp, 3
+  10002cdd: call    __lock
+  10002ce2: add     esp, 4
+  10002ce5: cmp     Count, ebp
+  10002ceb: jle     short loc_10002D57
+  10002ced: mov     esi, 0Ch
+  10002cf2: mov     edi, ds:DeleteCriticalSection; KERNEL32
+  10002cf8: mov     eax, dword_10007568
+  10002cfd: mov     eax, [eax+esi]
+  10002d00: test    eax, eax
+  10002d02: jz      short loc_10002D4B
+  10002d04: test    byte ptr [eax+0Ch], 83h
+  10002d08: jz      short loc_10002D19
+  10002d0a: push    eax; Stream
+  10002d0b: call    _fclose
+  10002d10: add     esp, 4
+  10002d13: cmp     eax, 0FFFFFFFFh
+  10002d16: jz      short loc_10002D19
+  10002d18: inc     ebx
+  10002d19: cmp     esi, 50h ; 'P'
+  10002d1c: jl      short loc_10002D4B
+  10002d1e: mov     eax, dword_10007568
+  10002d23: mov     eax, [eax+esi]
+  10002d26: add     eax, 20h ; ' '
+  10002d29: push    eax; lpCriticalSection
+  10002d2a: call    edi ; DeleteCriticalSection; KERNEL32
+  10002d2c: mov     ecx, dword_10007568
+  10002d32: mov     edx, [ecx+esi]
+  10002d35: push    edx; Block
+  10002d36: call    _free
+  10002d3b: add     esp, 4
+  10002d3e: mov     ecx, dword_10007568
+  10002d44: mov     dword ptr [ecx+esi], 0
+  10002d4b: add     esi, 4
+  10002d4e: inc     ebp
+  10002d4f: cmp     Count, ebp
+  10002d55: jg      short loc_10002CF8
+  10002d57: push    2
+  10002d59: call    __unlock
+  10002d5e: add     esp, 4
+  10002d61: mov     eax, ebx
+  10002d63: pop     ebp
+  10002d64: pop     edi
+  10002d65: pop     esi
+  10002d66: pop     ebx
+  10002d67: retn
+ENDFUNC
+FUNC 10002d70 __fflush_lk
+  10002d70: push    esi
+  10002d71: mov     esi, [esp+4+arg_0]
+  10002d75: push    esi
+  10002d76: call    __flush
+  10002d7b: add     esp, 4
+  10002d7e: test    eax, eax
+  10002d80: jz      short loc_10002D89
+  10002d82: mov     eax, 0FFFFFFFFh
+  10002d87: pop     esi
+  10002d88: retn
+  10002d89: test    byte ptr [esi+0Dh], 40h
+  10002d8d: jz      short loc_10002DA8
+  10002d8f: mov     eax, [esi+10h]
+  10002d92: push    eax; FileHandle
+  10002d93: call    __commit
+  10002d98: add     esp, 4
+  10002d9b: cmp     eax, 1
+  10002d9e: mov     eax, 0
+  10002da3: pop     esi
+  10002da4: adc     eax, 0FFFFFFFFh
+  10002da7: retn
+  10002da8: xor     eax, eax
+  10002daa: pop     esi
+  10002dab: retn
+ENDFUNC
+FUNC 10002db0 __flush
+  10002db0: push    ebx
+  10002db1: push    esi
+  10002db2: mov     esi, [esp+8+arg_0]
+  10002db6: push    edi
+  10002db7: xor     edi, edi
+  10002db9: mov     eax, [esi+0Ch]
+  10002dbc: mov     ecx, eax
+  10002dbe: and     cl, 3
+  10002dc1: cmp     cl, 2
+  10002dc4: jnz     short loc_10002E02
+  10002dc6: test    eax, 108h
+  10002dcb: jz      short loc_10002E02
+  10002dcd: mov     eax, [esi+8]
+  10002dd0: mov     ebx, [esi]
+  10002dd2: sub     ebx, eax
+  10002dd4: test    ebx, ebx
+  10002dd6: jle     short loc_10002E02
+  10002dd8: push    ebx; MaxCharCount
+  10002dd9: push    eax; Buf
+  10002dda: mov     eax, [esi+10h]
+  10002ddd: push    eax; FileHandle
+  10002dde: call    __write
+  10002de3: add     esp, 0Ch
+  10002de6: cmp     eax, ebx
+  10002de8: jnz     short loc_10002DF9
+  10002dea: mov     eax, [esi+0Ch]
+  10002ded: test    al, 80h
+  10002def: jz      short loc_10002E02
+  10002df1: and     eax, 0FFFFFFFDh
+  10002df4: mov     [esi+0Ch], eax
+  10002df7: jmp     short loc_10002E02
+  10002df9: or      dword ptr [esi+0Ch], 20h
+  10002dfd: mov     edi, 0FFFFFFFFh
+  10002e02: mov     eax, [esi+8]
+  10002e05: mov     [esi], eax
+  10002e07: mov     eax, edi
+  10002e09: mov     dword ptr [esi+4], 0
+  10002e10: pop     edi
+  10002e11: pop     esi
+  10002e12: pop     ebx
+  10002e13: retn
+ENDFUNC
+FUNC 10002e20 __flushall
+  10002e20: push    1
+  10002e22: call    _flsall
+  10002e27: add     esp, 4
+  10002e2a: retn
+ENDFUNC
+FUNC 10002e30 _flsall
+  10002e30: sub     esp, 4
+  10002e33: push    ebx
+  10002e34: push    esi
+  10002e35: push    edi
+  10002e36: xor     ebx, ebx
+  10002e38: push    ebp
+  10002e39: xor     edi, edi
+  10002e3b: mov     [esp+14h+var_4], ebx
+  10002e3f: push    2
+  10002e41: call    __lock
+  10002e46: add     esp, 4
+  10002e49: cmp     Count, ebx
+  10002e4f: jle     loc_10002EDA
+  10002e55: xor     ebp, ebp
+  10002e57: mov     esi, [esp+14h+arg_0]
+  10002e5b: mov     eax, dword_10007568
+  10002e60: mov     eax, [eax+ebp]
+  10002e63: test    eax, eax
+  10002e65: jz      short loc_10002ECC
+  10002e67: test    byte ptr [eax+0Ch], 83h
+  10002e6b: jz      short loc_10002ECC
+  10002e6d: push    eax
+  10002e6e: push    edi
+  10002e6f: call    __lock_file2
+  10002e74: add     esp, 8
+  10002e77: mov     eax, dword_10007568
+  10002e7c: mov     ecx, [eax+ebp]
+  10002e7f: mov     eax, [ecx+0Ch]
+  10002e82: test    al, 83h
+  10002e84: jz      short loc_10002EBA
+  10002e86: cmp     esi, 1
+  10002e89: jnz     short loc_10002E9C
+  10002e8b: push    ecx
+  10002e8c: call    __fflush_lk
+  10002e91: add     esp, 4
+  10002e94: cmp     eax, 0FFFFFFFFh
+  10002e97: jz      short loc_10002EBA
+  10002e99: inc     ebx
+  10002e9a: jmp     short loc_10002EBA
+  10002e9c: test    esi, esi
+  10002e9e: jnz     short loc_10002EBA
+  10002ea0: test    al, 2
+  10002ea2: jz      short loc_10002EBA
+  10002ea4: push    ecx
+  10002ea5: call    __fflush_lk
+  10002eaa: add     esp, 4
+  10002ead: cmp     eax, 0FFFFFFFFh
+  10002eb0: jnz     short loc_10002EBA
+  10002eb2: mov     [esp+14h+var_4], 0FFFFFFFFh
+  10002eba: mov     eax, dword_10007568
+  10002ebf: mov     ecx, [eax+ebp]
+  10002ec2: push    ecx
+  10002ec3: push    edi
+  10002ec4: call    __unlock_file2
+  10002ec9: add     esp, 8
+  10002ecc: add     ebp, 4
+  10002ecf: inc     edi
+  10002ed0: cmp     edi, Count
+  10002ed6: jl      short loc_10002E5B
+  10002ed8: jmp     short loc_10002EDE
+  10002eda: mov     esi, [esp+14h+arg_0]
+  10002ede: push    2
+  10002ee0: call    __unlock
+  10002ee5: add     esp, 4
+  10002ee8: mov     eax, ebx
+  10002eea: cmp     esi, 1
+  10002eed: jz      short loc_10002EF3
+  10002eef: mov     eax, [esp+14h+var_4]
+  10002ef3: pop     ebp
+  10002ef4: pop     edi
+  10002ef5: pop     esi
+  10002ef6: pop     ebx
+  10002ef7: add     esp, 4
+  10002efa: retn
+ENDFUNC
+FUNC 10002f00 _fclose
+  10002f00: push    esi
+  10002f01: push    edi
+  10002f02: mov     edi, 0FFFFFFFFh
+  10002f07: mov     esi, [esp+8+Stream]
+  10002f0b: test    byte ptr [esi+0Ch], 40h
+  10002f0f: jz      short loc_10002F1D
+  10002f11: mov     dword ptr [esi+0Ch], 0
+  10002f18: mov     eax, edi
+  10002f1a: pop     edi
+  10002f1b: pop     esi
+  10002f1c: retn
+  10002f1d: push    esi; Stream
+  10002f1e: call    __lock_file
+  10002f23: add     esp, 4
+  10002f26: push    esi
+  10002f27: call    __fclose_lk
+  10002f2c: add     esp, 4
+  10002f2f: mov     edi, eax
+  10002f31: push    esi; Stream
+  10002f32: call    __unlock_file
+  10002f37: add     esp, 4
+  10002f3a: mov     eax, edi
+  10002f3c: pop     edi
+  10002f3d: pop     esi
+  10002f3e: retn
+ENDFUNC
+FUNC 10002f40 __fclose_lk
+  10002f40: push    esi
+  10002f41: push    edi
+  10002f42: mov     edi, 0FFFFFFFFh
+  10002f47: mov     esi, [esp+8+arg_0]
+  10002f4b: test    byte ptr [esi+0Ch], 83h
+  10002f4f: jz      short loc_10002F93
+  10002f51: push    esi
+  10002f52: call    __flush
+  10002f57: add     esp, 4
+  10002f5a: mov     edi, eax
+  10002f5c: push    esi
+  10002f5d: call    __freebuf
+  10002f62: add     esp, 4
+  10002f65: mov     eax, [esi+10h]
+  10002f68: push    eax; FileHandle
+  10002f69: call    __close
+  10002f6e: add     esp, 4
+  10002f71: test    eax, eax
+  10002f73: jge     short loc_10002F7C
+  10002f75: mov     edi, 0FFFFFFFFh
+  10002f7a: jmp     short loc_10002F93
+  10002f7c: mov     eax, [esi+1Ch]
+  10002f7f: test    eax, eax
+  10002f81: jz      short loc_10002F93
+  10002f83: push    eax; Block
+  10002f84: call    _free
+  10002f89: mov     dword ptr [esi+1Ch], 0
+  10002f90: add     esp, 4
+  10002f93: mov     dword ptr [esi+0Ch], 0
+  10002f9a: mov     eax, edi
+  10002f9c: pop     edi
+  10002f9d: pop     esi
+  10002f9e: retn
+ENDFUNC
+FUNC 10002fa0 __commit
+  10002fa0: push    ebx
+  10002fa1: push    esi
+  10002fa2: mov     esi, [esp+8+FileHandle]
+  10002fa6: push    edi
+  10002fa7: cmp     esi, uNumber
+  10002fad: jnb     short loc_1000302E
+  10002faf: mov     eax, esi
+  10002fb1: and     eax, 0FFFFFFE7h
+  10002fb4: sar     eax, 3
+  10002fb7: lea     ebx, dword_10008580[eax]
+  10002fbd: mov     eax, esi
+  10002fbf: and     eax, 1Fh
+  10002fc2: mov     ecx, [ebx]
+  10002fc4: shl     eax, 2
+  10002fc7: lea     edi, [eax+eax*8]
+  10002fca: test    byte ptr [ecx+edi+4], 1
+  10002fcf: jz      short loc_1000302E
+  10002fd1: push    esi
+  10002fd2: call    __lock_fhandle
+  10002fd7: add     esp, 4
+  10002fda: mov     eax, [ebx]
+  10002fdc: test    byte ptr [eax+edi+4], 1
+  10002fe1: jz      short loc_1000300F
+  10002fe3: push    esi; FileHandle
+  10002fe4: mov     edi, 0
+  10002fe9: call    __get_osfhandle
+  10002fee: add     esp, 4
+  10002ff1: push    eax; hFile
+  10002ff2: call    ds:FlushFileBuffers; KERNEL32
+  10002ff8: test    eax, eax
+  10002ffa: jnz     short loc_10003004
+  10002ffc: call    ds:GetLastError; KERNEL32
+  10003002: mov     edi, eax
+  10003004: test    edi, edi
+  10003006: jz      short loc_1000301F
+  10003008: call    ___doserrno
+  1000300d: mov     [eax], edi
+  1000300f: mov     edi, 0FFFFFFFFh
+  10003014: call    __errno
+  10003019: mov     dword ptr [eax], 9
+  1000301f: push    esi
+  10003020: call    __unlock_fhandle
+  10003025: add     esp, 4
+  10003028: mov     eax, edi
+  1000302a: pop     edi
+  1000302b: pop     esi
+  1000302c: pop     ebx
+  1000302d: retn
+  1000302e: call    __errno
+  10003033: pop     edi
+  10003034: mov     dword ptr [eax], 9
+  1000303a: mov     eax, 0FFFFFFFFh
+  1000303f: pop     esi
+  10003040: pop     ebx
+  10003041: retn
+ENDFUNC
+FUNC 10003050 __write
+  10003050: push    esi
+  10003051: push    edi
+  10003052: mov     esi, [esp+8+FileHandle]
+  10003056: cmp     uNumber, esi
+  1000305c: jbe     short loc_100030AA
+  1000305e: mov     eax, esi
+  10003060: mov     ecx, esi
+  10003062: and     eax, 0FFFFFFE7h
+  10003065: and     ecx, 1Fh
+  10003068: sar     eax, 3
+  1000306b: shl     ecx, 2
+  1000306e: mov     edx, dword_10008580[eax]
+  10003074: lea     eax, [ecx+ecx*8]
+  10003077: test    byte ptr [edx+eax+4], 1
+  1000307c: jz      short loc_100030AA
+  1000307e: push    esi
+  1000307f: call    __lock_fhandle
+  10003084: mov     eax, [esp+0Ch+MaxCharCount]
+  10003088: mov     ecx, [esp+0Ch+Buf]
+  1000308c: add     esp, 4
+  1000308f: push    eax; nNumberOfBytesToWrite
+  10003090: push    ecx; lpBuffer
+  10003091: push    esi; FileHandle
+  10003092: call    __write_lk
+  10003097: add     esp, 0Ch
+  1000309a: mov     edi, eax
+  1000309c: push    esi
+  1000309d: call    __unlock_fhandle
+  100030a2: add     esp, 4
+  100030a5: mov     eax, edi
+  100030a7: pop     edi
+  100030a8: pop     esi
+  100030a9: retn
+  100030aa: call    __errno
+  100030af: mov     dword ptr [eax], 9
+  100030b5: call    ___doserrno
+  100030ba: pop     edi
+  100030bb: mov     dword ptr [eax], 0
+  100030c1: mov     eax, 0FFFFFFFFh
+  100030c6: pop     esi
+  100030c7: retn
+ENDFUNC
+FUNC 100030d0 __write_lk
+  100030d0: sub     esp, 418h
+  100030d6: push    ebx
+  100030d7: push    esi
+  100030d8: push    edi
+  100030d9: xor     ebx, ebx
+  100030db: mov     [esp+424h+var_408], ebx
+  100030df: push    ebp
+  100030e0: mov     ebp, [esp+428h+nNumberOfBytesToWrite]
+  100030e7: cmp     ebp, ebx
+  100030e9: jnz     short loc_100030F8
+  100030eb: xor     eax, eax
+  100030ed: pop     ebp
+  100030ee: pop     edi
+  100030ef: pop     esi
+  100030f0: pop     ebx
+  100030f1: add     esp, 418h
+  100030f7: retn
+  100030f8: mov     edx, [esp+428h+FileHandle]
+  100030ff: mov     eax, edx
+  10003101: and     eax, 0FFFFFFE7h
+  10003104: sar     eax, 3
+  10003107: add     eax, offset dword_10008580
+  1000310c: mov     [esp+428h+var_410], eax
+  10003110: mov     eax, edx
+  10003112: and     eax, 1Fh
+  10003115: mov     esi, [esp+428h+var_410]
+  10003119: shl     eax, 2
+  1000311c: lea     ecx, [eax+eax*8]
+  1000311f: mov     eax, [esi]
+  10003121: mov     [esp+428h+var_40C], ecx
+  10003125: test    byte ptr [eax+ecx+4], 20h
+  1000312a: jz      short loc_10003139
+  1000312c: push    2; dwMoveMethod
+  1000312e: push    0; lDistanceToMove
+  10003130: push    edx; FileHandle
+  10003131: call    __lseek_lk
+  10003136: add     esp, 0Ch
+  10003139: mov     eax, [esp+428h+var_410]
+  1000313d: mov     ecx, [esp+428h+var_40C]
+  10003141: add     ecx, [eax]
+  10003143: test    byte ptr [ecx+4], 80h
+  10003147: jz      loc_100031D5
+  1000314d: mov     [esp+428h+var_418], 0
+  10003155: mov     edi, [esp+428h+lpBuffer]
+  1000315c: mov     eax, edi
+  1000315e: sub     eax, [esp+428h+lpBuffer]
+  10003165: cmp     eax, ebp
+  10003167: jnb     loc_1000320E
+  1000316d: lea     esi, [esp+428h+Buffer]
+  10003171: mov     eax, edi
+  10003173: sub     eax, [esp+428h+lpBuffer]
+  1000317a: cmp     eax, ebp
+  1000317c: jnb     short loc_1000319C
+  1000317e: mov     al, [edi]
+  10003180: inc     edi
+  10003181: cmp     al, 0Ah
+  10003183: jnz     short loc_1000318A
+  10003185: mov     byte ptr [esi], 0Dh
+  10003188: inc     ebx
+  10003189: inc     esi
+  1000318a: mov     [esi], al
+  1000318c: inc     esi
+  1000318d: mov     eax, esi
+  1000318f: lea     ecx, [esp+428h+Buffer]
+  10003193: sub     eax, ecx
+  10003195: cmp     eax, 400h
+  1000319a: jl      short loc_10003171
+  1000319c: lea     eax, [esp+428h+Buffer]
+  100031a0: push    0; lpOverlapped
+  100031a2: sub     esi, eax
+  100031a4: lea     ecx, [esp+42Ch+Buffer]
+  100031a8: lea     eax, [esp+42Ch+NumberOfBytesWritten]
+  100031ac: mov     edx, [esp+42Ch+var_410]
+  100031b0: push    eax; lpNumberOfBytesWritten
+  100031b1: push    esi; nNumberOfBytesToWrite
+  100031b2: push    ecx; lpBuffer
+  100031b3: mov     eax, [edx]
+  100031b5: mov     ecx, [esp+438h+var_40C]
+  100031b9: mov     edx, [eax+ecx]
+  100031bc: push    edx; hFile
+  100031bd: call    ds:WriteFile; KERNEL32
+  100031c3: test    eax, eax
+  100031c5: jz      short loc_10003204
+  100031c7: mov     eax, [esp+428h+NumberOfBytesWritten]
+  100031cb: add     [esp+428h+var_408], eax
+  100031cf: cmp     esi, eax
+  100031d1: jle     short loc_1000315C
+  100031d3: jmp     short loc_1000320E
+  100031d5: lea     eax, [esp+428h+NumberOfBytesWritten]
+  100031d9: push    0; lpOverlapped
+  100031db: mov     edx, [esp+42Ch+lpBuffer]
+  100031e2: push    eax; lpNumberOfBytesWritten
+  100031e3: push    ebp; nNumberOfBytesToWrite
+  100031e4: mov     ecx, [ecx]
+  100031e6: push    edx; lpBuffer
+  100031e7: push    ecx; hFile
+  100031e8: call    ds:WriteFile; KERNEL32
+  100031ee: test    eax, eax
+  100031f0: jz      short loc_10003204
+  100031f2: mov     [esp+428h+var_418], 0
+  100031fa: mov     eax, [esp+428h+NumberOfBytesWritten]
+  100031fe: mov     [esp+428h+var_408], eax
+  10003202: jmp     short loc_1000320E
+  10003204: call    ds:GetLastError; KERNEL32
+  1000320a: mov     [esp+428h+var_418], eax
+  1000320e: cmp     [esp+428h+var_408], 0
+  10003213: jnz     loc_100032BA
+  10003219: cmp     [esp+428h+var_418], 0
+  1000321e: jz      short loc_1000326A
+  10003220: cmp     [esp+428h+var_418], 5
+  10003225: jnz     short loc_1000324D
+  10003227: call    __errno
+  1000322c: mov     dword ptr [eax], 9
+  10003232: call    ___doserrno
+  10003237: mov     ecx, [esp+428h+var_418]
+  1000323b: pop     ebp
+  1000323c: pop     edi
+  1000323d: mov     [eax], ecx
+  1000323f: mov     eax, 0FFFFFFFFh
+  10003244: pop     esi
+  10003245: pop     ebx
+  10003246: add     esp, 418h
+  1000324c: retn
+  1000324d: mov     ecx, [esp+428h+var_418]
+  10003251: push    ecx
+  10003252: call    __dosmaperr
+  10003257: add     esp, 4
+  1000325a: mov     eax, 0FFFFFFFFh
+  1000325f: pop     ebp
+  10003260: pop     edi
+  10003261: pop     esi
+  10003262: pop     ebx
+  10003263: add     esp, 418h
+  10003269: retn
+  1000326a: mov     eax, [esp+428h+var_410]
+  1000326e: mov     ecx, [esp+428h+var_40C]
+  10003272: mov     edx, [eax]
+  10003274: test    byte ptr [edx+ecx+4], 40h
+  10003279: jz      short loc_10003294
+  1000327b: mov     eax, [esp+428h+lpBuffer]
+  10003282: cmp     byte ptr [eax], 1Ah
+  10003285: jnz     short loc_10003294
+  10003287: xor     eax, eax
+  10003289: pop     ebp
+  1000328a: pop     edi
+  1000328b: pop     esi
+  1000328c: pop     ebx
+  1000328d: add     esp, 418h
+  10003293: retn
+  10003294: call    __errno
+  10003299: mov     dword ptr [eax], 1Ch
+  1000329f: call    ___doserrno
+  100032a4: pop     ebp
+  100032a5: mov     dword ptr [eax], 0
+  100032ab: mov     eax, 0FFFFFFFFh
+  100032b0: pop     edi
+  100032b1: pop     esi
+  100032b2: pop     ebx
+  100032b3: add     esp, 418h
+  100032b9: retn
+  100032ba: mov     eax, [esp+428h+var_408]
+  100032be: pop     ebp
+  100032bf: sub     eax, ebx
+  100032c1: pop     edi
+  100032c2: pop     esi
+  100032c3: pop     ebx
+  100032c4: add     esp, 418h
+  100032ca: retn
+ENDFUNC
+FUNC 100032d0 __close
+  100032d0: push    esi
+  100032d1: push    edi
+  100032d2: mov     esi, [esp+8+FileHandle]
+  100032d6: cmp     uNumber, esi
+  100032dc: jbe     short loc_10003320
+  100032de: mov     eax, esi
+  100032e0: mov     ecx, esi
+  100032e2: and     eax, 0FFFFFFE7h
+  100032e5: and     ecx, 1Fh
+  100032e8: sar     eax, 3
+  100032eb: shl     ecx, 2
+  100032ee: mov     edx, dword_10008580[eax]
+  100032f4: lea     eax, [ecx+ecx*8]
+  100032f7: test    byte ptr [edx+eax+4], 1
+  100032fc: jz      short loc_10003320
+  100032fe: push    esi
+  100032ff: call    __lock_fhandle
+  10003304: add     esp, 4
+  10003307: push    esi; FileHandle
+  10003308: call    __close_lk
+  1000330d: add     esp, 4
+  10003310: mov     edi, eax
+  10003312: push    esi
+  10003313: call    __unlock_fhandle
+  10003318: add     esp, 4
+  1000331b: mov     eax, edi
+  1000331d: pop     edi
+  1000331e: pop     esi
+  1000331f: retn
+  10003320: call    __errno
+  10003325: mov     dword ptr [eax], 9
+  1000332b: call    ___doserrno
+  10003330: pop     edi
+  10003331: mov     dword ptr [eax], 0
+  10003337: mov     eax, 0FFFFFFFFh
+  1000333c: pop     esi
+  1000333d: retn
+ENDFUNC
+FUNC 10003340 __close_lk
+  10003340: push    esi
+  10003341: push    edi
+  10003342: mov     esi, [esp+8+FileHandle]
+  10003346: cmp     esi, 1
+  10003349: jz      short loc_10003350
+  1000334b: cmp     esi, 2
+  1000334e: jnz     short loc_1000336A
+  10003350: push    2; FileHandle
+  10003352: call    __get_osfhandle
+  10003357: add     esp, 4
+  1000335a: mov     edi, eax
+  1000335c: push    1; FileHandle
+  1000335e: call    __get_osfhandle
+  10003363: add     esp, 4
+  10003366: cmp     edi, eax
+  10003368: jz      short loc_10003388
+  1000336a: push    esi; FileHandle
+  1000336b: call    __get_osfhandle
+  10003370: add     esp, 4
+  10003373: push    eax; hObject
+  10003374: call    ds:CloseHandle; KERNEL32
+  1000337a: test    eax, eax
+  1000337c: jnz     short loc_10003388
+  1000337e: call    ds:GetLastError; KERNEL32
+  10003384: mov     edi, eax
+  10003386: jmp     short loc_1000338A
+  10003388: xor     edi, edi
+  1000338a: push    esi
+  1000338b: call    __free_osfhnd
+  10003390: add     esp, 4
+  10003393: test    edi, edi
+  10003395: jz      short loc_100033A8
+  10003397: push    edi
+  10003398: call    __dosmaperr
+  1000339d: add     esp, 4
+  100033a0: mov     eax, 0FFFFFFFFh
+  100033a5: pop     edi
+  100033a6: pop     esi
+  100033a7: retn
+  100033a8: mov     eax, esi
+  100033aa: and     esi, 1Fh
+  100033ad: shl     esi, 2
+  100033b0: and     eax, 0FFFFFFE7h
+  100033b3: sar     eax, 3
+  100033b6: pop     edi
+  100033b7: mov     ecx, dword_10008580[eax]
+  100033bd: lea     eax, [esi+esi*8]
+  100033c0: pop     esi
+  100033c1: mov     byte ptr [ecx+eax+4], 0
+  100033c6: xor     eax, eax
+  100033c8: retn
+ENDFUNC
+FUNC 100033d0 __freebuf
+  100033d0: push    esi
+  100033d1: mov     esi, [esp+4+arg_0]
+  100033d5: mov     eax, [esi+0Ch]
+  100033d8: test    al, 83h
+  100033da: jz      short loc_10003407
+  100033dc: test    al, 8
+  100033de: jz      short loc_10003407
+  100033e0: mov     eax, [esi+8]
+  100033e3: push    eax; Block
+  100033e4: call    _free
+  100033e9: add     esp, 4
+  100033ec: mov     dword ptr [esi], 0
+  100033f2: and     dword ptr [esi+0Ch], 0FFFFFBF7h
+  100033f9: mov     dword ptr [esi+8], 0
+  10003400: mov     dword ptr [esi+4], 0
+  10003407: pop     esi
+  10003408: retn
+ENDFUNC
+FUNC 10003410 __dosmaperr
+  10003410: push    esi
+  10003411: call    ___doserrno
+  10003416: mov     ecx, [esp+4+arg_0]
+  1000341a: xor     esi, esi
+  1000341c: mov     [eax], ecx
+  1000341e: mov     eax, offset unk_10006778
+  10003423: cmp     [eax], ecx
+  10003425: jz      short loc_10003449
+  10003427: add     eax, 8
+  1000342a: inc     esi
+  1000342b: cmp     eax, offset String2
+  10003430: jb      short loc_10003423
+  10003432: cmp     ecx, 13h
+  10003435: jb      short loc_10003459
+  10003437: cmp     ecx, 24h ; '$'
+  1000343a: ja      short loc_10003459
+  1000343c: call    __errno
+  10003441: pop     esi
+  10003442: mov     dword ptr [eax], 0Dh
+  10003448: retn
+  10003449: call    __errno
+  1000344e: mov     ecx, dword_1000677C[esi*8]
+  10003455: pop     esi
+  10003456: mov     [eax], ecx
+  10003458: retn
+  10003459: cmp     ecx, 0BCh
+  1000345f: jb      short loc_10003476
+  10003461: cmp     ecx, 0CAh
+  10003467: ja      short loc_10003476
+  10003469: call    __errno
+  1000346e: pop     esi
+  1000346f: mov     dword ptr [eax], 8
+  10003475: retn
+  10003476: call    __errno
+  1000347b: pop     esi
+  1000347c: mov     dword ptr [eax], 16h
+  10003482: retn
+ENDFUNC
+FUNC 10003490 __errno
+  10003490: call    __getptd
+  10003495: add     eax, 8
+  10003498: retn
+ENDFUNC
+FUNC 100034a0 ___doserrno
+  100034a0: call    __getptd
+  100034a5: add     eax, 0Ch
+  100034a8: retn
+ENDFUNC
+FUNC 100034b0 __free_osfhnd
+  100034b0: mov     ecx, [esp+arg_0]
+  100034b4: push    esi
+  100034b5: push    edi
+  100034b6: cmp     ecx, uNumber
+  100034bc: jnb     short loc_10003523
+  100034be: mov     eax, ecx
+  100034c0: and     eax, 0FFFFFFE7h
+  100034c3: sar     eax, 3
+  100034c6: lea     edi, dword_10008580[eax]
+  100034cc: mov     eax, ecx
+  100034ce: and     eax, 1Fh
+  100034d1: shl     eax, 2
+  100034d4: lea     esi, [eax+eax*8]
+  100034d7: mov     eax, [edi]
+  100034d9: add     eax, esi
+  100034db: test    byte ptr [eax+4], 1
+  100034df: jz      short loc_10003523
+  100034e1: cmp     dword ptr [eax], 0FFFFFFFFh
+  100034e4: jz      short loc_10003523
+  100034e6: cmp     dword_10006058, 1
+  100034ed: jnz     short loc_10003515
+  100034ef: test    ecx, ecx
+  100034f1: jz      short loc_100034FF
+  100034f3: cmp     ecx, 1
+  100034f6: jz      short loc_10003505
+  100034f8: cmp     ecx, 2
+  100034fb: jz      short loc_1000350B
+  100034fd: jmp     short loc_10003515
+  100034ff: push    0
+  10003501: push    0FFFFFFF6h
+  10003503: jmp     short loc_1000350F
+  10003505: push    0
+  10003507: push    0FFFFFFF5h
+  10003509: jmp     short loc_1000350F
+  1000350b: push    0; hHandle
+  1000350d: push    0FFFFFFF4h; nStdHandle
+  1000350f: call    ds:SetStdHandle; KERNEL32
+  10003515: mov     eax, [edi]
+  10003517: pop     edi
+  10003518: mov     dword ptr [eax+esi], 0FFFFFFFFh
+  1000351f: xor     eax, eax
+  10003521: pop     esi
+  10003522: retn
+  10003523: call    __errno
+  10003528: mov     dword ptr [eax], 9
+  1000352e: call    ___doserrno
+  10003533: pop     edi
+  10003534: mov     dword ptr [eax], 0
+  1000353a: mov     eax, 0FFFFFFFFh
+  1000353f: pop     esi
+  10003540: retn
+ENDFUNC
+FUNC 10003550 __get_osfhandle
+  10003550: mov     ecx, [esp+FileHandle]
+  10003554: cmp     uNumber, ecx
+  1000355a: jbe     short loc_1000357E
+  1000355c: mov     eax, ecx
+  1000355e: and     ecx, 1Fh
+  10003561: shl     ecx, 2
+  10003564: and     eax, 0FFFFFFE7h
+  10003567: sar     eax, 3
+  1000356a: lea     edx, [ecx+ecx*8]
+  1000356d: mov     eax, dword_10008580[eax]
+  10003573: add     eax, edx
+  10003575: test    byte ptr [eax+4], 1
+  10003579: jz      short loc_1000357E
+  1000357b: mov     eax, [eax]
+  1000357d: retn
+  1000357e: call    __errno
+  10003583: mov     dword ptr [eax], 9
+  10003589: call    ___doserrno
+  1000358e: mov     dword ptr [eax], 0
+  10003594: mov     eax, 0FFFFFFFFh
+  10003599: retn
+ENDFUNC
+FUNC 100035a0 __lock_fhandle
+  100035a0: mov     eax, [esp+arg_0]
+  100035a4: push    ebx
+  100035a5: push    esi
+  100035a6: mov     ecx, eax
+  100035a8: push    edi
+  100035a9: and     ecx, 0FFFFFFE7h
+  100035ac: sar     ecx, 3
+  100035af: and     eax, 1Fh
+  100035b2: shl     eax, 2
+  100035b5: lea     edi, dword_10008580[ecx]
+  100035bb: lea     esi, [eax+eax*8]
+  100035be: mov     ebx, [edi]
+  100035c0: add     ebx, esi
+  100035c2: cmp     dword ptr [ebx+8], 0
+  100035c6: jnz     short loc_100035EF
+  100035c8: push    11h
+  100035ca: call    __lock
+  100035cf: add     esp, 4
+  100035d2: cmp     dword ptr [ebx+8], 0
+  100035d6: jnz     short loc_100035E5
+  100035d8: lea     eax, [ebx+0Ch]
+  100035db: push    eax; lpCriticalSection
+  100035dc: call    ds:InitializeCriticalSection; KERNEL32
+  100035e2: inc     dword ptr [ebx+8]
+  100035e5: push    11h
+  100035e7: call    __unlock
+  100035ec: add     esp, 4
+  100035ef: mov     eax, [edi]
+  100035f1: add     eax, esi
+  100035f3: add     eax, 0Ch
+  100035f6: push    eax; lpCriticalSection
+  100035f7: call    ds:EnterCriticalSection; KERNEL32
+  100035fd: pop     edi
+  100035fe: pop     esi
+  100035ff: pop     ebx
+  10003600: retn
+ENDFUNC
+FUNC 10003610 __unlock_fhandle
+  10003610: mov     ecx, [esp+arg_0]
+  10003614: mov     eax, ecx
+  10003616: and     ecx, 1Fh
+  10003619: shl     ecx, 2
+  1000361c: and     eax, 0FFFFFFE7h
+  1000361f: sar     eax, 3
+  10003622: lea     edx, [ecx+ecx*8]
+  10003625: mov     eax, dword_10008580[eax]
+  1000362b: add     eax, edx
+  1000362d: add     eax, 0Ch
+  10003630: push    eax; lpCriticalSection
+  10003631: call    ds:LeaveCriticalSection; KERNEL32
+  10003637: retn
+ENDFUNC
+FUNC 10003640 __lseek_lk
+  10003640: push    esi
+  10003641: push    edi
+  10003642: mov     esi, [esp+8+FileHandle]
+  10003646: push    esi; FileHandle
+  10003647: call    __get_osfhandle
+  1000364c: add     esp, 4
+  1000364f: cmp     eax, 0FFFFFFFFh
+  10003652: jnz     short loc_10003667
+  10003654: call    __errno
+  10003659: pop     edi
+  1000365a: mov     dword ptr [eax], 9
+  10003660: mov     eax, 0FFFFFFFFh
+  10003665: pop     esi
+  10003666: retn
+  10003667: mov     ecx, [esp+8+dwMoveMethod]
+  1000366b: mov     edx, [esp+8+lDistanceToMove]
+  1000366f: push    ecx; dwMoveMethod
+  10003670: push    0; lpDistanceToMoveHigh
+  10003672: push    edx; lDistanceToMove
+  10003673: push    eax; hFile
+  10003674: call    ds:SetFilePointer; KERNEL32
+  1000367a: cmp     eax, 0FFFFFFFFh
+  1000367d: mov     edi, eax
+  1000367f: mov     eax, 0
+  10003684: jnz     short loc_1000368C
+  10003686: call    ds:GetLastError; KERNEL32
+  1000368c: test    eax, eax
+  1000368e: jz      short loc_100036A1
+  10003690: push    eax
+  10003691: call    __dosmaperr
+  10003696: add     esp, 4
+  10003699: mov     eax, 0FFFFFFFFh
+  1000369e: pop     edi
+  1000369f: pop     esi
+  100036a0: retn
+  100036a1: mov     eax, esi
+  100036a3: and     esi, 1Fh
+  100036a6: shl     esi, 2
+  100036a9: and     eax, 0FFFFFFE7h
+  100036ac: sar     eax, 3
+  100036af: mov     ecx, dword_10008580[eax]
+  100036b5: lea     eax, [esi+esi*8]
+  100036b8: and     byte ptr [ecx+eax+4], 0FDh
+  100036bd: mov     eax, edi
+  100036bf: pop     edi
+  100036c0: pop     esi
+  100036c1: retn
+ENDFUNC
+FUNC 100036c2 GetWinPlatform
+  100036c2: push    esi
+  100036c3: push    edi
+  100036c4: xor     esi, esi
+  100036c6: call    ds:GetVersion; KERNEL32
+  100036cc: xor     edi, edi
+  100036ce: mov     ecx, eax
+  100036d0: shr     ecx, 10h
+  100036d3: cmp     cx, 1
+  100036d7: jz      short loc_100036EC
+  100036d9: cmp     eax, 80000000h
+  100036de: jnb     short loc_100036E7
+  100036e0: mov     esi, 1
+  100036e5: jmp     short loc_100036EC
+  100036e7: mov     edi, 1
+  100036ec: lea     eax, ds:0[edi*2]
+  100036f3: pop     edi
+  100036f4: or      eax, esi
+  100036f6: pop     esi
+  100036f7: retn
+ENDFUNC
+FUNC 100036f8 fNTWithShell
+  100036f8: push    esi
+  100036f9: call    GetWinPlatform
+  100036fe: test    al, 1
+  10003700: jnz     short loc_10003706
+  10003702: xor     eax, eax
+  10003704: jmp     short loc_10003723
+  10003706: xor     esi, esi
+  10003708: call    ds:GetVersion; KERNEL32
+  1000370e: xor     ecx, ecx
+  10003710: mov     cl, ah
+  10003712: mov     ch, al
+  10003714: cmp     ecx, 333h
+  1000371a: jbe     short loc_10003721
+  1000371c: mov     esi, 1
+  10003721: mov     eax, esi
+  10003723: pop     esi
+  10003724: retn
+ENDFUNC
+FUNC 10003725 sub_10003725
+  10003725: push    ebp
+  10003726: mov     ebp, esp
+  10003728: sub     esp, 58h
+  1000372b: push    esi
+  1000372c: lea     eax, [ebp+StartupInfo]
+  1000372f: push    44h ; 'D'; Size
+  10003731: xor     esi, esi
+  10003733: push    esi; Val
+  10003734: push    eax; void *
+  10003735: call    _memset
+  1000373a: add     esp, 0Ch
+  1000373d: mov     eax, [ebp+arg_4]
+  10003740: or      byte ptr [ebp+StartupInfo.dwFlags], 1
+  10003744: mov     [ebp+StartupInfo.wShowWindow], ax
+  10003748: lea     ecx, [ebp+ProcessInformation]
+  1000374b: push    ecx; lpProcessInformation
+  1000374c: lea     edx, [ebp+StartupInfo]
+  1000374f: mov     [ebp+StartupInfo.cb], 44h ; 'D'
+  10003756: push    edx; lpStartupInfo
+  10003757: push    esi; lpCurrentDirectory
+  10003758: push    esi; lpEnvironment
+  10003759: push    esi; dwCreationFlags
+  1000375a: push    esi; bInheritHandles
+  1000375b: push    esi; lpThreadAttributes
+  1000375c: push    esi; lpProcessAttributes
+  1000375d: push    [ebp+lpCommandLine]; lpCommandLine
+  10003760: push    esi; lpApplicationName
+  10003761: call    ds:CreateProcessA; KERNEL32
+  10003767: test    eax, eax
+  10003769: jz      short loc_100037A0
+  1000376b: push    0FFFFFFFFh; dwMilliseconds
+  1000376d: push    [ebp+ProcessInformation.hProcess]; hHandle
+  10003770: call    ds:WaitForSingleObject; KERNEL32
+  10003776: test    eax, eax
+  10003778: jz      short loc_10003786
+  1000377a: cmp     eax, 102h
+  1000377f: jz      short loc_100037A0
+  10003781: cmp     eax, 0FFFFFFFFh
+  10003784: jmp     short loc_100037A0
+  10003786: lea     eax, [ebp+ExitCode]
+  10003789: push    eax; lpExitCode
+  1000378a: push    [ebp+ProcessInformation.hProcess]; hProcess
+  1000378d: call    ds:GetExitCodeProcess; KERNEL32
+  10003793: cmp     eax, 1
+  10003796: jnz     short loc_100037A0
+  10003798: cmp     [ebp+ExitCode], 1
+  1000379c: sbb     eax, eax
+  1000379e: jmp     short loc_100037A2
+  100037a0: xor     eax, eax
+  100037a2: pop     esi
+  100037a3: mov     esp, ebp
+  100037a5: pop     ebp
+  100037a6: retn
+ENDFUNC
+FUNC 100037a7 sub_100037A7
+  100037a7: cmp     String1, 0
+  100037ae: jnz     short loc_100037C0
+  100037b0: push    offset String2; "SOFTWARE\\Microsoft\\Windows\\CurrentVe"...
+  100037b5: push    offset String1; lpString1
+  100037ba: call    ds:lstrcpyA; KERNEL32
+  100037c0: mov     eax, offset String1
+  100037c5: retn
+ENDFUNC
+FUNC 100037c6 sub_100037C6
+  100037c6: push    ebp
+  100037c7: mov     ebp, esp
+  100037c9: sub     esp, 24Ch
+  100037cf: push    ebx
+  100037d0: push    esi
+  100037d1: push    edi
+  100037d2: mov     edi, [ebp+lpString]
+  100037d5: test    edi, edi
+  100037d7: jz      loc_10003921
+  100037dd: mov     ebx, [ebp+lpString1]
+  100037e0: test    ebx, ebx
+  100037e2: jz      loc_10003921
+  100037e8: push    edi; lpString
+  100037e9: call    ds:lstrlenA; KERNEL32
+  100037ef: cmp     eax, 3
+  100037f2: jl      loc_10003921
+  100037f8: mov     al, [edi]
+  100037fa: cmp     al, 5Ch ; '\'
+  100037fc: jz      loc_10003921
+  10003802: cmp     al, 2Fh ; '/'
+  10003804: jz      loc_10003921
+  1000380a: cmp     byte ptr [edi+1], 3Ah ; ':'
+  1000380e: jnz     loc_10003921
+  10003814: lea     esi, [edi+2]
+  10003817: mov     al, [esi]
+  10003819: cmp     al, 5Ch ; '\'
+  1000381b: jz      short loc_10003825
+  1000381d: cmp     al, 2Fh ; '/'
+  1000381f: jnz     loc_10003921
+  10003825: cmp     [ebp+arg_8], 2
+  10003829: jbe     loc_10003921
+  1000382f: push    3; iMaxLength
+  10003831: push    edi; lpString2
+  10003832: push    ebx; lpString1
+  10003833: call    ds:lstrcpynA; KERNEL32
+  10003839: cmp     byte ptr [esi+1], 0
+  1000383d: jz      loc_100038EB
+  10003843: cmp     byte ptr [esi], 0
+  10003846: jz      short loc_1000385B
+  10003848: push    esi; lpsz
+  10003849: call    ds:CharNextA; USER32
+  1000384f: mov     esi, eax
+  10003851: mov     al, [eax]
+  10003853: cmp     al, 2Fh ; '/'
+  10003855: jz      short loc_1000385B
+  10003857: cmp     al, 5Ch ; '\'
+  10003859: jnz     short loc_10003843
+  1000385b: mov     eax, esi
+  1000385d: sub     eax, edi
+  1000385f: inc     eax
+  10003860: cmp     eax, 104h
+  10003865: jnb     loc_10003921
+  1000386b: push    eax; iMaxLength
+  1000386c: lea     ecx, [ebp+String1]
+  10003872: push    edi; lpString2
+  10003873: push    ecx; lpString1
+  10003874: call    ds:lstrcpynA; KERNEL32
+  1000387a: lea     eax, [ebp+FindFileData]
+  10003880: lea     ecx, [ebp+String1]
+  10003886: push    eax; lpFindFileData
+  10003887: push    ecx; lpFileName
+  10003888: call    ds:FindFirstFileA; KERNEL32
+  1000388e: mov     [ebp+hFindFile], eax
+  10003891: cmp     eax, 0FFFFFFFFh
+  10003894: jz      loc_10003921
+  1000389a: lea     eax, [ebp+FindFileData.cFileName]
+  100038a0: push    eax; lpString
+  100038a1: call    ds:lstrlenA; KERNEL32
+  100038a7: push    ebx; lpString
+  100038a8: mov     [ebp+var_4], eax
+  100038ab: call    ds:lstrlenA; KERNEL32
+  100038b1: add     [ebp+var_4], eax
+  100038b4: inc     [ebp+var_4]
+  100038b7: mov     eax, [ebp+var_4]
+  100038ba: cmp     eax, [ebp+arg_8]
+  100038bd: jnb     short loc_10003921
+  100038bf: push    offset asc_1000690C; "\\"
+  100038c4: push    ebx; lpString1
+  100038c5: call    ds:lstrcatA; KERNEL32
+  100038cb: lea     eax, [ebp+FindFileData.cFileName]
+  100038d1: push    eax; lpString2
+  100038d2: push    ebx; lpString1
+  100038d3: call    ds:lstrcatA; KERNEL32
+  100038d9: push    [ebp+hFindFile]; hFindFile
+  100038dc: call    ds:FindClose; KERNEL32
+  100038e2: cmp     byte ptr [esi], 0
+  100038e5: jnz     loc_10003839
+  100038eb: push    edi; lpString
+  100038ec: call    ds:lstrlenA; KERNEL32
+  100038f2: mov     al, [edi+eax-1]
+  100038f6: cmp     al, 5Ch ; '\'
+  100038f8: jz      short loc_100038FE
+  100038fa: cmp     al, 2Fh ; '/'
+  100038fc: jnz     short loc_10003918
+  100038fe: push    ebx; lpString
+  100038ff: call    ds:lstrlenA; KERNEL32
+  10003905: cmp     byte ptr [ebx+eax-1], 5Ch ; '\'
+  1000390a: jz      short loc_10003918
+  1000390c: push    offset asc_1000690C; "\\"
+  10003911: push    ebx; lpString1
+  10003912: call    ds:lstrcatA; KERNEL32
+  10003918: push    ebx; lpString
+  10003919: call    ds:lstrlenA; KERNEL32
+  1000391f: jmp     short loc_10003923
+  10003921: xor     eax, eax
+  10003923: pop     edi
+  10003924: pop     esi
+  10003925: pop     ebx
+  10003926: mov     esp, ebp
+  10003928: pop     ebp
+  10003929: retn
+ENDFUNC
+FUNC 1000392a sub_1000392A
+  1000392a: push    [esp+uBytes]; uBytes
+  1000392e: push    40h ; '@'; uFlags
+  10003930: call    ds:LocalAlloc; KERNEL32
+  10003936: retn
+ENDFUNC
+FUNC 10003937 sub_10003937
+  10003937: push    esi
+  10003938: push    [esp+4+lpString]; lpString
+  1000393c: call    ds:lstrlenA; KERNEL32
+  10003942: inc     eax
+  10003943: push    eax; uBytes
+  10003944: call    sub_1000392A
+  10003949: add     esp, 4
+  1000394c: mov     esi, eax
+  1000394e: test    esi, esi
+  10003950: jz      short loc_1000395D
+  10003952: push    [esp+4+lpString]; lpString2
+  10003956: push    esi; lpString1
+  10003957: call    ds:lstrcpyA; KERNEL32
+  1000395d: mov     eax, esi
+  1000395f: pop     esi
+  10003960: retn
+ENDFUNC
+FUNC 10003961 sub_10003961
+  10003961: mov     eax, [esp+hMem]
+  10003965: test    eax, eax
+  10003967: jz      short locret_10003970
+  10003969: push    eax; hMem
+  1000396a: call    ds:LocalFree; KERNEL32
+  10003970: retn
+ENDFUNC
+FUNC 10003971 sub_10003971
+  10003971: sub     esp, 140h
+  10003977: lea     eax, [esp+140h+FindFileData]
+  1000397b: push    eax; lpFindFileData
+  1000397c: push    [esp+144h+lpFileName]; lpFileName
+  10003983: call    ds:FindFirstFileA; KERNEL32
+  10003989: cmp     eax, 0FFFFFFFFh
+  1000398c: jnz     short loc_10003992
+  1000398e: xor     eax, eax
+  10003990: jmp     short loc_100039AF
+  10003992: test    byte ptr [esp+140h+FindFileData.dwFileAttributes], 10h
+  10003997: push    eax; hFindFile
+  10003998: jz      short loc_100039A4
+  1000399a: call    ds:FindClose; KERNEL32
+  100039a0: xor     eax, eax
+  100039a2: jmp     short loc_100039AF
+  100039a4: call    ds:FindClose; KERNEL32
+  100039aa: mov     eax, 1
+  100039af: add     esp, 140h
+  100039b5: retn
+ENDFUNC
+FUNC 100039b6 sub_100039B6
+  100039b6: push    ebp
+  100039b7: mov     ebp, esp
+  100039b9: sub     esp, 414h
+  100039bf: push    esi
+  100039c0: push    edi
+  100039c1: push    0; AccessMode
+  100039c3: mov     esi, [ebp+lpMultiByteStr]
+  100039c6: push    esi; FileName
+  100039c7: call    __access
+  100039cc: add     esp, 8
+  100039cf: cmp     eax, 0FFFFFFFFh
+  100039d2: jnz     short loc_100039EC
+  100039d4: push    esi
+  100039d5: lea     eax, [ebp+var_20C]
+  100039db: push    offset aCannotAccessFi; "Cannot access file: %s in fRegisterType"...
+  100039e0: push    eax; LPSTR
+  100039e1: call    ds:wsprintfA; USER32
+  100039e7: add     esp, 0Ch
+  100039ea: jmp     short loc_10003A69
+  100039ec: push    104h; cchWideChar
+  100039f1: lea     eax, [ebp+WideCharStr]
+  100039f7: push    eax; lpWideCharStr
+  100039f8: push    0FFFFFFFFh; cbMultiByte
+  100039fa: push    esi; lpMultiByteStr
+  100039fb: push    0; dwFlags
+  100039fd: push    0; CodePage
+  100039ff: call    ds:MultiByteToWideChar; KERNEL32
+  10003a05: lea     ecx, [ebp+pptlib]
+  10003a08: lea     eax, [ebp+WideCharStr]
+  10003a0e: push    ecx; pptlib
+  10003a0f: push    eax; szFile
+  10003a10: call    ds:LoadTypeLib
+  10003a16: test    eax, eax
+  10003a18: jge     short loc_10003A2A
+  10003a1a: push    eax
+  10003a1b: lea     ecx, [ebp+var_20C]
+  10003a21: push    esi
+  10003a22: push    offset aLoadtypelibOfS; "LoadTypeLib of %s failed : %lx"
+  10003a27: push    ecx
+  10003a28: jmp     short loc_10003A60
+  10003a2a: push    0; szHelpDir
+  10003a2c: lea     eax, [ebp+WideCharStr]
+  10003a32: push    eax; szFullPath
+  10003a33: push    [ebp+pptlib]; ptlib
+  10003a36: call    ds:RegisterTypeLib
+  10003a3c: mov     edi, eax
+  10003a3e: mov     ecx, [ebp+pptlib]
+  10003a41: mov     eax, [ecx]
+  10003a43: push    [ebp+pptlib]
+  10003a46: call    dword ptr [eax+8]
+  10003a49: mov     eax, 1
+  10003a4e: test    edi, edi
+  10003a50: jge     short loc_10003A6B
+  10003a52: push    edi
+  10003a53: lea     eax, [ebp+var_20C]
+  10003a59: push    esi
+  10003a5a: push    offset aRegistertypeli; "RegisterTypeLib of %s failed : %lx"
+  10003a5f: push    eax; LPSTR
+  10003a60: call    ds:wsprintfA; USER32
+  10003a66: add     esp, 10h
+  10003a69: xor     eax, eax
+  10003a6b: pop     edi
+  10003a6c: pop     esi
+  10003a6d: mov     esp, ebp
+  10003a6f: pop     ebp
+  10003a70: retn
+ENDFUNC
+FUNC 10003a71 sub_10003A71
+  10003a71: push    ebp
+  10003a72: xor     edx, edx
+  10003a74: mov     ebp, esp
+  10003a76: sub     esp, 82Ch
+  10003a7c: push    ebx
+  10003a7d: mov     [ebp+pptlib], edx
+  10003a80: push    esi
+  10003a81: mov     [ebp+var_4], edx
+  10003a84: push    edi
+  10003a85: mov     [ebp+rguid], edx
+  10003a88: lea     edi, [ebp+var_6F]
+  10003a8b: xor     eax, eax
+  10003a8d: mov     ecx, 13h
+  10003a92: mov     [ebp+phkResult], edx
+  10003a95: push    edx; AccessMode
+  10003a96: mov     [ebp+hKey], edx
+  10003a99: mov     [ebp+String], dl
+  10003a9c: rep stosd
+  10003a9e: stosw
+  10003aa0: stosb
+  10003aa1: push    [ebp+lpMultiByteStr]; FileName
+  10003aa4: call    __access
+  10003aa9: add     esp, 8
+  10003aac: cmp     eax, 0FFFFFFFFh
+  10003aaf: jnz     short loc_10003AD3
+  10003ab1: lea     ecx, [ebp+var_37C]
+  10003ab7: mov     esi, 80029C4Ah
+  10003abc: push    [ebp+lpMultiByteStr]
+  10003abf: push    offset aCannotAccessFi; "Cannot access file: %s in fRegisterType"...
+  10003ac4: push    ecx; LPSTR
+  10003ac5: call    ds:wsprintfA; USER32
+  10003acb: add     esp, 0Ch
+  10003ace: jmp     loc_10003E15
+  10003ad3: push    104h; cchWideChar
+  10003ad8: lea     eax, [ebp+WideCharStr]
+  10003ade: push    eax; lpWideCharStr
+  10003adf: push    0FFFFFFFFh; cbMultiByte
+  10003ae1: push    [ebp+lpMultiByteStr]; lpMultiByteStr
+  10003ae4: push    0; dwFlags
+  10003ae6: push    0; CodePage
+  10003ae8: call    ds:MultiByteToWideChar; KERNEL32
+  10003aee: lea     ecx, [ebp+pptlib]
+  10003af1: lea     edx, [ebp+WideCharStr]
+  10003af7: push    ecx; pptlib
+  10003af8: push    edx; szFile
+  10003af9: call    ds:LoadTypeLib
+  10003aff: mov     esi, eax
+  10003b01: test    esi, esi
+  10003b03: jge     short loc_10003B6E
+  10003b05: cmp     esi, 80028018h
+  10003b0b: jl      short loc_10003B2D
+  10003b0d: cmp     esi, 80028019h
+  10003b13: jle     short loc_10003B4B
+  10003b15: cmp     esi, 80028029h
+  10003b1b: jz      short loc_10003B4B
+  10003b1d: cmp     esi, 8002802Eh
+  10003b23: jz      short loc_10003B4B
+  10003b25: cmp     esi, 80029C4Ah
+  10003b2b: jz      short loc_10003B4B
+  10003b2d: push    esi
+  10003b2e: lea     ecx, [ebp+var_37C]
+  10003b34: push    [ebp+lpMultiByteStr]
+  10003b37: push    offset aLoadtypelibOfS_0; "LoadTypeLib of %s failed to load file: "...
+  10003b3c: push    ecx; LPSTR
+  10003b3d: call    ds:wsprintfA; USER32
+  10003b43: add     esp, 10h
+  10003b46: jmp     loc_10003E15
+  10003b4b: push    esi
+  10003b4c: lea     ecx, [ebp+var_37C]
+  10003b52: push    [ebp+lpMultiByteStr]
+  10003b55: push    offset aLoadtypelibOfS_1; "LoadTypeLib of %s failed to find regist"...
+  10003b5a: push    ecx; LPSTR
+  10003b5b: mov     esi, 80029C4Ah
+  10003b60: call    ds:wsprintfA; USER32
+  10003b66: add     esp, 10h
+  10003b69: jmp     loc_10003E15
+  10003b6e: mov     eax, [ebp+pptlib]
+  10003b71: push    [ebp+pptlib]
+  10003b74: mov     ebx, [eax]
+  10003b76: call    dword ptr [ebx+0Ch]
+  10003b79: mov     [ebp+var_20], eax
+  10003b7c: test    eax, eax
+  10003b7e: mov     [ebp+var_18], 0
+  10003b85: jz      loc_10003DF5
+  10003b8b: xor     edi, edi
+  10003b8d: mov     ebx, 20019h
+  10003b92: lea     eax, [ebp+var_4]
+  10003b95: mov     edx, [ebp+pptlib]
+  10003b98: push    eax
+  10003b99: mov     eax, [edx]
+  10003b9b: push    [ebp+var_18]
+  10003b9e: push    [ebp+pptlib]
+  10003ba1: call    dword ptr [eax+10h]
+  10003ba4: mov     esi, eax
+  10003ba6: test    esi, esi
+  10003ba8: jl      loc_10003E63
+  10003bae: lea     eax, [ebp+rguid]
+  10003bb1: mov     ecx, [ebp+var_4]
+  10003bb4: push    eax
+  10003bb5: mov     eax, [ecx]
+  10003bb7: push    [ebp+var_4]
+  10003bba: call    dword ptr [eax+0Ch]
+  10003bbd: mov     esi, eax
+  10003bbf: test    esi, esi
+  10003bc1: jl      loc_10003EA9
+  10003bc7: mov     eax, [ebp+rguid]
+  10003bca: cmp     dword ptr [eax+28h], 5
+  10003bce: jnz     loc_10003DBD
+  10003bd4: push    50h ; 'P'; cchMax
+  10003bd6: lea     eax, [ebp+sz]
+  10003bdc: push    eax; lpsz
+  10003bdd: push    [ebp+rguid]; rguid
+  10003be0: call    ds:StringFromGUID2; ole32
+  10003be6: test    eax, eax
+  10003be8: jz      loc_10003ECA
+  10003bee: push    [ebp+rguid]
+  10003bf1: mov     ecx, [ebp+var_4]
+  10003bf4: push    [ebp+var_4]
+  10003bf7: mov     eax, [ecx]
+  10003bf9: call    dword ptr [eax+4Ch]
+  10003bfc: mov     ecx, [ebp+var_4]
+  10003bff: mov     [ebp+rguid], edi
+  10003c02: mov     eax, [ecx]
+  10003c04: push    [ebp+var_4]
+  10003c07: call    dword ptr [eax+8]
+  10003c0a: push    offset aClsid; "CLSID"
+  10003c0f: lea     ecx, [ebp+String1]
+  10003c15: push    ecx; lpString1
+  10003c16: mov     [ebp+var_4], edi
+  10003c19: call    ds:lstrcpyA; KERNEL32
+  10003c1f: push    offset asc_1000690C; "\\"
+  10003c24: lea     ecx, [ebp+String1]
+  10003c2a: push    ecx; lpString1
+  10003c2b: call    ds:lstrcatA; KERNEL32
+  10003c31: push    edi; lpUsedDefaultChar
+  10003c32: lea     edx, [ebp+sz]
+  10003c38: push    edi; lpDefaultChar
+  10003c39: push    50h ; 'P'; cbMultiByte
+  10003c3b: push    [ebp+arg_8]; lpMultiByteStr
+  10003c3e: push    0FFFFFFFFh; cchWideChar
+  10003c40: push    edx; lpWideCharStr
+  10003c41: push    edi; dwFlags
+  10003c42: push    edi; CodePage
+  10003c43: call    ds:WideCharToMultiByte; KERNEL32
+  10003c49: push    [ebp+arg_8]; lpString2
+  10003c4c: lea     edx, [ebp+String1]
+  10003c52: push    edx; lpString1
+  10003c53: call    ds:lstrcatA; KERNEL32
+  10003c59: lea     ecx, [ebp+String]
+  10003c5c: push    ecx; lpString
+  10003c5d: call    ds:lstrlenA; KERNEL32
+  10003c63: test    eax, eax
+  10003c65: jnz     short loc_10003C74
+  10003c67: push    [ebp+arg_8]; lpString2
+  10003c6a: lea     ecx, [ebp+String]
+  10003c6d: push    ecx; lpString1
+  10003c6e: call    ds:lstrcpyA; KERNEL32
+  10003c74: lea     eax, [ebp+phkResult]
+  10003c77: lea     ecx, [ebp+String1]
+  10003c7d: push    eax; phkResult
+  10003c7e: push    ebx; samDesired
+  10003c7f: push    edi; ulOptions
+  10003c80: push    ecx; lpSubKey
+  10003c81: push    80000000h; hKey
+  10003c86: call    ds:RegOpenKeyExA; ADVAPI32
+  10003c8c: test    eax, eax
+  10003c8e: jnz     loc_10003DBD
+  10003c94: lea     eax, [ebp+hKey]
+  10003c97: cmp     [ebp+lpString1], edi
+  10003c9a: push    eax; phkResult
+  10003c9b: push    ebx; samDesired
+  10003c9c: push    edi; ulOptions
+  10003c9d: jz      loc_10003D34
+  10003ca3: push    offset SubKey; "ProgID"
+  10003ca8: push    [ebp+phkResult]; hKey
+  10003cab: call    ds:RegOpenKeyExA; ADVAPI32
+  10003cb1: test    eax, eax
+  10003cb3: jz      short loc_10003CC3
+  10003cb5: push    [ebp+phkResult]; hKey
+  10003cb8: call    ds:RegCloseKey; ADVAPI32
+  10003cbe: jmp     loc_10003DE6
+  10003cc3: lea     eax, [ebp+cbData]
+  10003cc6: lea     ecx, [ebp+Data]
+  10003ccc: mov     [ebp+cbData], 104h
+  10003cd3: push    eax; lpcbData
+  10003cd4: push    ecx; lpData
+  10003cd5: push    edi; lpType
+  10003cd6: push    edi; lpReserved
+  10003cd7: push    offset String; lpValueName
+  10003cdc: push    [ebp+hKey]; hKey
+  10003cdf: call    ds:RegQueryValueExA; ADVAPI32
+  10003ce5: test    eax, eax
+  10003ce7: jz      short loc_10003D00
+  10003ce9: push    [ebp+phkResult]; hKey
+  10003cec: call    ds:RegCloseKey; ADVAPI32
+  10003cf2: push    [ebp+hKey]; hKey
+  10003cf5: call    ds:RegCloseKey; ADVAPI32
+  10003cfb: jmp     loc_10003DE6
+  10003d00: push    [ebp+hKey]; hKey
+  10003d03: call    ds:RegCloseKey; ADVAPI32
+  10003d09: push    0FFFFFFFFh; cchCount2
+  10003d0b: lea     eax, [ebp+Data]
+  10003d11: push    eax; lpString2
+  10003d12: push    0FFFFFFFFh; cchCount1
+  10003d14: push    [ebp+lpString1]; lpString1
+  10003d17: push    1; dwCmpFlags
+  10003d19: push    800h; Locale
+  10003d1e: call    ds:CompareStringA; KERNEL32
+  10003d24: cmp     eax, 2
+  10003d27: jnz     loc_10003DBD
+  10003d2d: xor     esi, esi
+  10003d2f: jmp     loc_10003E15
+  10003d34: push    offset aInprocserver32; "InprocServer32"
+  10003d39: push    [ebp+phkResult]; hKey
+  10003d3c: call    ds:RegOpenKeyExA; ADVAPI32
+  10003d42: test    eax, eax
+  10003d44: jz      short loc_10003D62
+  10003d46: lea     eax, [ebp+hKey]
+  10003d49: push    eax; phkResult
+  10003d4a: push    ebx; samDesired
+  10003d4b: push    edi; ulOptions
+  10003d4c: push    offset aLocalserver32; "LocalServer32"
+  10003d51: push    [ebp+phkResult]; hKey
+  10003d54: call    ds:RegOpenKeyExA; ADVAPI32
+  10003d5a: test    eax, eax
+  10003d5c: jnz     loc_10003DE6
+  10003d62: lea     eax, [ebp+cbData]
+  10003d65: lea     ecx, [ebp+var_520]
+  10003d6b: mov     [ebp+cbData], 104h
+  10003d72: push    eax; lpcbData
+  10003d73: push    ecx; lpData
+  10003d74: push    edi; lpType
+  10003d75: push    edi; lpReserved
+  10003d76: push    offset String; lpValueName
+  10003d7b: push    [ebp+hKey]; hKey
+  10003d7e: call    ds:RegQueryValueExA; ADVAPI32
+  10003d84: push    [ebp+hKey]; hKey
+  10003d87: test    eax, eax
+  10003d89: jz      short loc_10003D93
+  10003d8b: call    ds:RegCloseKey; ADVAPI32
+  10003d91: jmp     short loc_10003DE6
+  10003d93: call    ds:RegCloseKey; ADVAPI32
+  10003d99: push    0FFFFFFFFh; cchCount2
+  10003d9b: lea     eax, [ebp+var_520]
+  10003da1: push    eax; lpString2
+  10003da2: push    0FFFFFFFFh; cchCount1
+  10003da4: push    [ebp+lpMultiByteStr]; lpString1
+  10003da7: push    1; dwCmpFlags
+  10003da9: push    800h; Locale
+  10003dae: call    ds:CompareStringA; KERNEL32
+  10003db4: cmp     eax, 2
+  10003db7: jz      loc_10003EF0
+  10003dbd: cmp     [ebp+rguid], edi
+  10003dc0: jz      short loc_10003DD3
+  10003dc2: push    [ebp+rguid]
+  10003dc5: mov     ecx, [ebp+var_4]
+  10003dc8: push    [ebp+var_4]
+  10003dcb: mov     eax, [ecx]
+  10003dcd: call    dword ptr [eax+4Ch]
+  10003dd0: mov     [ebp+rguid], edi
+  10003dd3: cmp     [ebp+var_4], edi
+  10003dd6: jz      short loc_10003DE6
+  10003dd8: mov     eax, [ebp+var_4]
+  10003ddb: push    [ebp+var_4]
+  10003dde: mov     esi, [eax]
+  10003de0: call    dword ptr [esi+8]
+  10003de3: mov     [ebp+var_4], edi
+  10003de6: inc     [ebp+var_18]
+  10003de9: mov     eax, [ebp+var_18]
+  10003dec: cmp     eax, [ebp+var_20]
+  10003def: jb      loc_10003B92
+  10003df5: mov     esi, 8002801Dh
+  10003dfa: lea     eax, [ebp+String]
+  10003dfd: push    eax; lpString
+  10003dfe: call    ds:lstrlenA; KERNEL32
+  10003e04: test    eax, eax
+  10003e06: jz      short loc_10003E15
+  10003e08: lea     eax, [ebp+String]
+  10003e0b: push    eax; lpString2
+  10003e0c: push    [ebp+arg_8]; lpString1
+  10003e0f: call    ds:lstrcpyA; KERNEL32
+  10003e15: cmp     [ebp+phkResult], 0
+  10003e19: jz      short loc_10003E24
+  10003e1b: push    [ebp+phkResult]; hKey
+  10003e1e: call    ds:RegCloseKey; ADVAPI32
+  10003e24: cmp     [ebp+rguid], 0
+  10003e28: jz      short loc_10003E38
+  10003e2a: push    [ebp+rguid]
+  10003e2d: mov     ecx, [ebp+var_4]
+  10003e30: push    [ebp+var_4]
+  10003e33: mov     eax, [ecx]
+  10003e35: call    dword ptr [eax+4Ch]
+  10003e38: cmp     [ebp+var_4], 0
+  10003e3c: jz      short loc_10003E49
+  10003e3e: mov     eax, [ebp+var_4]
+  10003e41: push    [ebp+var_4]
+  10003e44: mov     ebx, [eax]
+  10003e46: call    dword ptr [ebx+8]
+  10003e49: cmp     [ebp+pptlib], 0
+  10003e4d: jz      short loc_10003E5A
+  10003e4f: mov     eax, [ebp+pptlib]
+  10003e52: push    [ebp+pptlib]
+  10003e55: mov     ebx, [eax]
+  10003e57: call    dword ptr [ebx+8]
+  10003e5a: mov     eax, esi
+  10003e5c: pop     edi
+  10003e5d: pop     esi
+  10003e5e: pop     ebx
+  10003e5f: mov     esp, ebp
+  10003e61: pop     ebp
+  10003e62: retn
+  10003e63: cmp     esi, 8002802Bh
+  10003e69: jnz     short loc_10003E88
+  10003e6b: push    [ebp+lpMultiByteStr]
+  10003e6e: push    [ebp+var_18]
+  10003e71: push    offset aIndexIsOutside; "Index is outside the range of 0 to GetT"...
+  10003e76: lea     edx, [ebp+var_37C]
+  10003e7c: push    edx; LPSTR
+  10003e7d: call    ds:wsprintfA; USER32
+  10003e83: add     esp, 10h
+  10003e86: jmp     short loc_10003E15
+  10003e88: push    esi
+  10003e89: lea     edx, [ebp+var_37C]
+  10003e8f: push    [ebp+lpMultiByteStr]
+  10003e92: push    [ebp+var_18]
+  10003e95: push    offset aProblemGetting; "problem getting typeinfo for index %u o"...
+  10003e9a: push    edx; LPSTR
+  10003e9b: call    ds:wsprintfA; USER32
+  10003ea1: add     esp, 14h
+  10003ea4: jmp     loc_10003E15
+  10003ea9: push    esi
+  10003eaa: lea     edx, [ebp+var_37C]
+  10003eb0: push    [ebp+lpMultiByteStr]
+  10003eb3: push    [ebp+var_18]
+  10003eb6: push    offset aProblemGetting_0; "problem getting typeAttr for index %u o"...
+  10003ebb: push    edx; LPSTR
+  10003ebc: call    ds:wsprintfA; USER32
+  10003ec2: add     esp, 14h
+  10003ec5: jmp     loc_10003E15
+  10003eca: push    esi
+  10003ecb: lea     edx, [ebp+var_37C]
+  10003ed1: push    [ebp+lpMultiByteStr]
+  10003ed4: push    [ebp+var_18]
+  10003ed7: push    offset aCouldnTConvert; "Couldn't convert clsid to string when g"...
+  10003edc: push    edx; LPSTR
+  10003edd: mov     esi, 8007000Eh
+  10003ee2: call    ds:wsprintfA; USER32
+  10003ee8: add     esp, 14h
+  10003eeb: jmp     loc_10003E15
+  10003ef0: xor     esi, esi
+  10003ef2: jmp     loc_10003E15
+ENDFUNC
+FUNC 10003ef7 sub_10003EF7
+  10003ef7: push    ebp
+  10003ef8: mov     ebp, esp
+  10003efa: sub     esp, 108h
+  10003f00: push    esi
+  10003f01: lea     eax, [ebp+String]
+  10003f07: push    eax; lpData
+  10003f08: call    sub_1000430D
+  10003f0d: add     esp, 4
+  10003f10: test    eax, eax
+  10003f12: jnz     short loc_10003F18
+  10003f14: xor     eax, eax
+  10003f16: jmp     short loc_10003F78
+  10003f18: push    [ebp+lpString]; lpString
+  10003f1b: call    ds:lstrlenA; KERNEL32
+  10003f21: mov     esi, eax
+  10003f23: lea     eax, [ebp+String]
+  10003f29: push    eax; lpString
+  10003f2a: call    ds:lstrlenA; KERNEL32
+  10003f30: add     esi, eax
+  10003f32: cmp     esi, 104h
+  10003f38: jle     short loc_10003F3E
+  10003f3a: xor     eax, eax
+  10003f3c: jmp     short loc_10003F78
+  10003f3e: push    [ebp+lpString]; lpString2
+  10003f41: lea     ecx, [ebp+String]
+  10003f47: push    ecx; lpString1
+  10003f48: call    ds:lstrcatA; KERNEL32
+  10003f4e: lea     ecx, [ebp+String]
+  10003f54: push    ecx; lpFileName
+  10003f55: call    ds:GetFileAttributesA; KERNEL32
+  10003f5b: cmp     eax, 0FFFFFFFFh
+  10003f5e: jz      short loc_10003F69
+  10003f60: test    al, 10h
+  10003f62: mov     eax, 1
+  10003f67: jnz     short loc_10003F78
+  10003f69: push    0; lpSecurityAttributes
+  10003f6b: lea     eax, [ebp+String]
+  10003f71: push    eax; lpPathName
+  10003f72: call    ds:CreateDirectoryA; KERNEL32
+  10003f78: pop     esi
+  10003f79: mov     esp, ebp
+  10003f7b: pop     ebp
+  10003f7c: retn
+ENDFUNC
+FUNC 10003f7d sub_10003F7D
+  10003f7d: push    ebp
+  10003f7e: mov     ebp, esp
+  10003f80: sub     esp, 428h
+  10003f86: push    ebx
+  10003f87: lea     eax, [ebp+String]
+  10003f8d: push    esi
+  10003f8e: push    edi
+  10003f8f: xor     esi, esi
+  10003f91: push    eax; lpData
+  10003f92: mov     [ebp+var_8], esi
+  10003f95: mov     [ebp+var_4], esi
+  10003f98: call    sub_1000430D
+  10003f9d: add     esp, 4
+  10003fa0: test    eax, eax
+  10003fa2: jnz     short loc_10003FAB
+  10003fa4: xor     eax, eax
+  10003fa6: jmp     loc_1000421C
+  10003fab: mov     edi, [ebp+lpString]
+  10003fae: test    edi, edi
+  10003fb0: jz      short loc_10003FFE
+  10003fb2: lea     eax, [ebp+String]
+  10003fb8: push    eax; lpString
+  10003fb9: call    ds:lstrlenA; KERNEL32
+  10003fbf: mov     ebx, eax
+  10003fc1: push    edi; lpString
+  10003fc2: call    ds:lstrlenA; KERNEL32
+  10003fc8: add     ebx, eax
+  10003fca: inc     ebx
+  10003fcb: cmp     ebx, 104h
+  10003fd1: jle     short loc_10003FDA
+  10003fd3: xor     eax, eax
+  10003fd5: jmp     loc_1000421C
+  10003fda: test    edi, edi
+  10003fdc: jz      short loc_10004026
+  10003fde: push    edi; lpString2
+  10003fdf: lea     eax, [ebp+String]
+  10003fe5: push    eax; lpString1
+  10003fe6: call    ds:lstrcatA; KERNEL32
+  10003fec: push    offset asc_1000690C; "\\"
+  10003ff1: lea     eax, [ebp+String]
+  10003ff7: push    eax; lpString1
+  10003ff8: call    ds:lstrcatA; KERNEL32
+  10003ffe: test    edi, edi
+  10004000: jz      short loc_10004026
+  10004002: lea     eax, [ebp+String]
+  10004008: push    eax; lpFileName
+  10004009: call    ds:GetFileAttributesA; KERNEL32
+  1000400f: cmp     eax, 0FFFFFFFFh
+  10004012: jnz     short loc_1000401B
+  10004014: xor     eax, eax
+  10004016: jmp     loc_1000421C
+  1000401b: test    al, 10h
+  1000401d: jnz     short loc_10004026
+  1000401f: xor     eax, eax
+  10004021: jmp     loc_1000421C
+  10004026: lea     eax, [ebp+String]
+  1000402c: push    eax; lpString
+  1000402d: call    ds:lstrlenA; KERNEL32
+  10004033: mov     ebx, eax
+  10004035: mov     edi, [ebp+lpString2]
+  10004038: push    edi; lpString
+  10004039: call    ds:lstrlenA; KERNEL32
+  1000403f: add     ebx, eax
+  10004041: cmp     ebx, 104h
+  10004047: jle     short loc_10004050
+  10004049: xor     eax, eax
+  1000404b: jmp     loc_1000421C
+  10004050: push    edi; lpString2
+  10004051: lea     eax, [ebp+String]
+  10004057: push    eax; lpString1
+  10004058: call    ds:lstrcatA; KERNEL32
+  1000405e: lea     eax, [ebp+String]
+  10004064: push    eax; lpString
+  10004065: call    ds:lstrlenA; KERNEL32
+  1000406b: add     eax, 4
+  1000406e: cmp     eax, 104h
+  10004073: jle     short loc_1000407C
+  10004075: xor     eax, eax
+  10004077: jmp     loc_1000421C
+  1000407c: push    offset aLnk; ".LNK"
+  10004081: lea     eax, [ebp+String]
+  10004087: push    eax; lpString1
+  10004088: call    ds:lstrcatA; KERNEL32
+  1000408e: lea     eax, [ebp+String]
+  10004094: push    eax; lpFileName
+  10004095: call    ds:GetFileAttributesA; KERNEL32
+  1000409b: cmp     eax, 0FFFFFFFFh
+  1000409e: jz      short loc_100040AD
+  100040a0: lea     eax, [ebp+String]
+  100040a6: push    eax; lpFileName
+  100040a7: call    ds:DeleteFileA; KERNEL32
+  100040ad: lea     eax, [ebp+ppv]
+  100040b0: push    eax; ppv
+  100040b1: push    offset riid; riid
+  100040b6: push    1; dwClsContext
+  100040b8: push    0; pUnkOuter
+  100040ba: push    offset rclsid; rclsid
+  100040bf: call    ds:CoCreateInstance; ole32
+  100040c5: test    eax, eax
+  100040c7: jge     short loc_100040D0
+  100040c9: xor     eax, eax
+  100040cb: jmp     loc_1000421C
+  100040d0: lea     eax, [ebp+var_4]
+  100040d3: mov     ecx, [ebp+ppv]
+  100040d6: push    eax
+  100040d7: push    offset unk_100053B0
+  100040dc: mov     eax, [ecx]
+  100040de: push    [ebp+ppv]
+  100040e1: call    dword ptr [eax]
+  100040e3: mov     ebx, eax
+  100040e5: mov     ecx, [ebp+ppv]
+  100040e8: mov     eax, [ecx]
+  100040ea: push    [ebp+ppv]
+  100040ed: call    dword ptr [eax+8]
+  100040f0: test    ebx, ebx
+  100040f2: jge     short loc_100040FB
+  100040f4: xor     eax, eax
+  100040f6: jmp     loc_1000421C
+  100040fb: lea     eax, [ebp+var_8]
+  100040fe: mov     ecx, [ebp+var_4]
+  10004101: push    eax
+  10004102: push    offset unk_10005320
+  10004107: mov     eax, [ecx]
+  10004109: push    [ebp+var_4]
+  1000410c: call    dword ptr [eax]
+  1000410e: test    eax, eax
+  10004110: jge     short loc_1000411E
+  10004112: mov     [ebp+var_8], 0
+  10004119: jmp     loc_100041A1
+  1000411e: push    [ebp+arg_8]
+  10004121: mov     ecx, [ebp+var_4]
+  10004124: push    [ebp+var_4]
+  10004127: mov     eax, [ecx]
+  10004129: call    dword ptr [eax+50h]
+  1000412c: test    eax, eax
+  1000412e: jl      short loc_100041A1
+  10004130: push    [ebp+arg_C]
+  10004133: mov     ecx, [ebp+var_4]
+  10004136: push    [ebp+var_4]
+  10004139: mov     eax, [ecx]
+  1000413b: call    dword ptr [eax+2Ch]
+  1000413e: test    eax, eax
+  10004140: jl      short loc_100041A1
+  10004142: push    edi
+  10004143: mov     eax, [ebp+var_4]
+  10004146: mov     ebx, [eax]
+  10004148: push    [ebp+var_4]
+  1000414b: call    dword ptr [ebx+1Ch]
+  1000414e: test    eax, eax
+  10004150: jl      short loc_100041A1
+  10004152: push    [ebp+arg_8]; lpString2
+  10004155: lea     ecx, [ebp+String1]
+  1000415b: push    ecx; lpString1
+  1000415c: call    ds:lstrcpyA; KERNEL32
+  10004162: cmp     [ebp+String1], 0
+  10004169: lea     eax, [ebp+String1]
+  1000416f: jz      short loc_10004184
+  10004171: cmp     byte ptr [eax], 5Ch ; '\'
+  10004174: jnz     short loc_10004178
+  10004176: mov     esi, eax
+  10004178: push    eax; lpsz
+  10004179: call    ds:CharNextA; USER32
+  1000417f: cmp     byte ptr [eax], 0
+  10004182: jnz     short loc_10004171
+  10004184: test    esi, esi
+  10004186: jz      short loc_1000418B
+  10004188: mov     byte ptr [esi], 0
+  1000418b: lea     eax, [ebp+String1]
+  10004191: mov     ecx, [ebp+var_4]
+  10004194: push    eax
+  10004195: mov     eax, [ecx]
+  10004197: push    [ebp+var_4]
+  1000419a: call    dword ptr [eax+24h]
+  1000419d: test    eax, eax
+  1000419f: jge     short loc_100041C7
+  100041a1: cmp     [ebp+var_8], 0
+  100041a5: jz      short loc_100041B2
+  100041a7: mov     eax, [ebp+var_8]
+  100041aa: push    [ebp+var_8]
+  100041ad: mov     ebx, [eax]
+  100041af: call    dword ptr [ebx+8]
+  100041b2: cmp     [ebp+var_4], 0
+  100041b6: jz      short loc_100041C3
+  100041b8: mov     eax, [ebp+var_4]
+  100041bb: push    [ebp+var_4]
+  100041be: mov     ebx, [eax]
+  100041c0: call    dword ptr [ebx+8]
+  100041c3: xor     eax, eax
+  100041c5: jmp     short loc_1000421C
+  100041c7: push    105h; cchWideChar
+  100041cc: lea     eax, [ebp+WideCharStr]
+  100041d2: push    eax; lpWideCharStr
+  100041d3: lea     ecx, [ebp+String]
+  100041d9: push    0FFFFFFFFh; cbMultiByte
+  100041db: xor     esi, esi
+  100041dd: push    ecx; lpMultiByteStr
+  100041de: push    esi; dwFlags
+  100041df: push    esi; CodePage
+  100041e0: call    ds:MultiByteToWideChar; KERNEL32
+  100041e6: push    esi
+  100041e7: lea     ecx, [ebp+WideCharStr]
+  100041ed: push    ecx
+  100041ee: mov     eax, [ebp+var_8]
+  100041f1: mov     ebx, [eax]
+  100041f3: push    [ebp+var_8]
+  100041f6: call    dword ptr [ebx+18h]
+  100041f9: mov     edi, eax
+  100041fb: mov     eax, [ebp+var_8]
+  100041fe: push    [ebp+var_8]
+  10004201: mov     ebx, [eax]
+  10004203: call    dword ptr [ebx+8]
+  10004206: mov     ecx, [ebp+var_4]
+  10004209: push    [ebp+var_4]
+  1000420c: mov     eax, [ecx]
+  1000420e: call    dword ptr [eax+8]
+  10004211: mov     eax, 1
+  10004216: test    edi, edi
+  10004218: jge     short loc_1000421C
+  1000421a: xor     eax, eax
+  1000421c: pop     edi
+  1000421d: pop     esi
+  1000421e: pop     ebx
+  1000421f: mov     esp, ebp
+  10004221: pop     ebp
+  10004222: retn
+ENDFUNC
+FUNC 10004223 sub_10004223
+  10004223: push    ebp
+  10004224: mov     ebp, esp
+  10004226: sub     esp, 108h
+  1000422c: push    esi
+  1000422d: lea     eax, [ebp+String]
+  10004233: push    edi
+  10004234: push    eax; lpData
+  10004235: call    sub_1000430D
+  1000423a: add     esp, 4
+  1000423d: test    eax, eax
+  1000423f: jnz     short loc_10004248
+  10004241: xor     eax, eax
+  10004243: jmp     loc_10004307
+  10004248: mov     esi, [ebp+lpString]
+  1000424b: test    esi, esi
+  1000424d: jz      short loc_10004297
+  1000424f: push    esi; lpString
+  10004250: call    ds:lstrlenA; KERNEL32
+  10004256: mov     edi, eax
+  10004258: lea     eax, [ebp+String]
+  1000425e: push    eax; lpString
+  1000425f: call    ds:lstrlenA; KERNEL32
+  10004265: add     edi, eax
+  10004267: inc     edi
+  10004268: cmp     edi, 104h
+  1000426e: jle     short loc_10004277
+  10004270: xor     eax, eax
+  10004272: jmp     loc_10004307
+  10004277: push    esi; lpString2
+  10004278: lea     eax, [ebp+String]
+  1000427e: push    eax; lpString1
+  1000427f: call    ds:lstrcatA; KERNEL32
+  10004285: push    offset asc_1000690C; "\\"
+  1000428a: lea     eax, [ebp+String]
+  10004290: push    eax; lpString1
+  10004291: call    ds:lstrcatA; KERNEL32
+  10004297: push    [ebp+lpString2]; lpString
+  1000429a: call    ds:lstrlenA; KERNEL32
+  100042a0: mov     esi, eax
+  100042a2: lea     eax, [ebp+String]
+  100042a8: push    eax; lpString
+  100042a9: call    ds:lstrlenA; KERNEL32
+  100042af: add     esi, eax
+  100042b1: add     esi, 4
+  100042b4: cmp     esi, 104h
+  100042ba: jle     short loc_100042C0
+  100042bc: xor     eax, eax
+  100042be: jmp     short loc_10004307
+  100042c0: push    [ebp+lpString2]; lpString2
+  100042c3: lea     ecx, [ebp+String]
+  100042c9: push    ecx; lpString1
+  100042ca: call    ds:lstrcatA; KERNEL32
+  100042d0: push    offset aLnk; ".LNK"
+  100042d5: lea     ecx, [ebp+String]
+  100042db: push    ecx; lpString1
+  100042dc: call    ds:lstrcatA; KERNEL32
+  100042e2: lea     ecx, [ebp+String]
+  100042e8: push    ecx; lpFileName
+  100042e9: call    sub_10003971
+  100042ee: add     esp, 4
+  100042f1: test    eax, eax
+  100042f3: mov     eax, 1
+  100042f8: jz      short loc_10004307
+  100042fa: lea     eax, [ebp+String]
+  10004300: push    eax; lpFileName
+  10004301: call    ds:DeleteFileA; KERNEL32
+  10004307: pop     edi
+  10004308: pop     esi
+  10004309: mov     esp, ebp
+  1000430b: pop     ebp
+  1000430c: retn
+ENDFUNC
+FUNC 1000430d sub_1000430D
+  1000430d: push    ebp
+  1000430e: mov     ebp, esp
+  10004310: sub     esp, 6Ch
+  10004313: push    ebx
+  10004314: push    esi
+  10004315: push    edi
+  10004316: call    sub_100037A7
+  1000431b: push    eax; lpString2
+  1000431c: lea     ecx, [ebp+String1]
+  1000431f: push    ecx; lpString1
+  10004320: call    ds:lstrcpyA; KERNEL32
+  10004326: push    offset asc_1000690C; "\\"
+  1000432b: lea     ecx, [ebp+String1]
+  1000432e: push    ecx; lpString1
+  1000432f: mov     esi, ds:lstrcatA; KERNEL32
+  10004335: call    esi ; lstrcatA; KERNEL32
+  10004337: push    offset aExplorerShellF; "Explorer\\Shell Folders"
+  1000433c: lea     ecx, [ebp+String1]
+  1000433f: push    ecx; lpString1
+  10004340: call    esi ; lstrcatA; KERNEL32
+  10004342: lea     eax, [ebp+phkResult]
+  10004345: lea     ecx, [ebp+String1]
+  10004348: push    eax; phkResult
+  10004349: push    20019h; samDesired
+  1000434e: push    0; ulOptions
+  10004350: push    ecx; lpSubKey
+  10004351: push    80000001h; hKey
+  10004356: call    ds:RegOpenKeyExA; ADVAPI32
+  1000435c: test    eax, eax
+  1000435e: jz      short loc_10004364
+  10004360: xor     eax, eax
+  10004362: jmp     short loc_100043C5
+  10004364: lea     eax, [ebp+cbData]
+  10004367: mov     edi, [ebp+lpData]
+  1000436a: mov     [ebp+cbData], 104h
+  10004371: push    eax; lpcbData
+  10004372: push    edi; lpData
+  10004373: push    0; lpType
+  10004375: push    0; lpReserved
+  10004377: push    offset aPrograms; "Programs"
+  1000437c: push    [ebp+phkResult]; hKey
+  1000437f: call    ds:RegQueryValueExA; ADVAPI32
+  10004385: push    [ebp+phkResult]; hKey
+  10004388: mov     ebx, eax
+  1000438a: call    ds:RegCloseKey; ADVAPI32
+  10004390: test    ebx, ebx
+  10004392: jz      short loc_10004398
+  10004394: xor     eax, eax
+  10004396: jmp     short loc_100043C5
+  10004398: push    edi; lpString
+  10004399: call    ds:lstrlenA; KERNEL32
+  1000439f: cmp     byte ptr [edi+eax-2], 5Ch ; '\'
+  100043a4: jz      short loc_100043C0
+  100043a6: push    edi; lpString
+  100043a7: call    ds:lstrlenA; KERNEL32
+  100043ad: cmp     eax, 103h
+  100043b2: jl      short loc_100043B8
+  100043b4: xor     eax, eax
+  100043b6: jmp     short loc_100043C5
+  100043b8: push    offset asc_1000690C; "\\"
+  100043bd: push    edi; lpString1
+  100043be: call    esi ; lstrcatA; KERNEL32
+  100043c0: mov     eax, 1
+  100043c5: pop     edi
+  100043c6: pop     esi
+  100043c7: pop     ebx
+  100043c8: mov     esp, ebp
+  100043ca: pop     ebp
+  100043cb: retn
+ENDFUNC
+FUNC 100043cc sub_100043CC
+  100043cc: mov     eax, [esp+arg_0]
+  100043d0: xor     ecx, ecx
+  100043d2: mov     [eax], ecx
+  100043d4: mov     [eax+4], ecx
+  100043d7: mov     [eax+58h], ecx
+  100043da: retn
+ENDFUNC
+FUNC 100043db sub_100043DB
+  100043db: push    ebx
+  100043dc: push    esi
+  100043dd: mov     esi, [esp+8+arg_0]
+  100043e1: push    edi
+  100043e2: push    dword ptr [esi]; hMem
+  100043e4: call    sub_10003961
+  100043e9: add     esp, 4
+  100043ec: xor     edi, edi
+  100043ee: push    dword ptr [esi+4]; hMem
+  100043f1: call    sub_10003961
+  100043f6: add     esp, 4
+  100043f9: cmp     [esi+58h], edi
+  100043fc: jle     short loc_10004414
+  100043fe: lea     ebx, [esi+8]
+  10004401: push    dword ptr [ebx]; hMem
+  10004403: call    sub_10003961
+  10004408: add     esp, 4
+  1000440b: add     ebx, 4
+  1000440e: inc     edi
+  1000440f: cmp     [esi+58h], edi
+  10004412: jg      short loc_10004401
+  10004414: pop     edi
+  10004415: pop     esi
+  10004416: pop     ebx
+  10004417: retn
+ENDFUNC
+FUNC 10004418 sub_10004418
+  10004418: mov     eax, dword_10006BE8
+  1000441d: test    eax, eax
+  1000441f: jle     short loc_1000442B
+  10004421: imul    eax, 5Ch ; '\'
+  10004424: add     eax, offset unk_1000716C
+  10004429: jmp     short locret_1000442D
+  1000442b: xor     eax, eax
+  1000442d: retn
+ENDFUNC
+FUNC 1000442e fWithinAction
+  1000442e: cmp     dword_10006BE8, 0
+  10004435: mov     eax, 1
+  1000443a: jg      short locret_1000443E
+  1000443c: xor     eax, eax
+  1000443e: retn
+ENDFUNC
+FUNC 1000443f sub_1000443F
+  1000443f: cmp     dword_10006BE8, 0Ah
+  10004446: mov     eax, 0
+  1000444b: jge     short locret_10004466
+  1000444d: inc     dword_10006BE8
+  10004453: call    sub_10004418
+  10004458: push    eax
+  10004459: call    sub_100043CC
+  1000445e: add     esp, 4
+  10004461: mov     eax, 1
+  10004466: retn
+ENDFUNC
+FUNC 10004467 sub_10004467
+  10004467: call    fWithinAction
+  1000446c: test    eax, eax
+  1000446e: mov     eax, 0
+  10004473: jz      short locret_1000448E
+  10004475: call    sub_10004418
+  1000447a: push    eax
+  1000447b: call    sub_100043DB
+  10004480: add     esp, 4
+  10004483: mov     eax, 1
+  10004488: dec     dword_10006BE8
+  1000448e: retn
+ENDFUNC
+FUNC 1000448f sub_1000448F
+  1000448f: push    ebx
+  10004490: push    esi
+  10004491: push    edi
+  10004492: xor     esi, esi
+  10004494: mov     ebx, [esp+0Ch+arg_4]
+  10004498: push    ebp
+  10004499: cmp     ebx, esi
+  1000449b: jle     short loc_100044C1
+  1000449d: mov     ebp, [esp+10h+arg_0]
+  100044a1: mov     edi, ebx
+  100044a3: cmp     dword ptr [ebp+0], 0
+  100044a7: jnz     short loc_100044B0
+  100044a9: mov     dword ptr [ebp+0], offset String
+  100044b0: push    dword ptr [ebp+0]; lpString
+  100044b3: call    ds:lstrlenA; KERNEL32
+  100044b9: add     esi, eax
+  100044bb: add     ebp, 4
+  100044be: dec     edi
+  100044bf: jnz     short loc_100044A3
+  100044c1: inc     esi
+  100044c2: push    esi; uBytes
+  100044c3: call    sub_1000392A
+  100044c8: add     esp, 4
+  100044cb: mov     esi, eax
+  100044cd: test    esi, esi
+  100044cf: jnz     short loc_100044D5
+  100044d1: xor     eax, eax
+  100044d3: jmp     short loc_100044F1
+  100044d5: mov     byte ptr [esi], 0
+  100044d8: test    ebx, ebx
+  100044da: jle     short loc_100044EF
+  100044dc: mov     edi, [esp+10h+arg_0]
+  100044e0: push    dword ptr [edi]; lpString2
+  100044e2: push    esi; lpString1
+  100044e3: add     edi, 4
+  100044e6: call    ds:lstrcatA; KERNEL32
+  100044ec: dec     ebx
+  100044ed: jnz     short loc_100044E0
+  100044ef: mov     eax, esi
+  100044f1: pop     ebp
+  100044f2: pop     edi
+  100044f3: pop     esi
+  100044f4: pop     ebx
+  100044f5: retn
+ENDFUNC
+FUNC 100044f6 sub_100044F6
+  100044f6: mov     eax, [esp+lpsz]
+  100044fa: cmp     byte ptr [eax], 0
+  100044fd: jz      short locret_10004517
+  100044ff: mov     cl, [eax]
+  10004501: cmp     cl, 0Ah
+  10004504: jz      short locret_10004517
+  10004506: cmp     cl, 0Dh
+  10004509: jz      short locret_10004517
+  1000450b: push    eax; lpsz
+  1000450c: call    ds:CharNextA; USER32
+  10004512: cmp     byte ptr [eax], 0
+  10004515: jnz     short loc_100044FF
+  10004517: retn
+ENDFUNC
+FUNC 10004518 sub_10004518
+  10004518: push    ebp
+  10004519: xor     eax, eax
+  1000451b: mov     ebp, esp
+  1000451d: sub     esp, 4
+  10004520: push    esi
+  10004521: mov     esi, [ebp+arg_C]
+  10004524: test    esi, esi
+  10004526: jz      short loc_1000452A
+  10004528: mov     [esi], eax
+  1000452a: push    0; lpOverlapped
+  1000452c: lea     eax, [ebp+NumberOfBytesWritten]
+  1000452f: push    eax; lpNumberOfBytesWritten
+  10004530: push    [ebp+nNumberOfBytesToWrite]; nNumberOfBytesToWrite
+  10004533: push    [ebp+lpBuffer]; lpBuffer
+  10004536: push    [ebp+hFile]; hFile
+  10004539: call    ds:WriteFile; KERNEL32
+  1000453f: test    eax, eax
+  10004541: jnz     short loc_10004547
+  10004543: xor     eax, eax
+  10004545: jmp     short loc_1000455D
+  10004547: test    esi, esi
+  10004549: jz      short loc_10004550
+  1000454b: mov     eax, [ebp+NumberOfBytesWritten]
+  1000454e: mov     [esi], eax
+  10004550: mov     eax, [ebp+NumberOfBytesWritten]
+  10004553: sub     eax, [ebp+nNumberOfBytesToWrite]
+  10004556: cmp     eax, 1
+  10004559: sbb     eax, eax
+  1000455b: neg     eax
+  1000455d: pop     esi
+  1000455e: mov     esp, ebp
+  10004560: pop     ebp
+  10004561: retn
+ENDFUNC
+FUNC 10004562 sub_10004562
+  10004562: push    ebp
+  10004563: mov     ebp, esp
+  10004565: sub     esp, 10h
+  10004568: cmp     hMem, 0
+  1000456f: mov     [ebp+var_4], 0
+  10004576: push    ebx
+  10004577: push    esi
+  10004578: push    edi
+  10004579: jnz     short loc_10004585
+  1000457b: mov     eax, 1
+  10004580: jmp     loc_10004681
+  10004585: push    [ebp+lpString]; lpString
+  10004588: call    ds:lstrlenA; KERNEL32
+  1000458e: mov     [ebp+SecurityAttributes.nLength], 0Ch
+  10004595: xor     eax, eax
+  10004597: lea     ecx, [ebp+SecurityAttributes]
+  1000459a: push    eax; hTemplateFile
+  1000459b: mov     [ebp+SecurityAttributes.lpSecurityDescriptor], eax
+  1000459e: push    80000080h; dwFlagsAndAttributes
+  100045a3: mov     [ebp+SecurityAttributes.bInheritHandle], eax
+  100045a6: push    3; dwCreationDisposition
+  100045a8: push    ecx; lpSecurityAttributes
+  100045a9: push    eax; dwShareMode
+  100045aa: push    40000000h; dwDesiredAccess
+  100045af: push    hMem; lpFileName
+  100045b5: call    ds:CreateFileA; KERNEL32
+  100045bb: cmp     eax, 0FFFFFFFFh
+  100045be: mov     esi, eax
+  100045c0: jnz     short loc_100045C9
+  100045c2: xor     eax, eax
+  100045c4: jmp     loc_10004681
+  100045c9: push    2; dwMoveMethod
+  100045cb: push    0; lpDistanceToMoveHigh
+  100045cd: push    0; lDistanceToMove
+  100045cf: push    esi; hFile
+  100045d0: call    ds:SetFilePointer; KERNEL32
+  100045d6: cmp     eax, 0FFFFFFFFh
+  100045d9: jnz     short loc_100045E2
+  100045db: xor     eax, eax
+  100045dd: jmp     loc_10004681
+  100045e2: mov     edi, [ebp+lpString]
+  100045e5: mov     eax, [ebp+arg_0]
+  100045e8: cmp     byte ptr [eax], 0
+  100045eb: jz      short loc_10004607
+  100045ed: push    0; int
+  100045ef: push    eax; lpString
+  100045f0: call    ds:lstrlenA; KERNEL32
+  100045f6: push    eax; nNumberOfBytesToWrite
+  100045f7: push    [ebp+arg_0]; lpBuffer
+  100045fa: push    esi; hFile
+  100045fb: call    sub_10004518
+  10004600: add     esp, 10h
+  10004603: test    eax, eax
+  10004605: jz      short loc_10004662
+  10004607: mov     al, [edi]
+  10004609: cmp     al, 0Dh
+  1000460b: jz      short loc_10004611
+  1000460d: cmp     al, 0Ah
+  1000460f: jnz     short loc_1000461C
+  10004611: push    edi; lpsz
+  10004612: call    ds:CharNextA; USER32
+  10004618: mov     edi, eax
+  1000461a: jmp     short loc_10004607
+  1000461c: cmp     byte ptr [edi], 0
+  1000461f: jz      short loc_10004669
+  10004621: push    edi; lpsz
+  10004622: call    sub_100044F6
+  10004627: add     esp, 4
+  1000462a: mov     ebx, eax
+  1000462c: sub     eax, edi
+  1000462e: push    0; int
+  10004630: push    eax; nNumberOfBytesToWrite
+  10004631: push    edi; lpBuffer
+  10004632: push    esi; hFile
+  10004633: call    sub_10004518
+  10004638: add     esp, 10h
+  1000463b: test    eax, eax
+  1000463d: jz      short loc_10004662
+  1000463f: push    0; int
+  10004641: push    2; nNumberOfBytesToWrite
+  10004643: push    offset Buffer; "\r\n"
+  10004648: push    esi; hFile
+  10004649: call    sub_10004518
+  1000464e: add     esp, 10h
+  10004651: test    eax, eax
+  10004653: jz      short loc_10004662
+  10004655: mov     edi, ebx
+  10004657: cmp     byte ptr [ebx], 0
+  1000465a: jz      short loc_10004669
+  1000465c: test    ebx, ebx
+  1000465e: jnz     short loc_100045E5
+  10004660: jmp     short loc_10004669
+  10004662: mov     [ebp+var_4], 1
+  10004669: push    esi; hObject
+  1000466a: call    ds:CloseHandle; KERNEL32
+  10004670: test    eax, eax
+  10004672: mov     eax, 0
+  10004677: jz      short loc_10004681
+  10004679: cmp     [ebp+var_4], 1
+  1000467d: sbb     eax, eax
+  1000467f: neg     eax
+  10004681: pop     edi
+  10004682: pop     esi
+  10004683: pop     ebx
+  10004684: mov     esp, ebp
+  10004686: pop     ebp
+  10004687: retn
+ENDFUNC
+FUNC 10004688 sub_10004688
+  10004688: push    offset String; lpString
+  1000468d: push    offset Buffer; "\r\n"
+  10004692: call    sub_10004562
+  10004697: add     esp, 8
+  1000469a: retn
+ENDFUNC
+FUNC 1000469b AbortAction
+  1000469b: call    fWithinAction
+  100046a0: test    eax, eax
+  100046a2: mov     eax, 5
+  100046a7: jz      short locret_100046B6
+  100046a9: call    sub_10004467
+  100046ae: cmp     eax, 1
+  100046b1: sbb     eax, eax
+  100046b3: and     eax, 6
+  100046b6: retn
+ENDFUNC
+FUNC 100046b7 sub_100046B7
+  100046b7: push    ebx
+  100046b8: push    esi
+  100046b9: push    edi
+  100046ba: call    sub_10004418
+  100046bf: mov     edi, eax
+  100046c1: mov     esi, [esp+0Ch+lpString]
+  100046c5: test    esi, esi
+  100046c7: jnz     short loc_100046D0
+  100046c9: mov     eax, 1
+  100046ce: jmp     short loc_1000470D
+  100046d0: call    fWithinAction
+  100046d5: test    eax, eax
+  100046d7: jnz     short loc_100046E0
+  100046d9: mov     eax, 5
+  100046de: jmp     short loc_1000470D
+  100046e0: lea     ebx, [edi+58h]
+  100046e3: cmp     dword ptr [ebx], 14h
+  100046e6: jl      short loc_100046EF
+  100046e8: mov     eax, 3
+  100046ed: jmp     short loc_1000470D
+  100046ef: push    esi; lpString
+  100046f0: call    sub_10003937
+  100046f5: add     esp, 4
+  100046f8: test    eax, eax
+  100046fa: jnz     short loc_10004703
+  100046fc: mov     eax, 2
+  10004701: jmp     short loc_1000470D
+  10004703: mov     ecx, [ebx]
+  10004705: mov     [edi+ecx*4+8], eax
+  10004709: xor     eax, eax
+  1000470b: inc     dword ptr [ebx]
+  1000470d: pop     edi
+  1000470e: pop     esi
+  1000470f: pop     ebx
+  10004710: retn
+ENDFUNC
+FUNC 10004711 sub_10004711
+  10004711: push    esi
+  10004712: mov     esi, [esp+4+lpString]
+  10004716: test    esi, esi
+  10004718: jnz     short loc_10004721
+  1000471a: mov     eax, 1
+  1000471f: jmp     short loc_1000475D
+  10004721: call    fWithinAction
+  10004726: test    eax, eax
+  10004728: jnz     short loc_10004731
+  1000472a: mov     eax, 5
+  1000472f: jmp     short loc_1000475D
+  10004731: push    esi; lpString
+  10004732: call    sub_10003937
+  10004737: add     esp, 4
+  1000473a: mov     esi, eax
+  1000473c: mov     eax, 2
+  10004741: test    esi, esi
+  10004743: jz      short loc_1000475D
+  10004745: call    sub_10004418
+  1000474a: push    dword ptr [eax]; hMem
+  1000474c: call    sub_10003961
+  10004751: add     esp, 4
+  10004754: call    sub_10004418
+  10004759: mov     [eax], esi
+  1000475b: xor     eax, eax
+  1000475d: pop     esi
+  1000475e: retn
+ENDFUNC
+FUNC 1000475f sub_1000475F
+  1000475f: push    ebp
+  10004760: mov     ebp, esp
+  10004762: sub     esp, 14h
+  10004765: push    ebx
+  10004766: push    esi
+  10004767: push    edi
+  10004768: call    sub_10004418
+  1000476d: mov     ebx, eax
+  1000476f: call    fWithinAction
+  10004774: test    eax, eax
+  10004776: jnz     short loc_1000477F
+  10004778: mov     eax, 5
+  1000477d: jmp     short loc_100047E9
+  1000477f: cmp     [ebp+arg_0], 0
+  10004783: jnz     short loc_1000478C
+  10004785: mov     [ebp+arg_0], offset String
+  1000478c: xor     edi, edi
+  1000478e: cmp     [ebx+58h], edi
+  10004791: jle     short loc_100047E7
+  10004793: lea     esi, [ebx+8]
+  10004796: push    3
+  10004798: lea     ecx, [ebp+var_14]
+  1000479b: mov     [ebp+var_14], offset unk_10006BF0
+  100047a2: mov     eax, [esi]
+  100047a4: push    ecx
+  100047a5: mov     [ebp+var_C], offset unk_10006BEC
+  100047ac: mov     [ebp+var_10], eax
+  100047af: call    sub_1000448F
+  100047b4: add     esp, 8
+  100047b7: mov     [ebp+hMem], eax
+  100047ba: test    eax, eax
+  100047bc: jz      short loc_100047F0
+  100047be: push    eax; lpString
+  100047bf: push    [ebp+arg_0]; LPCSTR
+  100047c2: call    sub_10004562
+  100047c7: add     esp, 8
+  100047ca: mov     [ebp+var_8], eax
+  100047cd: push    [ebp+hMem]; hMem
+  100047d0: call    sub_10003961
+  100047d5: add     esp, 4
+  100047d8: cmp     [ebp+var_8], 0
+  100047dc: jz      short loc_100047F7
+  100047de: add     esi, 4
+  100047e1: inc     edi
+  100047e2: cmp     [ebx+58h], edi
+  100047e5: jg      short loc_10004796
+  100047e7: xor     eax, eax
+  100047e9: pop     edi
+  100047ea: pop     esi
+  100047eb: pop     ebx
+  100047ec: mov     esp, ebp
+  100047ee: pop     ebp
+  100047ef: retn
+  100047f0: mov     eax, 2
+  100047f5: jmp     short loc_100047E9
+  100047f7: mov     eax, 4
+  100047fc: jmp     short loc_100047E9
+ENDFUNC
+FUNC 100047fe sub_100047FE
+  100047fe: push    ebp
+  100047ff: mov     ebp, esp
+  10004801: sub     esp, 14h
+  10004804: push    ebx
+  10004805: push    esi
+  10004806: push    edi
+  10004807: call    sub_10004418
+  1000480c: mov     ecx, [ebp+arg_4]
+  1000480f: test    ecx, ecx
+  10004811: jnz     short loc_1000481A
+  10004813: mov     eax, 6
+  10004818: jmp     short loc_10004894
+  1000481a: mov     esi, [ebp+arg_0]
+  1000481d: test    esi, esi
+  1000481f: jnz     short loc_10004826
+  10004821: mov     esi, offset String
+  10004826: mov     edx, offset fWithinAction
+  1000482b: test    edx, edx
+  1000482d: jnz     short loc_10004836
+  1000482f: mov     eax, 5
+  10004834: jmp     short loc_10004894
+  10004836: mov     [ebp+var_14], esi
+  10004839: mov     [ebp+var_10], ecx
+  1000483c: mov     ecx, [eax]
+  1000483e: push    5
+  10004840: lea     edx, [ebp+var_14]
+  10004843: mov     [ebp+var_C], ecx
+  10004846: mov     [ebp+var_8], offset unk_10006BF4
+  1000484d: mov     eax, [eax+4]
+  10004850: push    edx
+  10004851: mov     [ebp+var_4], eax
+  10004854: call    sub_1000448F
+  10004859: add     esp, 8
+  1000485c: mov     edi, eax
+  1000485e: test    edi, edi
+  10004860: jnz     short loc_10004869
+  10004862: mov     eax, 2
+  10004867: jmp     short loc_10004894
+  10004869: push    edi; lpString
+  1000486a: push    offset String; LPCSTR
+  1000486f: call    sub_10004562
+  10004874: add     esp, 8
+  10004877: mov     ebx, eax
+  10004879: push    edi; hMem
+  1000487a: call    sub_10003961
+  1000487f: add     esp, 4
+  10004882: mov     eax, 4
+  10004887: test    ebx, ebx
+  10004889: jz      short loc_10004894
+  1000488b: push    esi; LPCSTR
+  1000488c: call    sub_1000475F
+  10004891: add     esp, 4
+  10004894: pop     edi
+  10004895: pop     esi
+  10004896: pop     ebx
+  10004897: mov     esp, ebp
+  10004899: pop     ebp
+  1000489a: retn
+ENDFUNC
+FUNC 1000489b CommitAction
+  1000489b: push    esi
+  1000489c: call    fWithinAction
+  100048a1: test    eax, eax
+  100048a3: jnz     short loc_100048AC
+  100048a5: mov     eax, 5
+  100048aa: jmp     short loc_100048D9
+  100048ac: push    offset aAction; "ACTION: "
+  100048b1: push    offset String; LPCSTR
+  100048b6: call    sub_100047FE
+  100048bb: add     esp, 8
+  100048be: mov     esi, eax
+  100048c0: test    esi, esi
+  100048c2: jnz     short loc_100048D2
+  100048c4: call    sub_10004688
+  100048c9: test    eax, eax
+  100048cb: jnz     short loc_100048DB
+  100048cd: mov     esi, 4
+  100048d2: call    sub_10004467
+  100048d7: mov     eax, esi
+  100048d9: pop     esi
+  100048da: retn
+  100048db: call    sub_10004467
+  100048e0: cmp     eax, 1
+  100048e3: sbb     eax, eax
+  100048e5: and     eax, 6
+  100048e8: jmp     short loc_100048D9
+ENDFUNC
+FUNC 100048ea sub_100048EA
+  100048ea: push    ebp
+  100048eb: mov     eax, [esp+arg_0]
+  100048ef: mov     ebp, esp
+  100048f1: sub     esp, 14h
+  100048f4: test    eax, eax
+  100048f6: push    ebx
+  100048f7: push    esi
+  100048f8: mov     [ebp+var_10], eax
+  100048fb: mov     [ebp+var_14], offset asc_10006C08; "*** "
+  10004902: mov     [ebp+var_C], offset asc_10006C04; " "
+  10004909: push    edi
+  1000490a: jz      loc_100049B3
+  10004910: mov     esi, [ebp+arg_4]
+  10004913: test    esi, esi
+  10004915: jz      loc_100049B3
+  1000491b: mov     edi, [ebp+lpString]
+  1000491e: test    edi, edi
+  10004920: jz      loc_100049B3
+  10004926: push    3
+  10004928: lea     eax, [ebp+var_14]
+  1000492b: push    eax
+  1000492c: call    sub_1000448F
+  10004931: add     esp, 8
+  10004934: mov     ebx, eax
+  10004936: test    ebx, ebx
+  10004938: jnz     short loc_10004941
+  1000493a: mov     eax, 2
+  1000493f: jmp     short loc_100049B8
+  10004941: push    edi; lpString
+  10004942: push    ebx; LPCSTR
+  10004943: call    sub_10004562
+  10004948: add     esp, 8
+  1000494b: mov     edi, eax
+  1000494d: push    ebx; hMem
+  1000494e: call    sub_10003961
+  10004953: add     esp, 4
+  10004956: test    edi, edi
+  10004958: jnz     short loc_10004961
+  1000495a: mov     eax, 4
+  1000495f: jmp     short loc_100049B8
+  10004961: call    fWithinAction
+  10004966: test    eax, eax
+  10004968: jz      short loc_100049A4
+  1000496a: call    sub_10004418
+  1000496f: push    2
+  10004971: mov     [ebp+var_8], esi
+  10004974: mov     [ebp+var_4], offset asc_10006C04; " "
+  1000497b: lea     esi, [ebp+var_8]
+  1000497e: push    esi
+  1000497f: call    sub_1000448F
+  10004984: add     esp, 8
+  10004987: test    eax, eax
+  10004989: jnz     short loc_10004992
+  1000498b: mov     eax, 2
+  10004990: jmp     short loc_100049B8
+  10004992: push    eax; int
+  10004993: push    offset asc_10006C08; "*** "
+  10004998: call    sub_100047FE
+  1000499d: add     esp, 8
+  100049a0: test    eax, eax
+  100049a2: jnz     short loc_100049B8
+  100049a4: call    sub_10004688
+  100049a9: cmp     eax, 1
+  100049ac: sbb     eax, eax
+  100049ae: and     eax, 4
+  100049b1: jmp     short loc_100049B8
+  100049b3: mov     eax, 1
+  100049b8: pop     edi
+  100049b9: pop     esi
+  100049ba: pop     ebx
+  100049bb: mov     esp, ebp
+  100049bd: pop     ebp
+  100049be: retn
+ENDFUNC
+FUNC 100049bf sub_100049BF
+  100049bf: push    [esp+lpString]; lpString
+  100049c3: push    [esp+4+arg_4]; int
+  100049c7: push    [esp+8+arg_0]; int
+  100049cb: call    sub_100048EA
+  100049d0: add     esp, 0Ch
+  100049d3: retn
+ENDFUNC
+FUNC 100049d4 sub_100049D4
+  100049d4: push    ebx
+  100049d5: push    esi
+  100049d6: mov     esi, [esp+8+lpString]
+  100049da: push    edi
+  100049db: test    esi, esi
+  100049dd: jz      short loc_10004A2E
+  100049df: mov     edi, [esp+0Ch+arg_4]
+  100049e3: test    edi, edi
+  100049e5: jz      short loc_10004A2E
+  100049e7: call    sub_1000443F
+  100049ec: test    eax, eax
+  100049ee: jnz     short loc_100049F7
+  100049f0: mov     eax, 3
+  100049f5: jmp     short loc_10004A33
+  100049f7: call    sub_10004418
+  100049fc: mov     ebx, eax
+  100049fe: push    esi; lpString
+  100049ff: call    sub_10003937
+  10004a04: add     esp, 4
+  10004a07: mov     [ebx], eax
+  10004a09: push    edi; lpString
+  10004a0a: call    sub_10003937
+  10004a0f: add     esp, 4
+  10004a12: mov     [ebx+4], eax
+  10004a15: cmp     dword ptr [ebx], 0
+  10004a18: jz      short loc_10004A22
+  10004a1a: test    eax, eax
+  10004a1c: jz      short loc_10004A22
+  10004a1e: xor     eax, eax
+  10004a20: jmp     short loc_10004A33
+  10004a22: call    sub_10004467
+  10004a27: mov     eax, 2
+  10004a2c: jmp     short loc_10004A33
+  10004a2e: mov     eax, 1
+  10004a33: pop     edi
+  10004a34: pop     esi
+  10004a35: pop     ebx
+  10004a36: retn
+ENDFUNC
+FUNC 10004a37 sub_10004A37
+  10004a37: push    esi
+  10004a38: mov     esi, [esp+4+lpFileName]
+  10004a3c: test    esi, esi
+  10004a3e: jnz     short loc_10004A47
+  10004a40: mov     eax, 1
+  10004a45: jmp     short loc_10004AA7
+  10004a47: xor     eax, eax
+  10004a49: push    eax; hTemplateFile
+  10004a4a: push    80h; dwFlagsAndAttributes
+  10004a4f: push    3; dwCreationDisposition
+  10004a51: push    eax; lpSecurityAttributes
+  10004a52: push    eax; dwShareMode
+  10004a53: push    80000000h; dwDesiredAccess
+  10004a58: push    esi; lpFileName
+  10004a59: call    ds:CreateFileA; KERNEL32
+  10004a5f: cmp     eax, 0FFFFFFFFh
+  10004a62: jnz     short loc_10004A6B
+  10004a64: mov     eax, 7
+  10004a69: jmp     short loc_10004AA7
+  10004a6b: push    eax; hObject
+  10004a6c: call    ds:CloseHandle; KERNEL32
+  10004a72: test    eax, eax
+  10004a74: jnz     short loc_10004A7D
+  10004a76: mov     eax, 7
+  10004a7b: jmp     short loc_10004AA7
+  10004a7d: push    esi; lpString
+  10004a7e: call    sub_10003937
+  10004a83: add     esp, 4
+  10004a86: mov     esi, eax
+  10004a88: mov     eax, 2
+  10004a8d: test    esi, esi
+  10004a8f: jz      short loc_10004AA7
+  10004a91: mov     eax, hMem
+  10004a96: push    eax; hMem
+  10004a97: call    sub_10003961
+  10004a9c: add     esp, 4
+  10004a9f: xor     eax, eax
+  10004aa1: mov     hMem, esi
+  10004aa7: pop     esi
+  10004aa8: retn
+ENDFUNC
+FUNC 10004aa9 DisableLogging
+  10004aa9: mov     eax, hMem
+  10004aae: push    eax; hMem
+  10004aaf: call    sub_10003961
+  10004ab4: add     esp, 4
+  10004ab7: xor     eax, eax
+  10004ab9: mov     hMem, 0
+  10004ac3: retn
+ENDFUNC
+FUNC 10004ac4 sub_10004AC4
+  10004ac4: push    [esp+lpString]; lpString
+  10004ac8: push    [esp+4+arg_0]; LPCSTR
+  10004acc: call    sub_10004562
+  10004ad1: add     esp, 8
+  10004ad4: test    eax, eax
+  10004ad6: mov     eax, 4
+  10004adb: jz      short locret_10004AE4
+  10004add: call    sub_10004688
+  10004ae2: xor     eax, eax
+  10004ae4: retn
+ENDFUNC
+FUNC 10004ae5 sub_10004AE5
+  10004ae5: push    ebp
+  10004ae6: mov     eax, [esp+arg_0]
+  10004aea: mov     ebp, esp
+  10004aec: sub     esp, 0Ch
+  10004aef: push    esi
+  10004af0: mov     ecx, [ebp+arg_4]
+  10004af3: push    edi
+  10004af4: mov     [ebp+var_C], eax
+  10004af7: push    3
+  10004af9: lea     eax, [ebp+var_C]
+  10004afc: push    eax
+  10004afd: mov     [ebp+var_4], ecx
+  10004b00: mov     [ebp+var_8], offset unk_10006BF4
+  10004b07: call    sub_1000448F
+  10004b0c: add     esp, 8
+  10004b0f: mov     edi, eax
+  10004b11: mov     eax, 2
+  10004b16: test    edi, edi
+  10004b18: jz      short loc_10004B35
+  10004b1a: push    edi; lpString
+  10004b1b: push    offset aConfig; "CONFIG: "
+  10004b20: call    sub_10004AC4
+  10004b25: add     esp, 8
+  10004b28: mov     esi, eax
+  10004b2a: push    edi; hMem
+  10004b2b: call    sub_10003961
+  10004b30: add     esp, 4
+  10004b33: mov     eax, esi
+  10004b35: pop     edi
+  10004b36: pop     esi
+  10004b37: mov     esp, ebp
+  10004b39: pop     ebp
+  10004b3a: retn
+ENDFUNC
+FUNC 10004b3b sub_10004B3B
+  10004b3b: push    [esp+lpString]; lpString
+  10004b3f: push    offset aNote; "NOTE: "
+  10004b44: call    sub_10004AC4
+  10004b49: add     esp, 8
+  10004b4c: retn
+ENDFUNC
+FUNC 10004b50 _memset
+  10004b50: mov     edx, [esp+Size]
+  10004b54: mov     ecx, [esp+arg_0]
+  10004b58: test    edx, edx
+  10004b5a: jz      short toend
+  10004b5c: xor     eax, eax
+  10004b5e: mov     al, byte ptr [esp+Val]
+  10004b62: push    edi
+  10004b63: mov     edi, ecx
+  10004b65: cmp     edx, 4
+  10004b68: jb      short tail
+  10004b6a: neg     ecx
+  10004b6c: and     ecx, 3
+  10004b6f: jz      short dwords
+  10004b71: sub     edx, ecx
+  10004b73: mov     [edi], al
+  10004b75: inc     edi
+  10004b76: dec     ecx
+  10004b77: jnz     short adjust_loop
+  10004b79: mov     ecx, eax
+  10004b7b: shl     eax, 8
+  10004b7e: add     eax, ecx
+  10004b80: mov     ecx, eax
+  10004b82: shl     eax, 10h
+  10004b85: add     eax, ecx
+  10004b87: mov     ecx, edx
+  10004b89: and     edx, 3
+  10004b8c: shr     ecx, 2
+  10004b8f: jz      short tail
+  10004b91: rep stosd
+  10004b93: test    edx, edx
+  10004b95: jz      short finish_0
+  10004b97: mov     [edi], al
+  10004b99: inc     edi
+  10004b9a: dec     edx
+  10004b9b: jnz     short tail
+  10004b9d: mov     eax, [esp+4+arg_0]
+  10004ba1: pop     edi
+  10004ba2: retn
+  10004ba3: mov     eax, [esp+arg_0]
+  10004ba7: retn
+ENDFUNC
+FUNC 10004bb0 _strcpy
+  10004bb0: push    edi
+  10004bb1: mov     edi, [esp+4+Destination]
+  10004bb5: jmp     short loc_10004C21
+  10004bb7: align 10h
+  10004bc0: mov     ecx, [esp+Destination]
+  10004bc4: push    edi
+  10004bc5: test    ecx, 3
+  10004bcb: jz      short loc_10004BDC
+  10004bcd: mov     al, [ecx]
+  10004bcf: inc     ecx
+  10004bd0: test    al, al
+  10004bd2: jz      short loc_10004C0F
+  10004bd4: test    ecx, 3
+  10004bda: jnz     short loc_10004BCD
+  10004bdc: mov     eax, [ecx]
+  10004bde: mov     edx, 7EFEFEFFh
+  10004be3: add     edx, eax
+  10004be5: xor     eax, 0FFFFFFFFh
+  10004be8: xor     eax, edx
+  10004bea: add     ecx, 4
+  10004bed: test    eax, 81010100h
+  10004bf2: jz      short loc_10004BDC
+  10004bf4: mov     eax, [ecx-4]
+  10004bf7: test    al, al
+  10004bf9: jz      short loc_10004C1E
+  10004bfb: test    ah, ah
+  10004bfd: jz      short loc_10004C19
+  10004bff: test    eax, 0FF0000h
+  10004c04: jz      short loc_10004C14
+  10004c06: test    eax, 0FF000000h
+  10004c0b: jz      short loc_10004C0F
+  10004c0d: jmp     short loc_10004BDC
+  10004c0f: lea     edi, [ecx-1]
+  10004c12: jmp     short loc_10004C21
+  10004c14: lea     edi, [ecx-2]
+  10004c17: jmp     short loc_10004C21
+  10004c19: lea     edi, [ecx-3]
+  10004c1c: jmp     short loc_10004C21
+  10004c1e: lea     edi, [ecx-4]
+  10004c21: mov     ecx, [esp+4+Source]
+  10004c25: test    ecx, 3
+  10004c2b: jz      short loc_10004C46
+  10004c2d: mov     dl, [ecx]
+  10004c2f: inc     ecx
+  10004c30: test    dl, dl
+  10004c32: jz      short loc_10004C98
+  10004c34: mov     [edi], dl
+  10004c36: inc     edi
+  10004c37: test    ecx, 3
+  10004c3d: jnz     short loc_10004C2D
+  10004c3f: jmp     short loc_10004C46
+  10004c41: mov     [edi], edx
+  10004c43: add     edi, 4
+  10004c46: mov     edx, 7EFEFEFFh
+  10004c4b: mov     eax, [ecx]
+  10004c4d: add     edx, eax
+  10004c4f: xor     eax, 0FFFFFFFFh
+  10004c52: xor     eax, edx
+  10004c54: mov     edx, [ecx]
+  10004c56: add     ecx, 4
+  10004c59: test    eax, 81010100h
+  10004c5e: jz      short loc_10004C41
+  10004c60: test    dl, dl
+  10004c62: jz      short loc_10004C98
+  10004c64: test    dh, dh
+  10004c66: jz      short loc_10004C8F
+  10004c68: test    edx, 0FF0000h
+  10004c6e: jz      short loc_10004C82
+  10004c70: test    edx, 0FF000000h
+  10004c76: jz      short loc_10004C7A
+  10004c78: jmp     short loc_10004C41
+  10004c7a: mov     [edi], edx
+  10004c7c: mov     eax, [esp+4+Destination]
+  10004c80: pop     edi
+  10004c81: retn
+  10004c82: mov     [edi], dx
+  10004c85: mov     eax, [esp+4+Destination]
+  10004c89: mov     byte ptr [edi+2], 0
+  10004c8d: pop     edi
+  10004c8e: retn
+  10004c8f: mov     [edi], dx
+  10004c92: mov     eax, [esp+4+Destination]
+  10004c96: pop     edi
+  10004c97: retn
+  10004c98: mov     [edi], dl
+  10004c9a: mov     eax, [esp+4+Destination]
+  10004c9e: pop     edi
+  10004c9f: retn
+ENDFUNC
+FUNC 10004ca0 __access
+  10004ca0: mov     eax, [esp+lpFileName]
+  10004ca4: push    eax; lpFileName
+  10004ca5: call    ds:GetFileAttributesA; KERNEL32
+  10004cab: cmp     eax, 0FFFFFFFFh
+  10004cae: jnz     short loc_10004CC5
+  10004cb0: call    ds:GetLastError; KERNEL32
+  10004cb6: push    eax
+  10004cb7: call    __dosmaperr
+  10004cbc: add     esp, 4
+  10004cbf: mov     eax, 0FFFFFFFFh
+  10004cc4: retn
+  10004cc5: test    al, 1
+  10004cc7: jz      short loc_10004CEC
+  10004cc9: test    byte ptr [esp+AccessMode], 2
+  10004cce: jz      short loc_10004CEC
+  10004cd0: call    __errno
+  10004cd5: mov     dword ptr [eax], 0Dh
+  10004cdb: call    ___doserrno
+  10004ce0: mov     dword ptr [eax], 5
+  10004ce6: mov     eax, 0FFFFFFFFh
+  10004ceb: retn
+  10004cec: xor     eax, eax
+  10004cee: retn
+ENDFUNC
+FUNC 10004cf0 _memcpy
+  10004cf0: push    ebp
+  10004cf1: mov     ebp, esp
+  10004cf3: push    edi
+  10004cf4: push    esi
+  10004cf5: mov     esi, [ebp+Src]
+  10004cf8: mov     edi, [ebp+arg_0]
+  10004cfb: mov     ecx, [ebp+Size]
+  10004cfe: cmp     edi, esi
+  10004d00: jbe     short loc_10004D0E
+  10004d02: mov     eax, esi
+  10004d04: add     eax, ecx
+  10004d06: cmp     edi, eax
+  10004d08: jb      loc_10004D9C
+  10004d0e: test    edi, 3
+  10004d14: jnz     short loc_10004D68
+  10004d16: mov     edx, ecx
+  10004d18: and     edx, 3
+  10004d1b: shr     ecx, 2
+  10004d1e: rep movsd
+  10004d20: jmp     ds:jpt_10004D20[edx*4]; switch 4 cases
+  10004d27: align 4
+  10004d28: dd offset loc_10004D60; jump table for switch statement
+  10004d38: mov     ax, [esi]; jumptable 10004D20 case 3
+  10004d3b: mov     [edi], ax
+  10004d3e: mov     al, [esi+2]
+  10004d41: mov     [edi+2], al
+  10004d44: mov     eax, [ebp+arg_0]
+  10004d47: pop     esi
+  10004d48: pop     edi
+  10004d49: leave
+  10004d4a: retn
+  10004d4b: align 4
+  10004d4c: mov     ax, [esi]; jumptable 10004D20 case 2
+  10004d4f: mov     [edi], ax
+  10004d52: mov     eax, [ebp+arg_0]
+  10004d55: pop     esi
+  10004d56: pop     edi
+  10004d57: leave
+  10004d58: retn
+  10004d59: align 4
+  10004d5c: mov     al, [esi]; jumptable 10004D20 case 1
+  10004d5e: mov     [edi], al
+  10004d60: mov     eax, [ebp+arg_0]; jumptable 10004D20 case 0
+  10004d63: pop     esi
+  10004d64: pop     edi
+  10004d65: leave
+  10004d66: retn
+  10004d67: align 4
+  10004d68: cmp     ecx, 0Ch
+  10004d6b: jbe     short loc_10004D90
+  10004d6d: mov     edx, edi
+  10004d6f: neg     edx
+  10004d71: and     edx, 3
+  10004d74: sub     ecx, edx
+  10004d76: mov     eax, ecx
+  10004d78: mov     ecx, edx
+  10004d7a: rep movsb
+  10004d7c: mov     ecx, eax
+  10004d7e: and     eax, 3
+  10004d81: shr     ecx, 2
+  10004d84: rep movsd
+  10004d86: jmp     ds:jpt_10004D20[eax*4]; switch 4 cases
+  10004d8d: align 10h
+  10004d90: rep movsb
+  10004d92: mov     eax, [ebp+arg_0]
+  10004d95: pop     esi
+  10004d96: pop     edi
+  10004d97: leave
+  10004d98: retn
+  10004d99: align 4
+  10004d9c: std
+  10004d9d: add     esi, ecx
+  10004d9f: add     edi, ecx
+  10004da1: test    edi, 3
+  10004da7: jnz     short loc_10004E08
+  10004da9: mov     edx, ecx
+  10004dab: and     edx, 3
+  10004dae: sub     esi, 4
+  10004db1: sub     edi, 4
+  10004db4: shr     ecx, 2
+  10004db7: rep movsd
+  10004db9: jmp     ds:jpt_10004DB9[edx*4]; switch 4 cases
+  10004dc0: dd offset loc_10004DFE; jump table for switch statement
+  10004dd0: mov     ax, [esi+2]; jumptable 10004DB9 case 3
+  10004dd4: mov     [edi+2], ax
+  10004dd8: mov     al, [esi+1]
+  10004ddb: mov     [edi+1], al
+  10004dde: cld
+  10004ddf: mov     eax, [ebp+arg_0]
+  10004de2: pop     esi
+  10004de3: pop     edi
+  10004de4: leave
+  10004de5: retn
+  10004de6: align 4
+  10004de8: mov     ax, [esi+2]; jumptable 10004DB9 case 2
+  10004dec: mov     [edi+2], ax
+  10004df0: cld
+  10004df1: mov     eax, [ebp+arg_0]
+  10004df4: pop     esi
+  10004df5: pop     edi
+  10004df6: leave
+  10004df7: retn
+  10004df8: mov     al, [esi+3]; jumptable 10004DB9 case 1
+  10004dfb: mov     [edi+3], al
+  10004dfe: cld; jumptable 10004DB9 case 0
+  10004dff: mov     eax, [ebp+arg_0]
+  10004e02: pop     esi
+  10004e03: pop     edi
+  10004e04: leave
+  10004e05: retn
+  10004e06: align 4
+  10004e08: dec     esi
+  10004e09: dec     edi
+  10004e0a: cmp     ecx, 0Ch
+  10004e0d: jbe     short loc_10004E34
+  10004e0f: neg     edx
+  10004e11: and     edx, 3
+  10004e14: sub     ecx, edx
+  10004e16: mov     eax, ecx
+  10004e18: mov     ecx, edx
+  10004e1a: rep movsb
+  10004e1c: mov     ecx, eax
+  10004e1e: and     eax, 3
+  10004e21: sub     esi, 3
+  10004e24: sub     edi, 3
+  10004e27: shr     ecx, 2
+  10004e2a: rep movsd
+  10004e2c: jmp     ds:jpt_10004DB9[eax*4]; switch 4 cases
+  10004e33: align 4
+  10004e34: rep movsb
+  10004e36: cld
+  10004e37: mov     eax, [ebp+arg_0]
+  10004e3a: pop     esi
+  10004e3b: pop     edi
+  10004e3c: leave
+  10004e3d: retn
+ENDFUNC

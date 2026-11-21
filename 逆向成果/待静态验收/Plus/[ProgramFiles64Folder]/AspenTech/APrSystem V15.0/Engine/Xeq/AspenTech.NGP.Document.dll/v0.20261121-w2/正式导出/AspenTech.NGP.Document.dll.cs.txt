@@ -1,0 +1,2209 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Diagnostics;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Text.Json;
+using AspenTech.APED.Core;
+using AspenTech.APED.Core.DBconfigs;
+using AspenTech.AspenPlus.Engine.Structures;
+using AspenTech.NGP.DataManagement;
+using AspenTech.NGP.DatabaseManagement;
+using AspenTech.NGP.Infrastructure;
+using AspenTech.NGP.PhysicalProperties;
+using Microsoft.CodeAnalysis;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: ComVisible(false)]
+[assembly: Guid("0fd0e718-85b5-4e70-8039-d99ecb4ae773")]
+[assembly: AssemblyTitle("Document")]
+[assembly: AssemblyFileVersion("41.0.0.39")]
+[assembly: AssemblyProduct("Plex Data Management (NGP)")]
+[assembly: AssemblyCopyright("Copyright © AspenTech Corporation 2025")]
+[assembly: AssemblyTrademark("AspenTech is a registered trademark of AspenTech Corporation")]
+[assembly: AssemblyCompany("AspenTech Corporation")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.0")]
+[module: System.Runtime.CompilerServices.RefSafetyRules(11)]
+namespace Microsoft.CodeAnalysis
+{
+	[CompilerGenerated]
+	[Microsoft.CodeAnalysis.Embedded]
+	internal sealed class EmbeddedAttribute : Attribute
+	{
+	}
+}
+namespace System.Runtime.CompilerServices
+{
+	[CompilerGenerated]
+	[Microsoft.CodeAnalysis.Embedded]
+	[AttributeUsage(AttributeTargets.Module, AllowMultiple = false, Inherited = false)]
+	internal sealed class RefSafetyRulesAttribute : Attribute
+	{
+		public readonly int Version;
+
+		public RefSafetyRulesAttribute(int P_0)
+		{
+			Version = P_0;
+		}
+	}
+}
+namespace AspenTech.NGP
+{
+	public class AssemblyInfo
+	{
+		public const string ProductName = "Plex Data Management (NGP)";
+
+		public const string CompanyName = "AspenTech Corporation";
+
+		public const string LegalTrademark = "AspenTech is a registered trademark of AspenTech Corporation";
+
+		public const string LegalCopyright = "Copyright © AspenTech Corporation 2025";
+
+		public const string DeveloperVersion = "41.0";
+
+		public const string DllVersion = "41.0.0.39";
+
+		public const string ReleaseVersion = "V15";
+
+		public const string Name = "";
+
+		public const string Title = "";
+
+		public const string Description = "";
+
+		public const string ProductNameAndVersion = "Plex Data Management (NGP) V15";
+
+		public const short AssemblyCopyrightFrom = 2013;
+
+		public const short AssemblyCopyrightTo = 2025;
+
+		public const string AssemblyCopyrightFrom_string = "2013";
+
+		public const string AssemblyCopyrightTo_string = "2025";
+	}
+}
+namespace AspenTech.NGP.Document
+{
+	public class DocumentFactory : IPlexDocumentFactory
+	{
+		private static IPlexDocumentFactory _instance;
+
+		private static Dictionary<int, IPlexDocument> _documents;
+
+		public static Dictionary<int, IPlexDocument> Documents => _documents ?? (_documents = new Dictionary<int, IPlexDocument>());
+
+		public static IPlexDocumentFactory Instance => _instance ?? (_instance = (IPlexDocumentFactory)(object)new DocumentFactory());
+
+		public IPlexDocument GetDocument(int fileNumber)
+		{
+			return GetDocument(fileNumber, null);
+		}
+
+		public IPlexDocument GetDocument(int fileNumber, IDBConfiguration dBConfiguration)
+		{
+			if (Documents.TryGetValue(fileNumber, out var value))
+			{
+				return value;
+			}
+			value = (IPlexDocument)(object)new PlexDocument(fileNumber, dBConfiguration);
+			_documents.Add(fileNumber, value);
+			return value;
+		}
+
+		public IPlexDocument CreateOrOverwriteDocument(int fileNumber)
+		{
+			if (Documents.TryGetValue(fileNumber, out var value))
+			{
+				_documents[fileNumber] = (IPlexDocument)(object)new PlexDocument(fileNumber);
+				return _documents[fileNumber];
+			}
+			value = (IPlexDocument)(object)new PlexDocument(fileNumber);
+			_documents.Add(fileNumber, value);
+			return value;
+		}
+
+		public static void Reset()
+		{
+			Documents.Clear();
+		}
+	}
+	public class PlexDocument : IPlexDocument, ITryGenerateBeads, IGenerateBeads, IDisposable
+	{
+		[UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Ansi)]
+		public delegate void FSetPureDataSourceCBD(int fileNumber, IntPtr pureDataSources);
+
+		[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+		public delegate void FSetBinaryDataSourcesCBD(int fileNumber, IntPtr binaryDataSources);
+
+		[UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Ansi)]
+		public delegate void FSetComponentsCBD(int fileNumber, IntPtr components);
+
+		[UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Ansi)]
+		public delegate void FSetOptionSetsCBD(int fileNumber, IntPtr names);
+
+		[UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Ansi)]
+		public delegate void FSetChemistryCBD(int fileNumber, IntPtr names);
+
+		[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+		public delegate void FPrintHollerithCBD(int fileNumber, int firstWord, int secondWord, int iter);
+
+		[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+		public delegate bool RAlocBeadCBD(int fileNumber, int beadNumber, int intLength, int realLength);
+
+		[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+		public delegate int AllociCBD(int fileNumber, int length);
+
+		[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+		public delegate bool RalociCBD(int fileNumber, int beadNumber, int length);
+
+		[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+		public delegate IntPtr LocatiCBD(int fileNumber, int beadNumber);
+
+		[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+		public delegate int LenthiCBD(int fileNumber, int beadNumber);
+
+		[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+		public delegate int AllocrCBD(int fileNumber, int length);
+
+		[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+		public delegate bool RalocrCBD(int fileNumber, int beadNumber, int length);
+
+		[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+		public delegate IntPtr LocatrCBD(int fileNumber, int beadNumber);
+
+		[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+		public delegate int LenthrCBD(int fileNumber, int beadNumber);
+
+		[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+		public delegate int AllocmCBD(int fileNumber, int intLength, int realLength);
+
+		[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+		public delegate bool RalocmCBD(int fileNumber, int beadNumber, int integerLength, int realLength);
+
+		[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+		public delegate void FreeBeadCBD(int fileNumber, int beadNumber);
+
+		[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+		public delegate int BeadTypeCBD(int fileNumber, int beadNumber);
+
+		[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+		public delegate bool DoesBeadExistCBD(int fileNumber, int beadNumber);
+
+		[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+		public delegate void TryGenerateBeadsMCBD(int fileNumber);
+
+		[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+		public delegate void FCallsSetHenryComponentsCBD(int fileNumber, string components);
+
+		[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+		public delegate void FCallsSetGlobalOptionSetsCBD(int filename, string Propid, string Henryid, string Chemid, int truecomp, string Freewater, int soluwater);
+
+		[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+		public delegate void FCallsGetGlobalOptionSetsCBD(int fileNumber, IntPtr nbOPSET);
+
+		[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+		public delegate void FCallsSetCurrentOptionSetsCBD(int filename, string Propid, string Henryid, string Chemid, int truecomp, string Freewater, int soluwater);
+
+		[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+		public delegate void FCallsGetCurrentOptionSetsCBD(int fileNumber, IntPtr NBOPSET);
+
+		[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+		public delegate void FCallsMakeOptionSetsCBD(int fileNumber, string Propid, string Henryid, string Chemid, int truecomp, string Freewater, int soluwater, IntPtr nbopset);
+
+		[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+		public delegate void FCallsGetNumbersWithCompTypeCBD(int fileNumber, IntPtr NCOMPS);
+
+		[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+		public delegate void FCallsSetPropertiesCBD(int fileNumber, string propnames);
+
+		[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+		public delegate void FCallsSetDataSourcesCBD(int fileNumber, string sources);
+
+		[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+		public delegate IntPtr ListApedDatabanks_WithDBAccessFlagCBD(out int size);
+
+		[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+		public delegate int FoundCompounds_FindCBD(IntPtr ptrSearchSourceArray, int arraySize, [MarshalAs(UnmanagedType.LPStr)] string identSearchString, [MarshalAs(UnmanagedType.LPStr)] string outputPropertyName, out double outputPropertyvalue, [MarshalAs(UnmanagedType.LPStr)] out string dbName, [MarshalAs(UnmanagedType.LPStr)] out string dbankName, [MarshalAs(UnmanagedType.LPStr)] out string compIndex, [MarshalAs(UnmanagedType.LPStr)] out string compName, [MarshalAs(UnmanagedType.LPStr)] out string compAlias, [MarshalAs(UnmanagedType.LPStr)] out string casNumber);
+
+		[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+		public delegate void SetPropertyPackageCBD(int fileNumber, string json);
+
+		public struct StrutOfDelegates
+		{
+			public AllociCBD allociCBD;
+
+			public LenthiCBD lenthiCBD;
+
+			public LocatiCBD locatiCBD;
+
+			public RalociCBD ralociCBD;
+
+			public AllocrCBD allocrCBD;
+
+			public LenthrCBD lenthrCBD;
+
+			public LocatrCBD locatrCBD;
+
+			public RalocrCBD ralocrCBD;
+
+			public AllocmCBD allocmCBD;
+
+			public BeadTypeCBD beadTypeCBD;
+
+			public RalocmCBD ralocmCBD;
+
+			public FreeBeadCBD freeBeadCBD;
+
+			public DoesBeadExistCBD doesBeadExistCBD;
+
+			public TryGenerateBeadsMCBD tryGenerateBeadsMCBD;
+
+			public FSetPureDataSourceCBD fSetPureDataSourceCBD;
+
+			public FSetComponentsCBD fSetComponentsCBD;
+
+			public FSetOptionSetsCBD fSetOptionSetsCBD;
+
+			public FSetChemistryCBD fSetChemistryCBD;
+
+			public FPrintHollerithCBD fPrintHollerithCBD;
+
+			public FCallsSetHenryComponentsCBD fCallsSetHenryComponentsCBD;
+
+			public FCallsSetGlobalOptionSetsCBD fCallsSetGlobalOptionSetsCBD;
+
+			public FCallsGetGlobalOptionSetsCBD fCallsGetGlobalOptionSetsCBD;
+
+			public FCallsSetCurrentOptionSetsCBD fCallsSetCurrentOptionSetsCBD;
+
+			public FCallsGetCurrentOptionSetsCBD fCallsGetCurrentOptionSetsCBD;
+
+			public FCallsMakeOptionSetsCBD fCallsMakeOptionSetsCBD;
+
+			public FCallsGetNumbersWithCompTypeCBD fCallsGetNumbersWithCompTypeCBD;
+
+			public FCallsSetPropertiesCBD fCallsSetPropertiesCBD;
+
+			public FCallsSetDataSourcesCBD fCallsSetDataSourcesCBD;
+
+			public FoundCompounds_FindCBD foundCompounds_FindCBD;
+
+			public ListApedDatabanks_WithDBAccessFlagCBD listApedDatabanks_WithDBAccessFlagCBD;
+
+			public SetPropertyPackageCBD setPropertyPackageCBD;
+		}
+
+		private bool _alreadyDisposed;
+
+		public static IList<GCHandle> ListGCHandle = new List<GCHandle>();
+
+		public bool FortranClient { get; private set; }
+
+		public IBeadData ConstantsBead { get; private set; }
+
+		public IBeadData ProcessBead { get; private set; }
+
+		public IBeadData AuxProcessBead { get; private set; }
+
+		public BeadStatus Status { get; private set; }
+
+		public IComponentManager ComponentManager { get; private set; }
+
+		public IOptionSetManager OptionSetManager { get; private set; }
+
+		public IParameterManager ParameterManager { get; private set; }
+
+		public IParagraphManager ParagraphManager { get; private set; }
+
+		public ICloseableBeadFile BeadFile { get; private set; }
+
+		public ICloseablePlexFile PlexFile => (ICloseablePlexFile)BeadFile;
+
+		internal PlexDocument(int fileNumber, IDBConfiguration dBConfiguration = null)
+		{
+			BeadFile = PlexFactory.Instance.CreateBeadFile(fileNumber);
+			InitializePlex();
+			ComponentManager = Factories.CreateComponentManager((IPlexDocument)(object)this, dBConfiguration);
+			ParagraphManager = GensenFactories.CreateParagraphManager((IPlexDocument)(object)this);
+			OptionSetManager = Factories.CreateOptionSetManager((IPlexDocument)(object)this);
+			ParameterManager = Factories.CreateParameterManager((IPlexDocument)(object)this);
+			((INotifyCollectionChanged)ComponentManager.Components).CollectionChanged += UpdateStatusOnPlexChange;
+			((INotifyCollectionChanged)ParagraphManager.ParagraphList).CollectionChanged += UpdateStatusOnPlexChange;
+			((INotifyCollectionChanged)OptionSetManager.OptionSets).CollectionChanged += UpdateStatusOnPlexChange;
+			((INotifyCollectionChanged)ParameterManager.DataSources).CollectionChanged += UpdateStatusOnPlexChange;
+			InitDelegates();
+		}
+
+		~PlexDocument()
+		{
+			Dispose(disposing: false);
+		}
+
+		public uint SetDataSources(string sources)
+		{
+			FortranClient = true;
+			string[] array = sources.Trim().Split(new char[1] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+			if (array.Length == 0)
+			{
+				return 2u;
+			}
+			List<IDataSource> list = new List<IDataSource>();
+			for (int i = 0; i < array.Length; i++)
+			{
+				string[] array2 = array[i].Trim().Split(' ');
+				if (array2.Length == 2)
+				{
+					try
+					{
+						list.Add(Factories.CreateDataSource(array2[0], array2[1]));
+					}
+					catch
+					{
+					}
+				}
+			}
+			try
+			{
+				ParameterManager.DataSources.AddRange((IEnumerable<IDataSource>)list);
+			}
+			catch
+			{
+				return 3u;
+			}
+			return 0u;
+		}
+
+		public int SetComponents(string components)
+		{
+			FortranClient = true;
+			CheckStatus();
+			string[] array = components.Trim().Split(new char[1] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+			if (array.Length == 0)
+			{
+				return 2;
+			}
+			List<IComponent> list = new List<IComponent>();
+			for (int i = 0; i < array.Length; i++)
+			{
+				string[] array2 = array[i].Trim().Split(' ');
+				string text = array2[0];
+				string apedAliasName = ((array2.Length == 2) ? array2[1] : text);
+				list.Add(Factories.CreateComponentByAlias(apedAliasName, text));
+			}
+			if (list.Count > 0)
+			{
+				ComponentManager.Components.AddRange((IEnumerable<IComponent>)list);
+				return 0;
+			}
+			return 3;
+		}
+
+		public int SetHenryComponents(string henrycomponents)
+		{
+			FortranClient = true;
+			CheckStatus();
+			string[] array = henrycomponents.Trim().Split(new char[1] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+			if (array.Length == 0)
+			{
+				return 2;
+			}
+			string text = array[0].Trim().ToUpper();
+			List<string> list = new List<string>();
+			for (int i = 1; i < array.Length; i++)
+			{
+				string text2 = array[i].Trim().ToUpper();
+				foreach (IComponent item in (IEnumerable<IComponent>)ComponentManager.Components)
+				{
+					if (text2 == item.UserSuppliedName)
+					{
+						list.Add(item.UserSuppliedName);
+						break;
+					}
+				}
+			}
+			if (list.Count > 0)
+			{
+				ComponentManager.CreateHenryList(text, list);
+				return 0;
+			}
+			return 3;
+		}
+
+		public int SetOptionSets(string names)
+		{
+			FortranClient = true;
+			CheckStatus();
+			if (string.IsNullOrWhiteSpace(names))
+			{
+				return 2;
+			}
+			List<string> list = new List<string>(names.Trim().Split(new char[1] { ';' }, StringSplitOptions.RemoveEmptyEntries));
+			if (list.Count == 0)
+			{
+				return 3;
+			}
+			for (int i = 0; i < list.Count; i++)
+			{
+				try
+				{
+					OptionSetManager.OptionSets.AddByName(list[i]);
+				}
+				catch (Exception)
+				{
+					return 4;
+				}
+			}
+			OptionSetManager[list[0]].SelectAs((OptionSetChoice)1);
+			if (OptionSetManager[list.Last()].IsFreeWaterMethod)
+			{
+				OptionSetManager[list.Last()].SelectAs((OptionSetChoice)2);
+			}
+			return 0;
+		}
+
+		public int SetChemistry(string names)
+		{
+			return -1;
+		}
+
+		public int SetProperties(string propnames)
+		{
+			FortranClient = true;
+			CheckStatus();
+			if (string.IsNullOrWhiteSpace(propnames))
+			{
+				return 2;
+			}
+			List<string> list = new List<string>(propnames.Trim().Split(new char[1] { ';' }, StringSplitOptions.RemoveEmptyEntries));
+			if (list.Count == 0)
+			{
+				return 3;
+			}
+			try
+			{
+				OptionSetManager.Properties(list);
+			}
+			catch
+			{
+				return 9000;
+			}
+			return 0;
+		}
+
+		public void SetGlobalOptionSets(string Propid, string Henryid, string Chemid, int truecomp, string Freewater, int soluwater)
+		{
+			FortranClient = true;
+			CheckStatus();
+			string text = Propid.Trim().ToUpper();
+			string text2 = Henryid.Trim().ToUpper();
+			string text3 = Chemid.Trim().ToUpper();
+			string text4 = Freewater.Trim().ToUpper();
+			OptionSetManager.SetGlobalOpSets(text, text2, text3, truecomp, text4, soluwater);
+		}
+
+		public IList<int> GetGlobalOptionSets()
+		{
+			FortranClient = true;
+			IList<int> list = new List<int>(new int[6]);
+			IList<int> globalOpSets = OptionSetManager.GetGlobalOpSets();
+			for (int i = 0; i < 6; i++)
+			{
+				list[i] = globalOpSets[i];
+			}
+			return list;
+		}
+
+		public void SetCurrentOptionSets(string Propid, string Henryid, string Chemid, int truecomp, string Freewater, int soluwater)
+		{
+			FortranClient = true;
+			string text = Propid.Trim().ToUpper();
+			string text2 = Henryid.Trim().ToUpper();
+			string text3 = Chemid.Trim().ToUpper();
+			string text4 = Freewater.Trim().ToUpper();
+			OptionSetManager.SetCurrentOpSets(text, text2, text3, truecomp, text4, soluwater);
+		}
+
+		public IList<int> GetCurrentOptionSets()
+		{
+			FortranClient = true;
+			IList<int> list = new List<int>(new int[6]);
+			IList<int> currentOpSets = OptionSetManager.GetCurrentOpSets();
+			for (int i = 0; i < 6; i++)
+			{
+				list[i] = currentOpSets[i];
+			}
+			return list;
+		}
+
+		public IList<int> MakeOptionSets(string Propid, string Henryid, string Chemid, int truecomp, string Freewater, int soluwater)
+		{
+			FortranClient = true;
+			string text = Propid.Trim().ToUpper();
+			string text2 = Henryid.Trim().ToUpper();
+			string text3 = Chemid.Trim().ToUpper();
+			string text4 = Freewater.Trim().ToUpper();
+			return OptionSetManager.MakeOpSets(text, text2, text3, truecomp, text4, soluwater);
+		}
+
+		public IList<int> GetNumbersWithCompType()
+		{
+			FortranClient = true;
+			IList<int> list = new List<int>(new int[3]);
+			IList<int> nCompWithType = ParameterManager.GetNCompWithType();
+			for (int i = 0; i < 3; i++)
+			{
+				list[i] = nCompWithType[i];
+			}
+			return list;
+		}
+
+		private void CheckStatus()
+		{
+			//IL_0002: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0007: Invalid comparison between I4 and Unknown
+			if (1 == (int)Status)
+			{
+				Status = (BeadStatus)2;
+			}
+		}
+
+		public void PrintHollerith(long firstWord, long secondWord, long iter)
+		{
+			HollerithUtility.ToString(firstWord);
+			HollerithUtility.ToString(secondWord);
+			_ = 0;
+		}
+
+		public void Dispose()
+		{
+			Status = (BeadStatus)0;
+			Dispose(disposing: true);
+			GC.SuppressFinalize(this);
+		}
+
+		public void ReinitializeNewRun()
+		{
+			Status = (BeadStatus)3;
+		}
+
+		protected virtual void Dispose(bool disposing)
+		{
+			Status = (BeadStatus)0;
+			if (!_alreadyDisposed)
+			{
+				_alreadyDisposed = true;
+				ReleaseUnmanagedResources();
+				if (disposing)
+				{
+					ReleaseManagedResources();
+				}
+			}
+		}
+
+		private void ReleaseManagedResources()
+		{
+			if (BeadFile != null)
+			{
+				BeadFile.Close();
+				BeadFile = null;
+			}
+			ComponentManager = null;
+			ParagraphManager = null;
+			OptionSetManager = null;
+			ParameterManager = null;
+			PlexFactory.Reset();
+			Factories.ResetAll();
+			DocumentFactory.Reset();
+		}
+
+		private void ReleaseUnmanagedResources()
+		{
+		}
+
+		private void UpdateStatusOnPlexChange(object sender, EventArgs e)
+		{
+			//IL_0002: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0007: Invalid comparison between I4 and Unknown
+			if (1 == (int)Status)
+			{
+				Status = (BeadStatus)2;
+			}
+		}
+
+		public void TryGenerateBeads()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0007: Invalid comparison between Unknown and I4
+			if ((int)Status != 1)
+			{
+				GenerateBeads();
+			}
+		}
+
+		public void GenerateBeads()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0007: Invalid comparison between Unknown and I4
+			//IL_000c: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0011: Invalid comparison between I4 and Unknown
+			//IL_0078: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00a3: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00a8: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00b0: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00b5: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00bc: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00c1: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00c5: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00ce: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00da: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00eb: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00ff: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0113: Unknown result type (might be due to invalid IL or missing references)
+			//IL_012c: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0145: Unknown result type (might be due to invalid IL or missing references)
+			//IL_015e: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0177: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0190: Unknown result type (might be due to invalid IL or missing references)
+			if ((int)Status != 1)
+			{
+				if (2 == (int)Status)
+				{
+					Factories.ResetAll();
+					BeadFile.Clear();
+					InitializePlex();
+				}
+				IComponentManager componentManager = ComponentManager;
+				((ITryGenerateBeads)((componentManager is ITryGenerateBeads) ? componentManager : null)).TryGenerateBeads();
+				IParagraphManager paragraphManager = ParagraphManager;
+				((ITryGenerateBeads)((paragraphManager is ITryGenerateBeads) ? paragraphManager : null)).TryGenerateBeads();
+				IOptionSetManager optionSetManager = OptionSetManager;
+				((ITryGenerateBeads)((optionSetManager is ITryGenerateBeads) ? optionSetManager : null)).TryGenerateBeads();
+				IParameterManager parameterManager = ParameterManager;
+				((ITryGenerateBeads)((parameterManager is ITryGenerateBeads) ? parameterManager : null)).TryGenerateBeads();
+				ProcessBead[57] = RawInteger.op_Implicit((long)ReplaceSTWORK());
+				IBeadData processBead = ProcessBead;
+				IBeadData processBead2 = ProcessBead;
+				IBeadData processBead3 = ProcessBead;
+				(int, int, int) tuple = ReplaceSTRMCLSS();
+				RawInteger val = RawInteger.op_Implicit((long)tuple.Item1);
+				RawInteger val2 = RawInteger.op_Implicit((long)tuple.Item2);
+				RawInteger val3 = RawInteger.op_Implicit((long)tuple.Item3);
+				processBead[82] = val;
+				processBead2[83] = val2;
+				processBead3[173] = val3;
+				ProcessBead[13] = RawInteger.op_Implicit(1L);
+				ProcessBead[14] = RawInteger.op_Implicit(1L);
+				ProcessBead[15] = RawInteger.op_Implicit(1L);
+				ProcessBead[40] = RawInteger.op_Implicit((long)GenerateHierarchyTopContainerBead());
+				ProcessBead[78] = RawInteger.op_Implicit((long)GenerateSubstreamClassBead());
+				AuxProcessBead[66] = RawInteger.op_Implicit((long)GenerateSimulationOptionBead());
+				AuxProcessBead[97] = RawInteger.op_Implicit((long)GenerateCarbonEquivalentBead());
+				AuxProcessBead[119] = RawInteger.op_Implicit((long)GenerateSolidSubstreamInfoBead());
+				Status = (BeadStatus)1;
+			}
+		}
+
+		private void InitializePlex()
+		{
+			//IL_003f: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0052: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0075: Unknown result type (might be due to invalid IL or missing references)
+			//IL_007a: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0083: Unknown result type (might be due to invalid IL or missing references)
+			//IL_009b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00b7: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00d3: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00ec: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0105: Unknown result type (might be due to invalid IL or missing references)
+			//IL_011e: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0137: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0150: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0169: Unknown result type (might be due to invalid IL or missing references)
+			GenerateConstantsBead();
+			int num = 200;
+			ProcessBead = ((IBeadFile)BeadFile).CreateBead(num, 0);
+			AuxProcessBead = ((IBeadFile)BeadFile).CreateBead(num, 0);
+			for (int i = 0; i < num; i++)
+			{
+				ProcessBead[i] = RawInteger.op_Implicit(0L);
+				AuxProcessBead[i] = RawInteger.op_Implicit(0L);
+			}
+			IBeadData processBead = ProcessBead;
+			BeadId id = AuxProcessBead.Id;
+			processBead[199] = RawInteger.op_Implicit((long)((BeadId)(ref id)).RawNumber);
+			ProcessBead[3] = RawInteger.op_Implicit((long)GenerateSequenceMonitorBead());
+			ProcessBead[158] = RawInteger.op_Implicit((long)GenerateDRSMAX());
+			ProcessBead[159] = RawInteger.op_Implicit((long)GenerateSYSINCL());
+			AuxProcessBead[27] = RawInteger.op_Implicit((long)GenerateFlashDefaultOptionsBead());
+			AuxProcessBead[47] = RawInteger.op_Implicit((long)GenerateDynamicLoadingBead());
+			AuxProcessBead[63] = RawInteger.op_Implicit((long)GenerateTABPOLY());
+			AuxProcessBead[67] = RawInteger.op_Implicit((long)GenerateVirtualFunctionTableBead());
+			AuxProcessBead[45] = RawInteger.op_Implicit((long)GeneratePetroleumCurvePropertiesBead());
+			ProcessBead[10] = RawInteger.op_Implicit((long)GenerateGlobalSpecsBead());
+			Status = (BeadStatus)0;
+		}
+
+		public int GenerateHierarchyTopContainerBead()
+		{
+			//IL_0012: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0020: Unknown result type (might be due to invalid IL or missing references)
+			//IL_002e: Unknown result type (might be due to invalid IL or missing references)
+			//IL_003c: Unknown result type (might be due to invalid IL or missing references)
+			//IL_004a: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0058: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0066: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0074: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0082: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0091: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00a0: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00af: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00be: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00cd: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00d7: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00dc: Unknown result type (might be due to invalid IL or missing references)
+			IBeadData obj = ((IBeadFile)BeadFile).CreateBead(14, 0);
+			obj[0] = RawInteger.op_Implicit(-1L);
+			obj[1] = RawInteger.op_Implicit(0L);
+			obj[2] = RawInteger.op_Implicit(0L);
+			obj[3] = RawInteger.op_Implicit(0L);
+			obj[4] = RawInteger.op_Implicit(0L);
+			obj[5] = RawInteger.op_Implicit(0L);
+			obj[6] = RawInteger.op_Implicit(0L);
+			obj[7] = RawInteger.op_Implicit(0L);
+			obj[8] = RawInteger.op_Implicit(0L);
+			obj[9] = RawInteger.op_Implicit(0L);
+			obj[10] = RawInteger.op_Implicit(0L);
+			obj[11] = RawInteger.op_Implicit(0L);
+			obj[12] = RawInteger.op_Implicit(1L);
+			obj[13] = RawInteger.op_Implicit(0L);
+			BeadId id = obj.Id;
+			return ((BeadId)(ref id)).RawNumber;
+		}
+
+		public int GenerateMessageStatusBead()
+		{
+			//IL_0033: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0041: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0050: Unknown result type (might be due to invalid IL or missing references)
+			//IL_005e: Unknown result type (might be due to invalid IL or missing references)
+			//IL_006c: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0087: Unknown result type (might be due to invalid IL or missing references)
+			//IL_008c: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0096: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00a4: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00b1: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00b6: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00c0: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00d2: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00e1: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00f1: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0100: Unknown result type (might be due to invalid IL or missing references)
+			//IL_010f: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0139: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0145: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0152: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0124: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0160: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0166: Expected O, but got Unknown
+			//IL_018a: Unknown result type (might be due to invalid IL or missing references)
+			//IL_018f: Unknown result type (might be due to invalid IL or missing references)
+			int num = ((IEnumerable<IComponent>)ComponentManager.Components).ToList().Count + 9;
+			IBeadData val = ((IBeadFile)BeadFile).CreateBead(num * 8 + 13, num * 3);
+			val[0] = RawInteger.op_Implicit(13L);
+			val[1] = RawInteger.op_Implicit(3L);
+			val[2] = RawInteger.op_Implicit(11L);
+			val[3] = RawInteger.op_Implicit(8L);
+			val[4] = RawInteger.op_Implicit(3L);
+			IBeadData val2 = ((IBeadFile)BeadFile).CreateBead(num, 0);
+			BeadId id = val2.Id;
+			val[5] = RawInteger.op_Implicit((long)((BeadId)(ref id)).RawNumber);
+			val[6] = RawInteger.op_Implicit(0L);
+			id = val2.Id;
+			val[7] = RawInteger.op_Implicit((long)((BeadId)(ref id)).RawNumber);
+			val[8] = RawInteger.op_Implicit(99999999L);
+			val[9] = RawInteger.op_Implicit(0L);
+			val[10] = RawInteger.op_Implicit(10L);
+			val[11] = RawInteger.op_Implicit(0L);
+			val[12] = RawInteger.op_Implicit(0L);
+			for (int i = 13; i < RawInteger.op_Implicit(val[2]) * RawInteger.op_Implicit(val[3]) + RawInteger.op_Implicit(val[0]); i++)
+			{
+				val[i] = RawInteger.op_Implicit(0L);
+			}
+			IBeadRealData val3 = (IBeadRealData)val;
+			for (int j = 0; j < num * 3; j++)
+			{
+				val3[j] = 0.0;
+			}
+			id = val.Id;
+			return ((BeadId)(ref id)).RawNumber;
+		}
+
+		public int GenerateSubstreamClassBead()
+		{
+			//IL_002b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0039: Unknown result type (might be due to invalid IL or missing references)
+			//IL_004a: Unknown result type (might be due to invalid IL or missing references)
+			//IL_005b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0076: Unknown result type (might be due to invalid IL or missing references)
+			//IL_007b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0084: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0092: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00a0: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00ae: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00bc: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00cb: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00da: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00e4: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00e9: Unknown result type (might be due to invalid IL or missing references)
+			int num = ((IEnumerable<IComponent>)ComponentManager.Components).ToList().Count + 9;
+			IBeadData obj = ((IBeadFile)BeadFile).CreateBead(11, 0);
+			obj[0] = RawInteger.op_Implicit(0L);
+			obj[1] = RawInteger.op_Implicit(0L);
+			obj[2] = WordUtility.FirstWord("MIXE");
+			obj[3] = WordUtility.SecondWord("D   ");
+			IBeadData val = ((IBeadFile)BeadFile).CreateBead(0, num);
+			BeadId id = val.Id;
+			obj[4] = RawInteger.op_Implicit((long)((BeadId)(ref id)).RawNumber);
+			obj[5] = RawInteger.op_Implicit(1L);
+			obj[6] = RawInteger.op_Implicit(1L);
+			obj[7] = RawInteger.op_Implicit((long)num);
+			obj[8] = RawInteger.op_Implicit(0L);
+			obj[9] = RawInteger.op_Implicit(0L);
+			obj[10] = RawInteger.op_Implicit((long)num);
+			id = obj.Id;
+			return ((BeadId)(ref id)).RawNumber;
+		}
+
+		public int GenerateSolidSubstreamInfoBead()
+		{
+			//IL_002b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0039: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0047: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0052: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0058: Expected O, but got Unknown
+			//IL_0075: Unknown result type (might be due to invalid IL or missing references)
+			//IL_007a: Unknown result type (might be due to invalid IL or missing references)
+			int num = ((IEnumerable<IComponent>)ComponentManager.Components).ToList().Count + 9;
+			IBeadData val = ((IBeadFile)BeadFile).CreateBead(3, num);
+			val[0] = RawInteger.op_Implicit((long)num);
+			val[1] = RawInteger.op_Implicit(0L);
+			val[2] = RawInteger.op_Implicit(0L);
+			IBeadRealData val2 = (IBeadRealData)val;
+			for (int i = 0; i < num; i++)
+			{
+				val2[i] = 1E+35;
+			}
+			BeadId id = val.Id;
+			return ((BeadId)(ref id)).RawNumber;
+		}
+
+		public int GenerateSimulationOptionBead()
+		{
+			//IL_0011: Unknown result type (might be due to invalid IL or missing references)
+			//IL_001f: Unknown result type (might be due to invalid IL or missing references)
+			//IL_002d: Unknown result type (might be due to invalid IL or missing references)
+			//IL_003b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0046: Unknown result type (might be due to invalid IL or missing references)
+			//IL_004b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_005b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_006b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_008a: Unknown result type (might be due to invalid IL or missing references)
+			//IL_008f: Unknown result type (might be due to invalid IL or missing references)
+			IBeadData obj = ((IBeadFile)BeadFile).CreateBead(4, 4);
+			obj[0] = RawInteger.op_Implicit(1L);
+			obj[1] = RawInteger.op_Implicit(1L);
+			obj[2] = RawInteger.op_Implicit(1L);
+			obj[3] = RawInteger.op_Implicit(1L);
+			IBeadRealData val = (IBeadRealData)obj;
+			val[0] = 101325.0;
+			val[1] = 1.0;
+			val[2] = 283.15;
+			val[3] = 31557600.0;
+			BeadId id = obj.Id;
+			return ((BeadId)(ref id)).RawNumber;
+		}
+
+		public int GenerateCarbonEquivalentBead()
+		{
+			//IL_0012: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0023: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0034: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0042: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0050: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0061: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0072: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0080: Unknown result type (might be due to invalid IL or missing references)
+			//IL_008e: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00a0: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00b2: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00c1: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00d0: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00e2: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00f4: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0103: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0112: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0124: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0136: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0145: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0154: Unknown result type (might be due to invalid IL or missing references)
+			//IL_015e: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0163: Unknown result type (might be due to invalid IL or missing references)
+			IBeadData obj = ((IBeadFile)BeadFile).CreateBead(21, 0);
+			obj[0] = RawInteger.op_Implicit(5L);
+			obj[1] = WordUtility.FirstWord("SAR ");
+			obj[2] = WordUtility.SecondWord("SAR ");
+			obj[3] = RawInteger.op_Implicit(0L);
+			obj[4] = RawInteger.op_Implicit(0L);
+			obj[5] = WordUtility.FirstWord("AR4 ");
+			obj[6] = WordUtility.SecondWord("AR4 ");
+			obj[7] = RawInteger.op_Implicit(0L);
+			obj[8] = RawInteger.op_Implicit(0L);
+			obj[9] = WordUtility.FirstWord("US ");
+			obj[10] = WordUtility.SecondWord("US ");
+			obj[11] = RawInteger.op_Implicit(0L);
+			obj[12] = RawInteger.op_Implicit(0L);
+			obj[13] = WordUtility.FirstWord("AR5 ");
+			obj[14] = WordUtility.SecondWord("AR5 ");
+			obj[15] = RawInteger.op_Implicit(0L);
+			obj[16] = RawInteger.op_Implicit(0L);
+			obj[17] = WordUtility.FirstWord("AR6 ");
+			obj[18] = WordUtility.SecondWord("AR6 ");
+			obj[19] = RawInteger.op_Implicit(0L);
+			obj[20] = RawInteger.op_Implicit(0L);
+			BeadId id = obj.Id;
+			return ((BeadId)(ref id)).RawNumber;
+		}
+
+		public void ReinitializePlex()
+		{
+			BeadFile.Clear();
+			InitializePlex();
+		}
+
+		internal void GenerateConstantsBead()
+		{
+			//IL_0034: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0047: Unknown result type (might be due to invalid IL or missing references)
+			//IL_005a: Unknown result type (might be due to invalid IL or missing references)
+			//IL_006d: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0080: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0093: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00a6: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00b9: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00cc: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00e0: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00f4: Unknown result type (might be due to invalid IL or missing references)
+			//IL_010e: Unknown result type (might be due to invalid IL or missing references)
+			//IL_012d: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0140: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0153: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0166: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0179: Unknown result type (might be due to invalid IL or missing references)
+			//IL_018c: Unknown result type (might be due to invalid IL or missing references)
+			//IL_019f: Unknown result type (might be due to invalid IL or missing references)
+			//IL_01b2: Unknown result type (might be due to invalid IL or missing references)
+			//IL_01cc: Unknown result type (might be due to invalid IL or missing references)
+			string text = "";
+			string mM = GlobalSpecs.MM;
+			string text2 = "";
+			int num = 524;
+			ConstantsBead = ((IBeadFile)BeadFile).CreateBead(num, 0);
+			ConstantsBead[0] = RawInteger.op_Implicit((long)num);
+			ConstantsBead[1] = RawInteger.op_Implicit(0L);
+			ConstantsBead[2] = RawInteger.op_Implicit(0L);
+			ConstantsBead[3] = RawInteger.op_Implicit(0L);
+			ConstantsBead[4] = RawInteger.op_Implicit(0L);
+			ConstantsBead[5] = RawInteger.op_Implicit(0L);
+			ConstantsBead[6] = RawInteger.op_Implicit(0L);
+			ConstantsBead[7] = RawInteger.op_Implicit(1L);
+			ConstantsBead[8] = RawInteger.op_Implicit(0L);
+			ConstantsBead[9] = RawInteger.op_Implicit(0L);
+			ConstantsBead[10] = RawInteger.op_Implicit(4L);
+			for (int i = 11; i < 20; i++)
+			{
+				ConstantsBead[i] = RawInteger.op_Implicit(0L);
+			}
+			ConstantsBead[20] = WordUtility.FirstWord(text);
+			ConstantsBead[21] = WordUtility.SecondWord(text);
+			ConstantsBead[22] = WordUtility.FirstWord(mM);
+			ConstantsBead[23] = WordUtility.SecondWord(mM);
+			ConstantsBead[24] = WordUtility.FirstWord(text2);
+			ConstantsBead[25] = WordUtility.SecondWord(text2);
+			ConstantsBead[26] = WordUtility.FirstWord(text2);
+			ConstantsBead[27] = WordUtility.SecondWord(text2);
+			for (int j = 28; j < num; j++)
+			{
+				ConstantsBead[j] = RawInteger.op_Implicit(0L);
+			}
+		}
+
+		private int GenerateGlobalSpecsBead()
+		{
+			//IL_0006: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Unknown result type (might be due to invalid IL or missing references)
+			BeadId val = GlobalSpecs.GenerateBeads((IBeadFile)(object)BeadFile);
+			return ((BeadId)(ref val)).RawNumber;
+		}
+
+		public int GenerateSequenceMonitorBead()
+		{
+			//IL_0017: Unknown result type (might be due to invalid IL or missing references)
+			//IL_002b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0030: Unknown result type (might be due to invalid IL or missing references)
+			IBeadData val = ((IBeadFile)BeadFile).CreateBead(10, 0);
+			for (int i = 0; i < 10; i++)
+			{
+				val[i] = RawInteger.op_Implicit(0L);
+			}
+			BeadId id = val.Id;
+			return ((BeadId)(ref id)).RawNumber;
+		}
+
+		public int GenerateDRSMAX()
+		{
+			//IL_0017: Unknown result type (might be due to invalid IL or missing references)
+			//IL_002b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0031: Expected O, but got Unknown
+			//IL_004e: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0053: Unknown result type (might be due to invalid IL or missing references)
+			IBeadData val = ((IBeadFile)BeadFile).CreateBead(12, 5);
+			for (int i = 0; i < 12; i++)
+			{
+				val[i] = RawInteger.op_Implicit(0L);
+			}
+			IBeadRealData val2 = (IBeadRealData)val;
+			for (int j = 0; j < 5; j++)
+			{
+				val2[j] = 0.0;
+			}
+			BeadId id = val.Id;
+			return ((BeadId)(ref id)).RawNumber;
+		}
+
+		private int GenerateSYSINCL()
+		{
+			//IL_0018: Unknown result type (might be due to invalid IL or missing references)
+			//IL_002a: Unknown result type (might be due to invalid IL or missing references)
+			//IL_003c: Unknown result type (might be due to invalid IL or missing references)
+			//IL_004e: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0060: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0072: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0084: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0096: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00a8: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00ba: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00cc: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00de: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00e8: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00ed: Unknown result type (might be due to invalid IL or missing references)
+			IBeadData obj = ((IBeadFile)BeadFile).CreateBead(14, 0);
+			int num = 0;
+			obj[num++] = RawInteger.op_Implicit(0L);
+			obj[num++] = RawInteger.op_Implicit(0L);
+			obj[num++] = RawInteger.op_Implicit(0L);
+			obj[num++] = RawInteger.op_Implicit(1L);
+			obj[num++] = RawInteger.op_Implicit(1L);
+			obj[num++] = RawInteger.op_Implicit(1L);
+			obj[num++] = RawInteger.op_Implicit(0L);
+			obj[num++] = RawInteger.op_Implicit(1L);
+			obj[num++] = RawInteger.op_Implicit(1L);
+			obj[num++] = RawInteger.op_Implicit(1L);
+			obj[num++] = RawInteger.op_Implicit(1L);
+			obj[num++] = RawInteger.op_Implicit(0L);
+			BeadId id = obj.Id;
+			return ((BeadId)(ref id)).RawNumber;
+		}
+
+		private int GenerateFlashDefaultOptionsBead()
+		{
+			//IL_0339: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0356: Unknown result type (might be due to invalid IL or missing references)
+			//IL_035d: Expected O, but got Unknown
+			//IL_038d: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0392: Unknown result type (might be due to invalid IL or missing references)
+			int gLOBAL_IMISS = GlobalSpecs.GLOBAL_IMISS;
+			int num = 30;
+			int gLOBAL_IMISS2 = GlobalSpecs.GLOBAL_IMISS;
+			int num2 = 1;
+			int gLOBAL_IMISS3 = GlobalSpecs.GLOBAL_IMISS;
+			int gLOBAL_IMISS4 = GlobalSpecs.GLOBAL_IMISS;
+			int gLOBAL_IMISS5 = GlobalSpecs.GLOBAL_IMISS;
+			int num3 = 0;
+			int num4 = 0;
+			int num5 = 0;
+			int num6 = 0;
+			int num7 = 0;
+			int num8 = 0;
+			int num9 = 1;
+			int num10 = 2;
+			int num11 = 1;
+			int num12 = 1;
+			int num13 = 0;
+			int num14 = 1;
+			int num15 = 2;
+			int num16 = 1;
+			int num17 = 1;
+			int gLOBAL_IMISS6 = GlobalSpecs.GLOBAL_IMISS;
+			int num18 = 1;
+			int num19 = 0;
+			int num20 = 0;
+			int num21 = 3;
+			int num22 = 3;
+			int num23 = 1;
+			int num24 = 1;
+			int num25 = 0;
+			int num26 = 0;
+			int num27 = 2;
+			int num28 = 3;
+			int num29 = 3;
+			int num30 = 1;
+			int num31 = 5;
+			int[] array = new int[37]
+			{
+				gLOBAL_IMISS, num, gLOBAL_IMISS2, num2, gLOBAL_IMISS3, gLOBAL_IMISS4, gLOBAL_IMISS5, num3, num4, num5,
+				num6, num7, num8, num9, num10, num11, num12, num13, num14, num15,
+				num16, num17, gLOBAL_IMISS6, num18, num19, num20, num21, num22, num23, num24,
+				num25, num26, num27, num28, num29, num30, num31
+			};
+			double num32 = 0.0001;
+			double num33 = 1E-12;
+			double num34 = 0.01;
+			double num35 = 0.0001;
+			double gLOBAL_RMISS = GlobalSpecs.GLOBAL_RMISS;
+			double gLOBAL_RMISS2 = GlobalSpecs.GLOBAL_RMISS;
+			double gLOBAL_RMISS3 = GlobalSpecs.GLOBAL_RMISS;
+			double gLOBAL_RMISS4 = GlobalSpecs.GLOBAL_RMISS;
+			double gLOBAL_RMISS5 = GlobalSpecs.GLOBAL_RMISS;
+			double gLOBAL_RMISS6 = GlobalSpecs.GLOBAL_RMISS;
+			double gLOBAL_RMISS7 = GlobalSpecs.GLOBAL_RMISS;
+			double gLOBAL_RMISS8 = GlobalSpecs.GLOBAL_RMISS;
+			double gLOBAL_RMISS9 = GlobalSpecs.GLOBAL_RMISS;
+			double num36 = 0.1;
+			double num37 = 0.98;
+			double num38 = 0.1;
+			double num39 = 1E-10;
+			double num40 = 0.0001;
+			double num41 = 0.0;
+			double num42 = 298.15;
+			double num43 = 101325.0;
+			double num44 = 1.001;
+			double num45 = 1.001;
+			double num46 = 1E-15;
+			double num47 = 0.99999;
+			double num48 = 1.0;
+			double num49 = 1E-10;
+			double[] array2 = new double[27]
+			{
+				num32, num33, num34, num35, gLOBAL_RMISS, gLOBAL_RMISS2, gLOBAL_RMISS3, gLOBAL_RMISS4, gLOBAL_RMISS5, gLOBAL_RMISS6,
+				gLOBAL_RMISS7, gLOBAL_RMISS8, gLOBAL_RMISS9, num36, num37, num38, num39, num40, num41, num42,
+				num43, num44, num45, num46, num47, num48, num49
+			};
+			IBeadData val = ((IBeadFile)BeadFile).CreateBead(array.Length, array2.Length);
+			int num50 = 0;
+			int[] array3 = array;
+			foreach (int num51 in array3)
+			{
+				val[num50++] = RawInteger.op_Implicit((long)num51);
+			}
+			int num52 = 0;
+			IBeadRealData val2 = (IBeadRealData)val;
+			double[] array4 = array2;
+			foreach (double num53 in array4)
+			{
+				val2[num52++] = num53;
+			}
+			BeadId id = val.Id;
+			return ((BeadId)(ref id)).RawNumber;
+		}
+
+		private int GenerateDynamicLoadingBead()
+		{
+			//IL_0074: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0079: Unknown result type (might be due to invalid IL or missing references)
+			//IL_007a: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0081: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0083: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0084: Unknown result type (might be due to invalid IL or missing references)
+			//IL_008b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0096: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00b5: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00cd: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00e6: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00f8: Unknown result type (might be due to invalid IL or missing references)
+			//IL_012d: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0132: Unknown result type (might be due to invalid IL or missing references)
+			//IL_015b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0175: Unknown result type (might be due to invalid IL or missing references)
+			//IL_017a: Unknown result type (might be due to invalid IL or missing references)
+			List<string> list = new List<string> { "ZZFORT", "ZZOPT", "ZZSENS", "ZZSPCS" };
+			List<int> list2 = new List<int> { 42, 26, 20, 42 };
+			IBeadData val = ((IBeadFile)BeadFile).CreateBead(20, 0);
+			RawInteger val2 = (val[2] = RawInteger.op_Implicit((long)list.Count));
+			RawInteger val4 = (val[1] = val2);
+			val[0] = val4;
+			val[3] = RawInteger.op_Implicit(0L);
+			int num = 4;
+			for (int i = 0; i < list.Count; i++)
+			{
+				val[num++] = WordUtility.FirstWord(list[i]);
+				val[num++] = WordUtility.SecondWord(list[i]);
+				val[num++] = RawInteger.op_Implicit((long)list2[i]);
+				val[num++] = RawInteger.op_Implicit(0L);
+			}
+			IBeadData val6 = ((IBeadFile)BeadFile).CreateBead(6, 0);
+			int num2 = 0;
+			int[] array = new int[6];
+			BeadId id = val.Id;
+			array[3] = ((BeadId)(ref id)).RawNumber;
+			array[5] = 48;
+			int[] array2 = array;
+			foreach (int num3 in array2)
+			{
+				val6[num2++] = RawInteger.op_Implicit((long)num3);
+			}
+			id = val6.Id;
+			return ((BeadId)(ref id)).RawNumber;
+		}
+
+		private int GenerateTABPOLY()
+		{
+			//IL_001d: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0031: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0036: Unknown result type (might be due to invalid IL or missing references)
+			IBeadData val = ((IBeadFile)BeadFile).CreateBead(12, 0);
+			int num = 0;
+			for (int i = 0; i < 12; i++)
+			{
+				val[num++] = RawInteger.op_Implicit(0L);
+			}
+			BeadId id = val.Id;
+			return ((BeadId)(ref id)).RawNumber;
+		}
+
+		private int GenerateVirtualFunctionTableBead()
+		{
+			//IL_0014: Unknown result type (might be due to invalid IL or missing references)
+			//IL_002d: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0032: Unknown result type (might be due to invalid IL or missing references)
+			//IL_003b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_004d: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0061: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0066: Unknown result type (might be due to invalid IL or missing references)
+			IBeadData val = ((IBeadFile)BeadFile).CreateBead(16, 0);
+			val[0] = RawInteger.op_Implicit(13L);
+			BeadId val2 = new BeadId(15, ((IBeadFile)BeadFile).FileNumber);
+			val[1] = RawInteger.op_Implicit((long)((BeadId)(ref val2)).RawNumber);
+			for (int i = 2; i < 16; i++)
+			{
+				val[i] = RawInteger.op_Implicit(0L);
+			}
+			val2 = val.Id;
+			return ((BeadId)(ref val2)).RawNumber;
+		}
+
+		private int GeneratePetroleumCurvePropertiesBead()
+		{
+			//IL_0017: Unknown result type (might be due to invalid IL or missing references)
+			//IL_003c: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0041: Unknown result type (might be due to invalid IL or missing references)
+			//IL_004a: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0058: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0066: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0074: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0082: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0090: Unknown result type (might be due to invalid IL or missing references)
+			//IL_009e: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00ac: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00ba: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00c8: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00d3: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00d8: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00e8: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0108: Unknown result type (might be due to invalid IL or missing references)
+			//IL_010d: Unknown result type (might be due to invalid IL or missing references)
+			IBeadData val = ((IBeadFile)BeadFile).CreateBead(10, 0);
+			for (int i = 0; i < 10; i++)
+			{
+				val[i] = RawInteger.op_Implicit(0L);
+			}
+			IBeadData val2 = ((IBeadFile)BeadFile).CreateBead(9, 3);
+			BeadId id = val2.Id;
+			val[0] = RawInteger.op_Implicit((long)((BeadId)(ref id)).RawNumber);
+			val2[0] = RawInteger.op_Implicit(3L);
+			val2[1] = RawInteger.op_Implicit(1L);
+			val2[2] = RawInteger.op_Implicit(1L);
+			val2[3] = RawInteger.op_Implicit(2L);
+			val2[4] = RawInteger.op_Implicit(1L);
+			val2[5] = RawInteger.op_Implicit(1L);
+			val2[6] = RawInteger.op_Implicit(1L);
+			val2[7] = RawInteger.op_Implicit(0L);
+			val2[8] = RawInteger.op_Implicit(1L);
+			IBeadRealData val3 = (IBeadRealData)val2;
+			val3[0] = 0.5;
+			val3[1] = 99.0;
+			val3[2] = 0.1;
+			id = val.Id;
+			return ((BeadId)(ref id)).RawNumber;
+		}
+
+		internal int ReplaceSTWORK()
+		{
+			//IL_013d: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0171: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0185: Unknown result type (might be due to invalid IL or missing references)
+			//IL_019f: Unknown result type (might be due to invalid IL or missing references)
+			//IL_01b6: Unknown result type (might be due to invalid IL or missing references)
+			//IL_01c5: Unknown result type (might be due to invalid IL or missing references)
+			//IL_01d3: Unknown result type (might be due to invalid IL or missing references)
+			//IL_01e0: Unknown result type (might be due to invalid IL or missing references)
+			//IL_01ee: Unknown result type (might be due to invalid IL or missing references)
+			//IL_01fb: Unknown result type (might be due to invalid IL or missing references)
+			//IL_020a: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0217: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0227: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0234: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0244: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0251: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0261: Unknown result type (might be due to invalid IL or missing references)
+			//IL_026e: Unknown result type (might be due to invalid IL or missing references)
+			//IL_027d: Unknown result type (might be due to invalid IL or missing references)
+			//IL_028c: Unknown result type (might be due to invalid IL or missing references)
+			//IL_029c: Unknown result type (might be due to invalid IL or missing references)
+			//IL_02a9: Unknown result type (might be due to invalid IL or missing references)
+			//IL_02b9: Unknown result type (might be due to invalid IL or missing references)
+			//IL_02c6: Unknown result type (might be due to invalid IL or missing references)
+			//IL_02d6: Unknown result type (might be due to invalid IL or missing references)
+			//IL_02e3: Unknown result type (might be due to invalid IL or missing references)
+			//IL_02f3: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0303: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0313: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0320: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0330: Unknown result type (might be due to invalid IL or missing references)
+			//IL_033d: Unknown result type (might be due to invalid IL or missing references)
+			//IL_034d: Unknown result type (might be due to invalid IL or missing references)
+			//IL_035a: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0373: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0381: Unknown result type (might be due to invalid IL or missing references)
+			//IL_03a0: Unknown result type (might be due to invalid IL or missing references)
+			//IL_03ae: Unknown result type (might be due to invalid IL or missing references)
+			//IL_03ca: Unknown result type (might be due to invalid IL or missing references)
+			//IL_03d8: Unknown result type (might be due to invalid IL or missing references)
+			//IL_03e5: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0402: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0410: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0420: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0430: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0440: Unknown result type (might be due to invalid IL or missing references)
+			//IL_044d: Unknown result type (might be due to invalid IL or missing references)
+			//IL_045a: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0472: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0477: Unknown result type (might be due to invalid IL or missing references)
+			//IL_015b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_04fe: Unknown result type (might be due to invalid IL or missing references)
+			//IL_050f: Unknown result type (might be due to invalid IL or missing references)
+			//IL_051f: Unknown result type (might be due to invalid IL or missing references)
+			//IL_052c: Unknown result type (might be due to invalid IL or missing references)
+			//IL_053c: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0549: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0559: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0566: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0576: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0586: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0593: Unknown result type (might be due to invalid IL or missing references)
+			//IL_05ad: Unknown result type (might be due to invalid IL or missing references)
+			//IL_05bb: Unknown result type (might be due to invalid IL or missing references)
+			//IL_05cb: Unknown result type (might be due to invalid IL or missing references)
+			//IL_05d8: Unknown result type (might be due to invalid IL or missing references)
+			//IL_05e8: Unknown result type (might be due to invalid IL or missing references)
+			//IL_05f5: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0605: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0613: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0481: Unknown result type (might be due to invalid IL or missing references)
+			//IL_04de: Unknown result type (might be due to invalid IL or missing references)
+			//IL_04e3: Unknown result type (might be due to invalid IL or missing references)
+			//IL_04e5: Unknown result type (might be due to invalid IL or missing references)
+			//IL_04ec: Unknown result type (might be due to invalid IL or missing references)
+			//IL_04f4: Unknown result type (might be due to invalid IL or missing references)
+			//IL_04f9: Unknown result type (might be due to invalid IL or missing references)
+			//IL_096c: Unknown result type (might be due to invalid IL or missing references)
+			//IL_097d: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0982: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0986: Unknown result type (might be due to invalid IL or missing references)
+			//IL_062b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0638: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0648: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0656: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0666: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0674: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0684: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0692: Unknown result type (might be due to invalid IL or missing references)
+			//IL_06a2: Unknown result type (might be due to invalid IL or missing references)
+			//IL_06b0: Unknown result type (might be due to invalid IL or missing references)
+			//IL_06c0: Unknown result type (might be due to invalid IL or missing references)
+			//IL_06ce: Unknown result type (might be due to invalid IL or missing references)
+			//IL_06de: Unknown result type (might be due to invalid IL or missing references)
+			//IL_06ec: Unknown result type (might be due to invalid IL or missing references)
+			//IL_06fc: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0709: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0719: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0727: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0737: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0744: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0754: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0761: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0771: Unknown result type (might be due to invalid IL or missing references)
+			//IL_077f: Unknown result type (might be due to invalid IL or missing references)
+			//IL_078f: Unknown result type (might be due to invalid IL or missing references)
+			//IL_079c: Unknown result type (might be due to invalid IL or missing references)
+			//IL_07ac: Unknown result type (might be due to invalid IL or missing references)
+			//IL_07ba: Unknown result type (might be due to invalid IL or missing references)
+			//IL_07ca: Unknown result type (might be due to invalid IL or missing references)
+			//IL_07da: Unknown result type (might be due to invalid IL or missing references)
+			//IL_07ea: Unknown result type (might be due to invalid IL or missing references)
+			//IL_07fa: Unknown result type (might be due to invalid IL or missing references)
+			//IL_080a: Unknown result type (might be due to invalid IL or missing references)
+			//IL_081a: Unknown result type (might be due to invalid IL or missing references)
+			//IL_082a: Unknown result type (might be due to invalid IL or missing references)
+			//IL_083b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_084b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_085c: Unknown result type (might be due to invalid IL or missing references)
+			//IL_086c: Unknown result type (might be due to invalid IL or missing references)
+			//IL_087d: Unknown result type (might be due to invalid IL or missing references)
+			//IL_088d: Unknown result type (might be due to invalid IL or missing references)
+			//IL_089b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_08ab: Unknown result type (might be due to invalid IL or missing references)
+			//IL_08b9: Unknown result type (might be due to invalid IL or missing references)
+			//IL_08c9: Unknown result type (might be due to invalid IL or missing references)
+			//IL_08d9: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0917: Unknown result type (might be due to invalid IL or missing references)
+			//IL_095a: Unknown result type (might be due to invalid IL or missing references)
+			//IL_09b4: Unknown result type (might be due to invalid IL or missing references)
+			//IL_09c1: Unknown result type (might be due to invalid IL or missing references)
+			//IL_09d0: Unknown result type (might be due to invalid IL or missing references)
+			//IL_09e0: Unknown result type (might be due to invalid IL or missing references)
+			//IL_09ee: Unknown result type (might be due to invalid IL or missing references)
+			//IL_09fe: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0a0e: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0a1e: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0a2c: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0a3c: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0a4a: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0a5a: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0a68: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0a78: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0a88: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0a95: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0aa5: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0ab2: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0ac2: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0acf: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0ae7: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0aff: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0b0f: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0b1d: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0b28: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0b2d: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0998: Unknown result type (might be due to invalid IL or missing references)
+			IBeadData val = ((IBeadFile)BeadFile).CreateBead(75, 0);
+			int count = ComponentManager.Count;
+			int nCCount = ComponentManager.NCCount;
+			int nNCCount = ComponentManager.NNCCount;
+			int num = 1;
+			int num2 = 1;
+			int num3 = 4;
+			int num4 = ParagraphManager.FindMaxSentenceCount("CHEMISTRY", "DISS");
+			int num5 = ParagraphManager.FindMaxSentenceCount("CHEMISTRY", "SALT");
+			int num6 = ParagraphManager.FindMaxSentenceCount("CHEMISTRY", "STOIC");
+			int num7 = num4 + num5 + num6;
+			int num8 = 8;
+			int num9 = 8;
+			int num10 = ((num8 > num9) ? num8 : num9);
+			double value = -1.25;
+			int num11 = ComponentManager.NCCount + 9;
+			int num12 = 25;
+			int num13 = ((num7 == 0) ? nCCount : (2 * nCCount));
+			int num14 = num3;
+			int num15 = num6 + num5;
+			int num16 = 0;
+			int num17 = ((num15 > nCCount) ? num15 : nCCount);
+			int num18 = 38 * nCCount + count + 2 * num13 + (nCCount + 5) * num14 + 2 * num15 + 1;
+			int num19 = 59 * nCCount + (3 * nCCount + 1) * num13 + (12 * nCCount + 11 + num16) * num14 + (nCCount + 5) * num15 + 72 * nCCount * nCCount + 38 + num12 + num17 * (2 + num17);
+			val[0] = RawInteger.op_Implicit((long)(nCCount * 6 + 37));
+			if (num7 > 0)
+			{
+				val[0] = RawInteger.op_Implicit((long)(2 * num7 + nCCount * 11 + 37));
+			}
+			val[1] = RawInteger.op_Implicit((long)(nCCount * 2 + 23 + num3));
+			val[2] = RawInteger.op_Implicit((long)((nCCount + 8) * (nCCount + 8)));
+			val[3] = RawInteger.op_Implicit((long)((nCCount * 2 + 10) * (nCCount * 2 + 10)));
+			val[4] = RawInteger.op_Implicit((long)(nCCount * 20 + 45 + 100));
+			val[6] = RawInteger.op_Implicit(12L);
+			val[7] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[6]) + nCCount);
+			val[8] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[7]) + nCCount);
+			val[9] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[8]) + nCCount);
+			val[10] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[9]) + nCCount);
+			val[11] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[10]) + nCCount);
+			val[12] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[11]) + nCCount);
+			val[13] = RawInteger.op_Implicit(1L);
+			val[14] = RawInteger.op_Implicit(1L);
+			val[15] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[14]) + nCCount);
+			val[16] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[15]) + nCCount);
+			val[17] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[16]) + nCCount);
+			val[18] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[17]) + nCCount + nCCount);
+			val[19] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[18]) + nCCount);
+			val[20] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[19]) + nCCount);
+			val[21] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[20]) + nNCCount);
+			int num20 = (nCCount + 8) * (nCCount + 8);
+			val[22] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[21]) + num20);
+			int num21 = (nCCount * 2 + 10) * (nCCount * 2 + 10);
+			val[23] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[22]) + num21);
+			int num22 = nCCount * 20 + 45 + 100;
+			val[24] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[23]) + num22);
+			int num23 = 2 * Convert.ToInt32(RawInteger.op_Implicit(val[0])) + 2 * num11;
+			val[55] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[24]) + num23);
+			val[59] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[55]) + 5 * num11);
+			val[61] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[59]) + nCCount);
+			RawInteger val2 = RawInteger.op_Implicit(RawInteger.op_Implicit(val[61]) + num19 + (nCCount + 4) * 4 + nCCount);
+			if (num7 > 0)
+			{
+				val[32] = val2;
+				int num24 = nCCount + num7;
+				int num25 = Math.Max(14 * num24 + 3 * num24 * num24 + num7, 10 * nCCount + 2 * nCCount * nCCount + 5 * num7 * num7) + num7;
+				RawInteger val3 = RawInteger.op_Implicit((long)(num7 + 2 * num5 + nCCount + (num6 + num5 + num7) * nCCount + (num6 + num5 + num7) * num10 + num25));
+				val2 = RawInteger.op_Implicit(RawInteger.op_Implicit(val2) + RawInteger.op_Implicit(val3));
+			}
+			val[25] = RawInteger.op_Implicit((RawInteger.op_Implicit(val2) - 1) * num + 1);
+			val[26] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[25]) + nCCount);
+			val[27] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[26]) + nCCount);
+			val[28] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[27]) + nNCCount);
+			val[29] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[28]) + num2 * 2);
+			int num26 = 2 * Convert.ToInt32(RawInteger.op_Implicit(val[1])) + 1;
+			val[54] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[29]) + num26);
+			val[58] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[54]) + 2);
+			val[60] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[58]) + nCCount);
+			val[73] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[60]) + num18);
+			if (num7 > 0)
+			{
+				val[30] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[73]) + nCCount);
+				val[31] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[30]) + num7);
+				val[33] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[31]) + num7);
+				val[34] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[32]) + num7);
+				val[35] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[12]) + 26);
+				val[36] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[35]) + num7);
+				val[37] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[36]) + num7);
+				val[38] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[37]) + nCCount);
+				val[39] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[38]) + num5);
+				val[40] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[39]) + nCCount);
+				val[41] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[40]) + nCCount);
+				val[42] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[34]) + num5);
+				val[43] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[42]) + nCCount);
+				val[44] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[43]) + num5);
+				val[45] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[44]) + nCCount * num6);
+				val[46] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[45]) + nCCount * num5);
+				val[47] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[46]) + nCCount * num7);
+				val[48] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[47]) + num6 * num10);
+				val[49] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[48]) + num5 * num10);
+				val[50] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[49]) + num7 * num10);
+				val[51] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[33]) + num5);
+				val[52] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[51]) + num5);
+				val[53] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[52]) + num5 * 2);
+				int num27 = Math.Max(nCCount + num7 + 4 * num7 + nCCount, 8 * nCCount);
+				num27 = num27 + num7 + nCCount + num7 + num7 + num7;
+				int num28 = 26 * num + 16;
+				double num29 = Convert.ToDouble(RawInteger.op_Implicit(val[53])) + (double)num27 + (double)num28 - 1.0;
+				val[5] = RawInteger.op_Implicit((long)Convert.ToInt32(num29 * Math.Max(Math.Abs(value), 1.0)));
+			}
+			else
+			{
+				RawInteger val4 = RawInteger.op_Implicit(66 + RawInteger.op_Implicit(val[73]) + nCCount - 1);
+				val[5] = val4;
+				for (int i = 30; i < 54; i++)
+				{
+					val[i] = RawInteger.op_Implicit(0L);
+				}
+			}
+			val[56] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[17]) + nCCount);
+			val[57] = RawInteger.op_Implicit(0L);
+			val[62] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[61]) + num19);
+			val[63] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[62]) + nCCount * num3);
+			val[64] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[63]) + num3);
+			val[65] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[64]) + num3);
+			val[66] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[65]) + num3);
+			val[67] = RawInteger.op_Implicit(17L);
+			val[68] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[67]) + 6);
+			val[69] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[68]) + nCCount);
+			val[70] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[69]) + nCCount);
+			int num30 = 12 + nCCount * 2;
+			val[71] = RawInteger.op_Implicit((long)num30);
+			int num31 = num30 + nCCount * 3;
+			val[72] = RawInteger.op_Implicit((long)num31);
+			val[74] = RawInteger.op_Implicit(RawInteger.op_Implicit(val[66]) + num3);
+			BeadId id = val.Id;
+			return ((BeadId)(ref id)).RawNumber;
+		}
+
+		internal (int, int, int) ReplaceSTRMCLSS()
+		{
+			//IL_0038: Unknown result type (might be due to invalid IL or missing references)
+			//IL_003e: Expected O, but got Unknown
+			//IL_005b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0062: Expected O, but got Unknown
+			//IL_0066: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0074: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0089: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0097: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00a4: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00a9: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00b3: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00c1: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00cf: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00dd: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00eb: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00fa: Unknown result type (might be due to invalid IL or missing references)
+			//IL_010a: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0119: Unknown result type (might be due to invalid IL or missing references)
+			//IL_012c: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0144: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0155: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0166: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0177: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0188: Unknown result type (might be due to invalid IL or missing references)
+			//IL_018d: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0197: Unknown result type (might be due to invalid IL or missing references)
+			//IL_01a8: Unknown result type (might be due to invalid IL or missing references)
+			//IL_01b9: Unknown result type (might be due to invalid IL or missing references)
+			//IL_01ca: Unknown result type (might be due to invalid IL or missing references)
+			//IL_01dc: Unknown result type (might be due to invalid IL or missing references)
+			//IL_01f0: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0209: Unknown result type (might be due to invalid IL or missing references)
+			//IL_020e: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0218: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0248: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0257: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0266: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0275: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0284: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0289: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0293: Unknown result type (might be due to invalid IL or missing references)
+			//IL_02a2: Unknown result type (might be due to invalid IL or missing references)
+			//IL_02b1: Unknown result type (might be due to invalid IL or missing references)
+			//IL_02c0: Unknown result type (might be due to invalid IL or missing references)
+			//IL_02cf: Unknown result type (might be due to invalid IL or missing references)
+			//IL_02df: Unknown result type (might be due to invalid IL or missing references)
+			//IL_02ef: Unknown result type (might be due to invalid IL or missing references)
+			//IL_031c: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0321: Unknown result type (might be due to invalid IL or missing references)
+			//IL_032b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0330: Unknown result type (might be due to invalid IL or missing references)
+			//IL_033a: Unknown result type (might be due to invalid IL or missing references)
+			//IL_033f: Unknown result type (might be due to invalid IL or missing references)
+			int num = ((IEnumerable<IComponent>)ComponentManager.Components).ToList().Count + 9;
+			IBeadData val = ((IBeadFile)BeadFile).CreateBead(22, 0);
+			IBeadData val2 = ((IBeadFile)BeadFile).CreateBead(34, num);
+			IBeadRealData val3 = (IBeadRealData)val2;
+			IBeadData val4 = ((IBeadFile)BeadFile).CreateBead(11, 0);
+			IBeadRealData val5 = (IBeadRealData)((IBeadFile)BeadFile).CreateBead(0, num);
+			val[0] = RawInteger.op_Implicit(0L);
+			val[1] = RawInteger.op_Implicit(0L);
+			string text = "CONVEN";
+			val[2] = WordUtility.FirstWord(text);
+			val[3] = WordUtility.SecondWord(text);
+			BeadId id = val2.Id;
+			val[4] = RawInteger.op_Implicit((long)((BeadId)(ref id)).RawNumber);
+			val[5] = RawInteger.op_Implicit(0L);
+			val[6] = RawInteger.op_Implicit((long)num);
+			val[7] = RawInteger.op_Implicit(0L);
+			val[8] = RawInteger.op_Implicit(0L);
+			val[9] = RawInteger.op_Implicit(0L);
+			val[10] = RawInteger.op_Implicit(11L);
+			val[11] = RawInteger.op_Implicit(0L);
+			int num2 = 12;
+			val[num2] = RawInteger.op_Implicit(1L);
+			string text2 = "MIXED";
+			val[num2 + 1] = WordUtility.FirstWord(text2);
+			val[num2 + 2] = WordUtility.SecondWord(text2);
+			val[num2 + 3] = WordUtility.FirstWord(text2);
+			val[num2 + 4] = WordUtility.SecondWord(text2);
+			int num3 = num2 + 5;
+			id = val4.Id;
+			val[num3] = RawInteger.op_Implicit((long)((BeadId)(ref id)).RawNumber);
+			val[num2 + 6] = RawInteger.op_Implicit(1L);
+			val[num2 + 7] = RawInteger.op_Implicit(1L);
+			val[num2 + 8] = RawInteger.op_Implicit((long)num);
+			val[num2 + 9] = RawInteger.op_Implicit(0L);
+			for (int i = 0; i < 34; i++)
+			{
+				val2[i] = RawInteger.op_Implicit(0L);
+			}
+			id = val.Id;
+			val2[8] = RawInteger.op_Implicit((long)((BeadId)(ref id)).RawNumber);
+			for (int j = 0; j < num; j++)
+			{
+				val3[j] = 0.0;
+			}
+			val4[0] = RawInteger.op_Implicit(0L);
+			val4[1] = RawInteger.op_Implicit(0L);
+			val4[2] = WordUtility.FirstWord(text2);
+			val4[3] = WordUtility.SecondWord(text2);
+			id = ((IBeadData)val5).Id;
+			val4[4] = RawInteger.op_Implicit((long)((BeadId)(ref id)).RawNumber);
+			val4[5] = RawInteger.op_Implicit(1L);
+			val4[6] = RawInteger.op_Implicit(1L);
+			val4[7] = RawInteger.op_Implicit((long)num);
+			val4[8] = RawInteger.op_Implicit(0L);
+			val4[9] = RawInteger.op_Implicit(0L);
+			val4[10] = RawInteger.op_Implicit((long)num);
+			for (int k = 0; k < num; k++)
+			{
+				val5[k] = 0.0;
+			}
+			id = val.Id;
+			int rawNumber = ((BeadId)(ref id)).RawNumber;
+			id = val.Id;
+			int rawNumber2 = ((BeadId)(ref id)).RawNumber;
+			id = val.Id;
+			return (rawNumber, rawNumber2, ((BeadId)(ref id)).RawNumber);
+		}
+
+		public static void FSetPureDataSources(int fileNumber, IntPtr pureDataSources)
+		{
+		}
+
+		public static void FSetBinaryDataSources(int fileNumber, IntPtr binaryDataSources)
+		{
+		}
+
+		public static void FSetComponents(int fileNumber, IntPtr components)
+		{
+			string components2 = Marshal.PtrToStringAnsi(components);
+			DocumentFactory.Instance.GetDocument(fileNumber).SetComponents(components2);
+		}
+
+		public static void FSetOptionSets(int fileNumber, IntPtr names)
+		{
+			string optionSets = Marshal.PtrToStringAnsi(names);
+			DocumentFactory.Instance.GetDocument(fileNumber).SetOptionSets(optionSets);
+		}
+
+		public static void FSetChemistry(int fileNumber, IntPtr names)
+		{
+			string chemistry = Marshal.PtrToStringAnsi(names);
+			DocumentFactory.Instance.GetDocument(fileNumber).SetChemistry(chemistry);
+		}
+
+		public static void FPrintHollerith(int fileNumber, int firstWord, int secondWord, int iter)
+		{
+			DocumentFactory.Instance.GetDocument(fileNumber).PrintHollerith((long)firstWord, (long)secondWord, (long)iter);
+		}
+
+		public static int CreateNewIntBead(int fileNumber, int length)
+		{
+			//IL_0012: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0017: Unknown result type (might be due to invalid IL or missing references)
+			BeadId val = ((IPlexFile)DocumentFactory.Instance.GetDocument(fileNumber).PlexFile).CreateNewBead(length, 0);
+			return ((BeadId)(ref val)).RawNumber;
+		}
+
+		public static int CreateNewRealBead(int fileNumber, int length)
+		{
+			//IL_0012: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0017: Unknown result type (might be due to invalid IL or missing references)
+			BeadId val = ((IPlexFile)DocumentFactory.Instance.GetDocument(fileNumber).PlexFile).CreateNewBead(0, length);
+			return ((BeadId)(ref val)).RawNumber;
+		}
+
+		public static int CreateNewMixedBead(int fileNumber, int iLength, int rLength)
+		{
+			//IL_0012: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0017: Unknown result type (might be due to invalid IL or missing references)
+			BeadId val = ((IPlexFile)DocumentFactory.Instance.GetDocument(fileNumber).PlexFile).CreateNewBead(iLength, rLength);
+			return ((BeadId)(ref val)).RawNumber;
+		}
+
+		public static bool RAlocBead(int fileNumber, int beadNumber, int intLength, int realLength)
+		{
+			BeadId val = default(BeadId);
+			((BeadId)(ref val))..ctor(beadNumber, fileNumber);
+			IPlexBead plexBeadOrNull = ((IPlexFile)DocumentFactory.Instance.GetDocument(fileNumber).PlexFile).GetPlexBeadOrNull(((BeadId)(ref val)).BeadNumber);
+			if (plexBeadOrNull == null)
+			{
+				return false;
+			}
+			return plexBeadOrNull.Resize(intLength, realLength, true);
+		}
+
+		public static int Alloci(int fileNumber, int length)
+		{
+			return CreateNewIntBead(fileNumber, length);
+		}
+
+		public static bool Raloci(int fileNumber, int beadNumber, int length)
+		{
+			return RAlocBead(fileNumber, beadNumber, length, 0);
+		}
+
+		public static IntPtr Locati(int fileNumber, int beadNumber)
+		{
+			BeadId val = default(BeadId);
+			((BeadId)(ref val))..ctor(beadNumber, fileNumber);
+			IPlexBead plexBeadOrNull = ((IPlexFile)DocumentFactory.Instance.GetDocument(fileNumber).PlexFile).GetPlexBeadOrNull(((BeadId)(ref val)).BeadNumber);
+			if (plexBeadOrNull == null)
+			{
+				return IntPtr.Zero;
+			}
+			return plexBeadOrNull.IntLocation;
+		}
+
+		public static int Lenthi(int fileNumber, int beadNumber)
+		{
+			BeadId val = default(BeadId);
+			((BeadId)(ref val))..ctor(beadNumber, fileNumber);
+			IPlexBead plexBeadOrNull = ((IPlexFile)DocumentFactory.Instance.GetDocument(fileNumber).PlexFile).GetPlexBeadOrNull(((BeadId)(ref val)).BeadNumber);
+			if (plexBeadOrNull == null)
+			{
+				return 0;
+			}
+			return plexBeadOrNull.IntSize;
+		}
+
+		public static int Allocr(int fileNumber, int length)
+		{
+			return CreateNewRealBead(fileNumber, length);
+		}
+
+		public static bool Ralocr(int fileNumber, int beadNumber, int length)
+		{
+			return RAlocBead(fileNumber, beadNumber, 0, length);
+		}
+
+		public static IntPtr Locatr(int fileNumber, int beadNumber)
+		{
+			BeadId val = default(BeadId);
+			((BeadId)(ref val))..ctor(beadNumber, fileNumber);
+			IPlexBead plexBeadOrNull = ((IPlexFile)DocumentFactory.Instance.GetDocument(fileNumber).PlexFile).GetPlexBeadOrNull(((BeadId)(ref val)).BeadNumber);
+			if (plexBeadOrNull == null)
+			{
+				return IntPtr.Zero;
+			}
+			return plexBeadOrNull.DoubleLocation;
+		}
+
+		public static int Lenthr(int fileNumber, int beadNumber)
+		{
+			BeadId val = default(BeadId);
+			((BeadId)(ref val))..ctor(beadNumber, fileNumber);
+			IPlexBead plexBeadOrNull = ((IPlexFile)DocumentFactory.Instance.GetDocument(fileNumber).PlexFile).GetPlexBeadOrNull(((BeadId)(ref val)).BeadNumber);
+			if (plexBeadOrNull == null)
+			{
+				return 0;
+			}
+			return plexBeadOrNull.DoubleSize;
+		}
+
+		public static int Allocm(int fileNumber, int intLength, int realLength)
+		{
+			return CreateNewMixedBead(fileNumber, intLength, realLength);
+		}
+
+		public static bool Ralocm(int fileNumber, int beadNumber, int integerLength, int realLength)
+		{
+			return RAlocBead(fileNumber, beadNumber, integerLength, realLength);
+		}
+
+		public static void FreeBead(int fileNumber, int beadNumber)
+		{
+			//IL_0019: Unknown result type (might be due to invalid IL or missing references)
+			BeadId val = default(BeadId);
+			((BeadId)(ref val))..ctor(beadNumber, fileNumber);
+			((IPlexFile)DocumentFactory.Instance.GetDocument(fileNumber).PlexFile).DeleteBead(val);
+		}
+
+		public static int BeadType(int fileNumber, int beadNumber)
+		{
+			//IL_0025: Unknown result type (might be due to invalid IL or missing references)
+			//IL_002b: Expected I4, but got Unknown
+			BeadId val = default(BeadId);
+			((BeadId)(ref val))..ctor(beadNumber, fileNumber);
+			return (int)((IPlexFile)DocumentFactory.Instance.GetDocument(fileNumber).PlexFile).GetPlexBeadOrNull(((BeadId)(ref val)).BeadNumber).BeadType;
+		}
+
+		public static bool DoesBeadExist(int fileNumber, int beadNumber)
+		{
+			//IL_0019: Unknown result type (might be due to invalid IL or missing references)
+			BeadId val = default(BeadId);
+			((BeadId)(ref val))..ctor(beadNumber, fileNumber);
+			return ((IPlexFile)DocumentFactory.Instance.GetDocument(fileNumber).PlexFile).Contains(val);
+		}
+
+		public static void TryGenerateBeadsM(int fileNumber)
+		{
+			((ITryGenerateBeads)DocumentFactory.Instance.GetDocument(fileNumber)).TryGenerateBeads();
+		}
+
+		public static void FCallsSetHenryComponents(int fileNumber, string components)
+		{
+			DocumentFactory.Instance.GetDocument(fileNumber).SetHenryComponents(components);
+		}
+
+		public static void FCallsSetGlobalOptionSets(int fileNumber, string Propid, string Henryid, string Chemid, int truecomp, string Freewater, int soluwater)
+		{
+			DocumentFactory.Instance.GetDocument(fileNumber).SetGlobalOptionSets(Propid, Henryid, Chemid, truecomp, Freewater, soluwater);
+		}
+
+		public static void FCallsGetGlobalOptionSets(int fileNumber, IntPtr nbOPSET)
+		{
+			IList<int> globalOptionSets = DocumentFactory.Instance.GetDocument(fileNumber).GetGlobalOptionSets();
+			for (int i = 0; i < globalOptionSets.Count(); i++)
+			{
+				Marshal.WriteInt64(nbOPSET, i * 8, globalOptionSets[i]);
+			}
+		}
+
+		public static void FCallsSetCurrentOptionSets(int fileNumber, string Propid, string Henryid, string Chemid, int truecomp, string Freewater, int soluwater)
+		{
+			DocumentFactory.Instance.GetDocument(fileNumber).SetCurrentOptionSets(Propid, Henryid, Chemid, truecomp, Freewater, soluwater);
+		}
+
+		public static void FCallsGetCurrentOptionSets(int fileNumber, IntPtr nbOPSET)
+		{
+			IList<int> currentOptionSets = DocumentFactory.Instance.GetDocument(fileNumber).GetCurrentOptionSets();
+			for (int i = 0; i < currentOptionSets.Count(); i++)
+			{
+				Marshal.WriteInt64(nbOPSET, i * 8, currentOptionSets[i]);
+			}
+		}
+
+		public static void FCallsMakeOptionSets(int fileNumber, string Propid, string Henryid, string Chemid, int truecomp, string Freewater, int soluwater, IntPtr nbopset)
+		{
+			IList<int> list = DocumentFactory.Instance.GetDocument(fileNumber).MakeOptionSets(Propid, Henryid, Chemid, truecomp, Freewater, soluwater);
+			for (int i = 0; i < list.Count(); i++)
+			{
+				Marshal.WriteInt64(nbopset, i * 8, list[i]);
+			}
+		}
+
+		public static void FCallsGetNumbersWithCompType(int fileNumber, IntPtr ncomps)
+		{
+			IList<int> numbersWithCompType = DocumentFactory.Instance.GetDocument(fileNumber).GetNumbersWithCompType();
+			for (int i = 0; i < numbersWithCompType.Count(); i++)
+			{
+				Marshal.WriteInt64(ncomps, i * 8, numbersWithCompType[i]);
+			}
+		}
+
+		public static void FCallsSetProperties(int fileNumber, string propnames)
+		{
+			DocumentFactory.Instance.GetDocument(fileNumber).SetProperties(propnames);
+		}
+
+		public static void FCallsSetDataSources(int fileNumber, string sources)
+		{
+			DocumentFactory.Instance.GetDocument(fileNumber).SetDataSources(sources);
+		}
+
+		public static IntPtr ListApedDatabanks_WithDBAccessFlag(out int size)
+		{
+			List<string> databankDatabaseList = GetDatabankDatabaseList();
+			size = databankDatabaseList.Count;
+			IntPtr[] array = new IntPtr[size];
+			for (int i = 0; i < size; i++)
+			{
+				array[i] = Marshal.StringToHGlobalAnsi(databankDatabaseList[i]);
+			}
+			IntPtr intPtr = Marshal.AllocHGlobal(size * IntPtr.Size);
+			Marshal.Copy(array, 0, intPtr, size);
+			return intPtr;
+		}
+
+		public static int FoundCompounds_Find(IntPtr ptrSearchSourceArray, int arraySize, string identSearchString, string outputPropertyName, out double outputPropertyvalue, out string dbName, out string dbankName, out string compIndex, out string compName, out string compAlias, out string casNumber)
+		{
+			string[] array = new string[arraySize];
+			IntPtr[] array2 = new IntPtr[arraySize];
+			Marshal.Copy(ptrSearchSourceArray, array2, 0, arraySize);
+			for (int i = 0; i < arraySize; i++)
+			{
+				array[i] = Marshal.PtrToStringAnsi(array2[i]);
+			}
+			dbName = "";
+			dbankName = "";
+			compIndex = "";
+			compName = "";
+			compAlias = "";
+			casNumber = "";
+			outputPropertyvalue = 0.0;
+			new List<IDataSource>();
+			for (int j = 0; j < arraySize; j++)
+			{
+				string[] array3 = array[j].Split('.');
+				array[j] = array3[0] + " " + array3[1];
+			}
+			ICollection matches = null;
+			ApedHelperFns.FindComponentAped(array, identSearchString, outputPropertyName, out matches);
+			if (matches.Count == 0)
+			{
+				return 0;
+			}
+			outputPropertyvalue = ApedHelperFns.ProcessMatchCollection(matches, outputPropertyName, out dbName, out dbankName, out compIndex, out compName, out compAlias, out casNumber);
+			return 1;
+		}
+
+		public static void SetPropertyPackagestatic(int fileNumber, string json)
+		{
+			DocumentFactory.Instance.GetDocument(fileNumber).SetPropertyPackage(json);
+		}
+
+		[DllImport("AspenTech_NGP_Managed2Unmanaged")]
+		public static extern void M2UnmBridgeAPI_SetManagedDel(StrutOfDelegates stCallBack);
+
+		public void InitDelegates()
+		{
+			StrutOfDelegates stCallBack = new StrutOfDelegates
+			{
+				allociCBD = Alloci
+			};
+			ListGCHandle.Add(GCHandle.Alloc(stCallBack.allociCBD));
+			stCallBack.lenthiCBD = Lenthi;
+			ListGCHandle.Add(GCHandle.Alloc(stCallBack.lenthiCBD));
+			stCallBack.locatiCBD = Locati;
+			ListGCHandle.Add(GCHandle.Alloc(stCallBack.locatiCBD));
+			stCallBack.ralociCBD = Raloci;
+			ListGCHandle.Add(GCHandle.Alloc(stCallBack.ralociCBD));
+			stCallBack.allocrCBD = Allocr;
+			ListGCHandle.Add(GCHandle.Alloc(stCallBack.allocrCBD));
+			stCallBack.lenthrCBD = Lenthr;
+			ListGCHandle.Add(GCHandle.Alloc(stCallBack.lenthrCBD));
+			stCallBack.locatrCBD = Locatr;
+			ListGCHandle.Add(GCHandle.Alloc(stCallBack.locatrCBD));
+			stCallBack.ralocrCBD = Ralocr;
+			ListGCHandle.Add(GCHandle.Alloc(stCallBack.ralocrCBD));
+			stCallBack.allocmCBD = Allocm;
+			ListGCHandle.Add(GCHandle.Alloc(stCallBack.allocmCBD));
+			stCallBack.beadTypeCBD = BeadType;
+			ListGCHandle.Add(GCHandle.Alloc(stCallBack.beadTypeCBD));
+			stCallBack.ralocmCBD = Ralocm;
+			ListGCHandle.Add(GCHandle.Alloc(stCallBack.ralocmCBD));
+			stCallBack.freeBeadCBD = FreeBead;
+			ListGCHandle.Add(GCHandle.Alloc(stCallBack.freeBeadCBD));
+			stCallBack.doesBeadExistCBD = DoesBeadExist;
+			ListGCHandle.Add(GCHandle.Alloc(stCallBack.doesBeadExistCBD));
+			stCallBack.tryGenerateBeadsMCBD = TryGenerateBeadsM;
+			ListGCHandle.Add(GCHandle.Alloc(stCallBack.tryGenerateBeadsMCBD));
+			stCallBack.fSetPureDataSourceCBD = FSetBinaryDataSources;
+			ListGCHandle.Add(GCHandle.Alloc(stCallBack.fSetPureDataSourceCBD));
+			stCallBack.fSetComponentsCBD = FSetComponents;
+			ListGCHandle.Add(GCHandle.Alloc(stCallBack.fSetComponentsCBD));
+			stCallBack.fSetOptionSetsCBD = FSetOptionSets;
+			ListGCHandle.Add(GCHandle.Alloc(stCallBack.fSetOptionSetsCBD));
+			stCallBack.fSetChemistryCBD = FSetChemistry;
+			ListGCHandle.Add(GCHandle.Alloc(stCallBack.fSetChemistryCBD));
+			stCallBack.fPrintHollerithCBD = FPrintHollerith;
+			ListGCHandle.Add(GCHandle.Alloc(stCallBack.fPrintHollerithCBD));
+			stCallBack.fCallsSetHenryComponentsCBD = FCallsSetHenryComponents;
+			ListGCHandle.Add(GCHandle.Alloc(stCallBack.fCallsSetHenryComponentsCBD));
+			stCallBack.fCallsSetGlobalOptionSetsCBD = FCallsSetGlobalOptionSets;
+			ListGCHandle.Add(GCHandle.Alloc(stCallBack.fCallsSetGlobalOptionSetsCBD));
+			stCallBack.fCallsGetGlobalOptionSetsCBD = FCallsGetGlobalOptionSets;
+			ListGCHandle.Add(GCHandle.Alloc(stCallBack.fCallsGetGlobalOptionSetsCBD));
+			stCallBack.fCallsSetCurrentOptionSetsCBD = FCallsSetCurrentOptionSets;
+			ListGCHandle.Add(GCHandle.Alloc(stCallBack.fCallsSetCurrentOptionSetsCBD));
+			stCallBack.fCallsGetCurrentOptionSetsCBD = FCallsGetCurrentOptionSets;
+			ListGCHandle.Add(GCHandle.Alloc(stCallBack.fCallsGetCurrentOptionSetsCBD));
+			stCallBack.fCallsMakeOptionSetsCBD = FCallsMakeOptionSets;
+			ListGCHandle.Add(GCHandle.Alloc(stCallBack.fCallsMakeOptionSetsCBD));
+			stCallBack.fCallsGetNumbersWithCompTypeCBD = FCallsGetNumbersWithCompType;
+			ListGCHandle.Add(GCHandle.Alloc(stCallBack.fCallsGetNumbersWithCompTypeCBD));
+			stCallBack.fCallsSetPropertiesCBD = FCallsSetProperties;
+			ListGCHandle.Add(GCHandle.Alloc(stCallBack.fCallsSetPropertiesCBD));
+			stCallBack.fCallsSetDataSourcesCBD = FCallsSetDataSources;
+			ListGCHandle.Add(GCHandle.Alloc(stCallBack.fCallsSetDataSourcesCBD));
+			stCallBack.foundCompounds_FindCBD = FoundCompounds_Find;
+			ListGCHandle.Add(GCHandle.Alloc(stCallBack.foundCompounds_FindCBD));
+			stCallBack.listApedDatabanks_WithDBAccessFlagCBD = ListApedDatabanks_WithDBAccessFlag;
+			ListGCHandle.Add(GCHandle.Alloc(stCallBack.listApedDatabanks_WithDBAccessFlagCBD));
+			stCallBack.setPropertyPackageCBD = SetPropertyPackagestatic;
+			ListGCHandle.Add(GCHandle.Alloc(stCallBack.setPropertyPackageCBD));
+			M2UnmBridgeAPI_SetManagedDel(stCallBack);
+		}
+
+		public static List<string> GetDatabankDatabaseList()
+		{
+			List<string> list = new List<string>();
+			foreach (KeyValuePair<IDatabank, IDatabase> item2 in Helper.GetDatabaseByDatabank())
+			{
+				string name = item2.Key.Name;
+				string item = item2.Value.Alias + "." + name;
+				list.Add(item);
+			}
+			return list;
+		}
+
+		public static Dictionary<string, IApedParameterResult> GetPureCompoundAttr(IList<IComponent> componentsAlias, IList<IDataSource> dataSources, IList<IPropertyParameter> purePropertyParameters)
+		{
+			new OptimizedParameterQuery(dataSources, componentsAlias, purePropertyParameters).Search(out var searchResultByName);
+			return searchResultByName;
+		}
+
+		public void SetPropertyPackage(string sJson)
+		{
+			PropertyPackageDto val = JsonSerializer.Deserialize<PropertyPackageDto>(sJson, (JsonSerializerOptions)null);
+			PostDS(val.datasources.ToList());
+			PostCL(val.compaliases.ToList());
+			PostOpsets(val.propertymethods.ToList());
+		}
+
+		public void PostCL(List<string> compAliases)
+		{
+			if (compAliases != null && compAliases.Count != 0)
+			{
+				List<IComponent> components = new List<IComponent>();
+				compAliases.ForEach(delegate(string item)
+				{
+					components.Add(Factories.CreateComponentByAlias(item));
+				});
+				ComponentManager.Components.AddRange((IEnumerable<IComponent>)components);
+			}
+		}
+
+		public void PostDS(List<DatasourcesDto> dataSources)
+		{
+			_ = string.Empty;
+			List<IDataSource> list = new List<IDataSource>();
+			foreach (DatasourcesDto dataSource in dataSources)
+			{
+				list.Add(Factories.CreateDataSource(dataSource.databaseName, dataSource.databankName));
+			}
+			ParameterManager.DataSources.AddRange((IEnumerable<IDataSource>)list);
+		}
+
+		public void PostOpsets(List<string> optionSetNames)
+		{
+			if (optionSetNames != null && optionSetNames.Count != 0)
+			{
+				List<IOptionSet> options = new List<IOptionSet>();
+				optionSetNames.ForEach(delegate(string item)
+				{
+					options.Add(Factories.OptionSet.GetOrCreate(item));
+				});
+				((IObservableList<IOptionSet>)(object)OptionSetManager.OptionSets).AddRange((IEnumerable<IOptionSet>)options);
+				OptionSetManager[optionSetNames[0]].SelectAs((OptionSetChoice)1);
+				OptionSetManager[optionSetNames[0]].SelectAs((OptionSetChoice)1);
+				if (OptionSetManager[optionSetNames.Last()].IsFreeWaterMethod)
+				{
+					OptionSetManager[optionSetNames.Last()].SelectAs((OptionSetChoice)2);
+				}
+			}
+		}
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

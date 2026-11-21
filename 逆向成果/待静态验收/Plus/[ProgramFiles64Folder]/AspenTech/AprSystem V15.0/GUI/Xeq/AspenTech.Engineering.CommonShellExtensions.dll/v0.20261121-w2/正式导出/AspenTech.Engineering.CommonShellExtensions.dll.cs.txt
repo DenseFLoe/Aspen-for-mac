@@ -1,0 +1,1466 @@
+#define TRACE
+using System;
+using System.CodeDom.Compiler;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Configuration;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Resources;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Security.Cryptography.X509Certificates;
+using System.Windows;
+using System.Xml.Linq;
+using AspenTech.Engineering.CommonShellExtensions.Compability;
+using AspenTech.Engineering.CommonShellExtensions.Compability.PrimitiveConverters;
+using AspenTech.Visualisation.CommonShell;
+using Microsoft.Practices.Composite.Logging;
+using Microsoft.Practices.Composite.Modularity;
+using Microsoft.Practices.Composite.UnityExtensions;
+using Microsoft.Practices.Unity;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyTitle("AspenTech.Engineering.CommonShellExtensions")]
+[assembly: AssemblyDescription("Common Shell Extensions")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("Aspen Technology, Inc")]
+[assembly: AssemblyProduct("Aspentech.ExchangerDesign.Infrastructure")]
+[assembly: AssemblyCopyright("Copyright © Aspen Technology, Inc 2014")]
+[assembly: AssemblyTrademark("")]
+[assembly: ComVisible(false)]
+[assembly: ThemeInfo(ResourceDictionaryLocation.None, ResourceDictionaryLocation.SourceAssembly)]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("40.0.0.0")]
+namespace AspenTech.Engineering.CommonShellExtensions
+{
+	[Module(ModuleName = "AspenTech.Engineering.CommonShellExtensions.Module")]
+	public class Module : IModule
+	{
+		public const string ModuleName = "AspenTech.Engineering.CommonShellExtensions.Module";
+
+		private readonly IUnityContainer _unityContainer;
+
+		public Module(IUnityContainer unityContainer)
+		{
+			if (unityContainer == null)
+			{
+				throw new ArgumentNullException("unityContainer");
+			}
+			_unityContainer = unityContainer;
+		}
+
+		public void Initialize()
+		{
+			//IL_0006: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0015: Expected O, but got Unknown
+			UnityContainerExtensions.RegisterType<ISettingsTransformer, SettingsTransformer>(_unityContainer, (LifetimeManager)new ContainerControlledLifetimeManager(), Array.Empty<InjectionMember>());
+		}
+	}
+}
+namespace AspenTech.Engineering.CommonShellExtensions.Properties
+{
+	[GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
+	[DebuggerNonUserCode]
+	[CompilerGenerated]
+	internal class Resources
+	{
+		private static ResourceManager resourceMan;
+
+		private static CultureInfo resourceCulture;
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		internal static ResourceManager ResourceManager
+		{
+			get
+			{
+				if (resourceMan == null)
+				{
+					resourceMan = new ResourceManager("AspenTech.Engineering.CommonShellExtensions.Properties.Resources", typeof(Resources).Assembly);
+				}
+				return resourceMan;
+			}
+		}
+
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		internal static CultureInfo Culture
+		{
+			get
+			{
+				return resourceCulture;
+			}
+			set
+			{
+				resourceCulture = value;
+			}
+		}
+
+		internal Resources()
+		{
+		}
+	}
+	[CompilerGenerated]
+	[GeneratedCode("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "16.10.0.0")]
+	internal sealed class Settings : ApplicationSettingsBase
+	{
+		private static Settings defaultInstance = (Settings)SettingsBase.Synchronized(new Settings());
+
+		public static Settings Default => defaultInstance;
+	}
+}
+namespace AspenTech.Engineering.CommonShellExtensions.Navigation
+{
+	public static class NavigatorServiceExtensions
+	{
+		public static IEnumerable<INavigatorService> QueryAllNavigatorServices(this NavigatorBar navigator)
+		{
+			if (navigator == null)
+			{
+				throw new ArgumentNullException("navigator");
+			}
+			foreach (NavigatorView navigatorView in navigator.NavigatorViews)
+			{
+				INavigatorService navigatorService = navigatorView.QueryNavigatorService();
+				if (navigatorService != null)
+				{
+					yield return navigatorService;
+				}
+			}
+		}
+
+		public static INavigatorService QueryNavigatorService(this NavigatorBar navigator, string navigatorViewKey)
+		{
+			if (navigator == null)
+			{
+				throw new ArgumentNullException("navigator");
+			}
+			return navigator.GetNavigatorView(navigatorViewKey)?.QueryNavigatorService();
+		}
+
+		public static INavigatorService QueryNavigatorService(this NavigatorView view)
+		{
+			if (view == null)
+			{
+				throw new ArgumentNullException("view");
+			}
+			if (view is INavigatorService)
+			{
+				return view as INavigatorService;
+			}
+			if (view is IServiceProvider serviceProvider)
+			{
+				object service = serviceProvider.GetService(typeof(INavigatorService));
+				if (service != null)
+				{
+					return service as INavigatorService;
+				}
+			}
+			return null;
+		}
+
+		public static NavigatorView GetNavigatorView(this NavigatorBar navigator, string navigatorViewKey)
+		{
+			if (navigator == null)
+			{
+				throw new ArgumentNullException("navigator");
+			}
+			if (string.IsNullOrEmpty(navigatorViewKey))
+			{
+				return null;
+			}
+			return navigator.NavigatorViews.FirstOrDefault((NavigatorView x) => string.Equals(x.Key, navigatorViewKey, StringComparison.InvariantCultureIgnoreCase));
+		}
+
+		public static void CheckNavigatorServices(this SelectedNavigationGroupChangingEventArgs args)
+		{
+			if (args == null)
+			{
+				throw new ArgumentNullException("args");
+			}
+			if (args.Cancel)
+			{
+				return;
+			}
+			if (args.CurrentGroup != null)
+			{
+				args.CurrentGroup.QueryNavigatorService()?.OnLeaving(args);
+				if (args.Cancel)
+				{
+					return;
+				}
+			}
+			if (args.NewGroup != null)
+			{
+				args.NewGroup.QueryNavigatorService()?.OnEntering(args);
+			}
+		}
+
+		public static bool SetupNavigatorServicesForInitialization(this NavigatorBar navigator, string navigatorViewKey)
+		{
+			if (navigator == null)
+			{
+				throw new ArgumentNullException("navigator");
+			}
+			INavigatorService navigatorService = navigator.QueryNavigatorService(navigatorViewKey);
+			if (navigatorService != null)
+			{
+				navigatorService.SetupForInitialization();
+				return true;
+			}
+			return false;
+		}
+
+		public static void NotifyGroupChangedToNavigatorServices(this NavigatorBar navigator, NavigatorView oldView, NavigatorView newView, bool isSynchronizingActiveScreen)
+		{
+			if (navigator == null)
+			{
+				throw new ArgumentNullException("navigator");
+			}
+			oldView?.QueryNavigatorService()?.OnLeft(isSynchronizingActiveScreen, newView);
+			newView?.QueryNavigatorService()?.OnEntered(isSynchronizingActiveScreen, oldView);
+		}
+
+		public static void NotifySettingsRestoringToNavigatorServices(this NavigatorBar navigator, CommonShellSettings settings)
+		{
+			if (navigator == null)
+			{
+				throw new ArgumentNullException("navigator");
+			}
+			foreach (INavigatorService item in navigator.QueryAllNavigatorServices().ToList())
+			{
+				item.OnRestoringShellSettings(settings);
+			}
+		}
+	}
+	public interface INavigatorService
+	{
+		void SetupForInitialization();
+
+		void OnLeaving(SelectedNavigationGroupChangingEventArgs args);
+
+		void OnEntering(SelectedNavigationGroupChangingEventArgs args);
+
+		void OnLeft(bool isSynchronizingActiveScreen, NavigatorView destination);
+
+		void OnEntered(bool isSynchronizingActiveScreen, NavigatorView source);
+
+		void OnRestoringShellSettings(CommonShellSettings settings);
+	}
+}
+namespace AspenTech.Engineering.CommonShellExtensions.Modules
+{
+	internal class InternalModuleInfoLoader : IDisposable
+	{
+		private Assembly[] _loadedAssemblies;
+
+		private Type _iModuleType;
+
+		private string ReflectionOnlyLoadDirectory { get; set; }
+
+		private Assembly[] LoadedAssemblies
+		{
+			get
+			{
+				if (_loadedAssemblies == null)
+				{
+					_loadedAssemblies = AppDomain.CurrentDomain.ReflectionOnlyGetAssemblies();
+				}
+				return _loadedAssemblies;
+			}
+		}
+
+		public Type IModuleType
+		{
+			get
+			{
+				if (_iModuleType == null)
+				{
+					Assembly assembly = LoadedAssemblies.First((Assembly asm) => asm.FullName == typeof(IModule).Assembly.FullName);
+					_iModuleType = assembly.GetType(typeof(IModule).FullName);
+				}
+				return _iModuleType;
+			}
+		}
+
+		public InternalModuleInfoLoader(string reflectionOnlyLoadDirectory = null)
+		{
+			ReflectionOnlyLoadDirectory = reflectionOnlyLoadDirectory;
+			Prepare();
+		}
+
+		public void LoadModuleInfos(ModuleCatalog catalog, string filePath)
+		{
+			if (LoadedAssemblies.Any((Assembly x) => string.Equals(x.Location, filePath, StringComparison.OrdinalIgnoreCase)))
+			{
+				return;
+			}
+			Assembly assembly = null;
+			try
+			{
+				assembly = Assembly.ReflectionOnlyLoadFrom(filePath);
+			}
+			catch (Exception ex)
+			{
+				Trace.TraceWarning(string.Format(CultureInfo.CurrentCulture, "Exception while loading modules from assembly {0}: {1}", filePath, ex.Message));
+			}
+			if (!(assembly != null))
+			{
+				return;
+			}
+			foreach (Type item in from t in assembly.GetExportedTypes().Where(IModuleType.IsAssignableFrom)
+				where t != IModuleType
+				where !t.IsAbstract
+				select t)
+			{
+				ModuleInfo moduleInfo = ModuleLoader.CreateModuleInfo(item);
+				if (moduleInfo != null)
+				{
+					catalog.AddModule(moduleInfo);
+				}
+			}
+		}
+
+		private void Prepare()
+		{
+			Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
+			foreach (Assembly assembly in assemblies)
+			{
+				if (assembly is AssemblyBuilder)
+				{
+					continue;
+				}
+				string text = string.Empty;
+				try
+				{
+					text = assembly.Location;
+				}
+				catch (Exception)
+				{
+				}
+				if (!string.IsNullOrEmpty(text))
+				{
+					try
+					{
+						Assembly.ReflectionOnlyLoadFrom(text);
+					}
+					catch (Exception)
+					{
+					}
+				}
+			}
+			RegisterReflectionOnlyResolve();
+		}
+
+		private void RegisterReflectionOnlyResolve()
+		{
+			if (!string.IsNullOrWhiteSpace(ReflectionOnlyLoadDirectory))
+			{
+				AppDomain.CurrentDomain.ReflectionOnlyAssemblyResolve += CurrentDomain_ReflectionOnlyAssemblyResolve;
+			}
+		}
+
+		private void UnregisterReflectionOnlyResolve()
+		{
+			if (!string.IsNullOrWhiteSpace(ReflectionOnlyLoadDirectory))
+			{
+				AppDomain.CurrentDomain.ReflectionOnlyAssemblyResolve -= CurrentDomain_ReflectionOnlyAssemblyResolve;
+			}
+		}
+
+		private Assembly CurrentDomain_ReflectionOnlyAssemblyResolve(object sender, ResolveEventArgs args)
+		{
+			return OnReflectionOnlyResolve(args, ReflectionOnlyLoadDirectory);
+		}
+
+		private Assembly OnReflectionOnlyResolve(ResolveEventArgs args, string directory)
+		{
+			Assembly assembly = AppDomain.CurrentDomain.ReflectionOnlyGetAssemblies().FirstOrDefault((Assembly asm) => string.Equals(asm.FullName, args.Name, StringComparison.OrdinalIgnoreCase));
+			if (assembly != null)
+			{
+				return assembly;
+			}
+			AssemblyName assemblyName = new AssemblyName(args.Name);
+			string text = Path.Combine(directory, assemblyName.Name + ".dll");
+			if (File.Exists(text))
+			{
+				return Assembly.ReflectionOnlyLoadFrom(text);
+			}
+			return Assembly.ReflectionOnlyLoad(args.Name);
+		}
+
+		public void Dispose()
+		{
+			UnregisterReflectionOnlyResolve();
+		}
+	}
+	public static class ModuleChecker
+	{
+		public static bool VerifyIsAspenSigned(string filePath)
+		{
+			if (string.IsNullOrEmpty(filePath))
+			{
+				throw new ArgumentException("Parameter filePath cannot be null or empty.");
+			}
+			if (!File.Exists(filePath))
+			{
+				throw new ArgumentException("Specified file doesn't exist.");
+			}
+			try
+			{
+				X509Certificate2 x509Certificate = new X509Certificate2(X509Certificate.CreateFromSignedFile(filePath));
+				if (x509Certificate != null && !string.IsNullOrWhiteSpace(x509Certificate.Subject) && ValidateCertSubjectAsAspenTechSigned(x509Certificate.Subject))
+				{
+					return ValidateCert509Chain(x509Certificate);
+				}
+				return false;
+			}
+			catch (Exception)
+			{
+				return false;
+			}
+		}
+
+		public static bool VerifyIsAspenSigned(Assembly assembly)
+		{
+			if (assembly == null)
+			{
+				throw new ArgumentNullException("assembly");
+			}
+			try
+			{
+				System.Reflection.Module[] modules = assembly.GetModules();
+				if (modules != null && modules.Length != 0)
+				{
+					X509Certificate signerCertificate = modules[0].GetSignerCertificate();
+					if (signerCertificate != null)
+					{
+						X509Certificate2 x509Certificate = new X509Certificate2(signerCertificate);
+						if (x509Certificate != null && !string.IsNullOrWhiteSpace(x509Certificate.Subject) && ValidateCertSubjectAsAspenTechSigned(x509Certificate.Subject))
+						{
+							return ValidateCert509Chain(x509Certificate);
+						}
+					}
+				}
+				return false;
+			}
+			catch (Exception)
+			{
+				return false;
+			}
+		}
+
+		private static bool ValidateCertSubjectAsAspenTechSigned(string certSubjectLine)
+		{
+			if (certSubjectLine.IndexOf("C=US") < 0)
+			{
+				return false;
+			}
+			string arg = "Aspen Technology, Inc.";
+			if (certSubjectLine.IndexOf($"CN=\"{arg}\"") < 0)
+			{
+				return false;
+			}
+			if (certSubjectLine.IndexOf($"O=\"{arg}\"") < 0)
+			{
+				return false;
+			}
+			return true;
+		}
+
+		private static bool ValidateCert509Chain(X509Certificate2 c2)
+		{
+			try
+			{
+				return new X509Chain
+				{
+					ChainPolicy = 
+					{
+						RevocationMode = X509RevocationMode.Offline,
+						VerificationFlags = X509VerificationFlags.IgnoreNotTimeValid
+					}
+				}.Build(c2);
+			}
+			catch (Exception)
+			{
+				return false;
+			}
+		}
+	}
+	public static class ModuleLoader
+	{
+		public static void AddModulesFromDirectory(this ModuleCatalog catalog, string directory, string searchPattern, SearchOption searchOption, bool verifySignedByAspenTech)
+		{
+			if (catalog == null)
+			{
+				throw new ArgumentNullException("catalog");
+			}
+			if (string.IsNullOrEmpty(directory))
+			{
+				throw new ArgumentException("Parameter directory cannot be null or empty.");
+			}
+			if (!Directory.Exists(directory))
+			{
+				return;
+			}
+			using InternalModuleInfoLoader internalModuleInfoLoader = new InternalModuleInfoLoader(directory);
+			string[] files = Directory.GetFiles(directory, searchPattern, searchOption);
+			foreach (string filePath in files)
+			{
+				if (!verifySignedByAspenTech || ModuleChecker.VerifyIsAspenSigned(filePath))
+				{
+					internalModuleInfoLoader.LoadModuleInfos(catalog, filePath);
+				}
+			}
+		}
+
+		public static void AddModulesFromFile(this ModuleCatalog catalog, string filePath, bool verifySignedByAspenTech)
+		{
+			if (catalog == null)
+			{
+				throw new ArgumentNullException("catalog");
+			}
+			if (string.IsNullOrEmpty(filePath))
+			{
+				throw new ArgumentException("Parameter filePath cannot be null or empty.");
+			}
+			if (!File.Exists(filePath))
+			{
+				throw new ArgumentException("Specified file doesn't exist.");
+			}
+			if (verifySignedByAspenTech && !ModuleChecker.VerifyIsAspenSigned(filePath))
+			{
+				return;
+			}
+			using InternalModuleInfoLoader internalModuleInfoLoader = new InternalModuleInfoLoader();
+			internalModuleInfoLoader.LoadModuleInfos(catalog, filePath);
+		}
+
+		public static ModuleInfo CreateModuleInfo(Type type)
+		{
+			if (type == null)
+			{
+				return null;
+			}
+			string name = type.Name;
+			bool flag = false;
+			CustomAttributeData customAttributeData = CustomAttributeData.GetCustomAttributes(type).FirstOrDefault((CustomAttributeData cad) => cad.Constructor.DeclaringType.FullName == typeof(ModuleAttribute).FullName);
+			if (customAttributeData != null)
+			{
+				foreach (CustomAttributeNamedArgument namedArgument in customAttributeData.NamedArguments)
+				{
+					switch (namedArgument.MemberInfo.Name)
+					{
+					case "ModuleName":
+						name = (string)namedArgument.TypedValue.Value;
+						break;
+					case "OnDemand":
+						flag = (bool)namedArgument.TypedValue.Value;
+						break;
+					case "StartupLoaded":
+						flag = !(bool)namedArgument.TypedValue.Value;
+						break;
+					}
+				}
+			}
+			ModuleInfo moduleInfo = new ModuleInfo(name, type.AssemblyQualifiedName)
+			{
+				InitializationMode = (flag ? InitializationMode.OnDemand : InitializationMode.WhenAvailable),
+				Ref = type.Assembly.CodeBase
+			};
+			foreach (CustomAttributeData item in from cad in CustomAttributeData.GetCustomAttributes(type)
+				where cad.Constructor.DeclaringType.FullName == typeof(ModuleDependencyAttribute).FullName
+				select cad)
+			{
+				moduleInfo.DependsOn.Add((string)item.ConstructorArguments[0].Value);
+			}
+			return moduleInfo;
+		}
+	}
+}
+namespace AspenTech.Engineering.CommonShellExtensions.Compability
+{
+	internal static class ConvertersManager
+	{
+		public static IEnumerable<IShellSettingsConverter> ResolveShellSettingConverters(IUnityContainer container, int sourceVersion, int targetVersion)
+		{
+			List<IShellSettingsConverter> list = ResolveOrderedConverters<IShellSettingsConverter>(container, sourceVersion, targetVersion).ToList();
+			if (list.Count == 0)
+			{
+				return new IShellSettingsConverter[1]
+				{
+					new DefaultShellSettingsConverter(container, targetVersion)
+				};
+			}
+			if (list[list.Count - 1].TargetVersion < targetVersion)
+			{
+				list.Add(new EmptyShellSettingsConverter(targetVersion));
+			}
+			return list;
+		}
+
+		public static IEnumerable<IWorkspaceFolderConverter> ResolveWorkspaceFolderConverters(IUnityContainer container, int sourceVersion, int targetVersion)
+		{
+			return ResolveConvertersInScope(container, sourceVersion, targetVersion, (Func<IWorkspaceFolderConverter>)(() => new DefaultWorkspaceFolderConverter(container, targetVersion)), (Func<IWorkspaceFolderConverter>)(() => new EmptyWorkspaceFolderConverter(targetVersion)));
+		}
+
+		public static IEnumerable<IShellWorkspaceConverter> ResolveWorkspaceConverters(IUnityContainer container, int sourceVersion, int targetVersion)
+		{
+			return ResolveConvertersInScope(container, sourceVersion, targetVersion, (Func<IShellWorkspaceConverter>)(() => new DefaultWorkspaceConverter(container, targetVersion)), (Func<IShellWorkspaceConverter>)(() => new EmptyWorkspaceConverter(targetVersion)));
+		}
+
+		public static IEnumerable<IScreenDataConverter> ResolveScreenDataConverters(IUnityContainer container, int sourceVersion, int targetVersion)
+		{
+			return ResolveConvertersInScope(container, sourceVersion, targetVersion, (Func<IScreenDataConverter>)(() => new DefaultScreenDataConverter(container, targetVersion)), (Func<IScreenDataConverter>)(() => new EmptyScreenDataConverter(targetVersion)));
+		}
+
+		private static IEnumerable<T> ResolveConvertersInScope<T>(IUnityContainer container, int sourceVersion, int targetVersion, Func<T> defaultCreator, Func<T> emptyCreator) where T : IVersionConverter
+		{
+			List<T> list = (from x in UnityContainerExtensions.ResolveAll<T>(container, Array.Empty<ResolverOverride>())
+				orderby x.TargetVersion
+				select x).ToList();
+			if (list.Count == 0)
+			{
+				return new T[1] { defaultCreator() };
+			}
+			List<T> list2 = ResolveOrderedConverters<T>(container, sourceVersion, targetVersion).ToList();
+			if (list2.Count == 0)
+			{
+				if (list.LastOrDefault((T x) => x.TargetVersion <= sourceVersion) != null)
+				{
+					return new T[1] { emptyCreator() };
+				}
+				return new T[1] { defaultCreator() };
+			}
+			if (list2[list2.Count - 1].TargetVersion < targetVersion)
+			{
+				list2.Add(emptyCreator());
+			}
+			return list2;
+		}
+
+		private static IEnumerable<T> ResolveOrderedConverters<T>(IUnityContainer container, int sourceVersion, int targetVersion) where T : IVersionConverter
+		{
+			return UnityContainerExtensions.ResolveAll<T>(container, Array.Empty<ResolverOverride>()).Where(delegate(T x)
+			{
+				T val = x;
+				if (val.TargetVersion > sourceVersion)
+				{
+					val = x;
+					return val.TargetVersion <= targetVersion;
+				}
+				return false;
+			}).OrderBy(delegate(T x)
+			{
+				T val = x;
+				return val.TargetVersion;
+			});
+		}
+	}
+	internal static class Extensions
+	{
+		public static void BatchConvert(this IEnumerable<IVersionConverter> converters, object source, int sourceVersion)
+		{
+			if (converters == null)
+			{
+				throw new ArgumentNullException("converters");
+			}
+			if (source == null)
+			{
+				throw new ArgumentNullException("source");
+			}
+			int sourceVersion2 = sourceVersion;
+			foreach (IVersionConverter converter in converters)
+			{
+				converter.Convert(source, sourceVersion2);
+				sourceVersion2 = converter.TargetVersion;
+			}
+		}
+
+		public static void DoDefaultConvert(this IShellSettingsConverter converter, object source, int sourceVersion, IUnityContainer container)
+		{
+			if (converter == null)
+			{
+				throw new ArgumentNullException("converter");
+			}
+			if (container == null)
+			{
+				throw new ArgumentNullException("container");
+			}
+			if (source == null)
+			{
+				return;
+			}
+			IEnumerable<IShellWorkspaceConverter> converters = ConvertersManager.ResolveWorkspaceConverters(container, sourceVersion, converter.TargetVersion);
+			IShellSettingsConverter contextConverter = converter.GetContextConverter(container, () => new DefaultShellSettingsConverter(container, sourceVersion));
+			object currentWorkspaceInTargetVersion = contextConverter.GetCurrentWorkspaceInTargetVersion(source);
+			if (currentWorkspaceInTargetVersion != null)
+			{
+				converters.BatchConvert(currentWorkspaceInTargetVersion, sourceVersion);
+			}
+			IEnumerable<object> navigatorGroupWorkspacesInTargetVersion = contextConverter.GetNavigatorGroupWorkspacesInTargetVersion(source);
+			if (navigatorGroupWorkspacesInTargetVersion != null)
+			{
+				foreach (object item in navigatorGroupWorkspacesInTargetVersion)
+				{
+					converters.BatchConvert(item, sourceVersion);
+				}
+			}
+			IEnumerable<IWorkspaceFolderConverter> converters2 = ConvertersManager.ResolveWorkspaceFolderConverters(container, sourceVersion, converter.TargetVersion);
+			object workspaceFolderInTargetVersion = contextConverter.GetWorkspaceFolderInTargetVersion(source);
+			if (workspaceFolderInTargetVersion != null)
+			{
+				converters2.BatchConvert(workspaceFolderInTargetVersion, sourceVersion);
+			}
+		}
+
+		public static void DoDefaultConvert(this IWorkspaceFolderConverter converter, object source, int sourceVersion, IUnityContainer container)
+		{
+			if (converter == null)
+			{
+				throw new ArgumentNullException("converter");
+			}
+			if (container == null)
+			{
+				throw new ArgumentNullException("container");
+			}
+			if (source == null)
+			{
+				return;
+			}
+			IWorkspaceFolderConverter contextConverter = converter.GetContextConverter(container, () => new DefaultWorkspaceFolderConverter(container, sourceVersion));
+			IEnumerable<object> workspacesInTargetVersion = contextConverter.GetWorkspacesInTargetVersion(source);
+			if (workspacesInTargetVersion != null)
+			{
+				IEnumerable<IShellWorkspaceConverter> converters = ConvertersManager.ResolveWorkspaceConverters(container, sourceVersion, converter.TargetVersion);
+				foreach (object item in workspacesInTargetVersion)
+				{
+					converters.BatchConvert(item, sourceVersion);
+				}
+			}
+			IEnumerable<object> workspaceFoldersInTargetVersion = contextConverter.GetWorkspaceFoldersInTargetVersion(source);
+			if (workspaceFoldersInTargetVersion == null)
+			{
+				return;
+			}
+			foreach (object item2 in workspaceFoldersInTargetVersion)
+			{
+				converter.DoDefaultConvert(item2, sourceVersion, container);
+			}
+		}
+
+		public static void DoDefaultConvert(this IShellWorkspaceConverter converter, object source, int sourceVersion, IUnityContainer container)
+		{
+			if (converter == null)
+			{
+				throw new ArgumentNullException("converter");
+			}
+			if (container == null)
+			{
+				throw new ArgumentNullException("container");
+			}
+			if (source == null)
+			{
+				return;
+			}
+			IEnumerable<object> screenDatasInTargetVersion = converter.GetContextConverter(container, () => new DefaultWorkspaceConverter(container, sourceVersion)).GetScreenDatasInTargetVersion(source);
+			if (screenDatasInTargetVersion == null)
+			{
+				return;
+			}
+			IEnumerable<IScreenDataConverter> converters = ConvertersManager.ResolveScreenDataConverters(container, sourceVersion, converter.TargetVersion);
+			foreach (object item in screenDatasInTargetVersion)
+			{
+				converters.BatchConvert(item, sourceVersion);
+			}
+		}
+
+		public static void DoDefaultConvert(this IScreenDataConverter converter, object source, int sourceVersion, IUnityContainer container)
+		{
+			if (converter == null)
+			{
+				throw new ArgumentNullException("converter");
+			}
+			if (container == null)
+			{
+				throw new ArgumentNullException("container");
+			}
+			if (source == null)
+			{
+				return;
+			}
+			IScreenDataConverter contextConverter = converter.GetContextConverter(container, () => new DefaultScreenDataConverter(container, sourceVersion));
+			string screenFactoryKeyInTargetVersion = contextConverter.GetScreenFactoryKeyInTargetVersion(source);
+			if (!string.IsNullOrEmpty(screenFactoryKeyInTargetVersion))
+			{
+				IScreenConverterCatalog screenConverterCatalog = container.TryResolve<IScreenConverterCatalog>();
+				if (screenConverterCatalog != null)
+				{
+					object screenSubjectInTargetVersion = contextConverter.GetScreenSubjectInTargetVersion(source);
+					object screenStateInTargetVersion = contextConverter.GetScreenStateInTargetVersion(source);
+					ConvertScreenInSequence(converter, screenConverterCatalog, source, screenFactoryKeyInTargetVersion, screenSubjectInTargetVersion, screenStateInTargetVersion, sourceVersion, converter.TargetVersion);
+				}
+			}
+		}
+
+		public static T GetContextConverter<T>(this T converter, IUnityContainer container, Func<T> defaultCreator) where T : IVersionConverter
+		{
+			if (converter == null)
+			{
+				throw new ArgumentNullException("converter");
+			}
+			if (container == null)
+			{
+				throw new ArgumentNullException("container");
+			}
+			if (defaultCreator == null)
+			{
+				throw new ArgumentNullException("defaultCreator");
+			}
+			T val = UnityContainerExtensions.ResolveAll<T>(container, Array.Empty<ResolverOverride>()).Where(delegate(T x)
+			{
+				T val2 = x;
+				return val2.TargetVersion < converter.TargetVersion;
+			}).OrderByDescending(delegate(T x)
+			{
+				T val2 = x;
+				return val2.TargetVersion;
+			})
+				.FirstOrDefault();
+			if (val != null)
+			{
+				return val;
+			}
+			return defaultCreator();
+		}
+
+		private static void ConvertScreenInSequence(IScreenDataConverter converter, IScreenConverterCatalog catalog, object source, string factoryKey, object subject, object state, int sourceVersion, int targetVersion)
+		{
+			foreach (IScreenConverter item in catalog.FindConvertersInOrder(factoryKey, sourceVersion, targetVersion))
+			{
+				item.Convert(subject, state);
+				if (item.IsScreenObsolete)
+				{
+					converter.UpdateScreenFactoryKey(source, string.Empty);
+					break;
+				}
+				if (!string.IsNullOrEmpty(item.NewScreenFactoryKey))
+				{
+					converter.UpdateScreenFactoryKey(source, item.NewScreenFactoryKey);
+					ConvertScreenInSequence(converter, catalog, source, item.NewScreenFactoryKey, subject, state, item.TargetVersion, targetVersion);
+					break;
+				}
+			}
+		}
+
+		public static XElement ElementWithLocalNamePath(this XElement node, string localNamePath)
+		{
+			if (node == null)
+			{
+				throw new ArgumentNullException("node");
+			}
+			if (string.IsNullOrWhiteSpace(localNamePath))
+			{
+				throw new ArgumentException("Parameter localNamePath cannot be null or white spaces.");
+			}
+			XElement xElement = node;
+			string[] array = localNamePath.Split('/');
+			foreach (string localName in array)
+			{
+				xElement = xElement.InternalElementWithLocalName(localName);
+				if (xElement == null)
+				{
+					return null;
+				}
+			}
+			return xElement;
+		}
+
+		public static IEnumerable<XElement> ElementsWithLocalNamePath(this XElement node, string localNamePath)
+		{
+			if (node == null)
+			{
+				throw new ArgumentNullException("node");
+			}
+			if (string.IsNullOrWhiteSpace(localNamePath))
+			{
+				throw new ArgumentException("Parameter localNamePath cannot be null or white spaces.");
+			}
+			XElement xElement = node;
+			string[] array = localNamePath.Split('/');
+			for (int i = 0; i < array.Length - 1; i++)
+			{
+				xElement = xElement.InternalElementWithLocalName(array[i]);
+				if (xElement == null)
+				{
+					break;
+				}
+			}
+			if (xElement == null)
+			{
+				yield break;
+			}
+			string lastSegment = array[array.Length - 1];
+			foreach (XElement item in xElement.Elements())
+			{
+				if (string.Equals(item.Name.LocalName, lastSegment, StringComparison.CurrentCulture))
+				{
+					yield return item;
+				}
+			}
+		}
+
+		private static XElement InternalElementWithLocalName(this XElement node, string localName)
+		{
+			if (node == null)
+			{
+				throw new ArgumentNullException("node");
+			}
+			if (localName == null)
+			{
+				throw new ArgumentNullException("localName");
+			}
+			return node.Elements().FirstOrDefault((XElement x) => string.Equals(x.Name.LocalName, localName, StringComparison.CurrentCulture));
+		}
+	}
+	public interface IScreenConverter
+	{
+		bool IsScreenObsolete { get; }
+
+		string ScreenFactoryKey { get; }
+
+		string NewScreenFactoryKey { get; }
+
+		int TargetVersion { get; }
+
+		void Convert(object screenSubject, object screenState);
+	}
+	public abstract class ScreenConverterBase : IScreenConverter
+	{
+		public virtual bool IsScreenObsolete => false;
+
+		public string ScreenFactoryKey { get; private set; }
+
+		public string NewScreenFactoryKey { get; private set; }
+
+		public int TargetVersion { get; private set; }
+
+		protected ScreenConverterBase(string screenFactoryKey, int targetVersion, string newScreenFactoryKey = null)
+		{
+			if (string.IsNullOrEmpty(screenFactoryKey))
+			{
+				throw new ArgumentException("Parameter screenFactoryKey cannot be null or empty.");
+			}
+			ScreenFactoryKey = screenFactoryKey;
+			NewScreenFactoryKey = newScreenFactoryKey;
+			TargetVersion = targetVersion;
+		}
+
+		public abstract void Convert(object screenSubject, object screenState);
+	}
+	public abstract class CommonScreenConverterBase : ScreenConverterBase
+	{
+		protected CommonScreenConverterBase(string screenFactoryKey, int targetVersion, string newScreenFactoryKey = null)
+			: base(screenFactoryKey, targetVersion, newScreenFactoryKey)
+		{
+		}
+
+		public sealed override void Convert(object screenSubject, object screenState)
+		{
+			XElement xElement = screenSubject as XElement;
+			XElement state = screenState as XElement;
+			if (xElement != null || screenState != null)
+			{
+				ConvertOverride(xElement, state);
+			}
+		}
+
+		protected abstract void ConvertOverride(XElement subject, XElement state);
+	}
+	internal class DelegateScreenConverter : ScreenConverterBase
+	{
+		private readonly Action<object, object> _converter;
+
+		public DelegateScreenConverter(string screenFactoryKey, int targetVersion, Action<object, object> converter, string newScreenFactoryKey)
+			: base(screenFactoryKey, targetVersion, newScreenFactoryKey)
+		{
+			if (converter == null)
+			{
+				throw new ArgumentNullException("converter");
+			}
+			_converter = converter;
+		}
+
+		public override void Convert(object screenSubject, object screenState)
+		{
+			_converter(screenSubject, screenState);
+		}
+	}
+	public interface IScreenConverterCatalog
+	{
+		IEnumerable<IScreenConverter> FindConvertersInOrder(string screenFactoryKey, int sourceVersion, int targetVersion);
+
+		void Register<T>() where T : IScreenConverter;
+
+		void Register(string screenFactoryKey, int targetVersion, Action<object, object> subjectAndStateConverter, string newScreenFactoryKey = null);
+	}
+	public class ScreenConverterCatalog : IScreenConverterCatalog
+	{
+		private readonly IUnityContainer _container;
+
+		private readonly List<IScreenConverter> _convertersList = new List<IScreenConverter>();
+
+		public ScreenConverterCatalog(IUnityContainer container)
+		{
+			if (container == null)
+			{
+				throw new ArgumentNullException("container");
+			}
+			_container = container;
+		}
+
+		public IEnumerable<IScreenConverter> FindConvertersInOrder(string screenFactoryKey, int sourceVersion, int targetVersion)
+		{
+			return from x in _convertersList
+				where string.Equals(x.ScreenFactoryKey, screenFactoryKey, StringComparison.InvariantCulture) && x.TargetVersion > sourceVersion && x.TargetVersion <= targetVersion
+				orderby x.TargetVersion
+				select x;
+		}
+
+		public void Register<T>() where T : IScreenConverter
+		{
+			T val = UnityContainerExtensions.Resolve<T>(_container, Array.Empty<ResolverOverride>());
+			AppendIfNotExist(val);
+		}
+
+		public void Register(string screenFactoryKey, int targetVersion, Action<object, object> subjectAndStateConverter, string newScreenFactoryKey = null)
+		{
+			DelegateScreenConverter converter = new DelegateScreenConverter(screenFactoryKey, targetVersion, subjectAndStateConverter, newScreenFactoryKey);
+			AppendIfNotExist(converter);
+		}
+
+		private void AppendIfNotExist(IScreenConverter converter)
+		{
+			if (!_convertersList.Any((IScreenConverter x) => IsSameConverter(x, converter)))
+			{
+				_convertersList.Add(converter);
+			}
+		}
+
+		private static bool IsSameConverter(IScreenConverter first, IScreenConverter second)
+		{
+			if (first == null && second == null)
+			{
+				return true;
+			}
+			if (first == null || second == null)
+			{
+				return false;
+			}
+			if (string.Equals(first.ScreenFactoryKey, second.ScreenFactoryKey, StringComparison.InvariantCulture))
+			{
+				return first.TargetVersion == second.TargetVersion;
+			}
+			return false;
+		}
+	}
+	public interface ISettingsTransformer
+	{
+		string Transform(string settings, int versionFrom, int versionTo);
+	}
+	internal interface IVersionConverter
+	{
+		int TargetVersion { get; }
+
+		void Convert(object source, int sourceVersion);
+	}
+	internal interface IShellSettingsConverter : IVersionConverter
+	{
+		object GetWorkspaceFolderInTargetVersion(object source);
+
+		object GetCurrentWorkspaceInTargetVersion(object source);
+
+		IEnumerable<object> GetNavigatorGroupWorkspacesInTargetVersion(object source);
+	}
+	internal interface IWorkspaceFolderConverter : IVersionConverter
+	{
+		IEnumerable<object> GetWorkspaceFoldersInTargetVersion(object source);
+
+		IEnumerable<object> GetWorkspacesInTargetVersion(object source);
+	}
+	internal interface IShellWorkspaceConverter : IVersionConverter
+	{
+		IEnumerable<object> GetScreenDatasInTargetVersion(object source);
+	}
+	internal interface IScreenDataConverter : IVersionConverter
+	{
+		string GetScreenFactoryKeyInTargetVersion(object source);
+
+		void UpdateScreenFactoryKey(object source, string newScreenFactoryKey);
+
+		object GetScreenSubjectInTargetVersion(object source);
+
+		object GetScreenStateInTargetVersion(object source);
+	}
+	internal class SettingsTransformer : ISettingsTransformer
+	{
+		private readonly IUnityContainer _unityContainer;
+
+		public SettingsTransformer(IUnityContainer unityContainer)
+		{
+			if (unityContainer == null)
+			{
+				throw new ArgumentNullException("unityContainer");
+			}
+			_unityContainer = unityContainer;
+		}
+
+		public string Transform(string settings, int sourceVersion, int targetVersion)
+		{
+			if (string.IsNullOrEmpty(settings))
+			{
+				return settings;
+			}
+			if (sourceVersion >= targetVersion)
+			{
+				return settings;
+			}
+			try
+			{
+				XElement root = XDocument.Parse(settings).Root;
+				ConvertersManager.ResolveShellSettingConverters(_unityContainer, sourceVersion, targetVersion).BatchConvert(root, sourceVersion);
+				return root.ToString();
+			}
+			catch (Exception ex)
+			{
+				Log(ex.Message);
+				return settings;
+			}
+		}
+
+		private void Log(string message)
+		{
+			_unityContainer.TryResolve<ILoggerFacade>()?.Log(message, Category.Exception, Priority.Medium);
+		}
+	}
+}
+namespace AspenTech.Engineering.CommonShellExtensions.Compability.PrimitiveConverters
+{
+	internal abstract class DefaultConverterBase : IVersionConverter
+	{
+		protected IUnityContainer Container { get; private set; }
+
+		public int TargetVersion { get; private set; }
+
+		protected DefaultConverterBase(IUnityContainer container, int targetVersion)
+		{
+			if (container == null)
+			{
+				throw new ArgumentNullException("container");
+			}
+			Container = container;
+			TargetVersion = targetVersion;
+		}
+
+		public void Convert(object source, int sourceVersion)
+		{
+			DoConvert(source, sourceVersion);
+		}
+
+		protected abstract void DoConvert(object source, int sourceVersion);
+	}
+	internal class DefaultScreenDataConverter : DefaultConverterBase, IScreenDataConverter, IVersionConverter
+	{
+		public DefaultScreenDataConverter(IUnityContainer container, int targetVersion)
+			: base(container, targetVersion)
+		{
+		}
+
+		protected override void DoConvert(object source, int sourceVersion)
+		{
+			this.DoDefaultConvert(source, sourceVersion, base.Container);
+		}
+
+		public string GetScreenFactoryKeyInTargetVersion(object source)
+		{
+			return GetScreenFactoryKeyByDefault(source);
+		}
+
+		public void UpdateScreenFactoryKey(object source, string newScreenFactoryKey)
+		{
+			UpdateScreenFactoryKeyByDefault(source, newScreenFactoryKey);
+		}
+
+		public object GetScreenSubjectInTargetVersion(object source)
+		{
+			return GetScreenSubjectByDefault(source);
+		}
+
+		public object GetScreenStateInTargetVersion(object source)
+		{
+			return GetScreenStateByDefault(source);
+		}
+
+		public static string GetScreenFactoryKeyByDefault(object source)
+		{
+			if (!(source is XElement xElement))
+			{
+				return null;
+			}
+			return xElement.Attribute("ScreenFactoryKey")?.Value;
+		}
+
+		public static void UpdateScreenFactoryKeyByDefault(object source, string newScreenFactoryKey)
+		{
+			if (!(source is XElement xElement))
+			{
+				return;
+			}
+			xElement.SetAttributeValue("ScreenFactoryKey", newScreenFactoryKey);
+			if (string.IsNullOrEmpty(newScreenFactoryKey))
+			{
+				while (xElement.HasElements)
+				{
+					xElement.Elements().First().Remove();
+				}
+			}
+		}
+
+		public static object GetScreenSubjectByDefault(object source)
+		{
+			if (!(source is XElement node))
+			{
+				return null;
+			}
+			return node.ElementWithLocalNamePath("WorkspaceScreenData.ScreenSubject")?.FirstNode;
+		}
+
+		public static object GetScreenStateByDefault(object source)
+		{
+			if (!(source is XElement node))
+			{
+				return null;
+			}
+			return node.ElementWithLocalNamePath("WorkspaceScreenData.ScreenState")?.FirstNode;
+		}
+	}
+	internal class DefaultShellSettingsConverter : DefaultConverterBase, IShellSettingsConverter, IVersionConverter
+	{
+		public DefaultShellSettingsConverter(IUnityContainer container, int targetVersion)
+			: base(container, targetVersion)
+		{
+		}
+
+		protected override void DoConvert(object source, int sourceVersion)
+		{
+			this.DoDefaultConvert(source, sourceVersion, base.Container);
+		}
+
+		public object GetWorkspaceFolderInTargetVersion(object source)
+		{
+			return GetWorkspaceFolderByDefault(source);
+		}
+
+		public object GetCurrentWorkspaceInTargetVersion(object source)
+		{
+			return GetCurrentWorkspaceByDefault(source);
+		}
+
+		public IEnumerable<object> GetNavigatorGroupWorkspacesInTargetVersion(object source)
+		{
+			return GetNavigatorGroupWorkspacesByDefault(source);
+		}
+
+		public static object GetWorkspaceFolderByDefault(object source)
+		{
+			if (!(source is XElement node))
+			{
+				return null;
+			}
+			return node.ElementWithLocalNamePath("CommonShellSettings.SavedWorkspaces/ShellWorkspaceFolder");
+		}
+
+		public static object GetCurrentWorkspaceByDefault(object source)
+		{
+			if (!(source is XElement node))
+			{
+				return null;
+			}
+			return node.ElementWithLocalNamePath("CommonShellSettings.CurrentWorkspace/ShellWorkspace");
+		}
+
+		public static IEnumerable<object> GetNavigatorGroupWorkspacesByDefault(object source)
+		{
+			if (!(source is XElement node))
+			{
+				return null;
+			}
+			return node.ElementWithLocalNamePath("CommonShellSettings.NavigatorGroupWorkspaces")?.Elements();
+		}
+	}
+	internal class DefaultWorkspaceConverter : DefaultConverterBase, IShellWorkspaceConverter, IVersionConverter
+	{
+		public DefaultWorkspaceConverter(IUnityContainer container, int targetVersion)
+			: base(container, targetVersion)
+		{
+		}
+
+		protected override void DoConvert(object source, int sourceVersion)
+		{
+			this.DoDefaultConvert(source, sourceVersion, base.Container);
+		}
+
+		public IEnumerable<object> GetScreenDatasInTargetVersion(object source)
+		{
+			return GetScreenDatasByDefault(source);
+		}
+
+		public static IEnumerable<object> GetScreenDatasByDefault(object source)
+		{
+			if (!(source is XElement node))
+			{
+				return null;
+			}
+			return node.ElementWithLocalNamePath("ShellWorkspace.Screens")?.ElementsWithLocalNamePath("WorkspaceScreenData");
+		}
+	}
+	internal class DefaultWorkspaceFolderConverter : DefaultConverterBase, IWorkspaceFolderConverter, IVersionConverter
+	{
+		public DefaultWorkspaceFolderConverter(IUnityContainer container, int targetVersion)
+			: base(container, targetVersion)
+		{
+		}
+
+		protected override void DoConvert(object source, int sourceVersion)
+		{
+			this.DoDefaultConvert(source, sourceVersion, base.Container);
+		}
+
+		public IEnumerable<object> GetWorkspaceFoldersInTargetVersion(object source)
+		{
+			return GetWorkspaceFoldersByDefault(source);
+		}
+
+		public IEnumerable<object> GetWorkspacesInTargetVersion(object source)
+		{
+			return GetWorkspacesByDefault(source);
+		}
+
+		public static IEnumerable<object> GetWorkspaceFoldersByDefault(object source)
+		{
+			if (!(source is XElement node))
+			{
+				return null;
+			}
+			return node.ElementWithLocalNamePath("ShellWorkspaceFolder.Folders")?.ElementsWithLocalNamePath("ShellWorkspaceFolder");
+		}
+
+		public static IEnumerable<object> GetWorkspacesByDefault(object source)
+		{
+			if (!(source is XElement node))
+			{
+				return null;
+			}
+			return node.ElementWithLocalNamePath("ShellWorkspaceFolder.Workspaces")?.ElementsWithLocalNamePath("ShellWorkspace");
+		}
+	}
+	internal abstract class EmptyConverterBase : IVersionConverter
+	{
+		public int TargetVersion { get; private set; }
+
+		protected EmptyConverterBase(int targetVersion)
+		{
+			TargetVersion = targetVersion;
+		}
+
+		public void Convert(object source, int sourceVersion)
+		{
+		}
+	}
+	internal class EmptyScreenDataConverter : EmptyConverterBase, IScreenDataConverter, IVersionConverter
+	{
+		public EmptyScreenDataConverter(int targetVersion)
+			: base(targetVersion)
+		{
+		}
+
+		public string GetScreenFactoryKeyInTargetVersion(object source)
+		{
+			throw new NotImplementedException();
+		}
+
+		public void UpdateScreenFactoryKey(object source, string newScreenFactoryKey)
+		{
+			throw new NotImplementedException();
+		}
+
+		public object GetScreenSubjectInTargetVersion(object source)
+		{
+			throw new NotImplementedException();
+		}
+
+		public object GetScreenStateInTargetVersion(object source)
+		{
+			throw new NotImplementedException();
+		}
+	}
+	internal class EmptyShellSettingsConverter : EmptyConverterBase, IShellSettingsConverter, IVersionConverter
+	{
+		public EmptyShellSettingsConverter(int targetVersion)
+			: base(targetVersion)
+		{
+		}
+
+		public object GetWorkspaceFolderInTargetVersion(object source)
+		{
+			throw new NotImplementedException();
+		}
+
+		public object GetCurrentWorkspaceInTargetVersion(object source)
+		{
+			throw new NotImplementedException();
+		}
+
+		public IEnumerable<object> GetNavigatorGroupWorkspacesInTargetVersion(object source)
+		{
+			throw new NotImplementedException();
+		}
+	}
+	internal class EmptyWorkspaceConverter : EmptyConverterBase, IShellWorkspaceConverter, IVersionConverter
+	{
+		public EmptyWorkspaceConverter(int targetVersion)
+			: base(targetVersion)
+		{
+		}
+
+		public IEnumerable<object> GetScreenDatasInTargetVersion(object source)
+		{
+			throw new NotImplementedException();
+		}
+	}
+	internal class EmptyWorkspaceFolderConverter : EmptyConverterBase, IWorkspaceFolderConverter, IVersionConverter
+	{
+		public EmptyWorkspaceFolderConverter(int targetVersion)
+			: base(targetVersion)
+		{
+		}
+
+		public IEnumerable<object> GetWorkspaceFoldersInTargetVersion(object source)
+		{
+			throw new NotImplementedException();
+		}
+
+		public IEnumerable<object> GetWorkspacesInTargetVersion(object source)
+		{
+			throw new NotImplementedException();
+		}
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

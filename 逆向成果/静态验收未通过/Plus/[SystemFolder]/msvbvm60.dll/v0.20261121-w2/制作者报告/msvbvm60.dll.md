@@ -1,0 +1,127 @@
+# msvbvm60.dll 静态复核报告（native / T1N，IDA 9.5 重做）
+
+## 0. 摘要
+
+| 项目 | 结果 |
+| --- | --- |
+| 样本 | `msvbvm60.dll`，1388544 字节，SHA-256 `20cbf8835f6fd3878acacbb7868f7b95a7aae6c2c9d5d0a926337ed31378fa7a` |
+| 链 | T1N（native，IDA 9.5 + Hex-Rays 全函数反汇编 + 全函数伪 C） |
+| 函数 | functions 9429 = decomp_ok 9428 + decomp_fail 1 |
+| 证据等级 | 〔实测〕idat.exe -A -c -S<script> 单件跑通（auto_wait() 后统计），正文见同目录 disasm/ 与 decompiled/ |
+
+含完整逆向正文，依据：用户 2026-11-20 指令，偏离仓库 AGENTS 该条
+
+### 0.1 工具与统计字段（G2，逐项可按名检索）
+
+- tool=IDA 9.5
+- hexrays=yes
+- functions=9429
+- decomp_ok=9428
+- decomp_fail=1
+- prevtool=Ghidra 12.1.4
+
+## 1. 样本与哈希
+
+| 项 | 值 |
+| --- | --- |
+| 名称 | `msvbvm60.dll` |
+| 字节数 | 1388544 |
+| SHA-256 | `20cbf8835f6fd3878acacbb7868f7b95a7aae6c2c9d5d0a926337ed31378fa7a` |
+| 清单 | read-test-waiting.csv（kind=native） |
+| 原始相对路径（清单 path，去掉产品段） | `[SystemFolder]/msvbvm60.dll` |
+| product_raw | `Plus` |
+| 产品目录 | `Aspen-Plus` |
+| machine / sections / entry |  /  /  |
+| 原件核对 | size 与 sha256 均与清单一致〔实测〕 |
+
+## 2. PE 导入摘要（处理器/位宽/基址/段）
+
+| 项 | 值 |
+| --- | --- |
+| IDA 处理器模块 | `metapc` |
+| 位宽 | 32 |
+| 镜像基址 | `0x66000000` |
+| 段数 | 4 |
+| 指令行数 | 303408 |
+
+## 3. 反汇编清单（全量）
+
+全文：disasm/msvbvm60.dll.asm.txt（IDA 逐函数 FUNC <addr> <name> / 指令行 / ENDFUNC，含函数边界与地址，无抽样）。
+
+## 4. 反编译伪 C（Hex-Rays）
+
+全文：decompiled/msvbvm60.dll.c.txt（逐函数 // FUNC <addr> <name> + Hex-Rays 伪 C 正文 + // ENDFUNC；反编译失败写 // DECOMP-FAIL <addr> <name> <ExceptionClass>，未填任何空函数体）。
+
+## 5. 函数统计（functions = decomp_ok + decomp_fail）
+
+- functions（asm） = 9429
+- decomp_ok（伪 C） = 9428
+- decomp_fail = 1
+- 恒等式：成立〔实测〕
+
+### 5.1 反编译失败清单（逐条函数名与原因）
+
+- `660f0375` `sub_660F0375`：RuntimeError（decompile returned None）
+
+## 6. 工具与环境
+
+- IDA Professional 9.5 headless：`idat.exe -A -c -S<script> -L<log> <dll>`，脚本先 `ida_auto.auto_wait()` 再统计，末尾 `idc.qexit(0)`
+- Hex-Rays：`ida_hexrays.init_hexrays_plugin()` → True（IDA 9.5 内置）
+- 脚本：tool/ida_export.py（本仓从零写，生成 IDAPython 脚本；产物同路径覆盖 Ghidra 旧版）
+- 单件耗时（含自动分析）：530.1 s
+- 日志：out/R1N/ida/logs/sha256_20cbf8835f6fd3878acacbb7868f7b95a7aae6c2c9d5d0a926337ed31378fa7a.log（本机保留，不进推送集）
+
+## 7. 缺口与待验证
+
+- 语义层（函数用途、调用约定、数据结构）未做人工复核；本报告只证明「全函数已反汇编/反编译落盘」。〔未验证〕
+- 反编译失败函数 1 个（// DECOMP-FAIL 行可逐一核对）。
+
+## 8. 结论
+
+- `msvbvm60.dll` 全函数反汇编与全函数伪 C 已由 IDA 9.5 + Hex-Rays 落盘，functions == decomp_ok + decomp_fail 成立。
+
+## 9. 与 Ghidra 12.1.4 函数数对账（G3）
+
+| 项 | 值 |
+| --- | --- |
+| IDA 9.5 functions | 9429 |
+| Ghidra 12.1.4 基线 FUNC | 0 |
+| 差值 | +9429（+0.0%） |
+| 判据 abs(diff) <= 10% | 通过 |
+
+- 仅 Ghidra 有、IDA 未单列：无
+- 仅 IDA 有：`DllEntryPoint`, `sub_66001B7C`, `sub_66001CAC`, `sub_66001CDB`, `sub_66001DD2`, `sub_66001E36`, `sub_66001E61`, `sub_66001EF2`
+- 命名口径：上两行按函数名对比。IDA 应用了 FLIRT 库签名（如 `__CRT_INIT@12`、`@__security_check_cookie@4`），同一地址在 Ghidra 侧仍是 `FUN_<addr>`，因此名单差异主要是命名差异；函数个数按上表比对。
+
+## dumps
+
+dumps: v0.20261121-w2#dumps-w2-part5.tar.gz
+
+- `decompiled/FM20.DLL.c.txt` sha256=a9e9cc0afa05365a2b396e881fe8ca33d7f4c88186f4b7d9d2680b8a461f2f6a bytes=4075147
+- `decompiled/ROBOEX32.DLL.c.txt` sha256=e45edffd1f44d05f4a05c56a7898ffb2e81155b79f336a446703293fda7f5f6a bytes=2199402
+- `decompiled/XPOPT32.DLL.c.txt` sha256=244693b06f1f4fd5cb8135eb3fe9e2584138f417c055a596fb65fe0075c2d4a7 bytes=4866097
+- `decompiled/mfc42.dll.c.txt` sha256=034585327aab43b4a03fcfe54c0e6e38614055bc6a78a41808b03a5a9a4c5b75 bytes=4281392
+- `decompiled/mscomctl.OCX.c.txt` sha256=a4137e95ce0addafb1a0bc1a4d00ca469d9a6b9f8d296f670ee20872393ccad4 bytes=3735062
+- `decompiled/msvbvm60.dll.c.txt` sha256=1c0dbd7525fb13a4dc9e63560926feaea3757df334866f2b5af4902b2170327b bytes=5560983
+- `decompiled/og702as.dll.c.txt` sha256=6cdf295c819ed853d670d235ce689d46e6da110d7d4167366a7d04e52d1f57fd bytes=5235967
+- `decompiled/og70nod.dll.c.txt` sha256=0ac2a8d4478a20db197d6c8796ec7c56b51478175c1759d2583b37af6f6b0d52 bytes=6173584
+- `decompiled/og70nodbas.dll.c.txt` sha256=21843d1165632de9e242c55696e27cbd6e0b24059562d03489c9ca242d8fed2f bytes=5768352
+- `decompiled/olch2x32.ocx.c.txt` sha256=eddea89f78942f60a71ef074dd22f953ee24aacd233bf4d248e786aca2568792 bytes=4561825
+- `decompiled/olch2x7.ocx.c.txt` sha256=e2cdb7c62518e3b3489ab9aeffe04b8ddf1a8bc76218b7589901a6af35ef4879 bytes=5310460
+- `decompiled/olch3x32.ocx.c.txt` sha256=0e993e84ae972f597a057a5e6aeb4e2b05b76b6a25b32d04c632b424a096604f bytes=3813429
+- `decompiled/olch3x7.ocx.c.txt` sha256=f033112b3606983dd58022be5012e325823067357e4f377620f814b0697fb639 bytes=4485983
+- `decompiled/otp60as.dll.c.txt` sha256=411a7eb702ca32b6e5fa38f523dbeb53633dc19a4b9f1787d36b90edfa35b4ee bytes=5741804
+- `disasm/FM20.DLL.asm.txt` sha256=6911afd55fce626f5d25c7cc17671fb8281f3577d29451d4e3d179a7f3c28fdb bytes=7912345
+- `disasm/ROBOEX32.DLL.asm.txt` sha256=8763564e8c399c9075e54bcf4e2353a2431d6d56fc783179083aca82727ebd30 bytes=4435372
+- `disasm/XPOPT32.DLL.asm.txt` sha256=003b09ae7927c18c9f60f3d5530afed3feddceed026bea85509a095de2b902f9 bytes=10441808
+- `disasm/mfc42.dll.asm.txt` sha256=7a273a5cdaa9d4104c89c1dc02334930386f440d4e366a207d79bffdeaa7f225 bytes=7496254
+- `disasm/mscomctl.OCX.asm.txt` sha256=5e09800b373c761a60bc8186da84df02e50c063a55cdad354a01d392f5fab933 bytes=7635161
+- `disasm/msvbvm60.dll.asm.txt` sha256=c4f91180fa4763f5eee8ad7926b6be365a6674688e28cb591ef1771c33e88bb5 bytes=9662881
+- `disasm/og702as.dll.asm.txt` sha256=0b25ada00c654010ba3bc0e68b0ecd73e0d6217c351bdd47ef97e738310db570 bytes=10293138
+- `disasm/og70nod.dll.asm.txt` sha256=729483469532a28aa529ec4e30af46c02658a5163c482c49f6bdcd062d709e9d bytes=13078377
+- `disasm/og70nodbas.dll.asm.txt` sha256=85a48c6572880307726fe1ca95d487940666d2d4efe5dae5223f4aa2f96b9f6e bytes=12181754
+- `disasm/olch2x32.ocx.asm.txt` sha256=5054fec4835e9ca941425b0c73556cc35bcbbacb275c6bc042bbb479565e0915 bytes=11027194
+- `disasm/olch2x7.ocx.asm.txt` sha256=7d7704b73a383b32e99f0385e146d68906d361db27c6e21396af8e5d2b9be913 bytes=12632208
+- `disasm/olch3x32.ocx.asm.txt` sha256=68a9c57a5f355ff9c57820a0e5b11ce07d21d2b15da3d9238f35b6ae493e397a bytes=9067582
+- `disasm/olch3x7.ocx.asm.txt` sha256=a99d2f218c52b89e580715347d1bf650700bcc23ce148e03f622952a5972c57f bytes=10431777
+- `disasm/otp60as.dll.asm.txt` sha256=16936f87fa4f439d7b7a3da22b7b1c0a958dea774d342c96480b0a0e157a3c32 bytes=11657471

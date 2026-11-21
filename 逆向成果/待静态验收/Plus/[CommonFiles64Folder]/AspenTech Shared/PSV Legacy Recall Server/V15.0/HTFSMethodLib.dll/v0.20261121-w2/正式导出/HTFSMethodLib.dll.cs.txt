@@ -1,0 +1,3399 @@
+using System;
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using AHResources;
+using AspenTech.Hydraulics.PropertyUtilities;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyCompany("Aspen Technology, Inc.")]
+[assembly: AssemblyProduct("Aspen Hydraulics")]
+[assembly: AssemblyCopyright("Copyright © Aspen Technology, Inc. 2024")]
+[assembly: AssemblyTitle("")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyDelaySign(false)]
+[assembly: AssemblyKeyFile("..\\..\\..\\packages\\AspenTech.StrongName.SNK.1.0.0\\content\\AspenTech.snk")]
+[assembly: AssemblyKeyName("")]
+[assembly: AssemblyFileVersion("41.0.0.97")]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.0")]
+namespace AspenTech.Hydraulics.HTFSMethodLib;
+
+[ComVisible(false)]
+public class CalculateSpecialPropertyMethodLib
+{
+	public static double ThermalExpansionCoeff(IFlowStream stream, IPhysicalPropertyPackage pIPPP)
+	{
+		try
+		{
+			IPhase phaseByID = stream.GetPhaseByID(0);
+			double value = phaseByID.Pressure.Value;
+			double value2 = phaseByID.Temperature.Value;
+			double value3 = phaseByID.Density.Value;
+			IFlowStream flowStream = (IFlowStream)stream.Clone();
+			pIPPP.ReflashStreamWithSameComposition(flowStream, FlashType.PTFlash, value, value2 + 0.1);
+			double value4 = flowStream.GetPhaseByID(0).Density.Value;
+			return -2.0 / (value3 + value4) * (value4 - value3) / 0.1;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "ThermalExpansionCoeff"), innerException);
+		}
+	}
+
+	public static double MassFractionGradientToEnthalpy(IFlowStream stream, IPhysicalPropertyPackage pIPPP)
+	{
+		try
+		{
+			if (stream.NumberOfPhases < 2)
+			{
+				throw new Exception(Resources.SinglePhaseFlowEncountered);
+			}
+			double value = stream.GetPhaseByID(0).Pressure.Value;
+			double value2 = stream.GetPhaseByID(0).MolarVapourFraction.Value;
+			double num = ((!(value2 > 0.5)) ? 1.0 : (-1.0));
+			double value3 = stream.GetPhaseByType(PhaseType.Vapour).MassFraction.Value;
+			double value4 = stream.GetPhaseByID(0).Enthalpy.Value;
+			IFlowStream flowStream = (IFlowStream)stream.Clone();
+			pIPPP.ReflashStreamWithSameComposition(flowStream, FlashType.PVFlash, value, value2 + num * 0.001);
+			double value5 = flowStream.GetPhaseByType(PhaseType.Vapour).MassFraction.Value;
+			double value6 = flowStream.GetPhaseByID(0).Enthalpy.Value;
+			return (value5 - value3) / (value6 - value4);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "MassFractionGradientToEnthalpy"), innerException);
+		}
+	}
+
+	public static double DerivativeOfTemperatureToEnthalpy(IFlowStream stream, IPhysicalPropertyPackage pIPPP)
+	{
+		double result = 0.0;
+		double num = 0.1;
+		double num2 = 0.0;
+		try
+		{
+			IPhase phaseByID = stream.GetPhaseByID(0);
+			double value = phaseByID.Pressure.Value;
+			double value2 = phaseByID.Temperature.Value;
+			double value3 = phaseByID.Enthalpy.Value;
+			IFlowStream flowStream = (IFlowStream)stream.Clone();
+			while (Math.Abs(num2) == 0.0)
+			{
+				pIPPP.ReflashStreamWithSameComposition(flowStream, FlashType.PTFlash, value, value2 + num);
+				double value4 = flowStream.GetPhaseByID(0).Enthalpy.Value;
+				num2 = value4 - value3;
+				result = num / num2;
+				num += 0.1;
+			}
+			return result;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "DerivativeOfTemperatureToEnthalpy"), innerException);
+		}
+	}
+
+	public static double LatentHeatOfMixtures(IFlowStream stream, IPhysicalPropertyPackage pIPPP)
+	{
+		double num = 0.0;
+		double num2 = 0.0;
+		double num3 = 0.0;
+		double num4 = 0.0;
+		double num5 = 0.0;
+		double num6 = 0.0;
+		double num7 = 0.0;
+		double num8 = 0.0;
+		double num9 = 0.0;
+		double num10 = 0.0;
+		double num11 = 0.0;
+		double num12 = 0.0;
+		double num13 = 0.0;
+		double num14 = 0.0;
+		double num15 = 0.0;
+		double num16 = 0.1;
+		double num17 = 0.0;
+		double num18 = 0.0;
+		double num19 = 0.0;
+		double num20 = 0.0;
+		try
+		{
+			IFlowStream flowStream = (IFlowStream)stream.Clone();
+			if (flowStream.NumberOfPhases < 2)
+			{
+				throw new Exception(Resources.SinglePhaseFlowEncountered);
+			}
+			IPhase phaseByID = flowStream.GetPhaseByID(0);
+			if (phaseByID.NumberOfCompounds < 2 && !phaseByID.GetComponent(1).IsHypothetical)
+			{
+				return flowStream.GetPhaseByType(PhaseType.Vapour).Enthalpy.Value - flowStream.CombinedLiquidPhase.Enthalpy.Value;
+			}
+			num2 = phaseByID.Pressure.Value;
+			num3 = phaseByID.Temperature.Value;
+			num17 = pIPPP.CalculateDewPoint(flowStream, num2);
+			num18 = pIPPP.CalculateBubblePoint(flowStream, num2);
+			while (num9 <= 0.0 || num8 <= 0.0)
+			{
+				num19 = Math.Max(num18 + 0.001, num3 - num16);
+				pIPPP.ReflashStreamWithSameComposition(flowStream, FlashType.PTFlash, num2, num19);
+				num4 = flowStream.GetPhaseByID(0).Enthalpy.Value;
+				num10 = flowStream.CombinedLiquidPhase.Cp.Value;
+				num12 = flowStream.GetPhaseByType(PhaseType.Vapour).Cp.Value;
+				num6 = flowStream.GetPhaseByType(PhaseType.Vapour).MassFraction.Value;
+				num20 = Math.Min(num17 - 0.001, num3 + num16);
+				pIPPP.ReflashStreamWithSameComposition(flowStream, FlashType.PTFlash, num2, num20);
+				num5 = flowStream.GetPhaseByID(0).Enthalpy.Value;
+				num11 = flowStream.CombinedLiquidPhase.Cp.Value;
+				num13 = flowStream.GetPhaseByType(PhaseType.Vapour).Cp.Value;
+				num7 = flowStream.GetPhaseByType(PhaseType.Vapour).MassFraction.Value;
+				num9 = num5 - num4;
+				num8 = num7 - num6;
+				num16 += 0.1;
+			}
+			num15 = 0.5 * (num6 + num7);
+			num14 = 0.5 * ((1.0 - num15) * (num10 + num11) + num15 * (num12 + num13));
+			return (num9 - num14 * (num20 - num19)) / num8;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "LatentHeatOfMixtures"), innerException);
+		}
+	}
+}
+[ComVisible(false)]
+public class Conduction
+{
+	public static double ThermalResistanceOfPlaneWall(double Conductivity, double WallThickness, double Area)
+	{
+		try
+		{
+			if (Area == RealValue.FEMPTY || Area < 0.0)
+			{
+				Area = 1.0;
+			}
+			if (Conductivity <= 0.0)
+			{
+				throw new ArgumentOutOfRangeException("Conductivity", Conductivity, Resources.MustBeGreaterThanZero);
+			}
+			return WallThickness / (Conductivity * Area);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "ThermalResistanceOfPlaneWall"), innerException);
+		}
+	}
+
+	public static double ThermalResistanceOfCylinder(double Conductivity, double InnerDiam, double OuterDiam, double Length)
+	{
+		try
+		{
+			if (Length == RealValue.FEMPTY || Length < 0.0)
+			{
+				Length = 1.0;
+			}
+			if (InnerDiam <= 0.0 || InnerDiam > OuterDiam)
+			{
+				throw new ArgumentOutOfRangeException("InnerDiam", InnerDiam, Resources.MustBeGreaterThanZero2);
+			}
+			if (OuterDiam <= 0.0)
+			{
+				throw new ArgumentOutOfRangeException("OuterDiam", OuterDiam, Resources.MustBeGreaterThanZero);
+			}
+			if (Conductivity <= 0.0)
+			{
+				throw new ArgumentOutOfRangeException("Conductivity", Conductivity, Resources.MustBeGreaterThanZero);
+			}
+			return Math.Log(OuterDiam / InnerDiam) / (Math.PI * 2.0 * Conductivity * Length);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "ThermalResistanceOfCylinder"), innerException);
+		}
+	}
+
+	public static double ThermalResistanceOfBuriedCylinder(double Conductivity, double Diameter, double Depth)
+	{
+		double num = 0.0;
+		try
+		{
+			if (Depth < 0.5 * Diameter)
+			{
+				throw new Exception(Resources.CylinderNotBuried);
+			}
+			double num2;
+			if (Depth < 2.0 * Diameter)
+			{
+				num = Math.Cosh(2.0 * Depth / Diameter);
+				num2 = Math.Log(Math.Abs(num + Math.Sqrt(num * num - 1.0)));
+			}
+			else if (Depth > 100.0 * Diameter)
+			{
+				num2 = Math.Log(4.0 * Depth / Diameter);
+			}
+			else
+			{
+				num = 2.0 * Depth / Diameter;
+				num2 = Math.Log(num + Math.Sqrt(num * num - 1.0));
+			}
+			return num2 / (Math.PI * 2.0 * Conductivity);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "ThermalResistanceOfBuriedCylinder"), innerException);
+		}
+	}
+
+	public static double ThermalResistanceOfSphere(double Conductivity, double InnerRadius, double OuterRadius)
+	{
+		try
+		{
+			if (InnerRadius <= 0.0 || InnerRadius > OuterRadius)
+			{
+				throw new ArgumentOutOfRangeException("InnerRadius", InnerRadius, Resources.MustBeGreaterThanZero3);
+			}
+			if (OuterRadius <= 0.0)
+			{
+				throw new ArgumentOutOfRangeException("OuterRadius", OuterRadius, Resources.MustBeGreaterThanZero);
+			}
+			if (Conductivity <= 0.0)
+			{
+				throw new ArgumentOutOfRangeException("Conductivity", Conductivity, Resources.MustBeGreaterThanZero);
+			}
+			return 1.0 / (Math.PI * 4.0 * Conductivity) * (1.0 / InnerRadius - 1.0 / OuterRadius);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "ThermalResistanceOfSphere"), innerException);
+		}
+	}
+
+	public static double ThermalResistanceForConvection(double HTCoeff, double Area)
+	{
+		try
+		{
+			if (Area == RealValue.FEMPTY || Area < 0.0)
+			{
+				Area = 1.0;
+			}
+			if (HTCoeff <= 0.0)
+			{
+				throw new ArgumentOutOfRangeException("HTCoeff", HTCoeff, Resources.MustBeGreaterThanZero);
+			}
+			return 1.0 / (HTCoeff * Area);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "ThermalResistanceForConvection"), innerException);
+		}
+	}
+
+	public static double HeatFlux(double T1, double T2, double ThermalResistance)
+	{
+		try
+		{
+			if (ThermalResistance <= 0.0)
+			{
+				throw new ArgumentOutOfRangeException("ThermalResistance", ThermalResistance, Resources.MustBeGreaterThanZero);
+			}
+			return (T1 - T2) / ThermalResistance;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "HeatFlux"), innerException);
+		}
+	}
+}
+public class Convection
+{
+	public static double HTCOfExternalFreeConvectionOnHorizontalCylinder(IFlowStream extFluid, IPhysicalPropertyPackage pIPPP, double diameter, double Ts, double Te)
+	{
+		double data = 101325.0;
+		IPhase phase = null;
+		try
+		{
+			phase = new Phase();
+			double data2 = 0.5 * (Ts + Te);
+			pIPPP.ReflashStreamWithSameComposition(extFluid, FlashType.PTFlash, data, data2);
+			if (extFluid.NumberOfPhases > 1)
+			{
+				throw new Exception(Resources.TwoPhaseFlowEncountered);
+			}
+			phase = extFluid.GetPhaseByID(1);
+			double thermalExpansionCoeff = CalculateSpecialPropertyMethodLib.ThermalExpansionCoeff(extFluid, pIPPP);
+			double num = DimensionlessNumbers.GrashofNumber(thermalExpansionCoeff, Ts, Te, diameter, phase.Viscosity.Value, phase.Density.Value);
+			double num2 = DimensionlessNumbers.PrandtlNumber(phase.Cp.Value, phase.Viscosity.Value, phase.Conductivity.Value);
+			double num3 = num * num2;
+			double num4;
+			double y;
+			if (num3 >= 1E-10 && num3 < 100.0)
+			{
+				num4 = 0.675;
+				y = 0.058;
+			}
+			else if (num3 >= 0.01 && num3 < 100.0)
+			{
+				num4 = 1.02;
+				y = 0.148;
+			}
+			else if (num3 >= 100.0 && num3 < 10000.0)
+			{
+				num4 = 0.85;
+				y = 0.188;
+			}
+			else if (num3 >= 10000.0 && num3 < 10000000.0)
+			{
+				num4 = 0.48;
+				y = 0.25;
+			}
+			else
+			{
+				if (!(num3 >= 10000000.0) || !(num3 < 1000000000000.0))
+				{
+					string message = string.Format(Resources.RaOutOfRange, num3.ToString());
+					throw new Exception(message);
+				}
+				num4 = 0.125;
+				y = 0.333;
+			}
+			return num4 * Math.Pow(num3, y) * phase.Conductivity.Value / diameter;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "HTCOfExternalFreeConvectionOnHorizontalCylinder"), innerException);
+		}
+	}
+
+	public static double HTCOfExternalForcedConvectionOnCylinder(IPhase fluidProp, double diameter, double velocity)
+	{
+		double num = 0.0;
+		double num2 = 0.0;
+		try
+		{
+			num = DimensionlessNumbers.ReynoldsNumber(velocity, fluidProp.Density.Value, diameter, fluidProp.Viscosity.Value);
+			num2 = DimensionlessNumbers.PrandtlNumber(fluidProp.Cp.Value, fluidProp.Viscosity.Value, fluidProp.Conductivity.Value);
+			double num3;
+			double y;
+			if (num >= 0.4 && num < 4.0)
+			{
+				num3 = 0.989;
+				y = 0.33;
+			}
+			else if (num >= 4.0 && num < 40.0)
+			{
+				num3 = 0.911;
+				y = 0.385;
+			}
+			else if (num >= 40.0 && num < 4000.0)
+			{
+				num3 = 0.683;
+				y = 0.466;
+			}
+			else if (num >= 4000.0 && num < 40000.0)
+			{
+				num3 = 0.193;
+				y = 0.618;
+			}
+			else
+			{
+				if (!(num >= 40000.0) || !(num < 400000.0))
+				{
+					throw new ArgumentOutOfRangeException("Re", num, Resources.ReOutOfRange);
+				}
+				num3 = 0.027;
+				y = 0.805;
+			}
+			return num3 * Math.Pow(num, y) * Math.Pow(num2, 1.0 / 3.0) * fluidProp.Conductivity.Value / diameter;
+		}
+		catch (ArgumentOutOfRangeException ex)
+		{
+			double result = (0.3 + 0.62 * Math.Sqrt(num) * Math.Pow(num2, 1.0 / 3.0) / Math.Pow(1.0 + Math.Pow(0.4 / num2, 2.0 / 3.0), 0.25) * Math.Pow(1.0 + Math.Pow(num / 282000.0, 0.625), 0.8)) * fluidProp.Conductivity.Value / diameter;
+			string text = ex.Message + Resources.ChurchillBernsteinUsedInstead;
+			return result;
+		}
+	}
+
+	public static double HTCOfHorizontalLaminarFlow(IFlowStream stream, IPhysicalPropertyPackage pIPPP, double diameter, double lengthFromEntrance, double wallTemp)
+	{
+		double num = 0.0;
+		IFlowStream flowStream = null;
+		IPhase phaseByID = stream.GetPhaseByID(1);
+		string text = null;
+		double num2 = 1.0;
+		double num3 = 1.0;
+		try
+		{
+			if (stream.NumberOfPhases > 1)
+			{
+				throw new Exception(Resources.TwoPhaseFlowEncountered);
+			}
+			double massFlux = stream.MassFlowrate.Value / HTFSUtility.FlowArea(diameter);
+			double num4 = SinglePhaseFlow.ReynoldsNumber(massFlux, diameter, phaseByID.Viscosity.Value);
+			if (num4 > 2000.0)
+			{
+				text = string.Format(Resources.ReNotLaminar, num4.ToString());
+				throw new Exception(text);
+			}
+			if (phaseByID.PhaseType != PhaseType.Vapour)
+			{
+				flowStream = (IFlowStream)stream.Clone();
+				num3 = pIPPP.CalculateProperty(flowStream, PropertyType.Viscosity, PhaseType.Liquid, FlashType.PTFlash, phaseByID.Pressure.Value, wallTemp);
+				num2 = Math.Pow(phaseByID.Viscosity.Value / num3, 0.14);
+			}
+			double num5 = DimensionlessNumbers.PrandtlNumber(phaseByID.Cp.Value, phaseByID.Viscosity.Value, phaseByID.Conductivity.Value);
+			double thermalExpansionCoeff = CalculateSpecialPropertyMethodLib.ThermalExpansionCoeff(stream, pIPPP);
+			double num6 = DimensionlessNumbers.GrashofNumber(thermalExpansionCoeff, wallTemp, phaseByID.Temperature.Value, diameter, phaseByID.Viscosity.Value, phaseByID.Density.Value);
+			double num7 = num4 * num5 / (lengthFromEntrance / diameter);
+			return 1.75 * Math.Pow(num7 + 0.0083 * Math.Pow(num6 * num5, 0.75), 1.0 / 3.0) * num2 * phaseByID.Conductivity.Value / diameter;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "HTCOfHorizontalLaminarFlow"), innerException);
+		}
+	}
+
+	public static double HTCOfVerticalLaminarFlow(IFlowStream stream, IPhysicalPropertyPackage pIPPP, double diameter, double lengthFromEntrance, double wallTemp, double angle)
+	{
+		double num = 0.0;
+		IFlowStream flowStream = null;
+		IPhase phaseByID = stream.GetPhaseByID(1);
+		IPhase phase = null;
+		string text = null;
+		double num2 = 0.0;
+		double num3 = 0.0;
+		double num4 = 0.0;
+		try
+		{
+			if (stream.NumberOfPhases > 1)
+			{
+				throw new Exception(Resources.TwoPhaseFlowEncountered);
+			}
+			double massFlux = stream.MassFlowrate.Value / HTFSUtility.FlowArea(diameter);
+			double num5 = SinglePhaseFlow.ReynoldsNumber(massFlux, diameter, phaseByID.Viscosity.Value);
+			if (num5 > 2000.0)
+			{
+				text = (text = string.Format(Resources.ReNotLaminar, num5.ToString()));
+				throw new Exception(text);
+			}
+			double num6 = DimensionlessNumbers.PrandtlNumber(phaseByID.Cp.Value, phaseByID.Viscosity.Value, phaseByID.Conductivity.Value);
+			double num7 = num5 * num6 / (lengthFromEntrance / diameter);
+			flowStream = (IFlowStream)stream.Clone();
+			pIPPP.CalculateProperty(flowStream, PropertyType.Viscosity, PhaseType.Liquid, FlashType.PTFlash, phaseByID.Pressure.Value, wallTemp);
+			phase = flowStream.GetPhaseByID(1);
+			double num8 = DimensionlessNumbers.PrandtlNumber(phase.Cp.Value, phase.Viscosity.Value, phase.Conductivity.Value);
+			double thermalExpansionCoeff = CalculateSpecialPropertyMethodLib.ThermalExpansionCoeff(flowStream, pIPPP);
+			double num9 = DimensionlessNumbers.GrashofNumber(thermalExpansionCoeff, wallTemp, phase.Temperature.Value, lengthFromEntrance, phase.Viscosity.Value, phase.Density.Value);
+			double num11;
+			if (num9 * num8 * diameter / lengthFromEntrance < 16.84 * Math.Pow(num7, 1.3333333333333333))
+			{
+				double num10 = 5.497787143782138 / Math.Pow(num7, 2.0 / 3.0);
+				num2 = ((!(num10 <= 1.98)) ? Math.Exp(-0.361571 * num10 - 0.22391) : Math.Exp(-0.4744418 * num10));
+				if (angle == 90.0)
+				{
+					num4 = 1.0;
+					num3 = 0.84;
+				}
+				else
+				{
+					if (angle != -90.0)
+					{
+						throw new Exception(Resources.NotVertical);
+					}
+					num4 = -1.0;
+					num3 = 0.75;
+				}
+				num11 = 1.75 * Math.Pow(num7 + num4 * 0.0722 * num2 * Math.Pow(num9 * num8 * diameter / lengthFromEntrance, num3), 1.0 / 3.0);
+			}
+			else
+			{
+				num4 = 0.0;
+				num11 = 1.75 * Math.Pow(num7, 1.0 / 3.0);
+			}
+			return num11 * phaseByID.Conductivity.Value / diameter;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "HTCOfVerticalLaminarFlow"), innerException);
+		}
+	}
+
+	public static double HTCOfTransitionalFlow(IFlowStream stream, IPhysicalPropertyPackage pIPPP, double diameter, double lengthFromEntrance, double wallTemp)
+	{
+		double num = 0.0;
+		IFlowStream flowStream = null;
+		IPhase phaseByID = stream.GetPhaseByID(1);
+		string text = null;
+		double num2 = 0.0;
+		double num3 = 0.0;
+		double num4 = 1.0;
+		try
+		{
+			if (stream.NumberOfPhases > 1)
+			{
+				throw new Exception(Resources.TwoPhaseFlowEncountered);
+			}
+			double massFlux = stream.MassFlowrate.Value / HTFSUtility.FlowArea(diameter);
+			double num5 = SinglePhaseFlow.ReynoldsNumber(massFlux, diameter, phaseByID.Viscosity.Value);
+			if (num5 < 2000.0 || num5 > 10000.0)
+			{
+				text = (text = string.Format(Resources.ReNotTransitional, num5.ToString()));
+				throw new Exception(text);
+			}
+			if (phaseByID.PhaseType != PhaseType.Vapour)
+			{
+				flowStream = (IFlowStream)stream.Clone();
+				num3 = pIPPP.CalculateProperty(flowStream, PropertyType.Viscosity, PhaseType.Liquid, FlashType.PTFlash, phaseByID.Pressure.Value, wallTemp);
+				num4 = Math.Pow(phaseByID.Viscosity.Value / num3, 0.14);
+			}
+			double num6 = DimensionlessNumbers.PrandtlNumber(phaseByID.Cp.Value, phaseByID.Viscosity.Value, phaseByID.Conductivity.Value);
+			num2 = Math.Exp(-0.0225 * Math.Pow(Math.Log(num6), 2.0));
+			double num7 = 0.0998 * (Math.Pow(num5, 2.0 / 3.0) - 125.0) * Math.Pow(num6, 0.495) * num2 * Math.Pow(1.0 + diameter / lengthFromEntrance, 2.0 / 3.0) * num4;
+			return num7 * phaseByID.Conductivity.Value / diameter;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "HTCOfTransitionalFlow"), innerException);
+		}
+	}
+
+	public static double HTCOfTurbulentFlow(IFlowStream stream, IPhysicalPropertyPackage pIPPP, double diameter, double wallTemp)
+	{
+		double num = 0.0;
+		IFlowStream flowStream = null;
+		IPhase phaseByID = stream.GetPhaseByID(1);
+		string text = null;
+		double num2 = 0.0;
+		double num3 = 0.0;
+		double num4 = 1.0;
+		try
+		{
+			if (stream.NumberOfPhases > 1)
+			{
+				throw new Exception(Resources.TwoPhaseFlowEncountered);
+			}
+			double massFlux = stream.MassFlowrate.Value / HTFSUtility.FlowArea(diameter);
+			double num5 = SinglePhaseFlow.ReynoldsNumber(massFlux, diameter, phaseByID.Viscosity.Value);
+			if (num5 < 10000.0)
+			{
+				text = string.Format(Resources.ReNotTurbulent, num5.ToString());
+				throw new Exception(text);
+			}
+			if (phaseByID.PhaseType != PhaseType.Vapour)
+			{
+				flowStream = (IFlowStream)stream.Clone();
+				num3 = pIPPP.CalculateProperty(flowStream, PropertyType.Viscosity, PhaseType.Liquid, FlashType.PTFlash, phaseByID.Pressure.Value, wallTemp);
+				num4 = Math.Pow(y: (!(wallTemp > phaseByID.Temperature.Value)) ? 0.3 : 0.18, x: phaseByID.Viscosity.Value / num3);
+			}
+			double num6 = DimensionlessNumbers.PrandtlNumber(phaseByID.Cp.Value, phaseByID.Viscosity.Value, phaseByID.Conductivity.Value);
+			num2 = Math.Exp(-0.0225 * Math.Pow(Math.Log(num6), 2.0));
+			double num7 = 0.02246 * Math.Pow(num5, 0.795) * Math.Pow(num6, 0.495) * num2 * num4;
+			return num7 * phaseByID.Conductivity.Value / diameter;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "HTCOfTurbulentFlow"), innerException);
+		}
+	}
+
+	public static double HTCOfInternalFlow(IFlowStream stream, IPhysicalPropertyPackage pIPPP, double diameter, double lengthFromEntrance, double wallTemp, double inclinedAngle)
+	{
+		double num = 0.0;
+		try
+		{
+			if (stream.NumberOfPhases > 1)
+			{
+				throw new Exception(Resources.TwoPhaseFlowEncountered);
+			}
+			double massFlux = stream.MassFlowrate.Value / HTFSUtility.FlowArea(diameter);
+			double num2 = SinglePhaseFlow.ReynoldsNumber(massFlux, diameter, stream.GetPhaseByID(1).Viscosity.Value);
+			if (num2 < 2000.0)
+			{
+				if (inclinedAngle == 0.0)
+				{
+					return HTCOfHorizontalLaminarFlow(stream, pIPPP, diameter, lengthFromEntrance, wallTemp);
+				}
+				return HTCOfVerticalLaminarFlow(stream, pIPPP, diameter, lengthFromEntrance, wallTemp, inclinedAngle);
+			}
+			if (num2 < 10000.0)
+			{
+				return HTCOfTransitionalFlow(stream, pIPPP, diameter, lengthFromEntrance, wallTemp);
+			}
+			return HTCOfTurbulentFlow(stream, pIPPP, diameter, wallTemp);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "HTCOfInternalFlow"), innerException);
+		}
+	}
+
+	public static double HTCOfTwoPhaseInternalFlow(IFlowStream flowStream, double diam, double Tx, double Tw)
+	{
+		double num = diam * diam * Math.PI * 0.25;
+		double num2 = Math.Abs(flowStream.MassFlowrate.Value) / num;
+		IPhase phase;
+		if (flowStream.NumberOfPhases == 1)
+		{
+			phase = flowStream.GetPhaseByID(1);
+		}
+		else
+		{
+			phase = flowStream.CombinedLiquidPhase;
+			num2 *= phase.MassFraction.Value;
+		}
+		double value = phase.Cp.Value;
+		double value2 = phase.Viscosity.Value;
+		double value3 = phase.Conductivity.Value;
+		double value4 = flowStream.GetPhaseByType(PhaseType.Overall).Temperature.Value;
+		int num3 = ((!(value4 > Tx)) ? 1 : (-1));
+		if (flowStream.NumberOfPhases == 1 && flowStream.GetPhaseByID(1).PhaseType == PhaseType.Vapour)
+		{
+			num3 *= 2;
+		}
+		double num4 = num2 * diam / value2;
+		double num5 = 2200.0;
+		double num6 = value * value2 / value3;
+		double x = Math.PI * diam * num4 * num6 * 0.25 / 500.0;
+		double num7 = 1.0;
+		double num8 = Math.Pow(365.0 + 13.03 * Math.Pow(x, 1.33333), 0.25);
+		double num9 = 0.02246 * Math.Pow(num4, 0.795) * Math.Pow(num6, 0.495 - 0.0225 * Math.Log(num6));
+		double num10 = num8;
+		double num11 = num9 * num7;
+		double num12 = Math.Max(num8, num11);
+		if (num3 == 2)
+		{
+			num7 = Math.Pow(value4 / Tw, 0.47);
+		}
+		double num13 = num10 * Math.Exp((Math.Min(10000.0, num4) - num5) / 730.0);
+		num11 = Math.Sqrt(1.0 / (1.0 / (num11 * num11) + 1.0 / (num13 * num13))) * num7;
+		num12 = Math.Max(num10, num11);
+		return num12 * value3 / diam;
+	}
+
+	internal static double CorrectionForMixturesOfBellAndGhaly(IFlowStream stream, IPhysicalPropertyPackage pIPPP, double diameter, double Tw, double htc0)
+	{
+		try
+		{
+			IPhase phaseByType = stream.GetPhaseByType(PhaseType.Vapour);
+			double num = phaseByType.MassFraction.Value * phaseByType.Cp.Value * CalculateSpecialPropertyMethodLib.DerivativeOfTemperatureToEnthalpy(stream, pIPPP);
+			IFlowStream flowStream = new FlowStream(1);
+			flowStream.SetPhaseValueByID(0, phaseByType);
+			flowStream.GetPhaseByID(0).PhaseType = PhaseType.Overall;
+			flowStream.MassFlowrate.Value = stream.MassFlowrate.Value * phaseByType.MassFraction.Value;
+			pIPPP.FlashStream(flowStream, FlashType.PTFlash);
+			double num2 = HTCOfInternalFlow(flowStream, pIPPP, diameter, 100000.0, Tw, 0.0);
+			return 1.0 / (1.0 / htc0 + num / num2);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "CorrectionForMixturesOfBellAndGhaly"), innerException);
+		}
+	}
+}
+[ComVisible(false)]
+public class DimensionlessNumbers
+{
+	public static double PrandtlNumber(double Cp, double vis, double cond)
+	{
+		try
+		{
+			return Cp * vis / cond;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "Pr"), innerException);
+		}
+	}
+
+	public static double ReynoldsNumber(double MassFlux, double Diameter, double Viscosity)
+	{
+		try
+		{
+			return MassFlux * Diameter / Viscosity;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "SinglePhaseFlow.ReynoldsNumber"), innerException);
+		}
+	}
+
+	public static double ReynoldsNumber(double Velocity, double Density, double Diameter, double Viscosity)
+	{
+		try
+		{
+			return Velocity * Density * Diameter / Viscosity;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "SinglePhaseFlow.ReynoldsNumber"), innerException);
+		}
+	}
+
+	public static double GrashofNumber(double thermalExpansionCoeff, double Ts, double Te, double length, double viscosity, double density)
+	{
+		try
+		{
+			return 9.80665 * thermalExpansionCoeff * Math.Abs(Ts - Te) * Math.Pow(length, 3.0) / Math.Pow(viscosity / density, 2.0);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "Gr"), innerException);
+		}
+	}
+
+	public static double GalileoNumber(double diameter, double densityL, double densityG, double viscoL)
+	{
+		try
+		{
+			return 9.80665 * densityL * (densityL - densityG) * Math.Pow(diameter, 3.0) / Math.Pow(viscoL, 2.0);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "Ga"), innerException);
+		}
+	}
+}
+[ComVisible(false)]
+public delegate double ChokePressureCallBackType(double Pres, ref IFlowStream Stream, ref IPhysicalPropertyPackage PropPkg, double Flux);
+public delegate double ChokeFlowCallBackType(double Pres, ref IFlowStream myStream, ref IPhysicalPropertyPackage myPPP, double pipeArea, double throatArea, double inletPress, double inletRho);
+[ComVisible(false)]
+public class HTFSUtility
+{
+	public static double DegreesToRads(double Angle)
+	{
+		return Math.PI * Angle / 180.0;
+	}
+
+	public static double RadsToDegrees(double Radians)
+	{
+		return Radians * 180.0 / Math.PI;
+	}
+
+	public static double CalculateFrictionalPressureGradient(IFlowStream stream, double Diameter, double MassFlux, double RelativeRoughness, double Angle)
+	{
+		double num = -32767.0;
+		try
+		{
+			if (stream.NumberOfPhases < 2)
+			{
+				return SinglePhaseFlow.FrictionalPressureGradient(Diameter, MassFlux, RelativeRoughness, stream.GetPhaseByID(1).Viscosity.Value, stream.GetPhaseByID(1).Density.Value);
+			}
+			return TwoPhaseFlow.FrictionalPressureGradientInPipe(stream, MassFlux, Diameter, RelativeRoughness);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "CalculatFrictionPressureGradient"), innerException);
+		}
+	}
+
+	public static double CalculateFrictionalPressureGradientInBend(IFlowStream stream, double Diameter, double MassFlux, double f, double K, double Radius)
+	{
+		try
+		{
+			if (stream.NumberOfPhases < 2)
+			{
+				return -2.0 * f * MassFlux * MassFlux / (stream.GetPhaseByID(1).Density.Value * Diameter);
+			}
+			if (stream.NumberOfPhases == 2 && stream.GetPhaseByType(PhaseType.Vapour) == null)
+			{
+				return -2.0 * f * MassFlux * MassFlux / (stream.CombinedLiquidPhase.Density.Value * Diameter);
+			}
+			return -2.0 * f * MassFlux * MassFlux / (stream.CombinedLiquidPhase.Density.Value * Diameter) * TwoPhaseFlow.BendMultiplier(Diameter, Radius, stream.GetPhaseByType(PhaseType.Vapour).MassFraction.Value, K, stream.CombinedLiquidPhase.Density.Value, stream.GetPhaseByType(PhaseType.Vapour).Density.Value);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "CalculateFrictionPressureGradientInBend"), innerException);
+		}
+	}
+
+	public static double CalculateEquivalentDensity(IFlowStream stream, double MassFlux, double Angle)
+	{
+		double num = -32767.0;
+		try
+		{
+			if (stream.NumberOfPhases > 1)
+			{
+				IPhase combinedLiquidPhase = stream.CombinedLiquidPhase;
+				IPhase phaseByType = stream.GetPhaseByType(PhaseType.Vapour);
+				if (phaseByType == null)
+				{
+					return combinedLiquidPhase.Density.Value;
+				}
+				return 1.0 / TwoPhaseFlow.EquivSpecVolume(combinedLiquidPhase.Density.Value, phaseByType.Density.Value, phaseByType.MassFraction.Value);
+			}
+			return stream.GetPhaseByID(1).Density.Value;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "CalculateEquivalentDensity"), innerException);
+		}
+	}
+
+	public static double CalculateGravitationalPressureGradient(double MassFlux, double Angle, IFlowStream stream)
+	{
+		double num = -32767.0;
+		try
+		{
+			if (stream.NumberOfPhases > 1)
+			{
+				return TwoPhaseFlow.GravitationalPressureGradient(MassFlux, stream.GetPhaseByType(PhaseType.Vapour).MassFraction.Value, stream.CombinedLiquidPhase.Density.Value, stream.GetPhaseByType(PhaseType.Vapour).Density.Value, stream.CombinedLiquidPhase.Viscosity.Value, stream.GetPhaseByType(PhaseType.Vapour).Viscosity.Value, Angle);
+			}
+			return -9.80665 * stream.GetPhaseByID(1).Density.Value * Math.Sin(DegreesToRads(Angle));
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "CalculateGravitationalPressureGradient"), innerException);
+		}
+	}
+
+	public static double FlowArea(double Diameter)
+	{
+		return Math.PI * Diameter * Diameter * 0.25;
+	}
+
+	public static double CalculateMassFlux(double TotalMassFlow, double Area)
+	{
+		return TotalMassFlow / Area;
+	}
+
+	public static double Square(double x)
+	{
+		return x * x;
+	}
+
+	public static double CalcRelativeRoughness(double SurfaceRoughness, double Diameter)
+	{
+		try
+		{
+			return SurfaceRoughness / Diameter;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "CalcRelativeRoughness"), innerException);
+		}
+	}
+
+	public static double LinearInterpolation(double X0, double Y0, double X1, double Y1, double X)
+	{
+		try
+		{
+			return Y0 + (Y1 - Y0) * (X1 - X) / (X1 - X0);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "LinearInterpolation"), innerException);
+		}
+	}
+
+	public static double CalculateStagnationSpecificEnthalpy(IFlowStream Stream, double MassFlux)
+	{
+		try
+		{
+			if (Stream.NumberOfPhases < 2)
+			{
+				return Stream.GetPhaseByID(0).Enthalpy.Value + SinglePhaseFlow.MomentumEnergy(MassFlux, Stream.GetPhaseByID(1).Density.Value);
+			}
+			double value = Stream.GetPhaseByType(PhaseType.Vapour).MassFraction.Value;
+			double value2 = Stream.CombinedLiquidPhase.Density.Value;
+			double value3 = Stream.GetPhaseByType(PhaseType.Vapour).Density.Value;
+			double num = TwoPhaseFlow.MomentumEnergyOfMixture(MassFlux, value, value2, value3);
+			return Stream.GetPhaseByID(0).Enthalpy.Value + num;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "CalculateStagnationSpecificEnthalpy"), innerException);
+		}
+	}
+
+	public static double CalculateStagnationPressure(IFlowStream Stream, double MassFlux)
+	{
+		double num = -32767.0;
+		try
+		{
+			num = CalculateEquivalentDensity(Stream, MassFlux, 0.0);
+			return Stream.GetPhaseByID(0).Pressure.Value + 0.5 * MassFlux * MassFlux / num;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "CalculateStagnationPressure"), innerException);
+		}
+	}
+
+	public static bool CalculateCriticalPressureRatioAndMassFlux(IFlowStream stream0, IPhysicalPropertyPackage pIPPP, double DiamRatio, out double Pc_P0, out double Mc)
+	{
+		Mc = RealValue.FEMPTY;
+		try
+		{
+			if (stream0.NumberOfPhases == 1 && stream0.GetPhaseByID(1).PhaseType == PhaseType.Vapour)
+			{
+				IPhase phaseByType = stream0.GetPhaseByType(PhaseType.Vapour);
+				Mc = SinglePhaseFlow.CriticalMassfluxForContractionWithVapour(phaseByType.Cp.Value / phaseByType.Cv.Value, DiamRatio, phaseByType.Pressure.Value, phaseByType.Density.Value, out Pc_P0);
+			}
+			else if (stream0.NumberOfPhases == 1 && stream0.GetPhaseByID(1).PhaseType == PhaseType.Liquid)
+			{
+				Mc = SinglePhaseFlow.CriticalMassfluxForContractionWithLiquid(stream0, pIPPP, DiamRatio, out Pc_P0);
+			}
+			else
+			{
+				Mc = TwoPhaseFlow.CriticalMassfluxForContractionBySimplifiedMcNeilMorris(stream0, pIPPP, DiamRatio, out Pc_P0);
+			}
+			if (Mc > 0.0 && Pc_P0 > 0.0)
+			{
+				return true;
+			}
+			Mc = RealValue.FEMPTY;
+			Pc_P0 = RealValue.FEMPTY;
+			return false;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "CalculateCriticalPressureRatioAndMassFlux"), innerException);
+		}
+	}
+
+	public static bool CheckChokingForIdealFlowInContraction(IFlowStream stream, double upstreamMassFlux, double diameterRatio)
+	{
+		try
+		{
+			double num = CalculateEquivalentDensity(stream, upstreamMassFlux, 0.0);
+			double num2 = stream.GetPhaseByID(0).Pressure.Value + 0.5 * upstreamMassFlux * upstreamMassFlux / num;
+			double num3 = upstreamMassFlux / (diameterRatio * diameterRatio);
+			double num4 = num2 - 0.5 * num3 * num3 / num;
+			if (num4 <= 0.0)
+			{
+				return true;
+			}
+			return false;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "CheckChokingForIdealFlowIncontraction"), innerException);
+		}
+	}
+
+	public static double GetChockedPressure(IFlowStream stream, IPhysicalPropertyPackage pIPPP, double diameter)
+	{
+		try
+		{
+			return GetChockedPressureWithClientSetting(stream, pIPPP, diameter, -1.0, canThrowException: true, 100000000.0);
+		}
+		catch (Exception)
+		{
+			return RealValue.FEMPTY;
+		}
+	}
+
+	public static double GetChockedPressureWithClientSetting(IFlowStream stream, IPhysicalPropertyPackage pIPPP, double diameter, double requiredAccuracy, bool canThrowException, double errorPressure)
+	{
+		double num = 0.001;
+		double fEMPTY = RealValue.FEMPTY;
+		double fEMPTY2 = RealValue.FEMPTY;
+		double fEMPTY3 = RealValue.FEMPTY;
+		double fEMPTY4 = RealValue.FEMPTY;
+		double fEMPTY5 = RealValue.FEMPTY;
+		double fEMPTY6 = RealValue.FEMPTY;
+		double fEMPTY7 = RealValue.FEMPTY;
+		double fEMPTY8 = RealValue.FEMPTY;
+		double fEMPTY9 = RealValue.FEMPTY;
+		double fEMPTY10 = RealValue.FEMPTY;
+		double fEMPTY11 = RealValue.FEMPTY;
+		double fEMPTY12 = RealValue.FEMPTY;
+		double fEMPTY13 = RealValue.FEMPTY;
+		bool flag = false;
+		int StateID = 0;
+		int num2 = 0;
+		bool flag2 = true;
+		try
+		{
+			if (requiredAccuracy > 0.0)
+			{
+				num = requiredAccuracy;
+			}
+			fEMPTY5 = FlowArea(diameter);
+			fEMPTY7 = stream.MassFlowrate.Value / fEMPTY5;
+			IFlowStream Stream = (IFlowStream)stream.Clone();
+			fEMPTY = Stream.GetPhaseByID(0).Pressure.Value;
+			fEMPTY11 = ChokePressureFunction(fEMPTY, ref Stream, ref pIPPP, fEMPTY7);
+			fEMPTY4 = 1.0 - fEMPTY11;
+			if (Math.Abs(fEMPTY11) < num)
+			{
+				return fEMPTY;
+			}
+			if (fEMPTY11 > 0.0)
+			{
+				fEMPTY12 = 0.0;
+				fEMPTY13 = fEMPTY11;
+				fEMPTY2 = 0.6 * fEMPTY;
+				fEMPTY3 = fEMPTY;
+			}
+			else
+			{
+				fEMPTY12 = fEMPTY11;
+				fEMPTY13 = 0.0;
+				fEMPTY2 = fEMPTY;
+				fEMPTY3 = fEMPTY * fEMPTY4 * 1.2;
+				if (fEMPTY3 > errorPressure)
+				{
+					fEMPTY3 = errorPressure;
+				}
+			}
+			ChokePressureCallBackType func = ChokePressureFunction;
+			fEMPTY = ChokePressureSecantSearch(func, ref Stream, ref pIPPP, fEMPTY7, fEMPTY2, fEMPTY3, 100, num);
+			if (fEMPTY != -32767.0)
+			{
+				return fEMPTY;
+			}
+			num2 = 0;
+			while (!flag)
+			{
+				MathLib.FindRoot(ref StateID, ref fEMPTY2, ref fEMPTY12, ref fEMPTY3, ref fEMPTY13, num, ref fEMPTY, fEMPTY11, ref num2, 100);
+				switch (StateID)
+				{
+				case 2:
+					flag = true;
+					break;
+				case 3:
+				case 4:
+					if (flag2)
+					{
+						if (fEMPTY11 > 0.0)
+						{
+							fEMPTY2 = 0.1 * fEMPTY2;
+							fEMPTY11 = ChokePressureFunction(fEMPTY2, ref Stream, ref pIPPP, fEMPTY7);
+							num2 = 1;
+						}
+						else
+						{
+							fEMPTY3 = 10.0 * fEMPTY3;
+							if (fEMPTY3 > errorPressure)
+							{
+								fEMPTY3 = errorPressure;
+							}
+							fEMPTY11 = ChokePressureFunction(fEMPTY3, ref Stream, ref pIPPP, fEMPTY7);
+							num2 = 2;
+						}
+						StateID = 0;
+						flag2 = false;
+						break;
+					}
+					if (canThrowException)
+					{
+						throw new Exception(Resources.UnknownRoot);
+					}
+					return errorPressure;
+				default:
+					fEMPTY11 = ChokePressureFunction(fEMPTY, ref Stream, ref pIPPP, fEMPTY7);
+					fEMPTY4 = 1.0 - fEMPTY11;
+					break;
+				}
+			}
+			if (fEMPTY <= 0.0)
+			{
+				throw new Exception(Resources.OutOfRange);
+			}
+			return fEMPTY;
+		}
+		catch (Exception innerException)
+		{
+			if (canThrowException)
+			{
+				throw new Exception(Resources.ChokeCalcFailed, innerException);
+			}
+			return errorPressure;
+		}
+	}
+
+	public static double MomentumEnergy(IFlowStream stream, double diam)
+	{
+		double num = 0.0;
+		double num2 = 0.0;
+		try
+		{
+			num = stream.MassFlowrate.Value / FlowArea(diam);
+			if (stream.NumberOfPhases < 2)
+			{
+				return SinglePhaseFlow.MomentumEnergy(num, stream.GetPhaseByID(1).Density.Value);
+			}
+			if (stream.GetPhaseByType(PhaseType.Vapour) == null)
+			{
+				return SinglePhaseFlow.MomentumEnergy(num, stream.CombinedLiquidPhase.Density.Value);
+			}
+			return TwoPhaseFlow.MomentumEnergyOfMixture(num, stream.GetPhaseByID(1).MassFraction.Value, stream.CombinedLiquidPhase.Density.Value, stream.GetPhaseByType(PhaseType.Vapour).Density.Value);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "HTFSUtility.MomentumEnergy"), innerException);
+		}
+	}
+
+	public static void UpdateStreamWithNewEnthalpy(IPhysicalPropertyPackage pIPPP, IFlowStream refStream, IFlowStream workingStream, double baseEnthalpy, double newPressure, double HeatFlux1, double HeatFlux2, double MassFlux, double Diameter, double Length, double MassFlowrate, double DensityE1, double DensityE2, double Angle, double extTemp)
+	{
+		double num = 0.0;
+		double num2 = 0.0;
+		double num3 = 0.0;
+		try
+		{
+			IPhase phaseByID = refStream.GetPhaseByID(0);
+			if (Math.Abs(HeatFlux1) > 0.0 || Math.Abs(HeatFlux2) > 0.0)
+			{
+				num = 0.5 * (HeatFlux1 + HeatFlux2) * Math.PI * Diameter * Length / MassFlowrate;
+				num2 = phaseByID.Temperature.Value;
+				num3 = phaseByID.Pressure.Value;
+				FlashCalculationLevelEnum flashLevel = pIPPP.FlashLevel;
+				pIPPP.FlashLevel = FlashCalculationLevelEnum.Thermal;
+				pIPPP.ReflashStreamWithSameComposition(workingStream, FlashType.PTFlash, num3, extTemp);
+				pIPPP.FlashLevel = flashLevel;
+				double value = workingStream.GetPhaseByID(0).Enthalpy.Value;
+				if (Math.Abs(baseEnthalpy - value) < Math.Abs(num))
+				{
+					num = value - baseEnthalpy;
+				}
+			}
+			double data = baseEnthalpy + num - 0.5 * MassFlux * MassFlux * (1.0 / (DensityE2 * DensityE2) - 1.0 / (DensityE1 * DensityE1)) - 9.80665 * Length * Math.Sin(DegreesToRads(Angle));
+			pIPPP.ReflashStreamWithSameComposition(workingStream, FlashType.PHFlash, newPressure, data);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "UpdateStreamWithNewEnthalpy"), innerException);
+		}
+	}
+
+	public static double CalculateChokedFlow(IPhysicalPropertyPackage myPPP, IFlowStream myStream, double pipeArea, double throatArea, double inletP, double outletP)
+	{
+		double num = 0.0;
+		double num2 = 0.0001;
+		int iterMax = 100;
+		double result = 100000000.0;
+		IPhase phaseByID = myStream.GetPhaseByID(0);
+		double value = phaseByID.Temperature.Value;
+		double value2 = phaseByID.Pressure.Value;
+		double value3 = phaseByID.Density.Value;
+		double value4 = phaseByID.Enthalpy.Value;
+		double num3 = 0.5 * outletP;
+		double num4 = 0.9 * inletP;
+		IFlowStream myStream2 = (IFlowStream)myStream.Clone();
+		double value5 = ChokeFlowFunction(num3, ref myStream2, ref myPPP, pipeArea, throatArea, value2, value3);
+		if (Math.Abs(value5) < num2)
+		{
+			myPPP.ReflashStreamWithSameComposition(myStream2, FlashType.PHFlash, num3, value4);
+			double value6 = myStream2.GetPhaseByID(0).Density.Value;
+			return CalcMassFlowfromBernoulli(value2, num3, value3, value6, pipeArea, throatArea);
+		}
+		double value7 = ChokeFlowFunction(num4, ref myStream2, ref myPPP, pipeArea, throatArea, value2, value3);
+		if (Math.Abs(value7) < num2)
+		{
+			myPPP.ReflashStreamWithSameComposition(myStream2, FlashType.PHFlash, num4, value4);
+			double value8 = myStream2.GetPhaseByID(0).Density.Value;
+			return CalcMassFlowfromBernoulli(value2, num4, value3, value8, pipeArea, throatArea);
+		}
+		ChokeFlowCallBackType func = ChokeFlowFunction;
+		double num5 = ChokeFlowSecantSearch(func, ref myStream2, ref myPPP, pipeArea, throatArea, value2, value3, num3, num4, iterMax, num2);
+		if (num5 != RealValue.FEMPTY)
+		{
+			myPPP.ReflashStreamWithSameComposition(myStream2, FlashType.PHFlash, num5, value4);
+			double value9 = myStream2.GetPhaseByID(0).Density.Value;
+			return CalcMassFlowfromBernoulli(value2, num5, value3, value9, pipeArea, throatArea);
+		}
+		return result;
+	}
+
+	public static double CalcSonicVelocity(IPhysicalPropertyPackage myPPP, IFlowStream myStream)
+	{
+		double fEMPTY = RealValue.FEMPTY;
+		if (myStream.NumberOfPhases < 2)
+		{
+			return SinglePhaseFlow.SonicVelocity(myStream, myPPP);
+		}
+		if (myStream.GetPhaseByType(PhaseType.Vapour) == null)
+		{
+			return SinglePhaseFlow.SonicVelocity(myStream, myPPP);
+		}
+		return TwoPhaseFlow.SonicVelocityWithHomogeneousDensity(myStream, myPPP);
+	}
+
+	public static double CalcMachNumber(IPhysicalPropertyPackage myPPP, IFlowStream myStream, double massVelocity)
+	{
+		double num = CalcSonicVelocity(myPPP, myStream);
+		return massVelocity / num;
+	}
+
+	public static double CalcMassVelocity(double massFlow, double density, double areaT)
+	{
+		return massFlow / (density * areaT);
+	}
+
+	public static double CalcMassFlowfromBernoulli(double inletP, double PT, double rho1, double rhoT, double pipeArea, double throatArea)
+	{
+		double num = inletP - PT;
+		double num2 = 1.0 / (rho1 * pipeArea * pipeArea);
+		double num3 = 1.0 / (rhoT * throatArea * throatArea);
+		if (rho1 != rhoT || pipeArea != throatArea)
+		{
+			return Math.Sqrt(2.0 * num / (num3 - num2));
+		}
+		return 0.0;
+	}
+
+	private static double ChokePressureFunction(double Pres, ref IFlowStream Stream, ref IPhysicalPropertyPackage PropPkg, double Flux)
+	{
+		double num = -32767.0;
+		double num2 = -32767.0;
+		IPhase phase = null;
+		double num3 = -32767.0;
+		double num4 = -32767.0;
+		double num5 = -32767.0;
+		try
+		{
+			phase = Stream.GetPhaseByID(0);
+			phase.Pressure.Value = Pres;
+			PropPkg.ReflashStreamWithSameComposition(Stream, FlashType.PHFlash, phase.Pressure.Value, phase.Enthalpy.Value);
+			num3 = phase.Density.Value;
+			num5 = Flux / num3;
+			num4 = CalcSonicVelocity(PropPkg, Stream);
+			Stream.GetPhaseByID(0).SonicVelocity.Value = num4;
+			num2 = num5 / num4;
+			return 1.0 - num2;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(Resources.ChokeCalcError, innerException);
+		}
+	}
+
+	private static double ChokePressureSecantSearch(ChokePressureCallBackType Func, ref IFlowStream Stream, ref IPhysicalPropertyPackage PropPkg, double Flux, double Min, double Max, int IterMax, double Tol)
+	{
+		double num = -32767.0;
+		double num2 = -32767.0;
+		double num3 = -32767.0;
+		int num4 = -32767;
+		double num5 = -32767.0;
+		double num6 = -32767.0;
+		double num7 = -32767.0;
+		double num8 = -32767.0;
+		double num9 = -32767.0;
+		try
+		{
+			num7 = Min;
+			num3 = Func(num7, ref Stream, ref PropPkg, Flux);
+			int num10 = 1;
+			while (num3 > 0.0 && num10 < 25)
+			{
+				num7 *= Math.Pow(0.9, num10);
+				num3 = Func(num7, ref Stream, ref PropPkg, Flux);
+				num10++;
+			}
+			num8 = Max;
+			num2 = Func(num8, ref Stream, ref PropPkg, Flux);
+			if (Math.Abs(num3) < Math.Abs(num2))
+			{
+				num5 = num7;
+				num9 = num8;
+				num6 = num3;
+				num3 = num2;
+				num2 = num6;
+			}
+			else
+			{
+				num9 = num7;
+				num5 = num8;
+			}
+			for (num4 = 0; num4 < IterMax; num4++)
+			{
+				num = (num9 - num5) * num2 / (num2 - num3);
+				if (num5 + num <= num7)
+				{
+					num = num7 - num5;
+				}
+				num9 = num5;
+				num3 = num2;
+				num5 += num;
+				if (num5 <= 0.0)
+				{
+					return RealValue.FEMPTY;
+				}
+				num2 = Func(num5, ref Stream, ref PropPkg, Flux);
+				if (double.IsNaN(num2))
+				{
+					return RealValue.FEMPTY;
+				}
+				if (Math.Abs(num / num5) <= Tol || Math.Abs(num2) <= Tol)
+				{
+					return num5;
+				}
+				if (num2 == 1.0 && num3 == 1.0)
+				{
+					return RealValue.FEMPTY;
+				}
+			}
+		}
+		catch
+		{
+		}
+		return RealValue.FEMPTY;
+	}
+
+	private static double ChokeFlowFunction(double Press, ref IFlowStream myStream, ref IPhysicalPropertyPackage myPPP, double pipeArea, double throatArea, double inletPress, double inletRho)
+	{
+		IPhase phaseByID = myStream.GetPhaseByID(0);
+		myStream.GetPhaseByID(0).Pressure.Value = Press;
+		myPPP.ReflashStreamWithSameComposition(myStream, FlashType.PHFlash, Press, phaseByID.Enthalpy.Value);
+		double value = myStream.GetPhaseByID(0).Density.Value;
+		double massFlow = CalcMassFlowfromBernoulli(inletPress, Press, inletRho, value, pipeArea, throatArea);
+		double massVelocity = CalcMassVelocity(massFlow, value, throatArea);
+		double num = CalcMachNumber(myPPP, myStream, massVelocity);
+		return 1.0 - num;
+	}
+
+	private static double ChokeFlowSecantSearch(ChokeFlowCallBackType Func, ref IFlowStream myStream, ref IPhysicalPropertyPackage myPPP, double pipeArea, double throatArea, double inletPress, double inletRho, double Min, double Max, int IterMax, double Tol)
+	{
+		double fEMPTY = RealValue.FEMPTY;
+		double fEMPTY2 = RealValue.FEMPTY;
+		double fEMPTY3 = RealValue.FEMPTY;
+		int num = -32767;
+		double fEMPTY4 = RealValue.FEMPTY;
+		double fEMPTY5 = RealValue.FEMPTY;
+		double fEMPTY6 = RealValue.FEMPTY;
+		double fEMPTY7 = RealValue.FEMPTY;
+		double fEMPTY8 = RealValue.FEMPTY;
+		try
+		{
+			fEMPTY6 = Min;
+			fEMPTY3 = Func(fEMPTY6, ref myStream, ref myPPP, pipeArea, throatArea, inletPress, inletRho);
+			int num2 = 1;
+			while (fEMPTY3 > 0.0 && num2 < 25)
+			{
+				fEMPTY6 *= Math.Pow(0.9, num2);
+				fEMPTY3 = Func(fEMPTY6, ref myStream, ref myPPP, pipeArea, throatArea, inletPress, inletRho);
+				num2++;
+			}
+			fEMPTY7 = Max;
+			fEMPTY2 = Func(fEMPTY7, ref myStream, ref myPPP, pipeArea, throatArea, inletPress, inletRho);
+			if (Math.Abs(fEMPTY3) < Math.Abs(fEMPTY2))
+			{
+				fEMPTY4 = fEMPTY6;
+				fEMPTY8 = fEMPTY7;
+				fEMPTY5 = fEMPTY3;
+				fEMPTY3 = fEMPTY2;
+				fEMPTY2 = fEMPTY5;
+			}
+			else
+			{
+				fEMPTY8 = fEMPTY6;
+				fEMPTY4 = fEMPTY7;
+			}
+			for (num = 0; num < IterMax; num++)
+			{
+				fEMPTY = (fEMPTY8 - fEMPTY4) * fEMPTY2 / (fEMPTY2 - fEMPTY3);
+				if (fEMPTY4 + fEMPTY <= fEMPTY6)
+				{
+					fEMPTY = fEMPTY6 - fEMPTY4;
+				}
+				fEMPTY8 = fEMPTY4;
+				fEMPTY3 = fEMPTY2;
+				fEMPTY4 += fEMPTY;
+				if (fEMPTY4 <= 0.0)
+				{
+					return RealValue.FEMPTY;
+				}
+				fEMPTY2 = Func(fEMPTY4, ref myStream, ref myPPP, pipeArea, throatArea, inletPress, inletRho);
+				if (double.IsNaN(fEMPTY2))
+				{
+					return RealValue.FEMPTY;
+				}
+				if (Math.Abs(fEMPTY / fEMPTY4) <= Tol || fEMPTY2 == 0.0)
+				{
+					return fEMPTY4;
+				}
+			}
+		}
+		catch
+		{
+		}
+		return RealValue.FEMPTY;
+	}
+}
+[ComVisible(false)]
+public class MathLib
+{
+	public static void FindRoot(ref int StateID, ref double Xmin, ref double YatXmin, ref double Xmax, ref double YatXmax, double Accuracy, ref double X, double Y, ref int IterCounter, int MaxIter)
+	{
+		try
+		{
+			if (StateID == 0)
+			{
+				switch (IterCounter)
+				{
+				case 0:
+					X = Xmin;
+					break;
+				case 1:
+					YatXmin = Y;
+					X = Xmax;
+					break;
+				case 2:
+					YatXmax = Y;
+					X = 0.5 * (Xmin + Xmax);
+					StateID = 1;
+					break;
+				default:
+					throw new Exception(Resources.UnknownFindRootError);
+				}
+			}
+			if (IterCounter > 2)
+			{
+				switch (StateID)
+				{
+				case 1:
+					break;
+				case 2:
+					throw new Exception(Resources.RootFound);
+				case 3:
+					throw new Exception(Resources.NoChangeInSignOfY);
+				case 4:
+					throw new Exception(Resources.RootNotFoundMaxIter);
+				default:
+					throw new Exception(Resources.UnknownFindRootError);
+				}
+				if (Math.Abs(Y) < Accuracy || Math.Abs(Xmax - Xmin) < Accuracy)
+				{
+					StateID = 2;
+				}
+				else if (IterCounter > MaxIter)
+				{
+					StateID = 4;
+				}
+				else
+				{
+					if (Y * YatXmin < 0.0)
+					{
+						Xmax = X;
+						YatXmax = Y;
+					}
+					else
+					{
+						if (!(Y * YatXmax < 0.0))
+						{
+							StateID = 3;
+							goto IL_0128;
+						}
+						Xmin = X;
+						YatXmin = Y;
+					}
+					X = 0.5 * (Xmin + Xmax);
+				}
+			}
+			goto IL_0128;
+			IL_0128:
+			IterCounter++;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "FindRoot"), innerException);
+		}
+	}
+
+	public static double IntegrationBySimpsonRule(double Xmin, double Xmax, double PreAnswer, double Accuracy, double[] Y, out int N, out bool isTheAnswer)
+	{
+		isTheAnswer = false;
+		try
+		{
+			if (Y.Length < 5)
+			{
+				N = 4;
+				return 0.0;
+			}
+			N = 2 * (int)(0.5 * (double)(Y.Length - 1));
+			double num = (Xmax - Xmin) / (double)N;
+			double num2 = 0.0;
+			double num3 = 0.0;
+			for (int i = 1; i <= N - 1; i += 2)
+			{
+				num2 += Y[i];
+			}
+			for (int j = 2; j <= N - 2; j += 2)
+			{
+				num3 += Y[j];
+			}
+			double num4 = num / 3.0 * (Y[0] + Y[N] + 4.0 * num2 + 2.0 * num3);
+			if (Math.Abs(num4 - PreAnswer) < Accuracy)
+			{
+				isTheAnswer = true;
+			}
+			else
+			{
+				N *= 2;
+			}
+			return num4;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "IntegrationBySimpsonRule"), innerException);
+		}
+	}
+
+	public static double SimpsonIntegral(double Xmin, double Xmax, double[] Y)
+	{
+		int num = Y.Length - 1;
+		double num2 = (Xmax - Xmin) / (double)num;
+		double num3 = 0.0;
+		if (num == 1)
+		{
+			return 0.5 * (Y[0] + Y[1]) * num2;
+		}
+		double num4 = 0.0;
+		double num5 = 0.0;
+		for (int i = 1; i <= num - 1; i += 2)
+		{
+			num4 += Y[i];
+		}
+		for (int j = 2; j <= num - 2; j += 2)
+		{
+			num5 += Y[j];
+		}
+		return num2 / 3.0 * (Y[0] + Y[num] + 4.0 * num4 + 2.0 * num5);
+	}
+
+	public static double LinearInterpolation(double X0, double Y0, double X1, double Y1, double X)
+	{
+		return Y0 + (Y1 - Y0) * (X1 - X) / (X1 - X0);
+	}
+}
+[ComVisible(false)]
+public class SinglePhaseFlow
+{
+	public static double FrictionFactor(double Re, double RelativeRoughness)
+	{
+		double num = 0.0;
+		try
+		{
+			if (Re < 4000.0)
+			{
+				if (Re <= 2000.0)
+				{
+					return 16.0 / Re;
+				}
+				if (RelativeRoughness > 0.0)
+				{
+					double num2 = Math.Log10(RelativeRoughness / 3.7065 - 0.0012605 * Math.Log10(Math.Pow(RelativeRoughness, 1.1098) / 2.8527 + 0.00340557));
+					double num3 = 1.0 / (16.0 * num2 * num2);
+					double y = 1.443 * Math.Log(num3 * 125.0);
+					double num4 = 0.008 / Math.Pow(2000.0, y);
+					return num4 * Math.Pow(Re, y);
+				}
+				double y2 = 0.008;
+				double y3 = 0.0014 + 0.125 / Math.Pow(4000.0, 0.32);
+				return HTFSUtility.LinearInterpolation(2000.0, y2, 4000.0, y3, Re);
+			}
+			if (RelativeRoughness > 0.0)
+			{
+				double num5 = Math.Log10(RelativeRoughness / 3.7065 - 5.042 / Re * Math.Log10(Math.Pow(RelativeRoughness, 1.1098) / 2.8527 + 5.8505 / Math.Pow(Re, 0.8981)));
+				return 1.0 / (16.0 * num5 * num5);
+			}
+			return 0.0014 + 0.125 / Math.Pow(Re, 0.32);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "SinglePhaseFlow.FrictionFactor"), innerException);
+		}
+	}
+
+	public static double FrictionFactor(double Re, double FrictionConstA, double FrictionConstB, double FrictionConstC)
+	{
+		try
+		{
+			if (Math.Abs(FrictionConstB) > 0.0 && Math.Abs(FrictionConstC) > 0.0 && Re > 0.0)
+			{
+				return FrictionConstA + FrictionConstB / Math.Pow(Re, FrictionConstC);
+			}
+			return 0.0;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(Resources.UserDefFFFailed, innerException);
+		}
+	}
+
+	public static double ReynoldsNumber(double MassFlux, double Diameter, double Viscosity)
+	{
+		try
+		{
+			return Math.Abs(MassFlux) * Diameter / Viscosity;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "SinglePhaseFlow.ReynoldsNumber"), innerException);
+		}
+	}
+
+	public static double ReynoldsNumber(double Velocity, double Density, double Diameter, double Viscosity)
+	{
+		try
+		{
+			return Math.Abs(Velocity) * Density * Diameter / Viscosity;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "SinglePhaseFlow.ReynoldsNumber"), innerException);
+		}
+	}
+
+	public static double PressureDrop(double K, double MassFlux, double Density)
+	{
+		try
+		{
+			return K * MassFlux * MassFlux / (2.0 * Density);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "SinglePhaseFlow.PressureDrop"), innerException);
+		}
+	}
+
+	public static double KFactorForCircularBend(double Diameter, double MassFlux, double Roughness, double Radius, double AngleDegrees, double Viscosity)
+	{
+		double num = HTFSUtility.FlowArea(Diameter);
+		double num2 = HTFSUtility.DegreesToRads(AngleDegrees);
+		double num3 = HTFSUtility.CalcRelativeRoughness(Roughness, Diameter);
+		double num4 = ReynoldsNumber(MassFlux, Diameter, Viscosity);
+		double num5 = FrictionFactor(num4, num3);
+		double num6 = Radius / Diameter;
+		double num7 = 4.0 * num5 * num6 * num2;
+		double num8 = ((!(num3 < 3E-05)) ? (0.153 + 0.0121 * Math.Log(num3)) : 0.027);
+		double num9 = ((num4 < 10000.0) ? 0.8854 : ((!(num4 < 350000.0)) ? 0.667 : (1.45 - 0.0613 * Math.Log(num4))));
+		double num10 = 2.0 * num2 / Math.PI * num8 * Math.Sqrt(num6) + num9 * Math.Exp(0.0 - num6);
+		return num7 + num10;
+	}
+
+	public static double KFactorForMitreBend(double Diameter, double Radius, int NoOfCuts, double MassFlux, double AngleDegrees, double Viscosity)
+	{
+		double num = 0.0;
+		double num2 = HTFSUtility.FlowArea(Diameter);
+		double num3 = HTFSUtility.DegreesToRads(AngleDegrees);
+		double re = ReynoldsNumber(MassFlux, Diameter, Viscosity);
+		if (NoOfCuts == 1)
+		{
+			num = KFactorForMitreBendWithOneCut(re, AngleDegrees);
+		}
+		else
+		{
+			double rDRatio = Diameter / Radius;
+			switch (NoOfCuts)
+			{
+			case 2:
+				num = KFactorForMitreBendWithTwoCuts(Diameter, Radius, rDRatio, re);
+				break;
+			case 3:
+				num = KFactorForMitreBendWithThreeCuts(Diameter, Radius, rDRatio, re);
+				break;
+			default:
+				num = 0.0;
+				Console.WriteLine(Resources.CannotCalculateKFactor3Cuts);
+				break;
+			}
+		}
+		return num;
+	}
+
+	public static double KFactorForMitreBendWithOneCut(double Re, double AngleDegrees)
+	{
+		double num = AngleDegrees / 120.0;
+		double d = -31.63 * num;
+		double num2 = 2.0256 * Math.Pow(num, 2.0392) * (1.0 + 16.43 * Math.Exp(d));
+		double x = 311554.0 / Re;
+		double x2 = 1.0 + Math.Pow(x, 0.914);
+		double num3 = Math.Pow(x2, 0.25);
+		return num2 * num3;
+	}
+
+	public static double KFactorForMitreBendWithTwoCuts(double Diameter, double Radius, double RDRatio, double Re)
+	{
+		double length = 0.8284 * Radius;
+		double kbBar = ((RDRatio <= 1.5) ? 0.42 : ((RDRatio <= 2.0) ? HTFSUtility.LinearInterpolation(1.5, 0.42, 2.0, 0.32, RDRatio) : ((RDRatio <= 3.0) ? HTFSUtility.LinearInterpolation(2.0, 0.32, 3.0, 0.26, RDRatio) : ((!(RDRatio <= 4.0)) ? HTFSUtility.LinearInterpolation(4.0, 0.3, 5.0, 0.36, RDRatio) : HTFSUtility.LinearInterpolation(3.0, 0.26, 4.0, 0.3, RDRatio)))));
+		return MitreBendCombineFunc(Diameter, length, kbBar, Re);
+	}
+
+	public static double KFactorForMitreBendWithThreeCuts(double Diameter, double Radius, double RDRatio, double Re)
+	{
+		double length = 1.0718 * Radius;
+		double kbBar = ((RDRatio <= 1.5) ? 0.4 : ((RDRatio <= 2.0) ? HTFSUtility.LinearInterpolation(1.5, 0.4, 2.0, 0.3, RDRatio) : ((RDRatio <= 3.0) ? HTFSUtility.LinearInterpolation(2.0, 0.3, 3.0, 0.23, RDRatio) : ((!(RDRatio <= 4.0)) ? 0.14 : HTFSUtility.LinearInterpolation(3.0, 0.23, 4.0, 0.14, RDRatio)))));
+		return MitreBendCombineFunc(Diameter, length, kbBar, Re);
+	}
+
+	public static double MitreBendCombineFunc(double Diameter, double length, double KbBar, double Re)
+	{
+		double num = FrictionFactor(Re, 0.0);
+		return KbBar * (1.0 + 200000.0 / Re) + 4.0 * num * length / Diameter;
+	}
+
+	public static double KFactorForGlobeValve(double PipeDiam, double ThroatDiam, double MassFlux, double ValveOpenRatio, double Viscosity)
+	{
+		double num = Math.Pow(ThroatDiam / PipeDiam, 2.0);
+		double num2 = ReynoldsNumber(MassFlux, ThroatDiam, Viscosity) / num;
+		double num3 = 7.0 * (1.0 - 0.226 * Math.Exp(-0.14 / ThroatDiam)) / (num * num);
+		double num4 = 1.0 + 110.0 / num2;
+		double num5 = 0.065691 / ValveOpenRatio + 1.100556 - 1.222483 * ValveOpenRatio;
+		double num6 = Math.Exp(num5 * num5);
+		return num3 * num4 * num6;
+	}
+
+	public static double KFactorForGateValve(double PipeDiam, double ThroatDiam, double MassFlux, double ValveOpenRatio, double Viscosity)
+	{
+		double num = Math.Pow(ThroatDiam / PipeDiam, 2.0);
+		double num2 = ReynoldsNumber(MassFlux, ThroatDiam, Viscosity) / num;
+		double num3 = 0.1135 * Math.Pow(num, -5.7617);
+		double num4 = Math.Pow(1.0 + Math.Pow(4.48 / num2, 5.27), 0.25);
+		double d = 0.102164 / ValveOpenRatio + 6.751257 - 9.824156 * ValveOpenRatio + 2.981365 * ValveOpenRatio * ValveOpenRatio;
+		double num5 = Math.Exp(d);
+		return num3 * num4 * num5;
+	}
+
+	public static double KFactorForBallValve(double PipeDiam, double ThroatDiam, double MassFlux, double OpenAngle, double BlindAngle, double Viscosity)
+	{
+		double re = ReynoldsNumber(MassFlux, PipeDiam, Viscosity);
+		double num = FrictionFactor(re, 0.0);
+		double num2 = 3.0 * num;
+		double num3 = (OpenAngle - BlindAngle) / (90.0 - BlindAngle);
+		double d = ((!(num3 > 0.75)) ? (8.48 - 7.08 * num3) : (-16.7056 + 55.8864 * num3 - 39.1808 * num3 * num3));
+		double num4 = Math.Exp(d);
+		return num2 * num4;
+	}
+
+	public static double KFactorForButterflyValve(double PipeDiam, double DiscToPipeDR, double MassFlux, double OpenAngle, double Viscosity)
+	{
+		double num = ReynoldsNumber(MassFlux, PipeDiam, Viscosity);
+		double d = HTFSUtility.DegreesToRads(OpenAngle);
+		double num2 = DiscToPipeDR * DiscToPipeDR;
+		double num3 = 120.0 * ((1.0 + 0.5 * DiscToPipeDR * (1.0 + Math.Cos(d))) / Math.Pow(1.0 - num2 * Math.Cos(d), 2.0));
+		double num4 = 1.56 / (1.0 - num2 * Math.Cos(d)) - 1.0;
+		double num5 = num4 * num4;
+		return num3 / num + (1.0 - 50.0 / num) * num5;
+	}
+
+	public static double KFactorForBordaInlet(double Diameter, double MassFlux, double Viscosity)
+	{
+		double num = ReynoldsNumber(MassFlux, Diameter, Viscosity);
+		return 160.0 / num + 1.0;
+	}
+
+	public static double KFactorForFlushInlet(double Diameter, double RadiusAtInlet, double MassFlux, double Viscosity)
+	{
+		double num = ReynoldsNumber(MassFlux, Diameter, Viscosity);
+		if (RadiusAtInlet <= 0.0)
+		{
+			return 160.0 / num + 0.5;
+		}
+		double num2 = 1.0 + 11.5 * Math.Exp(-25.0 * RadiusAtInlet / Diameter);
+		return 160.0 / num + 0.04 * num2;
+	}
+
+	public static double ContractionCoeff(double DiameterUS, double DiameterDS)
+	{
+		return ContractionCoeff(DiameterDS / DiameterUS);
+	}
+
+	public static double ContractionCoeff(double SmallToLargeDiameterRatio)
+	{
+		return 1.0 / (Math.Sqrt(0.41 * (1.0 - Math.Pow(SmallToLargeDiameterRatio, 2.0))) + 1.0);
+	}
+
+	public static double KFactorForSuddenContraction(double SmallToLargeDiameterRatio)
+	{
+		double num = SmallToLargeDiameterRatio * SmallToLargeDiameterRatio;
+		double val = -19.2214 * num * num + 8.54038 * Math.Pow(num, 2.5) + 14.24265 * Math.Pow(num, 1.5) - 4.53854 * num + 0.39543 * Math.Sqrt(num) + 0.57806;
+		return Math.Max(val, 0.0);
+	}
+
+	public static double KFactorForGradualContraction(double SmallToLargeDiameterRatio, double Angle)
+	{
+		double num = SmallToLargeDiameterRatio * SmallToLargeDiameterRatio;
+		double num2 = KFactorForSuddenContraction(SmallToLargeDiameterRatio);
+		double num3 = Angle / 180.0;
+		double x = 0.01791 * Math.Exp(-9.62408 * num3) + 0.03614 * Math.Pow(num3 * (1.0 + num3), 4.79028);
+		double num4 = Math.Pow(x, 0.25);
+		return num2 * num4;
+	}
+
+	public static double KFactorForSuddenEnlargement(double SmallToLargeDiameterRatio)
+	{
+		double num = SmallToLargeDiameterRatio * SmallToLargeDiameterRatio;
+		return Math.Pow(1.0 - num, 2.0);
+	}
+
+	public static double KFactorForGradualEnlargement(double SmallToLargeDiameterRatio, double Angle)
+	{
+		if (Angle > 45.0)
+		{
+			return KFactorForSuddenEnlargement(SmallToLargeDiameterRatio);
+		}
+		double num = SmallToLargeDiameterRatio * SmallToLargeDiameterRatio;
+		double num2 = HTFSUtility.DegreesToRads(Angle);
+		return 2.6 * Math.Sin(0.5 * num2) * Math.Pow(1.0 - num, 2.0);
+	}
+
+	public static double KFactorForOrifice(double PipeDiam, double ThroatDiam, double PlateThickness, double MassFlux, double Viscosity)
+	{
+		double num = ThroatDiam / PipeDiam;
+		double y = 1.5082 * Math.Pow(num, 0.08596);
+		double num2 = 2.825 / Math.Pow(num, 4.0) * Math.Pow(1.0 - num * num, y);
+		double num3 = PlateThickness / ThroatDiam;
+		double num4 = ((!(num3 <= 0.1)) ? (0.5 * (1.0 + Math.Exp(-0.28953 * (10.0 * num3 - 1.0)))) : 1.0);
+		if (num3 <= 3.0)
+		{
+			return num2 * num4;
+		}
+		double num5 = 1.0 - Math.Exp(-0.5 * num3);
+		double re = ReynoldsNumber(MassFlux, PipeDiam, Viscosity);
+		double num6 = FrictionFactor(re, 0.0);
+		return num2 * num4 + 4.0 * num6 * num5 * num3 / Math.Pow(num, 4.0);
+	}
+
+	public static double KFactorForNozzle(double PipeDiam, double ThroatDiam)
+	{
+		double num = ThroatDiam / PipeDiam;
+		return (1.04764 / (num * num) - 2.0) / (num * num) + 0.95236;
+	}
+
+	public static double ThroatToUpstreamPressureRatioForContraction(IFlowStream stream0, double DiamRatio, double MassFlux, double EtaC)
+	{
+		if (stream0.GetPhaseByType(PhaseType.Vapour).Cv.Value <= 0.0)
+		{
+			Console.WriteLine(Resources.UnknownCv);
+			return 0.0;
+		}
+		double num = stream0.GetPhaseByType(PhaseType.Vapour).Cp.Value / stream0.GetPhaseByType(PhaseType.Vapour).Cv.Value;
+		double X = 0.8;
+		bool flag = false;
+		double y = 0.0;
+		double YatXmin = 0.0;
+		double YatXmax = 0.0;
+		double Xmin = ((EtaC == RealValue.FEMPTY) ? 0.4 : EtaC);
+		double Xmax = 1.0;
+		int StateID = 0;
+		int IterCounter = 0;
+		bool flag2 = false;
+		double value = stream0.GetPhaseByType(PhaseType.Vapour).Pressure.Value;
+		double value2 = stream0.GetPhaseByType(PhaseType.Vapour).Density.Value;
+		while (!flag)
+		{
+			MathLib.FindRoot(ref StateID, ref Xmin, ref YatXmin, ref Xmax, ref YatXmax, 0.001, ref X, y, ref IterCounter, 100);
+			switch (StateID)
+			{
+			case 2:
+				flag = true;
+				break;
+			case 3:
+				Console.WriteLine(Resources.UnknownRoot);
+				flag2 = true;
+				break;
+			case 4:
+				Console.WriteLine(Resources.UnknownRoot100);
+				flag2 = true;
+				break;
+			default:
+			{
+				double num2 = MassFlux * MassFlux * (num - 1.0) / (value2 * value) / num / 2.0;
+				double y2 = (1.0 + num) / num;
+				double y3 = 2.0 / num;
+				y = Math.Pow(X, y3) * (1.0 + num2) - Math.Pow(X, y2) - num2 / Math.Pow(DiamRatio, 4.0);
+				break;
+			}
+			}
+			if (flag2)
+			{
+				return 0.0;
+			}
+		}
+		return X;
+	}
+
+	public static double DownstreamPressureForCompressibleEnlargement(double LargeD, double SmallD, double MassFlux, double Pressure, double Density, double IndexK)
+	{
+		double num = LargeD * LargeD / (SmallD * SmallD);
+		double num2 = (0.0 - MassFlux) * MassFlux / (num * num) * (IndexK + 1.0) / 2.0 / IndexK;
+		double num3 = MassFlux * MassFlux / num + Pressure * Density;
+		double num4 = 0.0 - (Pressure * Density + 0.5 * (IndexK - 1.0) / IndexK * MassFlux * MassFlux);
+		double num5 = (0.0 - num3 + Math.Sqrt(num3 * num3 - 4.0 * num2 * num4)) / 2.0 / num2;
+		double num6 = num5 / Density;
+		double num7 = MassFlux * MassFlux / num * (1.0 / Density - num6 / num);
+		return Pressure + num7;
+	}
+
+	public static double FrictionalPressureGradient(double Diameter, double MassFlux, double RelativeRoughness, double Viscosity, double Density)
+	{
+		try
+		{
+			double re = ReynoldsNumber(MassFlux, Diameter, Viscosity);
+			double num = FrictionFactor(re, RelativeRoughness);
+			return -2.0 * num * MassFlux * MassFlux / (Density * Diameter);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "SinglePhaseFlow.FrictionalPressureGradient"), innerException);
+		}
+	}
+
+	public static double CalculateRatioBeta(double DiameterRatio)
+	{
+		double d = 1.0 / (Math.Sqrt(0.41 * (1.0 - Math.Pow(DiameterRatio, 2.0))) + 1.0);
+		return Math.Sqrt(d) * DiameterRatio;
+	}
+
+	public static double CalculateIndexK(double VapourCp, double VapourCv)
+	{
+		return VapourCp / VapourCv;
+	}
+
+	public static double MomentumEnergy(double MassFlux, double Density)
+	{
+		try
+		{
+			return 0.5 * Math.Pow(MassFlux / Density, 2.0);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "SinglePhaseFlow.MomentumEnergy"), innerException);
+		}
+	}
+
+	public static double CriticalPressureRatioForContractionWithVapour(double IndexK, double DiamRatio)
+	{
+		double X = 0.8;
+		double Xmin = 0.4;
+		double Xmax = 0.99;
+		bool flag = false;
+		double y = 0.0;
+		double YatXmin = 0.0;
+		double YatXmax = 0.0;
+		int StateID = 0;
+		int IterCounter = 0;
+		while (!flag)
+		{
+			MathLib.FindRoot(ref StateID, ref Xmin, ref YatXmin, ref Xmax, ref YatXmax, 0.001, ref X, y, ref IterCounter, 100);
+			switch (StateID)
+			{
+			case 2:
+				flag = true;
+				break;
+			case 3:
+			case 4:
+				throw new Exception(Resources.UnknownRoot);
+			default:
+				y = Math.Pow(X, (1.0 - IndexK) / IndexK) - 0.5 * (IndexK + 1.0) + Math.Pow(DiamRatio, 4.0) * 0.5 * (IndexK - 1.0) * Math.Pow(X, 2.0 / IndexK);
+				break;
+			}
+		}
+		return X;
+	}
+
+	public static double CriticalMassfluxForContractionWithVapour(double IndexK, double DiamRatio, double Pressure, double Density, out double PressureRatio)
+	{
+		PressureRatio = CriticalPressureRatioForContractionWithVapour(IndexK, DiamRatio);
+		double num = CalculateRatioBeta(DiamRatio);
+		return Math.Pow(PressureRatio, 0.5 * (1.0 + IndexK) / IndexK) * Math.Sqrt(IndexK * Pressure * Density);
+	}
+
+	public static double CriticalPressureRatioForContractionWithLiquid(IFlowStream stream0, IPhysicalPropertyPackage pIPPP, double DiamRatio)
+	{
+		double X = 0.8;
+		double Xmin = 0.4;
+		double Xmax = 0.8;
+		bool flag = false;
+		double y = 0.0;
+		double YatXmin = 0.0;
+		double YatXmax = 0.0;
+		int StateID = 0;
+		int IterCounter = 0;
+		IFlowStream flowStream = (IFlowStream)stream0.Clone();
+		while (!flag)
+		{
+			double value = stream0.GetPhaseByID(0).Entropy.Value;
+			MathLib.FindRoot(ref StateID, ref Xmin, ref YatXmin, ref Xmax, ref YatXmax, 0.001, ref X, y, ref IterCounter, 100);
+			switch (StateID)
+			{
+			case 2:
+				flag = true;
+				continue;
+			case 3:
+			case 4:
+				throw new Exception(Resources.UnknownRoot);
+			}
+			double data = X * stream0.GetPhaseByID(0).Pressure.Value;
+			pIPPP.ReflashStreamWithSameComposition(flowStream, FlashType.PSFlash, data, value);
+			if (flowStream.NumberOfPhases < 2)
+			{
+				if (X == Xmin)
+				{
+					flag = true;
+					X = RealValue.FEMPTY;
+				}
+				else
+				{
+					y = 0.0 - YatXmin;
+				}
+			}
+			else
+			{
+				double num = GetdSl_dP(flowStream, pIPPP);
+				double henry_FauskeParameter = GetHenry_FauskeParameter(flowStream.GetPhaseByType(PhaseType.Vapour).MassFraction.Value);
+				y = 1.0 - X - Math.Pow(DiamRatio, 4.0) * 0.5 / (stream0.GetPhaseByID(0).Pressure.Value * stream0.CombinedLiquidPhase.Density.Value) * ((1.0 / flowStream.GetPhaseByType(PhaseType.Vapour).Density.Value - 1.0 / stream0.CombinedLiquidPhase.Density.Value) * henry_FauskeParameter / (flowStream.GetPhaseByType(PhaseType.Vapour).Entropy.Value - flowStream.CombinedLiquidPhase.Entropy.Value) * num);
+			}
+		}
+		return X;
+	}
+
+	public static double CriticalMassfluxForContractionWithLiquid(IFlowStream stream0, IPhysicalPropertyPackage pIPPP, double DiamRatio, out double PressureRatio)
+	{
+		try
+		{
+			PressureRatio = CriticalPressureRatioForContractionWithLiquid(stream0, pIPPP, DiamRatio);
+			if (PressureRatio == RealValue.FEMPTY || PressureRatio < 0.0)
+			{
+				return RealValue.FEMPTY;
+			}
+			return Math.Sqrt(2.0 * stream0.GetPhaseByID(0).Pressure.Value * stream0.GetPhaseByID(1).Density.Value * (1.0 - PressureRatio));
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "CriticalMassfluxForContractionWithLiquid"), innerException);
+		}
+	}
+
+	public static double GetHenry_FauskeParameter(double X)
+	{
+		if (X < 0.14)
+		{
+			return X / 0.14;
+		}
+		return 1.0;
+	}
+
+	public static double GetdSl_dP(IFlowStream stream, IPhysicalPropertyPackage pIPPP)
+	{
+		try
+		{
+			IPhase combinedLiquidPhase = stream.CombinedLiquidPhase;
+			double value = combinedLiquidPhase.Temperature.Value;
+			double num = 1.0 / combinedLiquidPhase.Density.Value;
+			double value2 = combinedLiquidPhase.Cp.Value;
+			double value3 = combinedLiquidPhase.Pressure.Value;
+			IFlowStream stream2 = (IFlowStream)stream.Clone();
+			double num2 = pIPPP.CalculateBubblePoint(stream2, value3 + 1.0);
+			return (value2 * (num2 - value) - num) / value;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "GetdSl_dP"), innerException);
+		}
+	}
+
+	public static double SonicVelocity(IFlowStream stream, IPhysicalPropertyPackage pIPPP)
+	{
+		double fEMPTY = RealValue.FEMPTY;
+		IFlowStream flowStream = (IFlowStream)stream.Clone();
+		double num = 0.0;
+		bool flag = false;
+		bool flag2 = false;
+		double num2 = RealValue.FEMPTY;
+		double fEMPTY2 = RealValue.FEMPTY;
+		bool flag3 = false;
+		int num3 = -32767;
+		bool flag4 = false;
+		double fEMPTY3 = RealValue.FEMPTY;
+		try
+		{
+			IPhase phase = stream.GetPhaseByID(1);
+			if (phase.PhaseType != PhaseType.Vapour)
+			{
+				flag = true;
+				phase = stream.CombinedLiquidPhase;
+			}
+			double value = phase.Pressure.Value;
+			double value2 = phase.Density.Value;
+			double num4 = value2;
+			double value3 = phase.Temperature.Value;
+			FlashCalculationLevelEnum flashLevel = pIPPP.FlashLevel;
+			pIPPP.FlashLevel = FlashCalculationLevelEnum.Thermal;
+			if (flowStream.GetPhaseByID(0).Entropy.IsUnknown)
+			{
+				throw new Exception(Resources.UnknownStreamState);
+			}
+			fEMPTY3 = flowStream.GetPhaseByID(0).MolarVapourFraction.Value;
+			if (fEMPTY3 < 0.0001)
+			{
+				fEMPTY2 = -0.1;
+			}
+			else
+			{
+				if (!(fEMPTY3 > 0.9999))
+				{
+					throw new Exception(Resources.MultiphaseStream);
+				}
+				fEMPTY2 = 0.1;
+			}
+			flag4 = false;
+			flag2 = true;
+			flag3 = false;
+			num3 = 0;
+			while (!flag3)
+			{
+				if (!flag4)
+				{
+					num3++;
+					num2 = fEMPTY2 * (double)num3;
+				}
+				else
+				{
+					fEMPTY2 *= -1.0;
+					flag4 = false;
+				}
+				if (Math.Abs(num2) > 2.0)
+				{
+					break;
+				}
+				pIPPP.ReflashStreamWithSameComposition(flowStream, FlashType.PTFlash, value, value3 + num2);
+				num4 = ((!flag) ? flowStream.GetPhaseByID(1).Density.Value : flowStream.CombinedLiquidPhase.Density.Value);
+				if (flowStream.GetPhaseByID(0).MolarVapourFraction.Value > 0.0 && flowStream.GetPhaseByID(0).MolarVapourFraction.Value < 1.0 && !flag4 && flag2)
+				{
+					flag4 = true;
+					flag2 = false;
+				}
+				else if (Math.Abs(num4 - value2) > 1E-06)
+				{
+					flag3 = true;
+					break;
+				}
+			}
+			if (flag3)
+			{
+				num = Math.Pow((1.0 / num4 - 1.0 / value2) / num2, 2.0);
+			}
+			double num5;
+			if (fEMPTY3 > 0.9999)
+			{
+				num5 = 0.99 * value;
+				pIPPP.ReflashStreamWithSameComposition(flowStream, FlashType.PTFlash, num5, value3);
+				if (flowStream.GetPhaseByID(0).MolarVapourFraction.Value < 0.9999)
+				{
+					num5 = 1.01 * value;
+					pIPPP.ReflashStreamWithSameComposition(flowStream, FlashType.PTFlash, num5, value3);
+				}
+			}
+			else
+			{
+				num5 = 2.0 * value;
+				pIPPP.ReflashStreamWithSameComposition(flowStream, FlashType.PTFlash, num5, value3);
+				if (flowStream.GetPhaseByID(0).MolarVapourFraction.Value > 0.0001)
+				{
+					double num6 = 0.2;
+					int num7 = 0;
+					do
+					{
+						double num8 = 1.0 - num6;
+						num6 *= 0.5;
+						num7++;
+						num5 = num8 * value;
+						pIPPP.ReflashStreamWithSameComposition(flowStream, FlashType.PTFlash, num5, value3);
+					}
+					while (flowStream.GetPhaseByID(0).MolarVapourFraction.Value > 0.0001 && num7 <= 6);
+				}
+			}
+			num4 = ((!flag) ? flowStream.GetPhaseByID(1).Density.Value : flowStream.CombinedLiquidPhase.Density.Value);
+			if (num4 == value2)
+			{
+				fEMPTY = 1E+20;
+			}
+			else
+			{
+				double num9 = (1.0 / num4 - 1.0 / value2) / (num5 - value);
+				double num10 = phase.Cp.Value + value3 * num / num9;
+				double num11 = (num5 - value) / (num4 - value2);
+				double num12 = phase.Cp.Value / num10 * num11;
+				fEMPTY = ((!(num12 > 0.0)) ? 1E+20 : Math.Sqrt(num12));
+			}
+			pIPPP.FlashLevel = flashLevel;
+			return fEMPTY;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(Resources.SinglePhaseSonicVFailed, innerException);
+		}
+	}
+
+	public static double WallShearStress(double DPfDz, double diameter)
+	{
+		return (0.0 - DPfDz) * diameter / 4.0;
+	}
+}
+[ComVisible(false)]
+public class TwoPhaseFlow
+{
+	public static double HomogeneousEquivalentDensity(double DensityL, double DensityG, double Quality)
+	{
+		return 1.0 / ((1.0 - Quality) / DensityL + Quality / DensityG);
+	}
+
+	public static double FrictionalPressureGradientInPipe(IFlowStream stream, double MassFlux, double Diameter, double RelativeRoughness)
+	{
+		IPhase combinedLiquidPhase = stream.CombinedLiquidPhase;
+		IPhase phaseByType = stream.GetPhaseByType(PhaseType.Vapour);
+		double value = stream.GetPhaseByType(PhaseType.Vapour).MassFraction.Value;
+		double massFlux = MassFlux * (1.0 - value);
+		double massFlux2 = MassFlux * value;
+		double num = SinglePhaseFlow.FrictionalPressureGradient(Diameter, massFlux, RelativeRoughness, combinedLiquidPhase.Viscosity.Value, combinedLiquidPhase.Density.Value);
+		double num2 = SinglePhaseFlow.FrictionalPressureGradient(Diameter, massFlux2, RelativeRoughness, phaseByType.Viscosity.Value, phaseByType.Density.Value);
+		double num3 = Baroczy(combinedLiquidPhase.Density.Value, phaseByType.Density.Value, combinedLiquidPhase.Viscosity.Value, phaseByType.Viscosity.Value);
+		if (num3 < 0.00316)
+		{
+			num3 = 0.00316;
+		}
+		double x = ((!(MassFlux >= 300.0)) ? (300.0 + (300.0 - MassFlux) * (300.0 - MassFlux) / 40.0) : MassFlux);
+		double num4 = 2.0 + 32.0 * Math.Pow(1.0 - 0.16 * Math.Pow(2.5 + Math.Log10(num3), 2.0), 3.0) / (1.0 + 0.005664 * Math.Pow(x, 0.8));
+		double num5 = Math.Sqrt(combinedLiquidPhase.Density.Value / phaseByType.Density.Value) + Math.Sqrt(phaseByType.Density.Value / combinedLiquidPhase.Density.Value);
+		double num6;
+		if (num4 > num5)
+		{
+			num6 = num4;
+		}
+		else
+		{
+			double d = combinedLiquidPhase.Density.Value * phaseByType.Density.Value / (value * combinedLiquidPhase.Density.Value + (1.0 - value) * phaseByType.Density.Value);
+			double num7 = Math.Sqrt(d) * Math.Pow(combinedLiquidPhase.Density.Value, 0.125) / Math.Pow(phaseByType.Density.Value, 0.625);
+			num6 = ((num4 >= num7) ? num4 : ((!(num5 >= num7)) ? num5 : num7));
+		}
+		double num8 = 0.5 * num6 * (1.0 + Math.Pow(10.0, -200.0 * RelativeRoughness));
+		double d2 = num * num2;
+		return num + (0.0 - num8) * Math.Sqrt(d2) + num2;
+	}
+
+	public static double HTFSVoidFraction(double MassFlux, double Quality, double DensityL, double DensityG, double ViscosityL, double ViscosityG, double AngleDegrees)
+	{
+		double num = 0.0;
+		double num2 = 0.0;
+		double num3 = 0.0;
+		double num4 = 0.0;
+		double num5 = 0.0;
+		double num6 = 0.0;
+		double result = 0.0;
+		double num7 = ViscosityL / ViscosityG;
+		double num8 = DensityG / DensityL;
+		double d = Baroczy(DensityL, DensityG, ViscosityL, ViscosityG);
+		if (Quality > 1E-06 && Quality < 1.0)
+		{
+			double d2 = Quality / ((1.0 - Quality) * num8);
+			num = ((!(MassFlux < 11.0)) ? Math.Log10(MassFlux) : Math.Log10(11.0));
+			num5 = Math.Log10(d);
+			num6 = Math.Log10(d2);
+			if (AngleDegrees > -1E-06 && AngleDegrees < 1E-06)
+			{
+				num2 = 1.667;
+			}
+			else
+			{
+				num3 = HTFSUtility.DegreesToRads(AngleDegrees);
+				if (AngleDegrees > 89.999 && AngleDegrees < 90.001)
+				{
+					num2 = 1.482;
+				}
+				else if (AngleDegrees > 0.0 && AngleDegrees < 90.0)
+				{
+					num4 = Math.Sin(2.0 * num3);
+					num2 = 1.667 - 0.00206 * AngleDegrees + 0.247 * num4;
+				}
+				else if (AngleDegrees > -90.001 && AngleDegrees < -89.999)
+				{
+					num2 = 1.081;
+				}
+				else if (AngleDegrees > -90.0 && AngleDegrees < 0.0)
+				{
+					num4 = Math.Sin(2.0 * num3);
+					num2 = 1.667 + 0.00652 * AngleDegrees + 0.771 * num4;
+				}
+			}
+			double num9 = (0.0 - num2) * num5 / (num + 0.7563);
+			double num10 = 0.1292 * num5;
+			double num11 = 1.0 - 0.3792 * num6;
+			double num12 = num5 + 4.007;
+			double num13 = 1.0 + 0.1377 * num;
+			double num14 = num9 * (1.0 + num10 * num11 * num12 * num13);
+			if (num14 < 0.0)
+			{
+				num14 = 0.0;
+			}
+			double x = 10.0;
+			double num15 = Math.Pow(x, num14);
+			if (num15 < 1.0)
+			{
+				num15 = 1.0;
+			}
+			result = 1.0 / (1.0 + (1.0 - Quality) / Quality * num8 * num15);
+		}
+		else if (Quality > 0.999999)
+		{
+			result = 1.0;
+		}
+		return result;
+	}
+
+	public static double XLMParameter(double Diameter, double MassFlux, double RelativeRoughness, double Quality, double DensityL, double DensityG, double ViscosityL, double ViscosityG)
+	{
+		double re = (1.0 - Quality) * SinglePhaseFlow.ReynoldsNumber(MassFlux, Diameter, ViscosityL);
+		double re2 = Quality * SinglePhaseFlow.ReynoldsNumber(MassFlux, Diameter, ViscosityG);
+		double num = SinglePhaseFlow.FrictionFactor(re, RelativeRoughness);
+		double num2 = SinglePhaseFlow.FrictionFactor(re2, RelativeRoughness);
+		return Math.Sqrt(num * DensityG / (num2 * DensityL)) * (1.0 - Quality) / Quality;
+	}
+
+	public static double MultiplierOfMartinelli(double ConstC, double Xtt)
+	{
+		return 1.0 + ConstC / Xtt + 1.0 / (Xtt * Xtt);
+	}
+
+	public static double MultiplierOfMartinelliAtL(double DensityL, double DensityG, double Quality)
+	{
+		double xtt = (1.0 - Quality) / Quality * Math.Sqrt(DensityG / DensityL);
+		double constC = Math.Sqrt(DensityL / DensityG) + Math.Sqrt(DensityG / DensityL);
+		return MultiplierOfMartinelli(constC, xtt);
+	}
+
+	public static double MultiplierOfMartinelliAtL0(double DensityL, double DensityG, double Quality)
+	{
+		double num = MultiplierOfMartinelliAtL(DensityL, DensityG, Quality);
+		return num * Math.Pow(1.0 - Quality, 2.0);
+	}
+
+	public static double MultiplierOfChisholm(double Y, double MassFlux, double Quality, double IndexN)
+	{
+		double num = ((!(IndexN <= 0.0)) ? IndexN : 0.25);
+		double num2 = ((Y < 9.5) ? ((MassFlux < 500.0) ? 4.8 : ((!(MassFlux < 1900.0)) ? (55.0 / Math.Sqrt(MassFlux)) : (2400.0 / MassFlux))) : ((!(Y < 28.0)) ? (15000.0 / (Y * Y * Math.Sqrt(MassFlux))) : ((!(MassFlux <= 600.0)) ? (21.0 / Y) : (520.0 / (Y * Math.Sqrt(MassFlux))))));
+		return 1.0 + (Y * Y - 1.0) * (num2 * Math.Pow(Quality * (1.0 - Quality), 0.5 * (2.0 - num)) + Math.Pow(Quality, 2.0 - num));
+	}
+
+	public static double MultiplierOfFriedel(double MassFlux, double Diameter, IPhase Liquid, IPhase Vapour)
+	{
+		double num = SinglePhaseFlow.ReynoldsNumber(MassFlux, Diameter, Liquid.Viscosity.Value);
+		double num2 = SinglePhaseFlow.ReynoldsNumber(MassFlux, Diameter, Vapour.Viscosity.Value);
+		double num3 = Math.Pow(1.0 - Vapour.MassFraction.Value, 2.0) + Math.Pow(Vapour.MassFraction.Value, 2.0) * Liquid.Density.Value / Vapour.Density.Value * num2 / num;
+		double num4 = Math.Pow(Vapour.MassFraction.Value, 0.78) * Math.Pow(1.0 - Vapour.MassFraction.Value, 0.224);
+		double num5 = Math.Pow(Liquid.Density.Value / Vapour.Density.Value, 0.91) * Math.Pow(Vapour.Viscosity.Value / Liquid.Viscosity.Value, 0.19) * Math.Pow(1.0 - Vapour.Viscosity.Value / Liquid.Viscosity.Value, 0.7);
+		double num6 = HomogeneousEquivalentDensity(Liquid.Density.Value, Vapour.Density.Value, Vapour.MassFraction.Value);
+		double x = MassFlux * MassFlux / (9.80665 * Diameter * num6 * num6);
+		double x2 = MassFlux * MassFlux * Diameter / (num6 * Liquid.SurfaceTension.Value);
+		return num3 + 3.23 * num4 * num5 / (Math.Pow(x, 0.045) * Math.Pow(x2, 0.035));
+	}
+
+	public static double Baroczy(double DensityL, double DensityG, double ViscosityL, double ViscosityG)
+	{
+		double x = ViscosityL / ViscosityG;
+		double num = DensityG / DensityL;
+		return num * Math.Pow(x, 0.2);
+	}
+
+	public static double BendMultiplier(double Diameter, double Radius, double Quality, double KLo, double DensityL, double DensityG)
+	{
+		double num = 1.0 + 2.2 / (KLo * (2.0 + Radius / Diameter));
+		return 1.0 + (DensityL / DensityG - 1.0) * (num * Quality * (1.0 - Quality) + HTFSUtility.Square(Quality));
+	}
+
+	public static double EnlargementMultiplier(double Diameter, double MassFlux, double DensityL, double DensityG, double Quality, double VisL, double VisG)
+	{
+		double num = HTFSVoidFraction(MassFlux, Quality, DensityL, DensityG, VisL, VisG, 0.0);
+		return Quality * Quality / num * DensityL / DensityG + HTFSUtility.Square(1.0 - Quality) / (1.0 - num);
+	}
+
+	public static double ValvePlateMultiplier(double DensityL, double DensityG, double Quality)
+	{
+		double num = DensityL / DensityG;
+		if (Quality == 0.0 || Quality == 1.0)
+		{
+			return 1.0;
+		}
+		double num2 = 1.0 - Quality;
+		double num3 = Math.Sqrt(Quality * num + num2);
+		double num4 = 1.0 + HTFSUtility.Square(num3 - 1.0) / (Math.Sqrt(num) - 1.0);
+		num4 = Quality + num2 / num3 * num4;
+		return (Quality * num + num3 * num2) * num4;
+	}
+
+	public static double MomentumEquivVolume(double DensityL, double DensityG, double Quality)
+	{
+		double num = 0.0;
+		double num2 = 0.0;
+		double num3 = ChisholmSlipRatio(DensityL, DensityG, Quality);
+		double num4 = MorrisEntrainment(DensityL, DensityG);
+		num = ((!(Quality > 0.99999) || !(Quality < 1.000001)) ? (num4 / (1.0 - num4)) : 1.0);
+		return (Quality / DensityG + num3 * (1.0 - Quality) / DensityL) * (Quality + (1.0 - Quality) / num3 * (1.0 + HTFSUtility.Square(num3 - 1.0) * num));
+	}
+
+	public static double MomentumEquivVolume(double DensityRatio, double Quality)
+	{
+		double num = 0.0;
+		double num2 = 0.0;
+		double num3 = Math.Sqrt(1.0 + (DensityRatio - 1.0) * Quality);
+		double num4 = Math.Sqrt(1.0 / DensityRatio);
+		num = ((!(Quality > 0.99999) || !(Quality < 1.000001)) ? (num4 / (1.0 - num4)) : 1.0);
+		return (Quality * DensityRatio + num3 * (1.0 - Quality)) * (Quality + (1.0 - Quality) / num3 * (1.0 + HTFSUtility.Square(num3 - 1.0) * num));
+	}
+
+	public static double EnergyEquivVolume(double DensityL, double DensityG, double Quality)
+	{
+		double num = ChisholmSlipRatio(DensityL, DensityG, Quality);
+		double num2 = MorrisEntrainment(DensityL, DensityG);
+		return (Quality / DensityG + num * (1.0 - Quality) / DensityL) * Math.Sqrt(Quality + (1.0 - Quality) * (num * num2 + (1.0 - num * num2) * HTFSUtility.Square(1.0 - num * num2) / HTFSUtility.Square(1.0 - num2) / HTFSUtility.Square(num)));
+	}
+
+	public static double EquivSpecVolume(double DensityL, double DensityG, double Quality)
+	{
+		try
+		{
+			double num = 0.0;
+			double num2 = 0.0;
+			double num3 = 0.0;
+			double num4 = 0.0;
+			double num5 = 0.0;
+			double num6 = 0.0;
+			double num7 = 0.0;
+			double num8 = 0.0;
+			double num9 = 0.0;
+			num = 1.0 - Quality;
+			num3 = ChisholmSlipRatio(DensityL, DensityG, Quality);
+			num2 = num / num3;
+			if (Math.Abs(DensityL - DensityG) > 1E-06)
+			{
+				num4 = HTFSUtility.Square(num3 - 1.0);
+				num5 = Math.Sqrt(DensityL / DensityG) - 1.0;
+				num6 = num4 / num5 + 1.0;
+			}
+			else
+			{
+				num6 = 1.0;
+			}
+			num7 = num3 * num / DensityL;
+			num7 += Quality / DensityG;
+			num8 = Quality + num2 * num6;
+			return num7 * num8;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "EquivSpecVolume"), innerException);
+		}
+	}
+
+	public static double ChisholmSlipRatio(double DensityL, double DensityG, double Quality)
+	{
+		try
+		{
+			return Math.Sqrt(1.0 + (DensityL / DensityG - 1.0) * Quality);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "ChisholmSlipRatio"), innerException);
+		}
+	}
+
+	public static double MorrisEntrainment(double DensityL, double DensityG)
+	{
+		try
+		{
+			return Math.Sqrt(DensityG / DensityL);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "MorrisEntrainment"), innerException);
+		}
+	}
+
+	public static double TotalHeadEnthalpy(double MassFlux, double Enthalpy, double Quality, double DensityL, double DensityG)
+	{
+		try
+		{
+			double num = MomentumEnergyOfMixture(MassFlux, Quality, DensityL, DensityG);
+			return Enthalpy + num;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "TotalHeadEnthalpy"), innerException);
+		}
+	}
+
+	public static double Enthalpy(double Enthalpy1, double HeatFlux1, double HeatFlux2, double MassFlux, double Diameter, double Length, double MassFlowrate, double DensityE1, double DensityE2, double Angle)
+	{
+		try
+		{
+			return Enthalpy1 + 0.5 * (HeatFlux1 + HeatFlux2) * Math.PI * Diameter * Length / MassFlowrate - 0.5 * MassFlux * MassFlux * (1.0 / (DensityE2 * DensityE2) - 1.0 / (DensityE1 * DensityE1)) - 9.80665 * Length * Math.Sin(HTFSUtility.DegreesToRads(Angle));
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "Enthalpy"), innerException);
+		}
+	}
+
+	public static double GravitationalPressureGradient(double MassFlux, double Quality, double DensityL, double DensityG, double ViscosityL, double ViscosityG, double Angle)
+	{
+		try
+		{
+			double num = VoidFractionInPipe(DensityL, DensityG, ViscosityL, ViscosityG, Quality, MassFlux, Angle);
+			double num2 = 1.0 - num + num * DensityG / DensityL;
+			return -9.80665 * DensityL * Math.Sin(HTFSUtility.DegreesToRads(Angle)) * num2;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "GravitationalPressureGradient"), innerException);
+		}
+	}
+
+	public static double SlipRatioInPipe(double DensityL, double DensityG, double VisL, double VisG, double Quality, double MassFlux, double Angle)
+	{
+		try
+		{
+			double num = Math.Log10(DensityG / DensityL * Math.Pow(VisL / VisG, 0.2));
+			double num2 = Math.Log10(Quality / (1.0 - Quality) * DensityL / DensityG);
+			if (Math.Abs(Angle) > 90.0)
+			{
+				Console.WriteLine(Resources.InclinedAngleOutside90Deg);
+				return 1.0;
+			}
+			double angle = 2.0 * Angle;
+			double num3 = ((!(Angle < 0.0)) ? (1.667 - 0.00206 * Angle + 0.247 * Math.Sin(HTFSUtility.DegreesToRads(angle))) : (1.667 + 0.00652 * Angle + 0.772 * Math.Sin(HTFSUtility.DegreesToRads(angle))));
+			double num4 = Math.Log10(MassFlux);
+			double num5 = (0.0 - num3) * num / (num4 + 0.7563) * (1.0 + 0.1292 * num * (1.0 - 0.3792 * num2) * (num + 4.007) * (1.0 + 0.1377 * num4));
+			if (num5 < 0.0)
+			{
+				num5 = 0.0;
+			}
+			double num6 = Math.Pow(10.0, num5);
+			if (num6 < 1.0)
+			{
+				num6 = 1.0;
+			}
+			return num6;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "SlipRatioInPipe"), innerException);
+		}
+	}
+
+	public static double VoidFractionInPipe(double DensityL, double DensityG, double VisL, double VisG, double Quality, double MassFlux, double Angle)
+	{
+		try
+		{
+			double num = SlipRatioInPipe(DensityL, DensityG, VisL, VisG, Quality, MassFlux, Angle);
+			return 1.0 / (1.0 + num * (1.0 - Quality) / Quality * DensityG / DensityL);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "VoidFractionInPipe"), innerException);
+		}
+	}
+
+	public static double VoidFractionInPipe(double DensityL, double DensityG, double Quality, double SlipRatio)
+	{
+		try
+		{
+			return 1.0 / (1.0 + SlipRatio * (1.0 - Quality) / Quality * DensityG / DensityL);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "VoidFractionInPipe"), innerException);
+		}
+	}
+
+	public static double EquivalentSpecificVolume(double DensityL, double DensityG, double Quality, double SlipRatio)
+	{
+		return (Quality / DensityG + SlipRatio * (1.0 - Quality) / DensityL) * (Quality + (1.0 - Quality) / SlipRatio * (1.0 + (SlipRatio - 1.0) * (SlipRatio - 1.0) / (Math.Sqrt(DensityL / DensityG) - 1.0)));
+	}
+
+	public static double SlipRatioInFittings(double DensityL, double DensityG, double VisL, double VisG, double Quality, double MassFlux)
+	{
+		double num = VoidFractionInPipe(DensityL, DensityG, VisL, VisG, Quality, MassFlux, 0.0);
+		return DensityL / DensityG * (Quality / (1.0 - Quality)) * ((1.0 - num) / num);
+	}
+
+	public static double CoefficeCByFittingsName(string Name, double DensityL, double DensityG, double VisL, double VisG, double Quality, double MassFlux)
+	{
+		double num = 0.0;
+		double result = 0.0;
+		double num2 = 0.0;
+		switch (Name)
+		{
+		case "SuddenExpansion":
+			num = SlipRatioInFittings(DensityL, DensityG, VisL, VisG, Quality, MassFlux);
+			break;
+		case "SuddenContraction":
+			num = 1.0;
+			break;
+		case "ThinPlate":
+			num2 = 0.5;
+			break;
+		case "ThickPlate":
+		case "GateValve":
+			num2 = 1.5;
+			break;
+		case "GlobeValve":
+			num2 = 2.0;
+			break;
+		}
+		switch (Name)
+		{
+		case "SuddenExpansion":
+		case "SuddenContraction":
+			result = num * Math.Sqrt(DensityG / DensityL) + Math.Sqrt(DensityL / DensityG) / num;
+			break;
+		case "ThinPlate":
+		case "ThickPlate":
+		case "GateValve":
+		case "GlobeValve":
+			result = num2 * (Math.Sqrt(DensityG / DensityL) + Math.Sqrt(DensityL / DensityG));
+			break;
+		}
+		return result;
+	}
+
+	public static double CoefficeCFor90DegreeBend(double DensityL, double DensityG, double RDRatio)
+	{
+		double num = ((!(RDRatio < 1.0)) ? Math.Min(4.3, Math.Max(1.0, 1.0 + 0.6 * (7.0 - RDRatio))) : (4.3 - 2.0 * (1.0 - RDRatio) * (1.0 - RDRatio)));
+		return num * (Math.Sqrt(DensityG / DensityL) + Math.Sqrt(DensityL / DensityG));
+	}
+
+	public static double ThroatToUpstreamPressureRatioForContraction(IFlowStream stream0, double DiamRatio, double MassFlux, double CPRatio)
+	{
+		if (stream0.GetPhaseByType(PhaseType.Vapour).Cv.Value <= 0.0)
+		{
+			Console.WriteLine(Resources.UnknownCv);
+			return 0.0;
+		}
+		double k = stream0.GetPhaseByType(PhaseType.Vapour).Cp.Value / stream0.GetPhaseByType(PhaseType.Vapour).Cv.Value;
+		IPhase combinedLiquidPhase = stream0.CombinedLiquidPhase;
+		IPhase phaseByType = stream0.GetPhaseByType(PhaseType.Vapour);
+		double value = combinedLiquidPhase.Density.Value;
+		double value2 = phaseByType.Density.Value;
+		double value3 = phaseByType.MassFraction.Value;
+		double num = HomogeneousEquivalentDensity(value, value2, value3);
+		double slipRatio = Math.Sqrt(value / num);
+		double num2 = 1.0 / EquivalentSpecificVolume(value, value2, value3, slipRatio);
+		double num3 = SinglePhaseFlow.ContractionCoeff(DiamRatio);
+		double num4 = DiamRatio * DiamRatio;
+		double num5 = Math.Pow(num3 * num4, 2.0);
+		double X = 0.8;
+		bool flag = false;
+		double y = 0.0;
+		double YatXmin = 0.0;
+		double YatXmax = 0.0;
+		double Xmin = ((CPRatio == RealValue.FEMPTY) ? 0.4 : CPRatio);
+		double Xmax = 0.99;
+		int StateID = 0;
+		int IterCounter = 0;
+		bool flag2 = false;
+		double value4 = stream0.GetPhaseByType(PhaseType.Vapour).Pressure.Value;
+		while (!flag)
+		{
+			MathLib.FindRoot(ref StateID, ref Xmin, ref YatXmin, ref Xmax, ref YatXmax, 0.001, ref X, y, ref IterCounter, 100);
+			switch (StateID)
+			{
+			case 2:
+				flag = true;
+				break;
+			case 3:
+				if (Xmin > 0.4)
+				{
+					Xmin = 0.4;
+					StateID = 0;
+					IterCounter = 0;
+				}
+				else
+				{
+					flag2 = true;
+				}
+				break;
+			case 4:
+				flag2 = true;
+				break;
+			default:
+			{
+				double num6 = EquilibriumProcessEquivDensity(value, value2, value3, X, k);
+				double num7 = 0.5 * MassFlux * MassFlux / (value4 * num2) * (1.0 - Math.Pow(num2 / num6, 2.0) / num5);
+				bool isTheAnswer = false;
+				double num8 = 0.0;
+				double num9 = 1.0;
+				double num10 = X;
+				double preAnswer = 0.0;
+				double[] array = new double[2];
+				while (!isTheAnswer)
+				{
+					num8 = MathLib.IntegrationBySimpsonRule(num9, num10, preAnswer, 0.001, array, out var N, out isTheAnswer);
+					if (!isTheAnswer)
+					{
+						double num11 = (num10 - num9) / (double)N;
+						array = new double[N + 1];
+						for (int i = 0; i < N; i++)
+						{
+							double eta = num9 + num11 * (double)i;
+							double num12 = EquilibriumProcessEquivDensity(value, value2, value3, eta, k);
+							array[i] = num2 / num12;
+						}
+					}
+					preAnswer = num8;
+				}
+				y = num7 - num8;
+				break;
+			}
+			}
+			if (flag2)
+			{
+				break;
+			}
+		}
+		if (flag2)
+		{
+			return RealValue.FEMPTY;
+		}
+		return X;
+	}
+
+	public static double EquilibriumProcessEquivDensity(double DensityL, double DensityGu, double Quality, double Eta, double K)
+	{
+		try
+		{
+			double densityG = DensityGu / Math.Pow(1.0 / Eta, 1.0 / K);
+			double num = HomogeneousEquivalentDensity(DensityL, densityG, Quality);
+			double slipRatio = Math.Sqrt(DensityL / num);
+			return 1.0 / EquivalentSpecificVolume(DensityL, densityG, Quality, slipRatio);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "EquilibriumProcessEquivDensity"), innerException);
+		}
+	}
+
+	public static double MomentumEnergyOfMixture(double MassFlux, double Quality, double DensityL, double DensityG)
+	{
+		try
+		{
+			double num = Math.Sqrt(DensityG / DensityL);
+			double num2 = num / (1.0 - num);
+			double num3 = ChisholmSlipRatio(DensityL, DensityG, Quality);
+			double num4 = DensityL / DensityG;
+			double num5 = 1.0 + num * (num3 - 1.0);
+			double num6 = MassFlux / DensityG * (Quality * num4 * num5 + num3 * (1.0 - Quality)) / num4 / num5;
+			double num7 = 0.5 * num6 * num6 * (Quality + (1.0 - Quality) / (num3 * num3) * (1.0 + num2 * Math.Pow(num3, 3.0)) / (1.0 + num3 * num2));
+			double num8 = num3 * num3;
+			double num9 = 1.0 + num * (num8 + 1.0);
+			double num10 = MassFlux / DensityL * (Quality * num4 * num9 + num8 * (1.0 - Quality)) / num9;
+			return 0.5 * num10 * num10 * (Quality + (1.0 - Quality) * (1.0 + num2 * num8 * num8 * num8) / num8 / num8 / (1.0 + num2 * num8));
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "MomentumEnergyOfMixture"), innerException);
+		}
+	}
+
+	public static double DownstreamPressureForCompressibleEnlargement(IFlowStream streamIn, IPhysicalPropertyPackage pIPPP, double MassFluxIn, double SmallToLargeDiamRatio)
+	{
+		double num = SmallToLargeDiamRatio * SmallToLargeDiamRatio;
+		double massFlux = MassFluxIn * num;
+		double num2 = HTFSUtility.CalculateStagnationSpecificEnthalpy(streamIn, MassFluxIn);
+		double value = streamIn.GetPhaseByID(0).Pressure.Value;
+		double num3 = value;
+		double num4 = MomentumEquivVolume(streamIn.CombinedLiquidPhase.Density.Value / streamIn.GetPhaseByType(PhaseType.Vapour).Density.Value, streamIn.GetPhaseByType(PhaseType.Vapour).MassFraction.Value);
+		double num5 = HomogeneousEquivalentDensity(streamIn.CombinedLiquidPhase.Density.Value, streamIn.GetPhaseByType(PhaseType.Vapour).Density.Value, streamIn.GetPhaseByType(PhaseType.Vapour).MassFraction.Value);
+		double num6 = value + 0.5 * MassFluxIn * MassFluxIn / num5;
+		double X = num6;
+		double value2 = streamIn.GetPhaseByType(PhaseType.Vapour).MassFraction.Value;
+		double num7 = 1.1;
+		IFlowStream flowStream = (IFlowStream)streamIn.Clone();
+		bool flag = false;
+		double num8 = 0.0;
+		double fEMPTY = RealValue.FEMPTY;
+		double num9 = 0.0;
+		double num10 = value2 / num7;
+		double num11 = Math.Min(1.0, value2 * num7);
+		while (!flag)
+		{
+			bool flag2 = false;
+			for (int i = 0; i < 10; i++)
+			{
+				double num12 = num10 + (double)i * (num11 - num10) / 10.0;
+				double Xmin = num3;
+				double Xmax = num6;
+				X = num6;
+				bool flag3 = false;
+				double y = 0.0;
+				double YatXmin = 0.0;
+				double YatXmax = 0.0;
+				int StateID = 0;
+				int IterCounter = 0;
+				while (!flag3 && !flag2)
+				{
+					MathLib.FindRoot(ref StateID, ref Xmin, ref YatXmin, ref Xmax, ref YatXmax, 0.001, ref X, y, ref IterCounter, 100);
+					switch (StateID)
+					{
+					case 2:
+						flag3 = true;
+						continue;
+					case 3:
+					case 4:
+						num7 *= num7;
+						flag2 = true;
+						continue;
+					}
+					double num13 = 100.0;
+					double num14 = 100.0;
+					double num15 = flowStream.GetPhaseByID(0).MolecularWeight.Value / flowStream.GetPhaseByType(PhaseType.Vapour).MolecularWeight.Value * num12;
+					while (num13 > num14 * 0.001)
+					{
+						if (num15 < 0.0)
+						{
+							num15 = 0.0;
+						}
+						if (num15 > 1.0)
+						{
+							num15 = 1.0;
+						}
+						pIPPP.ReflashStreamWithSameComposition(flowStream, FlashType.PVFlash, X, num15);
+						double num16 = ((flowStream.NumberOfPhases <= 1) ? ((flowStream.GetPhaseByID(1).PhaseType != PhaseType.Liquid) ? 1.0 : 0.0) : flowStream.GetPhaseByType(PhaseType.Vapour).MassFraction.Value);
+						num13 = Math.Abs(num15 - num14);
+						num14 = num15;
+						num15 += 0.5 * (num12 - num16);
+					}
+					double num17 = MomentumEquivVolume(flowStream.CombinedLiquidPhase.Density.Value / flowStream.GetPhaseByType(PhaseType.Vapour).Density.Value, flowStream.GetPhaseByType(PhaseType.Vapour).MassFraction.Value);
+					y = 1.0 - X / value - MassFluxIn * MassFluxIn * num * (num17 * num - num4) / streamIn.CombinedLiquidPhase.Density.Value / value;
+				}
+				if (flag3)
+				{
+					num8 = HTFSUtility.CalculateStagnationSpecificEnthalpy(flowStream, massFlux);
+					fEMPTY = num2 - num8;
+					if (Math.Abs(fEMPTY) < Math.Abs(num2 * 0.001) || num11 - num10 < 0.001)
+					{
+						flag = true;
+						break;
+					}
+					if (num9 * fEMPTY < 0.0)
+					{
+						num10 = num12 - (num11 - num10) / 10.0;
+						num11 = num12;
+						break;
+					}
+					num9 = fEMPTY;
+					continue;
+				}
+				num10 /= num7;
+				num11 = num12;
+				break;
+			}
+			if (!flag)
+			{
+				num7 *= num7;
+				num10 = value2 / num7;
+				num11 = Math.Min(1.0, value2 * num7);
+			}
+		}
+		return X;
+	}
+
+	public static double CriticalPressureRatioForContractionBySimplifiedMcNeilMorris(double IndexK, double Diamratio, double VolRatio, double Quality)
+	{
+		double num = Math.Pow(2.0 / (1.0 + IndexK), IndexK / (IndexK - 1.0)) * Math.Pow(1.0 - Math.Pow(Diamratio, 3.0), -0.117 * Math.Pow(IndexK, 0.693));
+		double num2 = 5.65 * Math.Pow(VolRatio, 0.013) * Math.Pow(IndexK, 0.0561) / Math.Pow(1.0 - Math.Pow(Diamratio, 4.0), 0.0322);
+		double y = 0.717 * Math.Pow(IndexK, 0.299) * Math.Pow(1.0 - Math.Pow(Diamratio, 4.0), 0.116) / Math.Pow(VolRatio, 0.151);
+		return num * (1.0 - Math.Exp((0.0 - num2) * Math.Pow(Quality, y)));
+	}
+
+	public static double CriticalMassfluxForContractionBySimplifiedMcNeilMorris(IFlowStream upstream, IPhysicalPropertyPackage pIPPP, double DiamRatio, out double PressureRatio)
+	{
+		IPhase phaseByType = upstream.GetPhaseByType(PhaseType.Vapour);
+		double value = phaseByType.Density.Value;
+		IPhase combinedLiquidPhase = upstream.CombinedLiquidPhase;
+		double num = phaseByType.Cp.Value / phaseByType.Cv.Value;
+		double volRatio = combinedLiquidPhase.Density.Value / phaseByType.Density.Value;
+		PressureRatio = CriticalPressureRatioForContractionBySimplifiedMcNeilMorris(num, DiamRatio, volRatio, phaseByType.MassFraction.Value);
+		IPhase phaseByType2 = upstream.GetPhaseByType(PhaseType.Overall);
+		double data = phaseByType2.Pressure.Value * PressureRatio;
+		IFlowStream flowStream = (IFlowStream)upstream.Clone();
+		pIPPP.ReflashStreamWithSameComposition(flowStream, FlashType.PSFlash, data, phaseByType2.Entropy.Value);
+		phaseByType = flowStream.GetPhaseByType(PhaseType.Vapour);
+		combinedLiquidPhase = flowStream.CombinedLiquidPhase;
+		double num2 = HomogeneousEquivalentDensity(combinedLiquidPhase.Density.Value, phaseByType.Density.Value, phaseByType.MassFraction.Value);
+		double num3 = Math.Sqrt(combinedLiquidPhase.Density.Value / num2);
+		double num4 = 1.0 / (Math.Sqrt(combinedLiquidPhase.Density.Value / phaseByType.Density.Value) - 1.0);
+		double value2 = upstream.GetPhaseByType(PhaseType.Vapour).MassFraction.Value;
+		volRatio = combinedLiquidPhase.Density.Value / phaseByType.Density.Value;
+		double num5 = 0.5 * value2 * value2 / num3 * (2.0 * num3 + 1.0 - value2) + 0.5 * value2 * (1.0 - value2) / Math.Pow(num3, 3.0) * (1.0 + Math.Pow(num3 - 1.0, 2.0) * num4) * (2.0 * num3 * num3 - value2 * volRatio) + (num3 - 1.0) * (1.0 - value2) * num4 / (num3 * num3) * (value2 * volRatio + num3 * (1.0 - value2)) * (value2 - 0.5 * num3 * (num3 - 1.0) * num4 * num4 / (1.0 + num4));
+		double d = phaseByType2.Pressure.Value * num * value / num5 * Math.Pow(PressureRatio, (1.0 + num) / num);
+		return Math.Sqrt(d);
+	}
+
+	public static double CriticalPressureRatioForContractionByHenryFauske(IFlowStream stream0, IPhysicalPropertyPackage pIPPP, double DiamRatio)
+	{
+		double X = 0.8;
+		double Xmin = 0.4;
+		double Xmax = 0.8;
+		bool flag = false;
+		double y = 0.0;
+		double YatXmin = 0.0;
+		double YatXmax = 0.0;
+		int StateID = 0;
+		int IterCounter = 0;
+		IFlowStream flowStream = (IFlowStream)stream0.Clone();
+		while (!flag)
+		{
+			double value = stream0.GetPhaseByID(0).Entropy.Value;
+			MathLib.FindRoot(ref StateID, ref Xmin, ref YatXmin, ref Xmax, ref YatXmax, 0.001, ref X, y, ref IterCounter, 100);
+			switch (StateID)
+			{
+			case 2:
+				flag = true;
+				continue;
+			case 3:
+			case 4:
+				throw new Exception(Resources.UnknownRoot);
+			}
+			double num = X * stream0.GetPhaseByID(0).Pressure.Value;
+			pIPPP.ReflashStreamWithSameComposition(flowStream, FlashType.PSFlash, num, value);
+			double num2 = SinglePhaseFlow.GetdSl_dP(flowStream, pIPPP);
+			double henry_FauskeParameter = SinglePhaseFlow.GetHenry_FauskeParameter(flowStream.GetPhaseByType(PhaseType.Vapour).MassFraction.Value);
+			double value2 = flowStream.GetPhaseByType(PhaseType.Vapour).MassFraction.Value;
+			double num3 = flowStream.GetPhaseByType(PhaseType.Vapour).Cp.Value / flowStream.GetPhaseByType(PhaseType.Vapour).Cv.Value;
+			double num4 = flowStream.CombinedLiquidPhase.Cp.Value / flowStream.GetPhaseByType(PhaseType.Vapour).Cp.Value;
+			double num5 = ((1.0 - value2) * num4 + 1.0) / ((1.0 - value2) * num4 + 1.0 / num3);
+			double num6 = 1.0 / stream0.GetPhaseByType(PhaseType.Vapour).Density.Value;
+			double num7 = num6 / Math.Pow(X, 1.0 / num3);
+			double num8 = 1.0 / stream0.CombinedLiquidPhase.Density.Value;
+			double value3 = stream0.GetPhaseByType(PhaseType.Vapour).MassFraction.Value;
+			double num9 = value3 * num6 / ((1.0 - value3) * num8 + value3 * num6);
+			double num10 = value3 * num7 / ((1.0 - value3) * num8 + value3 * num7);
+			double num11 = 1.0 / num5 + (1.0 - num8 / num7) * ((1.0 - value3) * henry_FauskeParameter * num * num2 / (value3 * (flowStream.GetPhaseByType(PhaseType.Vapour).Entropy.Value - flowStream.CombinedLiquidPhase.Entropy.Value)) - flowStream.GetPhaseByType(PhaseType.Vapour).Cp.Value * (1.0 / num5 - 1.0 / num3) / (flowStream.GetPhaseByType(PhaseType.Vapour).Entropy.Value - flowStream.CombinedLiquidPhase.Entropy.Value));
+			double x = ((1.0 - num9) / num9 * (1.0 - X) + num3 / (num3 - 1.0)) / (0.5 / (num11 * num10 * num10) + num3 / (num3 - 1.0));
+			y = Math.Pow(x, num3 / (num3 - 1.0)) - X;
+		}
+		return X;
+	}
+
+	public static double CriticalMassfluxForContractionByHenryFauske(IFlowStream stream0, IPhysicalPropertyPackage pIPPP, double DiamRatio, out double PressureRatio)
+	{
+		double num = -32767.0;
+		try
+		{
+			num = (PressureRatio = CriticalPressureRatioForContractionByHenryFauske(stream0, pIPPP, DiamRatio));
+			double num2 = SinglePhaseFlow.CalculateRatioBeta(DiamRatio);
+			double num3 = stream0.GetPhaseByType(PhaseType.Vapour).Cp.Value / stream0.GetPhaseByType(PhaseType.Vapour).Cv.Value;
+			double num4 = 1.0 / stream0.GetPhaseByType(PhaseType.Vapour).Density.Value;
+			double num5 = num4 / Math.Pow(num, 1.0 / num3);
+			double num6 = 1.0 / stream0.CombinedLiquidPhase.Density.Value;
+			double value = stream0.GetPhaseByType(PhaseType.Vapour).MassFraction.Value;
+			double num7 = stream0.GetPhaseByID(0).Pressure.Value * ((1.0 - value) * num6 * (1.0 - num) + value * num3 / (num3 - 1.0) * (num4 - num5 * num));
+			double num8 = 0.5 * Math.Pow((1.0 - value) * num6 + value * num5, 2.0);
+			return Math.Sqrt(num7 / num8);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "CriticalMassfluxForContractionByHenryFauske"), innerException);
+		}
+	}
+
+	public static double EnlargementTPMultiplier(double DensityL, double DensityG, double VisL, double VisG, double Quality, double MassFlux, double Angle)
+	{
+		double num = -32767.0;
+		try
+		{
+			num = VoidFractionInPipe(DensityL, DensityG, VisL, VisG, Quality, MassFlux, Angle);
+			return HTFSUtility.Square(Quality) / num * DensityL / DensityG + HTFSUtility.Square(1.0 - Quality) / (1.0 - num);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "EnlargementTPMultiplier"), innerException);
+		}
+	}
+
+	public static double SonicVelocityWithHomogeneousDensity(IFlowStream stream, IPhysicalPropertyPackage pIPPP)
+	{
+		bool flag = false;
+		double fEMPTY = RealValue.FEMPTY;
+		double num = RealValue.FEMPTY;
+		double num2 = RealValue.FEMPTY;
+		double num3 = RealValue.FEMPTY;
+		bool flag2 = false;
+		int num4 = -32767;
+		IPhase phase = null;
+		double fEMPTY2 = RealValue.FEMPTY;
+		double fEMPTY3 = RealValue.FEMPTY;
+		double result = RealValue.FEMPTY;
+		bool flag3 = false;
+		IPhase phase2 = null;
+		double fEMPTY4 = RealValue.FEMPTY;
+		IFlowStream flowStream = null;
+		FlashCalculationLevelEnum flashLevel = pIPPP.FlashLevel;
+		try
+		{
+			flowStream = (IFlowStream)stream.Clone();
+			fEMPTY4 = flowStream.GetPhaseByID(0).MolarVapourFraction.Value;
+			fEMPTY2 = flowStream.GetPhaseByID(0).Pressure.Value;
+			phase = flowStream.CombinedLiquidPhase;
+			phase2 = flowStream.GetPhaseByType(PhaseType.Vapour);
+			if (phase2 == null)
+			{
+				return SinglePhaseFlow.SonicVelocity(stream, pIPPP);
+			}
+			fEMPTY = HomogeneousEquivalentDensity(phase.Density.Value, phase2.Density.Value, phase2.MassFraction.Value);
+			pIPPP.FlashLevel = FlashCalculationLevelEnum.Thermal;
+			if (flowStream.GetPhaseByID(0).Entropy.IsUnknown)
+			{
+				throw new Exception(Resources.UnknownStreamState);
+			}
+			fEMPTY4 = flowStream.GetPhaseByID(0).MolarVapourFraction.Value;
+			if (fEMPTY4 >= 0.5 && fEMPTY4 <= 1.0)
+			{
+				num3 = 0.01 * fEMPTY2;
+			}
+			else if (fEMPTY4 >= 0.0 && fEMPTY4 < 0.5)
+			{
+				num3 = -0.01 * fEMPTY2;
+			}
+			flag3 = false;
+			flag = true;
+			flag2 = false;
+			num4 = 0;
+			while (!flag2)
+			{
+				if (!flag3)
+				{
+					num4++;
+					num2 = num3 * Math.Pow(10.0, num4 - 1);
+				}
+				else
+				{
+					num3 *= -1.0;
+					num2 *= -1.0;
+					flag3 = false;
+				}
+				if (Math.Abs(num2) > 0.1 * fEMPTY2)
+				{
+					break;
+				}
+				fEMPTY3 = flowStream.GetPhaseByID(0).Entropy.Value;
+				if (pIPPP is ImpIPPPWithCOMThermoPureComp)
+				{
+					ImpIPPPWithCOMThermoPureComp impIPPPWithCOMThermoPureComp = pIPPP as ImpIPPPWithCOMThermoPureComp;
+					impIPPPWithCOMThermoPureComp.TemperatureEstimate = flowStream.GetPhaseByID(0).Temperature.Value;
+					impIPPPWithCOMThermoPureComp.TemperatureStep = 10.0;
+					impIPPPWithCOMThermoPureComp.UseTemperatureEstimate = true;
+					impIPPPWithCOMThermoPureComp.ReflashStreamWithSameComposition(flowStream, FlashType.PSFlash, fEMPTY2 + num2, fEMPTY3);
+					impIPPPWithCOMThermoPureComp.UseTemperatureEstimate = false;
+				}
+				else
+				{
+					pIPPP.ReflashStreamWithSameComposition(flowStream, FlashType.PSFlash, fEMPTY2 + num2, fEMPTY3);
+				}
+				phase = flowStream.CombinedLiquidPhase;
+				phase2 = flowStream.GetPhaseByType(PhaseType.Vapour);
+				if ((phase == null || phase2 == null) && !flag3 && flag)
+				{
+					flag3 = true;
+					flag = false;
+					continue;
+				}
+				phase = flowStream.CombinedLiquidPhase;
+				phase2 = flowStream.GetPhaseByType(PhaseType.Vapour);
+				if (phase2 != null && phase != null)
+				{
+					num = HomogeneousEquivalentDensity(phase.Density.Value, phase2.Density.Value, phase2.MassFraction.Value);
+					if (Math.Abs(num - fEMPTY) > 0.01)
+					{
+						flag2 = true;
+						result = Math.Sqrt(Math.Abs(num2 / (num - fEMPTY)));
+						return result;
+					}
+					continue;
+				}
+				num = RealValue.FEMPTY;
+				throw new Exception(Resources.UnknownDensity);
+			}
+			if (fEMPTY != num)
+			{
+				result = Math.Sqrt(Math.Abs(num2 / (num - fEMPTY)));
+				return result;
+			}
+			throw new Exception(Resources.InsensitiveDensity);
+		}
+		catch (Exception)
+		{
+			return result;
+		}
+		finally
+		{
+			pIPPP.FlashLevel = flashLevel;
+		}
+	}
+
+	public static double SonicVelocityWithHeterogeneousDensity(IFlowStream stream, IPhysicalPropertyPackage pIPPP, double diameter, double angle)
+	{
+		double fEMPTY = RealValue.FEMPTY;
+		IPhase combinedLiquidPhase = stream.CombinedLiquidPhase;
+		IPhase phaseByType = stream.GetPhaseByType(PhaseType.Vapour);
+		double value = combinedLiquidPhase.Pressure.Value;
+		double num = Math.PI / 4.0 * diameter * diameter;
+		double massFlux = stream.MassFlowrate.Value / num;
+		double num2 = VoidFractionInPipe(combinedLiquidPhase.Density.Value, phaseByType.Density.Value, combinedLiquidPhase.Viscosity.Value, phaseByType.Viscosity.Value, phaseByType.MassFraction.Value, massFlux, angle);
+		double num3 = num2 * phaseByType.Density.Value + (1.0 - num2) * combinedLiquidPhase.Density.Value;
+		double num4 = -100.0;
+		IFlowStream flowStream = (IFlowStream)stream.Clone();
+		try
+		{
+			double value2 = flowStream.GetPhaseByID(0).Entropy.Value;
+			pIPPP.ReflashStreamWithSameComposition(flowStream, FlashType.PSFlash, value + num4, value2);
+			combinedLiquidPhase = flowStream.CombinedLiquidPhase;
+			phaseByType = flowStream.GetPhaseByType(PhaseType.Vapour);
+			num2 = VoidFractionInPipe(combinedLiquidPhase.Density.Value, phaseByType.Density.Value, combinedLiquidPhase.Viscosity.Value, phaseByType.Viscosity.Value, phaseByType.MassFraction.Value, massFlux, angle);
+			double num5 = num2 * phaseByType.Density.Value + (1.0 - num2) * combinedLiquidPhase.Density.Value;
+			if (Math.Abs(num3 - num5) < 1E-10)
+			{
+				return 0.0;
+			}
+			return Math.Sqrt(Math.Abs(num4 / (num5 - num3)));
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "SonicVelocityWithHeterogeneousDensity"), innerException);
+		}
+	}
+
+	public static double SonicVelocityWithMomentumBasedDensity(IFlowStream stream, IPhysicalPropertyPackage pIPPP)
+	{
+		double fEMPTY = RealValue.FEMPTY;
+		IPhase combinedLiquidPhase = stream.CombinedLiquidPhase;
+		IPhase phaseByType = stream.GetPhaseByType(PhaseType.Vapour);
+		double value = combinedLiquidPhase.Pressure.Value;
+		double slipRatio = Math.Sqrt(combinedLiquidPhase.Density.Value / phaseByType.Density.Value);
+		double num = VoidFractionInPipe(combinedLiquidPhase.Density.Value, phaseByType.Density.Value, phaseByType.MassFraction.Value, slipRatio);
+		double num2 = 1.0 / (Math.Pow(phaseByType.MassFraction.Value, 2.0) / (num * phaseByType.Density.Value) + Math.Pow(1.0 - phaseByType.MassFraction.Value, 2.0) / ((1.0 - num) * combinedLiquidPhase.Density.Value));
+		double num3 = -100.0;
+		IFlowStream flowStream = (IFlowStream)stream.Clone();
+		try
+		{
+			double value2 = flowStream.GetPhaseByID(0).Entropy.Value;
+			pIPPP.ReflashStreamWithSameComposition(flowStream, FlashType.PSFlash, value + num3, value2);
+			combinedLiquidPhase = flowStream.CombinedLiquidPhase;
+			phaseByType = flowStream.GetPhaseByType(PhaseType.Vapour);
+			slipRatio = Math.Sqrt(combinedLiquidPhase.Density.Value / phaseByType.Density.Value);
+			num = VoidFractionInPipe(combinedLiquidPhase.Density.Value, phaseByType.Density.Value, phaseByType.MassFraction.Value, slipRatio);
+			double num4 = 1.0 / (Math.Pow(phaseByType.MassFraction.Value, 2.0) / (num * phaseByType.Density.Value) + Math.Pow(1.0 - phaseByType.MassFraction.Value, 2.0) / ((1.0 - num) * combinedLiquidPhase.Density.Value));
+			if (Math.Abs(num2 - num4) < 1E-10)
+			{
+				return 0.0;
+			}
+			return Math.Sqrt(Math.Abs(num3 / (num4 - num2)));
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "SonicVelocityWithMomentumBasedDensity"), innerException);
+		}
+	}
+
+	public static double SonicVelocityWithEnergyBasedDensity(IFlowStream stream, IPhysicalPropertyPackage pIPPP)
+	{
+		double fEMPTY = RealValue.FEMPTY;
+		IPhase combinedLiquidPhase = stream.CombinedLiquidPhase;
+		IPhase phaseByType = stream.GetPhaseByType(PhaseType.Vapour);
+		double value = combinedLiquidPhase.Pressure.Value;
+		double slipRatio = Math.Pow(combinedLiquidPhase.Density.Value / phaseByType.Density.Value, 1.0 / 3.0);
+		double num = VoidFractionInPipe(combinedLiquidPhase.Density.Value, phaseByType.Density.Value, phaseByType.MassFraction.Value, slipRatio);
+		double num2 = 1.0 / (Math.Pow(phaseByType.MassFraction.Value, 3.0) / (Math.Pow(num, 2.0) * phaseByType.Density.Value) + Math.Pow(1.0 - phaseByType.MassFraction.Value, 3.0) / (Math.Pow(1.0 - num, 2.0) * combinedLiquidPhase.Density.Value));
+		double num3 = -100.0;
+		IFlowStream flowStream = (IFlowStream)stream.Clone();
+		try
+		{
+			double value2 = flowStream.GetPhaseByID(0).Entropy.Value;
+			pIPPP.ReflashStreamWithSameComposition(flowStream, FlashType.PSFlash, value + num3, value2);
+			combinedLiquidPhase = flowStream.CombinedLiquidPhase;
+			phaseByType = flowStream.GetPhaseByType(PhaseType.Vapour);
+			slipRatio = Math.Pow(combinedLiquidPhase.Density.Value / phaseByType.Density.Value, 1.0 / 3.0);
+			num = VoidFractionInPipe(combinedLiquidPhase.Density.Value, phaseByType.Density.Value, phaseByType.MassFraction.Value, slipRatio);
+			double num4 = 1.0 / (Math.Pow(phaseByType.MassFraction.Value, 3.0) / (Math.Pow(num, 2.0) * phaseByType.Density.Value) + Math.Pow(1.0 - phaseByType.MassFraction.Value, 3.0) / (Math.Pow(1.0 - num, 2.0) * combinedLiquidPhase.Density.Value));
+			if (Math.Abs(num2 - num4) < 1E-10)
+			{
+				return 0.0;
+			}
+			return Math.Sqrt(Math.Abs(num3 / (num4 - num2)));
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "SonicVelocityWithEnergyBasedDensity"), innerException);
+		}
+	}
+
+	public static double SlipRatioByCISECorrelation(IFlowStream stream, double diameter)
+	{
+		try
+		{
+			IPhase combinedLiquidPhase = stream.CombinedLiquidPhase;
+			IPhase phaseByType = stream.GetPhaseByType(PhaseType.Vapour);
+			double value = phaseByType.MassFraction.Value;
+			double num = combinedLiquidPhase.Density.Value * value / (phaseByType.Density.Value * (1.0 - value) + combinedLiquidPhase.Density.Value * value);
+			double num2 = num / (1.0 - num);
+			double num3 = Math.PI / 4.0 * diameter * diameter;
+			double num4 = stream.MassFlowrate.Value / num3;
+			double x = num4 * diameter / combinedLiquidPhase.Viscosity.Value;
+			double num5 = num4 * num4 * diameter / (combinedLiquidPhase.SurfaceTension.Value * combinedLiquidPhase.Density.Value);
+			double num6 = 1.578 * Math.Pow(x, -0.19) * Math.Pow(combinedLiquidPhase.Density.Value / phaseByType.Density.Value, 0.22);
+			double num7 = 0.0273 * num5 * Math.Pow(x, -0.51) * Math.Pow(combinedLiquidPhase.Density.Value / phaseByType.Density.Value, -0.08);
+			return 1.0 + num6 * Math.Sqrt(num2 / (1.0 + num2 * num7) - num2 * num7);
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "SlipRatioByCISECorrelation"), innerException);
+		}
+	}
+
+	public static double DPfDzOfCondensationInTubeWithoutMassTransferCorrection(IFlowStream stream, double diameter)
+	{
+		double num = 0.0;
+		double num2 = 0.0;
+		double num3 = 0.0;
+		try
+		{
+			if (stream.NumberOfPhases < 2)
+			{
+				throw new Exception(Resources.SinglePhaseFlowEncountered);
+			}
+			IPhase combinedLiquidPhase = stream.CombinedLiquidPhase;
+			IPhase phaseByType = stream.GetPhaseByType(PhaseType.Vapour);
+			num2 = phaseByType.MassFraction.Value;
+			num = stream.MassFlowrate.Value / HTFSUtility.FlowArea(diameter);
+			double num4 = DimensionlessNumbers.ReynoldsNumber((1.0 - num2) * num, diameter, combinedLiquidPhase.Viscosity.Value);
+			double num5 = DimensionlessNumbers.ReynoldsNumber(num2 * num, diameter, phaseByType.Viscosity.Value);
+			if (num5 > 2000.0 && num4 > 2000.0)
+			{
+				return FrictionalPressureGradientOfMorrisAndGallagher(stream, diameter);
+			}
+			double num6;
+			if (num5 > 2000.0)
+			{
+				num6 = MultiplierOfAnnularFlow(stream, diameter);
+			}
+			else
+			{
+				double constC = ((!(num4 >= 2000.0)) ? 5.0 : 10.0);
+				double xtt = XLMParameter(diameter, num, 0.0, num2, combinedLiquidPhase.Density.Value, phaseByType.Density.Value, combinedLiquidPhase.Viscosity.Value, phaseByType.Viscosity.Value);
+				num6 = MultiplierOfMartinelli(constC, xtt);
+			}
+			double num7 = SinglePhaseFlow.FrictionFactor(num4, 0.0);
+			return -4.0 * num7 * Math.Pow(num * (1.0 - num2), 2.0) / (2.0 * diameter * combinedLiquidPhase.Density.Value) * num6;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "DPfDzOfCondensationInTubeWithoutMassTransferCorrection"), innerException);
+		}
+	}
+
+	public static double FrictionalPressureGradientOfCondensationInTube(IFlowStream stream, double diameter, double heatflux, IPhysicalPropertyPackage pIPPP)
+	{
+		double num = 1.0;
+		double num2 = 1.25;
+		double num3 = 0.0;
+		double num4 = 0.0;
+		int num5 = 0;
+		double num6 = 0.0;
+		try
+		{
+			IFlowStream flowStream = (IFlowStream)stream.Clone();
+			num3 = DPfDzOfCondensationInTubeWithoutMassTransferCorrection(flowStream, diameter);
+			if (Math.Abs(heatflux) > 0.0)
+			{
+				if (pIPPP == null)
+				{
+					throw new ArgumentNullException("pIPPP", Resources.IsNull);
+				}
+				IPhase phaseByType = flowStream.GetPhaseByType(PhaseType.Vapour);
+				double value = phaseByType.MassFraction.Value;
+				double num7 = flowStream.MassFlowrate.Value / HTFSUtility.FlowArea(diameter);
+				double num8 = num7 * value / phaseByType.Density.Value;
+				num4 = CalculateSpecialPropertyMethodLib.MassFractionGradientToEnthalpy(flowStream, pIPPP);
+				double num9 = heatflux * num4;
+				while (Math.Abs(num - num2) > 0.001 && num5 < 100)
+				{
+					num = num2;
+					double num10 = SinglePhaseFlow.WallShearStress(num3 * num, diameter);
+					num6 = num9 * num8 / num10;
+					num2 = num6 / (1.0 - Math.Exp(0.0 - num6));
+					num5++;
+				}
+			}
+			return num3 * num;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "FrictionalPressureGradientOfCondensationInTube"), innerException);
+		}
+	}
+
+	public static double FrictionalPressureGradientOfMorrisAndGallagher(IFlowStream stream, double diameter)
+	{
+		double num = 0.0;
+		double num2 = 0.0;
+		double num3 = 0.0;
+		double num4 = 0.0;
+		double num5 = 0.0;
+		double num6 = 0.0;
+		double num7 = 0.0;
+		double num8 = 0.0;
+		double num9 = 0.0;
+		double num10 = 0.0;
+		try
+		{
+			if (stream.NumberOfPhases < 2)
+			{
+				throw new Exception(Resources.SinglePhaseFlowEncountered);
+			}
+			IPhase combinedLiquidPhase = stream.CombinedLiquidPhase;
+			IPhase phaseByType = stream.GetPhaseByType(PhaseType.Vapour);
+			num3 = phaseByType.MassFraction.Value;
+			num4 = HomogeneousEquivalentDensity(combinedLiquidPhase.Density.Value, phaseByType.Density.Value, num3);
+			num5 = Math.Sqrt(combinedLiquidPhase.Density.Value / num4);
+			num6 = 1.0 / (Math.Sqrt(combinedLiquidPhase.Density.Value / phaseByType.Density.Value) - 1.0);
+			num2 = (num3 / phaseByType.Density.Value + num5 * (1.0 - num3) / combinedLiquidPhase.Density.Value) * (num3 + (1.0 - num3) / num5 * (1.0 + Math.Pow(num5 - 1.0, 2.0) * num6));
+			num7 = (num3 * phaseByType.Viscosity.Value / phaseByType.Density.Value + (1.0 - num3) * combinedLiquidPhase.Viscosity.Value / combinedLiquidPhase.Density.Value) / num2;
+			num9 = stream.MassFlowrate.Value / HTFSUtility.FlowArea(diameter);
+			num8 = num9 * diameter / num7;
+			num = 0.0067 + 0.145 * Math.Pow(num8, -0.3286);
+			return -2.0 * num * num9 * num9 * num2 / diameter;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "FrictionalPressureGradientOfMorrisAndGallagher"), innerException);
+		}
+	}
+
+	public static double MultiplierOfAnnularFlow(IFlowStream stream, double diameter)
+	{
+		double num = 0.0;
+		double num2 = 0.0;
+		double num3 = 0.0;
+		double num4 = 0.0;
+		double num5 = 0.0;
+		double num6 = 0.0;
+		try
+		{
+			if (stream.NumberOfPhases < 2)
+			{
+				throw new Exception(Resources.SinglePhaseFlowEncountered);
+			}
+			IPhase combinedLiquidPhase = stream.CombinedLiquidPhase;
+			IPhase phaseByType = stream.GetPhaseByType(PhaseType.Vapour);
+			num = phaseByType.MassFraction.Value;
+			num6 = stream.MassFlowrate.Value / HTFSUtility.FlowArea(diameter);
+			num2 = XLMParameter(diameter, num6, 0.0, num, combinedLiquidPhase.Density.Value, phaseByType.Density.Value, combinedLiquidPhase.Viscosity.Value, phaseByType.Viscosity.Value);
+			num4 = 0.25 * num2;
+			num5 = 0.0558 * Math.Pow(num2, 2.0 / 3.0);
+			return Math.Pow(1.0 / Math.Pow(num4, 2.5) + 1.0 / Math.Pow(num5, 2.5), 0.8) / 16.0;
+		}
+		catch (Exception innerException)
+		{
+			throw new Exception(string.Format(Resources.MethodFailed, "MultiplierOfAnnularFlow"), innerException);
+		}
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

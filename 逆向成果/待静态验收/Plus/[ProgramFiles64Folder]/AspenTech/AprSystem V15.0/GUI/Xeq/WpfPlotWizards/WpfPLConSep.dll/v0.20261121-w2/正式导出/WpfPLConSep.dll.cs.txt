@@ -1,0 +1,1048 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
+using System.IO;
+using System.Reflection;
+using System.Resources;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using AspenTech.AspenPlus.Happ;
+using AspenTech.AspenPlus.Infrastructure;
+using AspenTech.AspenPlus.Localization.WpfPlotWizards;
+using WpfPlotWizardsHelper;
+using WpfPlotwizard;
+
+[assembly: CompilationRelaxations(8)]
+[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
+[assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
+[assembly: AssemblyFileVersion("41.0.0.614")]
+[assembly: AssemblyTitle("WpfPLConsep")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("Aspen Technology, Inc.")]
+[assembly: AssemblyProduct("WpfPLConsep")]
+[assembly: AssemblyCopyright("Copyright © Aspen Technology, Inc. 2012 - 2024")]
+[assembly: AssemblyTrademark("")]
+[assembly: ComVisible(false)]
+[assembly: NeutralResourcesLanguage("en-US", UltimateResourceFallbackLocation.Satellite)]
+[assembly: Guid("b66741ca-a35f-4fec-aa40-75e71a9e116c")]
+[assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+[assembly: AssemblyVersion("41.0.0.614")]
+namespace WpfPLConSep
+{
+	[ProgId("WpfPLConSep.RibbonPlotWizardMgr")]
+	public class RibbonPlotWizardMgr : IRibbonPlotWizardMgr
+	{
+		private static string[] supportedTypes = new string[3] { "Temp", "Liquid", "Vapor" };
+
+		private IHNode _hnode;
+
+		private IHWizardPlot _wizardPlot;
+
+		private static List<PWRPlotType> _lspwrTypes = new List<PWRPlotType>();
+
+		private PWRParser _pwrParser = new PWRParser();
+
+		private Assembly _asm;
+
+		private Dictionary<string, IRibbonPlotWizardType> _dicTagIdToPlotType;
+
+		private IHWizardPlot _tempWizard = (CHWizardPlot)Activator.CreateInstance(Marshal.GetTypeFromCLSID(new Guid("9E14C11F-6706-4067-8112-35CE9468F3A5")));
+
+		public RibbonPlotWizardMgr()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			Initialize();
+		}
+
+		long IRibbonPlotWizardMgr.SupportedPlotTypes(ref List<string> lsTagIds)
+		{
+			lsTagIds.Clear();
+			for (int i = 0; i < _lspwrTypes.Count; i++)
+			{
+				PWRPlotType val = _lspwrTypes[i];
+				IRibbonPlotWizardType iplotType = null;
+				_tempWizard.Clear();
+				_pwrParser.FillDefaultPlotVal(val, ref _hnode, ref _tempWizard);
+				if (DoesPlotTypeHaveData(val.TagId, ref iplotType, ref _tempWizard))
+				{
+					lsTagIds.Add(val.TagId);
+				}
+			}
+			return _lspwrTypes.Count;
+		}
+
+		long IRibbonPlotWizardMgr.GetPlotType(string sTagId, ref IRibbonPlotWizardType plwType)
+		{
+			if (_dicTagIdToPlotType.ContainsKey(sTagId))
+			{
+				plwType = _dicTagIdToPlotType[sTagId];
+				if (plwType == null)
+				{
+					return 0L;
+				}
+				PWRPlotType val = null;
+				_pwrParser.FindPlotType(sTagId, ref _lspwrTypes, ref val);
+				_pwrParser.FillDefaultPlotVal(val, ref _hnode, ref _wizardPlot);
+			}
+			return 0L;
+		}
+
+		void IRibbonPlotWizardMgr.SetContext(object oNode, ref object oWizard)
+		{
+			_hnode = oNode as IHNode;
+			_wizardPlot = oWizard as IHWizardPlot;
+		}
+
+		void IRibbonPlotWizardMgr.ShowInputDialog(string sPlotName)
+		{
+		}
+
+		private void InitializeWizardPlot()
+		{
+		}
+
+		private void Initialize()
+		{
+			_asm = Assembly.GetExecutingAssembly();
+			StreamReader streamReader = new StreamReader(Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLConSep.Text.ConSeppwr.txt"));
+			_lspwrTypes.Clear();
+			_pwrParser.ParsePwrFile(streamReader, ref _lspwrTypes);
+			_dicTagIdToPlotType = new Dictionary<string, IRibbonPlotWizardType>();
+			for (int i = 0; i < _lspwrTypes.Count; i++)
+			{
+				string tagId = _lspwrTypes[i].TagId;
+				if (tagId == supportedTypes[0])
+				{
+					IRibbonPlotWizardType value = (IRibbonPlotWizardType)(object)new Temperature();
+					_dicTagIdToPlotType.Add(tagId, value);
+				}
+				else if (tagId == supportedTypes[1])
+				{
+					IRibbonPlotWizardType value = (IRibbonPlotWizardType)(object)new LiquidComposition();
+					_dicTagIdToPlotType.Add(tagId, value);
+				}
+				else if (tagId == supportedTypes[2])
+				{
+					IRibbonPlotWizardType value = (IRibbonPlotWizardType)(object)new VaporComposition();
+					_dicTagIdToPlotType.Add(tagId, value);
+				}
+			}
+		}
+
+		private bool DoesPlotTypeHaveData(string sTagId, ref IRibbonPlotWizardType iplotType, ref IHWizardPlot iWizardPlot)
+		{
+			int num = 0;
+			if (_dicTagIdToPlotType.ContainsKey(sTagId))
+			{
+				iplotType = _dicTagIdToPlotType[sTagId];
+				if (iplotType == null)
+				{
+					return false;
+				}
+				object obj = iWizardPlot;
+				iplotType.Context((object)_hnode, ref obj, ref num);
+				if (num == 0)
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+	}
+	[ProgId("WpfPLConSep.LiquidComposition")]
+	public class LiquidComposition : IRibbonPlotWizardType
+	{
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private PlotwizardHelper _help = new PlotwizardHelper();
+
+		private string _currentPresUnit = string.Empty;
+
+		private string _uniqueId = "ConSep_LiquidComposition";
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private Image _imgBitmap;
+
+		private bool _bHasInputDialog;
+
+		private string _varName;
+
+		private int _basis = 2;
+
+		private string _basisFieldId = WpfPLConSepResources.Basis;
+
+		private bool _bCheckDataOnly;
+
+		public string TooltipContentForRibbonItem => WpfPLConSepResources.TooltipContentForRibbonItem_Liquid;
+
+		public string TooltipHeaderForRibbonItem => WpfPLConSepResources.TooltipHeaderForRibbonItem_Liquid;
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		public object CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		public bool HasInputDialog => _bHasInputDialog;
+
+		public string HelpFile => _help.GetHelpFileName();
+
+		public long HelpID => _help.GetHelpID();
+
+		public Image ImageIcon => _imgBitmap;
+
+		public string Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		public List<string> SupportedDataFields => new List<string>();
+
+		public List<string> SupportedStyleFields => new List<string>();
+
+		public string TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		public object WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		public LiquidComposition()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			_varName = "Output\\X10";
+			_bHasInputDialog = false;
+			if (_imgBitmap == null)
+			{
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLConSep.Images.composition.ico");
+				_imgBitmap = new Bitmap(manifestResourceStream);
+			}
+		}
+
+		public void Context(object oNode, ref object oPlotWizardComponent, ref int ierror)
+		{
+			if (oPlotWizardComponent == null || oNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			_context = oNode as IHNode;
+			_wizardPlot = oPlotWizardComponent as IHWizardPlot;
+			IHNode iHNode = _context.FindNode(_varName);
+			if (iHNode == null || iHNode.Elements.Count <= 0)
+			{
+				ierror = 1;
+				return;
+			}
+			_wizardPlot.RemoveAllDependentVariable();
+			_wizardPlot.AddDependentVariable(_context, _varName);
+			_wizardPlot.SetIndependentVariable(_context, _varName + "!Label");
+		}
+
+		public List<string> FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.Equals(_basisFieldId))
+			{
+				return new List<string> { "Mole", "Mass" };
+			}
+			return new List<string>();
+		}
+
+		public void GetConfigData(ref string sConfigValue)
+		{
+		}
+
+		public RibbonControlType GetFieldCtrlType(string sFieldName)
+		{
+			if (!sFieldName.Equals(_basisFieldId))
+			{
+				return (RibbonControlType)0;
+			}
+			return (RibbonControlType)1;
+		}
+
+		public void GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.Equals(_basisFieldId))
+			{
+				IHNode iHNode = _context.FindNode("Input/IBASIS");
+				if (iHNode != null)
+				{
+					sCurrentVal = (((dynamic)iHNode.get_Value(Type.Missing) == "MOLE") ? "Mole" : "Mass");
+					_basis = ((!(((dynamic)iHNode.get_Value(Type.Missing) == "MOLE") ? true : false)) ? 1 : 2);
+				}
+			}
+		}
+
+		public void GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		public void SetConfigData(string sValue)
+		{
+		}
+
+		public void SetFieldData(string sFieldName, string sValue)
+		{
+			if (sFieldName.Equals(_basisFieldId))
+			{
+				_basis = ((sValue == "Mass") ? 1 : 2);
+			}
+		}
+
+		public void SetFieldStyle(string sFieldName, string sValue)
+		{
+		}
+
+		public void ShowInputDialog()
+		{
+		}
+
+		public void UpdateWizardData()
+		{
+			if (_basis == 0)
+			{
+				IHNode iHNode = _context.FindNode("Input/IBASIS");
+				if (iHNode != null)
+				{
+					_basis = ((!(((dynamic)iHNode.get_Value(Type.Missing) == "MOLE") ? true : false)) ? 1 : 2);
+				}
+			}
+			_wizardPlot.basis = _basis;
+			string text = "";
+			text = ((_basis != 1) ? "Mole" : "Mass");
+			_wizardPlot.PlotVal.Title = WpfPLConSepResources.LiquidProfile_Block + ": " + WpfPLConSepResources.LiquidProfile_Liquid_Profile + " (" + text + ")";
+			_wizardPlot.SetIndependentVariable(_context, "Output/STAGE_NO2");
+			_wizardPlot.RemoveAllDependentVariable();
+			IHNode iHNode2 = _context.FindNode("Output/COMPID");
+			IHNode iHNode3 = _context.FindNode(_varName);
+			if (iHNode2 == null || iHNode3 == null)
+			{
+				return;
+			}
+			int count = iHNode2.Elements.Count;
+			_wizardPlot.PlotVal.NVariables = count;
+			for (int i = 0; i < count; i++)
+			{
+				string label = (dynamic)iHNode2.Elements[i, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+				((IHPlotVal)_wizardPlot.PlotVal).set_Label(i, label);
+				int count2 = iHNode3.Elements.Count;
+				for (int j = 0; j < count2; j++)
+				{
+					((IHPlotVal)_wizardPlot.PlotVal).set_YData(i, j, (short)1, (object)iHNode3.Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[i, Type.Missing, Type.Missing, Type.Missing, Type.Missing]);
+				}
+			}
+		}
+	}
+	[RibbonPlotWizardMgr("WpfPLCONSEP.RibbonPlotWizardMgr", typeof(RibbonPlotWizardMgr))]
+	public class ConSepPlotWizardModule : PlotModuleBase
+	{
+	}
+	[ProgId("WpfPLConSep.Temperature")]
+	public class Temperature : IRibbonPlotWizardType
+	{
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private PlotwizardHelper _help = new PlotwizardHelper();
+
+		private string _currentPresUnit = string.Empty;
+
+		private string _uniqueId = "ConSep_Temperature";
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private Image _imgBitmap;
+
+		private bool _bHasInputDialog;
+
+		private string _varName;
+
+		private string _tempUnitsFieldId = WpfPLConSepResources.TempUnits;
+
+		private string _currentTempUnit = "R";
+
+		private bool _bCheckDataOnly;
+
+		public string TooltipContentForRibbonItem => WpfPLConSepResources.TooltipContentForRibbonItem_Temp;
+
+		public string TooltipHeaderForRibbonItem => WpfPLConSepResources.TooltipHeaderForRibbonItem_Temp;
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		public object CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		public bool HasInputDialog => _bHasInputDialog;
+
+		public string HelpFile => _help.GetHelpFileName();
+
+		public long HelpID => _help.GetHelpID();
+
+		public Image ImageIcon => _imgBitmap;
+
+		public string Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		public List<string> SupportedDataFields => new List<string> { _tempUnitsFieldId };
+
+		public List<string> SupportedStyleFields => new List<string>();
+
+		public string TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		public object WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		public Temperature()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			_varName = "Output\\B_TEMP4";
+			_bHasInputDialog = false;
+			if (_imgBitmap == null)
+			{
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLConSep.Images.temp.ico");
+				_imgBitmap = new Bitmap(manifestResourceStream);
+			}
+		}
+
+		public void Context(object oNode, ref object oPlotWizardComponent, ref int ierror)
+		{
+			if (oPlotWizardComponent == null || oNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			_context = oNode as IHNode;
+			_wizardPlot = oPlotWizardComponent as IHWizardPlot;
+			IHNode iHNode = _context.FindNode(_varName);
+			if (iHNode == null || iHNode.Elements.Count <= 0)
+			{
+				ierror = 1;
+				return;
+			}
+			_wizardPlot.RemoveAllDependentVariable();
+			_wizardPlot.SetIndependentVariable(_context, _varName + "!Label");
+			_wizardPlot.AddDependentVariable(_context, _varName);
+		}
+
+		public void UpdateWizardData()
+		{
+			_wizardPlot.RemoveAllDependentVariable();
+			_wizardPlot.SetIndependentVariable(_context, _varName + "!Label");
+			_wizardPlot.AddDependentVariable(_context, _varName);
+			_help.SaveUnitsComboText(_context.Application.Tree, _wizardPlot, _currentTempUnit);
+		}
+
+		public List<string> FieldDataOptionList(string sFieldName)
+		{
+			if (sFieldName.Equals(_tempUnitsFieldId))
+			{
+				return new List<string> { "R", "F", "C", "K" };
+			}
+			return new List<string>();
+		}
+
+		public void GetConfigData(ref string sConfigValue)
+		{
+		}
+
+		public RibbonControlType GetFieldCtrlType(string sFieldName)
+		{
+			if (!sFieldName.Equals(_tempUnitsFieldId))
+			{
+				return (RibbonControlType)0;
+			}
+			return (RibbonControlType)1;
+		}
+
+		public void GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+			if (sFieldName.Equals(_tempUnitsFieldId))
+			{
+				sCurrentVal = (_currentTempUnit = _help.GetUnitString(_context.Application.Tree, _wizardPlot));
+			}
+		}
+
+		public void GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		public void SetConfigData(string sValue)
+		{
+		}
+
+		public void SetFieldData(string sFieldName, string sValue)
+		{
+			if (sFieldName.Equals(_tempUnitsFieldId))
+			{
+				_currentTempUnit = sValue;
+			}
+		}
+
+		public void SetFieldStyle(string sFieldName, string sValue)
+		{
+		}
+
+		public void ShowInputDialog()
+		{
+		}
+	}
+	[ProgId("WpfPLConSep.VaporComposition")]
+	public class VaporComposition : IRibbonPlotWizardType
+	{
+		private IHNode _context;
+
+		private IHWizardPlot _wizardPlot;
+
+		private PlotwizardHelper _help = new PlotwizardHelper();
+
+		private string _currentPresUnit = string.Empty;
+
+		private string _uniqueId = "ConSep_VaporComposition";
+
+		private string _plotName;
+
+		private object _nodeCxs;
+
+		private Image _imgBitmap;
+
+		private bool _bHasInputDialog;
+
+		private string _varName;
+
+		private int _basis = 2;
+
+		private bool _bCheckDataOnly;
+
+		public string TooltipContentForRibbonItem => WpfPLConSepResources.TooltipContentForRibbonItem_Vapor;
+
+		public string TooltipHeaderForRibbonItem => WpfPLConSepResources.TooltipHeaderForRibbonItem_Vapor;
+
+		public bool CheckDataOnly
+		{
+			get
+			{
+				return _bCheckDataOnly;
+			}
+			set
+			{
+				_bCheckDataOnly = value;
+			}
+		}
+
+		public object CxsNode
+		{
+			get
+			{
+				return _nodeCxs;
+			}
+			set
+			{
+				_nodeCxs = value;
+			}
+		}
+
+		public bool HasInputDialog => _bHasInputDialog;
+
+		public string HelpFile => _help.GetHelpFileName();
+
+		public long HelpID => _help.GetHelpID();
+
+		public Image ImageIcon => _imgBitmap;
+
+		public string Name
+		{
+			get
+			{
+				return _plotName;
+			}
+			set
+			{
+				_plotName = value;
+			}
+		}
+
+		public List<string> SupportedDataFields => new List<string>();
+
+		public List<string> SupportedStyleFields => new List<string>();
+
+		public string TagID
+		{
+			get
+			{
+				return _uniqueId;
+			}
+			set
+			{
+				_uniqueId = value;
+			}
+		}
+
+		public object WizardPlot
+		{
+			get
+			{
+				return _wizardPlot;
+			}
+			set
+			{
+				_wizardPlot = value as IHWizardPlot;
+			}
+		}
+
+		public VaporComposition()
+		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
+			_varName = "Output\\Y";
+			_bHasInputDialog = false;
+			if (_imgBitmap == null)
+			{
+				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("WpfPLConSep.Images.composition.ico");
+				_imgBitmap = new Bitmap(manifestResourceStream);
+			}
+		}
+
+		public void Context(object oNode, ref object oPlotWizardComponent, ref int ierror)
+		{
+			if (oPlotWizardComponent == null || oNode == null)
+			{
+				ierror = 1;
+				return;
+			}
+			_context = oNode as IHNode;
+			_wizardPlot = oPlotWizardComponent as IHWizardPlot;
+			IHNode iHNode = _context.FindNode(_varName);
+			if (iHNode == null || iHNode.Elements.Count <= 0)
+			{
+				ierror = 1;
+				return;
+			}
+			_wizardPlot.RemoveAllDependentVariable();
+			_wizardPlot.AddDependentVariable(_context, _varName);
+			_wizardPlot.SetIndependentVariable(_context, _varName + "!Label");
+		}
+
+		public List<string> FieldDataOptionList(string sFieldName)
+		{
+			return new List<string>();
+		}
+
+		public void GetConfigData(ref string sConfigValue)
+		{
+		}
+
+		public RibbonControlType GetFieldCtrlType(string sFieldName)
+		{
+			return (RibbonControlType)0;
+		}
+
+		public void GetFieldData(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		public void GetFieldStyle(string sFieldName, ref string sCurrentVal)
+		{
+		}
+
+		public void SetConfigData(string sValue)
+		{
+		}
+
+		public void SetFieldData(string sFieldName, string sValue)
+		{
+		}
+
+		public void SetFieldStyle(string sFieldName, string sValue)
+		{
+		}
+
+		public void ShowInputDialog()
+		{
+		}
+
+		public void UpdateWizardData()
+		{
+			if (_basis == 0)
+			{
+				IHNode iHNode = _context.FindNode("Input/IBASIS");
+				if (iHNode != null)
+				{
+					_basis = ((!(((dynamic)iHNode.get_Value(Type.Missing) == "MOLE") ? true : false)) ? 1 : 2);
+				}
+			}
+			_wizardPlot.basis = _basis;
+			string text = "";
+			text = ((_basis != 1) ? "Mole" : "Mass");
+			_wizardPlot.PlotVal.Title = WpfPLConSepResources.LiquidProfile_Block + ": " + WpfPLConSepResources.LiquidProfile_Vapor_Profile + " (" + text + ")";
+			_wizardPlot.basis = _basis;
+			_wizardPlot.SetIndependentVariable(_context, "Output/STAGE_NO2");
+			_wizardPlot.RemoveAllDependentVariable();
+			IHNode iHNode2 = _context.FindNode("Output/COMPID");
+			IHNode iHNode3 = _context.FindNode(_varName);
+			if (iHNode2 == null || iHNode3 == null)
+			{
+				return;
+			}
+			int count = iHNode2.Elements.Count;
+			_wizardPlot.PlotVal.NVariables = count;
+			for (int i = 0; i < count; i++)
+			{
+				string label = (dynamic)iHNode2.Elements[i, Type.Missing, Type.Missing, Type.Missing, Type.Missing].get_Value(Type.Missing);
+				((IHPlotVal)_wizardPlot.PlotVal).set_Label(i, label);
+				int count2 = iHNode3.Elements.Count;
+				for (int j = 0; j < count2; j++)
+				{
+					((IHPlotVal)_wizardPlot.PlotVal).set_YData(i, j, (short)1, (object)iHNode3.Elements[j, Type.Missing, Type.Missing, Type.Missing, Type.Missing].Elements[i, Type.Missing, Type.Missing, Type.Missing, Type.Missing]);
+				}
+			}
+		}
+	}
+}
+namespace AspenTech.AspenPlus.Happ
+{
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("11677780-B72B-11D0-A943-0000C0A118DB")]
+	[CoClass(typeof(object))]
+	[TypeIdentifier]
+	public interface CHPlotVal : IHPlotVal
+	{
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("8008C730-1A3E-11D1-8A4D-0000C0237DF9")]
+	[CoClass(typeof(object))]
+	[TypeIdentifier]
+	public interface CHWizardPlot : IHWizardPlot
+	{
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("8E567522-F9BA-11CF-90B2-0000C0A810C4")]
+	[TypeIdentifier]
+	public interface IHNode
+	{
+		[DispId(1610743808)]
+		IHapp Application
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743808)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+
+		void _VtblGap1_5();
+
+		[DispId(1610743814)]
+		object Value
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743814)]
+			[return: MarshalAs(UnmanagedType.Struct)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743814)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.Struct)]
+			set;
+		}
+
+		void _VtblGap2_10();
+
+		[DispId(1610743826)]
+		IHNodeCol Elements
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743826)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+
+		void _VtblGap3_8();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743835)]
+		[return: MarshalAs(UnmanagedType.Interface)]
+		IHNode FindNode([In][MarshalAs(UnmanagedType.BStr)] string path);
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("89E81F60-019A-11D0-9BE7-0000C05375D5")]
+	[TypeIdentifier]
+	public interface IHNodeCol : IEnumerable
+	{
+		void _VtblGap1_2();
+
+		[DispId(1610743810)]
+		int Count
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743810)]
+			get;
+		}
+
+		void _VtblGap2_3();
+
+		[DispId(0)]
+		IHNode this[[In][MarshalAs(UnmanagedType.Struct)] object loc_or_name, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name2, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name3, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name4, [Optional][In][MarshalAs(UnmanagedType.Struct)] object loc_or_name5]
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(0)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("11677780-B72B-11D0-A943-0000C0A118DB")]
+	[TypeIdentifier]
+	public interface IHPlotVal
+	{
+		void _VtblGap1_2();
+
+		[DispId(1610743810)]
+		string Title
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743810)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743810)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.BStr)]
+			set;
+		}
+
+		void _VtblGap2_1();
+
+		void _VtblGap3_6();
+
+		[DispId(1610743819)]
+		string Label
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743819)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743819)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.BStr)]
+			set;
+		}
+
+		void _VtblGap4_1();
+
+		void _VtblGap5_2();
+
+		[DispId(1610743824)]
+		int NVariables
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743824)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743824)]
+			[param: In]
+			set;
+		}
+
+		void _VtblGap6_5();
+
+		[DispId(1610743831)]
+		object YData
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743831)]
+			[param: In]
+			[param: MarshalAs(UnmanagedType.Struct)]
+			set;
+		}
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[Guid("8008C730-1A3E-11D1-8A4D-0000C0237DF9")]
+	[TypeIdentifier]
+	public interface IHWizardPlot
+	{
+		[DispId(1610743808)]
+		CHPlotVal PlotVal
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743808)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+
+		[DispId(1610743809)]
+		int basis
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743809)]
+			get;
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743809)]
+			[param: In]
+			set;
+		}
+
+		void _VtblGap1_4();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743815)]
+		void SetIndependentVariable([In][MarshalAs(UnmanagedType.Interface)] IHNode pContext, [In][MarshalAs(UnmanagedType.BStr)] string indepvar);
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743816)]
+		void AddDependentVariable([In][MarshalAs(UnmanagedType.Interface)] IHNode pContext, [In][MarshalAs(UnmanagedType.BStr)] string depvar);
+
+		void _VtblGap2_1();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743818)]
+		void RemoveAllDependentVariable();
+
+		void _VtblGap3_4();
+
+		[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[DispId(1610743823)]
+		void Clear();
+	}
+	[ComImport]
+	[CompilerGenerated]
+	[DefaultMember("Name")]
+	[Guid("8E567521-F9BA-11CF-90B2-0000C0A810C4")]
+	[TypeIdentifier]
+	public interface IHapp
+	{
+		void _VtblGap1_3();
+
+		[DispId(0)]
+		string Name
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(0)]
+			[return: MarshalAs(UnmanagedType.BStr)]
+			get;
+		}
+
+		void _VtblGap2_7();
+
+		[DispId(1610743819)]
+		IHNode Tree
+		{
+			[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+			[DispId(1610743819)]
+			[return: MarshalAs(UnmanagedType.Interface)]
+			get;
+		}
+	}
+}
+You are not using the latest version of the tool, please update.
+Latest version is '11.2.0.10050' (yours is '9.1.0.7988')
