@@ -1,6 +1,6 @@
 # 待静态验收
 
-共 949 件。已有代码，等待逐件核对。
+共 946 件。已有代码，等待逐件核对。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -467,7 +467,6 @@
 | [iconeditorCME.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/iconeditorCME.dll/) | Plus | `842049c07f64` |
 | [ICSharpCode.SharpZipLib.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/ICSharpCode.SharpZipLib.dll/) | Plus | `cf8cae61961b` |
 | [ICSharpCode.SharpZipLib.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseConfiguration/ICSharpCode.SharpZipLib.dll/) | Properties | `c182a48c429c` |
-| [ifmsmn.exe](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/ifmsmn.exe/) | Plus | `066c1c3bd87d` |
 | [INETWH32.dll](Plus/%5BSystemFolder%5D/INETWH32.dll/) | Plus | `4a9c61bc942f` |
 | [Infragistics4.Documents.Excel.v15.1.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/Infragistics4.Documents.Excel.v15.1.dll/) | Plus | `c35446076c5b` |
 | [Infragistics4.Documents.Reports.v21.1.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/Infragistics4.Documents.Reports.v21.1.dll/) | Plus | `e7afaf9943d6` |
@@ -730,7 +729,6 @@
 | [SSUnitOp.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Hydraulics%20V15.0/SSUnitOp.dll/) | Plus | `48112926fd33` |
 | [ssutils.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/ssutils.dll/) | Plus | `64d8d95bef91` |
 | [statuscodeCME.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/statuscodeCME.dll/) | Plus | `588239aa1633` |
-| [Stingray.GridUtils71.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/Stingray.GridUtils71.dll/) | Plus | `04ef7136488b` |
 | [StoreRecall.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Hydraulics%20V15.0/StoreRecall.dll/) | Plus | `e165fa5f7b3f` |
 | [strings.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/strings.dll/) | Plus | `30e5a41d8639` |
 | [strlibmn.exe](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/strlibmn.exe/) | Plus | `749bb79f6cb4` |
@@ -821,7 +819,6 @@
 | [WpfAdhocPlot.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WpfPlotWizards/WpfAdhocPlot.dll/) | Plus | `c647c2decb36` |
 | [WpfAdsAdhocPlot.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WpfPlotWizards/WpfAdsAdhocPlot.dll/) | Plus | `df444cfe86a7` |
 | [WPFHierarchyComboBox.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WPFHierarchyComboBox.dll/) | Plus | `bdba187f71ea` |
-| [WpfPLAnalysis.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WpfPlotWizards/WpfPLAnalysis.dll/) | Plus | `02d2245cc40a` |
 | [WpfPLAssay.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WpfPlotWizards/WpfPLAssay.dll/) | Plus | `39e88718d3fa` |
 | [WpfPLBatchOp.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WpfPlotWizards/WpfPLBatchOp.dll/) | Plus | `3b0a4b8af7c3` |
 | [WpfPLBatchSep.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WpfPlotWizards/WpfPLBatchSep.dll/) | Plus | `d6ba3b3848dc` |
