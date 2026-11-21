@@ -1,6 +1,6 @@
 # 静态验收未通过
 
-共 291 件。已有代码或局部成果，逐件记录有明确缺口。
+共 294 件。已有代码或局部成果，逐件记录有明确缺口。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -13,6 +13,7 @@
 | [ACMOtf410.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/ACMOtf410.dll/) | Plus | `f2d5787884ac` |
 | [AdbHysysExtractCOM.exe](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/Aspen%20Data%20Share%20V15.0/AdbHysysExtractCOM.exe/) | Plus | `ef0d5cbc7fee` |
 | [Adsim2.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/Adsim2.dll/) | Plus | `00d4cec6c14f` |
+| [aos_include.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Open%20Solvers%20V15.0/Include/aos_include.dll/) | Plus | `017dc805c3b1` |
 | [aos_lssqp.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Open%20Solvers%20V15.0/Bin/aos_lssqp.dll/) | Plus | `c012acb83e7d` |
 | [aos_lssqp_proxy.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Open%20Solvers%20V15.0/Bin/aos_lssqp_proxy.dll/) | Plus | `db53f95dbeb3` |
 | [aos_ma38.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Open%20Solvers%20V15.0/Bin/aos_ma38.dll/) | Plus | `807adf9faf7f` |
@@ -39,6 +40,7 @@
 | [AspenTech.APED.Core.dll](Plus-Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/Bin/AspenTech.APED.Core.dll/) | Plus-Properties | `7995945d8ff9` |
 | [AspenTech.APED.Core.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseConfiguration/AspenTech.APED.Core.dll/) | Properties | `e4e66a5e8597` |
 | [AspenTech.AspenPlus.UnmanagedWrapper.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.AspenPlus.UnmanagedWrapper.dll/) | Plus-Properties | `12726eceaf4f` |
+| [AspenTech.HtmlHelp.StrongNameInvoke.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.HtmlHelp.StrongNameInvoke.dll/) | Plus | `02826aae6dfd` |
 | [AssistEd.exe](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/AssistEd.exe/) | Plus | `f948cf2ce74f` |
 | [ASW_pw8.2394B958_0137_40A8_A8CA_BB6DB1AE36C0.exe](Properties/Icon/ASW_pw8.2394B958_0137_40A8_A8CA_BB6DB1AE36C0.exe/) | Properties | `b17a58755b3a` |
 | [atdms.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/atdms.dll/) | Plus | `0c61338f85a6` |
@@ -196,6 +198,7 @@
 | [ROBOEX32.DLL](Plus/%5BSystemFolder%5D/ROBOEX32.DLL/) | Plus | `2e76e25ea2dc` |
 | [rtmodels.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/rtmodels.dll/) | Plus | `02f6863acfd3` |
 | [rtogen.exe](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/rtogen.exe/) | Plus | `024611d1a18e` |
+| [rtoval.exe](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/rtoval.exe/) | Plus | `007c337c3a9a` |
 | [SetAllUsers.dll](Properties-Database-Server/Binary/SetAllUsers.dll/) | Properties-Database-Server | `97143ba76bd6` |
 | [Shlwapi.dll](Plus/Windows/SysWOW64/Shlwapi.dll/) | Plus | `b89b3be3ba37` |
 | [simdll.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/simdll.dll/) | Plus-Properties | `9b762caf68ad` |

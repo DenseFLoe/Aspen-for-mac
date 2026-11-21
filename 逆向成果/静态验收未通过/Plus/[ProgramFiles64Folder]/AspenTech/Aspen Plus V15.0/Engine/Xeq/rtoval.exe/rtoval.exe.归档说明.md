@@ -1,6 +1,8 @@
 # rtoval.exe
 
-状态为**待静态验收**。已定位并核对发布包中的导出文件，等待逐件静态验收。
+当前状态为**静态验收未通过**。[第四组第 1 轮验收记录](rtoval.exe.%E9%9D%99%E6%80%81%E9%AA%8C%E6%94%B6.md)列出缺口和复验条件。
+
+原归档记录为**待静态验收**。已定位并核对发布包中的导出文件，等待逐件静态验收。
 
 原路径为 `Plus/[ProgramFiles64Folder]/AspenTech/Aspen Plus V15.0/Engine/Xeq/rtoval.exe`。
 

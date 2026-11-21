@@ -1,6 +1,6 @@
 # 待静态验收
 
-共 954 件。已有代码，等待逐件核对。
+共 951 件。已有代码，等待逐件核对。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -54,7 +54,6 @@
 | [aos_homotopy_nlap_lssqp.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Open%20Solvers%20V15.0/Bin/aos_homotopy_nlap_lssqp.dll/) | Plus | `a5aa4fff7aaf` |
 | [aos_homotopy_sparse.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Open%20Solvers%20V15.0/Bin/aos_homotopy_sparse.dll/) | Plus | `ca5d37095d2d` |
 | [aos_hypsqp.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Open%20Solvers%20V15.0/Bin/aos_hypsqp.dll/) | Plus | `43d546ddd13c` |
-| [aos_include.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Open%20Solvers%20V15.0/Include/aos_include.dll/) | Plus | `017dc805c3b1` |
 | [aos_integrator.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Open%20Solvers%20V15.0/Bin/aos_integrator.dll/) | Plus | `ff5d55db016c` |
 | [aos_lapack.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Open%20Solvers%20V15.0/Bin/aos_lapack.dll/) | Plus | `35fb8810c49b` |
 | [aos_lib.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Open%20Solvers%20V15.0/Lib/aos_lib.dll/) | Plus | `60e753ed5af8` |
@@ -244,7 +243,6 @@
 | [AspenTech.HtmlHelp.HelpIntegration.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.HtmlHelp.HelpIntegration.dll/) | Plus | `061d5a3a8409` |
 | [AspenTech.HtmlHelp.HelpLauncher.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.HtmlHelp.HelpLauncher.dll/) | Plus | `22dfdebff1c0` |
 | [AspenTech.HtmlHelp.Logging.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.HtmlHelp.Logging.dll/) | Plus | `b3483be1cee5` |
-| [AspenTech.HtmlHelp.StrongNameInvoke.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.HtmlHelp.StrongNameInvoke.dll/) | Plus | `02826aae6dfd` |
 | [AspenTech.HtmlHelp.StrongNameInvoke.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Converter%20V15.0/AspenTech.HtmlHelp.StrongNameInvoke.dll/) | Plus | `d9e08466e285` |
 | [AspenTech.HybridModel.Desktop.ClientLibrary.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.HybridModel.Desktop.ClientLibrary.dll/) | Plus | `bf9218688610` |
 | [AspenTech.Hydraulics.Framework.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/PSV%20Legacy%20Recall%20Server/V15.0/AspenTech.Hydraulics.Framework.dll/) | Plus | `269453cd56b8` |
@@ -694,7 +692,6 @@
 | [rtojac.exe](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/rtojac.exe/) | Plus | `973fd916a9fd` |
 | [rtores.exe](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/rtores.exe/) | Plus | `3871fe332614` |
 | [rtotran.exe](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/rtotran.exe/) | Plus | `29a9be69a2d1` |
-| [rtoval.exe](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/rtoval.exe/) | Plus | `007c337c3a9a` |
 | [rtpdfutl.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/rtpdfutl.dll/) | Plus | `7a2d4d6e4d6c` |
 | [rtpdfutl.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/rtpdfutl.dll/) | Plus | `fcd3d3082dc8` |
 | [rtpdfutl1.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/rtpdfutl1.dll/) | Plus | `1e906eb96ee2` |
