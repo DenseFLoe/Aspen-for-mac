@@ -1,6 +1,6 @@
 # 待静态验收
 
-共 961 件。已有代码，等待逐件核对。
+共 959 件。已有代码，等待逐件核对。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -23,7 +23,6 @@
 | [AdsAccessor.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AdsAccessor.dll/) | Plus | `aef59d35e28f` |
 | [AdsComparer.exe](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/Aspen%20Data%20Share%20V15.0/AdsComparer.exe/) | Plus | `a2e1d9e2f963` |
 | [Adsim.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/Adsim.dll/) | Plus | `a78a1b0acb4d` |
-| [Adsim2.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/Adsim2.dll/) | Plus | `00d4cec6c14f` |
 | [AdvancedFileDialog.ocx](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AdvancedFileDialog.ocx/) | Plus | `1a967ca0241c` |
 | [AdvancedFileDialogLib.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AdvancedFileDialogLib.dll/) | Plus | `dc459f335bfd` |
 | [aesuom.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/aesuom.dll/) | Plus | `510591573e35` |
@@ -753,7 +752,6 @@
 | [System.Data.SQLite.Linq.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/System.Data.SQLite.Linq.dll/) | Plus | `a409e2bf0b5c` |
 | [System.Diagnostics.DiagnosticSource.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Diagnostics.DiagnosticSource.dll/) | Plus | `1887592615fc` |
 | [System.Memory.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Memory.dll/) | Plus | `bf3fb84664f4` |
-| [System.Net.Http.Formatting.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/System.Net.Http.Formatting.dll/) | Plus | `00664130b963` |
 | [System.Numerics.Vectors.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Numerics.Vectors.dll/) | Plus | `1d3ef8698281` |
 | [System.Runtime.CompilerServices.Unsafe.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Runtime.CompilerServices.Unsafe.dll/) | Plus | `37768488e8ef` |
 | [System.Security.AccessControl.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/System.Security.AccessControl.dll/) | Plus | `ff14c5f628b9` |

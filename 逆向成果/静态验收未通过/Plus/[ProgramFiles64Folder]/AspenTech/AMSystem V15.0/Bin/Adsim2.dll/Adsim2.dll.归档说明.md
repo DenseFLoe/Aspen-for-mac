@@ -1,6 +1,6 @@
 # Adsim2.dll
 
-状态为**待静态验收**。已定位并核对发布包中的导出文件，等待逐件静态验收。
+状态为**静态验收未通过**。[二组第 1 轮复核](静态验收-audit-2-20261121-01.md)记录缺口、复现依据和修复条件。修复后交回二组复验。
 
 原路径为 `Plus/[ProgramFiles64Folder]/AspenTech/AMSystem V15.0/Bin/Adsim2.dll`。
 

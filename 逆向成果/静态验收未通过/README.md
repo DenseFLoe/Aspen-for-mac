@@ -1,6 +1,6 @@
 # 静态验收未通过
 
-共 285 件。已有代码或局部成果，逐件记录有明确缺口。
+共 287 件。已有代码或局部成果，逐件记录有明确缺口。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -12,6 +12,7 @@
 | [ACMOtf400.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/ACMOtf400.dll/) | Plus | `d7bce1d094a0` |
 | [ACMOtf410.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/ACMOtf410.dll/) | Plus | `f2d5787884ac` |
 | [AdbHysysExtractCOM.exe](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/Aspen%20Data%20Share%20V15.0/AdbHysysExtractCOM.exe/) | Plus | `ef0d5cbc7fee` |
+| [Adsim2.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/Adsim2.dll/) | Plus | `00d4cec6c14f` |
 | [aos_lssqp.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Open%20Solvers%20V15.0/Bin/aos_lssqp.dll/) | Plus | `c012acb83e7d` |
 | [aos_lssqp_proxy.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Open%20Solvers%20V15.0/Bin/aos_lssqp_proxy.dll/) | Plus | `db53f95dbeb3` |
 | [aos_ma38.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Open%20Solvers%20V15.0/Bin/aos_ma38.dll/) | Plus | `807adf9faf7f` |
@@ -198,6 +199,7 @@
 | [smge.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/smge.dll/) | Plus-Properties | `81740da615da` |
 | [solvint.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/solvint.dll/) | Plus | `49d15aa8d37a` |
 | [ssa3d30.ocx](Plus/%5BSystemFolder%5D/ssa3d30.ocx/) | Plus | `8698a7224323` |
+| [System.Net.Http.Formatting.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/System.Net.Http.Formatting.dll/) | Plus | `00664130b963` |
 | [SystemLibrary400_1.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/SystemLibrary400_1.dll/) | Plus | `ad9bc4fae634` |
 | [SystemLibrary410_1.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/SystemLibrary410_1.dll/) | Plus | `56a4322d1a84` |
 | [tabctl32.ocx](Plus/%5BSystemFolder%5D/tabctl32.ocx/) | Plus | `d10a197fd53e` |
