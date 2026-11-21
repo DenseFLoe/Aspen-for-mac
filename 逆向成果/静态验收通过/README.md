@@ -1,6 +1,6 @@
 # 静态验收通过
 
-已有逐件静态验收记录。运行行为留待 Windows 对照。本次整理共 64 个原件。按产品和原安装路径找到同名文件夹。
+已有逐件静态验收记录。运行行为留待 Windows 对照。本次整理共 68 个原件。按产品和原安装路径找到同名文件夹。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -63,8 +63,12 @@
 | [Microsoft.Extensions.Primitives.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseConfiguration/Microsoft.Extensions.Primitives.dll/) | Properties | `446ff16e903e` |
 | [Npgsql.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseConfiguration/Npgsql.dll/) | Properties | `50e3a31230c9` |
 | [Npgsql.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseSetup/Npgsql.dll/) | Properties | `02ea73194ff5` |
+| [oomfhostlib.lib](Plus/%5BProgramFiles64Folder%5D/AspenTech/OOMF%20V15.0/lib/oomfhostlib.lib/) | Plus | `d48d67029ff1` |
 | [PFSCtrlLib.dll](Plus/Program%20Files/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/PFSCtrlLib.dll/) | Plus | `5073b8f277f6` |
 | [SaveMergeNNFiles.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/SaveMergeNNFiles.dll/) | Plus-Properties | `a610bfe69f5b` |
 | [SetupAPEDPostgreSQLDatabases.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseSetup/SetupAPEDPostgreSQLDatabases.dll/) | Properties | `23b8382cb0cd` |
 | [System.Configuration.ConfigurationManager.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseSetup/System.Configuration.ConfigurationManager.dll/) | Properties | `e814b79f175e` |
 | [System.Security.Cryptography.ProtectedData.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseSetup/System.Security.Cryptography.ProtectedData.dll/) | Properties | `80566f0839ec` |
+| [urcny6.obj](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Examples/Polymers/Polyamide/nylon6.apwz%21/urcny6.obj/) | Plus | `72133372b496` |
+| [usrgel.obj](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Examples/Polymers/SuspensionEPS.apwz%21/usrgel.obj/) | Plus | `e3c4115ceb2c` |
+| [usrny6.obj](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Examples/Polymers/Polyamide/nylon6.apwz%21/usrny6.obj/) | Plus | `92efb7c09dff` |
