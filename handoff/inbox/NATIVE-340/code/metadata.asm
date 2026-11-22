@@ -1,4 +1,4 @@
-; NATIVE-340 CLR metadata listing (563 TypeDef / 188 MethodDef, original CLI tables)
+; NATIVE-340 CLR metadata (563 TypeDef / 188 MethodDef from the original CLI tables)
 0x02000001  TypeDef  <Module>  MethodList 0x06000000-0x0600008C (141 members)
     0x06000001  MethodDef  std.exception.{ctor}  flavor=IL rva=0x10A0
     0x06000002  MethodDef  std.exception.{dtor}  flavor=IL rva=0x10CC
