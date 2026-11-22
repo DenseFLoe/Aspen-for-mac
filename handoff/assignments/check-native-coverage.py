@@ -156,6 +156,60 @@ def table(folder, name, required):
     return rows
 
 
+def check_indirect_attachment(folder, calls, excerpt, extensions, imagebase):
+    """Cross-check the optional row/line index used by the native submissions."""
+    index = folder / "code" / "indirect.csv"
+    if not index.is_file():
+        return
+    fields = {"kind", "caller", "listing"}
+    with index.open(encoding="utf-8-sig", newline="") as stream:
+        reader = csv.DictReader(stream, strict=True)
+        if not fields.issubset(reader.fieldnames or []):
+            print("indirect.csv uses another layout; review its sites against calls.csv manually")
+            return
+        attachment = list(reader)
+
+    def identity(row):
+        kind, owner = row["kind"], int(row["caller"], 0)
+        ref = row["listing"]
+        lines = excerpt(ref, extensions)
+        if kind == "method":
+            pattern = r"^\s*IL_([0-9a-f]+):\s*(?:call[\w.]*|jmp)\b"
+        else:
+            pattern = r"^\s*(?:0x)?([0-9a-f]+)[:\s]+(?:[0-9a-f]{2}\s+)+(?:(?:bnd|notrack)\s+)?(?:call\w*|jmp\w*)\b"
+        positions = re.findall(pattern, lines, re.I | re.M)
+        # The exact listing reference is also valid for a different disassembler layout.
+        location = None
+        if len(positions) == 1:
+            position = int(positions[0], 16)
+            if kind == "native" and position >= imagebase:
+                position -= imagebase
+            location = kind, owner, position
+        return (kind, owner, ref), location
+
+    registered_refs, registered_positions, ambiguous_owners = set(), set(), set()
+    for row in calls:
+        if row["class"] == "data":
+            continue
+        ref, position = identity(row)
+        registered_refs.add(ref)
+        if position is None:
+            ambiguous_owners.add(ref[:2])
+        else:
+            registered_positions.add(position)
+    missing, manual = [], 0
+    for row in attachment:
+        ref, position = identity(row)
+        if ref in registered_refs or (position and position in registered_positions):
+            continue
+        if position is None or ref[:2] in ambiguous_owners:
+            manual += 1
+        else:
+            missing.append(row["listing"])
+    if manual:
+        print(f"indirect.csv: {manual} sites need manual comparison of listing ranges")
+    require(not missing, f"indirect.csv: {len(missing)} transfer sites missing from calls.csv; first={missing[:3]}")
+
 def verify(folder, data, digest, records, filepos, imagebase):
     expected = {(r["kind"], r["key"]): r for r in records}
     report = json.loads((folder / "run.json").read_text(encoding="utf-8-sig"))
@@ -231,6 +285,7 @@ def verify(folder, data, digest, records, filepos, imagebase):
         require(site not in call_sites, f"duplicate call site {site}")
         call_sites.add(site)
         call_classes.add(category)
+    check_indirect_attachment(folder, calls, excerpt, asm, imagebase)
     require("external" in call_classes, "no external call evidence")
     if is_mixed:
         require("boundary" in call_classes or "unresolved" in call_classes, "missing mixed boundary evidence")

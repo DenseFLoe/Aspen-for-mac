@@ -171,6 +171,15 @@ def recover(data):
         insns[owner]=instructions
     verified = json.loads((ROOT/"reassembly.json").read_text(encoding="utf-8-sig"))
     matches={int(r["rva"],0):r for r in verified["matches"]}
+    delta = json.loads((ROOT/"s5/reassembly-delta.json").read_text(encoding="utf-8"))
+    assert delta["original_sha256"] == SHA
+    assert delta["previous_sha256"] == hashlib.sha256((ROOT/"reassembly.json").read_bytes()).hexdigest()
+    for row in delta["matches"]:
+        entry = int(row["rva"], 0)
+        if entry in matches:
+            raise ValueError(f"Duplicate reassembled entry {entry:#x}")
+        assert hashlib.sha256(im[entry:entry+row["bytes"]]).hexdigest() == row["sha256"]
+        matches[entry] = row
     source={}
     for part in sorted((ROOT/"code").glob("verified-*.h")):
         lines=part.read_text().splitlines()
