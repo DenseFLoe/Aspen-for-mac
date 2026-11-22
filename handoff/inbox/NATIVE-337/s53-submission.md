@@ -28,4 +28,4 @@ checked 307 coverage rows, 307 tool-native entries, 684 call records, 0 declared
 ~~~
 
 ## 附：历史附表
-code/s37-two-hop.prev.csv（历史回归基准，sha 72918f68…）；code/s45-two-hop.csv（本轮固定布局，sha 2ef4b467…）。
+code/s37-two-hop.prev.csv（历史回归基准，sha 72918f68…）；code/s37-two-hop.csv（本轮固定布局，sha 2ef4b467…）。

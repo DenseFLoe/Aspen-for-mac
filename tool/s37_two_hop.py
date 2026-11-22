@@ -78,12 +78,28 @@ def main():
         return max(hits) if hits else 0
 
     calls = list(csv.DictReader(open(folder / 'calls.csv', encoding='utf-8')))
-    # main-table row is located by the instruction reference (listing line), not by owner
-    row_by_line = {}
+    # main-table row is located by (listing file, line); a bare line number is NOT a
+    # unique key once the listing is split across native*.asm files.
+    row_by_key = {}
     for idx, r in enumerate(calls, start=2):
-        m = r['listing'].split('#L')
-        if len(m) == 2:
-            row_by_line.setdefault(int(m[1].split('-')[0]), idx)
+        ref = r['listing']
+        if '#L' not in ref:
+            continue
+        fpart, lpart = ref.split('#L', 1)
+        fname = fpart.rsplit('/', 1)[-1]
+        line = int(lpart.split('-')[0])
+        row_by_key.setdefault((fname, line), []).append(idx)
+
+    def row_for(fname, line, symbol):
+        cands = row_by_key.get((fname, line), [])
+        if len(cands) == 1:
+            return cands[0]
+        # ambiguous line: disambiguate with the main-table callee/note, else report none
+        hits = [i for i in cands
+                if symbol and (symbol in calls[i - 2].get('callee', '') or symbol in calls[i - 2].get('note', ''))]
+        if len(hits) == 1:
+            return hits[0]
+        return None
 
     sites = []
     for addr in sorted(addr2line):
@@ -105,7 +121,7 @@ def main():
         lib, nm = iat[slot]
         asm = addr2line.get(site)
         owner = '0x%X' % owner_of(site)
-        row = row_by_line.get(asm[1]) if asm else None
+        row = row_for(asm[0], asm[1], '%s!%s' % (lib, nm)) if asm else None
         out.append(dict(site='0x%X' % site,
                         first_hop='0x%X' % hop,
                         iat_slot='0x%X' % slot,
