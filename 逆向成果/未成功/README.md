@@ -1,6 +1,6 @@
 # 未成功
 
-共 62 件。每件均有尝试记录，当前交付只有报告。
+共 61 件。每件均有尝试记录，当前交付只有报告。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -49,7 +49,6 @@
 | [MSVBVM50.DLL](Plus/%5BSystemFolder%5D/MSVBVM50.DLL/) | Plus | `4aef0066e8e4` |
 | [msvbvm60.dll](Plus/Windows/SysWOW64/msvbvm60.dll/) | Plus | `898288bd3b21` |
 | [NewBinary12.BA3F7B28_13D7_4630_902E_55D684AF3A97](Plus/Binary/NewBinary12.BA3F7B28_13D7_4630_902E_55D684AF3A97/) | Plus | `4f6da8511bee` |
-| [nl2sol.lib](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Lib/nl2sol.lib/) | Plus | `7738ce952d97` |
 | [OC25.DLL](Plus/%5BSystemFolder%5D/OC25.DLL/) | Plus | `b30884117342` |
 | [Polymer library.acml](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Lib/Polymer%20library.acml/) | Plus | `28b3d58354ba` |
 | [RCSTR3.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/RCSTR3.dll/) | Plus | `de4e7d927e78` |
