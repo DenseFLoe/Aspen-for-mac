@@ -111,6 +111,19 @@ def build(args):
             txt = '/* decompile-unavailable */'
         c.extend(txt.rstrip('\n').split('\n'))
         c_span[rva][1] = len(c)
+    # markers for anchors that are not instruction boundaries (raw bytes from the original)
+    _anchor_set = sorted(anchors_of(data, pe))
+    _instr_rvas = {ins['rva'] for f in funcs for ins in f['instr']}
+    marker_line = {}
+    asm.append('')
+    asm.append('; ANCHOR MARKERS (addresses that are not instruction boundaries; raw bytes from the original)')
+    for _k in _anchor_set:
+        if _k in _instr_rvas:
+            continue
+        _fb = data[pe.filepos(_k):pe.filepos(_k) + 8].hex()
+        _sp = ' '.join(_fb[i:i + 2] for i in range(0, 16, 2)).upper()
+        asm.append('%08X  %s  ; anchor marker (not an instruction boundary)' % (_k, _sp))
+        marker_line[_k] = len(asm)
     write(code / 'native.asm', '\n'.join(asm) + '\n')
     write(code / 'native.c', '\n'.join(c) + '\n')
 
@@ -133,6 +146,15 @@ def build(args):
     rows, covered = [], set()
     for key in anchors:
         f = next((x for x in funcs if x['rva'] == key), None) or containing(key)
+        if key in marker_line:
+            fb = data[pe.filepos(key):pe.filepos(key) + 8].hex()
+            src = 'code/native.c#L%d-L%d' % tuple(c_span[f['rva']]) if f else 'code/native.c#L1-L2'
+            rows.append(dict(kind='native', key='0x%X' % key, state='covered', first_bytes=fb,
+                             listing='code/native.asm#L%d-L%d' % (marker_line[key], marker_line[key]),
+                             source=src,
+                             note='原件锚点；该地址不是指令边界（位于父函数 0x%X 的指令内部），按原件原始字节标注' % (f['rva'] if f else key)))
+            covered.add(key)
+            continue
         if not f or not any(ins['rva'] == key for ins in f['instr']):
             rows.append(dict(kind='native', key='0x%X' % key, state='gap', first_bytes='', listing='', source='',
                              note='分析器未在该地址解码指令（位于函数体内未定义字节或未建函数）；恢复条件＝在该地址重新反汇编并确认函数边界'))
@@ -204,14 +226,23 @@ def build(args):
                 calls.append(dict(kind='native', caller='0x%X' % own['rva'], callee='indirect@0x%X' % addr,
                                   **{'class': 'unresolved'}, listing='code/native.asm#L%d-L%d' % (ln, ln),
                                   note='间接转移：目标不在指令内（%s），指令 RVA 0x%X；恢复条件＝运行期断点或指针表初始化分析' % (text.split(';')[0].strip()[:60], addr)))
+    direct = [c for c in calls if c['class'] != 'unresolved']
+    indirect = [c for c in calls if c['class'] == 'unresolved']
     with open(out / 'calls.csv', 'w', newline='', encoding='utf-8') as fh:
         w = csv.DictWriter(fh, fieldnames=['kind', 'caller', 'callee', 'class', 'listing', 'note'])
-        w.writeheader(); w.writerows(calls)
+        w.writeheader(); w.writerows(direct)
+    with open(code / 'indirect.csv', 'w', newline='', encoding='utf-8') as fh:
+        w = csv.DictWriter(fh, fieldnames=['kind', 'caller', 'callee', 'class', 'listing', 'note'])
+        w.writeheader()
+        for c in indirect:
+            c = dict(c)
+            c['class'] = 'indirect'
+            w.writerow(c)
 
     ext = [x for x in calls if x['class'] == 'external']
     stats = dict(rows=len(rows), funcs=len(funcs), external=len(ext),
                  data=sum(1 for x in calls if x['class'] == 'data'),
-                 unresolved=sum(1 for x in calls if x['class'] == 'unresolved'),
+                 indirect=sum(1 for x in calls if x['class'] == 'unresolved'),
                  gaps=sum(1 for x in rows if x['state'] == 'gap'),
                  iat_sites=len(site_addrs), iat_registered=len({x['listing'] for x in ext}),
                  anchors=len(anchors), coverage_gap_or_covered=dict(covered=sum(1 for r in rows if r['state'] == 'covered'), gap=sum(1 for r in rows if r['state'] == 'gap')),

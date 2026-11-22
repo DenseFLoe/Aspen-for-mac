@@ -43,3 +43,12 @@
     PYTHONIOENCODING=utf-8 python out/review9/merge_ledger.py                             # 合并 + R1/R2/R6 断言
     PYTHONIOENCODING=utf-8 python out/review9/gen_reports.py                              # stats/failures/README/11-report
     PYTHONIOENCODING=utf-8 python out/review9/verify_item.py --idx 916 --fresh            # 单件复跑
+
+# 原判定与现判定分列（第二轮更正）
+
+| 原 Tier B 判定 | 件数 | 现在 | 去向 |
+| --- | ---: | --- | --- |
+| PASS | 978 | pass 530 / fail 448 | 448 件尾部残留 ilspycmd 提示（B4 tool_nag_tail）转 fail |
+| PARTIAL | 7 | fail 7 | 7 件原 partial（no_il 6 / no_claim 1）全部转 fail |
+| NOT_RUN | 15 | fail 15 | a2/a3/tier_b/analyze_failed 等既有失败 |
+| 合计 | 1000 | pass 530 / fail 470 | B4 的 455 个失败 = 原 PASS 448 + 原 PARTIAL 7；本表保留旧回执口径，不覆盖 |

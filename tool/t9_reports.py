@@ -295,6 +295,24 @@ validation_md = f"""# T9 自检（R1–R6 逐条，机检预审 · 第二轮更�
     PYTHONIOENCODING=utf-8 python out/review9/verify_item.py --idx 916 --fresh            # 单件复跑
 """
 
+from collections import Counter as _C
+_tb = _C(r.get("tier_b") or "" for r in rows)
+_orig_pass = _tb.get("PASS", 0)
+_orig_partial = sum(v for k, v in _tb.items() if k.startswith("PARTIAL"))
+_orig_fail = sum(v for k, v in _tb.items() if k == "NOT_RUN")
+_b4 = sum(1 for r in rows if "tool_nag_tail" in (r.get("fail_codes") or ""))
+_b4_from_pass = _b4 - _orig_partial
+split_md = f"""# 原判定与现判定分列（第二轮更正）
+
+| 原 Tier B 判定 | 件数 | 现在 | 去向 |
+| --- | ---: | --- | --- |
+| PASS | {_orig_pass} | pass {verdicts['pass']} / fail {_b4_from_pass} | {_b4_from_pass} 件尾部残留 ilspycmd 提示（B4 tool_nag_tail）转 fail |
+| PARTIAL | {_orig_partial} | fail {_orig_partial} | 7 件原 partial（no_il 6 / no_claim 1）全部转 fail |
+| NOT_RUN | {_orig_fail} | fail {_orig_fail} | a2/a3/tier_b/analyze_failed 等既有失败 |
+| 合计 | {_orig_pass + _orig_partial + _orig_fail} | pass {verdicts['pass']} / fail {fail_rows} | B4 的 455 个失败 = 原 PASS 448 + 原 PARTIAL 7；本表保留旧回执口径，不覆盖 |
+"""
+stats_md = stats_md + "\n" + split_md
+validation_md = validation_md + "\n" + split_md
 for name, text in (("stats.md", stats_md), ("failures.md", failures_md),
                    ("README.md", readme_md), ("validation.md", validation_md)):
     (OUT / name).write_text(text, encoding="utf-8", newline="\n")

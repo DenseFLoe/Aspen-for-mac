@@ -84,3 +84,12 @@
 - 这是**机检预审**，不是上游 P0–P3 终判：原件二进制不在仓库，语义层与运行期证据一律未做。
 - Tier B 是「我方产物自证」（数 IL/ASM 条目 vs 报告声称值），不是用 dnfile/pefile 从原件重算。
 - B3 占位符命中只登记不判 fail（无法区分原版行为与恢复缺口）。
+
+# 原判定与现判定分列（第二轮更正）
+
+| 原 Tier B 判定 | 件数 | 现在 | 去向 |
+| --- | ---: | --- | --- |
+| PASS | 978 | pass 530 / fail 448 | 448 件尾部残留 ilspycmd 提示（B4 tool_nag_tail）转 fail |
+| PARTIAL | 7 | fail 7 | 7 件原 partial（no_il 6 / no_claim 1）全部转 fail |
+| NOT_RUN | 15 | fail 15 | a2/a3/tier_b/analyze_failed 等既有失败 |
+| 合计 | 1000 | pass 530 / fail 470 | B4 的 455 个失败 = 原 PASS 448 + 原 PARTIAL 7；本表保留旧回执口径，不覆盖 |
