@@ -103,7 +103,7 @@ def data_sections(data, pe, hdr):
     if not hdr["more_sections"]:
         return []
     rva = (hdr["rva"] + hdr["header_size"] + hdr["code_size"] + 3) & ~3
-    out, guard = [], 0
+    out = []
     while True:
         sec = section_of(pe, rva)
         if sec is None:
@@ -124,18 +124,25 @@ def data_sections(data, pe, hdr):
                     raise ValueError("clause %d range outside the IL body (code size %d)"
                                      % (c["index"], hdr["code_size"]))
         out.append(rec)
-        guard += 1
-        if not rec["more"] or guard > 8:
-            break
-        rva += size
-    return out
+        if not rec["more"]:
+            return out
+        nxt = rva + size
+        sec2 = section_of(pe, nxt)
+        if sec2 is None:
+            raise ValueError("section at %#x declares a successor but RVA %#x is outside every section"
+                             % (rva, nxt))
+        rva = nxt
 
 
 def read(data, pe, rva):
     hdr = header(data, pe, rva)
     secs = data_sections(data, pe, hdr)
-    eh = next((s for s in secs if s["base"] == EHTABLE), None)
-    return hdr, eh, (eh["clauses"] if eh else [])
+    ehs = [s for s in secs if s["base"] == EHTABLE]
+    clauses = [c for s in ehs for c in s["clauses"]]
+    eh = ehs[0] if ehs else None
+    if eh is not None:
+        eh = dict(eh, section_count=len(secs), clauses=clauses, count=len(clauses))
+    return hdr, eh, clauses
 
 
 class _FakePE:

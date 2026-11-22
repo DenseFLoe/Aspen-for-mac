@@ -105,7 +105,16 @@ def gate_facts(data, pe, slot_rva, cmp_addr, jcc_addr, test_addr, jz_addr):
     taken_val, taken_at = path_return(data, pe, jcc["target"])
     fall_val, fall_at = path_return(data, pe, jcc_addr + jcc["len"])
     sec = next(s for s in pe.secs if s["rva"] <= slot_rva < s["rva"] + max(s["size"], s.get("vsize", 0)))
-    chars = struct.unpack_from("<I", data, sec["hdr"] + 36)[0]      # IMAGE_SECTION_HEADER.Characteristics
+    hdr_off = sec.get("hdr")
+    if hdr_off is None:                                  # fall back to the section table itself
+        pe_off = struct.unpack_from("<I", data, 60)[0]
+        opt = pe_off + 24
+        start = opt + struct.unpack_from("<H", data, pe_off + 20)[0]
+        for i in range(struct.unpack_from("<H", data, pe_off + 6)[0]):
+            if struct.unpack_from("<I", data, start + 40 * i + 12)[0] == sec["rva"]:
+                hdr_off = start + 40 * i
+                break
+    chars = struct.unpack_from("<I", data, hdr_off + 36)[0]          # IMAGE_SECTION_HEADER.Characteristics
     signed = chars - (1 << 32) if chars & 0x80000000 else chars
     # the predicate is decoded, not assumed: compare value = signed(Characteristics) - imm
     cmp_value = signed - cmp_ins["imm"]
@@ -118,6 +127,9 @@ def gate_facts(data, pe, slot_rva, cmp_addr, jcc_addr, test_addr, jz_addr):
     skipped = (al_for_slot == 0 and skip_when_zero) or (al_for_slot != 0 and not skip_when_zero)
     return dict(
         cmp=cmp_ins["text"], cmp_disp="0x%X" % cmp_ins["disp"],
+        jcc_cc=jcc["cc"], jcc_opcode="0x%02X" % data[pe.filepos(jcc["addr"])],
+        jcc_taken=taken,
+        al_immediates={"0x%X" % taken_at: taken_val, "0x%X" % fall_at: fall_val},
         jcc=dict(cc=jcc["cc"], addr="0x%X" % jcc["addr"], target="0x%X" % jcc["target"],
                  fallthrough="0x%X" % (jcc["addr"] + jcc["len"])),
         taken_return=taken_val, taken_at="0x%X" % taken_at,
