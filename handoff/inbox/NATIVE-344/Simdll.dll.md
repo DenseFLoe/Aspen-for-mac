@@ -1,23 +1,15 @@
 # Simdll.dll 静态复核
 
-原件是 Plus-Properties 的 `Program Files/AspenTech/AprSystem V15.0/GUI/Xeq/simdll.dll`。PE 版本资源 41.0.0.614，AMD64，373,288 字节，SHA-256 为 `9b762caf68ad02f296eb3d98d9995af91adbd572f7c00acb88f4afc5fe88d601`。[固定输入提交](https://github.com/DenseFLoe/Aspen-for-mac/blob/64670801de54e990f975aaeda06e89340c0e4e08/issue-materials/344/Simdll.dll) · [工单 #344](https://github.com/DenseFLoe/Aspen-for-mac/issues/344)
+原件来自 Plus-Properties 的 `Program Files/AspenTech/AprSystem V15.0/GUI/Xeq/simdll.dll`，PE 版本 41.0.0.614，AMD64，373,288 字节。原件 SHA-256 为 `9b762caf68ad02f296eb3d98d9995af91adbd572f7c00acb88f4afc5fe88d601`。[固定原件](https://github.com/DenseFLoe/Aspen-for-mac/blob/64670801de54e990f975aaeda06e89340c0e4e08/issue-materials/344/Simdll.dll) · [工单 #344](https://github.com/DenseFLoe/Aspen-for-mac/issues/344)
 
-整件仍为静态验收未通过。本轮定位了原报告的两个入口，另恢复 19 个简单叶函数，并核对内部 19 项分派表。三个重点业务入口已有可编辑控制流模型，依赖侧原型和更深被调实现继续保留在缺口中。[业务源码及逐项解读](code/simdll.c.md) · [叶函数](code/leaves.c.md)
+整件仍有 959 个原生入口缺口。本轮对 401 个已确定的导入跳板提供可编辑实现并逐字节重组。结合首轮 19 个短函数，1,379 行中已有 420 行通过原指令对照。首轮的业务入口、运行时区间、Ghidra 及原始资源索引保留。[第五号交付](s5-submission.md) · [覆盖表](coverage.csv)
 
-原件异常目录、代码导出、程序入口去重共 911 个锚点。858 个运行时区间中 278 个带有链式 unwind 信息。[区间表](runtime-ranges.csv)记录各段归属、完整区间的字节摘要和从入口能静态遍历的指令字节数。比如 0x31540 主范围接续 0x3163a 和 0x32580 两个从属范围，0x15a10 主范围接续 0x15ab8 和 0x15b25。代码导出 273 个序号对应 166 个唯一入口，单个 0x1370 有 101 个导出序号。
+每个新入口完整执行一条六字节的 RIP 相对间接尾跳转，目标为原件导入表的一个指针槽。16 个 DLL 提供 401 个槽，325 项按名、76 项按序号导入。源码经实际 C 编译、对象文件符号定位及 401 处 AMD64 REL32 重定位后，2,406 字节与原件全部相等。重点调用表有 434 项。完整引用索引独立核对 11,299 个不同的类别与指令位置组合，含 1,961 处直接 IAT 转移。[源文件及复查方法](s5/import-thunks.c.md) · [逐指令证据](s5/import-thunks.asm) · [完整引用](references.csv)
 
-独立 Capstone 遍历产生 1,316 个锚点与直达调用候选。按每个区间的直接控制流解码，0x22a8d 的间接分派使用原始的 19 项 DWORD 表继续展开。其他无法静态绑定的间接跳转停在该指令。[引用索引](references.csv)以十六进制“区间或候选入口:指令 RVA”保存目标关系。独立使用 iced-x86 1.21.0 解码和原始 PE 描述符复查的 11,254 条记录包含 2,334 个直达内部调用、1,916 处直接 IAT 转移、2,221 处经 IAT 跳板的转移、4,147 个 RIP 相对数据引用、388 个跨区间分支、1 个已解析分派及 247 处未决间接转移。IAT 导入按原件的名称或序号区分，引用计数包含调用及尾跳转。
+本轮附有 50 个资源叶的原始数据及指纹，均按类型、标识与语言逐项核对。12 组图标共指向 14 个图像资源，组内声明与实际内容长度相符。菜单、对话框、字符串等资源的使用方仍需业务代码或框架调用证据。[可还原资源](s5/resources.json) · [资源索引](resources.csv)
 
-Ghidra 12.2 在同一原件识别 1098 个函数入口。其中 63 个入口扩充了独立遍历，281 个原件锚点或调用目标只出现在独立遍历中。别名和分段 unwind 都可能影响工具计数。导出器按跳板优先归类，结果为 generated=364, thunk=434, warning=300。含 WARNING 字样的输出覆盖 720 个入口，含跳板。可按 [Ghidra 函数表](ghidra/functions.tsv) 的 RVA、原件区间和源码行定位。独立复查已逐行验证源位置及区间字节数。[交叉核对结果](crosscheck.json)
+继续从首轮确定的 0x31540 主区间及其 0x3163a、0x32580 链式片段复查分支、数据和调用归属，逐址解决剩余 959 项缺口。247 处待定间接转移仍需目标依据。Windows 运行行为留待相应阶段实测。[首轮静态裁定](../../outbox/NATIVE-344/s1-decision.md) · [首轮原始说明](https://github.com/DenseFLoe/Aspen-for-mac/blob/f1ed621740bf27fabf86b4780d9fdcb75df279ca/handoff/inbox/NATIVE-344/Simdll.dll.md)
 
-Ghidra 的三个入口均能定位相同的状态字段、分支和跳表操作。0x39c00 的自动返回表达式给出 CONCAT71 和未知高位，原件在 0x39c88 保存 EAX、在 0x39cbd 原样写回 EAX；0x109c0 两个出口分别返回 0 或归一化到 0/1 的 32 位结果。外部调用参数的原型仍需依赖侧证据。
+复查本轮构建与资源使用 `python s5/verify.py <Simdll.dll> <zig>`。全量引用使用 `python verify_references.py <Simdll.dll> <本件目录>`。自仓库根执行 `python handoff/assignments/check-native-coverage.py NATIVE-344 --original <Simdll.dll>`，本轮为 1,379 个入口、434 个引用和 959 项缺口，退出 2。[构建结果](s5/rebuild.json) · [引用结果](crosscheck.json)
 
-使用 JDK 25 与 Ghidra 12.2 的 analyzeHeadless，执行 `analyzeHeadless <项目目录> Sim344 -import <原件> -max-cpu 2 -analysisTimeoutPerFile 600 -scriptPath <本交付目录> -postScript ExportSimFunctions.java <本交付目录>/ghidra`。本机使用不含点前缀目录名的项目路径。中文安装路径使默认控制台日志配置加载异常，分析进程正常退出；版本、输入指纹、函数边界和 C 文件均从实际项目回读验证。
-
-任务覆盖表共有 1379 个地址。19 个叶函数已逐条对应原件，其余 1360 个地址的缺口、源码索引和恢复条件见 [coverage.csv](coverage.csv)。原件资源树含 9 种类型、50 个资源叶节点，[资源表](resources.csv)已按类型、名称、语言、长度、代码页和每份原始内容的 SHA-256 定位。恢复整件需交付必要资源，复查窗口、菜单等资源与代码引用，绑定剩余间接目标，审查链式区间、类型、数据和外部调用契约，并逐个排除遗漏实现。没有运行 Windows 产品。
-
-## 复查
-
-`python handoff/assignments/check-native-coverage.py NATIVE-344 --original <Simdll.dll>` 对原件与交付检查，预期退出 2。该命令检查 33 个已逐行挂接的重点引用。全范围的引用按 `python verify_references.py <Simdll.dll> <本交付目录>` 复核，预期退出 0。两份人工或叶函数 C 模型分别以 Zig 0.13.0 的 x86_64-windows-gnu C11 编译器生成本地静态对象，编译检查成功。
-
-Capstone 5.0.6、pefile 2024.8.26 与 `recover.py <Simdll.dll> <输出目录>` 可再生遍历、叶函数及表格。在带有已导出的 `ghidra/functions.tsv` 的输出目录内运行即可合并两套入口。完整的证据与产物指纹见[本轮清单](artifacts.sha256)。
+本目录当前文件记录在 [artifacts.sha256](artifacts.sha256)。首轮提交、指纹清单和数据可从原提交回读，首轮清单 SHA-256 为 `a38056517ade35d5d9cc34f8de45d90b78792fdff860a18aa68846b6bd3fbe46`。本轮实际更新了覆盖、调用、引用、统计和逐件说明。[固定的首轮清单](https://github.com/DenseFLoe/Aspen-for-mac/blob/f1ed621740bf27fabf86b4780d9fdcb75df279ca/handoff/inbox/NATIVE-344/artifacts.sha256)
