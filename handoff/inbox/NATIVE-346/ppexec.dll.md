@@ -47,3 +47,8 @@ Plus-Properties，原路径为 `[ProgramFiles64Folder]/AspenTech/APrSystem V15.0
 ## 第二十一号初始化路径复验
 
 两条配套库的取址路径已核对到各自的计数读取。按原件已知初始化值 64，三处复制和一处填充的目的范围均为 512 字节。保留 13 个未决，仍待核对可写字段的外部来源及三处 PLEX 源记录容量。 [逐址证据及恢复条件](s21/contracts.md) · [复跑步骤](s21-submission.md)
+
+
+## 第二十五号 PLEX 源记录复验
+
+三个 PLEX 源字段及小计数、批量复制的起址已逐址核对，源地址为 `DMS_PLEX + 8*(j+f-1)`。通用描述符的写入及查找条件有独立证据，具体键的来源、记录容量和 13 处未决继续保留。[参数契约](s25/contracts.md) · [本轮回执](s25-submission.md)
