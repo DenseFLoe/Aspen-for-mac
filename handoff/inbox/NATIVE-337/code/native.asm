@@ -5560,3 +5560,5 @@
 ; FUNC 00006250-0000625E FUN_180006250 (14 bytes)
 00006250  48 8D 0D B9 51 00 00  LEA RCX
 00006257  48 FF 25 72 0E 00 00  JMP qword ptr [0x1800070d0]
+
+; ANCHOR MARKERS (addresses that are not instruction boundaries; raw bytes from the original)
