@@ -1,6 +1,6 @@
 # 未成功
 
-共 60 件。每件均有尝试记录，当前交付只有报告。
+共 59 件。每件均有尝试记录，当前交付只有报告。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -10,7 +10,6 @@
 | [APlusHtmlHelp.exe](Plus/Program%20Files/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/APlusHtmlHelp.exe/) | Plus | `ed8de8c0525a` |
 | [APropHtmlHelp.exe](Properties/Program%20Files/AspenTech/Aspen%20Properties%20V15.0/GUI/xeq/APropHtmlHelp.exe/) | Properties | `ad692fbf8e9f` |
 | [ApwnRes.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/ApwnRes.dll/) | Plus | `1ef6c43d2f4f` |
-| [Aspen Properties.xla](Properties/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Properties%20V15.0/Engine/xeq/Aspen%20Properties.xla/) | Properties | `d124683bb13c` |
 | [AspenTech.Exchange.ExchangeAgent.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.Exchange.ExchangeAgent.dll/) | Plus | `4031e6d551bc` |
 | [BATCHSEP.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/BATCHSEP.dll/) | Plus | `259f7e2d588f` |
 | [d3dcompiler_47.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/d3dcompiler_47.dll/) | Plus | `e4bc3420a280` |
