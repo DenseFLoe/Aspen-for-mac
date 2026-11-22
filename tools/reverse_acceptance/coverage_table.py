@@ -158,4 +158,6 @@ def check(original, files):
     return dict(scope="handoff_coverage_keys_original_anchor_bytes_and_evidence_ranges",
                 status="fail" if "fail" in statuses else "inconclusive" if statuses else "pass",
                 findings=findings, metrics=dict(rows=len(rows), unique_keys=len(seen), original_anchors=len(expected),
+                                                declared_entry_gaps=sum(f["code"] == "declared_coverage_gap" and
+                                                                        f.get("kind") == "native" for f in findings),
                                                 matched_marked_source_owners=owners_checked))

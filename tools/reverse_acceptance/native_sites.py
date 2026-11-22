@@ -2,6 +2,7 @@
 
 import bisect
 import csv
+import hashlib
 import re
 from collections import Counter, defaultdict
 from pathlib import Path, PureWindowsPath
@@ -9,7 +10,8 @@ from pathlib import Path, PureWindowsPath
 
 SCOPE = ("PE x86/x64: verify instruction bytes and single-instruction lengths in submitted "
          "native listings, and compare indirect transfers and static IAT targets with calls.csv. "
-         "Function discovery, all possible instruction boundaries, data references, source equivalence "
+         "Verify declared direct internal edges and distinguish IAT references from control transfers. "
+         "Function discovery, all possible instruction boundaries, arbitrary data references, source equivalence "
          "and runtime target sets are outside this check.")
 LINE = re.compile(r"^\s*(?:0[xX])?([0-9a-fA-F]{4,16})\s*:?\s+"
                   r"((?:[0-9a-fA-F]{2}[ \t]+)*[0-9a-fA-F]{2})(?=\s|$)")
@@ -45,19 +47,60 @@ def safe_path(root, name):
     return target
 
 
-def csv_rows(root, name, fields):
+def csv_rows(root, name, *schemas, numbered=False):
     with safe_path(root, name).open(encoding="utf-8-sig", newline="") as f:
         reader = csv.DictReader(f, strict=True)
         header = reader.fieldnames or []
-        if len(set(header)) != len(header) or not fields.issubset(header):
+        if len(set(header)) != len(header) or sum(fields.issubset(header) for fields in schemas) != 1:
             raise ValueError(f"Invalid {name} header")
         for row in reader:
             if None in row or any(value is None for value in row.values()):
                 raise ValueError(f"Incomplete {name} row at line {reader.line_num}")
-            yield row
+            yield (reader.line_num, row) if numbered else row
 
 
-def check(original: bytes, delivery: Path) -> dict:
+def provider_exports(provider, pefile, result):
+    if provider is None:
+        return {}
+    path, digest = provider
+    try:
+        data = Path(path).read_bytes()
+        actual = hashlib.sha256(data).hexdigest()
+        if actual != digest.lower():
+            raise ValueError("Provider SHA-256 differs from the supplied fingerprint.")
+        with pefile.PE(data=data, fast_load=True) as pe:
+            pe.parse_data_directories(directories=[0])
+            exports = getattr(pe, "DIRECTORY_ENTRY_EXPORT", None)
+            if not exports:
+                raise ValueError("Provider has no readable export directory.")
+            name = (pe.get_string_at_rva(exports.struct.Name) or b"").decode("ascii").casefold()
+            if not name:
+                raise ValueError("Missing provider DLL name in export directory.")
+            found = {}
+            for symbol in exports.symbols:
+                if symbol.forwarder or not symbol.address:
+                    continue
+                sections = [s for s in pe.sections if s.VirtualAddress <= symbol.address <
+                            s.VirtualAddress + (s.Misc_VirtualSize or s.SizeOfRawData)]
+                if len(sections) != 1:
+                    continue
+                section = sections[0]
+                evidence = {"provider_sha256": actual, "export_rva": hex(symbol.address),
+                            "section": section.Name.rstrip(b"\0").decode("ascii", "backslashreplace"),
+                            "executable": bool(section.Characteristics & 0x20000000)}
+                aliases = [f"#{symbol.ordinal}"]
+                if symbol.name:
+                    aliases.append(symbol.name.decode("ascii", "backslashreplace"))
+                for alias in aliases:
+                    key = (name, alias)
+                    found[key] = evidence if key not in found or found[key] == evidence else None
+            return found
+    except (ValueError, OSError, pefile.PEFormatError) as err:
+        result["findings"].append({"severity": "inconclusive", "code": "provider_evidence", "message": str(err)})
+        return {}
+
+
+def check(original: bytes, delivery: Path, provider=None) -> dict:
     result = {"status": "inconclusive", "scope": SCOPE, "findings": [], "metrics": {}}
     try:
         import iced_x86 as x86
@@ -73,7 +116,8 @@ def check(original: bytes, delivery: Path) -> dict:
                                        "message": "This audit supports x86 PE32 and x64 PE32+."})
             return result
         with pe:
-            _audit(original, delivery.resolve(), pe, 64 if machine == 0x8664 else 32, x86, result)
+            _audit(original, delivery.resolve(), pe, 64 if machine == 0x8664 else 32, x86, result,
+                   provider_exports(provider, pefile, result))
     except (OSError, UnicodeError, ValueError, csv.Error, pefile.PEFormatError) as err:
         result["findings"].append({"severity": "fail", "code": "invalid_input", "message": str(err)})
     levels = {row["severity"] for row in result["findings"]}
@@ -81,7 +125,7 @@ def check(original: bytes, delivery: Path) -> dict:
     return result
 
 
-def _audit(original, root, pe, bits, x86, result):
+def _audit(original, root, pe, bits, x86, result, provider):
     findings, metrics = result["findings"], result["metrics"]
 
     def report(level, code, message, site=None, line=None):
@@ -153,13 +197,13 @@ def _audit(original, root, pe, bits, x86, result):
             if shown is not None and shown != ins.op0_register:
                 return "Displayed transfer register disagrees with original bytes."
         if ins.op0_kind in near:
-            numeric = re.fullmatch(r"(?:(?:short|near(?: ptr)?)\s+)?0x([0-9a-f]+)", operand)
-            if numeric and int(numeric[1], 16) not in {ins.near_branch_target, ins.near_branch_target - base}:
+            numeric = re.fullmatch(r"(?:(?:short|near(?: ptr)?)\s+)?(?:0x([0-9a-f]+)|([0-9][0-9a-f]*)h)", operand)
+            if numeric and int(numeric[1] or numeric[2], 16) not in {ins.near_branch_target, ins.near_branch_target - base}:
                 return "Displayed direct branch target disagrees with original bytes."
         return None
 
-    def slot_of(ins):
-        if ins.flow_control not in indirect or ins.op0_kind != x86.OpKind.MEMORY:
+    def static_memory(ins):
+        if not any(ins.op_kind(i) == x86.OpKind.MEMORY for i in range(ins.op_count)):
             return None
         if ins.segment_prefix in (x86.Register.FS, x86.Register.GS):
             return None
@@ -167,6 +211,11 @@ def _audit(original, root, pe, bits, x86, result):
             return ins.ip_rel_memory_address - base
         if ins.memory_base == x86.Register.NONE and ins.memory_index == x86.Register.NONE:
             return ins.memory_displacement - base
+        return None
+
+    def slot_of(ins):
+        if ins.flow_control in indirect and ins.op0_kind == x86.OpKind.MEMORY:
+            return static_memory(ins)
         return None
 
     def decode(rva):
@@ -194,7 +243,7 @@ def _audit(original, root, pe, bits, x86, result):
             target = jump.near_branch_target - base
         return None
 
-    rows = [r for r in csv_rows(root, "calls.csv", {"kind", "caller", "class", "callee", "listing", "note"})
+    rows = [(line, r) for line, r in csv_rows(root, "calls.csv", {"kind", "caller", "class", "callee", "listing", "note"}, numbered=True)
             if r["kind"].casefold() == "native"]
     files = set()
     default = "code/native.asm"
@@ -206,7 +255,7 @@ def _audit(original, root, pe, bits, x86, result):
             ref = parse_ref(row["listing"])
             if row["kind"].casefold() == "native" and ref and ref[0].lower().endswith(".asm"):
                 files.add(ref[0])
-    for row in rows:
+    for _, row in rows:
         ref = parse_ref(row["listing"])
         if ref and ref[0].lower().endswith(".asm"):
             files.add(ref[0])
@@ -301,9 +350,12 @@ def _audit(original, root, pe, bits, x86, result):
     counts = Counter()
     known_iat = {rva for rva in expected if slot_of(instructions[rva]) in iat}
     explicit_unresolved = set()
-    for row_index, row in enumerate(rows, 1):
+    unresolved_pairs = defaultdict(list)
+    data_sites = defaultdict(dict)
+    qualified_slot = re.compile(r"IAT\s+(0x[0-9a-f]+)\s+\(([^()!]+)!([^()!]+)\)", re.I)
+    for row_index, row in rows:
         cls = row["class"].strip().casefold()
-        if cls == "data":
+        if cls == "data" and "!" not in row["callee"]:
             continue
         ref = parse_ref(row["listing"])
         if not ref or ref[0] not in by_file:
@@ -324,6 +376,22 @@ def _audit(original, root, pe, bits, x86, result):
         ins = instructions[site]
         if owners[site] and normalize(int(row["caller"], 0)) not in owners[site]:
             report("inconclusive", "caller_ownership", "Caller and listing ownership require reconciliation.", site, row["listing"])
+        if cls == "data":
+            label = row["callee"].strip()
+            wrapped = qualified_slot.fullmatch(label)
+            dll, _, symbol = label.partition("!")
+            slot = static_memory(ins)
+            if wrapped:
+                dll, symbol = wrapped[2], wrapped[3]
+            ident = (dll.casefold(), symbol)
+            if iat.get(slot) != ident or (wrapped and int(wrapped[1], 16) != slot):
+                report("fail", "data_iat_target", "Declared import operand disagrees with the original IAT slot.",
+                       site, row["listing"])
+                continue
+            if site in data_sites[ident]:
+                report("fail", "duplicate_data_import", "Repeated import operand registration.", site, row["listing"])
+            data_sites[ident][site] = slot
+            continue
         if cls not in CLAIM_CLASSES:
             report("fail", "invalid_class", f"Unrecognized native transfer class {cls!r}.", site, row["listing"])
             continue
@@ -338,24 +406,151 @@ def _audit(original, root, pe, bits, x86, result):
                 report("fail", "iat_target", "Classification or destination differs from the original import slot.", site, row["listing"])
         elif cls == "unresolved":
             explicit_unresolved.add(site)
+            unresolved_pairs[(int(row["caller"], 0), site)].append(
+                {"source": f"calls.csv#L{row_index}", "listing": row["listing"]})
         else:
             report("inconclusive", "target_evidence", "Target or boundary needs evidence beyond this local instruction.", site, row["listing"])
 
-    # Some deliveries keep the internal edges in a sidecar with several possible destinations per site.
-    # This proves only registration. Checking the value flow and completeness of the target set is separate.
+    incoming = defaultdict(set)
+    fallthrough = defaultdict(set)
+    for site, ins in instructions.items():
+        if ins.flow_control in direct and ins.op0_kind in near:
+            incoming[ins.near_branch_target - base].add(site)
+        if ins.flow_control in next_flow:
+            fallthrough[site + ins.len].add(site)
+
+    # Explicit direct edges bind to decoded original operands. Rows describing a possible
+    # indirect destination give only registration, regardless of how many candidates they list.
     internal = set()
+    verified_direct = set()
     sidecar = safe_path(root, "internal-transfers.csv")
     if sidecar.is_file():
-        for row in csv_rows(root, "internal-transfers.csv", {"site_rva", "target_rva", "basis"}):
-            site = int(row["site_rva"], 0)
-            if site not in expected or site in known_iat or site in counts:
+        modern = {"site_rva", "target_rva", "basis"}
+        legacy = {"owner", "site", "target", "target_owner", "instruction"}
+        for row in csv_rows(root, "internal-transfers.csv", modern, legacy):
+            old = legacy.issubset(row)
+            site = int(row["site" if old else "site_rva"], 0)
+            target = int(row["target" if old else "target_rva"], 0)
+            is_direct = old or row["basis"].strip().casefold() == "direct"
+            if is_direct:
+                ins = decode(site)
+                if (not ins or ins.is_invalid or ins.flow_control not in direct or ins.op0_kind not in near
+                        or not mapped(target) or ins.near_branch_target - base != target):
+                    report("fail", "internal_direct_target", f"Declared direct edge to {hex(target)} disagrees with original.", site)
+                    continue
+                if old:
+                    words = DISPLAY_PREFIX.sub("", row["instruction"].strip().casefold()).split()
+                    mnemonic = ALIASES.get(words[0], words[0]) if words else ""
+                    if getattr(x86.Mnemonic, mnemonic.upper(), None) != ins.mnemonic or text_conflict(ins, row["instruction"]):
+                        report("fail", "internal_direct_instruction", "Legacy instruction disagrees with original.", site)
+                        continue
+                owner_text = row["owner"] if old else row.get("owner_rva")
+                endpoints = [(site, owner_text)]
+                if old:
+                    endpoints.append((target, row["target_owner"]))
+                if any(value is not None and (not mapped(int(value, 0)) or
+                       (owners[rva] and int(value, 0) not in owners[rva])) for rva, value in endpoints):
+                    report("inconclusive", "internal_owner", "Declared ownership requires reconciliation.", site)
+                if site in verified_direct:
+                    report("fail", "duplicate_internal_direct", "Repeated direct edge registration.", site)
+                verified_direct.add(site)
+                incoming[target].add(site)
                 continue
-            target = int(row["target_rva"], 0)
-            if row["basis"].strip() and mapped(target):
+            if site in expected and site not in known_iat and site not in counts and row["basis"].strip() and mapped(target):
                 internal.add(site)
         if internal:
             report("inconclusive", "internal_destinations",
                    f"{len(internal)} transfer sites use internal edge evidence; path constraints require independent review.")
+        unlisted = sorted(verified_direct - instructions.keys())
+        if unlisted:
+            report("inconclusive", "internal_boundary",
+                   f"{len(unlisted)} direct operands match original bytes at boundaries absent from the verified listings.",
+                   unlisted[0])
+
+    # A gap named in a sidecar must still have its unresolved native row at the same caller and site.
+    gaps = set()
+    gap_records = []
+    if safe_path(root, "control-gaps.csv").is_file():
+        for line, row in csv_rows(root, "control-gaps.csv", {"owner_rva", "site_rva", "observation"}, numbered=True):
+            owner, site = int(row["owner_rva"], 0), int(row["site_rva"], 0)
+            gap_records.append({"owner_rva": hex(owner), "site_rva": hex(site), "source": f"control-gaps.csv#L{line}",
+                                "submitted_observation": row["observation"],
+                                "unresolved_main_rows": unresolved_pairs.get((owner, site), [])})
+            if (owner, site) in gaps:
+                report("fail", "duplicate_control_gap", "Repeated control gap registration.", site)
+            gaps.add((owner, site))
+            if (owner, site) not in unresolved_pairs:
+                report("fail", "control_gap_main_row", "No unresolved calls.csv record matches this gap's owner and site.", site)
+                internal.discard(site)
+        for _, site in sorted(unresolved_pairs.keys() - gaps):
+            report("fail", "control_gap_sidecar_row", "Unresolved main-table record is absent from the supplied gap index.", site)
+    result["control_gap_records"] = gap_records
+    unresolved = explicit_unresolved | {site for _, site in gaps}
+
+    # Discover uses of trusted non-executable exports even when a submission omits its data records.
+    declared_data = {(ident, site) for ident, sites in data_sites.items() for site in sites}
+    data_slots = {slot: ident for slot, ident in iat.items() if provider.get(ident) and not provider[ident]["executable"]}
+    if data_slots:
+        for ident in data_slots.values():
+            data_sites.setdefault(ident, {})
+        for site, ins in instructions.items():
+            slot = static_memory(ins)
+            if slot in data_slots:
+                data_sites[data_slots[slot]][site] = slot
+
+    # An IAT operand in an instruction may be listed as data alongside its control record.
+    # Without such a record, only a standalone JMP thunk may be explained as a data import.
+    details = []
+    for ident, sites in sorted(data_sites.items()):
+        provider_export = provider.get(ident)
+        reads = []
+        stubs = []
+        observed_jumps = []
+        for site, slot in sorted(sites.items()):
+            ins = instructions[site]
+            if site in expected:
+                if ins.flow_control == flows.INDIRECT_BRANCH and ins.mnemonic == x86.Mnemonic.JMP:
+                    observed_jumps.append(hex(site))
+                if counts[site] or (ident, site) not in declared_data:
+                    continue
+                if ins.flow_control != flows.INDIRECT_BRANCH or ins.mnemonic != x86.Mnemonic.JMP:
+                    report("fail", "data_hides_call", "An IAT operand registration does not account for an original call.", site)
+                    continue
+                counts[site] += 1
+                callers = sorted(incoming[site])
+                stubs.append({"site_rva": hex(site), "slot_rva": hex(slot),
+                              "observed_direct_incoming_rvas": [hex(x) for x in callers],
+                              "listed_fallthrough_rvas": [hex(x) for x in sorted(fallthrough[site])],
+                              "pe_root": site in anchors})
+                if callers or fallthrough[site] or site in anchors or (provider_export and provider_export["executable"]):
+                    report("fail", "data_thunk_control", "Data-only thunk classification conflicts with a control entry or executable export.", site)
+                elif not provider_export:
+                    report("inconclusive", "data_thunk_provider", "A matching provider export section is required to verify the data-only thunk claim.", site)
+            elif ins.mnemonic == x86.Mnemonic.MOV and ins.op0_kind == x86.OpKind.REGISTER and ins.op1_kind == x86.OpKind.MEMORY:
+                read = {"site_rva": hex(site), "slot_rva": hex(slot)}
+                following = decode(site + ins.len)
+                if (following and not following.is_invalid and following.op_count == 2
+                        and following.op1_kind == x86.OpKind.MEMORY and following.op0_kind == x86.OpKind.REGISTER
+                        and following.memory_base == ins.op0_register and following.memory_index == x86.Register.NONE
+                        and following.memory_displacement == 0 and following.segment_prefix == x86.Register.NONE
+                        and following.mnemonic == x86.Mnemonic.MOVSD):
+                    read["scalar_double_read_rva"] = hex(site + ins.len)
+                reads.append(read)
+        if stubs or (provider_export and not provider_export["executable"]):
+            calls = set()
+            for site in instructions.keys() | verified_direct:
+                ins = instructions.get(site) or decode(site)
+                if ((ins.flow_control == flows.INDIRECT_CALL and iat.get(slot_of(ins)) == ident)
+                        or (ins.flow_control == flows.CALL and import_veneer(ins) == ident)):
+                    calls.add(site)
+            if calls and provider_export and not provider_export["executable"]:
+                report("fail", "call_to_data_export", "Original call instruction targets a non-executable provider export.", min(calls))
+            details.append({"import": "!".join(ident), "provider_export": provider_export,
+                            "slot_reads": reads, "data_registered_jump_thunks": stubs,
+                            "observed_iat_jump_rvas": observed_jumps,
+                            "observed_call_rvas": [hex(s) for s in sorted(calls)],
+                            "observation_scope": "Verified listing instructions and declared direct edges decoded from original bytes."})
+    result["data_import_evidence"] = details
     registered = (expected & counts.keys()) | internal
     missing = sorted(expected - registered)
     duplicates = sorted(site for site, count in counts.items() if count > 1)
@@ -363,8 +558,10 @@ def _audit(original, root, pe, bits, x86, result):
         report("fail", "missing_transfer", "No native transfer record for this original-backed listing site.", site)
     for site in duplicates:
         report("fail", "duplicate_transfer", f"{counts[site]} native transfer registrations.", site)
-    if explicit_unresolved:
-        report("inconclusive", "unresolved_destinations", f"{len(explicit_unresolved)} registered destinations require other evidence.")
+    if unresolved:
+        report("inconclusive", "unresolved_destinations", f"{len(unresolved)} registered destinations require other evidence.")
+    metrics.update(verified_internal_direct_sites=len(verified_direct), sidecar_control_gap_sites=len({s for _, s in gaps}),
+                   unresolved_site_rvas=[hex(s) for s in sorted(unresolved)])
     metrics.update(indirect_sites=len(expected), direct_iat_sites=len(known_iat),
                    registered_expected_sites=len(registered), internally_registered_sites=len(internal), missing_sites=len(missing),
                    duplicate_sites=len(duplicates), explicitly_unresolved_sites=len(explicit_unresolved),

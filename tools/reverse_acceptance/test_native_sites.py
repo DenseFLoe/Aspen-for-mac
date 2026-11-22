@@ -1,4 +1,5 @@
 import csv
+import hashlib
 import importlib.util
 import struct
 import tempfile
@@ -49,25 +50,123 @@ def tiny_pe(bits=64, tail=b"\xc3"):
     return bytes(data), call
 
 
+def ordinal_provider(target=0x21c0):
+    data = bytearray(tiny_pe()[0])
+    struct.pack_into("<II", data, 0x98 + 112, 0x2080, 40)
+    struct.pack_into("<IIHHIIIIIII", data, 0x480, 0, 0, 0, 0, 0x2070, 5, 1, 0, 0x20c0, 0, 0)
+    struct.pack_into("<I", data, 0x4c0, target)
+    return bytes(data)
+
+
 @unittest.skipUnless(importlib.util.find_spec("iced_x86") and importlib.util.find_spec("pefile"),
                      "requires iced-x86 and pefile")
 class NativeSitesTest(unittest.TestCase):
     def audit(self, extras=(), *, bits=64, tail=b"\xc3", tail_asm=None, callee="x.DLL!#5",
-              call_override=None):
+              call_override=None, first_class="external", head=None, tables=None, provider=None):
         original, call = tiny_pe(bits, tail)
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / "code").mkdir()
-            listing = [f"00001000  {(call_override or call).hex(' ')}  call [slot]"]
+            if head:
+                original = original[:0x200] + head + original[0x200 + len(head):]
+            listing = [f"00001000  {(head or call_override or call).hex(' ')}  " + ("nop" if head else "call [slot]")]
             if tail_asm is None:
                 tail_asm = [f"00001006  {tail.hex(' ')}  instruction"]
             (root / "code/native.asm").write_text("\n".join(listing + tail_asm), encoding="utf-8")
             with (root / "calls.csv").open("w", newline="", encoding="utf-8") as f:
                 writer = csv.writer(f)
                 writer.writerow(("kind", "caller", "callee", "class", "listing", "note"))
-                for line, cls, name in [(1, "external", callee), *extras]:
+                initial = [(1, first_class, callee)] if first_class else []
+                for line, cls, name in [*initial, *extras]:
                     writer.writerow(("native", "0x1000", name, cls, f"code/native.asm#L{line}", ""))
-            return check(original, root)
+            for name, records in (tables or {}).items():
+                with (root / name).open("w", newline="", encoding="utf-8") as f:
+                    csv.writer(f).writerows(records)
+            trusted = None
+            if provider:
+                blob, digest = provider
+                path = root / "provider.dll"
+                path.write_bytes(blob)
+                trusted = (path, digest or hashlib.sha256(blob).hexdigest())
+            return check(original, root, trusted)
+
+    def test_old_and_current_direct_edges_bind_to_the_original_operand(self):
+        old = ["owner", "site", "target", "target_owner", "instruction"]
+        modern = ["owner_rva", "site_rva", "target_rva", "basis"]
+        def audit(header, record):
+            return self.audit(tail=b"\xeb\xfe", tables={"internal-transfers.csv": [header, record]})
+        for header, row in [(old, ["0x1000", "0x1006", "0x1006", "0x1000", "jmp 00001006h"]),
+                            (modern, ["0x1000", "0x1006", "0x1006", "direct"])]:
+            with self.subTest(header=header):
+                self.assertEqual(audit(header, row)["status"], "pass")
+                wrong = list(row)
+                wrong[2] = "0x1007"
+                result = audit(header, wrong)
+                self.assertIn("internal_direct_target", [f["code"] for f in result["findings"]])
+                self.assertEqual(result["status"], "fail")
+        for text in ("call 00001006h", "jmp 00001007h", "unknown"):
+            result = audit(old, ["0x1000", "0x1006", "0x1006", "0x1000", text])
+            self.assertIn("internal_direct_instruction", [f["code"] for f in result["findings"]])
+
+    def test_sidecar_gap_requires_main_row_at_same_owner_and_site(self):
+        header = ["owner_rva", "site_rva", "observation"]
+        tables = {"control-gaps.csv": [header, ["0x1000", "0x1006", "candidate target only"]],
+                  "internal-transfers.csv": [["site_rva", "target_rva", "basis"],
+                                             ["0x1006", "0x1000", "candidate table entry"]]}
+        kwargs = {"tail": b"\xff\xe0", "tables": tables}
+        result = self.audit([(2, "unresolved", "register")], **kwargs)
+        self.assertEqual(result["status"], "inconclusive")
+        self.assertEqual(result["control_gap_records"][0]["unresolved_main_rows"][0]["source"], "calls.csv#L3")
+        result = self.audit(**kwargs)
+        self.assertEqual(result["status"], "fail")
+        self.assertEqual(result["metrics"]["unresolved_site_rvas"], ["0x1006"])
+        self.assertEqual(result["metrics"]["missing_sites"], 1)
+        self.assertEqual(result["control_gap_records"][0]["unresolved_main_rows"], [])
+        tables["control-gaps.csv"][1][0] = "0x1001"
+        result = self.audit([(2, "unresolved", "register")], **kwargs)
+        self.assertIn("control_gap_main_row", [f["code"] for f in result["findings"]])
+
+    def test_data_iat_read_stub_calls_and_provider_are_independent(self):
+        read = b"\x48\x8b\x05" + struct.pack("<I", 0x2050 - 0x100d)
+        scalar = b"\xf2\x0f\x10\x00"
+        stub = b"\xff\x25" + struct.pack("<I", 0x2050 - 0x1018)
+        body = [(0x1006, read), (0x100d, scalar), (0x1011, b"\xc3"), (0x1012, stub)]
+        kwargs = {"extras": [(2, "data", "X.dll!#5"), (5, "data", "X.dll!#5")],
+                  "tail": b"".join(ins for _, ins in body),
+                  "tail_asm": [f"{rva:08x}  {ins.hex(' ')}  instruction" for rva, ins in body],
+                  "head": b"\x66\x0f\x1f\x44\x00\x00", "first_class": None}
+        good = self.audit(**kwargs, provider=(ordinal_provider(), None))
+        item = good["data_import_evidence"][0]
+        self.assertFalse(item["provider_export"]["executable"])
+        self.assertEqual(item["slot_reads"][0]["scalar_double_read_rva"], "0x100d")
+        self.assertEqual(item["data_registered_jump_thunks"][0]["observed_direct_incoming_rvas"], [])
+        self.assertEqual(item["observed_call_rvas"], [])
+        self.assertEqual(good["metrics"]["missing_sites"], 0)
+        self.assertNotEqual(good["status"], "fail", good)
+        missing = self.audit(**kwargs, provider=(ordinal_provider(), "0" * 64))
+        self.assertIsNone(missing["data_import_evidence"][0]["provider_export"])
+        self.assertIn("data_thunk_provider", [f["code"] for f in missing["findings"]])
+        wrong = self.audit(**kwargs, provider=(ordinal_provider(0x1000), None))
+        self.assertIn("data_thunk_control", [f["code"] for f in wrong["findings"]])
+        kwargs.update(head=None, first_class="external")
+        called = self.audit(**kwargs, provider=(ordinal_provider(), None))
+        self.assertEqual(called["data_import_evidence"][0]["observed_call_rvas"], ["0x1000"])
+        self.assertIn("call_to_data_export", [f["code"] for f in called["findings"]])
+        kwargs["extras"] = []
+        dropped = self.audit(**kwargs, provider=(ordinal_provider(), None))
+        evidence = dropped["data_import_evidence"][0]
+        self.assertEqual(evidence["observed_call_rvas"], ["0x1000"])
+        self.assertEqual(evidence["observed_iat_jump_rvas"], ["0x1012"])
+        self.assertEqual(evidence["data_registered_jump_thunks"], [])
+        self.assertEqual(evidence["slot_reads"][0]["site_rva"], "0x1006")
+        self.assertEqual(dropped["metrics"]["missing_sites"], 1)
+        hidden = self.audit(first_class="data")
+        self.assertIn("data_hides_call", [f["code"] for f in hidden["findings"]])
+        self.assertEqual(hidden["metrics"]["missing_sites"], 1)
+        ancillary = self.audit([(1, "data", "IAT 0x2050 (X.dll!#5)")])
+        self.assertEqual(ancillary["status"], "pass")
+        forged = self.audit([(1, "data", "IAT 0x2058 (X.dll!#5)")])
+        self.assertIn("data_iat_target", [f["code"] for f in forged["findings"]])
 
     def test_import_by_ordinal_and_pointer_width(self):
         for bits in (32, 64):

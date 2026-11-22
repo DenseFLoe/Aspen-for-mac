@@ -1,5 +1,7 @@
 import csv
 import json
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -96,6 +98,13 @@ class WholeItemTests(unittest.TestCase):
         (self.delivery / "run.json").write_text(json.dumps({"original_sha256": self.digest, "status": "pass"}))
         self.assertEqual(self.evaluate()["status"], "fail")
 
+    def test_single_file_phase_two_delivery_keeps_its_shape(self):
+        self.source.rename(self.delivery / "implementation.txt")
+        result = self.evaluate()
+        self.assertEqual(result["status"], "inconclusive")
+        self.assertIn("whole_item_proof_outstanding", [f["code"] for f in result["findings"]])
+        self.assertEqual(result["checks"], [])
+
     def test_later_tool_problem_preserves_an_independent_failure(self):
         self.original.write_bytes(b"MZ" + bytes(64))
         self.digest = verify.digest_file(self.original)
@@ -105,6 +114,34 @@ class WholeItemTests(unittest.TestCase):
             result = self.evaluate()
         self.assertEqual(result["status"], "fail")
         self.assertIn("check_unavailable", [f["code"] for c in result["checks"] for f in c["findings"]])
+
+    def test_export_evidence_and_coverage_gap_in_same_item_report(self):
+        self.original.write_bytes(b"MZ" + bytes(64))
+        self.digest = verify.digest_file(self.original)
+        (self.delivery / "s5").mkdir()
+        (self.delivery / "s5/business-evidence.json").write_text("{}")
+        (self.delivery / "coverage.csv").write_text("kind,key,state,first_bytes,listing,source,note\n"
+                                                    "native,0x1200,gap,,,,missing body\n")
+        rebuilt = verify.section("export rebuild", "pass", exports={"sample": {"status": "pass"}})
+        import native_exports
+        with patch.object(native_exports, "check", return_value=rebuilt) as build:
+            result = self.evaluate()
+        build.assert_called_once_with(self.original.read_bytes(), self.delivery, None)
+        self.assertIn(rebuilt, result["checks"])
+        coverage = next(c for c in result["checks"] if "declared_entry_gaps" in c["metrics"])
+        self.assertEqual(coverage["metrics"]["declared_entry_gaps"], 1)
+        self.assertIn("0x1200", [f.get("key") for f in coverage["findings"]])
+        self.assertEqual(verify.EXIT[result["status"]], 1)
+
+    def test_provider_flags_must_identify_an_independent_reference(self):
+        args = [sys.executable, "-B", str(verify.HERE / "verify.py"), "item", "--original", str(self.original),
+                "--delivery", str(self.delivery), "--sha256", self.digest]
+        for flags in (["--provider", "dependency.dll"], ["--provider-sha256", self.digest],
+                      ["--provider", "dependency.dll", "--provider-sha256", "invalid"]):
+            with self.subTest(flags=flags):
+                run = subprocess.run(args + flags, capture_output=True, check=False)
+                self.assertEqual(run.returncode, 2)
+                self.assertEqual(json.loads(run.stdout)["findings"][0]["code"], "invalid_verification_inputs")
 
     def test_duplicate_coverage_columns_cannot_hide_a_gap(self):
         import coverage_table
@@ -160,6 +197,22 @@ class WholeItemTests(unittest.TestCase):
         ledger.write_text("产品,原路径,原件SHA256\n", encoding="utf-8")
         with self.assertRaisesRegex(ValueError, "empty inventory"):
             verify.project(ledger, verify.digest_file(ledger), inputs, None)
+
+    def test_project_resolves_provider_from_input_file(self):
+        ledger = self.base / "inventory.csv"
+        ledger.write_text(f"产品,原路径,原件SHA256\nPlus,ref.dll,{self.digest}\n", encoding="utf-8")
+        inputs = self.base / "bindings.json"
+        binding = dict(product="Plus", path="ref.dll", sha256=self.digest,
+                       original="ref.dll", delivery="delivery", provider="dep.dll")
+        inputs.write_text(json.dumps([binding]))
+        with self.assertRaisesRegex(ValueError, "both provider"):
+            verify.project(ledger, verify.digest_file(ledger), inputs, None)
+        binding["provider_sha256"] = self.digest
+        inputs.write_text(json.dumps([binding]))
+        with patch.object(verify, "item", return_value={"status": "fail"}) as run:
+            result = verify.project(ledger, verify.digest_file(ledger), inputs, None)
+        self.assertEqual(run.call_args.args[-1], (self.base.resolve() / "dep.dll", self.digest))
+        self.assertEqual(result["counts"]["fail"], 1)
 
     def test_source_list_catches_missing_contents_and_mismatched_lists(self):
         scopes = self.base / "scopes"

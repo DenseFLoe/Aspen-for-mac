@@ -171,7 +171,15 @@ def file_notes(files, expected, product, original_path, build):
                    issues, sources=len(sources), product=product, original_path=original_path)
 
 
-def evaluate(original, expected, delivery, rebuilt=None, assembler=None, product=None, original_path=None):
+def provider_binding(path, expected):
+    if path is None and expected is None:
+        return None
+    if path is None or expected is None:
+        raise ValueError("supply both provider path and reference provider SHA-256")
+    return Path(path), digest_arg(expected)
+
+
+def evaluate(original, expected, delivery, rebuilt=None, assembler=None, product=None, original_path=None, provider=None):
     expected = digest_arg(expected)
     result = {"schema": VERSION, "scope": "whole_item_static", "expected_sha256": expected,
               "status": "inconclusive", "checks": [], "findings": []}
@@ -244,7 +252,9 @@ def evaluate(original, expected, delivery, rebuilt=None, assembler=None, product
             checks.append(component("coverage_table", data, files))
 
     if data.startswith(b"MZ") and "calls.csv" in files:
-        checks.append(component("native_sites", data, delivery))
+        checks.append(component("native_sites", data, delivery, provider))
+    if data.startswith(b"MZ") and "s5/business-evidence.json" in files:
+        checks.append(component("native_exports", data, delivery, assembler))
     if data.startswith(b"MZ") and "resources.csv" in files:
         checks.append(component("pe_resources", data, delivery))
     if any(entry.is_dir() and entry.name.casefold() in {"vba", "vba-src"} for entry in delivery.iterdir()):
@@ -288,9 +298,9 @@ def evaluate(original, expected, delivery, rebuilt=None, assembler=None, product
     return result
 
 
-def item(original, expected, delivery, rebuilt=None, assembler=None, product=None, original_path=None):
+def item(original, expected, delivery, rebuilt=None, assembler=None, product=None, original_path=None, provider=None):
     try:
-        return evaluate(original, expected, delivery, rebuilt, assembler, product, original_path)
+        return evaluate(original, expected, delivery, rebuilt, assembler, product, original_path, provider)
     except (OSError, UnicodeError, ValueError, csv.Error, ImportError) as exc:
         return {"schema": VERSION, "scope": "whole_item_static", "status": "inconclusive",
                 "expected_sha256": expected, "findings": [finding("unverifiable_input", message=str(exc))],
@@ -362,14 +372,17 @@ def project(inventory_path, inventory_sha, input_path, assembler, source_scopes=
     chosen = {}
     for record in bindings:
         required = {"product", "path", "sha256", "original", "delivery"}
-        if not isinstance(record, dict) or not required <= record.keys() or record.keys() - required - {"rebuilt"}:
+        if not isinstance(record, dict) or not required <= record.keys() or record.keys() - required - {"rebuilt", "provider", "provider_sha256"}:
             raise ValueError("invalid fields in input binding")
         if any(not isinstance(value, str) or not value.strip() for value in record.values()):
             raise ValueError("input binding fields must be nonempty strings")
         key = (record["product"], record["path"], digest_arg(record["sha256"]))
         if key not in expected or key in chosen:
             raise ValueError(f"unexpected or duplicate input binding: {key}")
-        chosen[key] = record
+        provider = provider_binding(record.get("provider"), record.get("provider_sha256"))
+        if provider:
+            provider = input_path.resolve().parent / provider[0], provider[1]
+        chosen[key] = record, provider
 
     rows = []
     counts = Counter()
@@ -377,13 +390,14 @@ def project(inventory_path, inventory_sha, input_path, assembler, source_scopes=
         row = {"product": product, "path": path, "sha256": digest, "inventory_status": prior_status}
         if origins:
             row["source_rows"] = origins[digest]
-        bound = chosen.get((product, path, digest))
-        if bound is None:
+        binding = chosen.get((product, path, digest))
+        if binding is None:
             row.update(status="inconclusive", reason="no_input_binding")
         else:
+            bound, provider = binding
             parent = input_path.resolve().parent
             rebuilt = parent / bound["rebuilt"] if "rebuilt" in bound else None
-            proof = item(parent / bound["original"], digest, parent / bound["delivery"], rebuilt, assembler, product, path)
+            proof = item(parent / bound["original"], digest, parent / bound["delivery"], rebuilt, assembler, product, path, provider)
             row.update(status=proof["status"], proof=proof)
         counts[row["status"]] += 1
         rows.append(row)
@@ -405,17 +419,20 @@ def main():
     single.add_argument("--product", help="product in the trusted inventory")
     single.add_argument("--original-path", help="original logical path in that inventory")
     single.add_argument("--rebuilt", type=Path, help="existing CLR rebuild for a scoped comparison")
+    single.add_argument("--provider", type=Path, help="independent PE that provides a registered import")
+    single.add_argument("--provider-sha256", help="trusted SHA-256 of that provider PE")
     batch = sub.add_parser("project", help="verify each row of a frozen project inventory")
     batch.add_argument("--inventory", type=Path, required=True)
     batch.add_argument("--inventory-sha256", required=True)
     batch.add_argument("--inputs", type=Path, required=True)
     batch.add_argument("--source-scopes", type=Path, help="directory with plus/properties/shared-scope.csv from the pinned original inventories")
     for cmd in (single, batch):
-        cmd.add_argument("--assembler", type=Path, help="trusted assembler for the BFDYLD profile")
+        cmd.add_argument("--assembler", type=Path, help="trusted Zig for COFF reassembly and native export comparison")
     args = parser.parse_args()
     try:
         if args.command == "item":
-            result = item(args.original, args.sha256, args.delivery, args.rebuilt, args.assembler, args.product, args.original_path)
+            provider = provider_binding(args.provider, args.provider_sha256)
+            result = item(args.original, args.sha256, args.delivery, args.rebuilt, args.assembler, args.product, args.original_path, provider)
         else:
             result = project(args.inventory, args.inventory_sha256, args.inputs, args.assembler, args.source_scopes)
     except (OSError, UnicodeError, ValueError, csv.Error) as exc:
