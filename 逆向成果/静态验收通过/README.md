@@ -1,6 +1,6 @@
 # 静态验收通过
 
-已有逐件静态验收记录。运行行为留待 Windows 对照。本次整理共 88 个原件。按产品和原安装路径找到同名文件夹。
+已有逐件静态验收记录。运行行为留待 Windows 对照。本次整理共 89 个原件。按产品和原安装路径找到同名文件夹。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -61,6 +61,7 @@
 | [DevExpress.Images.v23.2.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/DevExpress.Images.v23.2.dll/) | Plus | `569c25ba89a8` |
 | [FluidFlowInterfaceAndEnum.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Hydraulics%20V15.0/FluidFlowInterfaceAndEnum.dll/) | Plus | `174cc8931a4b` |
 | [Interop.Aosapfs.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/Interop.Aosapfs.dll/) | Plus-Properties | `05f0b74afdc7` |
+| [libatdll.lib](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/procedures/libatdll.lib/) | Plus | `aa423ce85b3c` |
 | [log4net.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseSetup/log4net.dll/) | Properties | `2af48761d784` |
 | [Microsoft.Extensions.Configuration.Abstractions.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseConfiguration/Microsoft.Extensions.Configuration.Abstractions.dll/) | Properties | `fefcdb267a73` |
 | [Microsoft.Extensions.Configuration.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseConfiguration/Microsoft.Extensions.Configuration.dll/) | Properties | `b5cd9da2c336` |

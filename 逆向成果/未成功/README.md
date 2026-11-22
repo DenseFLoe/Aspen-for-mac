@@ -1,6 +1,6 @@
 # 未成功
 
-共 61 件。每件均有尝试记录，当前交付只有报告。
+共 60 件。每件均有尝试记录，当前交付只有报告。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -37,7 +37,6 @@
 | [InfragisticsWPF.DataPresenter.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/Aspen%20CXS%20V15.0/SummaryGrid/InfragisticsWPF.DataPresenter.dll/) | Plus | `ae2c3201bed6` |
 | [InfragisticsWPF.DataPresenter.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/InfragisticsWPF.DataPresenter.dll/) | Plus | `eee8094c3a52` |
 | [InfragisticsWPF.Documents.Excel.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/InfragisticsWPF.Documents.Excel.dll/) | Plus | `b497b96a40e1` |
-| [libatdll.lib](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/procedures/libatdll.lib/) | Plus | `aa423ce85b3c` |
 | [libcef.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/libcef.dll/) | Plus | `9c0249a0a760` |
 | [libGLESv2.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/libGLESv2.dll/) | Plus | `e8a921f658ba` |
 | [modeler.acml](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Lib/modeler.acml/) | Plus | `5ed632617448` |
