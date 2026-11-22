@@ -6,4 +6,4 @@
 
 [本次逐件说明](v1.20261122-retry85/vbaProject.bin.md) · [公开文件及核验证据指纹表](v1.20261122-retry85/%E5%8F%91%E5%B8%83%E6%8C%87%E7%BA%B9%E8%A1%A8.csv) · [历史尝试](README.%E5%8E%86%E5%8F%B2.md)
 
-本机保留「保护口令相关的模块」。公开证据范围逐项列在发布指纹表。
+Sheet8 已归档在同指纹的工作簿 ZIP 成员 `vba/Sheet8.cls` 中。[Sheet8 源码位置和核验说明](v1.20261122-retry85/vbaProject.bin.Sheet8.cls.md)
