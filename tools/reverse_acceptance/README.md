@@ -59,7 +59,7 @@ Source SHA-256: <这份源码的小写 SHA-256>
 | PE `resources.csv` 及 `s5/resources.json` | 核对原件资源树中的键、语言、大小、地址、代码页、指纹及可用的实际交付内容。 |
 | 工作簿的 `VBA/` 或 `vba-src/` | 按模块身份比较原件和交付的可编辑 VBA。记录缺失、多出或改变的模块。宿主表单、公式、XLM、P-code 和运行行为仍需各自的证据。 |
 | `--rebuilt` 的 CLR 程序集 | 比较逐方法签名和实现、IL、有关 token 元数据、局部变量和异常区域。方法体无法证明等价时输出差异。传入同一 DLL 只能验证二进制比较环节。 |
-| `BFDYLD.s` | 对两件固定指纹的 AMD64 COFF，使用已核验的 Zig 在临时目录重组，核对节、数据、符号、辅助记录和重定位。该项可随整体结果保留单独的通过记录。 |
+| 交付根目录的一份 `.s` 源码 | 对受支持的 AMD64 COFF 对象，先核对原件布局和受限 AT&T 汇编语法，再使用受信 Zig 在临时目录重组。对照节、字节、符号、辅助记录和重定位。源码文件名和普通注释可变。需要预处理的 `.S` 或超出支持范围的语法保留待核。 |
 
 三个固定候选的逐件对照、工具和复跑命令见[原生验收回归记录](native-regression.md)。
 
@@ -130,7 +130,7 @@ Source SHA-256: <这份源码的小写 SHA-256>
 
 交付含可识别的分轮原生回编清单时，`cumulative_rebuild` 逐段重编早期区间。每个 RVA 只计一次，按原件节范围、代码字节及重定位校验。累计范围是申报的代码区间，函数边界另按可得的原件元数据核对。支持的内部函数交付还会逐址比较调用表中的导入调用和 RIP 相对数据引用。
 
-`historical_listing` 用受信的旧清单逐条复核原件指令，定位新清单中缺少的站点，单列原件为 NOP 或 INT3 的条目。`mixed_baseline` 用受信的原件级跳转清单复验已知 CLR 绑定，并核对它们在反汇编和主表的登记情况。构造调用用原件 IL 指令边界和 token 验证，关联 C 源码的检查限于受支持的段寄存器取值序列。
+`historical_listing` 分别核对历史行的原件字节和独立指令边界。证明起点后才核对缺漏，并单列已证的 NOP 或 INT3。与原件字节吻合且边界待核的行记录在 `unproven_boundaries`，有重叠时列出已证指令的起点。边界依据包含从原件出发的控制流，以及受支持的 x64 C 作用域表和 MSVC FH4 异常继续地址。`exception_continuations` 记录异常入口依据。`mixed_baseline` 用受信的原件级跳转清单复验已知 CLR 绑定，并核对它们在反汇编和主表的登记情况。构造调用用原件 IL 指令边界和 token 验证，关联 C 源码的检查限于受支持的段寄存器取值序列。[Windows x64 异常处理](https://learn.microsoft.com/en-us/cpp/build/exception-handling-x64) · [MSVC FH4 元数据](https://devblogs.microsoft.com/cppblog/making-cpp-exception-handling-smaller-on-x64/)
 
 主表可引用补充的 ASM 与 IL。验收器按文件和行号定位，独立核对指令或 IL 站点、原件中的槽或 token 及主表申报。历史跳转和本轮原件跳转分别计数。累计回编从 `reassembly.json` 和 `s<轮号>/reassembly-delta.json` 发现轮次，逐轮核对前序清单指纹，用各段源码实际重编，并核对原件字节和重定位。
 
@@ -160,4 +160,4 @@ python -B $tool project --inventory "$work/inventory.csv" --inventory-sha256 '11
 
 指定 `--source-scopes` 时，再核对固定提交的三份“需要逆向”原件清单，目录内分别命名 `plus-scope.csv`、`properties-scope.csv`、`shared-scope.csv`。校验器内固定了三份原始 SHA-256。同一内容保留全部来源记录号；总表之外的原件进入分母，也可以绑定本地材料。以这次快照计，来源记录 8,191 条，去重后 1,397 个原件，公开总表 1,394 件。省略此参数时结论仅覆盖提供的母表，输出的 `scope` 会明确这一点。这三份清单的范围为项目已分类的需要逆向内容，产品整体的安装完备性和 Windows 行为有各自的验收阶段。[Plus 来源](https://github.com/DenseFLoe/Aspen-for-mac/blob/773260c1033e524cebe000699409f5708bebfda0/inventories/2026-11-19/plus/01-needs-reverse/files.csv) · [Properties 来源](https://github.com/DenseFLoe/Aspen-for-mac/blob/773260c1033e524cebe000699409f5708bebfda0/inventories/2026-11-19/properties/01-needs-reverse/files.csv) · [共享来源](https://github.com/DenseFLoe/Aspen-for-mac/blob/773260c1033e524cebe000699409f5708bebfda0/inventories/2026-11-19/shared/01-needs-reverse/files.csv)
 
-完整 JSON 可用标准输出重定向保存。`rows[].proof.checks[]` 给出每个专项的判据、指标与差异位置；`rows[].source_rows` 指向原始清单，按 CSV 逻辑行编号，表头为 1。`inventory_status` 是输入快照的历史状态。运行回归测试可用 `python -B -m unittest discover -s tools/reverse_acceptance`。
+完整 JSON 可用标准输出重定向保存。`rows[].proof.checks[]` 给出每个专项的判据、指标与差异位置。`rows[].source_rows` 指向原始清单，按 CSV 逻辑行编号，表头为 1。`inventory_status` 是输入快照的历史状态。`counts` 给出整件状态总数，`pass_by_basis` 分别计数本次完成的整件源码回编核验和既有整件裁定回放。运行回归测试可用 `python -B -m unittest discover -s tools/reverse_acceptance`。

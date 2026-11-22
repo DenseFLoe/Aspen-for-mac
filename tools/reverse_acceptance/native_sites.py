@@ -61,7 +61,18 @@ def csv_rows(root, name, *schemas, numbered=False):
             yield (reader.line_num, row) if numbered else row
 
 
-def original_reachability(pe, bits, x86, mapped, decode, listed, result):
+def complete_exception_entries(pe):
+    entries = getattr(pe, "DIRECTORY_ENTRY_EXCEPTION", ())
+    directories = pe.OPTIONAL_HEADER.DATA_DIRECTORY
+    if len(directories) <= 3:
+        return ()
+    directory = directories[3]
+    if directory.Size != 12 * len(entries) or directory.VirtualAddress % 4:
+        return None
+    return entries
+
+
+def original_reachability(pe, bits, x86, mapped, decode, listed, result, *, handler_edges=None, paths=None):
     """Compare original-rooted instruction boundaries to the verified delivery listings."""
     roots, ends = {}, set()
     stops = {}
@@ -79,11 +90,10 @@ def original_reachability(pe, bits, x86, mapped, decode, listed, result):
         else:
             diagnostic("unmapped_entry_point", entry)
     if bits == 64:
-        entries = getattr(pe, "DIRECTORY_ENTRY_EXCEPTION", ())
-        directories = pe.OPTIONAL_HEADER.DATA_DIRECTORY
-        if len(directories) > 3 and directories[3].Size != 12 * len(entries):
-            diagnostic("exception_directory_incomplete", directories[3].VirtualAddress)
-        for item in entries:
+        entries = complete_exception_entries(pe)
+        if entries is None:
+            diagnostic("exception_directory_incomplete", pe.OPTIONAL_HEADER.DATA_DIRECTORY[3].VirtualAddress)
+        for item in entries or ():
             begin, end = item.struct.BeginAddress, item.struct.EndAddress
             region = mapped(begin)
             if region and 0 < end - begin <= region[1]:
@@ -91,6 +101,8 @@ def original_reachability(pe, bits, x86, mapped, decode, listed, result):
                 ends.add(end)
             else:
                 diagnostic("invalid_exception_range", begin)
+    for handler in handler_edges or ():
+        roots.setdefault(handler, "exception_handler_thunk")
     exports = getattr(pe, "DIRECTORY_ENTRY_EXPORT", None)
     if exports:
         for symbol in exports.symbols:
@@ -112,20 +124,26 @@ def original_reachability(pe, bits, x86, mapped, decode, listed, result):
     predecessors = {rva: (rva, None, "root") for rva in sorted(roots)}
     queue = deque(predecessors)
     nodes = {}
+    rejected = set()
     while queue and len(nodes) < ORIGINAL_WALK_LIMIT:
         rva = queue.popleft()
         ins = decode(rva)
         nodes[rva] = (1, (), None)
         if ins is None or ins.is_invalid:
+            rejected.add(rva)
             diagnostic("undecodable_instruction", rva)
             continue
+        nodes[rva] = (ins.len, (), None)
         following = rva + ins.len
         end_index = bisect.bisect_right(boundaries, rva)
         if end_index < len(boundaries) and boundaries[end_index] < following:
+            rejected.add(rva)
             diagnostic("instruction_crosses_exception_end", rva)
             continue
         flow = ins.flow_control
         neighbours = []
+        if handler_edges and rva in handler_edges:
+            neighbours.extend((target, "exception_continuation") for target in sorted(handler_edges[rva]))
         if flow in direct:
             if ins.op0_kind not in near:
                 diagnostic("unsupported_direct_operand", rva)
@@ -167,15 +185,40 @@ def original_reachability(pe, bits, x86, mapped, decode, listed, result):
         active.append((rva, rva + nodes[rva][0]))
     for site in sorted(conflicts):
         diagnostic("overlapping_original_boundaries", site)
+    excluded = conflicts | rejected
     confirmed = {rva: (rva, None, "root") for rva in sorted(roots)
-                 if not capped and roots[rva] != "executable_section_export" and rva not in conflicts}
+                 if not capped and roots[rva] != "executable_section_export" and rva not in excluded}
     queue = deque(confirmed)
+    waiting = defaultdict(list)
+
+    def confirm(source, target, edge):
+        if target not in excluded and target not in confirmed:
+            confirmed[target] = (confirmed[source][0], source, edge)
+            queue.append(target)
+
     while queue:
         rva = queue.popleft()
+        # Exception metadata connects a validated handler thunk to its continuation only
+        # if its filter/catch funclet also survives the combined overlap and reachability check.
+        for source, target in waiting.pop(rva, ()):
+            confirm(source, target, "exception_continuation")
         for target, edge in nodes[rva][1]:
-            if target not in conflicts and target not in confirmed:
-                confirmed[target] = (confirmed[rva][0], rva, edge)
-                queue.append(target)
+            if edge == "exception_continuation":
+                alternatives = handler_edges[rva][target]
+                if None not in alternatives and not any(address in confirmed for address in alternatives):
+                    for prerequisite in alternatives:
+                        waiting[prerequisite].append((rva, target))
+                    continue
+            confirm(rva, target, edge)
+
+    proven = {site: nodes[site][0] for site in confirmed}
+    if paths is not None:
+        paths.clear()
+        for site in proven:
+            root, previous, edge = confirmed[site]
+            paths[site] = (root, roots[root], previous, edge)
+    if result is None:
+        return proven
 
     records = []
     confirmed_indirect = 0
@@ -221,7 +264,7 @@ def original_reachability(pe, bits, x86, mapped, decode, listed, result):
     result["metrics"].update(original_reachable_indirect_sites=confirmed_indirect,
                              original_reachable_unlisted_sites=unlisted,
                              original_candidate_unlisted_sites=len(records) - unlisted)
-    return set(confirmed)
+    return proven
 
 
 def provider_exports(provider, pefile, result):
@@ -478,7 +521,9 @@ def _audit(original, root, pe, bits, x86, result, provider, historical_listing):
                 sites.append(rva)
         by_file[name] = (line_numbers, sites, num if line_numbers else 0)
     metrics.update(instruction_sites=len(instructions), native_call_rows=len(rows), listing_files=len(files))
-    proven_starts = original_reachability(pe, bits, x86, mapped, decode, instructions, result)
+    paths = {} if historical_listing is not None else None
+    proven_lengths = original_reachability(pe, bits, x86, mapped, decode, instructions, result, paths=paths)
+    proven_starts = proven_lengths.keys()
     if not instructions:
         report("inconclusive", "no_native_listing", "No independently decodable instruction sites available.")
 
@@ -490,7 +535,7 @@ def _audit(original, root, pe, bits, x86, result, provider, historical_listing):
         end = max(end, rva + instructions[rva].len)
     anchors = {pe.OPTIONAL_HEADER.AddressOfEntryPoint}
     if bits == 64:
-        anchors.update(x.struct.BeginAddress for x in getattr(pe, "DIRECTORY_ENTRY_EXCEPTION", ()))
+        anchors.update(x.struct.BeginAddress for x in complete_exception_entries(pe) or ())
     exports = getattr(pe, "DIRECTORY_ENTRY_EXPORT", None)
     if exports:
         anchors.update(x.address for x in exports.symbols if x.address and not x.forwarder)
@@ -781,7 +826,29 @@ def _audit(original, root, pe, bits, x86, result, provider, historical_listing):
                                                      owners, proven_starts, by_file, route_rows, report)
     if historical_listing is not None:
         if __package__:
-            from .historical_listing import compare as compare_historical_listing
+            from .historical_listing import eh_continuations, compare as compare_historical_listing
         else:
-            from historical_listing import compare as compare_historical_listing
-        result["historical_listing"] = compare_historical_listing(historical_listing, pe, x86, decode, instructions, report)
+            from historical_listing import eh_continuations, compare as compare_historical_listing
+        scopes = (eh_continuations(original, pe, x86, decode, mapped, iat, slot_of, proven_starts)
+                  if bits == 64 and complete_imports else {})
+        if scopes:
+            # A conflicting handler interpretation must also invalidate paths that depend on its ABI.
+            edges = defaultdict(lambda: defaultdict(set))
+            for target, records in scopes.items():
+                for row in records:
+                    prerequisite = row.get("prerequisite_rva")
+                    edges[int(row["handler_thunk_rva"], 16)][target].add(int(prerequisite, 16) if prerequisite else None)
+            proven_lengths = original_reachability(pe, bits, x86, mapped, decode, instructions, None,
+                                                   handler_edges=edges, paths=paths)
+        history = compare_historical_listing(historical_listing, pe, x86, decode, instructions, proven_lengths, report)
+        history["exception_continuations"] = [row for records in scopes.values() for row in records]
+        for row in history["exception_continuations"]:
+            endpoints = [row["target_rva"], row["handler_thunk_rva"]]
+            if row.get("prerequisite_rva"):
+                endpoints.append(row["prerequisite_rva"])
+            row["boundaries_confirmed"] = all(int(address, 16) in proven_lengths for address in endpoints)
+        for row in history["missing_nonpadding"]:
+            root_rva, kind, previous, edge = paths[int(row["rva"], 16)]
+            row.update(root_rva=hex(root_rva), root_kind=kind, edge=edge,
+                       predecessor_rva=hex(previous) if previous is not None else None)
+        result["historical_listing"] = history
