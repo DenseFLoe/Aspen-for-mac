@@ -1,5 +1,24 @@
 # Ikc2Bkp.dll 逐件静态核验
 
+## 第五号分配
+
+原件为 Plus-Properties 的 `Program Files/AspenTech/AprSystem V15.0/GUI/Xeq/Ikc2Bkp.dll`，版本 41.0.0.614，217,128 字节。输入提交为 `64670801de54e990f975aaeda06e89340c0e4e08`，SHA-256 为 `bba17051eb1071e5f48702f685f1d8d5d3b9f5cfd222f357e30fd0545bf00011`。本次增加两个可编辑的 AMD64 函数实现，另确认四处属于宿主的展开入口。265 个入口中已核 248 个，余 17 个入口缺口、15 处控制流转移目标待恢复。整件仍有缺口。
+
+| 宿主区间（右端不含） | 可达指令 | CHAININFO 入口 | 相同字节 | 已应用 COFF 重定位 |
+| --- | ---: | --- | ---: | ---: |
+| 0x2ee0–0x3033 | 96 | 0x2f05、0x302b | 339 | 1 |
+| 0x22da0–0x23025 | 154 | 0x22df6、0x2300a | 645 | 27 |
+
+两个宿主的完整机器码 SHA-256 分别为 `d83281d329a93ff8531e96582b75347e3b15118a539e5881466746bdfbe95cc9`、`7853009cbd5a9e6f7be12f38bcae0a28d4bc43da206353bd0ff091d25ce475fd`。第九个头文件保留了 0x22e5d 的 JNE rel32 编码及标号操作数。四条异常展开记录均从原件解出父三元组，逐个与宿主的起止 RVA 和展开信息 RVA 相同。四个片段入口均是沿原件控制流可达的指令起点。逐指令字节与后继在 `s5/host-flow.csv`，源码在 `code/verified-09.h`。
+
+**业务及错误返回。** 0x22da0 先将全局版本字节设为“1.4”，以 RVA 0x26660 的只读模式调用 fopen。打开失败报告错误并返回 -1。读行使用 0x232b0，记录 0x31784 的续行符“&”及 0x31785 的注释符“!”。普通段送 0x22180 处理。遇到 EOF（读行返回 -2）时，段落状态为零则成功，非零则报告段落未闭合并返回 -1。读行返回 -1 会报告行错误；读行返回 0 且段落处理状态为负数时，记录此前的处理错误并返回 -1。已打开的输入流在相应退出路径经槽 0x261d8 调 fclose，函数末尾恢复非易失寄存器。0x2ee0 依据记录数遍历步长 32 字节的记录，从偏移 0x10 读名称、偏移 0x28 读 double。COMISD 配合 JBE 跳过非负值和无序值；负值记录移至目标序列，系数乘 RVA 0x26658 处的双精度 -1.0，后续记录前移，源与目标计数相应调整。该函数经寄存器传入两组记录、原地修改；没有独立的错误返回分支。
+
+**复验。** 在本目录运行 `python -B s5/check-hosts.py <原件> <Zig>`，使用 Capstone 5.0.6、pefile 2024.8.26、Zig 0.13.0。脚本调用本件 reassemble.py，核对首轮与本轮的联合证据、逐条控制流、四处展开关联与两张去向表，退出 0。重组的 185 个函数共 145,008 字节，5,322 处重定位，全部逐字节相同。首轮 183 个函数的全部地址、字节数、摘要和重定位记录保持完全一致；另 59 个原有段内入口的覆盖行未变。在临时源码把 0x2ee0 内唯一一次 MULSD 的源改为 XMM1，重组比较检出 0x2ee0 差异，0x22da0 仍吻合。
+
+从仓库根运行 `python -B handoff/assignments/check-native-coverage.py NATIVE-349 --original <原件>`，输出 `checked 265 coverage rows, 265 tool-native entries, 3947 call records, 17 declared gaps`，退出 2。`s5/prior-gaps.csv` 列出原 23 个入口的本轮状态和对应实现或恢复条件，`s5/prior-indirect.csv` 列出 15 个间接转移及各自证据。余项应逐入口补齐实现，并将各间接站点实参或寄存器与实际调用者、最终目标关联。首轮完整证据固定在 `20488adec7e3bfbe702ce1e6a275a1039547962e`；原 183 个函数的 reassembly.json 和本轮两项 s5/reassembly-delta.json 分开保存。
+
+## 首轮记录
+
 本轮补证仍有 23 个入口缺口，整件静态验收未通过。固定原件为 Plus-Properties 的 `Program Files/AspenTech/AprSystem V15.0/GUI/Xeq/Ikc2Bkp.dll`，版本 41.0.0.614，217,128 字节。输入取自提交 `64670801de54e990f975aaeda06e89340c0e4e08` 中的 `issue-materials/349/Ikc2Bkp.dll`，SHA-256 为 `bba17051eb1071e5f48702f685f1d8d5d3b9f5cfd222f357e30fd0545bf00011`。
 
 ## 已对照的范围
