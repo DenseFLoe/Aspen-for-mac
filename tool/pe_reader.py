@@ -17,7 +17,7 @@ class PE:
             vsize = struct.unpack_from("<I", data, pos + 8)[0]
             rva, size, raw = struct.unpack_from("<III", data, pos + 12)
             flags = struct.unpack_from("<I", data, pos + 36)[0]
-            self.secs.append(dict(rva=rva, size=size, raw=raw, vsize=vsize, hdr=pos,
+            self.secs.append(dict(rva=rva, size=size, raw=raw, vsize=vsize,
                                   exec=bool(flags & 0x20000000),
                                   name=data[pos:pos+8].rstrip(b"\0").decode("latin-1")))
         self.opt = opt
