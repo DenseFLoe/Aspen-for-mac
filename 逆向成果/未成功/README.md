@@ -1,11 +1,10 @@
 # 未成功
 
-共 65 件。每件均有尝试记录，当前交付只有报告。
+共 64 件。每件均有尝试记录，当前交付只有报告。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
 | [aos_base.lib](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Open%20Solvers%20V15.0/Lib/aos_base.lib/) | Plus | `c0dc08130b3f` |
-| [apdelayload.lib](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Lib/apdelayload.lib/) | Plus | `d8c809c76f20` |
 | [ApedControls.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/Bin/ApedControls.dll/) | Plus | `20ed55fd8b12` |
 | [aphier.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/aphier.dll/) | Plus | `ba15509092d7` |
 | [APlusHtmlHelp.exe](Plus/Program%20Files/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/APlusHtmlHelp.exe/) | Plus | `ed8de8c0525a` |
