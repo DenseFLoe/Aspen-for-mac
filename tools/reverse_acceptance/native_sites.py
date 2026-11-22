@@ -221,6 +221,7 @@ def original_reachability(pe, bits, x86, mapped, decode, listed, result):
     result["metrics"].update(original_reachable_indirect_sites=confirmed_indirect,
                              original_reachable_unlisted_sites=unlisted,
                              original_candidate_unlisted_sites=len(records) - unlisted)
+    return set(confirmed)
 
 
 def provider_exports(provider, pefile, result):
@@ -477,7 +478,7 @@ def _audit(original, root, pe, bits, x86, result, provider):
                 sites.append(rva)
         by_file[name] = (line_numbers, sites, num if line_numbers else 0)
     metrics.update(instruction_sites=len(instructions), native_call_rows=len(rows), listing_files=len(files))
-    original_reachability(pe, bits, x86, mapped, decode, instructions, result)
+    proven_starts = original_reachability(pe, bits, x86, mapped, decode, instructions, result)
     if not instructions:
         report("inconclusive", "no_native_listing", "No independently decodable instruction sites available.")
 
@@ -525,6 +526,7 @@ def _audit(original, root, pe, bits, x86, result, provider):
     known_iat = {rva for rva in expected if slot_of(instructions[rva]) in iat}
     explicit_unresolved = set()
     unresolved_pairs = defaultdict(list)
+    main_rows = defaultdict(list)
     data_sites = defaultdict(dict)
     qualified_slot = re.compile(r"IAT\s+(0x[0-9a-f]+)\s+\(([^()!]+)!([^()!]+)\)", re.I)
     for row_index, row in rows:
@@ -548,8 +550,16 @@ def _audit(original, root, pe, bits, x86, result, provider):
             continue
         site = candidates.pop()
         ins = instructions[site]
-        if owners[site] and normalize(int(row["caller"], 0)) not in owners[site]:
-            report("inconclusive", "caller_ownership", "Caller and listing ownership require reconciliation.", site, row["listing"])
+        raw_owner = None
+        owner = None
+        if owners[site] or (cls != "data" and (ins.flow_control == flows.INDIRECT_CALL or cls == "unresolved")):
+            try:
+                raw_owner = int(row["caller"], 0)
+                owner = normalize(raw_owner)
+            except ValueError:
+                report("fail", "invalid_caller", f"calls.csv#L{row_index} lacks a numeric caller.", site, row["listing"])
+            if owners[site] and owner not in owners[site]:
+                report("inconclusive", "caller_ownership", "Caller and listing ownership require reconciliation.", site, row["listing"])
         if cls == "data":
             label = row["callee"].strip()
             wrapped = qualified_slot.fullmatch(label)
@@ -566,6 +576,12 @@ def _audit(original, root, pe, bits, x86, result, provider):
                 report("fail", "duplicate_data_import", "Repeated import operand registration.", site, row["listing"])
             data_sites[ident][site] = slot
             continue
+        if ins.flow_control == flows.INDIRECT_CALL and raw_owner is not None:
+            dll, sep, symbol = row["callee"].strip().partition("!")
+            matched_iat = (cls == "external" and bool(sep) and (dll.casefold(), symbol) == iat.get(slot_of(ins)))
+            main_rows[site].append({"owner": owner if owner is not None else raw_owner, "source": f"calls.csv#L{row_index}",
+                                    "listing": row["listing"], "callee": row["callee"], "classification": cls,
+                                    "known_iat": matched_iat})
         if cls not in CLAIM_CLASSES:
             report("fail", "invalid_class", f"Unrecognized native transfer class {cls!r}.", site, row["listing"])
             continue
@@ -580,8 +596,8 @@ def _audit(original, root, pe, bits, x86, result, provider):
                 report("fail", "iat_target", "Classification or destination differs from the original import slot.", site, row["listing"])
         elif cls == "unresolved":
             explicit_unresolved.add(site)
-            unresolved_pairs[(int(row["caller"], 0), site)].append(
-                {"source": f"calls.csv#L{row_index}", "listing": row["listing"]})
+            if raw_owner is not None:
+                unresolved_pairs[(raw_owner, site)].append({"source": f"calls.csv#L{row_index}", "listing": row["listing"]})
         else:
             report("inconclusive", "target_evidence", "Target or boundary needs evidence beyond this local instruction.", site, row["listing"])
 
@@ -741,3 +757,14 @@ def _audit(original, root, pe, bits, x86, result, provider):
                    duplicate_sites=len(duplicates), explicitly_unresolved_sites=len(explicit_unresolved),
                    missing_register_jumps=sum(instructions[s].flow_control == flows.INDIRECT_BRANCH
                                               and instructions[s].op0_kind == x86.OpKind.REGISTER for s in missing))
+    # Keep previous coverage results available if the optional submitted target evidence is unreadable.
+    try:
+        if __package__:
+            from .native_targets import audit
+        else:
+            from native_targets import audit
+        audit(root, original, pe, bits, x86, instructions, owners, main_rows, report, result, proven_starts, by_file)
+    except (ImportError, OSError) as err:
+        report("inconclusive", "target_audit_unavailable", str(err))
+    except (ValueError, csv.Error) as err:
+        report("fail", "invalid_target_evidence", str(err))

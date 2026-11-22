@@ -2,9 +2,11 @@ import csv
 import hashlib
 import importlib.util
 import struct
+import sys
 import tempfile
+import types
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 from pathlib import Path
 
 if __package__:
@@ -92,6 +94,38 @@ class NativeSitesTest(unittest.TestCase):
                 path.write_bytes(blob)
                 trusted = (path, digest or hashlib.sha256(blob).hexdigest())
             return check(original, root, trusted)
+
+    def test_target_audit_receives_proven_calls_and_original_main_rows(self):
+        module_name = check.__module__.removesuffix("native_sites") + "native_targets"
+        module = types.ModuleType(module_name)
+        module.audit = Mock()
+        with patch.dict(sys.modules, {module_name: module}):
+            rows = [(2, "unresolved", "rax"), (2, "boundary", "callback"), (2, "external", "Y.dll!run"),
+                    (2, "data", "auxiliary operand"), (3, "unresolved", "jump"),
+                    (1, "data", "IAT 0x2050 (X.dll!#5)")]
+            result = self.audit(rows, tail=b"\xff\xd0\xff\xe0",
+                                tail_asm=["00001006  ff d0  call rax", "00001008  ff e0  jmp rax"])
+            args = module.audit.call_args.args
+            main, proven, by_file = args[7], args[-2], args[-1]
+            self.assertEqual(set(main), {0x1000, 0x1006})
+            self.assertEqual(proven, {0x1000, 0x1006, 0x1008})
+            self.assertEqual(by_file["code/native.asm"], ([1, 2, 3], [0x1000, 0x1006, 0x1008], 3))
+            self.assertTrue(main[0x1000][0]["known_iat"])
+            self.assertEqual([row["classification"] for row in main[0x1006]], ["unresolved", "boundary", "external"])
+            self.assertFalse(any(row["known_iat"] for row in main[0x1006]))
+            self.assertEqual(main[0x1006][2], {"owner": 0x1000, "source": "calls.csv#L5", "listing": "code/native.asm#L2",
+                                              "callee": "Y.dll!run", "classification": "external", "known_iat": False})
+            self.assertEqual(result["metrics"]["explicitly_unresolved_sites"], 2)
+            self.audit(tail=b"\xff\xd0\xc3", tail_asm=[])
+            args = module.audit.call_args.args
+            self.assertNotIn(0x1006, args[7])
+            self.assertIn(0x1006, args[-2])
+            self.assertNotIn(0x1006, args[-1]["code/native.asm"][1])
+            module.audit.side_effect = ValueError("invalid target record")
+            invalid = self.audit()
+            self.assertEqual(invalid["status"], "fail")
+            self.assertIn("invalid_target_evidence", [f["code"] for f in invalid["findings"]])
+            self.assertEqual(invalid["metrics"]["registered_expected_sites"], 1)
 
     def test_deleting_only_a_listing_line_moves_a_gap_to_original_coverage(self):
         # Jump over bytes that look like an indirect call. The actual indirect jump is farther

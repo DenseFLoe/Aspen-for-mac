@@ -69,6 +69,41 @@ Source SHA-256: <这份源码的小写 SHA-256>
 
 原生交付还会按原件 PE 资源树逐项报告资源证据。对支持的 `version.json` 和 `s5-data/version-resource.json`，验收器从 JSON 构造完整版本资源并比较每个字节，包含 UTF-16 字符串、终止符及对齐字节。[Windows 版本资源布局](https://learn.microsoft.com/en-us/windows/win32/menurc/vs-versioninfo)
 
+### 下游如何提交间接 CALL 的目标依据
+
+`item` 和 `project` 都从原件核对。原有 `calls.csv`、`code/indirect.csv`、`code/indirect-resolved.csv` 可以直接提交。每个调用地址在 `indirect_call_targets.sites` 中有一行，包含主表行号、旧表申报、原件指令字节、操作数、判定和理由。这个专项收录主表中尚未核准的间接 CALL，以及附件明确提到的地址。已核准的普通导入仅在附件点名时进入本专项。所有间接转移的漏登统计仍见原有的 `metrics`。
+
+需要提交新依据时，在交付根目录添加 `target-evidence.json`。下面两条可分别在 FindComponent.dll 上复验。第一条申报一个按序号导入的函数，第二条仅申报分派路径。
+
+```json
+{
+  "schema": "indirect-call-targets-v1",
+  "original_sha256": "3b3a8100a0ac587d2707935409fb2a8c5fd71eae659f95edb99c9f604454ff02",
+  "claims": [
+    {
+      "site": "0x1012", "owner": "0x1000", "target": null,
+      "external": {"iat_rva": "0x75b8", "import": "mfc140.dll!#310"},
+      "witness": {"kind": "iat", "slot_rva": "0x75b8"}
+    },
+    {
+      "site": "0x53f2", "owner": "0x5310", "target": null, "external": null,
+      "witness": {"kind": "guard_dispatch", "definition_rva": "0x53eb", "register": "r9", "slot_rva": "0x7670"}
+    }
+  ]
+}
+```
+
+每个地址提交一次。`site` 是 CALL 的 RVA，`owner` 是所属函数的起始 RVA。内部函数填十六进制 `target` 并将 `external` 置空。外部导入填 `external` 并将 `target` 置空。最终目标未知时两项均可为空。原件指纹须与本次 `item` 的受信输入相符。新增附件会改变交付指纹，重跑时应使用该副本的指纹。
+
+| AMD64 PE32+ 依据 | 原件核对的事实 | 通过时可引用的结论 |
+| --- | --- | --- |
+| `iat` | CALL 的 RIP 相对内存操作数、槽 RVA、导入描述符、DLL 名和区分大小写的符号或序号 | `instruction_operand`，原件静态导入身份 |
+| `readonly_slot` | 同形 CALL 消费的只读槽有唯一 DIR64 重定位，槽中的指针指向可核的原件函数入口 | `instruction_operand`，原件静态内部目标 RVA |
+| `readonly_table` | 另填 `definition_rva` 和 `register`。从已核的原件函数入口，RIP 相对 LEA 定义表基址，直线到达 CALL，寄存器保持，固定偏移槽及内部目标满足上述只读指针要求 | `from_owner_entry`，从所列入口执行的目标 RVA |
+| `guard_dispatch` | 另填 `definition_rva` 和 `register`。原件 MOV 从 Load Config 标注的分派槽读取到寄存器，顺序执行至调用时该寄存器保持 | `definition_fallthrough`，`original.dispatch_route` 可核实，最终目标仍待核 |
+
+`decision=confirmed` 时读取 `confirmed_target` 及其 `binding_scope`。`unresolved` 保留现有线索，例如只写了基址寄存器、只取到了分派器，或依据超出支持范围。`contradicted` 表示申报的地址、归属、操作数、依据或目标存在可定位的冲突，或同址登记存在冲突。`witness_result.reported` 与 `witness_result.original` 分别记录申报和原件结果。三种状态按地址互斥计数，后两种的 `confirmed_target` 均为空。运行时完整目标集合和整件静态验收各有独立判据。
+
 ## 全项目分母和批量输入
 
 下面的例子沿用上面的原件和交付。把三份来源清单和逐件总表下载到同一工作目录，再提交本机可供核对的材料。首次下载需要联网；验收器会自行核验这些清单的指纹。
