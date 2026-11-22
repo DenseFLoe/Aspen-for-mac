@@ -18,9 +18,10 @@ HERE = Path(__file__).resolve().parent
 APPROVALS = json.loads((HERE / "accepted_archives.json").read_text(encoding="utf-8"))
 EXIT = {"pass": 0, "fail": 1, "inconclusive": 2}
 VERSION = "1.0"
-IMPLEMENTATION = "1.7"
+IMPLEMENTATION = "1.8"
 ARCHIVE_REPLAY_BASIS = "previous_whole_item_static_acceptance_replayed"
 FRESH_BUILD_BASIS = "fresh_source_build_full_file_exact_and_item_evidence"
+CFB_MAGIC = bytes.fromhex("d0cf11e0a1b11ae1")
 HEX = re.compile(r"[0-9a-fA-F]{64}")
 REGION_DELTA = re.compile(r"s[1-9][0-9]*/reassembly-delta\.json")
 REFERENCE_TYPES = {"instruction_listing", "clr_thunks"}
@@ -141,10 +142,11 @@ def verifier_identity():
     # Bind a CLI report to the verifier inputs present at startup on this machine.
     names = ("verify.py", "accepted_archives.json", "coverage_table.py", "native_sites.py", "native_targets.py",
              "target_witness.py", "native_exports.py", "native_regions.py", "clr_fixups.py", "import_routes.py",
-             "com_call_sites.py",
+             "com_call_sites.py", "bounded_switches.py",
              "historical_listing.py", "fh4.py", "mixed_baseline.py", "callback_paths.py",
              "pe_resources.py", "version_resource.py", "fresh_cs.py", "compile_fresh_cs.ps1", "managed.py",
-             "ManagedEvidence.cs", "coff.py", "office_vba.py")
+             "ManagedEvidence.cs", "coff.py", "office_vba.py", "office_forms.py", "biff_workbook.py",
+             "office_project.py")
     paths = {name: HERE / name for name in names}
     helper = "handoff/assignments/check-native-coverage.py"
     paths[helper] = HERE.parents[1] / helper
@@ -404,6 +406,11 @@ def evaluate(original, expected, delivery, rebuilt=None, assembler=None, product
         checks.append(component("pe_resources", data, delivery))
     if any(entry.is_dir() and entry.name.casefold() in {"vba", "vba-src"} for entry in delivery.iterdir()):
         checks.append(component("office_vba", data, delivery))
+    if data.startswith(CFB_MAGIC):
+        if "workbook.json" in files:
+            checks.append(component("biff_workbook", data, delivery))
+        if "project.json" in files and any(name.startswith("project/") for name in files):
+            checks.append(component("office_project", data, delivery))
     if rebuilt:
         checks.append(component("managed", data, rebuilt))
     if data.startswith(b"\x64\x86") and any(

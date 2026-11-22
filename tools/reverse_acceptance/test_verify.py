@@ -297,6 +297,15 @@ class WholeItemTests(unittest.TestCase):
         self.assertEqual(run.call_args.args[-1], (self.base.resolve() / "dep.dll", self.digest))
         self.assertEqual(result["counts"]["fail"], 1)
 
+    def test_biff_workbook_listing_is_checked_without_vba(self):
+        self.original.write_bytes(bytes.fromhex("d0cf11e0a1b11ae1"))
+        (self.delivery / "workbook.json").write_text("[]", encoding="utf-8")
+        result = verify.section("BIFF8 workbook", "fail", [verify.finding("biff_record_differs")])
+        with patch.object(verify, "component", return_value=result) as check:
+            verdict = verify.item(self.original, verify.digest_file(self.original), self.delivery)
+        check.assert_called_once_with("biff_workbook", self.original.read_bytes(), self.delivery)
+        self.assertEqual(verdict["status"], "fail")
+
     def test_source_list_catches_missing_contents_and_mismatched_lists(self):
         scopes = self.base / "scopes"
         scopes.mkdir()
