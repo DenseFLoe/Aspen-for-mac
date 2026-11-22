@@ -2,7 +2,7 @@
 
 - 总件数 **1000** ｜ pass **530** ｜ fail **470** ｜ partial **0** ｜ blocked **0**
 - **2026-11-22 第二轮更正**：455 件 .cs.txt 尾部残留 ilspycmd 升级提示（tool_nag_tail），首轮判据只匹配行首工具名故漏检；结论由 pass 978 更正为 pass 530 / fail 470。产品矩阵、失败原因表、失败明细、README 限制说明与 validation R3 同轮按台账重算，旧汇总 978/15/7 与 537/463 一并作废。
-- 机器可读重算结果见同目录 reconciliation.json：逐行取自 selection.csv + ledger-1000.csv 独立复算，不复制任何旧文档数字。
+- 机器可读重算结果见归档的 `handoff/inbox/T9-368-RECONCILE/reconciliation.json`（T9 交叉核对 v1 §3 的固定位置，也是 check-t9-368.py 的 RESULT 常量）；**本目录不放同名文件**。本文件全部数字由本轮生成器从 ledger-1000.csv 独立复算，不复制任何旧文档数字。
 - 固定输入：提交 db544a6fdfb04ec60d182c311aa47d13a61d744b 的 handoff/review/t9-1000/ 六个文件（SHA-256 已逐个核对）。
 - 证据档位：已实测 1000（无未验证 / 无法判定行）。
 - 选件：待静态验收 916 + 静态验收未通过 84（按路径序）。
@@ -32,11 +32,12 @@
 
 | 层 | 应做 | 实做 | 覆盖率 | 未覆盖件数 |
 | --- | ---: | ---: | ---: | ---: |
-| Tier A 结构一致性 | 1000 | 1000 | 100.0% | 15 |
+| Tier A 结构一致性 | 1000 | 1000 | 100.0% | 0 |
 | Tier B 内容重算（CLR） | 455 | 455 | 100.0% | 0 |
 | Tier B 内容重算（native） | 530 | 530 | 100.0% | 0 |
 | Tier B 合计 | 985 | 985 | 100.0% | 0 |
 
+> **Tier A 已执行 1,000、未覆盖 0；失败 15 另列**：台账 tier_a 列为 PASS 985 与 FAIL 15，1,000 件全部有执行结果，故未覆盖记 0；15 件 FAIL 即 a2_sha_missing + a3_report_missing，在 §4「fail_code 独立行数」单列，不从已执行里再扣一次。
 > 应做 = kind ∈ {CLR, native}（含 115 件经 tree 回退重判的变体导出件）；other 15 件为真非 PE / 缺报告，只做 Tier A。
 > **Tier B 原始字段分布**（tier_b 列原值，勿与最终 verdict 混读）：PASS 978、PARTIAL:no_il 6、PARTIAL:no_claim 1、NOT_RUN 15。这 6+1 件同时带 tool_nag_tail，最终 verdict 均为 fail，故最终 partial 计 0。
 
@@ -51,7 +52,7 @@
 | analyze_failed | 1 | 报告自述 status=failed_analyze（反编译失败），无统计数可比对（tier_b=PARTIAL:no_claim） |
 | **原因占用合计** | **492** | 多码行重叠，去重后 fail 行 470 |
 
-> 独立行数按「该原因出现在多少行」计，不做去重；同一行可带多个原因。重叠：a2_sha_missing + a3_report_missing 同现 15 行，tier_b_incomplete + tool_nag_tail 同现 6 行，analyze_failed + tool_nag_tail 同现 1 行 ⇒ 占用 492 次 = fail 470 行 + 重叠 22 行。
+> **两个量必须分清**：492 是**归因占用次数**（按「该原因出现在多少行」计，不去重，同一行可带多个原因）；470 是 **fail 身份行数**（每件只算一次）。二者不是同一个量。重叠：a2_sha_missing + a3_report_missing 同现 15 行，tier_b_incomplete + tool_nag_tail 同现 6 行，analyze_failed + tool_nag_tail 同现 1 行 ⇒ 占用 492 次 = fail 470 行 + 重叠 22 行。
 > tool_nag_tail 分布：Plus 439、Properties 16、Plus-Properties 0；kind 全为 CLR（CLR 共 455 件）；归档状态：待静态验收 446 / 静态验收未通过 9。
 
 ## 5. blocked 原因分布

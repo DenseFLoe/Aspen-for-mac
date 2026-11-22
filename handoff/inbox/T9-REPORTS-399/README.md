@@ -4,7 +4,7 @@
 
 ## 这是什么
 
-对 1,000 件未评审逆向成果（待静态验收 916 + 静态验收未通过 84）出的**逐件机检预审台账**。机器可读重算见 reconciliation.json。
+对 1,000 件未评审逆向成果（待静态验收 916 + 静态验收未通过 84）出的**逐件机检预审台账**。机器可读重算见归档的 `handoff/inbox/T9-368-RECONCILE/reconciliation.json`（标准 §3 固定位置；本目录无同名文件）。
 
 > **这不是上游 P0–P3 终判。** 原因：原件二进制不在仓库（逆向成果/ 下 0 个二进制 blob），语义层（类型用途、调用约定、逻辑等价、运行期行为）未复核。本批只证明「结构自洽 + 我方产物与报告声称值一致」。
 
@@ -27,14 +27,22 @@
 | stats.md | 分产品×结论矩阵、分归档状态矩阵、Tier A/B 覆盖率实数、fail_code 独立行数、blocked 原因 |
 | review_shard.py / merge_ledger.py / verify_item.py / gen_reports.py | 扫描 / 合并 / 单件复跑 / 报告生成 |
 | validation.md | R1–R6 逐条自检 + 分片一致性 + 已知异常（裸波浪号 404、代理、并行写坏片） |
-| reconciliation.json | 本轮独立重算的固定结果（产品/状态矩阵、原因独立行数、反例对象） |
+| reconciliation.json | **不在本目录**：固定结果归档在 `handoff/inbox/T9-368-RECONCILE/reconciliation.json`（check-t9-368.py 的 RESULT 常量指向该路径） |
 
 ## 复现
 
-    cd _work/wf-20261120-aspen-batch
-    PYTHONIOENCODING=utf-8 python out/review9/review_shard.py --shard 3 --concurrency 3   # 单分片重跑
-    PYTHONIOENCODING=utf-8 python out/review9/merge_ledger.py                              # 合并 + R1/R2/R6 断言
-    PYTHONIOENCODING=utf-8 python out/review9/verify_item.py --idx 42 --fresh              # 单件复跑
+在仓库根、Python 3.9+，只用固定提交 db544a6f 的六个文件即可复现本目录四份报告：
+
+    # 0) 逐文件核对六份固定输入的 SHA-256，并与归档 reconciliation.json 对照
+    python -B handoff/assignments/check-t9-368.py --input-dir handoff/review/t9-1000
+
+    # 1) 从台账重生成四份报告（本目录生成器；--out 默认 handoff/inbox/T9-REPORTS-399）
+    python -B handoff/inbox/T9-REPORTS-399/t9_reports.py --input-dir handoff/review/t9-1000 --out handoff/inbox/T9-REPORTS-399
+
+    # 2) 核对重生成结果（四份报告 vs 固定输入独立复算）
+    python -B handoff/assignments/check-t9-reports-399.py --input-dir handoff/review/t9-1000 --reports handoff/inbox/T9-REPORTS-399
+
+**核对路径（谁核对什么）**：两张 CSV 的逐行身份（idx、分片、归档状态、产品、名称、对象目录、0–999 完整性、路径唯一性）由固定的 `handoff/assignments/check-t9-368.py` 完成（SHA-256 `ff2fbcd5873e5d86d4912417dccdc39eb6d638fef701a80dd8c047f00e9a58b1`，check-t9-reports-399.py 以 REFERENCE_SHA 固定它）；本目录生成器 **只读 ledger-1000.csv** 生成报告，不做双表核对。实测反例：把 selection.csv 移出输入目录后重跑，四份报告逐字节相同。
 
 ## 限制（明写）
 
