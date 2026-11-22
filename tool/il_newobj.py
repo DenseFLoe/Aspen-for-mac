@@ -23,7 +23,7 @@ def _memberref_class(tables, memberref_row):
     return cli_tables.decode_coded(10, row["Class"])
 
 
-def resolve(tables, meta, tok):
+def resolve(tables, meta, tok, data=None):
     """Resolve one operand token.  Returns dict with kind/owner/verdict."""
     table, row = cli_tables.split_token(tok)
     types = meta["types"]
@@ -64,7 +64,7 @@ def resolve(tables, meta, tok):
                        owner_token=tok2, verdict="internal-type-ctor")
         elif parent == 1:                              # TypeRef (external assembly)
             tr = tables["rows"][1][prow - 1]
-            scope, srow = cli_tables.decode_coded(1, tr["ResolutionScope"])
+            scope, srow = cli_tables.decode_resolution_scope(tr["ResolutionScope"])
             asm = ""
             if scope == 35 and srow <= len(tables["rows"].get(35, [])):
                 asm = tables["rows"][35][srow - 1]["Name"]
@@ -74,8 +74,10 @@ def resolve(tables, meta, tok):
                        owner_name="%s.%s" % (tr["TypeNamespace"], tr["TypeName"]),
                        verdict="external-ctor", assembly=asm)
         elif parent == 27:                             # TypeSpec (generic instantiation)
-            out.update(owner_kind="TypeSpec", owner_row=prow, verdict="external-ctor",
-                       note="generic instantiation")
+            asm, nm = cli_tables.typespec_name(data, tables, prow) if data else ("", "TypeSpec#%d" % prow)
+            out.update(owner_kind="TypeSpec", owner_row=prow, owner_name=nm, assembly=asm,
+                       verdict="external-ctor",
+                       note="TypeSpec#%d GENERICINST -> %s" % (prow, nm))
         elif parent == 26:                             # ModuleRef
             mr = tables["rows"][26][prow - 1]
             out.update(owner_kind="ModuleRef", owner_row=prow, owner_name=mr["Name"],
@@ -99,7 +101,7 @@ def scan(data, pe, tables, meta):
             if name != "newobj":
                 continue
             tok = int(operand.split()[0], 16)
-            info = resolve(tables, meta, tok)
+            info = resolve(tables, meta, tok, data)
             info.update(caller_token=m["token"], caller_name=m["name"], caller_rva=m["rva"],
                         offset=off, opcode="0x73", size=size)
             sites.append(info)

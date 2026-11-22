@@ -175,3 +175,87 @@ def token(table, row):
 
 def split_token(tok):
     return tok >> 24, tok & 0xFFFFFF
+
+# ---- signature helpers (TypeSpec) ------------------------------------------
+ELEMENT = {0x01: "void", 0x02: "bool", 0x03: "char", 0x04: "System.SByte", 0x05: "System.Byte",
+           0x06: "System.Int16", 0x07: "System.UInt16", 0x08: "System.Int32", 0x09: "System.UInt32",
+           0x0A: "System.Int64", 0x0B: "System.UInt64", 0x0C: "System.Single", 0x0D: "System.Double",
+           0x0E: "System.String", 0x18: "System.IntPtr", 0x19: "System.UIntPtr",
+           0x1C: "System.Object"}
+
+# TypeRef.ResolutionScope is its own coded index (Module/ModuleRef/AssemblyRef/TypeRef),
+# distinct from TypeDefOrRef even though both live in 2 bits.
+RESOLUTION_SCOPE = {0: 0, 1: 26, 2: 35, 3: 1}
+
+
+def decode_resolution_scope(value):
+    return RESOLUTION_SCOPE[value & 3], value >> 2
+
+
+def blob_bytes(data, tables, index):
+    """#Blob heap entry at index -> raw bytes."""
+    base = tables["streams"]["#Blob"][0]
+    i = base + index
+    b0 = data[i]
+    if b0 & 0x80 == 0:
+        n, start = b0, i + 1
+    elif b0 & 0xC0 == 0x80:
+        n, start = ((b0 & 0x3F) << 8) | data[i + 1], i + 2
+    else:
+        n = ((b0 & 0x1F) << 24) | (data[i + 1] << 16) | (data[i + 2] << 8) | data[i + 3]
+        start = i + 4
+    return data[start:start + n]
+
+
+def compressed(data, i):
+    b0 = data[i]
+    if b0 & 0x80 == 0:
+        return b0, i + 1
+    if b0 & 0xC0 == 0x80:
+        return ((b0 & 0x3F) << 8) | data[i + 1], i + 2
+    return ((b0 & 0x1F) << 24) | (data[i + 1] << 16) | (data[i + 2] << 8) | data[i + 3], i + 4
+
+
+def typedeforref_name(tables, value):
+    tag, row = value & 3, value >> 2
+    if tag == 1 and row <= len(tables["rows"].get(1, [])):
+        tr = tables["rows"][1][row - 1]
+        scope, srow = decode_resolution_scope(tr["ResolutionScope"])
+        asm = ""
+        if scope == 35 and srow <= len(tables["rows"].get(35, [])):
+            asm = tables["rows"][35][srow - 1]["Name"]
+        return asm, "%s.%s" % (tr["TypeNamespace"], tr["TypeName"])
+    if tag == 0 and row <= len(tables["rows"].get(2, [])):
+        td = tables["rows"][2][row - 1]
+        return "this-module", "%s.%s" % (td["TypeNamespace"], td["TypeName"])
+    return "", "TypeDefOrRef#%d" % value
+
+
+def typespec_name(data, tables, row):
+    """Render a TypeSpec row (GENERICINST and simple class forms)."""
+    ts = tables["rows"][27][row - 1]
+    sig = blob_bytes(data, tables, ts["Signature"])
+    i = 0
+    et = sig[i]
+    i += 1
+    if et == 0x15:                                  # GENERICINST
+        kind = sig[i]
+        i += 1
+        value, i = compressed(sig, i)
+        asm, name = typedeforref_name(tables, value)
+        n, i = compressed(sig, i)
+        args = []
+        for _ in range(n):
+            a = sig[i]
+            i += 1
+            if a == 0x12:                            # CLASS/VALUETYPE
+                v, i = compressed(sig, i)
+                _, an = typedeforref_name(tables, v)
+                args.append(an)
+            else:
+                args.append(ELEMENT.get(a, "et%#x" % a))
+        return asm, "%s<%s>" % (name, ",".join(args))
+    if et == 0x12:
+        v, i = compressed(sig, i)
+        return typedeforref_name(tables, v)
+    return "", "TypeSpec#%d" % row
