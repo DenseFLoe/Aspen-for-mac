@@ -60,7 +60,7 @@ def main():
     def host_of(rva):
         return next((b for b, e in hosts if b <= rva < e), 0)
 
-    asms = sorted((folder / 'code').glob('native*.asm'))
+    asms = sorted((folder / 'code').rglob('native*.asm'))
     owners, addr2line = [], {}
     for fn in asms:
         for ln in open(fn, encoding='utf-8'):
@@ -69,8 +69,9 @@ def main():
                 lo, hi = m[2].split('-')
                 owners.append((int(lo, 16), int(hi, 16)))
         _, insns = parse_asm(str(fn))
+        rel = fn.relative_to(folder).as_posix()
         for (ln, addr, b, text, raw) in insns:
-            addr2line[addr] = (fn.name, ln)
+            addr2line[addr] = (rel, ln)
 
     def owner_of(rva):
         # most specific (innermost) fragment wins when listing ranges overlap
@@ -86,9 +87,8 @@ def main():
         if '#L' not in ref:
             continue
         fpart, lpart = ref.split('#L', 1)
-        fname = fpart.rsplit('/', 1)[-1]
         line = int(lpart.split('-')[0])
-        row_by_key.setdefault((fname, line), []).append(idx)
+        row_by_key.setdefault((fpart, line), []).append(idx)
 
     def row_for(fname, line, symbol):
         cands = row_by_key.get((fname, line), [])
@@ -117,11 +117,17 @@ def main():
             sites.append((addr, hop, slot))
 
     out = []
+    ambiguous = 0
+    missing = 0
     for site, hop, slot in sites:
         lib, nm = iat[slot]
         asm = addr2line.get(site)
         owner = '0x%X' % owner_of(site)
         row = row_for(asm[0], asm[1], '%s!%s' % (lib, nm)) if asm else None
+        if asm and row is None:
+            ambiguous += 1
+        if not asm:
+            missing += 1
         out.append(dict(site='0x%X' % site,
                         first_hop='0x%X' % hop,
                         iat_slot='0x%X' % slot,
@@ -129,7 +135,7 @@ def main():
                         main_class=calls[row - 2]['class'] if row else '',
                         original_host='0x%X' % host_of(site),
                         candidate_owner=owner,
-                        asm='code/%s#L%d' % (asm[0], asm[1]) if asm else '',
+                        asm='%s#L%d' % (asm[0], asm[1]) if asm else '',
                         calls_row=row or ''))
     out_path = Path(a.out) if a.out else (folder / 'code' / 's37-two-hop.csv')
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -137,7 +143,8 @@ def main():
         w = csv.DictWriter(fh, fieldnames=['site', 'first_hop', 'iat_slot', 'import_symbol', 'main_class',
                                            'original_host', 'candidate_owner', 'asm', 'calls_row'])
         w.writeheader(); w.writerows(out)
-    print('rows %d; discovered_from_listing=%d' % (len(out), len(sites)))
+    print('rows %d; discovered_from_listing=%d; ambiguous_calls_row=%d; missing_listing_ref=%d'
+          % (len(out), len(sites), ambiguous, missing))
 
 
 if __name__ == '__main__':

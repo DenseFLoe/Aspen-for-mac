@@ -53,14 +53,15 @@ def prep(name, mutate_listing=False, drop_row=None, with_prev=True):
     return d
 
 
-def split_listing(d):
+def split_listing(d, subdir=False):
     """s53 verifier layout: move native.asm lines 199-226 into native-part.asm lines 19-46."""
     src = d / 'code' / 'native.asm'
     lines = src.read_text(encoding='utf-8').splitlines()
     block = lines[198:226]                       # 1-based 199-226
     lines[198:226] = ['; moved to native-part.asm'] * len(block)
     src.write_text('\n'.join(lines) + '\n', encoding='utf-8')
-    part = d / 'code' / 'native-part.asm'
+    part = (d / 'code' / 'sub' / 'native-part.asm') if subdir else (d / 'code' / 'native-part.asm')
+    part.parent.mkdir(parents=True, exist_ok=True)
     part.write_text('\n'.join(['; split listing part (verifier layout)'] * 18 + block) + '\n', encoding='utf-8')
     # rewrite calls.csv references into the moved block: file -> native-part.asm, line -= 180
     rows = list(csv.DictReader(open(d / 'calls.csv', encoding='utf-8')))
@@ -73,7 +74,8 @@ def split_listing(d):
             continue
         first, _, last = lpart.partition('-L')
         if 199 <= int(first) <= 226:
-            r['listing'] = 'code/native-part.asm#L%d-L%d' % (int(first) - 180, int(last) - 180 if last else int(first) - 180)
+            newfirst, newlast = int(first) - 180, (int(last) - 180 if last else int(first) - 180)
+            r['listing'] = ('code/sub/native-part.asm' if subdir else 'code/native-part.asm') + '#L%d-L%d' % (newfirst, newlast)
     with open(d / 'calls.csv', 'w', newline='', encoding='utf-8') as fh:
         w = csv.DictWriter(fh, fieldnames=['kind', 'caller', 'callee', 'class', 'listing', 'note'])
         w.writeheader(); w.writerows(rows)
@@ -142,6 +144,19 @@ def main():
     print('E two-layout   : rc=%d/%d rows=%d/%d  0x106C=%s/525 0x12DA=%s/528 status=%s' % (
         rc1, rc2, n1, n2, g1.get('0X106C', ('', ''))[1], g1.get('0X12DA', ('', ''))[1],
         'PASS' if e_ok else 'FAIL'))
+    # F: subdirectory layout must resolve from repo root
+    d3 = prep('layout-subdir', with_prev=False)
+    split_listing(d3, subdir=True)
+    rc3, _, _ = run(d3, d3 / 'out3.csv')
+    n3, g3 = assoc(d3 / 'out3.csv')
+    f_ok = (rc3 == 0 and n3 == 161
+            and g3.get('0X106C', ('', ''))[1] == '525' and g3.get('0X12DA', ('', ''))[1] == '528')
+    ref = g3.get('0X12DA', ('', ''))[0]
+    ref_ok = ref.startswith('code/sub/') and (d3 / ref.split('#')[0]).exists()
+    ok &= (f_ok and ref_ok)
+    print('F subdir       : rc=%d rows=%d  0x106C=%s/525 0x12DA=%s/528 ref_resolvable=%s status=%s' % (
+        rc3, n3, g3.get('0X106C', ('', ''))[1], g3.get('0X12DA', ('', ''))[1], ref_ok,
+        'PASS' if (f_ok and ref_ok) else 'FAIL'))
     (WORK / 's49-inputs.json').write_text(json.dumps(inputs, ensure_ascii=False, indent=1), encoding='utf-8')
     print('TOOLS          : generator=%s pe_reader=%s tests=%s' % (
         sha('tool/s37_two_hop.py'), sha('tool/pe_reader.py'), sha('tool/s45_tests.py')))
