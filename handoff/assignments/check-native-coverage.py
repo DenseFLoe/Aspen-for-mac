@@ -13,6 +13,10 @@ from urllib.request import urlopen
 ROOT = Path(__file__).resolve().parents[2]
 BASE = "https://raw.githubusercontent.com/DenseFLoe/Aspen-for-mac/64670801de54e990f975aaeda06e89340c0e4e08/issue-materials"
 INPUTS = {
+    "NATIVE-350": (
+        "https://raw.githubusercontent.com/DenseFLoe/Aspen-for-mac/ad53650f6071f83b133ede7bf847bc5096cd3b56/%E7%AD%89%E5%BE%85%E9%93%81%E5%A4%B4%E7%8C%AB/Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/zedstwu.dll",
+        "09b4491feeb7389b072b9de06b86a6d978dbb61527ad821e181b072bc5b9a59b",
+    ),
     "NATIVE-349": ("349/Ikc2Bkp.dll", "bba17051eb1071e5f48702f685f1d8d5d3b9f5cfd222f357e30fd0545bf00011"),
     "NATIVE-337": ("337/FindComponent.dll", "3b3a8100a0ac587d2707935409fb2a8c5fd71eae659f95edb99c9f604454ff02"),
     "NATIVE-338": ("338/Happ.dll", "7d4964f25cee38127a0b68fd3c0360c79c030f4c6ed24aa2d2e50b68e008936a"),
@@ -247,7 +251,8 @@ def main():
     if args.original:
         data = args.original.read_bytes()
     else:
-        with urlopen(BASE + "/" + rel, timeout=60) as stream:
+        url = rel if rel.startswith("https://") else BASE + "/" + rel
+        with urlopen(url, timeout=60) as stream:
             data = stream.read()
     require(hashlib.sha256(data).hexdigest() == digest, "original SHA-256 mismatch")
     records, filepos, imagebase = inspect(data)
