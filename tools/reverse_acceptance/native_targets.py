@@ -1,4 +1,4 @@
-"""Check submitted indirect CALL target claims against original instructions and witnesses."""
+"""Check submitted indirect transfers and verify supported indirect CALL target claims."""
 import bisect
 from collections import Counter, defaultdict
 import hashlib
@@ -20,6 +20,7 @@ FIELDS = {"kind", "caller", "callee", "class", "listing", "note"}
 RVA = re.compile(r"0x[0-9a-f]{1,8}", re.I)
 SITE = re.compile(r"indirect@(0x[0-9a-f]{1,8})", re.I)
 BASE_HINT = re.compile(r"base\s+([a-z0-9]+)(?:\s+(.*))?", re.I)
+TRANSFER_LABEL = re.compile(r"(?:^|\()\s*(callq?|jmpq?)\s+\S", re.I)
 
 
 def address(value):
@@ -80,10 +81,18 @@ def label(value):
     return None
 
 
-def read_legacy(root, path, by_file, records, report):
+def read_legacy(root, path, by_file, records, managed, report):
     fields = FIELDS | ({"resolved", "verdict"} if path == LEGACY else set())
+    native_rows = managed_rows = False
     for line, row in native_sites.csv_rows(root, path, fields, numbered=True):
         where = f"{path}#L{line}"
+        kind = row["kind"].strip().casefold()
+        if kind == "method":
+            managed.append({"source": where, "caller": row["caller"], "callee": row["callee"],
+                            "listing": row["listing"]})
+            managed_rows = True
+            continue
+        native_rows = True
         hint = SITE.fullmatch(row["callee"].strip())
         sites = listed_sites(row["listing"], by_file)
         if hint:
@@ -91,7 +100,7 @@ def read_legacy(root, path, by_file, records, report):
         elif len(sites) == 1:
             site, = sites
         else:
-            report("inconclusive", "indirect_target_site_unverified", "Cannot identify a unique call site.", line=where)
+            report("inconclusive", "indirect_target_site_unverified", "Cannot identify a unique native transfer site.", line=where)
             continue
         item = {"source": where, "listing": row["listing"], "callee": row["callee"],
                 "classification": row["class"], "note": row["note"]}
@@ -101,13 +110,14 @@ def read_legacy(root, path, by_file, records, report):
             item["owner"] = address(row["caller"].strip())
         except ValueError:
             item["owner"] = None
-        if row["kind"].casefold() != "native" or item["owner"] is None:
+        if kind != "native" or item["owner"] is None:
             item["issue"] = "invalid_identity"
         elif sites and site not in sites:
             item["issue"] = "listing_points_to_different_site"
         elif sites != {site}:
             item["issue"] = "listing_site_not_unique"
         records[site][path].append(item)
+    return native_rows or not managed_rows
 
 
 def read_claims(root, original, records, report):
@@ -154,9 +164,48 @@ def read_claims(root, original, records, report):
             indexed["issue"] = str(exc)
 
 
+def site_record(site, primary, entries, proven_starts, report):
+    row = {"site_rva": hex(site), "main_rows": [{**r, "owner": hex(r["owner"])} for r in primary],
+           "original_boundary_confirmed": site in proven_starts, "operand": None,
+           "evidence": dict(entries), "decision": "unresolved", "confirmed_target": None, "reasons": []}
+
+    def flag(code, message, source=None, level="fail"):
+        row["reasons"].append(code)
+        if level == "fail":
+            row["decision"] = "contradicted"
+        report(level, code, message, site, source)
+
+    return row, flag
+
+
+def check_registration(site, primary, entries, owner_set, mnemonic, flag):
+    for item in primary:
+        hint = SITE.fullmatch(item["callee"].strip())
+        if hint and address(hint[1]) != site:
+            flag("indirect_target_site_mismatch", "Main-table transfer address differs from its listing.", item["source"])
+    for path, records in entries.items():
+        if len(records) != 1:
+            flag("indirect_target_duplicate", "Duplicate site records in " + path, records[-1]["source"])
+        for record in records:
+            source = record["source"]
+            if "issue" in record:
+                uncertain = record["issue"] == "listing_site_not_unique"
+                flag("indirect_target_evidence_reference", record["issue"], source,
+                     "inconclusive" if uncertain else "fail")
+            if owner_set is not None and record.get("owner") not in owner_set:
+                flag("indirect_target_owner_mismatch", "Evidence owner disagrees with the owner at this site.", source)
+    for record in [*primary, *entries.get(INDEX, []), *entries.get(LEGACY, [])]:
+        labels = sorted({match.casefold().removesuffix("q") for match in TRANSFER_LABEL.findall(record["callee"])})
+        if any(declared != mnemonic for declared in labels):
+            flag("indirect_target_transfer_kind_mismatch",
+                 f"CSV labels the transfer {'/'.join(labels).upper()}. The original instruction is {mnemonic.upper()}.",
+                 record["source"])
+
+
 def audit(root, original, pe, bits, x86, instructions, owners, main_rows, report, result, proven_starts, by_file):
     evidence = defaultdict(lambda: defaultdict(list))
     supplied = set()
+    managed = []
     # A separately supplied index preserves sites even if removed from the resolution table or calls.csv.
     for path in (INDEX, LEGACY, CLAIMS):
         if not native_sites.safe_path(root, path).is_file():
@@ -165,13 +214,14 @@ def audit(root, original, pe, bits, x86, instructions, owners, main_rows, report
         try:
             if path == CLAIMS:
                 read_claims(root, original, evidence, report)
-            else:
-                read_legacy(root, path, by_file, evidence, report)
+            elif not read_legacy(root, path, by_file, evidence, managed, report):
+                supplied.remove(path)
         except (ValueError, OSError, RecursionError, native_sites.csv.Error) as exc:
             report("inconclusive" if isinstance(exc, OSError) else "fail", "indirect_target_evidence_unreadable",
                    str(exc), line=path)
     sites = set(evidence) | {site for site, rows in main_rows.items() if any(not r["known_iat"] for r in rows)}
     rows_out = []
+    jumps = []
     fmt = x86.Formatter(x86.FormatterSyntax.INTEL)
     ranges = defaultdict(set)
     for func in getattr(pe, "DIRECTORY_ENTRY_EXCEPTION", ()):
@@ -180,15 +230,24 @@ def audit(root, original, pe, bits, x86, instructions, owners, main_rows, report
         entries = evidence[site]
         primary = main_rows.get(site, [])
         ins = instructions.get(site)
-        row = {"site_rva": hex(site), "main_rows": [{**r, "owner": hex(r["owner"])} for r in primary],
-               "original_boundary_confirmed": site in proven_starts, "operand": None,
-               "evidence": dict(entries), "decision": "unresolved", "confirmed_target": None, "reasons": []}
+        if ins is not None and ins.flow_control == x86.FlowControl.INDIRECT_BRANCH:
+            legacy_entries = {path: records for path, records in entries.items() if path != CLAIMS}
+            if primary or legacy_entries:
+                jump, flag = site_record(site, primary, legacy_entries, proven_starts, report)
+                jumps.append(jump)
+                jump["original_mnemonic"] = "jmp"
+                jump["operand"] = operand(ins, pe, x86, fmt)
+                jump["original_bytes"] = pe.get_data(site, ins.len).hex(" ")
+                jump_owners = {r["owner"] for r in primary} or owners.get(site) or None
+                check_registration(site, primary, legacy_entries, jump_owners, "jmp", flag)
+                if not jump["reasons"]:
+                    jump["reasons"].append("jump_target_resolution_outside_scope")
+            if CLAIMS not in entries:
+                continue
+            # Structured evidence claims CALLs even when it cites a genuine JMP.
+            entries, primary = {CLAIMS: entries[CLAIMS]}, []
+        row, flag = site_record(site, primary, entries, proven_starts, report)
         rows_out.append(row)
-        def flag(code, message, source=None, level="fail"):
-            row["reasons"].append(code)
-            if level == "fail":
-                row["decision"] = "contradicted"
-            report(level, code, message, site, source)
 
         if ins is None or ins.flow_control != x86.FlowControl.INDIRECT_CALL:
             flag("indirect_target_not_a_verified_call", "No matching original-backed indirect CALL at the cited address.",
@@ -202,21 +261,7 @@ def audit(root, original, pe, bits, x86, instructions, owners, main_rows, report
         if owners.get(site) and not owner_set <= owners[site]:
             flag("indirect_target_owner_unverified", "Primary owner disagrees with the submitted listing owner.",
                  level="inconclusive")
-        for item in primary:
-            hint = SITE.fullmatch(item["callee"].strip())
-            if hint and address(hint[1]) != site:
-                flag("indirect_target_site_mismatch", "Main-table call address differs from its listing.", item["source"])
-        for path, records in entries.items():
-            if len(records) != 1:
-                flag("indirect_target_duplicate", "Duplicate site records in " + path, records[-1]["source"])
-            for record in records:
-                source = record["source"]
-                if "issue" in record:
-                    uncertain = record["issue"] == "listing_site_not_unique"
-                    flag("indirect_target_evidence_reference", record["issue"], source,
-                         "inconclusive" if uncertain else "fail")
-                if record.get("owner") not in owner_set:
-                    flag("indirect_target_owner_mismatch", "Evidence owner does not match a main-table row at this site.", source)
+        check_registration(site, primary, entries, owner_set, "call", flag)
         if any(r["classification"] == "unresolved" for r in primary):
             row["missing_legacy_records"] = [p for p in (INDEX, LEGACY) if p in supplied and not entries.get(p)]
         legacy_labels = [r["callee"] for r in [*primary, *entries.get(INDEX, [])] if label(r["callee"])]
@@ -294,6 +339,13 @@ def audit(root, original, pe, bits, x86, instructions, owners, main_rows, report
     result["indirect_call_targets"] = {
         "scope": "Submitted indirect CALL targets. A static import identity or an owner-entry proof has the scope recorded per site.",
         "sites": rows_out, "counts": {key: counts[key] for key in ("confirmed", "unresolved", "contradicted")}}
+    jump_counts = Counter(row["decision"] for row in jumps)
+    result["indirect_jump_targets"] = {
+        "scope": "Submitted indirect JMP sites. This check verifies registration and instruction kind.",
+        "sites": jumps, "counts": {key: jump_counts[key] for key in ("unresolved", "contradicted")}}
+    result["managed_indirect_records"] = {
+        "scope": "Managed records declared in legacy indirect transfer tables. IL verification is outside this check.",
+        "count": len(managed), "records": managed}
     if counts["unresolved"] and supplied:
         report("inconclusive", "indirect_call_targets_unresolved",
                f"{counts['unresolved']} submitted call sites still lack conclusive target evidence.")

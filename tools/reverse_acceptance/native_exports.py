@@ -21,6 +21,8 @@ SCOPE = ("Named AMD64 PE export ranges with restricted inline-assembly C sources
 # Reviewed register-forms.h defines the fixed NAKED, START and END C macros.
 HEADER_SHA256 = "9cfb9b139e9fb4364b0857f024f6507bdcc47c898ccc08af255845dcd41a8eb3"
 IDENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+RVA_SYMBOL = re.compile(r"rva_([0-9a-fA-F]{1,8})")
+QUALIFIED_RVA_SYMBOL = re.compile(r"(?:[A-Za-z_][A-Za-z0-9_]*_)?rva_([0-9a-fA-F]{1,8})")
 WRAPPER = re.compile(
     r'\A#include "register-forms\.h"\n[ \t\n]*'
     r'(?:/\* [A-Za-z0-9_:. ()-]+ \*/\n[ \t\n]*)?'
@@ -74,7 +76,7 @@ def _source_supported(source, export, x86):
     return True
 
 
-def _coff(data, export):
+def _coff(data, export, relocation_symbol=RVA_SYMBOL):
     machine, count, _, symbols, nsyms, optional, _ = struct.unpack_from("<HHIIIHH", data)
     if machine != 0x8664 or optional or not 0 < count <= 96:
         raise ValueError("Unsupported COFF header")
@@ -113,7 +115,7 @@ def _coff(data, export):
         label = externals.get(sym, "")
         field = range(pos, pos + 4)
         if (not 4 <= kind <= 9 or pos + 4 > size or occupied.intersection(field)
-                or not re.fullmatch(r"rva_[0-9a-fA-F]{1,8}", label)):
+                or not relocation_symbol.fullmatch(label)):
             raise ValueError("Unsupported COFF symbol, relocation type or field")
         occupied.update(field)
         rows.append((pos, label, kind))
@@ -163,20 +165,22 @@ def _compare(raw, rebuilt, rows, entry, x86):
         else:
             continue
         offset = ins.ip - entry + pos
-        fields[offset] = (ins.next_ip, target)
+        fields[offset] = (ins.ip, ins.next_ip, target)
         if not entry <= target < entry + len(raw):
             required.add(offset)
     payload = bytearray(rebuilt)
     for pos, label, kind in rows:
         addend, = struct.unpack_from("<i", payload, pos)
         rva = entry + pos
-        delta = int(label[4:], 16) + addend - (rva + kind)
+        symbol_target = int(label.rsplit("rva_", 1)[1], 16)
+        delta = symbol_target + addend - (rva + kind)
         original_disp, = struct.unpack_from("<i", raw, pos)
         details = {"rva": hex(rva), "symbol": label, "addend": addend, "relocation_type": kind}
         if pos not in fields:
             return {"code": "export_relocation_field", **details,
                     "original": "no decoded REL32 operand", "rebuilt": label}
-        following, target = fields[pos]
+        instruction, following, target = fields[pos]
+        details["instruction_rva"] = hex(instruction)
         if delta != original_disp or following + delta != target:
             return {"code": "export_relocation_target", **details,
                     "original": hex(target), "rebuilt": hex(following + delta),
@@ -184,15 +188,16 @@ def _compare(raw, rebuilt, rows, entry, x86):
         # In this source format rva_X names the referenced RVA itself. Check
         # symbol and addend independently even when two errors cancel in bytes.
         expected_addend = rva + kind - following
-        if int(label[4:], 16) != target or addend != expected_addend:
+        if symbol_target != target or addend != expected_addend:
             return {"code": "export_relocation_symbol", **details, "original": hex(target),
-                    "rebuilt": hex(int(label[4:], 16)), "expected_addend": expected_addend}
+                    "rebuilt": hex(symbol_target), "expected_addend": expected_addend}
         required.discard(pos)
         struct.pack_into("<i", payload, pos, delta)
     if required:
         first = min(required)
+        instruction, _, target = fields[first]
         return {"code": "export_missing_relocation", "rva": hex(entry + first),
-                "original": hex(fields[first][1]), "rebuilt": None}
+                "instruction_rva": hex(instruction), "original": hex(target), "rebuilt": None}
     for i, (a, b) in enumerate(zip(raw, payload)):
         if a != b:
             return {"code": "export_code_byte", "rva": hex(entry + i),
@@ -410,10 +415,24 @@ def _check_facts(raw, entry, pe, x86, claim, row, name, issue):
                   rva=rva, field=path, original=left, reported=right)
 
 
-def _build(compiler, source, header, name):
+def _reviewed_compiler(assembler, root, metrics):
+    if assembler is None:
+        raise ValueError("Supply reviewed Windows Zig 0.13.0 with --assembler")
+    compiler = Path(assembler).resolve(strict=True)
+    if compiler.name.lower() != "zig.exe" or compiler.is_relative_to(root):
+        raise ValueError("Supply the reviewed compiler outside the delivery")
+    with compiler.open("rb") as stream:
+        metrics["assembler_sha256"] = hashlib.file_digest(stream, "sha256").hexdigest()
+    if metrics["assembler_sha256"] != ZIG_SHA256:
+        raise ValueError("Compiler does not match the reviewed Zig SHA-256")
+    return compiler
+
+
+def _build(compiler, source, header, name, relocation_symbol=RVA_SYMBOL):
     with tempfile.TemporaryDirectory(prefix="aspen-export-") as directory:
         tmp = Path(directory)
-        (tmp / "register-forms.h").write_bytes(header)
+        if header is not None:
+            (tmp / "register-forms.h").write_bytes(header)
         (tmp / "export.c").write_bytes(source)
         env = {k: v for k, v in os.environ.items() if k.upper() in
                {"SYSTEMROOT", "WINDIR", "LOCALAPPDATA", "USERPROFILE", "TEMP", "TMP"}}
@@ -423,7 +442,7 @@ def _build(compiler, source, header, name):
                              capture_output=True, timeout=90)
         if run.returncode:
             raise ValueError("Compiler rejected source: " + run.stderr[-1200:].decode("utf-8", "replace"))
-        return _coff((tmp / "export.obj").read_bytes(), name)
+        return _coff((tmp / "export.obj").read_bytes(), name, relocation_symbol)
 
 
 def _manifest_values(checked, claim, name, row, issue):
@@ -488,15 +507,7 @@ def check(original: bytes, delivery: Path, assembler: Path | None) -> dict:
         header = _read(root, "s5/register-forms.h", 1 << 20)
         if _digest(header) != HEADER_SHA256:
             raise ValueError("Unsupported inline-assembly macro header")
-        if assembler is None:
-            raise ValueError("Supply reviewed Windows Zig 0.13.0 with --assembler")
-        compiler = Path(assembler).resolve(strict=True)
-        if compiler.name.lower() != "zig.exe" or compiler.is_relative_to(root):
-            raise ValueError("Supply the reviewed compiler outside the delivery")
-        with compiler.open("rb") as stream:
-            metrics["assembler_sha256"] = hashlib.file_digest(stream, "sha256").hexdigest()
-        if metrics["assembler_sha256"] != ZIG_SHA256:
-            raise ValueError("Compiler does not match the reviewed Zig SHA-256")
+        compiler = _reviewed_compiler(assembler, root, metrics)
     except (OSError, ValueError, RuntimeError) as exc:
         compiler = None
         issue("inconclusive", "export_prerequisite", str(exc))
