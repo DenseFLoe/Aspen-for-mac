@@ -132,6 +132,12 @@ Source SHA-256: <这份源码的小写 SHA-256>
 
 `historical_listing` 用受信的旧清单逐条复核原件指令，定位新清单中缺少的站点，单列原件为 NOP 或 INT3 的条目。`mixed_baseline` 用受信的原件级跳转清单复验已知 CLR 绑定，并核对它们在反汇编和主表的登记情况。构造调用用原件 IL 指令边界和 token 验证，关联 C 源码的检查限于受支持的段寄存器取值序列。
 
+主表可引用补充的 ASM 与 IL。验收器按文件和行号定位，独立核对指令或 IL 站点、原件中的槽或 token 及主表申报。历史跳转和本轮原件跳转分别计数。累计回编从 `reassembly.json` 和 `s<轮号>/reassembly-delta.json` 发现轮次，逐轮核对前序清单指纹，用各段源码实际重编，并核对原件字节和重定位。
+
+COM 核验从提交的调用点和工厂关系出发，独立解码原件中创建接口、传递接收对象及触发虚表调用的指令。只有接口来源可证时才使用该接口的虚表布局。报告分别列出成员、字节位移和运行时目标证据。[接口定义](https://learn.microsoft.com/en-us/windows/win32/api/oaidl/nn-oaidl-idispatch)
+
+历史覆盖范围可通过 `--reference-evidence` 与 `--reference-evidence-sha256` 显式绑定。清单位于候选目录外，声明原件 SHA-256，并用 `files` 中的 `instruction_listing` 或 `clr_thunks` 记录参考文件的相对 `path` 与 `sha256`。清单的 `schema` 为 `static-reference-evidence-v1`。批量输入对应字段为 `reference_evidence` 和 `reference_evidence_sha256`。参考资料用来指定复核范围，验收器仍用原件逐项作判断。
+
 ppexec 第十三号的 `submitted_callback_paths` 使用原件 PE 和提交的路径证据复验节权限门控及一条指定调用方的参数传递。结论分别受原版节表、已证调用方和提交路径条件约束。回调目标全集仍需另外证明。
 
 ## 全项目分母和批量输入

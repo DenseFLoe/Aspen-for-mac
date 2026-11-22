@@ -265,7 +265,7 @@ def provider_exports(provider, pefile, result):
         return {}
 
 
-def check(original: bytes, delivery: Path, provider=None) -> dict:
+def check(original: bytes, delivery: Path, provider=None, historical_listing=None) -> dict:
     result = {"status": "inconclusive", "scope": SCOPE, "findings": [], "metrics": {}}
     try:
         import iced_x86 as x86
@@ -282,7 +282,7 @@ def check(original: bytes, delivery: Path, provider=None) -> dict:
             return result
         with pe:
             _audit(original, delivery.resolve(), pe, 64 if machine == 0x8664 else 32, x86, result,
-                   provider_exports(provider, pefile, result))
+                   provider_exports(provider, pefile, result), historical_listing)
     except (OSError, UnicodeError, ValueError, csv.Error, pefile.PEFormatError) as err:
         result["findings"].append({"severity": "fail", "code": "invalid_input", "message": str(err)})
     levels = {row["severity"] for row in result["findings"]}
@@ -290,7 +290,7 @@ def check(original: bytes, delivery: Path, provider=None) -> dict:
     return result
 
 
-def _audit(original, root, pe, bits, x86, result, provider):
+def _audit(original, root, pe, bits, x86, result, provider, historical_listing):
     findings, metrics = result["findings"], result["metrics"]
 
     def report(level, code, message, site=None, line=None):
@@ -779,10 +779,9 @@ def _audit(original, root, pe, bits, x86, result, provider):
             from import_routes import audit as audit_import_routes
         result["import_routes"] = audit_import_routes(root, pe, bits, x86, decode, slot_of, iat if complete_imports else {},
                                                      owners, proven_starts, by_file, route_rows, report)
-    if __package__:
-        from .historical_listing import compare as compare_historical_listing
-    else:
-        from historical_listing import compare as compare_historical_listing
-    historical = compare_historical_listing(original, pe, x86, decode, instructions, report)
-    if historical is not None:
-        result["historical_listing"] = historical
+    if historical_listing is not None:
+        if __package__:
+            from .historical_listing import compare as compare_historical_listing
+        else:
+            from historical_listing import compare as compare_historical_listing
+        result["historical_listing"] = compare_historical_listing(historical_listing, pe, x86, decode, instructions, report)

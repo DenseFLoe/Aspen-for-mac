@@ -140,3 +140,15 @@ FindComponent S13 另作兼容复验，原 99 个 CALL 均保持未决。S17 的
 | ppexec S13 | `0x11c56` 的指定路径因 `0x122f4` 的权限测试拒绝可写槽 `0x22148`。单一已证调用方 `0x14e06` 向 `0x121c0` 所在例程传入 `0x11b24`。 |
 
 逐条重读原件字节和操作数，另用 Capstone 对照相关指令，用 LIEF 独立复跑 Ikc2Bkp 的完整 COFF 对象。三个源材料错绑对照仍全部命中，包括 zedstwu `0x1074` 重定位字段、WrapSaveMergeNNFiles `0x19018` 槽、FindComponent `0x106c` 导入序号。[FindComponent 旧指令清单](https://github.com/DenseFLoe/Aspen-for-mac/blob/a180dcfd1b6bd39072a4a03b94b908408e6da426/handoff/inbox/NATIVE-337/code/native.asm) · [WrapSaveMergeNNFiles 旧跳转清单](https://github.com/DenseFLoe/Aspen-for-mac/blob/d9c836dad07901f72448844ec2be7f363757e372/handoff/outbox/NATIVE-340/s5-native-fixup-targets.csv) · [ppexec 路径裁定](https://github.com/DenseFLoe/Aspen-for-mac/blob/d9c836dad07901f72448844ec2be7f363757e372/handoff/outbox/NATIVE-346/s13-decision.md)
+
+## 验收器 1.6 对补充分片、COM 和续轮的复验
+
+| 固定样本 | 1.5 实跑 | 1.6 实跑与专项复检 |
+| --- | --- | --- |
+| WrapSaveMergeNNFiles S21 | 126 条历史 CLR 跳转被报为登记或引用错误，21 条 `newobj` 被报为缺调用。 | 核实 237 条跳转、111 个前驱和 16 条已登记的外部构造调用。剩 5 条内部构造调用实际漏登。原件 `0x3660` 的读 GS 再读字段也已核实。 [裁定](https://github.com/DenseFLoe/Aspen-for-mac/blob/f6ba295f357c43c97cec46fcb7214a3a6ac91f9e/handoff/outbox/NATIVE-340/s21-decision.md) |
+| FindComponent S25 | 整件待核，未报告 COM 成员错误。 | 64 个申报点中，58 个成员名正确，6 个错误，64 处位移均为空。运行时实现地址待核，整件未通过。 [裁定](https://github.com/DenseFLoe/Aspen-for-mac/blob/2b94f3746bd9f53b478a9d1946e1d0451b046d44/handoff/outbox/NATIVE-337/s25-decision.md) |
+| Ikc2Bkp S25 | 累计回编止于 S13，共 189 段、145,522 字节、5,353 处重定位。 | 续编 S17 的 11 段和 S21 的 2 段。累计 202 段、146,662 字节、5,419 处重定位。 [裁定](https://github.com/DenseFLoe/Aspen-for-mac/blob/75359eecbb1c28f9c9696cf6c38960d295e3b164/handoff/outbox/NATIVE-349/s25-decision.md) |
+
+在 Wrap 副本只登记 `0x06000020` 的 `IL_0000`，已登记构造调用从 16 增至 17，漏登从 5 降至 4。在 Find 副本补齐 64 对正确成员和位移后，COM 专项通过。随后只把 `0x18a1` 的 `0x30` 改成 `0x28`，仅该址报告错误。在 Ikc 副本只改一个 S21 调用目标 `0x24a64 → 0x24a65`，重编定位到字段 RVA `0x243ca`。
+
+旧跳转和旧指令清单通过显式、带指纹的参考清单绑定。验收器从候选提出的路径和原件数据流证明 COM 接收对象及虚表来源。另以两组不同的合成 PE 函数地址验证 COM 成员，伪造工厂、替换接收对象或从分支绕过虚表读取会使接口待核。累计回编另以无 S13 的独立 S307 合成输入实际重编，轮次由清单与前序指纹决定。

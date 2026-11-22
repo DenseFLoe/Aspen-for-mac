@@ -35,6 +35,40 @@ class WholeItemTests(unittest.TestCase):
         self.assertEqual(result["status"], "inconclusive")
         self.assertEqual(result["findings"][0]["code"], "original_identity_mismatch")
 
+    def test_historical_reference_is_explicit_and_bound_to_the_original(self):
+        self.original.write_bytes(b"MZ" + bytes(64))
+        self.digest = verify.digest_file(self.original)
+        historical = self.base / "reviewed.csv"
+        historical.write_bytes(b"rva,bytes\n20,c3\n")
+        reference = self.base / "references.json"
+        metadata = {"schema": "static-reference-evidence-v1", "original_sha256": self.digest,
+                    "files": {"instruction_listing": {"path": historical.name, "sha256": verify.digest_file(historical)}}}
+        reference.write_text(json.dumps(metadata), encoding="utf-8")
+        binding = verify.reference_binding(reference, verify.digest_file(reference))
+        with patch.object(verify, "component", return_value=verify.section("test native", "inconclusive")) as check:
+            self.evaluate()
+            check.assert_not_called()
+            self.evaluate(reference_evidence=binding)
+            check.assert_called_once_with("native_sites", self.original.read_bytes(), self.delivery, None, historical.read_bytes())
+        historical.write_bytes(b"rva,bytes\n21,c3\n")
+        bad = self.evaluate(reference_evidence=binding)
+        self.assertIn("reference_unverifiable", [f["code"] for c in bad["checks"] for f in c["findings"]])
+        metadata["original_sha256"] = "0" * 64
+        reference.write_text(json.dumps(metadata), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "original identity"):
+            verify.reference_material((reference, verify.digest_file(reference)), self.digest, self.delivery)
+
+    def test_candidate_cannot_supply_its_own_trusted_reference(self):
+        historical = self.delivery / "reviewed.csv"
+        historical.write_bytes(b"rva,bytes\n20,c3\n")
+        reference = self.base / "references.json"
+        reference.write_text(json.dumps({
+            "schema": "static-reference-evidence-v1", "original_sha256": self.digest,
+            "files": {"instruction_listing": {"path": "delivery/reviewed.csv", "sha256": verify.digest_file(historical)}},
+        }), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "outside the candidate"):
+            verify.reference_material((reference, verify.digest_file(reference)), self.digest, self.delivery)
+
     def test_archive_needs_exact_set_and_identity(self):
         with patch.object(verify, "APPROVALS", [self.archive]):
             self.assertEqual(self.evaluate()["status"], "pass")
