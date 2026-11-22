@@ -177,7 +177,7 @@ def recover(data):
     verified = json.loads((ROOT/"reassembly.json").read_text(encoding="utf-8-sig"))
     matches={int(r["rva"],0):r for r in verified["matches"]}
     previous = ROOT/"reassembly.json"
-    for path in (ROOT/"s5/reassembly-delta.json", ROOT/"s9/reassembly-delta.json"):
+    for path in (ROOT/"s5/reassembly-delta.json", ROOT/"s9/reassembly-delta.json", ROOT/"s13/reassembly-delta.json"):
         delta = json.loads(path.read_text(encoding="utf-8"))
         assert delta["original_sha256"] == SHA
         assert delta["previous_sha256"] == hashlib.sha256(previous.read_bytes()).hexdigest()
