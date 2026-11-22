@@ -43,3 +43,7 @@ Plus-Properties，原路径为 `[ProgramFiles64Folder]/AspenTech/APrSystem V15.0
 ## 第十七号复验材料
 
 从固定原件和独立指纹的配套 `atdms.dll` 核实六组动态计数、八个动态调用、11 个固定长度及五个分派位置的条件。`DMS_LENTHM` 的两个 64 位输出和 `DMS_TINFO+0x848` 的 64 元素初始化已定位。计数的全路径和工作区容量仍需外部声明，保留 13 处未决转移。 [参数契约](s17/contracts.md) · [逐址裁定](s17/disposition.csv) · [原件证据](s17/evidence.json) · [复跑命令](s17-submission.md)
+
+## 第二十一号初始化路径复验
+
+两条配套库的取址路径已核对到各自的计数读取。按原件已知初始化值 64，三处复制和一处填充的目的范围均为 512 字节。保留 13 个未决，仍待核对可写字段的外部来源及三处 PLEX 源记录容量。 [逐址证据及恢复条件](s21/contracts.md) · [复跑步骤](s21-submission.md)
