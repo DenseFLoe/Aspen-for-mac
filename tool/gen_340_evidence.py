@@ -282,16 +282,25 @@ def main():
                 calls.append(dict(kind='native', caller='0x%X' % own['rva'], callee='indirect@0x%X' % addr, **{'class': 'unresolved'},
                                   listing='code/native.asm#L%d-L%d' % (ln, ln),
                                   note='间接转移：目标不在指令内（%s），指令 RVA 0x%X；恢复条件＝运行期断点或指针表初始化分析' % (text.split(';')[0].strip()[:60], addr)))
+    direct = [c for c in calls if c['class'] != 'unresolved']
+    indirect = [c for c in calls if c['class'] == 'unresolved']
     with open(out / 'calls.csv', 'w', newline='', encoding='utf-8') as fh:
         w = csv.DictWriter(fh, fieldnames=['kind', 'caller', 'callee', 'class', 'listing', 'note'])
-        w.writeheader(); w.writerows(calls)
+        w.writeheader(); w.writerows(direct)
+    with open(code / 'indirect.csv', 'w', newline='', encoding='utf-8') as fh:
+        w = csv.DictWriter(fh, fieldnames=['kind', 'caller', 'callee', 'class', 'listing', 'note'])
+        w.writeheader()
+        for c in indirect:
+            c = dict(c)
+            c['class'] = 'indirect'
+            w.writerow(c)
 
     n_il = sum(1 for m in methods if m['flavor'] == 'IL' and m['rva'])
     n_nat = sum(1 for m in methods if m['flavor'] == 'native')
     n_decl = sum(1 for m in methods if not m['rva'])
     stats = dict(rows=len(rows), funcs=len(funcs), anchors=len(anchors),
                  external=sum(1 for x in calls if x['class'] == 'external'), boundary=sum(1 for x in calls if x['class'] == 'boundary'),
-                 unresolved=sum(1 for x in calls if x['class'] == 'unresolved'), data=0,
+                 data=0, indirect=sum(1 for x in calls if x['class'] == 'unresolved'),
                  gaps=sum(1 for r in rows if r['state'] == 'gap'), iat_sites=sites,
                  methoddef=len(methods), il_bodies=n_il, native_bodies=n_nat, declarations=n_decl,
                  typedefs=len(types))
