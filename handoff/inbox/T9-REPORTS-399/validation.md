@@ -4,9 +4,9 @@
 
 | id | 判据 | 实测结果 | 证据 |
 | --- | --- | --- | --- |
-| R1 | 1,000 行齐全、无遗漏、无重复（item_dir 唯一） | ✅ rows=1000 ｜ unique item_dir=1000 ｜ dup=0 ｜ dup_idx=0 | reconciliation.json matched_rows / unique_item_dirs |
-| R2 | 每行 verdict ∈ {pass,fail,partial,blocked}、无空值、fail 行必有 fail_codes | ✅ bad_verdict=[] ｜ fail_no_code=[] ｜ fail=470 全带码 | reconciliation.json verdicts / code_counts |
-| R3 | 每个 fail 有 fail_code 且 failures.md 列全该码的 idx 并给复跑命令 | ✅ 470 件 fail 全带 fail_codes（tool_nag_tail 455、a2_sha_missing 15、a3_report_missing 15、tier_b_incomplete 6、analyze_failed 1；占用 492 次，多码重叠 22 行）；failures.md 每组列全 idx，并给 verify_item.py --idx <idx> --fresh | failures.md / reconciliation.json code_counts |
+| R1 | 1,000 行齐全、无遗漏、无重复（item_dir 唯一） | ✅ rows=1000 ｜ unique item_dir=1000 ｜ dup=0 ｜ dup_idx=0 | handoff/inbox/T9-368-RECONCILE/reconciliation.json matched_rows / unique_item_dirs |
+| R2 | 每行 verdict ∈ {pass,fail,partial,blocked}、无空值、fail 行必有 fail_codes | ✅ bad_verdict=[] ｜ fail_no_code=[] ｜ fail=470 全带码 | handoff/inbox/T9-368-RECONCILE/reconciliation.json verdicts / code_counts |
+| R3 | 每个 fail 有 fail_code 且 failures.md 列全该码的 idx 并给复跑命令 | ✅ 470 件 fail 全带 fail_codes（tool_nag_tail 455、a2_sha_missing 15、a3_report_missing 15、tier_b_incomplete 6、analyze_failed 1；占用 492 次，多码重叠 22 行）；failures.md 每组列全 idx，并给 verify_item.py --idx <idx> --fresh | failures.md / handoff/inbox/T9-368-RECONCILE/reconciliation.json code_counts |
 | R4 | Tier B 覆盖率写实数 | ✅ 985/985（CLR 455/455、native 530/530）；另 15 件真非 PE/缺报告只做 Tier A；tier_b 原始字段 PASS 978 / PARTIAL:no_il 6 / PARTIAL:no_claim 1 / NOT_RUN 15 | stats.md §3 |
 | R5 | 三档证据逐行单值、不混写 | ✅ 已实测 1000（无未验证/无法判定行） | ledger evidence_level |
 | R6 | 分片结果与合并一致（抽 20 行逐字段） | ✅ mismatch fields = 0（合并日志断言；本轮只复核台账，未重跑分片合并） | logs/merge.json r6_mismatch |
@@ -24,7 +24,15 @@
 
 - 我本人用独立 urllib 重取 7 件（5 件 pass + 2 件非 pass）：两侧 SHA-256 逐字符相同 6/6（第 7 件报告缺失，符合 fail），导出计数与 evidence 一致。
 - 12 个 worker 各自 5 行抽查，回报全部一致（详见各 shard-<n>.check.md）。
-- 本轮另用 _t13/recompute.py 从两张 CSV 独立复算全部数字（不读旧文档），结果与 reconciliation.json 完全一致。
+- 本轮（s5）用本目录生成器从 ledger-1000.csv 重生成四份报告，四份逐字节复现；双表身份核对仍由固定 check-t9-368.py 完成，其结果与归档 `handoff/inbox/T9-368-RECONCILE/reconciliation.json` 一致（本目录无同名文件）。
+
+## 本轮（s5）更正说明
+
+1. **Tier A 口径**：原第 3 节写作「应做 1,000、实做 1,000、覆盖率 100%、未覆盖 15」。按固定台账，Tier A 是 **PASS 985 + FAIL 15 = 1,000，全部有执行结果**，故 **未覆盖 = 0**，失败的 15 件在 §4 单列（a2_sha_missing + a3_report_missing）。生成器已改，四份报告按新口径重生成。
+2. **谁核对什么**：两张 CSV 的 1,000 个身份逐行比对由固定的 `handoff/assignments/check-t9-368.py` 完成（SHA-256 `ff2fbcd5873e5d86d4912417dccdc39eb6d638fef701a80dd8c047f00e9a58b1`）；本目录生成器 **只读 ledger-1000.csv** 生成四份报告，不读 selection.csv。实测：移走 selection.csv 后重跑，四份报告逐字节相同。
+3. **输出路径**：生成器 `--out` 默认值已改为 `handoff/inbox/T9-REPORTS-399`（原默认写的是旧任务目录 T9-368-RECONCILE）。完整命令见 README「复现」。
+4. **reconciliation.json 位置**：本候选目录**没有**该文件；固定结果归档在 `handoff/inbox/T9-368-RECONCILE/reconciliation.json`（标准 §3 指定位置，check-t9-368.py 的 RESULT 常量同样指向它）。stats.md、README.md 与本表的引用已全部改指该路径，不再写「同目录」。
+5. **三个数不混**：`455` 是 Tier B 的 B4 失败件数（CLR 455 = 合计 455），构成是 **448 件原 pass + 7 件原 partial**；`492` 是 fail_code 的**归因占用次数**（允许一行多码）；`470` 是 **fail 身份行数**。三处分别标注，互不替代。
 
 ## 已知异常（已定位，不影响结论）
 
