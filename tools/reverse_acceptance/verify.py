@@ -18,7 +18,7 @@ HERE = Path(__file__).resolve().parent
 APPROVALS = json.loads((HERE / "accepted_archives.json").read_text(encoding="utf-8"))
 EXIT = {"pass": 0, "fail": 1, "inconclusive": 2}
 VERSION = "1.0"
-IMPLEMENTATION = "1.1"
+IMPLEMENTATION = "1.2"
 HEX = re.compile(r"[0-9a-fA-F]{64}")
 SNAPSHOT = "773260c1033e524cebe000699409f5708bebfda0"
 SOURCE_LISTS = {
@@ -135,7 +135,8 @@ def tree_id(hashes):
 
 def verifier_identity():
     # Bind a CLI report to the verifier inputs present at startup on this machine.
-    names = ("verify.py", "accepted_archives.json", "coverage_table.py", "native_sites.py", "native_exports.py",
+    names = ("verify.py", "accepted_archives.json", "coverage_table.py", "native_sites.py", "native_targets.py",
+             "target_witness.py", "native_exports.py",
              "pe_resources.py", "version_resource.py", "fresh_cs.py", "compile_fresh_cs.ps1", "managed.py",
              "ManagedEvidence.cs", "coff.py", "office_vba.py")
     paths = {name: HERE / name for name in names}
@@ -316,7 +317,7 @@ def evaluate(original, expected, delivery, rebuilt=None, assembler=None, product
         if "coverage.csv" in files:
             checks.append(component("coverage_table", data, files))
 
-    if data.startswith(b"MZ") and "calls.csv" in files:
+    if data.startswith(b"MZ") and files.keys() & {"calls.csv", "target-evidence.json", "code/indirect.csv", "code/indirect-resolved.csv"}:
         checks.append(component("native_sites", data, delivery, provider))
     if data.startswith(b"MZ") and "s5/business-evidence.json" in files:
         checks.append(component("native_exports", data, delivery, assembler))
