@@ -35,7 +35,7 @@ tool/s33_rebuild.py：
 | 分析器函数 | 307 |
 | 原件锚点 | 115 |
 | coverage 行（缺口） | 307（0） |
-| IAT 调用/跳转站点 | 0 |
+| IAT 调用/跳转站点 | 363 |
 | 已登记 external | 524 |
 | 数据引用 data | 48 |
 | 未决 unresolved | 112 |
