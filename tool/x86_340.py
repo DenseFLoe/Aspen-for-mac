@@ -88,6 +88,14 @@ def rva_in(a, b, x):
     return a <= x <= b
 
 
+def condition_taken(cc, value):
+    """Evaluate a decoded condition code against the signed comparison result."""
+    return {
+        "jge": value >= 0, "jl": value < 0, "jg": value > 0, "jle": value <= 0,
+        "jz": value == 0, "je": value == 0, "jnz": value != 0, "jne": value != 0,
+    }.get(cc, False)
+
+
 def gate_facts(data, pe, slot_rva, cmp_addr, jcc_addr, test_addr, jz_addr):
     """Derive the guard semantics from the bytes themselves."""
     cmp_ins = decode(data, pe, cmp_addr)
@@ -99,10 +107,12 @@ def gate_facts(data, pe, slot_rva, cmp_addr, jcc_addr, test_addr, jz_addr):
     sec = next(s for s in pe.secs if s["rva"] <= slot_rva < s["rva"] + max(s["size"], s.get("vsize", 0)))
     chars = struct.unpack_from("<I", data, sec["hdr"] + 36)[0]      # IMAGE_SECTION_HEADER.Characteristics
     signed = chars - (1 << 32) if chars & 0x80000000 else chars
-    # the decoded predicate: jge (signed >= 0) takes the branch that returns taken_val
-    predicate = "%s: signed(Characteristics) %s 0 -> return %s" % (
-        jcc["cc"], ">=" if jcc["cc"] == "jge" else "?", taken_val)
-    al_for_slot = taken_val if signed >= 0 else fall_val
+    # the predicate is decoded, not assumed: compare value = signed(Characteristics) - imm
+    cmp_value = signed - cmp_ins["imm"]
+    taken = condition_taken(jcc["cc"], cmp_value)
+    predicate = "signed(Characteristics)=%d ; cmp imm=%d ; %s taken=%s" % (
+        signed, cmp_ins["imm"], jcc["cc"], taken)
+    al_for_slot = taken_val if taken else fall_val
     # consumer: test al,al + jz -> skip when al == 0
     skip_when_zero = jz["cc"] == "jz"
     skipped = (al_for_slot == 0 and skip_when_zero) or (al_for_slot != 0 and not skip_when_zero)
@@ -116,7 +126,8 @@ def gate_facts(data, pe, slot_rva, cmp_addr, jcc_addr, test_addr, jz_addr):
                                    fallthrough="0x%X" % (jz["addr"] + jz["len"])),
         section=dict(name=sec["name"], rva="0x%X" % sec["rva"], characteristics="0x%X" % chars,
                      signed=signed, writable=bool(chars & 0x80000000)),
-        predicate=predicate, al_for_slot=al_for_slot,
+        predicate=predicate, cmp_value=cmp_value, taken=taken,
+        al_for_slot=al_for_slot,
         slot_skipped=skipped,
         positive_branch="0x%X-0x%X" % (jz["addr"] + jz["len"], jz["target"] - 1),
         skip_branch="0x%X" % jz["target"])
