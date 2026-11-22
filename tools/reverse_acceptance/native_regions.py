@@ -15,6 +15,9 @@ else:
 
 HOST_MANIFEST = "s13/callee-evidence.json"
 DELTA_MANIFEST = "s13/reassembly-delta.json"
+BASE_MANIFEST = "reassembly.json"
+ROUND_DIR = re.compile(r"s([1-9][0-9]*)")
+ROUND_MANIFEST = re.compile(r"s[1-9][0-9]*/reassembly-delta\.json")
 # Macro definitions are executable compiler input. Accept reviewed versions only.
 HOST_HEADER = "d6c8d9ecdc38d7dff3e1a1eeb94651c6dfc48cc57f93ca91531bccf188f3b28d"
 CHUNK_PRELUDE = "a41be1a4c411efff7a7031dc52e7b13b0b7c850d2c6b988d25507080733728d9"
@@ -106,16 +109,22 @@ def _chunk_sources(root):
         r"/\* body (0x[0-9a-f]+) until (0x[0-9a-f]+) \*/\nBODY void (ikc_[0-9a-f]+)\(void\) \{\n"
         r"[ \t]*__asm__\(INTEL\n(?P<body>.*?)^[ \t]*END\);\n\}", re.DOTALL | re.MULTILINE)
     bodies = {}
+    active_macro = ""
     for file in includes:
         text = build._read(root, f"code/{file}", 4 << 20).decode("ascii").replace("\r\n", "\n")
         macro, boundary, _ = text.partition("/* body ")
         if not boundary or (macro and build._digest(macro.encode("ascii")) != CHUNK_MACRO):
             raise ValueError("Unsupported chunk macro prelude")
+        if macro:
+            if active_macro:
+                raise ValueError("Duplicate chunk macro definition")
+            active_macro = macro
         pos = len(macro)
         for match in wrapper.finditer(text, pos):
             if text[pos:match.start()].strip() or match[3] in bodies:
                 raise ValueError("Unexpected code or duplicate function in editable chunk")
-            bodies[match[3]] = (file, macro, match)
+            # In verified.c, assembler macros survive across subsequent includes.
+            bodies[match[3]] = (file, active_macro, match)
             pos = match.end()
         if text[pos:].strip():
             raise ValueError("Unsupported trailing code in editable chunk")
@@ -200,23 +209,74 @@ def _fields(claim, expected):
             yield {"field": key, "original": value, "reported": given}
 
 
-def _cumulative(root, pe, x86, chunks, compiler, metrics, loader_patches, delta_doc, delta_rows):
+def _round_manifests(root):
+    """Discover numbered deltas and any missing ones declared by content inventories."""
+    rounds = {}
+    for item in root.iterdir():
+        if ROUND_DIR.fullmatch(item.name) and item.is_dir():
+            path = f"{item.name}/reassembly-delta.json"
+            if (root / path).exists() or (root / (path + ".md")).exists():
+                rounds.setdefault(path, None)
+        elif item.name == "SHA256SUMS.txt" or re.fullmatch(r"s[1-9][0-9]*-manifest\.sha256", item.name):
+            for line in build._read(root, item.name, 4 << 20).decode("utf-8-sig").splitlines():
+                fields = line.split(maxsplit=1)
+                if len(fields) != 2:
+                    continue
+                path = fields[1].removeprefix("*")
+                if path != BASE_MANIFEST and not ROUND_MANIFEST.fullmatch(path):
+                    continue
+                digest = fields[0].lower()
+                if not re.fullmatch(r"[0-9a-f]{64}", digest) or rounds.get(path) not in (None, digest):
+                    raise ValueError(f"Invalid or conflicting manifest fingerprint for {path}")
+                rounds[path] = digest
+    base_digest = rounds.pop(BASE_MANIFEST, None)
+    ordered = {BASE_MANIFEST: base_digest}
+    for path in sorted(rounds, key=lambda p: int(p.split("/")[0][1:])):
+        ordered[path] = rounds[path]
+    return ordered
+
+
+def _cumulative(root, pe, x86, chunks, compiler, metrics, loader_patches, delta_doc, delta_rows, paths):
     """Replay the historical range manifests. Submitted extents define byte slices only."""
-    paths = ("reassembly.json", "s5/reassembly-delta.json", "s9/reassembly-delta.json", DELTA_MANIFEST)
     result = {"status": "inconclusive", "scope": "Rebuilt claimed code ranges in file-backed executable sections",
-              "matching_ranges": 0, "matching_bytes": 0, "relocations": 0, "ranges": [], "findings": []}
+              "matching_ranges": 0, "matching_bytes": 0, "relocations": 0, "manifest_sha256": {},
+              "ranges": [], "findings": []}
     metrics["cumulative_rebuild"] = result
     occupied = []
     delta = {int(row["entry"], 16): row for row in delta_rows}
-    for path in paths:
-        doc = (delta_doc if path == DELTA_MANIFEST else
-               json.loads(build._read(root, path, 8 << 20), object_pairs_hook=build._unique_keys))
+    manifests = {}
+    previous = None
+    for path, fingerprint in paths.items():
+        if not (root / path).is_file():
+            result["status"] = "fail"
+            result["findings"].append(dict(listing=path, reason="Missing cumulative manifest"))
+            return
+        content = build._read(root, path, 8 << 20)
+        doc = json.loads(content, object_pairs_hook=build._unique_keys)
+        digest = build._digest(content)
+        result["manifest_sha256"][path] = digest
+        if fingerprint is not None and digest != fingerprint:
+            result["status"] = "fail"
+            result["findings"].append(dict(listing=path, reason="Manifest differs from declared fingerprint",
+                                           expected=fingerprint, actual=digest))
+            return
+        if path == DELTA_MANIFEST and delta_doc is not None and doc != delta_doc:
+            raise ValueError("Current delta changed during verification")
+        if doc.get("previous_sha256") != previous:
+            result["status"] = "fail"
+            result["findings"].append(dict(listing=path, reason="Previous manifest fingerprint differs",
+                                           expected=previous, reported=doc.get("previous_sha256")))
+            return
         if doc["original_sha256"] != metrics["original_sha256"]:
             raise ValueError(f"Different original in {path}")
+        previous = digest
+        manifests[path] = doc
+    claimed_names = set()
+    for path, doc in manifests.items():
         matches = _claims(doc, True)
         if not 1 <= len(matches) <= 512:
             raise ValueError(f"Invalid number of ranges in {path}")
-        size = fixes = successful = 0
+        size = fixes = successful = instructions = 0
         for name, claim, entry in matches:
             length = claim["bytes"]
             if type(length) is not int or not 1 <= length <= 1 << 20:
@@ -225,12 +285,14 @@ def _cumulative(root, pe, x86, chunks, compiler, metrics, loader_patches, delta_
             if any(entry < hi and lo < end for lo, hi in occupied):
                 raise ValueError(f"Overlapping cumulative range at {entry:#x}")
             occupied.append((entry, end))
-            if path == DELTA_MANIFEST:
+            claimed_names.add(name)
+            if path == DELTA_MANIFEST and delta_doc is not None:
                 row = delta.get(entry, {})
                 if row.get("status") != "pass":
                     result["findings"].append({"entry": hex(entry), "reason": "Current delta range unverified"})
                     continue
                 count = row["relocations"]
+                instructions += row.get("instructions", 0)
                 file, compiled = row["source"], row["compiled_input_sha256"]
             else:
                 try:
@@ -248,6 +310,11 @@ def _cumulative(root, pe, x86, chunks, compiler, metrics, loader_patches, delta_
                     actual = [[hex(entry + pos), hex(int(label.rsplit("rva_", 1)[1], 16)), kind]
                               for pos, label, kind in sorted(rels)]
                     differences = list(_fields(claim, {"sha256": build._digest(raw), "relocations": actual}))
+                    if "instructions" in doc or "instructions" in claim:
+                        count_instructions = sum(1 for _ in x86.Decoder(64, raw, ip=entry))
+                        instructions += count_instructions
+                        if "instructions" in claim:
+                            differences.extend(_fields(claim, {"instructions": count_instructions}))
                     if mismatch or differences:
                         result["status"] = "fail"
                         result["findings"].append(dict(entry=hex(entry), listing=path, reason=mismatch or differences[0]))
@@ -263,12 +330,22 @@ def _cumulative(root, pe, x86, chunks, compiler, metrics, loader_patches, delta_
             fixes += count
             successful += 1
         if successful == len(matches):
-            for diff in _fields(doc, dict(bodies=successful, bytes=size, relocations=fixes)):
+            totals = dict(bodies=successful, bytes=size, relocations=fixes)
+            if "instructions" in doc:
+                totals["instructions"] = instructions
+            if "previous_matches_identical" in doc:
+                totals["previous_matches_identical"] = result["matching_ranges"]
+            for diff in _fields(doc, totals):
                 result["status"] = "fail"
                 result["findings"].append(dict(listing=path, reason=diff))
         result["matching_ranges"] += successful
         result["matching_bytes"] += size
         result["relocations"] += fixes
+    if chunks and set(chunks[1]) != claimed_names:
+        result["status"] = "fail"
+        result["findings"].append(dict(reason="Editable body inventory differs from cumulative manifests",
+                                       unclaimed=sorted(chunks[1].keys() - claimed_names),
+                                       missing=sorted(claimed_names - chunks[1].keys())))
     if not result["findings"]:
         result["status"] = "pass"
 
@@ -293,6 +370,13 @@ def check(original: bytes, delivery: Path, assembler: Path | None) -> dict:
     paths = [name for name in (HOST_MANIFEST, DELTA_MANIFEST) if (root / name).is_file()]
     manifests = {}
     pending = []
+    try:
+        rounds = _round_manifests(root)
+    except (OSError, ValueError, RuntimeError) as exc:
+        issue("fail", "region_manifest_invalid", str(exc))
+        rounds = {}
+    cumulative = bool(rounds and ((root / BASE_MANIFEST).exists() or rounds[BASE_MANIFEST] or
+                                  any(path not in (BASE_MANIFEST, DELTA_MANIFEST) for path in rounds)))
     for path in paths:
         try:
             doc = json.loads(build._read(root, path, 4 << 20), object_pairs_hook=build._unique_keys)
@@ -307,7 +391,7 @@ def check(original: bytes, delivery: Path, assembler: Path | None) -> dict:
             manifests[path] = doc
         except (OSError, ValueError, KeyError, TypeError, RuntimeError) as exc:
             issue("fail", "region_manifest_invalid", str(exc), listing=path)
-    if not pending:
+    if not pending and not cumulative:
         if findings:
             result["status"] = "fail"
         return result
@@ -320,7 +404,7 @@ def check(original: bytes, delivery: Path, assembler: Path | None) -> dict:
         unwind = [(u.struct.BeginAddress, u.struct.EndAddress)
                   for u in getattr(pe, "DIRECTORY_ENTRY_EXCEPTION", ())]
         dirs = pe.OPTIONAL_HEADER.DATA_DIRECTORY
-        if len(dirs) <= 5 or dirs[3].Size != len(unwind) * 12 or not unwind:
+        if len(dirs) <= 5 or dirs[3].Size != len(unwind) * 12 or (pending and not unwind):
             raise ValueError("Incomplete original exception directory")
         relocs = getattr(pe, "DIRECTORY_ENTRY_BASERELOC", ())
         if dirs[5].VirtualAddress and sum(block.struct.SizeOfBlock for block in relocs) != dirs[5].Size:
@@ -341,10 +425,10 @@ def check(original: bytes, delivery: Path, assembler: Path | None) -> dict:
     occurrences = Counter(entry for _, _, _, entry in pending)
     grouped = {p: [] for p in manifests}
     try:
-        chunks = _chunk_sources(root) if DELTA_MANIFEST in manifests else None
+        chunks = _chunk_sources(root) if cumulative or DELTA_MANIFEST in manifests else None
     except (OSError, ValueError, RuntimeError) as exc:
         chunks = None
-        issue("inconclusive", "region_chunk_source_unverified", str(exc), listing=DELTA_MANIFEST)
+        issue("inconclusive", "region_chunk_source_unverified", str(exc), listing="code/verified.c")
     for path, name, claim, entry in sorted(pending, key=lambda record: (record[3], record[1])):
         delta = path == DELTA_MANIFEST
         row = dict(name=name, entry=hex(entry), listing=path, status="inconclusive", rebuild_status="inconclusive",
@@ -435,10 +519,10 @@ def check(original: bytes, delivery: Path, assembler: Path | None) -> dict:
             for difference in _fields(manifests[path], expected):
                 issue("fail", "region_manifest_total", "Declared total differs from verified ranges",
                       listing=path, **difference)
-    if DELTA_MANIFEST in manifests and (root / "reassembly.json").is_file() and compiler and chunks:
+    if cumulative and compiler and chunks:
         try:
             _cumulative(root, pe, x86, chunks, compiler, metrics, loader_patches,
-                        manifests[DELTA_MANIFEST], grouped[DELTA_MANIFEST])
+                        manifests.get(DELTA_MANIFEST), grouped.get(DELTA_MANIFEST, []), rounds)
             if metrics["cumulative_rebuild"]["status"] != "pass":
                 issue(metrics["cumulative_rebuild"]["status"], "region_cumulative_unverified", "See cumulative range findings")
         except (ValueError, OSError, KeyError, TypeError, RuntimeError) as exc:

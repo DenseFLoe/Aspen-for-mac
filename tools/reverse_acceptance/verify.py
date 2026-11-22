@@ -18,9 +18,10 @@ HERE = Path(__file__).resolve().parent
 APPROVALS = json.loads((HERE / "accepted_archives.json").read_text(encoding="utf-8"))
 EXIT = {"pass": 0, "fail": 1, "inconclusive": 2}
 VERSION = "1.0"
-IMPLEMENTATION = "1.5"
-PPEXEC_SHA256 = "d93227b9a8f77c09fc1294834b6a4d87ba03a0697a680039fdce35cb1ce4549a"
+IMPLEMENTATION = "1.6"
 HEX = re.compile(r"[0-9a-fA-F]{64}")
+REGION_DELTA = re.compile(r"s[1-9][0-9]*/reassembly-delta\.json")
+REFERENCE_TYPES = {"instruction_listing", "clr_thunks"}
 SNAPSHOT = "773260c1033e524cebe000699409f5708bebfda0"
 SOURCE_LISTS = {
     "plus": "97f64d168dbc33f6281233f59e411c0efe69e7224400bde58c76220b98b6d2c3",
@@ -138,8 +139,8 @@ def verifier_identity():
     # Bind a CLI report to the verifier inputs present at startup on this machine.
     names = ("verify.py", "accepted_archives.json", "coverage_table.py", "native_sites.py", "native_targets.py",
              "target_witness.py", "native_exports.py", "native_regions.py", "clr_fixups.py", "import_routes.py",
-             "historical_listing.py", "baselines/findcomponent-s5-instructions.csv", "mixed_baseline.py",
-             "baselines/869c4b23598e433086fc72a0fc1c7bd50b3e280e0d84ad6742de28df8e804fec.csv", "callback_paths.py",
+             "com_call_sites.py",
+             "historical_listing.py", "mixed_baseline.py", "callback_paths.py",
              "pe_resources.py", "version_resource.py", "fresh_cs.py", "compile_fresh_cs.ps1", "managed.py",
              "ManagedEvidence.cs", "coff.py", "office_vba.py")
     paths = {name: HERE / name for name in names}
@@ -241,8 +242,60 @@ def provider_binding(path, expected):
     return Path(path), digest_arg(expected)
 
 
+def reference_binding(path, expected):
+    if path is None and expected is None:
+        return None
+    if path is None or expected is None:
+        raise ValueError("supply both reference evidence path and its independent SHA-256")
+    return Path(path), digest_arg(expected)
+
+
+def read_reference_file(path, expected, delivery, limit):
+    path = path.resolve(strict=True)
+    if path.is_relative_to(delivery) or not path.is_file():
+        raise ValueError("reference evidence must be outside the candidate delivery")
+    with path.open("rb") as stream:
+        contents = stream.read(limit + 1)
+    if len(contents) > limit or sha(contents) != digest_arg(expected):
+        raise ValueError(f"reference file does not match its trusted identity: {path.name}")
+    return contents
+
+
+def reference_material(binding, original_sha, delivery):
+    path, claimed = binding
+    delivery = delivery.resolve(strict=True)
+    material = json.loads(read_reference_file(path, claimed, delivery, 1 << 20), object_pairs_hook=strict_object)
+    if (not isinstance(material, dict) or material.keys() != {"schema", "original_sha256", "files"}
+            or material["schema"] != "static-reference-evidence-v1" or material["original_sha256"] != original_sha
+            or not isinstance(material["files"], dict) or not material["files"]
+            or material["files"].keys() - REFERENCE_TYPES):
+        raise ValueError("invalid reference manifest or original identity")
+    output = {}
+    for name, info in material["files"].items():
+        if not isinstance(info, dict) or info.keys() != {"path", "sha256"} or not isinstance(info["path"], str):
+            raise ValueError(f"invalid reference member: {name}")
+        child = path.parent / info["path"]
+        output[name] = read_reference_file(child, info["sha256"], delivery, 8 << 20)
+    return output
+
+
+def has_callback_witness(files):
+    if "s13/disposition.csv" in files:
+        return True
+    packet = files.get("s13/evidence.json")
+    if packet is None:
+        return False
+    try:
+        if packet.stat().st_size > 8 << 20:
+            return False
+        doc = load_json(packet)
+    except (OSError, ValueError):
+        return False
+    return isinstance(doc, dict) and bool(doc.keys() & {"optional_callback", "local_callback"})
+
+
 def evaluate(original, expected, delivery, rebuilt=None, assembler=None, product=None, original_path=None, provider=None,
-             delivery_sha256=None):
+             delivery_sha256=None, reference_evidence=None):
     expected = digest_arg(expected)
     result = {"schema": VERSION, "scope": "whole_item_static", "expected_sha256": expected,
               "status": "inconclusive", "checks": [], "findings": []}
@@ -275,6 +328,13 @@ def evaluate(original, expected, delivery, rebuilt=None, assembler=None, product
     if delivery_sha256 is not None and result["delivery_sha256"] != delivery_sha256:
         notes.append(finding("delivery_identity_mismatch", expected=delivery_sha256, observed=result["delivery_sha256"]))
         return result
+    references = {}
+    if reference_evidence is not None:
+        result["reference_evidence_sha256"] = reference_evidence[1]
+        try:
+            references = reference_material(reference_evidence, expected, delivery)
+        except (OSError, ValueError) as exc:
+            checks.append(section("reference_evidence", "inconclusive", [finding("reference_unverifiable", message=str(exc))]))
     if not files:
         result["status"] = "fail"
         notes.append(finding("empty_submission"))
@@ -320,18 +380,22 @@ def evaluate(original, expected, delivery, rebuilt=None, assembler=None, product
         if "coverage.csv" in files:
             checks.append(component("coverage_table", data, files))
 
-    if data.startswith(b"MZ") and files.keys() & {"calls.csv", "target-evidence.json", "code/indirect.csv",
-                                                 "code/indirect-resolved.csv", "code/import-callers.csv"}:
-        checks.append(component("native_sites", data, delivery, provider))
+    if data.startswith(b"MZ") and ("instruction_listing" in references or files.keys() & {
+            "calls.csv", "target-evidence.json", "code/indirect.csv", "code/indirect-resolved.csv", "code/import-callers.csv"}):
+        checks.append(component("native_sites", data, delivery, provider, references.get("instruction_listing")))
     if data.startswith(b"MZ") and "s5/business-evidence.json" in files:
         checks.append(component("native_exports", data, delivery, assembler))
-    if data.startswith(b"MZ") and files.keys() & {"s13/callee-evidence.json", "s13/reassembly-delta.json"}:
+    if data.startswith(b"MZ") and ("s13/callee-evidence.json" in files or
+                                  ("reassembly.json" in files and "code/verified.c" in files) or
+                                  any(REGION_DELTA.fullmatch(path) for path in files)):
         checks.append(component("native_regions", data, delivery, assembler))
+    if data.startswith(b"MZ") and files.keys() & {"code/com-call-sites.csv", "code/s25-idispatch-slots.csv"}:
+        checks.append(component("com_call_sites", data, delivery))
     if data.startswith(b"MZ") and "code/vtable-fixups.csv" in files:
         checks.append(component("clr_fixups", data, delivery))
-    if data.startswith(b"MZ") and ("code/newobj.csv" in files or (HERE / "baselines" / f"{expected}.csv").is_file()):
-        checks.append(component("mixed_baseline", data, delivery))
-    if expected == PPEXEC_SHA256 and files.keys() & {"s13/evidence.json", "s13/disposition.csv", "s13-submission.md"}:
+    if data.startswith(b"MZ") and ("clr_thunks" in references or files.keys() & {"code/newobj.csv", "code/vtable-fixups.csv"}):
+        checks.append(component("mixed_baseline", data, delivery, references.get("clr_thunks")))
+    if data.startswith(b"MZ") and has_callback_witness(files):
         checks.append(component("callback_paths", data, delivery))
     if data.startswith(b"MZ") and files.keys() & {"resources.csv", "s5/resources.json", "s5-data/version-resource.json",
                                                  "native-functions.csv", "coverage.csv", "calls.csv"}:
@@ -380,9 +444,10 @@ def evaluate(original, expected, delivery, rebuilt=None, assembler=None, product
 
 
 def item(original, expected, delivery, rebuilt=None, assembler=None, product=None, original_path=None, provider=None,
-         delivery_sha256=None):
+         delivery_sha256=None, reference_evidence=None):
     try:
-        return evaluate(original, expected, delivery, rebuilt, assembler, product, original_path, provider, delivery_sha256)
+        return evaluate(original, expected, delivery, rebuilt, assembler, product, original_path, provider, delivery_sha256,
+                        reference_evidence)
     except (OSError, UnicodeError, ValueError, csv.Error, ImportError) as exc:
         return {"schema": VERSION, "scope": "whole_item_static", "status": "inconclusive",
                 "expected_sha256": expected, "findings": [finding("unverifiable_input", message=str(exc))],
@@ -454,7 +519,8 @@ def project(inventory_path, inventory_sha, input_path, assembler, source_scopes=
     chosen = {}
     for record in bindings:
         required = {"product", "path", "sha256", "original", "delivery"}
-        optional = {"rebuilt", "provider", "provider_sha256", "delivery_sha256"}
+        optional = {"rebuilt", "provider", "provider_sha256", "delivery_sha256", "reference_evidence",
+                    "reference_evidence_sha256"}
         if not isinstance(record, dict) or not required <= record.keys() or record.keys() - required - optional:
             raise ValueError("invalid fields in input binding")
         if any(not isinstance(value, str) or not value.strip() for value in record.values()):
@@ -465,9 +531,12 @@ def project(inventory_path, inventory_sha, input_path, assembler, source_scopes=
         if key not in expected or key in chosen:
             raise ValueError(f"unexpected or duplicate input binding: {key}")
         provider = provider_binding(record.get("provider"), record.get("provider_sha256"))
+        reference = reference_binding(record.get("reference_evidence"), record.get("reference_evidence_sha256"))
         if provider:
             provider = input_path.resolve().parent / provider[0], provider[1]
-        chosen[key] = record, provider
+        if reference:
+            reference = input_path.resolve().parent / reference[0], reference[1]
+        chosen[key] = record, provider, reference
 
     rows = []
     counts = Counter()
@@ -479,11 +548,11 @@ def project(inventory_path, inventory_sha, input_path, assembler, source_scopes=
         if binding is None:
             row.update(status="inconclusive", reason="no_input_binding")
         else:
-            bound, provider = binding
+            bound, provider, reference = binding
             parent = input_path.resolve().parent
             rebuilt = parent / bound["rebuilt"] if "rebuilt" in bound else None
             proof = item(parent / bound["original"], digest, parent / bound["delivery"], rebuilt, assembler,
-                         product, path, provider, delivery_sha256=bound.get("delivery_sha256"))
+                         product, path, provider, delivery_sha256=bound.get("delivery_sha256"), reference_evidence=reference)
             row.update(status=proof["status"], proof=proof)
         counts[row["status"]] += 1
         rows.append(row)
@@ -508,6 +577,8 @@ def main():
     single.add_argument("--rebuilt", type=Path, help="existing CLR rebuild for a scoped comparison")
     single.add_argument("--provider", type=Path, help="independent PE that provides a registered import")
     single.add_argument("--provider-sha256", help="trusted SHA-256 of that provider PE")
+    single.add_argument("--reference-evidence", type=Path, help="independently supplied reference-evidence manifest")
+    single.add_argument("--reference-evidence-sha256", help="trusted SHA-256 of that manifest")
     batch = sub.add_parser("project", help="verify each row of a frozen project inventory")
     batch.add_argument("--inventory", type=Path, required=True)
     batch.add_argument("--inventory-sha256", required=True)
@@ -520,8 +591,9 @@ def main():
     try:
         if args.command == "item":
             provider = provider_binding(args.provider, args.provider_sha256)
+            reference = reference_binding(args.reference_evidence, args.reference_evidence_sha256)
             result = item(args.original, args.sha256, args.delivery, args.rebuilt, args.assembler, args.product,
-                          args.original_path, provider, args.delivery_sha256)
+                          args.original_path, provider, args.delivery_sha256, reference)
         else:
             result = project(args.inventory, args.inventory_sha256, args.inputs, args.assembler, args.source_scopes)
     except (OSError, UnicodeError, ValueError, csv.Error) as exc:

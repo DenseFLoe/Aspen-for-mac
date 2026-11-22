@@ -131,12 +131,17 @@ class RegionControls(unittest.TestCase):
         pe = pefile.PE(data=bytes(data))
         digest = build._digest(data)
         paths = ("reassembly.json", "s5/reassembly-delta.json", "s9/reassembly-delta.json", regions.DELTA_MANIFEST)
+        previous = None
         for i, path in enumerate(paths):
             doc = dict(original_sha256=digest, bodies=1, bytes=1, relocations=0,
                        matches=[dict(rva=hex(0x1008+i), bytes=1, sha256=build._digest(b"\x90"), relocations=[])])
             out = self.delivery / path
             out.parent.mkdir(exist_ok=True)
-            out.write_text(json.dumps(doc), encoding="utf-8")
+            if previous is not None:
+                doc["previous_sha256"] = previous
+            encoded = json.dumps(doc).encode("ascii")
+            out.write_bytes(encoded)
+            previous = build._digest(encoded)
         for first_byte, status, count in ((0x90, "pass", 4), (0xcc, "fail", 3)):
             metrics = {"original_sha256": digest}
             current = [dict(entry="0x100b", status="pass", relocations=0, source="current",
@@ -144,9 +149,118 @@ class RegionControls(unittest.TestCase):
             with (mock.patch.object(regions, "_chunk_source", return_value=("shard", b"", b"body", None)),
                   mock.patch.object(build, "_build", side_effect=[(bytes([first_byte]), []), (b"\x90", []),
                                                                   (b"\x90", [])]) as compiler):
-                regions._cumulative(self.delivery.resolve(), pe, x86, (), self.compiler, metrics, (), doc, current)
+                regions._cumulative(self.delivery.resolve(), pe, x86, (), self.compiler, metrics, (), doc, current,
+                                    regions._round_manifests(self.delivery.resolve()))
             result = metrics["cumulative_rebuild"]
             self.assertEqual((status, count, 3), (result["status"], result["matching_ranges"], compiler.call_count))
+
+    def test_later_round_chain_and_relocation_identity(self):
+        import iced_x86 as x86
+        import pefile
+        data = bytearray(self.original.read_bytes())
+        data[0x208:0x20d] = b"\x90" * 5
+        pe = pefile.PE(data=bytes(data))
+        original_hash = build._digest(data)
+        entries = [0x1008, 0x1009, 0x100a, 0x100b, 0x1000, 0x100c]
+        previous = None
+        manifests = []
+        paths = [regions.BASE_MANIFEST, *(f"s{n}/reassembly-delta.json" for n in (3, 7, 13, 47, 106))]
+        for path, entry in zip(paths, entries):
+            raw = pe.get_data(entry, 7 if entry == 0x1000 else 1)
+            rels = [["0x1002", "0x2050", 4]] if entry == 0x1000 else []
+            claim = dict(rva=hex(entry), bytes=len(raw), sha256=build._digest(raw), relocations=rels)
+            doc = dict(original_sha256=original_hash, matches=[claim], bodies=1,
+                       bytes=len(raw), relocations=len(rels))
+            if previous:
+                doc["previous_sha256"] = previous
+            out = self.delivery / path
+            out.parent.mkdir(exist_ok=True)
+            content = json.dumps(doc).encode("ascii")
+            out.write_bytes(content)
+            previous = build._digest(content)
+            manifests.append(doc)
+        row = dict(entry="0x100b", status="pass", relocations=0, source="current", compiled_input_sha256="hash")
+
+        def replay(symbol):
+            mock_code = [(b"\x90", [])] * 3 + [(b"\xff\x15\0\0\0\0\xc3", [(2, symbol, 4)]), (b"\x90", [])]
+            metrics = {"original_sha256": original_hash}
+            with (mock.patch.object(regions, "_chunk_source", return_value=("chunk", b"", b"source", None)),
+                  mock.patch.object(build, "_build", side_effect=mock_code) as compiler):
+                regions._cumulative(self.delivery.resolve(), pe, x86, (), self.compiler, metrics, (),
+                                    manifests[3], [row], regions._round_manifests(self.delivery.resolve()))
+            return metrics["cumulative_rebuild"], compiler.call_count
+
+        result, calls = replay("rva_2050")
+        self.assertEqual(("pass", 6, 12, 1, 5), (result["status"], result["matching_ranges"],
+                         result["matching_bytes"], result["relocations"], calls))
+        result, _ = replay("rva_2051")
+        self.assertEqual(("fail", 5, 0), (result["status"], result["matching_ranges"], result["relocations"]))
+        self.assertEqual("export_relocation_target", result["findings"][0]["reason"]["code"])
+        last = self.delivery / paths[-1]
+        last.write_text(json.dumps(dict(manifests[-1], previous_sha256="0"*64)), encoding="ascii")
+        result, calls = replay("rva_2050")
+        self.assertEqual(("fail", 0, "Previous manifest fingerprint differs"),
+                         (result["status"], calls, result["findings"][0]["reason"]))
+        prior = self.delivery / paths[-2]
+        (self.delivery / "s47-manifest.sha256").write_bytes(
+            f"{build._digest(prior.read_bytes())}  {paths[-2]}\n".encode("ascii"))
+        prior.unlink()
+        result, calls = replay("rva_2050")
+        self.assertEqual(("fail", 0, paths[-2]),
+                         (result["status"], calls, result["findings"][0]["listing"]))
+
+    def test_numbered_format_without_s13_runs_through_public_check(self):
+        source_dir = self.delivery / "code"
+        source_dir.mkdir()
+        (source_dir / "verified.c").write_bytes(b'#include "verified-01.h"\n')
+        raw = bytearray(self.original.read_bytes())
+        raw[0x208:0x20a] = b"\x90\xc3"
+        original_hash = build._digest(raw)
+        root = self.delivery.resolve()
+        body = ""
+        previous = None
+        for i, path in enumerate((regions.BASE_MANIFEST, "s88/reassembly-delta.json")):
+            entry = 0x1008 + i
+            op = ("nop", "ret")[i]
+            body += (f"/* body {entry:#x} until {entry + 1:#x} */\nBODY void ikc_{entry:x}(void) {{\n"
+                     f'  __asm__(INTEL\n    "{op}\\n"\n    END);\n}}\n')
+            claim = dict(rva=hex(entry), bytes=1, sha256=build._digest(raw[0x208+i:0x209+i]), relocations=[])
+            doc = dict(original_sha256=original_hash, matches=[claim], bodies=1, bytes=1, relocations=0)
+            if previous:
+                doc["previous_sha256"] = previous
+            dest = root / path
+            dest.parent.mkdir(exist_ok=True)
+            content = json.dumps(doc).encode("ascii")
+            dest.write_bytes(content)
+            previous = build._digest(content)
+        (source_dir / "verified-01.h").write_bytes(body.encode("ascii"))
+        with (mock.patch.object(regions, "CHUNK_PRELUDE", build._digest(b"")),
+              mock.patch.object(build, "ZIG_SHA256", build._digest(self.compiler.read_bytes())),
+              mock.patch.object(build, "_build", side_effect=[(b"\x90", []), (b"\xc3", [])]) as compiler):
+            report = regions.check(bytes(raw), root, self.compiler)
+        cumulative = report["metrics"]["cumulative_rebuild"]
+        self.assertEqual(("pass", "pass", 2, 2), (report["status"], cumulative["status"],
+                         cumulative["matching_ranges"], compiler.call_count))
+
+    def test_reviewed_macro_reaches_only_subsequent_includes(self):
+        import iced_x86 as x86
+        folder = self.delivery / "code"
+        folder.mkdir()
+        unit = "".join(f'#include "verified-{i}.h"\n' for i in range(3))
+        (folder / "verified.c").write_bytes(unit.encode("ascii"))
+        macro = "/* reviewed directive */\n"
+        for i in range(3):
+            entry = 0x1000 + i
+            src = (f"/* body {entry:#x} until {entry + 1:#x} */\nBODY void ikc_{entry:x}(void) {{\n"
+                   '  __asm__(INTEL\n    "ret\\n"\n    END);\n}\n')
+            (folder / f"verified-{i}.h").write_bytes(((macro if i == 1 else "") + src).encode("ascii"))
+        with (mock.patch.object(regions, "CHUNK_PRELUDE", build._digest(b"")),
+              mock.patch.object(regions, "CHUNK_MACRO", build._digest(macro.encode("ascii")))):
+            chunks = regions._chunk_sources(self.delivery.resolve())
+        for i in range(3):
+            entry = 0x1000 + i
+            _, _, source, _ = regions._chunk_source(chunks, f"ikc_{entry:x}", entry, entry + 1, x86)
+            self.assertEqual(i > 0, macro.encode("ascii") in source)
 
     def test_chunk_index_rejects_uncompiled_wrapper(self):
         folder = self.delivery / "code"
