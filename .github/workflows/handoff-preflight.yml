@@ -1,0 +1,48 @@
+name: Handoff preflight
+
+on:
+  pull_request_target:
+    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review]
+    paths: ['handoff/**', '.github/workflows/handoff-preflight.yml']
+  push:
+    branches: [main]
+    paths: ['handoff/**', '.github/workflows/handoff-preflight.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: handoff-preflight-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  inspect:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      # pull_request_target uses the base workflow. Only its trusted revision is
+      # checked out. Candidate blobs are fetched as data in the following step.
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.base.sha || github.sha }}
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /handoff/preflight.py
+            /handoff/dispatch.py
+            /handoff/assignments/check-roundtrip.ps1
+            /handoff/inbox/ROUNDTRIP-9/scheme-C.csv
+      - name: Inspect pinned candidate data
+        env:
+          CANDIDATE_REPO: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          GH_READ_TOKEN: ${{ github.token }}
+        run: |
+          if [[ ! -f handoff/dispatch.py || ! -f handoff/preflight.py ]]; then
+            echo 'Trusted base has no preflight yet. The first push to main will run it.'
+            exit 0
+          fi
+          python3 -IB handoff/preflight.py
