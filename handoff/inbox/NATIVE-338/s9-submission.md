@@ -21,7 +21,7 @@ python -B tool/native_anchor_inventory.py --binary issue-materials/338/Happ.dll 
 
 # 自证
 - 本轮 1,522 个锚点逐址映射；IAT 站点与外呼逐条相等（见 metrics.json 的 iat_sites/iat_registered）。
-- 判定命令输出见下；checker exit 0（0 缺口）；间接转移（寄存器/指针表）逐址列入 code/indirect.csv，不进 calls.csv 的四类。
+- 判定命令输出见下；checker exit 2（0 缺口 + 2,630 条已申报未决）；间接转移按上游口径留在 calls.csv 的 class=unresolved，附件 code/indirect.csv 保留逐址说明。
 
 # 下一批如何自动避免
 门禁一条：原生件交付前必须跑锚点枚举脚本，断言 coverage 行覆盖 anchor 全集且每条 listing 行真实存在（工具已内置断言）。
@@ -44,10 +44,10 @@ python -B tool/native_anchor_inventory.py --binary issue-materials/338/Happ.dll 
 ## 判定命令与原始输出
 
 ~~~
-checked 1971 coverage rows, 1969 tool-native entries, 5121 call records, 0 declared gaps
+checked 1971 coverage rows, 1969 tool-native entries, 7751 call records, 0 declared gaps
 ~~~
 
-exit code: 0
+exit code: 2
 
 ## 产物
 
