@@ -73,3 +73,11 @@ AVX 填充 `[0x11f40,0x12ff8)` 回编逐字节吻合，包括 189 条指令、41
 255 个入口中覆盖 150 个，105 个仍有缺口，3,567 条引用中 26 条待解。整件未通过静态验收。
 
 [可编辑源码](s37/capability-query.c) · [回编结果](s37/reassembly.json) · [回执](s37-submission.md)
+
+## s41 补充归档
+
+恢复 0x14910–0x14cab 的 923 字节与 278 条指令，13 处 REL32 与原件一致。.pdata 的 12 字节和 .xdata 的 28 字节均匹配。独立回编还核对 2,056 字节只读 Vendor/描述符数据与 64 字节零初始化存储。原件以 EFLAGS ID 位测试进入 CPUID 路径，Intel 路径比较 EBX/EDX/ECX，按 leaf 4 或 leaf 2 的条件写入 16 字节记录。0x14c80 写入 0x235fc 的 32 位就绪字段，0x148ea 与 0x14cd3 是已核对的直调入口，0x14c91 直调 0x18110 检查栈 cookie。
+
+覆盖 255 个入口中的 151 个，尚余 104 个入口缺口和 26 条未决引用。整件未通过静态验收。
+
+[可编辑源码](s41/initialize-capability-records.c) · [描述符数据](s41/initializer-data.c) · [回编结果](s41/reassembly.json) · [回执](s41-submission.md)
