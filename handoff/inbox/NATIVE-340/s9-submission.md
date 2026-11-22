@@ -22,8 +22,8 @@ python -B tool/il_disasm.py --binary issue-materials/340/WrapSaveMergeNNFiles.dl
 
 # 自证
 - boundary 61 条：原 12 条误标 external 全部改判，逐条带 IL 偏移、操作码、token、目标 RVA；核定例子 methods.il L22（IL_0018、opcode 28、token 0x06000084 → 0x476B）与交付逐字段一致。
-- 15/15 处 calli 与 4 处原生间接转移移入 code/indirect.csv（不属 calls.csv 四类）；native 侧 4 处 KERNEL32 导入调用落 L483/486/489/493。
-- checker：877 coverage rows、126 tool-native、271 call records、0 declared gaps；exit 0。
+- 15/15 处 calli 与 4 处原生间接转移在 calls.csv 登记为 class=unresolved（附件 code/indirect.csv 保留逐址说明）；native 侧 4 处 KERNEL32 导入调用落 L483/486/489/493。
+- checker：877 coverage rows、126 tool-native、290 call records、0 declared gaps；exit 2（19 条已申报未决：15 calli + 4 原生间接，均留在 calls.csv）。
 
 # 下一批如何自动避免
 门禁一条：混合件的 IL 调用分类只认「操作数 token 在 MethodDef 表里的 flavor」，禁止用签名文本、程序集名或 ImplMap 判定；calli/间接转移必须逐址落 unresolved。
@@ -43,10 +43,10 @@ python -B tool/il_disasm.py --binary issue-materials/340/WrapSaveMergeNNFiles.dl
 ## 判定命令与原始输出
 
 ~~~
-checked 877 coverage rows, 126 tool-native entries, 271 call records, 0 declared gaps
+checked 877 coverage rows, 126 tool-native entries, 290 call records, 0 declared gaps
 ~~~
 
-exit code: 0
+exit code: 2
 
 ## 产物
 
