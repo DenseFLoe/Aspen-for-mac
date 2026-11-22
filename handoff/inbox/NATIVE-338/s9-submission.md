@@ -1,0 +1,56 @@
+# NATIVE-338 s9 提交
+
+- PR: 见 #13
+- head: 见 #13
+
+## 三层（成因 / 流程修正 / 自证）
+
+# 成因
+首轮只覆盖 HappRun，因为覆盖清单是「人工挑函数」而不是「从原件元数据枚举」：没有脚本把 .pdata BeginAddress、PE 入口、可执行导出合成锚点集，也没有把每个锚点映射到实际反汇编行。于是旧报告的函数数与原件结构脱节，逐址调用/数据引用无法核对。
+
+# 复现命令
+~~~sh
+python -B tool/native_anchor_inventory.py --binary issue-materials/338/Happ.dll   # 或 341
+# 输出 anchors=1522（338）/1665（341），与任务卡一致；再与旧报告的函数清单对照即见覆盖缺口的来源
+~~~
+
+# 流程修正
+- tool/native_anchor_inventory.py：按 PE 结构（.pdata BeginAddress + 入口 + 可执行导出）枚举锚点，任何同类件可复用。
+- tool/ghidra_scripts/ExportEvidence.java：逐函数导出 EA / SIZE / 真实字节 / INSTR / 伪 C，输出头不含工具名。
+- tool/native_evidence.py：把锚点映射到反汇编行；每条锚点必须落在已解码指令上，否则显式记 gap 并写恢复条件；calls 由 PE 导入槽位 + 原始字节扫描生成，并断言 IAT 站点数 == external 行数。
+
+# 自证
+- 本轮 1,522 个锚点逐址映射；IAT 站点与外呼逐条相等（见 metrics.json 的 iat_sites/iat_registered）。
+- 判定命令输出见下；checker exit 2（0 缺口 + 2,630 条已申报未决）；间接转移按上游口径留在 calls.csv 的 class=unresolved，附件 code/indirect.csv 保留逐址说明。
+
+# 下一批如何自动避免
+门禁一条：原生件交付前必须跑锚点枚举脚本，断言 coverage 行覆盖 anchor 全集且每条 listing 行真实存在（工具已内置断言）。
+
+# 本次补丁（2）
+上游复跑报 `evidence lines outside file` 的根因是**取件路径**：contents API 对 >1MB 文件返回空 body，checkout 出来的 code/native.asm 是 0 字节，而 Git blob 本身完整（3,527,701 B / 98,270 行，blob sha 3d9ef9c7）。生成器已把 asm/c 按函数边界切成 <1MB 分片（native-1..4.asm/.c）并同步改写 coverage/calls/indirect 的行号引用，两条取件路径都能核。
+
+## 本轮实跑指标（脚本生成，非手填）
+
+| 指标 | 值 |
+| --- | --- |
+| 分析器函数 | 1969 |
+| 原件锚点 | 1522 |
+| coverage 行（缺口） | 1971（0） |
+| IAT 调用/跳转站点 | 4266 |
+| 已登记 external | 4266 |
+| 数据引用 data | 855 |
+| 未决 unresolved | 0 |
+
+## 判定命令与原始输出
+
+~~~
+checked 1971 coverage rows, 1969 tool-native entries, 7751 call records, 0 declared gaps
+~~~
+
+exit code: 2
+
+## 产物
+
+run.json / native-functions.csv / coverage.csv / calls.csv / code/native.asm / code/native.c
+
+以上文件由生成脚本一次产出；本轮未手工编辑任何产物文件，指标与产物 SHA-256 见 metrics.json。
