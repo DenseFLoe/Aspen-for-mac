@@ -180,7 +180,6 @@ class SubmittedTargetsTest(unittest.TestCase):
 
     def test_wrong_base_site_and_owner_are_independent_conflicts(self):
         for column, value, expected in [(6, "base rbx MOV RBX", "indirect_target_base_mismatch"),
-                                        (4, "code/native.asm#L2", "indirect_target_evidence_reference"),
                                         (1, "0x1006", "indirect_target_owner_mismatch")]:
             with self.subTest(column=column):
                 rows = [list(v) for v in self.legacy]
@@ -188,6 +187,7 @@ class SubmittedTargetsTest(unittest.TestCase):
                 self.set_legacy(rows)
                 out = self.rows(self.audit())
                 self.assertIn(expected, out["0x1008"]["reasons"])
+                self.assertEqual(out["0x1008"]["decision"], "contradicted")
                 self.assertIsNone(out["0x1008"]["confirmed_target"])
                 self.assertEqual(out["0x1006"]["decision"], "unresolved")
         self.set_legacy(self.legacy)
@@ -195,6 +195,54 @@ class SubmittedTargetsTest(unittest.TestCase):
         main[2][2] = "indirect@0x1006"
         self.table("calls.csv", self.header, main)
         self.assertIn("indirect_target_site_mismatch", self.rows(self.audit())["0x1008"]["reasons"])
+
+    def test_stale_legacy_lines_are_reported_separately_from_target_decisions(self):
+        for ref, observed, code, severity in [
+            ("code/native.asm#L2", ["0x1006"], "listing_points_to_different_site", "fail"),
+            ("code/native.asm#L2-L3", ["0x1006", "0x1008"], "listing_site_not_unique", "inconclusive"),
+            ("code/native.asm#L10", [], "listing_site_not_unique", "inconclusive"),
+        ]:
+            with self.subTest(ref=ref):
+                rows = [list(v) for v in self.legacy]
+                rows[1][4] = ref
+                rows[1][6] = "base rbx MOV RBX"
+                self.set_legacy(rows)
+                result = self.audit()
+                row = self.rows(result)["0x1008"]
+                self.assertEqual((row["decision"], row["confirmed_target"]), ("unresolved", None))
+                self.assertEqual(row["reasons"], ["target_witness_required"])
+                references = result["legacy_indirect_listing_references"]
+                self.assertEqual(references["count"], 1)
+                self.assertEqual(references["counts"][code], 1)
+                self.assertEqual(references["records"], [{"source": "code/indirect-resolved.csv#L3", "listing": ref,
+                    "claimed_site_rva": "0x1008", "observed_listing_rvas": observed, "code": code,
+                    "verified_listings": ["code/native.asm#L3"]}])
+                finding, = [f for f in result["findings"] if f["code"] == "legacy_indirect_listing_reference"]
+                self.assertEqual((finding["severity"], finding["site_rva"]), (severity, "0x1008"))
+
+    def test_stale_legacy_target_cannot_confirm_or_conflict_with_independent_witness(self):
+        main = list(self.main[0])
+        main[2:4] = ["indirect@0x1000", "unresolved"]
+        self.table("calls.csv", self.header, [main, *self.main[1:]])
+        stale = [*main, "X.dll!#5", "resolved"]
+        stale[4] = "code/native.asm#L2"
+        self.set_legacy([*self.legacy, stale])
+        self.assertEqual(self.rows(self.audit())["0x1000"]["decision"], "unresolved")
+        stale[6] = "X.dll!#6"
+        self.set_legacy([*self.legacy, stale])
+        self.claims(self.positive)
+        row = self.rows(self.audit())["0x1000"]
+        self.assertEqual(row["decision"], "confirmed")
+        self.assertEqual(row["confirmed_target"]["external"]["import"], "X.dll!#5")
+
+    def test_stale_row_still_counts_for_duplicate_registration(self):
+        stale = list(self.legacy[1])
+        stale[4] = "code/native.asm#L2"
+        self.set_legacy([*self.legacy, stale])
+        result = self.audit()
+        self.assertEqual(result["legacy_indirect_listing_references"]["count"], 1)
+        row = self.rows(result)["0x1008"]
+        self.assertEqual((row["decision"], row["reasons"]), ("contradicted", ["indirect_target_duplicate"]))
 
     def test_absent_index_record_and_absent_main_record_stay_visible(self):
         self.set_legacy(self.legacy[:1])

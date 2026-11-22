@@ -41,12 +41,10 @@ def unique_object(pairs):
 def listed_sites(ref, by_file):
     parsed = native_sites.parse_ref(ref)
     if not parsed or parsed[0] not in by_file:
-        return set()
+        return (), False
     path, lo, hi = parsed
     lines, addresses, last = by_file[path]
-    if hi > last:
-        return set()
-    return set(addresses[bisect.bisect_left(lines, lo):bisect.bisect_right(lines, hi)])
+    return addresses[bisect.bisect_left(lines, lo):bisect.bisect_right(lines, hi)], hi <= last
 
 
 def operand(ins, pe, x86, fmt):
@@ -94,11 +92,11 @@ def read_legacy(root, path, by_file, records, managed, report):
             continue
         native_rows = True
         hint = SITE.fullmatch(row["callee"].strip())
-        sites = listed_sites(row["listing"], by_file)
+        sites, in_range = listed_sites(row["listing"], by_file)
         if hint:
             site = address(hint[1])
-        elif len(sites) == 1:
-            site, = sites
+        elif in_range and len(set(sites)) == 1:
+            site = sites[0]
         else:
             report("inconclusive", "indirect_target_site_unverified", "Cannot identify a unique native transfer site.", line=where)
             continue
@@ -112,12 +110,37 @@ def read_legacy(root, path, by_file, records, managed, report):
             item["owner"] = None
         if kind != "native" or item["owner"] is None:
             item["issue"] = "invalid_identity"
-        elif sites and site not in sites:
-            item["issue"] = "listing_points_to_different_site"
-        elif sites != {site}:
-            item["issue"] = "listing_site_not_unique"
+        if kind == "native" and hint and (not in_range or len(sites) != 1 or sites[0] != site):
+            item["reference_issue"] = ("listing_points_to_different_site" if in_range and sites and site not in sites
+                                       else "listing_site_not_unique")
+            item["observed_listing_rvas"] = [hex(rva) for rva in sorted(set(sites))]
         records[site][path].append(item)
     return native_rows or not managed_rows
+
+
+def listing_reference_report(evidence, by_file, report):
+    issues = [(site, row) for site, tables in sorted(evidence.items()) for path in (INDEX, LEGACY)
+              for row in tables.get(path, ()) if "reference_issue" in row]
+    listings = {site: [] for site, _ in issues}
+    if listings:
+        for name, (lines, addresses, _) in by_file.items():
+            for line, site in zip(lines, addresses):
+                if site in listings:
+                    listings[site].append(f"{name}#L{line}")
+    counts = {"listing_points_to_different_site": 0, "listing_site_not_unique": 0}
+    records = []
+    for site, row in issues:
+        code = row["reference_issue"]
+        counts[code] += 1
+        observed = row["observed_listing_rvas"]
+        records.append({"source": row["source"], "listing": row["listing"], "claimed_site_rva": hex(site),
+                        "observed_listing_rvas": observed, "code": code, "verified_listings": listings[site]})
+        mismatch = code == "listing_points_to_different_site"
+        problem = "points to other instructions" if mismatch else "does not identify a unique instruction"
+        report("fail" if mismatch else "inconclusive", "legacy_indirect_listing_reference",
+               f"{row['listing']} {problem} for {hex(site)} (observed RVAs: {', '.join(observed) or 'none'}).",
+               site, row["source"])
+    return {"count": len(records), "counts": counts, "records": records}
 
 
 def read_claims(root, original, records, report):
@@ -189,9 +212,7 @@ def check_registration(site, primary, entries, owner_set, mnemonic, flag):
         for record in records:
             source = record["source"]
             if "issue" in record:
-                uncertain = record["issue"] == "listing_site_not_unique"
-                flag("indirect_target_evidence_reference", record["issue"], source,
-                     "inconclusive" if uncertain else "fail")
+                flag("indirect_target_evidence_reference", record["issue"], source)
             if owner_set is not None and record.get("owner") not in owner_set:
                 flag("indirect_target_owner_mismatch", "Evidence owner disagrees with the owner at this site.", source)
     for record in [*primary, *entries.get(INDEX, []), *entries.get(LEGACY, [])]:
@@ -219,6 +240,7 @@ def audit(root, original, pe, bits, x86, instructions, owners, main_rows, report
         except (ValueError, OSError, RecursionError, native_sites.csv.Error) as exc:
             report("inconclusive" if isinstance(exc, OSError) else "fail", "indirect_target_evidence_unreadable",
                    str(exc), line=path)
+    result["legacy_indirect_listing_references"] = listing_reference_report(evidence, by_file, report)
     sites = set(evidence) | {site for site, rows in main_rows.items() if any(not r["known_iat"] for r in rows)}
     rows_out = []
     jumps = []
@@ -264,8 +286,11 @@ def audit(root, original, pe, bits, x86, instructions, owners, main_rows, report
         check_registration(site, primary, entries, owner_set, "call", flag)
         if any(r["classification"] == "unresolved" for r in primary):
             row["missing_legacy_records"] = [p for p in (INDEX, LEGACY) if p in supplied and not entries.get(p)]
-        legacy_labels = [r["callee"] for r in [*primary, *entries.get(INDEX, [])] if label(r["callee"])]
+        legacy_labels = [r["callee"] for r in [*primary, *entries.get(INDEX, [])]
+                         if "reference_issue" not in r and label(r["callee"])]
         for e in entries.get(LEGACY, []):
+            if "reference_issue" in e:
+                continue
             hint = BASE_HINT.fullmatch(e["resolved"])
             if hint:
                 e["base_matches_operand"] = op.get("base") == hint[1].casefold()

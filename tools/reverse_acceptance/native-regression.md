@@ -112,3 +112,17 @@ python -B -m unittest discover -s "$NewRoot/tools/reverse_acceptance" -v
 | WrapSaveMergeNNFiles 仅把旧表 `0x48b0` 的 `JMP RAX` 写成 `CALL RAX` | `indirect_target_transfer_kind_mismatch` 定位到该址。其余 10 个 JMP 仍是未决。 |
 
 FindComponent S13 另作兼容复验，原 99 个 CALL 均保持未决。S17 的旧附件仍存在行号引用差异。局部回编和 CLR 磁盘槽核验各按自身证据给出结论。
+
+## 验收器 1.4 的 FindComponent S17 两跳导入复验
+
+原件 SHA-256 为 `3b3a8100a0ac587d2707935409fb2a8c5fd71eae659f95edb99c9f604454ff02`，固定 S17 交付树指纹为 `58cf2a2140ecef1f1b1fa8c2f81af4c3b162aeeb429b7d8b5c6d0f674d166460`。验收器先读交付申报的 161 个 RVA，再逐条从原件核对 CALL 或 JMP、跳板、IAT 槽和导入名或序号。[固定交付](https://github.com/DenseFLoe/Aspen-for-mac/blob/cc6f30c82bcc107e769672705cfe4bd8fea025c2/handoff/inbox/NATIVE-337/code/import-callers.csv) · [独立裁定](https://github.com/DenseFLoe/Aspen-for-mac/blob/ff2d6a3787f460342b618364d0ea2d38199e700d/handoff/outbox/NATIVE-337/s17-decision.md)
+
+151 条链路具备独立指令边界证据，10 条的调用点或跳板边界还待核。12 条的调用方归属还不足以独立核实，包含上述 10 条和 2 条已证链路。按链路与归属均满足的口径，原样交付为 149 个确认、12 个未决、0 个矛盾。主调用表缺登记 161 条，分别列在自己的站点下。
+
+| 单独改动 | `item` 两跳导入结果 | 旧间接调用表引用结果 |
+| --- | --- | --- |
+| S17 原样 | 149 确认、12 未决、0 矛盾。 | 97 条错位、2 条无法指向唯一指令。 |
+| 仅把 `0x106c → 0x4aa3 → 0x75e8` 的 `mfc140.dll!#2344` 改为同 DLL 的 `#2348` | 148 确认、12 未决、1 矛盾。报告定位到 `code/import-callers.csv#L2`，保留原件序号 `#2344` 和申报序号 `#2348`。 | 97 条错位、2 条无法指向唯一指令。 |
+| 只把 `0x1389` 的旧引用从 L237 改成 L241 | 与原样逐条相同。 | 错位降到 96 条，另外 2 条保持。该址具体目标仍未决。 |
+
+三个副本的整件 `item` 均退出 1。旧表目标专项保持 109 个 CALL 和 3 个 JMP 未决。另用五件固定试点跑 `project`，S17 的专项报告逐项等于单件结果。

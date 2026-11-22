@@ -527,6 +527,7 @@ def _audit(original, root, pe, bits, x86, result, provider):
     explicit_unresolved = set()
     unresolved_pairs = defaultdict(list)
     main_rows = defaultdict(list)
+    route_rows = defaultdict(list) if safe_path(root, "code/import-callers.csv").is_file() else None
     data_sites = defaultdict(dict)
     qualified_slot = re.compile(r"IAT\s+(0x[0-9a-f]+)\s+\(([^()!]+)!([^()!]+)\)", re.I)
     for row_index, row in rows:
@@ -582,6 +583,9 @@ def _audit(original, root, pe, bits, x86, result, provider):
             main_rows[site].append({"owner": owner if owner is not None else raw_owner, "source": f"calls.csv#L{row_index}",
                                     "listing": row["listing"], "callee": row["callee"], "classification": cls,
                                     "known_iat": matched_iat})
+        if route_rows is not None and ins.flow_control in direct:
+            route_rows[site].append({"source": f"calls.csv#L{row_index}", "caller": row["caller"],
+                                     "listing": row["listing"], "callee": row["callee"], "classification": cls})
         if cls not in CLAIM_CLASSES:
             report("fail", "invalid_class", f"Unrecognized native transfer class {cls!r}.", site, row["listing"])
             continue
@@ -768,3 +772,10 @@ def _audit(original, root, pe, bits, x86, result, provider):
         report("inconclusive", "target_audit_unavailable", str(err))
     except (ValueError, csv.Error) as err:
         report("fail", "invalid_target_evidence", str(err))
+    if route_rows is not None:
+        if __package__:
+            from .import_routes import audit as audit_import_routes
+        else:
+            from import_routes import audit as audit_import_routes
+        result["import_routes"] = audit_import_routes(root, pe, bits, x86, decode, slot_of, iat if complete_imports else {},
+                                                     owners, proven_starts, by_file, route_rows, report)

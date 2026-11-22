@@ -110,6 +110,14 @@ Source SHA-256: <这份源码的小写 SHA-256>
 
 兼容旧表混列的间接转移。`indirect_jump_targets` 记录原生间接 JMP，明确填错 CALL 或 JMP 的行会报告 `indirect_target_transfer_kind_mismatch`。`managed_indirect_records` 给出旧表中托管记录的位置和申报内容。声明 CALL 目标的 JSON 仍使用上面的格式。
 
+旧表用明确的 RVA 申报站点时，行号问题见 `legacy_indirect_listing_references`。其中列出原申报地址、行号实际对应的地址和已核字节的当前清单位置。仅因旧引用错位或无法唯一定位的记录，不作为具体目标矛盾计数。修正引用后，最终目标仍按实际依据判断。
+
+### 两跳导入证据
+
+`item` 和 `project` 都可读取 FindComponent S17 使用的 `code/import-callers.csv`。每个调用点只提交一行。`rva` 填直接 CALL 或尾部 JMP 的 RVA，`owner` 填调用点所属函数的起始 RVA，缺归属时留空。`detail` 使用 `0x4aa3 -> IAT 0x75e8 -> mfc140.dll!#2344` 的格式，支持按名和按序号导入。
+
+`import_routes.sites` 逐址显示原件调用指令、原件跳板指令、IAT 槽和导入身份，并列下游提交。静态证明要求调用点和跳板边界可独立核实，跳板是消费该 IAT 槽的一条间接 JMP。 `chain_counts` 汇总四项链路证据，`counts` 还要求原件异常目录能核实调用方归属。边界或归属不足的保留未决。主表登记情况见 `main_registration` 和 `unregistered_sites`。导入身份以原件 PE 描述符为准。
+
 ### 内部函数回编与 CLR 跳转槽
 
 交付含 `s13/callee-evidence.json` 或 `s13/reassembly-delta.json` 时，`item` 和 `project` 会增加内部函数回编专项。前者列出函数符号和各自的 `s13/<符号>.c` 源码，后者按 RVA 对应 `code/verified.c` 引用的源码分片。现有两种格式可原样提交。验收器依据原件 PE 异常目录定位函数起止，使用 `--assembler` 指定的受信 Zig 重新编译受支持的内联汇编，并按原件指令核对 COFF 重定位字段、类型、目标、加数及应用重定位后的代码字节。只编译通过语法核对的指令与受信宏。其他源码形式和缺少编译器的结果会保留待核。
