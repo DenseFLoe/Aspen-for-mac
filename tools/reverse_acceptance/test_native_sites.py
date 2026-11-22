@@ -4,6 +4,7 @@ import importlib.util
 import struct
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 if __package__:
@@ -62,8 +63,10 @@ def ordinal_provider(target=0x21c0):
                      "requires iced-x86 and pefile")
 class NativeSitesTest(unittest.TestCase):
     def audit(self, extras=(), *, bits=64, tail=b"\xc3", tail_asm=None, callee="x.DLL!#5",
-              call_override=None, first_class="external", head=None, tables=None, provider=None):
+              call_override=None, first_class="external", head=None, tables=None, provider=None, pe_edit=None):
         original, call = tiny_pe(bits, tail)
+        if pe_edit:
+            original = pe_edit(original)
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / "code").mkdir()
@@ -89,6 +92,64 @@ class NativeSitesTest(unittest.TestCase):
                 path.write_bytes(blob)
                 trusted = (path, digest or hashlib.sha256(blob).hexdigest())
             return check(original, root, trusted)
+
+    def test_deleting_only_a_listing_line_moves_a_gap_to_original_coverage(self):
+        # Jump over bytes that look like an indirect call. The actual indirect jump is farther
+        # along the direct target's fallthrough; neither that target nor the jump needs to be listed.
+        tail = b"\xeb\x02\xff\xd0\x90\xff\xe0"
+        listing = ["00001006  eb 02  jmp 0x100a", "0000100b  ff e0  jmp rax"]
+        for bits in (32, 64):
+            with self.subTest(bits=bits):
+                full = self.audit(bits=bits, tail=tail, tail_asm=listing)
+                self.assertEqual(full["metrics"]["missing_sites"], 1)
+                self.assertEqual(full["metrics"]["original_reachable_unlisted_sites"], 0)
+                shortened = self.audit(bits=bits, tail=tail, tail_asm=listing[:1])
+                self.assertEqual(shortened["status"], "fail")
+                self.assertEqual(shortened["metrics"]["missing_sites"], 0)
+                self.assertEqual(shortened["metrics"]["original_reachable_indirect_sites"], 2)
+                self.assertEqual(shortened["original_reachability"]["unlisted_transfers"], [
+                    {"site_rva": "0x100b", "transfer": "indirect_jump", "root_rva": "0x1000", "root_kind": "entry_point",
+                     "predecessor_rva": "0x100a", "edge": "fallthrough", "basis": "unambiguous_code_root_path",
+                     "status": "fail"}])
+
+    def test_overlap_or_exhausted_budget_does_not_certify_hidden_sites(self):
+        # The conditional branch targets the second byte of the fallthrough instruction.
+        overlap = self.audit(tail=b"\x74\x01\xff\xe0\xc3\xc3", tail_asm=[])
+        self.assertEqual(overlap["status"], "inconclusive", overlap)
+        self.assertEqual(overlap["metrics"]["original_reachable_unlisted_sites"], 0)
+        self.assertEqual(overlap["metrics"]["original_candidate_unlisted_sites"], 1)
+        walk = overlap["original_reachability"]
+        self.assertIn("overlapping_original_boundaries", walk["diagnostics"])
+        self.assertEqual(walk["unlisted_transfers"][0]["basis"], "overlapping_instruction_boundary")
+        # A direct branch from the middle of that ambiguous instruction also makes a downstream
+        # indirect jump provisional, even when no bytes overlap at the jump itself.
+        downstream = self.audit(tail=b"\x74\x01\xb8\xeb\x02\x00\x00\xff\xe0", tail_asm=[])
+        self.assertEqual(downstream["metrics"]["original_candidate_unlisted_sites"], 1, downstream)
+        self.assertEqual(downstream["metrics"]["original_reachable_unlisted_sites"], 0)
+        with patch(check.__module__ + ".ORIGINAL_WALK_LIMIT", 1):
+            limited = self.audit(tail=b"\xff\xe0", tail_asm=[])
+        self.assertEqual(limited["status"], "inconclusive")
+        self.assertTrue(limited["original_reachability"]["budget_exhausted"])
+        self.assertIn("instruction_budget_exhausted", limited["original_reachability"]["diagnostics"])
+
+    def test_exception_root_can_certify_an_executable_export(self):
+        def edited(data, unwind):
+            image = bytearray(data)
+            exported = ordinal_provider(0x1007)
+            image[0x98 + 112:0x98 + 120] = exported[0x98 + 112:0x98 + 120]
+            image[0x480:0x4c4] = exported[0x480:0x4c4]
+            if unwind:
+                struct.pack_into("<II", image, 0x98 + 112 + 3 * 8, 0x20d0, 12)
+                struct.pack_into("<III", image, 0x4d0, 0x1007, 0x1009, 0x20e0)
+                image[0x4e0] = 1
+            return bytes(image)
+        for unwind, status, root_kind in [(False, "inconclusive", "executable_section_export"),
+                                          (True, "fail", "exception_function")]:
+            with self.subTest(unwind=unwind):
+                result = self.audit(tail=b"\xc3\xff\xe0", tail_asm=["00001006  c3  ret"],
+                                    pe_edit=lambda data: edited(data, unwind))
+                item, = result["original_reachability"]["unlisted_transfers"]
+                self.assertEqual((item["site_rva"], item["root_kind"], item["status"]), ("0x1007", root_kind, status))
 
     def test_old_and_current_direct_edges_bind_to_the_original_operand(self):
         old = ["owner", "site", "target", "target_owner", "instruction"]

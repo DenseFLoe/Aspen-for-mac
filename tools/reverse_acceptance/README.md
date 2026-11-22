@@ -59,6 +59,16 @@ Source SHA-256: <这份源码的小写 SHA-256>
 
 三个固定候选的逐件对照、工具和复跑命令见[原生验收回归记录](native-regression.md)。
 
+### 复核固定交付
+
+每次 CLI 运行的顶层 `verifier` 给出验收器版本、实际工具源码和受信档案的组合指纹、Python 及已安装的解析依赖版本。逐件报告中的 `delivery_sha256` 和 `delivery_files` 标识此次验的交付，包括失败或待核的交付。在有受信交付指纹时，可为 `item` 传入 `--delivery-sha256`，批量输入中对应字段为 `delivery_sha256`。不吻合时该件返回 `delivery_identity_mismatch` 并待核。交付指纹是“相对 POSIX 文件名 → 文件 SHA-256”的 JSON 对象按键排序、以 UTF-8 和紧凑分隔符编码后的 SHA-256。复验同一批次时，应从独立核实过的候选取得预期值。
+
+原生覆盖会核对工具发现的额外入口与原件锚点，并从完整证据文件核验所引首条指令及源码范围。转移报告的 `missing_sites` 为**清单中存在指令、主表却缺登记**的站点数。`original_reachable_unlisted_sites` 为**从原件可信入口独立核得、交付清单缺指令**的间接转移数。逐址来由见 `original_reachability.unlisted_transfers`。仅由导出提示、遇到解码冲突或超过遍历预算的位置单列待核。
+
+导出报告的 `rebuild_status` 表示实际编译和重定位后字节是否匹配。`original_facts_status` 单列可直接从原件核对的申报，`manifest_status` 汇总已核对的申报。缺少受信 Zig 时，导出回编待核、匹配字节计为零，指令、调用、RIP 相对引用中可核实的矛盾照常报告。
+
+原生交付还会按原件 PE 资源树逐项报告资源证据。对支持的 `version.json` 和 `s5-data/version-resource.json`，验收器从 JSON 构造完整版本资源并比较每个字节，包含 UTF-16 字符串、终止符及对齐字节。[Windows 版本资源布局](https://learn.microsoft.com/en-us/windows/win32/menurc/vs-versioninfo)
+
 ## 全项目分母和批量输入
 
 下面的例子沿用上面的原件和交付。把三份来源清单和逐件总表下载到同一工作目录，再提交本机可供核对的材料。首次下载需要联网；验收器会自行核验这些清单的指纹。

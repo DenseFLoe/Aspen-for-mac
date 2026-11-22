@@ -7,10 +7,14 @@ import json
 import re
 import struct
 from pathlib import Path
+if __package__:
+    from .version_resource import encode as encode_version
+else:
+    from version_resource import encode as encode_version
 
 
-SCOPE = ("PE resource identities, code pages, RVAs, sizes and original bytes against "
-         "resources.csv and s5/resources.json. Source-level use and UI behaviour are outside this check.")
+SCOPE = ("PE resource identities, code pages, RVAs and payloads, including exact bytes rebuilt "
+         "from supported editable VERSIONINFO documents. Source-level use and UI behaviour are outside this check.")
 FIELDS = {"type", "name", "language", "bytes", "code_page", "rva", "sha256"}
 
 
@@ -20,6 +24,8 @@ def _rows(original):
     with pefile.PE(data=original, fast_load=True) as pe:
         dirs = pe.OPTIONAL_HEADER.DATA_DIRECTORY
         if len(dirs) <= 2:
+            if pe.OPTIONAL_HEADER.NumberOfRvaAndSizes > 2:
+                raise ValueError("declared resource directory entry cannot be read")
             return {}
         directory = dirs[2]
         base, size = directory.VirtualAddress, directory.Size
@@ -181,7 +187,66 @@ def check(original: bytes, delivery: Path) -> dict:
             finding("fail","missing_resource",layer=layer,key=key)
         metrics[layer + "_unique"] = len(seen)
 
-    for layer,relative in (("inventory","resources.csv"),("payload","s5/resources.json")):
+    layers = (("inventory","resources.csv"),("payload","s5/resources.json"))
+    supplied_tables = any((root / name).is_file() for _, name in layers)
+    versions = {key: value for key, value in originals.items() if key[0] == ("id", "16")}
+    verified = set()
+    models = {}
+    for relative in ("version.json", "s5-data/version-resource.json"):
+        path = root / relative
+        if not path.is_file():
+            continue
+        try:
+            if not path.resolve().is_relative_to(root):
+                raise ValueError("version document outside delivery")
+            if path.stat().st_size > 2 * 1024 * 1024:
+                finding("inconclusive", "version_document_limit", path=relative)
+                continue
+            doc = json.loads(path.read_text(encoding="utf-8-sig"), object_pairs_hook=_unique_object)
+            if relative == "version.json":
+                # This generic filename is also used for unrelated application metadata.
+                if not isinstance(doc, dict) or not {"key", "type"} <= doc.keys():
+                    continue
+                if len(versions) != 1:
+                    finding("inconclusive" if versions else "fail", "version_leaf_not_unique",
+                            path=relative, original_version_leaves=len(versions))
+                    continue
+                key, = versions
+                node = doc
+            else:
+                if not isinstance(doc, dict) or doc.keys() != {"resource_type", "id", "language", "code_page", "root"}:
+                    raise ValueError("invalid wrapped version document")
+                key = tuple(("id", str(_number(doc[k]))) for k in ("resource_type", "id", "language"))
+                if key not in versions:
+                    finding("fail", "version_resource_identity", path=relative, key=key)
+                    continue
+                if _number(doc["code_page"]) != versions[key][2]:
+                    finding("fail", "version_code_page", path=relative, original=versions[key][2], claimed=doc["code_page"])
+                node = doc["root"]
+            rva, length, code_page, expected_sha, raw = versions[key]
+            rebuilt = encode_version(node)
+            model = dict(key=key, rva=hex(rva), bytes=length, code_page=code_page,
+                         original_sha256=expected_sha, rebuilt_sha256=hashlib.sha256(rebuilt).hexdigest())
+            models[relative] = model
+            if raw == rebuilt:
+                verified.add(key)
+                model["bytes_match"] = True
+            else:
+                model["bytes_match"] = False
+                at = next((i for i,(a,b) in enumerate(zip(raw, rebuilt)) if a != b), min(length, len(rebuilt)))
+                finding("fail", "version_resource_bytes", path=relative, offset=at, rva=hex(rva + at),
+                        original=raw[at:at+1].hex() or None, rebuilt=rebuilt[at:at+1].hex() or None)
+        except (ValueError, OSError, RecursionError) as err:
+            finding("inconclusive", "version_model_unverified", path=relative, reason=str(err))
+    metrics.update(version_models=models, rebuilt_version_leaves=len(verified),
+                   rebuilt_version_bytes=sum(versions[k][1] for k in verified))
+
+    if not supplied_tables:
+        for key in sorted(originals.keys() - verified):
+            finding("inconclusive", "resource_bytes_unverified", key=key, rva=hex(originals[key][0]))
+        return result
+
+    for layer,relative in layers:
         target = (root/relative).resolve()
         if not target.is_relative_to(root):
             finding("fail","resource_file_outside_delivery",layer=layer)

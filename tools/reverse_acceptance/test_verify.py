@@ -48,6 +48,51 @@ class WholeItemTests(unittest.TestCase):
             self.source.unlink()
             self.assertEqual(self.evaluate()["status"], "fail")
 
+    def test_delivery_identity_pins_files_and_their_relative_names(self):
+        from hashlib import sha256
+        original = self.evaluate()
+        expected = sha256(json.dumps({"source.cs": verify.digest_file(self.source)}, ensure_ascii=False,
+                                     separators=(",", ":")).encode()).hexdigest()
+        self.assertEqual(original["delivery_sha256"], expected)
+        self.assertEqual(original["delivery_files"], 1)
+        with patch.object(verify, "APPROVALS", [self.archive]):
+            self.assertEqual(self.evaluate(delivery_sha256=expected)["status"], "pass")
+            self.source.rename(self.delivery / "renamed.cs")
+            r = self.evaluate(delivery_sha256=expected)
+        self.assertEqual(r["status"], "inconclusive")
+        self.assertEqual(r["findings"][0]["code"], "delivery_identity_mismatch")
+        self.assertNotEqual(r["delivery_sha256"], expected)
+
+    def test_changed_partial_submission_cannot_keep_a_final_verdict(self):
+        self.original.write_bytes(b"MZ" + bytes(64))
+        self.digest = verify.digest_file(self.original)
+        (self.delivery / "calls.csv").touch()
+        def check(*args):
+            self.source.write_text("changed while checking")
+            return verify.section("changing test submission", "fail", [verify.finding("earlier_difference")])
+        with patch.object(verify, "component", side_effect=check):
+            r = self.evaluate()
+        self.assertEqual(r["status"], "inconclusive")
+        self.assertEqual(r["findings"][-1]["code"], "inputs_changed_during_verification")
+        self.assertIn("earlier_difference", [f["code"] for c in r["checks"] for f in c["findings"]])
+
+    def test_component_failure_cannot_be_overruled_by_a_pass_label(self):
+        import types
+        def contradictory():
+            return verify.section("fixture", "pass", [dict(code="byte_differs", severity="fail")])
+        with patch.object(verify.importlib, "import_module", return_value=types.SimpleNamespace(check=contradictory)):
+            report = verify.component("fixture")
+        self.assertEqual(report["status"], "fail")
+        self.assertEqual([i["code"] for i in report["findings"]], ["byte_differs", "component_status_conflict"])
+
+        def partially_malformed():
+            return {"findings": [{"code": "byte_differs", "status": "fail"}, None]}
+        with patch.object(verify.importlib, "import_module", return_value=types.SimpleNamespace(check=partially_malformed)):
+            report = verify.component("fixture")
+        self.assertEqual(report["status"], "fail")
+        self.assertEqual(report["findings"][0]["code"], "byte_differs")
+        self.assertIn("malformed_component_result", [f["code"] for f in report["findings"]])
+
     def test_self_attestation_and_original_copy(self):
         (self.delivery / "claims.json").write_text('{"status":"pass"}')
         (self.delivery / "result.dll").write_bytes(self.original.read_bytes())

@@ -94,7 +94,131 @@ class ExportControls(unittest.TestCase):
         self.assertEqual("pass", r["status"], r["findings"])
         self.assertEqual(7, r["metrics"]["matching_bytes"])
         self.assertEqual(1, r["metrics"]["exports"]["F"]["relocations"])
+        row = r["metrics"]["exports"]["F"]
+        self.assertEqual(("pass", "inconclusive"), (row["rebuild_status"], row["manifest_status"]))
+        self.assertEqual(["instructions", "jumps", "calls", "rip_operands"], row["unreported_fields"])
         self.compiler.assert_called_once()
+
+    def machine_claims(self):
+        return {"instructions": 2, "jumps": {},
+                "calls": [{"site": "0x1000", "target": None, "external": {"iat_rva": "0x2050", "import": "X.dll!#5"}}],
+                "rip_operands": [["0x1000", "0x2050"]]}
+
+    def test_ordinal_import_and_rebuild_have_independent_statuses(self):
+        claim = self.manifest["exports"]["F"]
+        claim.update(self.machine_claims())
+        good = self.audit()
+        self.assertEqual("pass", good["status"], good["findings"])
+        self.assertEqual("pass", good["metrics"]["exports"]["F"]["manifest_status"])
+        claim["calls"][0]["external"]["import"] = "X.dll!#6"
+        bad = self.audit()
+        row = bad["metrics"]["exports"]["F"]
+        self.assertEqual(("fail", "pass", "fail", 7, 1), (bad["status"], row["rebuild_status"],
+                         row["manifest_status"], row["matching_bytes"], row["relocations"]))
+        f, = bad["findings"]
+        self.assertEqual(("export_manifest_mismatch", "0x1000", ["calls", 0, "external", "import"], "X.dll!#5",
+                          "X.dll!#6"), (f["code"], f["rva"], f["field"], f["original"], f["reported"]))
+
+    def test_scalar_and_site_claims_are_compared_by_value_and_type(self):
+        claim = self.manifest["exports"]["F"]
+        for field, value, where in [("instructions", True, ["instructions"]),
+                                    ("jumps", {"jmp": 1}, ["jumps", "jmp"]),
+                                    ("rip_operands", [["0x1000", "0x2051"]], ["rip_operands", 0, 1]),
+                                    ("calls", [], ["calls", 0])]:
+            with self.subTest(field=field):
+                claim.update(self.machine_claims())
+                claim[field] = value
+                r = self.audit()
+                f, = r["findings"]
+                self.assertEqual(("fail", "0x1000", where), (r["status"], f["rva"], f["field"]))
+                self.assertEqual(7, r["metrics"]["matching_bytes"])
+
+    def test_direct_call_thunk_requires_executable_bytes_and_correct_slot(self):
+        import pefile
+        data = bytearray(self.original)
+        data[0x200:0x207] = bytes.fromhex("e8 3b 00 00 00 90 c3")  # call 0x1040
+        data[0x240:0x246] = b"\xff\x25" + struct.pack("<i", 0x2050 - 0x1046)
+        pe = pefile.PE(data=bytes(data))
+        facts = exports._facts(data[0x200:0x207], 0x1000, pe, self.x86)
+        call, = facts["calls"]
+        self.assertEqual({"site": "0x1000", "target": "0x1040",
+                          "external": {"iat_rva": "0x2050", "import": "X.dll!#5"}}, call)
+        self.assertEqual([], facts["rip_operands"])
+        # Identical JMP instruction in the non-executable data section.
+        data[0x200:0x205] = b"\xe8" + struct.pack("<i", 0x2140 - 0x1005)
+        data[0x540:0x546] = b"\xff\x25" + struct.pack("<i", 0x2050 - 0x2146)
+        pe = pefile.PE(data=bytes(data))
+        facts = exports._facts(data[0x200:0x207], 0x1000, pe, self.x86)
+        self.assertIsNone(facts["calls"][0]["external"])
+
+    def test_declared_register_indirect_target_is_unproven(self):
+        import pefile
+        pe = pefile.PE(data=self.original)
+        raw = bytes.fromhex("ff d0 c3")  # call rax; ret
+        facts = exports._facts(raw, 0x1000, pe, self.x86)
+        self.assertEqual([{"site": "0x1000", "target": None, "external": None}], facts["calls"])
+        claim = {"calls": [{"site": "0x1000", "target": "0x1234", "external": None}]}
+        issue = mock.Mock()
+        row = {"manifest_status": "pass"}
+        exports._check_facts(raw, 0x1000, pe, self.x86, claim, row, "F", issue)
+        args, kwargs = issue.call_args
+        self.assertEqual(("inconclusive", "export_indirect_destination"), args[:2])
+        self.assertEqual(("0x1000", "0x1234", "inconclusive"), (kwargs["rva"], kwargs["reported"], row["status"]))
+
+    def test_bad_semantic_claim_does_not_mask_bad_total(self):
+        self.manifest["exports"]["F"]["instructions"] = 17
+        self.manifest["matching_bytes"] = 1
+        report = self.audit()
+        self.assertEqual({"export_manifest_mismatch", "export_manifest_total"}, {f["code"] for f in report["findings"]})
+        self.assertEqual(7, report["metrics"]["matching_bytes"])
+
+    def test_ordered_stores_and_zero_fill_from_original_section(self):
+        import pefile
+        data = bytearray(self.original)
+        struct.pack_into("<I", data, 0x98 + 240 + 40 + 8, 0x220)  # virtual suffix past .idata raw bytes
+        pe = pefile.PE(data=bytes(data))
+        raw = b"\x48\xc7\x05" + struct.pack("<i", 0x2200 - 0x100b) + b"\xff" * 4 + b"\xc3"
+        row = {"manifest_status": "pass"}
+        claim = {"ordered_u64_stores": [["0x1000", "0x2200", -1]],
+                 "mapped_zero_initialized_data": {"begin": "0x2200", "end": "0x2208", "bytes": 8}}
+        findings = []
+
+        def issue(status, code, message, **kwargs):
+            findings.append((status, code, kwargs))
+
+        exports._check_facts(raw, 0x1000, pe, self.x86, claim, row, "other", issue)
+        self.assertEqual([], findings)
+        self.assertTrue(row["decoded"]["initializer_range"]["zero_initialized"])
+        claim["ordered_u64_stores"][0][2] = 42
+        exports._check_facts(raw, 0x1000, pe, self.x86, claim, row, "other", issue)
+        self.assertEqual(["ordered_u64_stores", 0, 2], findings[0][2]["field"])
+        # The same store into the file-backed import directory targets nonzero data.
+        raw = raw[:3] + struct.pack("<i", 0x2000 - 0x100b) + raw[7:]
+        claim = {"mapped_zero_initialized_data": {"begin": "0x2000", "end": "0x2008", "bytes": 8}}
+        findings.clear()
+        exports._check_facts(raw, 0x1000, pe, self.x86, claim, row, "other", issue)
+        f, = findings
+        self.assertEqual(("fail", "export_initializer_nonzero", "0x2000", 0x40),
+                         (f[0], f[1], f[2]["rva"], f[2]["original"]))
+
+    def test_unordered_rip_evidence_preserves_all_sites_and_multiplicity(self):
+        import pefile
+        pe = pefile.PE(data=self.original)
+        raw = bytes.fromhex("48 8d 05 00 00 00 00 48 8d 05 08 00 00 00 75 00 c3")
+        row = {"manifest_status": "pass"}
+        facts = exports._facts(raw, 0x3000, pe, self.x86)
+        self.assertEqual({"jne": 1}, facts["jumps"])
+        claim = {"rip_operands": list(reversed(facts["rip_operands"]))}
+        findings = []
+
+        def issue(status, code, message, **kwargs):
+            findings.append(kwargs)
+
+        exports._check_facts(raw, 0x3000, pe, self.x86, claim, row, "other", issue)
+        self.assertEqual([], findings)
+        claim["rip_operands"][1] = claim["rip_operands"][0]
+        exports._check_facts(raw, 0x3000, pe, self.x86, claim, row, "other", issue)
+        self.assertEqual(("0x3000", "0x3007"), (findings[0]["original"], findings[0]["reported"]))
 
     def test_same_count_wrong_target_and_exact_site(self):
         self.obj = object_file(symbol=b"rva_2051")
@@ -155,6 +279,37 @@ class ExportControls(unittest.TestCase):
         self.zig.write_bytes(b"test executable fingerprint")
         (self.s5 / "F.c").unlink()
         self.assertEqual("fail", self.audit()["status"])
+        self.compiler.assert_not_called()
+
+    def test_original_manifest_proof_survives_missing_compiler(self):
+        self.manifest["exports"]["F"].update(self.machine_claims())
+        path = self.s5 / "business-evidence.json"
+        path.write_text(json.dumps(self.manifest), encoding="utf-8")
+        report = exports.check(self.original, self.root, None)
+        row = report["metrics"]["exports"]["F"]
+        self.assertEqual(("inconclusive", "pass", "inconclusive", "inconclusive"),
+                         (report["status"], row["original_facts_status"], row["manifest_status"], row["rebuild_status"]))
+        self.assertEqual((0, 0), (report["metrics"]["matching_bytes"], report["metrics"]["relocations"]))
+        self.assertEqual((2, 1), (row["decoded"]["instructions"], row["decoded"]["iat_calls"]))
+        self.compiler.assert_not_called()
+
+    def test_false_claim_with_missing_compiler_or_header(self):
+        claims = self.machine_claims()
+        claims["calls"][0]["external"]["import"] = "X.dll!#6"
+        self.manifest["exports"]["F"].update(claims)
+        (self.s5 / "business-evidence.json").write_text(json.dumps(self.manifest), encoding="utf-8")
+        for missing in ("compiler", "header"):
+            with self.subTest(missing=missing):
+                if missing == "header":
+                    (self.s5 / "register-forms.h").unlink()
+                report = exports.check(self.original, self.root, None if missing == "compiler" else self.zig)
+                row = report["metrics"]["exports"]["F"]
+                self.assertEqual(("fail", "fail", "fail", "inconclusive", 0, 0), (report["status"],
+                                 row["original_facts_status"], row["manifest_status"], row["rebuild_status"],
+                                 row["matching_bytes"], row["relocations"]))
+                f, = (f for f in report["findings"] if f["severity"] == "fail")
+                self.assertEqual(("export_manifest_mismatch", "0x1000", "X.dll!#5", "X.dll!#6"),
+                                 (f["code"], f["rva"], f["original"], f["reported"]))
         self.compiler.assert_not_called()
 
     def test_forged_and_duplicate_manifest(self):
