@@ -93,6 +93,48 @@ class ResourceComparisonTests(unittest.TestCase):
         r=self.run_case([self.row],[self.payload])
         self.assertEqual(r["status"],"inconclusive")
 
+    def test_payload_claim_is_checked_even_without_inventory(self):
+        import verify
+        original = self.root.parent / (self.root.name + ".dll")
+        original.write_bytes(self.data)
+        self.addCleanup(original.unlink)
+        (self.root / "s5/resources.json").write_text(json.dumps({"resources": [
+            {**self.payload, "content_base64": "ZXhhbXBsZT8="}]}))
+        result = verify.item(original, verify.sha(self.data), self.root)
+        self.assertEqual(result["status"], "fail")
+        self.assertIn("resource_payload_mismatch", [f["code"] for c in result["checks"] for f in c["findings"]])
+
+    def test_editable_version_bound_to_original_leaf_and_exact_bytes(self):
+        # Hand-constructed original with a fixed block and one UTF-16 text child.
+        key = "VS_VERSION_INFO\0".encode("utf-16-le")
+        child = struct.pack("<3H", 16, 2, 1) + "A\0".encode("utf-16-le") + bytes(2) + b"x\x00\x00\x00"
+        raw = struct.pack("<3H", 108, 52, 0) + key + bytes(2) + struct.pack("<13I", *range(13)) + child
+        self.assertEqual(108, len(raw))
+        from version_resource import FIXED
+        node = {"key": "VS_VERSION_INFO", "type": 0, "fixed": dict(zip(FIXED,range(13))),
+                "children": [{"key": "A", "type": 1, "text": "x\0"}]}
+        orig = bytearray(self.data)
+        struct.pack_into("<I", orig, 528, 16)
+        struct.pack_into("<I", orig, 588, len(raw))
+        orig[608:608+len(raw)] = raw
+        path = self.root / "version.json"
+        path.write_text(json.dumps(node))
+        report = check(bytes(orig), self.root)
+        self.assertEqual(report["status"], "pass", report)
+        self.assertEqual(report["metrics"]["rebuilt_version_bytes"], len(raw))
+        node["children"][0]["text"] = "y\0"
+        path.write_text(json.dumps(node))
+        report = check(bytes(orig), self.root)
+        self.assertEqual(report["status"], "fail", report)
+        f, = [f for f in report["findings"] if f["code"] == "version_resource_bytes"]
+        self.assertEqual((f["offset"],f["original"],f["rebuilt"]), (104,"78","79"))
+        path.unlink()
+        wrapped = dict(root=node,resource_type=16,id=8,language=1033,code_page=1252)
+        (self.root / "s5-data").mkdir()
+        (self.root / "s5-data/version-resource.json").write_text(json.dumps(wrapped))
+        report = check(bytes(orig), self.root)
+        self.assertIn("version_resource_identity", [f["code"] for f in report["findings"]])
+
 
 if __name__=="__main__":
     unittest.main()

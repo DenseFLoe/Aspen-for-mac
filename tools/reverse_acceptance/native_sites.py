@@ -4,12 +4,13 @@ import bisect
 import csv
 import hashlib
 import re
-from collections import Counter, defaultdict
+from collections import Counter, defaultdict, deque
 from pathlib import Path, PureWindowsPath
 
 
 SCOPE = ("PE x86/x64: verify instruction bytes and single-instruction lengths in submitted "
          "native listings, and compare indirect transfers and static IAT targets with calls.csv. "
+         "Also check listing coverage against a bounded static walk from original PE roots. "
          "Verify declared direct internal edges and distinguish IAT references from control transfers. "
          "Function discovery, all possible instruction boundaries, arbitrary data references, source equivalence "
          "and runtime target sets are outside this check.")
@@ -25,6 +26,7 @@ ALIASES = {"retn": "ret", "retq": "ret", "callq": "call", "jmpq": "jmp", "jz": "
            "jpe": "jp", "jpo": "jnp", "jnge": "jl", "jnl": "jge", "jng": "jle", "jnle": "jg",
            "loopz": "loope", "loopnz": "loopne"}
 DISPLAY_PREFIX = re.compile(r"^(?:(?:rep(?:e|ne|z|nz)?|lock|bnd|notrack|data16|addr32)[.\s]+)*", re.I)
+ORIGINAL_WALK_LIMIT = 200_000
 
 
 def parse_ref(value):
@@ -57,6 +59,168 @@ def csv_rows(root, name, *schemas, numbered=False):
             if None in row or any(value is None for value in row.values()):
                 raise ValueError(f"Incomplete {name} row at line {reader.line_num}")
             yield (reader.line_num, row) if numbered else row
+
+
+def original_reachability(pe, bits, x86, mapped, decode, listed, result):
+    """Compare original-rooted instruction boundaries to the verified delivery listings."""
+    roots, ends = {}, set()
+    stops = {}
+
+    def diagnostic(reason, rva):
+        group = stops.setdefault(reason, {"count": 0, "example_rvas": []})
+        group["count"] += 1
+        if len(group["example_rvas"]) < 12:
+            group["example_rvas"].append(hex(rva))
+
+    entry = pe.OPTIONAL_HEADER.AddressOfEntryPoint
+    if entry:
+        if mapped(entry):
+            roots[entry] = "entry_point"
+        else:
+            diagnostic("unmapped_entry_point", entry)
+    if bits == 64:
+        entries = getattr(pe, "DIRECTORY_ENTRY_EXCEPTION", ())
+        directories = pe.OPTIONAL_HEADER.DATA_DIRECTORY
+        if len(directories) > 3 and directories[3].Size != 12 * len(entries):
+            diagnostic("exception_directory_incomplete", directories[3].VirtualAddress)
+        for item in entries:
+            begin, end = item.struct.BeginAddress, item.struct.EndAddress
+            region = mapped(begin)
+            if region and 0 < end - begin <= region[1]:
+                roots.setdefault(begin, "exception_function")
+                ends.add(end)
+            else:
+                diagnostic("invalid_exception_range", begin)
+    exports = getattr(pe, "DIRECTORY_ENTRY_EXPORT", None)
+    if exports:
+        for symbol in exports.symbols:
+            if symbol.address and not symbol.forwarder and mapped(symbol.address):
+                # An executable section can also contain exported objects. Its export RVA alone
+                # does not certify a function boundary.
+                roots.setdefault(symbol.address, "executable_section_export")
+    elif pe.OPTIONAL_HEADER.DATA_DIRECTORY and pe.OPTIONAL_HEADER.DATA_DIRECTORY[0].VirtualAddress:
+        diagnostic("export_directory_unreadable", pe.OPTIONAL_HEADER.DATA_DIRECTORY[0].VirtualAddress)
+
+    flows = x86.FlowControl
+    indirect = {flows.INDIRECT_BRANCH: "indirect_jump", flows.INDIRECT_CALL: "indirect_call"}
+    direct = {flows.CALL, flows.CONDITIONAL_BRANCH, flows.UNCONDITIONAL_BRANCH}
+    fallthrough = {flows.NEXT, flows.CONDITIONAL_BRANCH, flows.CALL, flows.INDIRECT_CALL}
+    terminal = {flows.RETURN, flows.EXCEPTION, flows.INTERRUPT, flows.INDIRECT_BRANCH, flows.UNCONDITIONAL_BRANCH}
+    near = {x86.OpKind.NEAR_BRANCH16, x86.OpKind.NEAR_BRANCH32, x86.OpKind.NEAR_BRANCH64}
+    base = pe.OPTIONAL_HEADER.ImageBase
+    boundaries = sorted(ends)
+    predecessors = {rva: (rva, None, "root") for rva in sorted(roots)}
+    queue = deque(predecessors)
+    nodes = {}
+    while queue and len(nodes) < ORIGINAL_WALK_LIMIT:
+        rva = queue.popleft()
+        ins = decode(rva)
+        nodes[rva] = (1, (), None)
+        if ins is None or ins.is_invalid:
+            diagnostic("undecodable_instruction", rva)
+            continue
+        following = rva + ins.len
+        end_index = bisect.bisect_right(boundaries, rva)
+        if end_index < len(boundaries) and boundaries[end_index] < following:
+            diagnostic("instruction_crosses_exception_end", rva)
+            continue
+        flow = ins.flow_control
+        neighbours = []
+        if flow in direct:
+            if ins.op0_kind not in near:
+                diagnostic("unsupported_direct_operand", rva)
+                continue
+            neighbours.append((ins.near_branch_target - base, "direct_target"))
+        if flow in fallthrough:
+            # A call continuation is a structural return address, conditional on the call returning.
+            # A PE runtime-function end cannot by itself establish a new function's fallthrough.
+            if following not in ends:
+                edge = "call_continuation" if flow in {flows.CALL, flows.INDIRECT_CALL} else "fallthrough"
+                neighbours.append((following, edge))
+            elif following not in roots:
+                diagnostic("fallthrough_at_exception_end", rva)
+        elif flow not in terminal:
+            diagnostic("unmodeled_control_flow", rva)
+        valid = []
+        for target, edge in neighbours:
+            if not mapped(target):
+                diagnostic("unmapped_" + edge, rva)
+                continue
+            valid.append((target, edge))
+            if target not in predecessors:
+                predecessors[target] = (predecessors[rva][0], rva, edge)
+                queue.append(target)
+        nodes[rva] = (ins.len, valid, indirect.get(flow))
+    capped = bool(queue)
+    if capped:
+        diagnostic("instruction_budget_exhausted", queue[0])
+
+    # Two reachable starts may overlap even if the competing interpretation was found later.
+    # Remove both starts and re-establish reachability, so their descendants need an independent path.
+    conflicts = set()
+    active = []
+    for rva in sorted(nodes):
+        active = [(addr, end) for addr, end in active if end > rva]
+        if active:
+            conflicts.add(rva)
+            conflicts.update(addr for addr, _ in active)
+        active.append((rva, rva + nodes[rva][0]))
+    for site in sorted(conflicts):
+        diagnostic("overlapping_original_boundaries", site)
+    confirmed = {rva: (rva, None, "root") for rva in sorted(roots)
+                 if not capped and roots[rva] != "executable_section_export" and rva not in conflicts}
+    queue = deque(confirmed)
+    while queue:
+        rva = queue.popleft()
+        for target, edge in nodes[rva][1]:
+            if target not in conflicts and target not in confirmed:
+                confirmed[target] = (confirmed[rva][0], rva, edge)
+                queue.append(target)
+
+    records = []
+    confirmed_indirect = 0
+    for site, (_, _, kind) in sorted(nodes.items()):
+        if kind is None:
+            continue
+        certain = site in confirmed
+        confirmed_indirect += int(certain)
+        if site in listed:
+            continue
+        root, prev, edge = (confirmed if certain else predecessors)[site]
+        if certain:
+            basis = "unambiguous_code_root_path"
+        elif capped:
+            basis = "walk_budget_exhausted"
+        elif site in conflicts:
+            basis = "overlapping_instruction_boundary"
+        elif roots[root] == "executable_section_export":
+            basis = "export_root_without_independent_code_path"
+        else:
+            basis = "path_depends_on_overlapping_boundaries"
+        records.append({"site_rva": hex(site), "transfer": kind, "root_rva": hex(root), "root_kind": roots[root],
+                        "predecessor_rva": hex(prev) if prev is not None else None, "edge": edge,
+                        "basis": basis, "status": "fail" if certain else "inconclusive"})
+    for level in ("fail", "inconclusive"):
+        selected = [item for item in records if item["status"] == level]
+        if selected:
+            code = "original_unlisted_transfer" if level == "fail" else "original_candidate_unlisted_transfer"
+            result["findings"].append({"severity": level, "code": code, "site_rva": selected[0]["site_rva"],
+                                       "message": f"{len(selected)} indirect sites lack verified listing instructions. "
+                                                  "Per-site evidence is in original_reachability.unlisted_transfers."})
+    if stops or not any(kind != "executable_section_export" for kind in roots.values()):
+        result["findings"].append({"severity": "inconclusive", "code": "original_walk_limits",
+                                   "message": "Original-root walk has diagnostic stops or no verified code roots. See original_reachability."})
+    result["original_reachability"] = {
+        "basis": "Original file-backed x86/x64 instruction boundaries from PE roots through direct targets and ordinary "
+                 "fallthrough, including potential return from calls. Indirect destinations and runtime execution are unknown. "
+                 "An unlisted failure requires a path from the PE entry or a valid runtime-function entry avoiding "
+                 "overlapping original boundaries. Export-only paths, conflicts and a capped walk are provisional.",
+        "instruction_limit": ORIGINAL_WALK_LIMIT, "examined_starts": len(nodes), "budget_exhausted": capped,
+        "roots_by_kind": dict(Counter(roots.values())), "diagnostics": stops, "unlisted_transfers": records}
+    unlisted = sum(item["status"] == "fail" for item in records)
+    result["metrics"].update(original_reachable_indirect_sites=confirmed_indirect,
+                             original_reachable_unlisted_sites=unlisted,
+                             original_candidate_unlisted_sites=len(records) - unlisted)
 
 
 def provider_exports(provider, pefile, result):
@@ -243,18 +407,25 @@ def _audit(original, root, pe, bits, x86, result, provider):
             target = jump.near_branch_target - base
         return None
 
-    rows = [(line, r) for line, r in csv_rows(root, "calls.csv", {"kind", "caller", "class", "callee", "listing", "note"}, numbered=True)
-            if r["kind"].casefold() == "native"]
+    try:
+        rows = [(line, r) for line, r in csv_rows(root, "calls.csv", {"kind", "caller", "class", "callee", "listing", "note"}, numbered=True)
+                if r["kind"].casefold() == "native"]
+    except (OSError, ValueError, csv.Error) as err:
+        report("fail", "invalid_input", str(err))
+        rows = []
     files = set()
     default = "code/native.asm"
     if safe_path(root, default).is_file():
         files.add(default)
     coverage = safe_path(root, "coverage.csv")
     if coverage.is_file():
-        for row in csv_rows(root, "coverage.csv", {"kind", "listing"}):
-            ref = parse_ref(row["listing"])
-            if row["kind"].casefold() == "native" and ref and ref[0].lower().endswith(".asm"):
-                files.add(ref[0])
+        try:
+            for row in csv_rows(root, "coverage.csv", {"kind", "listing"}):
+                ref = parse_ref(row["listing"])
+                if row["kind"].casefold() == "native" and ref and ref[0].lower().endswith(".asm"):
+                    files.add(ref[0])
+        except (OSError, ValueError, csv.Error) as err:
+            report("fail", "invalid_input", str(err))
     for _, row in rows:
         ref = parse_ref(row["listing"])
         if ref and ref[0].lower().endswith(".asm"):
@@ -265,6 +436,9 @@ def _audit(original, root, pe, bits, x86, result, provider):
     by_file = {}
     for name in sorted(files):
         path = safe_path(root, name)
+        if not path.is_file():
+            report("fail", "missing_listing", "Referenced native listing file is absent.", line=name)
+            continue
         line_numbers, sites = [], []
         owner = None
         with path.open(encoding="utf-8-sig") as stream:
@@ -303,9 +477,9 @@ def _audit(original, root, pe, bits, x86, result, provider):
                 sites.append(rva)
         by_file[name] = (line_numbers, sites, num if line_numbers else 0)
     metrics.update(instruction_sites=len(instructions), native_call_rows=len(rows), listing_files=len(files))
+    original_reachability(pe, bits, x86, mapped, decode, instructions, result)
     if not instructions:
         report("inconclusive", "no_native_listing", "No independently decodable instruction sites available.")
-        return
 
     ordered = sorted(instructions)
     end = 0
