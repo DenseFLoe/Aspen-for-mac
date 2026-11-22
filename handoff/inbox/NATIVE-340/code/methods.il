@@ -1,4 +1,4 @@
-/* NATIVE-340 MethodDef bodies: IL disassembly from IDA CLR loader, native methods point to native.c */
+/* NATIVE-340 MethodDef bodies: IL disassembly (original bytes via IDA CLR loader), native methods point to native.c */
 // MethodDef 0x06000001  std.exception.{ctor}  flavor=IL rva=0x10A0
 .method /* std.exception.{ctor} */ cil managed { 
   IL_0000: ldarg.0  
@@ -1899,13 +1899,13 @@
   IL_0002: ldarg.1  
   IL_0003: ldloc.0  
   IL_0004: calli    T0x11000075
-  IL_0009: leave.s  loc_10BB
+  IL_0009: leave.s  loc_109B
   IL_000B: pop      
   IL_000C: call     native int [mscorlib]System.Runtime.InteropServices.Marshal::GetExceptionPointers()
   IL_0011: call     modopt([mscorlib]System.Runtime.CompilerServices.CallConvCdecl) int32 __FrameUnwindFilter(valuetype _EXCEPTION_POINTERS* A_0)
   IL_0016: endfilter 
   IL_0018: pop      
-  IL_0019: leave.s  loc_10BB
+  IL_0019: leave.s  loc_109B
   IL_001B: ret      
 }
 // MethodDef 0x06000058  ___CxxCallUnwindVecDtor  flavor=IL rva=0x3E90
@@ -2606,13 +2606,9 @@
   IL_001A: ret      
 }
 // MethodDef 0x06000074  DecodePointer  flavor=IL rva=0x0
-.method /* DecodePointer */ cil managed { 
-  IL_0000: .maxstack 8
-}
+.method /* DecodePointer */ declaration only, no RVA (import/runtime implementation)
 // MethodDef 0x06000075  EncodePointer  flavor=IL rva=0x0
-.method /* EncodePointer */ cil managed { 
-  IL_0000: .maxstack 8
-}
+.method /* EncodePointer */ declaration only, no RVA (import/runtime implementation)
 // MethodDef 0x06000076  _initterm_e  flavor=IL rva=0x463C
 .method /* _initterm_e */ cil managed { 
   IL_0000: ldc.i4.0 
@@ -2711,6 +2707,44 @@
   IL_001A: call     instance void* [mscorlib]System.IntPtr::ToPointer()
   IL_001F: ret      
 }
+// MethodDef 0x0600007B  new[]  flavor=native rva=0x480C
+.method /* new[] */ pinvokeimpl native, body in code/native.c at RVA 0x480C
+// MethodDef 0x0600007C  delete[]  flavor=native rva=0x4804
+.method /* delete[] */ pinvokeimpl native, body in code/native.c at RVA 0x4804
+// MethodDef 0x0600007D  MultiByteToWideChar  flavor=native rva=0x486A
+.method /* MultiByteToWideChar */ pinvokeimpl native, body in code/native.c at RVA 0x486A
+// MethodDef 0x0600007E  WideCharToMultiByte  flavor=native rva=0x4864
+.method /* WideCharToMultiByte */ pinvokeimpl native, body in code/native.c at RVA 0x4864
+// MethodDef 0x0600007F  __ExceptionPtrCopy  flavor=native rva=0x485E
+.method /* __ExceptionPtrCopy */ pinvokeimpl native, body in code/native.c at RVA 0x485E
+// MethodDef 0x06000080  __ExceptionPtrDestroy  flavor=native rva=0x4858
+.method /* __ExceptionPtrDestroy */ pinvokeimpl native, body in code/native.c at RVA 0x4858
+// MethodDef 0x06000081  delete[]  flavor=native rva=0x4814
+.method /* delete[] */ pinvokeimpl native, body in code/native.c at RVA 0x4814
+// MethodDef 0x06000082  delete  flavor=native rva=0x2400
+.method /* delete */ pinvokeimpl native, body in code/native.c at RVA 0x2400
+// MethodDef 0x06000083  __std_exception_destroy  flavor=native rva=0x4771
+.method /* __std_exception_destroy */ pinvokeimpl native, body in code/native.c at RVA 0x4771
+// MethodDef 0x06000084  __std_exception_copy  flavor=native rva=0x476B
+.method /* __std_exception_copy */ pinvokeimpl native, body in code/native.c at RVA 0x476B
+// MethodDef 0x06000085  _getFiberPtrId  flavor=native rva=0x3660
+.method /* _getFiberPtrId */ pinvokeimpl native, body in code/native.c at RVA 0x3660
+// MethodDef 0x06000086  _cexit  flavor=native rva=0x47D7
+.method /* _cexit */ pinvokeimpl native, body in code/native.c at RVA 0x47D7
+// MethodDef 0x06000087  Sleep  flavor=native rva=0x4870
+.method /* Sleep */ pinvokeimpl native, body in code/native.c at RVA 0x4870
+// MethodDef 0x06000088  abort  flavor=native rva=0x487C
+.method /* abort */ pinvokeimpl native, body in code/native.c at RVA 0x487C
+// MethodDef 0x06000089  __security_init_cookie  flavor=native rva=0x2474
+.method /* __security_init_cookie */ pinvokeimpl native, body in code/native.c at RVA 0x2474
+// MethodDef 0x0600008A  __FrameUnwindFilter  flavor=native rva=0x4876
+.method /* __FrameUnwindFilter */ pinvokeimpl native, body in code/native.c at RVA 0x4876
+// MethodDef 0x0600008B  __current_exception_context  flavor=native rva=0x478F
+.method /* __current_exception_context */ pinvokeimpl native, body in code/native.c at RVA 0x478F
+// MethodDef 0x0600008C  terminate  flavor=native rva=0x47DD
+.method /* terminate */ pinvokeimpl native, body in code/native.c at RVA 0x47DD
+// MethodDef 0x0600008D  __current_exception  flavor=native rva=0x4789
+.method /* __current_exception */ pinvokeimpl native, body in code/native.c at RVA 0x4789
 // MethodDef 0x0600008E  .ctor  flavor=IL rva=0x1DA4
 .method /* .ctor */ cil managed { 
   IL_0000: ldarg.0  
@@ -3332,41 +3366,3 @@
   IL_0001: call     instance void [mscorlib]System.Attribute::.ctor()
   IL_0006: ret      
 }
-// MethodDef 0x0600007B  new[]  flavor=native rva=0x480C
-.method /* new[] */ pinvokeimpl native, body in code/native.c at RVA 0x480C
-// MethodDef 0x0600007C  delete[]  flavor=native rva=0x4804
-.method /* delete[] */ pinvokeimpl native, body in code/native.c at RVA 0x4804
-// MethodDef 0x0600007D  MultiByteToWideChar  flavor=native rva=0x486A
-.method /* MultiByteToWideChar */ pinvokeimpl native, body in code/native.c at RVA 0x486A
-// MethodDef 0x0600007E  WideCharToMultiByte  flavor=native rva=0x4864
-.method /* WideCharToMultiByte */ pinvokeimpl native, body in code/native.c at RVA 0x4864
-// MethodDef 0x0600007F  __ExceptionPtrCopy  flavor=native rva=0x485E
-.method /* __ExceptionPtrCopy */ pinvokeimpl native, body in code/native.c at RVA 0x485E
-// MethodDef 0x06000080  __ExceptionPtrDestroy  flavor=native rva=0x4858
-.method /* __ExceptionPtrDestroy */ pinvokeimpl native, body in code/native.c at RVA 0x4858
-// MethodDef 0x06000081  delete[]  flavor=native rva=0x4814
-.method /* delete[] */ pinvokeimpl native, body in code/native.c at RVA 0x4814
-// MethodDef 0x06000082  delete  flavor=native rva=0x2400
-.method /* delete */ pinvokeimpl native, body in code/native.c at RVA 0x2400
-// MethodDef 0x06000083  __std_exception_destroy  flavor=native rva=0x4771
-.method /* __std_exception_destroy */ pinvokeimpl native, body in code/native.c at RVA 0x4771
-// MethodDef 0x06000084  __std_exception_copy  flavor=native rva=0x476B
-.method /* __std_exception_copy */ pinvokeimpl native, body in code/native.c at RVA 0x476B
-// MethodDef 0x06000085  _getFiberPtrId  flavor=native rva=0x3660
-.method /* _getFiberPtrId */ pinvokeimpl native, body in code/native.c at RVA 0x3660
-// MethodDef 0x06000086  _cexit  flavor=native rva=0x47D7
-.method /* _cexit */ pinvokeimpl native, body in code/native.c at RVA 0x47D7
-// MethodDef 0x06000087  Sleep  flavor=native rva=0x4870
-.method /* Sleep */ pinvokeimpl native, body in code/native.c at RVA 0x4870
-// MethodDef 0x06000088  abort  flavor=native rva=0x487C
-.method /* abort */ pinvokeimpl native, body in code/native.c at RVA 0x487C
-// MethodDef 0x06000089  __security_init_cookie  flavor=native rva=0x2474
-.method /* __security_init_cookie */ pinvokeimpl native, body in code/native.c at RVA 0x2474
-// MethodDef 0x0600008A  __FrameUnwindFilter  flavor=native rva=0x4876
-.method /* __FrameUnwindFilter */ pinvokeimpl native, body in code/native.c at RVA 0x4876
-// MethodDef 0x0600008B  __current_exception_context  flavor=native rva=0x478F
-.method /* __current_exception_context */ pinvokeimpl native, body in code/native.c at RVA 0x478F
-// MethodDef 0x0600008C  terminate  flavor=native rva=0x47DD
-.method /* terminate */ pinvokeimpl native, body in code/native.c at RVA 0x47DD
-// MethodDef 0x0600008D  __current_exception  flavor=native rva=0x4789
-.method /* __current_exception */ pinvokeimpl native, body in code/native.c at RVA 0x4789

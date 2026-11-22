@@ -1,4 +1,4 @@
-/* NATIVE-340 reconstructed C (Hex-Rays) */
+/* NATIVE-340 reconstructed C (Hex-Rays; native view with CLI COM directory cleared, RVA unchanged) */
 
 /* ---- FUNC 00001DD8 sub_180001DD8 ---- */
 _QWORD *__fastcall sub_180001DD8(_QWORD *a1, char a2)
@@ -1001,9 +1001,6 @@ _BOOL8 sub_1800030E8()
 {
   return dword_180019830 != 0;
 }
-
-/* ---- FUNC 00003660 sub_180003660_manual ---- */
-/* sub_180003660_manual: IDA failed to decompile; raw disassembly in native.asm */
 
 /* ---- FUNC 0000476B __std_exception_copy ---- */
 // attributes: thunk
@@ -2272,4 +2269,12 @@ __int64 sub_180005784()
 __int64 sub_180005794()
 {
   return qword_180019820();
+}
+
+/* ---- FUNC 00003660 sub_180003660_manual ---- */
+/* FUNC 00003660 sub_180003660_manual (14 bytes, hand-decoded; IDA 9.5 did not create a function) */
+void *sub_180003660(void)
+{
+    unsigned char *peb = (unsigned char *)__readgsqword(0x30);  /* mov rax, gs:[30h] */
+    return *(void **)(peb + 8);                                 /* mov rax, [rax+8]; retn -> PEB->ImageBaseAddress */
 }
