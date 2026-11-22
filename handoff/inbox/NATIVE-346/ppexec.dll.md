@@ -39,3 +39,7 @@ Plus-Properties，原路径为 `[ProgramFiles64Folder]/AspenTech/APrSystem V15.0
 本轮逐址处理前一轮留下的 15 处未决。原件的节属性判据排除可写的 0x22148，正常映像因而不进入 0x11c56。0x121c0 的唯一已定位调用路径把 0x11b24 作为第四入参传入，该内部边已有原件证据。主调用表还保留 13 处未决。
 
 从两处分派入口回查 19 个调用方的 R8 来源。常量和若干元素数乘八的路径已定位，动态计数的完整范围仍需追到声明及生产者。另核对原件中三处 XFG/CF 回退槽和 GuardMemcpy 的导入链。26 个数据导出、已有资源、已回编代码的证据继续适用。[逐址裁定](s13/disposition.csv) · [本轮证据](s13/evidence.json) · [复跑命令](s13-submission.md)
+
+## 第十七号复验材料
+
+从固定原件和独立指纹的配套 `atdms.dll` 核实六组动态计数、八个动态调用、11 个固定长度及五个分派位置的条件。`DMS_LENTHM` 的两个 64 位输出和 `DMS_TINFO+0x848` 的 64 元素初始化已定位。计数的全路径和工作区容量仍需外部声明，保留 13 处未决转移。 [参数契约](s17/contracts.md) · [逐址裁定](s17/disposition.csv) · [原件证据](s17/evidence.json) · [复跑命令](s17-submission.md)
