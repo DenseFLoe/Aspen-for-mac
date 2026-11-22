@@ -19,6 +19,10 @@ python -B $tool item --original $original --sha256 $sha --delivery $delivery --p
 
 新环境可用 `python -m pip install -r tools/reverse_acceptance/requirements.txt` 安装 Python 依赖。`--rebuilt` 接受已有 CLR 回编件。`--assembler` 接受 COFF 及原生导出回编使用的受信 Windows Zig 0.13.0。需要核对导入提供方的导出节时，同时传入 `--provider <原版 DLL> --provider-sha256 <清单指纹>`。未提供时，使用方可见的槽读取、跳板和调用证据仍会列出。
 
+在 Windows 上使用嵌入式 Python 时，先用实际执行验收器的解释器运行 `python -B -c "import iced_x86"` 检查依赖。若模块已安装但无法导入，检查该解释器的 `sys.path` 和嵌入式配置。若该配置允许读取 `PYTHONPATH`，可在当前 PowerShell 会话把它指向现有依赖目录。否则使用能导入这些依赖的项目解释器。
+
+若原生导出回编报告 Zig `AccessDenied`、`Permission denied` 或 `FailedToEmit`，检查当前工作盘的写权限。在专用 PowerShell 会话内，将 `TEMP` 和 `TMP` 指向可写的临时目录，将 `LOCALAPPDATA` 指向可写的 Zig 缓存位置，再运行原命令。原生导出回编子进程会继承这三个变量，`ZIG_*CACHE_DIR` 不在其传递列表中。
+
 ## 整件通过的依据
 
 1. **既有整件验收回放。** 验收器保管独立于交付的[受信档案指纹](accepted_archives.json)。两个初始条目均取自项目固定提交，逐件确认了通过说明、可编辑源码与依据。重算原件 SHA-256、全目录文件名和逐文件 SHA-256。全部相符才复用既有结论；交付发生变化时保留逐文件差异，重新判断。原路径或产品不符时也保留待核。回放继承原判定已记载的差异和适用范围。[受信提交](https://github.com/DenseFLoe/Aspen-for-mac/tree/773260c1033e524cebe000699409f5708bebfda0)
