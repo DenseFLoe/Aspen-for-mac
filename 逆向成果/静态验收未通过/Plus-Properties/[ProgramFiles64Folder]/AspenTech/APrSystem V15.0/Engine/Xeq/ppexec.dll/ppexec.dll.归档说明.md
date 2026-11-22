@@ -7,3 +7,7 @@
 本目录公开逐件说明。局部逆向正文仅在本地保存。
 
 原件 SHA-256 为 `d93227b9a8f77c09fc1294834b6a4d87ba03a0697a680039fdce35cb1ce4549a`。[原轮次记录](https://github.com/DenseFLoe/Aspen-for-mac/tree/main/inventories/reverse/20261119-01)
+
+## 2026-11-22 第五轮复验
+
+532 个代码段、跳板和片段经静态重组，共 80,822 字节与原件吻合。其余 629 字节为 NOP 或 INT3，完整代码节共 81,451 字节。唯一版本资源已逐字节重组。仍有 20 个分派位置的索引范围、14 处间接转移和导出变量的类型与边界待核。整件仍为静态验收未通过。[本轮裁定与复跑证据](https://github.com/DenseFLoe/Aspen-for-mac/blob/main/handoff/outbox/NATIVE-346/s5-decision.md)
