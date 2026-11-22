@@ -29,3 +29,7 @@ Plus-Properties，原路径为 `[ProgramFiles64Folder]/AspenTech/APrSystem V15.0
 2. 安装 pefile 2024.8.26、Capstone 5.0.6，执行 python recover.py <原件> <本目录>。code/ppexec.c、反编译索引及相应源码为输入。恢复后的覆盖表、引用、资源和分发表均可复算。
 3. 执行 python rebuild.py <原件> <clang 或 zig 路径>。使用 Zig 0.13.0 可逐条复现 reassembly.json。该步骤仅编译和比较源文件，原件和回编对象均不运行。
 4. 仓库根执行 python handoff/assignments/check-native-coverage.py NATIVE-346。使用固定原件副本时可加 --original <原件>。本轮全体证据指纹见 SHA256SUMS.txt。
+
+## 第九号复验材料
+
+[本轮回执](s9-submission.md) · [分派索引](s9/selector-evidence.md) · [14 个回调与转发位置](s9/callbacks.json) · [全件导出地址引用](s9/data.json) · [PPROY 的外部使用者](s9/cross-check.json)。当前逐址表保留 15 处待定转移及其恢复条件，源代码与第五轮已有资源共同构成候选。

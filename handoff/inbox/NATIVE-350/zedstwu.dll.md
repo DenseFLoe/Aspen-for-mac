@@ -27,3 +27,7 @@ PE 资源树只有 RT_VERSION，ID 1，语言 1033。0x28060 处 800 字节已�
 ## 复跑
 
 在本件目录执行 `python verify.py <zedstwu.dll> <zig>` 编译两份 C，验证入口、数据表、资源和终止调用。使用 Zig 0.13.0、pefile 2024.8.26 和 iced-x86 1.21.0。执行 `python check-references.py <zedstwu.dll> <旧ASM文本> <旧C文本>`，使用 Capstone 5.0.6 从独立解码器核对 14,091 个指令位置、4,583 行提交的原始指令及引用。旧文本从任务卡链接的原目录取得，程序先验证两份指纹。仓库根运行 `python handoff/assignments/check-native-coverage.py NATIVE-350 --original <zedstwu.dll>`，本轮输出 255 行覆盖、255 个原生入口、3,567 行引用、125 项缺口，退出 2。[正式提交回执](s1-submission.md) · [交付指纹](artifacts.sha256)
+
+## 第五号修复
+
+四个业务导出的 13,218 字节已重组核对。消费者从 ppexec 的 PPROY 首字段读双精度数；对应的六字节数据导入桩未见直接调用或跳转。当前 255 个入口中 134 个已核实，121 个待核，另有 44 处未决转移。[逐件提交及复跑入口](s5-submission.md) · [逐导出证据](s5/business-evidence.json)

@@ -34,3 +34,7 @@
 ## 2026-11-22 第一轮修复复验
 
 已从原件核实复制流程的剩余长度、四张静态跳转表、阈值、备用终止路径及可编辑版本资源。恢复的 4,266 字节复制实现、217 个表项和 800 字节版本资源与原件一致。255 个入口中还有 125 个待核，包括四个业务导出，另有 44 处间接转移待查。整件仍为静态验收未通过。[本轮裁定与逐址记录](https://github.com/DenseFLoe/Aspen-for-mac/blob/main/handoff/outbox/NATIVE-350/s1-decision.md)
+
+## 2026-11-22 第五号复验
+
+四个业务导出的 13,218 字节已经从可编辑源码重新生成，与原件一致。当前 255 个入口有 134 个已核实，121 个缺口及 44 处未决转移仍待修复。[逐件复验与恢复条件](https://github.com/DenseFLoe/Aspen-for-mac/blob/main/handoff/outbox/NATIVE-350/s5-decision.md)
