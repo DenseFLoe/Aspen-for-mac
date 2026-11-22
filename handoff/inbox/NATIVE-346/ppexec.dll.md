@@ -1,0 +1,23 @@
+# ppexec.dll 静态修复第一轮
+
+原路径为 Plus-Properties/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/Engine/Xeq/ppexec.dll。固定输入在提交 64670801de54e990f975aaeda06e89340c0e4e08 的 issue-materials/346/ppexec.dll。文件 138,280 字节，版本 41.0.0.605，SHA-256 为 d93227b9a8f77c09fc1294834b6a4d87ba03a0697a680039fdce35cb1ce4549a。本轮结论为整件静态验收未通过。
+
+## 实现与证据
+
+- 100 条 AMD64 运行时函数记录、21 个代码导出和入口去重得 101 个原件锚点。26 个数据导出和 800 字节 RT_VERSION 资源在 pe-surface.json 按名或资源键定位。
+- Ghidra 12.2 与 JDK 25 对原件进行默认 PE 静态分析。在同一项目导出 418 个可执行地址入口、418 份伪 C；decompiler-functions.csv 将各段关联到 code/ghidra-*.c。Capstone 5.0.6 另行从入口跟踪直接分支/调用及已证实的分发表。native-functions.csv 汇合两个分析结果。运行时目录中的一个范围可包含多个代码片段，Ghidra 自身的函数范围和反编译结果仍需逐项验证。
+- code/ppexec.c 恢复全部 21 个代码导出及 19 个非导出实现，code/import_thunks.c 恢复 296 个导入跳板。在 Zig 0.13.0 cc 的 Windows x86-64 GNU 目标重新编译，按原 RVA 绑定 COFF 中的 2,691 处 REL32 系列重定位；逐函数比对的 43,702 字节全部相同。逐个入口的长度、字节指纹和重定位目标见 reassembly.json。正向比对还覆盖 21 个代码导出的全部原函数跨度，导出 APCLOSE 用无栈尾跳的 12 个字节定界。独立负控修改 PHCBIO 的减一和一个导入跳板槽位，两个重建检查分别在 RVA 0x2d12 和 0x11344 检出差异。
+- PPEXEC_INTPP 的原件区间为 [0x65b0, 0x87cc)。0x6b8d、0x6c16、0x6e7d 的三个直接 CALL 各指向 0x114f8，该处字节 ff 25 52 3d 00 00 解出 IAT RVA 0x15250，对应 atdms.dll!DMS_ASGOPN。Ghidra 对应的三次调用见 code/ghidra-01.c 第 3069、3079、3104 行。独立全代码节扫描指向 0x114f8 的 E8/E9 rel32 字段也只命中上述三处。
+- PPEXEC_PHCCIN 在 0x178b 比较索引上界 0xb2，0x1797 得到表基址 0x15dc0，读取有符号 32 位偏移后在 0x17a5 跳转。phccin-switch.csv 列出 179 组键字节及全部 179 个不同 case 入口。code/phcbio-model.c 另给出 PPEXEC_PHCBIO 的高层读写、条件和索引计算。
+- calls.csv 按调用者与指令位置给出 803 条外部转移、1,944 条数据引用和 30 条尚需绑定的间接转移。internal-transfers.csv 列出已识别的直接内部调用/跳转以及有分配表证据的 case 目标。control-gaps.csv 记录各条未决控制流。
+
+## 剩余事项
+
+判定器输出为 checked 418 coverage rows, 418 tool-native entries, 2777 call records, 82 declared gaps，退出码 2。coverage.csv 逐行列明 82 个缺口及对应的 Ghidra 源码。优先从 0x8d40、0x8e10、0x8ea0、0xa6c0 和 0xe040 的间接分派入手，将索引值、表和调用者对应，再补余下运行库入口与共享片段。核验 26 个导出数据对象的类型、大小和初始化，以及必要资源、导入、重定位和展开信息。当前未作 Windows 行为测试。
+
+## 复验
+
+1. 在普通目录启动 Ghidra 12.2 的 analyzeHeadless，以固定原件运行默认分析，使用 -max-cpu 2 -analysisTimeoutPerFile 300 -scriptPath <本目录> -postScript ExportPpexec.java <本目录>。ExportPpexec.java 会先验证所选程序的完整 SHA-256。
+2. 安装 pefile 2024.8.26、Capstone 5.0.6，执行 python recover.py <原件> <本目录>。code/ppexec.c、反编译索引及相应源码为输入。恢复后的覆盖表、引用、资源和分发表均可复算。
+3. 执行 python rebuild.py <原件> <clang 或 zig 路径>。使用 Zig 0.13.0 可逐条复现 reassembly.json。该步骤仅编译和比较源文件，原件和回编对象均不运行。
+4. 仓库根执行 python handoff/assignments/check-native-coverage.py NATIVE-346。使用固定原件副本时可加 --original <原件>。本轮全体证据指纹见 SHA256SUMS.txt。
