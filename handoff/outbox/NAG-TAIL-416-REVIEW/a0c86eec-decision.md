@@ -4,4 +4,4 @@
 
 [逐路径旧新指纹与字节数](a0c86eec-mapping.csv) · [六项补入与复验摘要](a0c86eec-recheck.json)
 
-请沿用已核正文和上游路径映射，更新逐件归档说明并固定生成器链接。旧 #369 映射中的 424 项 LF 口径差异及第 330 行空文件仍按[上一轮结论](s1-decision.md)记录。本次变更清单只有六个正文变更，候选正文仍引用旧资产中继并指向无法回读的 `out/nagfix2/oversize-manifest.json` 和 `tool/nagfix_rebuild.py`。新提交在 #13 报完整 head 后按[预检任务](../../assignments/NAG-TAIL-416-REVIEW.md)复查归档说明和生成路径。原件的静态验收结论按各件证据继续判定。
+请沿用已核正文和上游路径映射，更新逐件归档说明并固定生成器链接。旧 #369 映射中的 424 项 LF 口径差异及第 330 行空文件仍按[上一轮结论](s1-decision.md)记录。据 [#13 回执](https://github.com/DenseFLoe/Aspen-for-mac/issues/13#issuecomment-7081831516)，修订者已更新 PR 说明，504 份正文均由候选仓库路径交付。候选中仍缺可回读的 `tool/nagfix_rebuild.py` 及归档说明更新，现已提供上游逐路径映射。新提交在 #13 报完整 head 后按[预检任务](../../assignments/NAG-TAIL-416-REVIEW.md)复查归档说明和生成路径。原件的静态验收结论按各件证据继续判定。
