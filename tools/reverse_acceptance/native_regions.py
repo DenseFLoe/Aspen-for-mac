@@ -1,5 +1,6 @@
 """Rebuild declared internal AMD64 PE ranges from supported inline assembly deliveries."""
 from collections import Counter
+import csv
 import json
 from pathlib import Path
 import re
@@ -7,9 +8,10 @@ import struct
 import subprocess
 
 if __package__:
-    from . import native_exports as build
+    from . import native_exports as build, native_sites
 else:
     import native_exports as build
+    import native_sites
 
 HOST_MANIFEST = "s13/callee-evidence.json"
 DELTA_MANIFEST = "s13/reassembly-delta.json"
@@ -24,7 +26,7 @@ LABEL = re.compile(r"\.L[A-Za-z0-9_]+")
 INSTRUCTION = re.compile(r"([a-z][a-z0-9]*)(?: [a-zA-Z0-9_., +*\[\]-]+)?")
 HOST_MACRO = re.compile(r"S9_(?:(?:JMP|JA|JBE|JE|JGE|JLE|JNE)32\(\.L[A-Za-z0-9_]+\)|NOP(?:2|4|5|6|7|8|10|11|12|14))")
 REG_PAIR = r"reg_[A-Za-z0-9]+, reg_[A-Za-z0-9]+"
-CHUNK_CALL = re.compile(rf"(?:ikc_(?:mov64|xor8|xor32)_load {REG_PAIR}|ikc_s13_reg 0x[0-9a-f]{{1,2}}, (?:32|64), {REG_PAIR})")
+CHUNK_CALL = re.compile(rf"(?:ikc_(?:add|and|cmp|mov|or|sbb|sub|xor)(?:8|16|32|64)_load {REG_PAIR}|ikc_s13_reg 0x[0-9a-f]{{1,2}}, (?:32|64), {REG_PAIR})")
 
 
 def _rva(value):
@@ -33,12 +35,28 @@ def _rva(value):
     return int(value, 16)
 
 
+def _legacy_instruction(statement, x86):
+    prefix, sep, rest = statement.partition(r"\n")
+    if sep:
+        if prefix == ".byte 0x40 # original redundant REX prefix" and re.fullmatch(r"push (?:rbp|rbx|rdi|rsi)", rest.strip()):
+            return True
+        return (prefix == ".byte 0x48 # original REX.W on near transfer"
+                and bool(re.fullmatch(r"jmp qword ptr \[rip \+ rva_[0-9a-f]+\]", rest.strip())))
+    nop = re.fullmatch(r"\.byte (0x[0-9a-f]{1,2}(?:,0x[0-9a-f]{1,2}){0,14}) # alignment NOP", statement)
+    if nop:
+        data = bytes(int(byte, 16) for byte in nop[1].split(","))
+        ins = x86.Decoder(64, data).decode()
+        return ins.mnemonic == x86.Mnemonic.NOP and ins.len == len(data)
+    return bool(statement in (".byte 0x0f, 0x85", "mov rax, qword ptr gs:[0x30]") or re.fullmatch(r"\.long \.L_[0-9a-f]+_[0-9a-f]+ - \. - 4", statement)
+                or re.fullmatch(r"rep stosb byte ptr \[rdi\], al|lock cmpxchg qword ptr \[rip \+ rva_[0-9a-f]+\], rcx", statement))
+
+
 def _block(body, x86, chunk=False):
     """Re-emit single assembly statements, excluding comments and other source text."""
     lines = []
     for raw in body.splitlines():
         line = COMMENT.sub("", raw.strip())
-        if not line:
+        if not line or (chunk and line == "/* Original JNE rel32; normal relaxation would choose rel8. */"):
             continue
         if not chunk and HOST_MACRO.fullmatch(line):
             lines.append(line)
@@ -48,7 +66,7 @@ def _block(body, x86, chunk=False):
         statement = line[1:-3].strip()
         op = INSTRUCTION.fullmatch(statement)
         if (not (LABEL.fullmatch(statement.removesuffix(":")) and statement.endswith(":"))
-                and not (chunk and CHUNK_CALL.fullmatch(statement))
+                and not (chunk and (CHUNK_CALL.fullmatch(statement) or _legacy_instruction(statement, x86)))
                 and not (op and op[1] not in {"db", "dw", "dd", "dq"}
                          and (op[1] == "movabs" or hasattr(x86.Mnemonic, op[1].upper())))):
             raise ValueError("Unsupported inline assembly statement: " + statement[:100])
@@ -84,25 +102,33 @@ def _chunk_sources(root):
     if (build._digest(prelude.encode("ascii")) != CHUNK_PRELUDE or not includes or len(includes) > 64
             or len(set(includes)) != len(includes) or INCLUDE.sub("", sep + tail).strip()):
         raise ValueError("Unsupported verified.c macro prelude or include list")
-    return prelude, {
-        name: build._read(root, f"code/{name}", 4 << 20).decode("ascii").replace("\r\n", "\n")
-        for name in includes}
+    wrapper = re.compile(
+        r"/\* body (0x[0-9a-f]+) until (0x[0-9a-f]+) \*/\nBODY void (ikc_[0-9a-f]+)\(void\) \{\n"
+        r"[ \t]*__asm__\(INTEL\n(?P<body>.*?)^[ \t]*END\);\n\}", re.DOTALL | re.MULTILINE)
+    bodies = {}
+    for file in includes:
+        text = build._read(root, f"code/{file}", 4 << 20).decode("ascii").replace("\r\n", "\n")
+        macro, boundary, _ = text.partition("/* body ")
+        if not boundary or (macro and build._digest(macro.encode("ascii")) != CHUNK_MACRO):
+            raise ValueError("Unsupported chunk macro prelude")
+        pos = len(macro)
+        for match in wrapper.finditer(text, pos):
+            if text[pos:match.start()].strip() or match[3] in bodies:
+                raise ValueError("Unexpected code or duplicate function in editable chunk")
+            bodies[match[3]] = (file, macro, match)
+            pos = match.end()
+        if text[pos:].strip():
+            raise ValueError("Unsupported trailing code in editable chunk")
+    return prelude, bodies
 
 
 def _chunk_source(chunks, name, entry, end, x86):
-    prelude, includes = chunks
-    wrapper = re.compile(
-        rf"/\* body (0x[0-9a-f]+) until (0x[0-9a-f]+) \*/\nBODY void {re.escape(name)}\(void\) \{{\n"
-        r"[ \t]*__asm__\(INTEL\n(?P<body>.*?)^[ \t]*END\);\n\}", re.DOTALL | re.MULTILINE)
-    found = [(file, text, match) for file, text in includes.items() for match in wrapper.finditer(text)]
-    if len(found) != 1:
+    prelude, bodies = chunks
+    if name not in bodies:
         raise ValueError("Expected one editable chunk body at the submitted RVA")
-    file, text, match = found[0]
+    file, macro, match = bodies[name]
     if (_rva(match[1]), _rva(match[2])) != (entry, end):
         raise ValueError("Chunk body comment disagrees with the original PE extent")
-    macro = text.partition("/* body ")[0]
-    if build._digest(macro.encode("ascii")) != CHUNK_MACRO:
-        raise ValueError("Unsupported chunk macro prelude")
     body = _block(match["body"], x86, chunk=True)
     source = f"{prelude}{macro}BODY void {name}(void) {{\n__asm__(INTEL\n{body}\nEND);\n}}\n"
     return f"code/{file}", match[0].encode("ascii"), source.encode("ascii"), None
@@ -121,11 +147,130 @@ def _claims(doc, delta):
     return [(f"ikc_{entry:x}", match, entry) for entry, match in entries]
 
 
+def _host_references(root, pe, instructions, claim, x86):
+    """Resolve original operands, then require exact submitted owner/site/target records."""
+    slots = build._import_slots(pe)
+    entry = instructions[0].ip
+    expected = {}
+    imports = Counter()
+    regions = Counter()
+    for ins in instructions:
+        if ins.is_ip_rel_memory_operand:
+            target = ins.ip_rel_memory_address
+            section = pe.get_section_by_rva(target)
+            if section is None or ins.segment_prefix in (x86.Register.FS, x86.Register.GS):
+                raise ValueError(f"Unverified RIP-relative target at {ins.ip:#x}")
+            identity = slots.get(target)
+            region = identity.partition("!")[0] + " (IAT)" if identity else section.Name.rstrip(b"\0").decode("ascii")
+            regions[region] += 1
+            expected[ins.ip, "data"] = identity or hex(target)
+        if (ins.flow_control in (x86.FlowControl.CALL, x86.FlowControl.UNCONDITIONAL_BRANCH)
+                and ins.op0_kind == x86.OpKind.NEAR_BRANCH64):
+            call = build._call_operand(pe, ins, slots, x86)
+            if call["external"]:
+                identity = call["external"]["import"]
+                imports[identity.partition("!")[0]] += 1
+                expected[ins.ip, "external"] = identity
+    reported = {}
+    for record in native_sites.csv_rows(root, "calls.csv", {"caller", "class", "callee", "note"}):
+        if _rva(record["caller"]) != entry or record["class"] not in ("external", "data"):
+            continue
+        site = re.match(r"RVA (0x[0-9a-f]+);", record["note"])
+        if site is None:
+            raise ValueError("Missing host reference site in calls.csv")
+        key = (_rva(site[1]), record["class"])
+        if key in reported:
+            raise ValueError(f"Duplicate host reference at {key[0]:#x}")
+        reported[key] = record["callee"]
+    facts = dict(external_import_call_sites=sum(imports.values()), import_calls_by_dll=dict(imports),
+                 rip_relative_data_sites=sum(regions.values()), rip_relative_target_regions=dict(regions))
+    differences = list(_fields(claim, facts))
+    for key in sorted(expected.keys() | reported.keys()):
+        if expected.get(key) != reported.get(key):
+            differences.append(dict(field=key[1], rva=hex(key[0]), original=expected.get(key), reported=reported.get(key)))
+    facts["reference_sites"] = [{"site": hex(site), "class": cls, "callee": target}
+                               for (site, cls), target in sorted(expected.items())]
+    return facts, differences
+
+
 def _fields(claim, expected):
     for key, value in expected.items():
         given = claim.get(key)
         if type(given) is not type(value) or given != value:
             yield {"field": key, "original": value, "reported": given}
+
+
+def _cumulative(root, pe, x86, chunks, compiler, metrics, loader_patches, delta_doc, delta_rows):
+    """Replay the historical range manifests. Submitted extents define byte slices only."""
+    paths = ("reassembly.json", "s5/reassembly-delta.json", "s9/reassembly-delta.json", DELTA_MANIFEST)
+    result = {"status": "inconclusive", "scope": "Rebuilt claimed code ranges in file-backed executable sections",
+              "matching_ranges": 0, "matching_bytes": 0, "relocations": 0, "ranges": [], "findings": []}
+    metrics["cumulative_rebuild"] = result
+    occupied = []
+    delta = {int(row["entry"], 16): row for row in delta_rows}
+    for path in paths:
+        doc = (delta_doc if path == DELTA_MANIFEST else
+               json.loads(build._read(root, path, 8 << 20), object_pairs_hook=build._unique_keys))
+        if doc["original_sha256"] != metrics["original_sha256"]:
+            raise ValueError(f"Different original in {path}")
+        matches = _claims(doc, True)
+        if not 1 <= len(matches) <= 512:
+            raise ValueError(f"Invalid number of ranges in {path}")
+        size = fixes = successful = 0
+        for name, claim, entry in matches:
+            length = claim["bytes"]
+            if type(length) is not int or not 1 <= length <= 1 << 20:
+                raise ValueError(f"Invalid range length for {name}")
+            end = entry + length
+            if any(entry < hi and lo < end for lo, hi in occupied):
+                raise ValueError(f"Overlapping cumulative range at {entry:#x}")
+            occupied.append((entry, end))
+            if path == DELTA_MANIFEST:
+                row = delta.get(entry, {})
+                if row.get("status") != "pass":
+                    result["findings"].append({"entry": hex(entry), "reason": "Current delta range unverified"})
+                    continue
+                count = row["relocations"]
+                file, compiled = row["source"], row["compiled_input_sha256"]
+            else:
+                try:
+                    section = pe.get_section_by_rva(entry)
+                    if (section is None or not section.Characteristics & 0x20000000
+                            or end > section.VirtualAddress + min(section.SizeOfRawData, section.Misc_VirtualSize)
+                            or any(entry - 7 <= patch < end for patch in loader_patches)):
+                        raise ValueError("Range not wholly within comparable original executable bytes")
+                    raw = pe.get_data(entry, length)
+                    if len(raw) != length:
+                        raise ValueError("Truncated original range")
+                    file, _, source, header = _chunk_source(chunks, name, entry, end, x86)
+                    rebuilt, rels = build._build(compiler, source, header, name, build.QUALIFIED_RVA_SYMBOL)
+                    mismatch = build._compare(raw, rebuilt, rels, entry, x86)
+                    actual = [[hex(entry + pos), hex(int(label.rsplit("rva_", 1)[1], 16)), kind]
+                              for pos, label, kind in sorted(rels)]
+                    differences = list(_fields(claim, {"sha256": build._digest(raw), "relocations": actual}))
+                    if mismatch or differences:
+                        result["status"] = "fail"
+                        result["findings"].append(dict(entry=hex(entry), listing=path, reason=mismatch or differences[0]))
+                        continue
+                    count, compiled = len(rels), build._digest(source)
+                except (ValueError, OSError, RuntimeError, struct.error, csv.Error, subprocess.TimeoutExpired) as exc:
+                    result["findings"].append(dict(entry=hex(entry), listing=path, reason=str(exc)))
+                    continue
+            result["ranges"].append(dict(entry=hex(entry), exclusive_end=hex(end), listing=path, source=file,
+                                         original_text_sha256=claim["sha256"], compiled_input_sha256=compiled,
+                                         matching_bytes=length, relocations=count))
+            size += length
+            fixes += count
+            successful += 1
+        if successful == len(matches):
+            for diff in _fields(doc, dict(bodies=successful, bytes=size, relocations=fixes)):
+                result["status"] = "fail"
+                result["findings"].append(dict(listing=path, reason=diff))
+        result["matching_ranges"] += successful
+        result["matching_bytes"] += size
+        result["relocations"] += fixes
+    if not result["findings"]:
+        result["status"] = "pass"
 
 
 def check(original: bytes, delivery: Path, assembler: Path | None) -> dict:
@@ -171,7 +316,7 @@ def check(original: bytes, delivery: Path, assembler: Path | None) -> dict:
         pe = pefile.PE(data=original, fast_load=True)
         if (pe.FILE_HEADER.Machine, pe.OPTIONAL_HEADER.Magic) != (0x8664, 0x20b):
             raise ValueError("Requires AMD64 PE32+")
-        pe.parse_data_directories(directories=[3, 5])
+        pe.parse_data_directories(directories=[1, 3, 5, 13])
         unwind = [(u.struct.BeginAddress, u.struct.EndAddress)
                   for u in getattr(pe, "DIRECTORY_ENTRY_EXCEPTION", ())]
         dirs = pe.OPTIONAL_HEADER.DATA_DIRECTORY
@@ -260,11 +405,19 @@ def check(original: bytes, delivery: Path, assembler: Path | None) -> dict:
             production = (dict(relocations=actual_relocs) if delta else
                           dict(source_sha256=row["source_sha256"], rebuilt_text_sha256=original_hash,
                                matching_bytes=len(raw), rel32=len(rels)))
+            if not delta and ((root / "calls.csv").is_file() or "external_import_call_sites" in claim
+                              or "rip_relative_data_sites" in claim):
+                facts, differences = _host_references(root, pe, instructions, claim, x86)
+                for difference in differences:
+                    issue("fail", "region_host_reference", "Original host reference evidence differs",
+                          **difference, **location)
+                if not differences:
+                    row.update(facts)
             for difference in _fields(claim, production):
                 issue("fail", "region_manifest_fact", "Declared rebuild evidence differs", **difference, **location)
         except FileNotFoundError as exc:
             issue("fail", "region_source_missing", str(exc), **location)
-        except (ValueError, OSError, RuntimeError, struct.error, subprocess.TimeoutExpired) as exc:
+        except (ValueError, OSError, RuntimeError, struct.error, csv.Error, subprocess.TimeoutExpired) as exc:
             issue("inconclusive", "region_unverified", str(exc), rva=hex(entry), **location)
         finally:
             levels = {finding["severity"] for finding in findings[begin:]}
@@ -282,6 +435,14 @@ def check(original: bytes, delivery: Path, assembler: Path | None) -> dict:
             for difference in _fields(manifests[path], expected):
                 issue("fail", "region_manifest_total", "Declared total differs from verified ranges",
                       listing=path, **difference)
+    if DELTA_MANIFEST in manifests and (root / "reassembly.json").is_file() and compiler and chunks:
+        try:
+            _cumulative(root, pe, x86, chunks, compiler, metrics, loader_patches,
+                        manifests[DELTA_MANIFEST], grouped[DELTA_MANIFEST])
+            if metrics["cumulative_rebuild"]["status"] != "pass":
+                issue(metrics["cumulative_rebuild"]["status"], "region_cumulative_unverified", "See cumulative range findings")
+        except (ValueError, OSError, KeyError, TypeError, RuntimeError) as exc:
+            issue("inconclusive", "region_cumulative_unverified", str(exc))
     if any(f["severity"] == "fail" for f in findings):
         result["status"] = "fail"
     elif not findings and all(r["status"] == "pass" for r in metrics["regions"]):

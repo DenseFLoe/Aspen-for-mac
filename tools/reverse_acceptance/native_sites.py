@@ -779,3 +779,10 @@ def _audit(original, root, pe, bits, x86, result, provider):
             from import_routes import audit as audit_import_routes
         result["import_routes"] = audit_import_routes(root, pe, bits, x86, decode, slot_of, iat if complete_imports else {},
                                                      owners, proven_starts, by_file, route_rows, report)
+    if __package__:
+        from .historical_listing import compare as compare_historical_listing
+    else:
+        from historical_listing import compare as compare_historical_listing
+    historical = compare_historical_listing(original, pe, x86, decode, instructions, report)
+    if historical is not None:
+        result["historical_listing"] = historical

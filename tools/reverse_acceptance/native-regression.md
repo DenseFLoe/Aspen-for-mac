@@ -126,3 +126,17 @@ FindComponent S13 另作兼容复验，原 99 个 CALL 均保持未决。S17 的
 | 只把 `0x1389` 的旧引用从 L237 改成 L241 | 与原样逐条相同。 | 错位降到 96 条，另外 2 条保持。该址具体目标仍未决。 |
 
 三个副本的整件 `item` 均退出 1。旧表目标专项保持 109 个 CALL 和 3 个 JMP 未决。另用五件固定试点跑 `project`，S17 的专项报告逐项等于单件结果。
+
+## 验收器 1.5 与五件旧裁定对照
+
+先记录此前裁定的 22 个事实，再以同一原件及固定候选逐件运行验收器。1.3 对上 11 项，1.4 对上 14 项，1.5 对上 22 项。五件用 `project` 复跑，专项与各件 `item` 一致，整件均未通过。
+
+| 样本 | 1.5 补上的旧裁定内容 |
+| --- | --- |
+| zedstwu S13 | 分别认证两个内部函数中的 16 和 15 处导入调用、219 和 113 处 RIP 相对数据引用，合计 31 和 332。 |
+| Ikc2Bkp S13 | 从源码独立重编截至 S13 的 189 个不重叠区间，匹配 145,522 字节和 5,353 处重定位。前述 S13 两段计入一次。 |
+| WrapSaveMergeNNFiles S13 | 从原件复验旧清单的 126 个 CLR 跳转，其中 122 个同时缺汇编与主表记录。21 条已证 `newobj` 缺主表登记。`0x3660` 的原件先从 `GS:[0x30]` 取值，提交的 C 直接用 `Self + 8`。整件由待核转为未通过。 |
+| FindComponent S17 | 复验旧清单 5,082 条指令。现清单缺 36 个旧地址，其中 9 条为其他指令，27 条为 NOP 或 INT3。 |
+| ppexec S13 | `0x11c56` 的指定路径因 `0x122f4` 的权限测试拒绝可写槽 `0x22148`。单一已证调用方 `0x14e06` 向 `0x121c0` 所在例程传入 `0x11b24`。 |
+
+逐条重读原件字节和操作数，另用 Capstone 对照相关指令，用 LIEF 独立复跑 Ikc2Bkp 的完整 COFF 对象。三个源材料错绑对照仍全部命中，包括 zedstwu `0x1074` 重定位字段、WrapSaveMergeNNFiles `0x19018` 槽、FindComponent `0x106c` 导入序号。[FindComponent 旧指令清单](https://github.com/DenseFLoe/Aspen-for-mac/blob/a180dcfd1b6bd39072a4a03b94b908408e6da426/handoff/inbox/NATIVE-337/code/native.asm) · [WrapSaveMergeNNFiles 旧跳转清单](https://github.com/DenseFLoe/Aspen-for-mac/blob/d9c836dad07901f72448844ec2be7f363757e372/handoff/outbox/NATIVE-340/s5-native-fixup-targets.csv) · [ppexec 路径裁定](https://github.com/DenseFLoe/Aspen-for-mac/blob/d9c836dad07901f72448844ec2be7f363757e372/handoff/outbox/NATIVE-346/s13-decision.md)
