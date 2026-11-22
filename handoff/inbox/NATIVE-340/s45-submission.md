@@ -40,7 +40,12 @@ FAILED ITEMS: [slot_skipped]
 ## 4. EH 读器扩展（ECMA-335）
 
 - small（12B：`u2 flags/u2 tryOff/u1 tryLen/u2 handlerOff/u1 handlerLen/u4 classToken`）与 fat（24B）两种布局，按 kind 的 0x40 位选择；
-- `MoreSects`(0x80) 可串联多个数据节，逐段读取（测了 fat|0x80+small、small|0x80+fat 两种配对）；
+- **口径更正**：两处 MoreSects 位分属不同结构——方法头 flags 的 `CorILMethod_MoreSects = 0x8`（本方法是否有数据节），
+  数据节 kind 字节的 `COR_ILMETHOD_SECT MoreSects = 0x80`（是否还有下一节），`0x40 = FatFormat`。
+  代码按此实现（`CORILMETHOD_MORESECTS=0x8` / `SECT_MORESECTS=0x80` / `SECT_FATFORMAT=0x40`）；
+  s45 消息里「MoreSects(0x80)」的说法把节 kind 位当成了头标志，属措辞错误，位值本身在代码里用对了。
+  数据节可串联多个，逐段读取（测了 fat\|0x80+small、small\|0x80+fat 两种配对，并新增两条判别测试：
+  头 flags 置 0x80 而不置 0x8 时必须读不到数据节；首节 kind 无 0x80 时链条必须止于该节）；
 - 校验 try/handler 范围必须落在 IL 内（越界拒绝）；
 - 遇到支持范围外的节类型，抛 `UnsupportedSection`，报文给出**具体 RVA / kind / size**，该件停止判定（不硬读）。
 

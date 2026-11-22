@@ -30,6 +30,17 @@ class UnsupportedSection(ValueError):
                          "supported kinds: 0x01 EHTable, 0x02 OptIL" % (kind, rva, size))
 
 
+# ECMA-335 II.25.4.1 CorILMethod flags (method header, 16-bit word):
+#   CorILMethod_TinyFormat 0x2, CorILMethod_FatFormat 0x3,
+#   CorILMethod_MoreSects 0x8, CorILMethod_InitLocals 0x10.
+CORILMETHOD_MORESECTS = 0x8
+# ECMA-335 II.25.4.5 COR_ILMETHOD_SECT (per data-section kind byte):
+#   bits 0..5 Kind (0x01 EHTable), bit 0x40 FatFormat, bit 0x80 MoreSects.
+SECT_FATFORMAT = 0x40
+SECT_MORESECTS = 0x80
+SECT_KIND_MASK = 0x3F
+
+
 def section_of(pe, rva):
     """RVA -> section; a section spans max(SizeOfRawData, VirtualSize)."""
     for s in pe.secs:
@@ -61,12 +72,12 @@ def header(data, pe, rva):
         raise ValueError("IL body of RVA %#x leaves section %s" % (rva, sec["name"]))
     return dict(rva=rva, kind="fat", header_size=header_size, code_size=code_size,
                 flags=flags, maxstack=maxstack, local_var=local_var,
-                more_sections=bool(flags & 0x8),
+                more_sections=bool(flags & CORILMETHOD_MORESECTS),
                 il=data[p + header_size:p + header_size + code_size])
 
 
 def _clauses(data, p, kind, size):
-    fat = bool(kind & 0x40)
+    fat = bool(kind & SECT_FATFORMAT)
     entry = 24 if fat else 12
     if size < 4 or (size - 4) % entry:
         raise ValueError("data section size %d does not fit %d-byte clauses" % (size, entry))
@@ -83,7 +94,12 @@ def _clauses(data, p, kind, size):
 
 
 def data_sections(data, pe, hdr):
-    """Read every chained data section.  MoreSects (0x80) says another follows."""
+    """Read every chained data section.
+
+    Two different bits control this, and they live in different structures:
+      * method header flags  CorILMethod_MoreSects = 0x8  -> data sections exist;
+      * each section's kind byte  COR_ILMETHOD_SECT MoreSects = 0x80 -> another follows.
+    """
     if not hdr["more_sections"]:
         return []
     rva = (hdr["rva"] + hdr["header_size"] + hdr["code_size"] + 3) & ~3
@@ -95,11 +111,11 @@ def data_sections(data, pe, hdr):
         p = pe.filepos(rva)
         kind = data[p]
         size = data[p + 1] | (data[p + 2] << 8) | (data[p + 3] << 16)
-        base = kind & 0x3F
+        base = kind & SECT_KIND_MASK
         if base not in SUPPORTED:
             raise UnsupportedSection(rva, kind, size)
-        rec = dict(rva=rva, kind=kind, fat=bool(kind & 0x40), size=size,
-                   more=bool(kind & 0x80), base=base)
+        rec = dict(rva=rva, kind=kind, fat=bool(kind & SECT_FATFORMAT), size=size,
+                   more=bool(kind & SECT_MORESECTS), base=base)
         if base == EHTABLE:
             rec["fat"], rec["clauses"] = _clauses(data, p, kind, size)
             for c in rec["clauses"]:
@@ -134,14 +150,15 @@ class _FakePE:
         raise ValueError("RVA %#x outside" % rva)
 
 
-def _synthetic(kind1, kind2=None, clause=None, try_len=4, handler_off=3, handler_len=1):
+def _synthetic(kind1, kind2=None, clause=None, try_len=4, handler_off=3, handler_len=1,
+               hdr_flags=None):
     data = bytearray(0x4000)
     sec = dict(rva=0x1000, size=0x1000, raw=0x1000, vsize=0x1000, hdr=0x80, exec=True, name=".text")
     struct.pack_into("<I", data, 0x80 + 36, 0x60000020)
     pe = _FakePE(data, [sec])
     body = 0x1000
     code = bytes([0x00, 0x2A, 0x00, 0x00])
-    flags = 0x0B if kind1 else 0x03
+    flags = hdr_flags if hdr_flags is not None else (0x0B if kind1 else 0x03)
     struct.pack_into("<H", data, body, (3 << 12) | flags)
     struct.pack_into("<H", data, body + 2, 8)
     struct.pack_into("<I", data, body + 4, len(code))
@@ -178,6 +195,16 @@ def synthetic_tests():
     data, pe = _synthetic(0x00)
     h, eh, cl = read(data, pe, 0x1000)
     out.append(("MoreSects clear -> no data section", eh is None and not cl and h["more_sections"] is False))
+    # header bit must be 0x8, not 0x80: flags=0x83 has 0x80 set and 0x8 clear
+    data, pe = _synthetic(0x41, hdr_flags=0x83)
+    h, eh, cl = read(data, pe, 0x1000)
+    out.append(("header uses CorILMethod_MoreSects 0x8, not 0x80",
+                h["more_sections"] is False and eh is None and not cl))
+    # chaining must come from the section kind byte 0x80, not from the header alone
+    data, pe = _synthetic(0x41, 0x01)                 # first kind 0x41 has no 0x80
+    h, eh, cl = read(data, pe, 0x1000)
+    secs = data_sections(data, pe, h)
+    out.append(("section chain stops when kind lacks 0x80", len(secs) == 1 and secs[0]["more"] is False))
     data, pe = _synthetic(0x41, try_len=0x40)
     try:
         read(data, pe, 0x1000)

@@ -156,7 +156,9 @@ def main():
           "- `页保护` = 运行期 `PAGE_*`（VirtualProtect/VirtualQuery），文件里没有编码；"
           "本条只对文件属性与静态分支下结论，不对运行期页保护下结论。", "",
           "## 3. EH 读器扩展（ECMA-335）", "",
-          "- small（12B `u2/u2/u1/u2/u1/u4`）与 fat（24B）两种子句布局；more(0x80) 位可串联多个数据节，逐个读取；",
+          "- small（12B `u2/u2/u1/u2/u1/u4`）与 fat（24B）两种子句布局；两处 MoreSects 位分属不同结构——"
+          "方法头 flags 的 CorILMethod_MoreSects=**0x8**（是否有数据节），数据节 kind 字节的 COR_ILMETHOD_SECT "
+          "MoreSects=**0x80**（是否还有下一节），0x40=FatFormat；逐个读取已声明的节；",
           "- 校验 try/handler 范围必须落在 IL 内，越界拒绝；",
           "- 遇到支持范围外的节类型，抛 `UnsupportedSection` 并报出具体 RVA/kind/size，该件停止判定。", "",
           "合成测试 9 项 + 真件 5 项 + 注入断言 10 项，共 %d 条控制：%s"
