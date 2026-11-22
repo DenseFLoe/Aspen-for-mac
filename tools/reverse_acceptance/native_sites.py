@@ -72,7 +72,8 @@ def complete_exception_entries(pe):
     return entries
 
 
-def original_reachability(pe, bits, x86, mapped, decode, listed, result, *, handler_edges=None, paths=None):
+def original_reachability(pe, bits, x86, mapped, decode, listed, result, *, handler_edges=None, paths=None,
+                          original=None):
     """Compare original-rooted instruction boundaries to the verified delivery listings."""
     roots, ends = {}, set()
     stops = {}
@@ -219,6 +220,12 @@ def original_reachability(pe, bits, x86, mapped, decode, listed, result, *, hand
             paths[site] = (root, roots[root], previous, edge)
     if result is None:
         return proven
+    if bits == 64 and original is not None:
+        if __package__:
+            from .bounded_switches import audit as audit_switches
+        else:
+            from bounded_switches import audit as audit_switches
+        result["bounded_switch_paths"] = audit_switches(original, pe, x86, decode, nodes, proven, excluded, ends, listed)
 
     records = []
     confirmed_indirect = 0
@@ -522,7 +529,7 @@ def _audit(original, root, pe, bits, x86, result, provider, historical_listing):
         by_file[name] = (line_numbers, sites, num if line_numbers else 0)
     metrics.update(instruction_sites=len(instructions), native_call_rows=len(rows), listing_files=len(files))
     paths = {} if historical_listing is not None else None
-    proven_lengths = original_reachability(pe, bits, x86, mapped, decode, instructions, result, paths=paths)
+    proven_lengths = original_reachability(pe, bits, x86, mapped, decode, instructions, result, paths=paths, original=original)
     proven_starts = proven_lengths.keys()
     if not instructions:
         report("inconclusive", "no_native_listing", "No independently decodable instruction sites available.")
@@ -812,7 +819,8 @@ def _audit(original, root, pe, bits, x86, result, provider, historical_listing):
             from .native_targets import audit
         else:
             from native_targets import audit
-        audit(root, original, pe, bits, x86, instructions, owners, main_rows, report, result, proven_starts, by_file)
+        audit(root, original, pe, bits, x86, instructions, owners, main_rows, report, result, proven_starts, by_file,
+              missing_sites=missing)
     except (ImportError, OSError) as err:
         report("inconclusive", "target_audit_unavailable", str(err))
     except (ValueError, csv.Error) as err:

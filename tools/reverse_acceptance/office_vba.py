@@ -7,11 +7,16 @@ import zipfile
 from collections import Counter
 from pathlib import Path
 from xml.etree import ElementTree
+import struct
+
+if __package__:
+    from . import office_forms
+else:
+    import office_forms
 
 
-SCOPE = ("Excel host's one declared VBA project: bidirectional comparison of .bas/.cls/.frm "
-         "source text, including Attribute records and blank lines. Does not check p-code, "
-         "XLM, workbook formulas, references, UserForm design, ActiveX, host behaviour or embedded objects.")
+SCOPE = ("Declared Excel VBA module source and, for manifest-backed exported UserForms, "
+         "designer frame, resource extent and logical stream/class tree; excludes workbook, p-code and runtime.")
 EXT = {".bas", ".cls", ".frm", ".vba"}
 DIRECTORIES = {"vba", "vba-src"}
 CFB = bytes.fromhex("d0cf11e0a1b11ae1")
@@ -54,7 +59,7 @@ def _compound(data):
         return z.read(path), "OOXML", sum(n.startswith("xl/macrosheets/") and n.endswith(".xml") for n in names)
 
 
-def _original(data):
+def _original(data, forms=None):
     compound, host, xlm = _compound(data)
     import olefile
     from oletools.olevba import VBA_Project
@@ -95,6 +100,17 @@ def _original(data):
             m.code_raw.decode(project.codec,errors="strict")
             modules[key]=bytes(m.code_raw)
             streams.add(stream)
+            if forms is not None and key.endswith(".frm"):
+                # PROJECT binds BaseClass to this module; dir independently binds its source stream.
+                declarations = ole.openstream(base+"PROJECT").read().decode(project.codec).splitlines()
+                form_decl = "BaseClass=" + m.name
+                prefix = (*parts, m.name)
+                if declarations.count(form_decl) == 1 and ole.exists(list(prefix)):
+                    try:
+                        form_tree = office_forms.tree(ole, prefix)
+                        forms[key] = (m.name, tuple(m.code_path.split("/")), m.textoffset, prefix, *form_tree)
+                    except (office_forms.FormIssue, OSError, ValueError):
+                        pass
         if {m.name.casefold() for m in project.modules}!={n.casefold() for n in project.module_ext}:
             raise Unverified("project_and_dir_module_sets_differ")
         for p in paths:
@@ -142,8 +158,9 @@ def check(original: bytes, delivery: Path) -> dict:
         if status=="fail" or result["status"]=="pass":
             result["status"]=status
 
+    forms = {}
     try:
-        modules,codec,host,xlm=_original(original)
+        modules,codec,host,xlm=_original(original, forms)
     except Unverified as exc:
         finding("inconclusive",exc.args[0])
         return result
@@ -164,12 +181,17 @@ def check(original: bytes, delivery: Path) -> dict:
             finding("fail","editable_source_outside_delivery")
             return result
         files={}
+        resources=set()
         # These published layouts have one flat directory of editable modules.
         # A nested directory makes its module namespace ambiguous.
         for path in directory.iterdir():
             if path.is_dir():
                 finding("inconclusive","nested_vba_delivery_requires_mapping")
                 continue
+            if path.suffix.casefold() == ".frx":
+                if path.name.casefold() in resources:
+                    finding("fail", "duplicate_form_resource")
+                resources.add(path.name.casefold())
             if path.suffix.casefold() not in EXT:
                 continue
             key=path.name.casefold()
@@ -185,8 +207,53 @@ def check(original: bytes, delivery: Path) -> dict:
         for key in sorted(files.keys()-modules.keys()):
             finding("fail","extra_editable_module",key)
         counts=Counter()
+        declared_forms = {key for key in modules if key.endswith(".frm")}
+        declared_resources = {Path(key).with_suffix(".frx").name for key in declared_forms}
+        for key in sorted(resources - declared_resources):
+            finding("fail", "orphan_form_resource", key)
+        document = None
+        export_manifest = False
+        if declared_forms and (root / "project.json").exists():
+            try:
+                document = office_forms.manifest(root)
+                manifested = [row["file"].casefold() for row in document.get("modules", [])
+                              if "form" in row or row.get("role") == "BaseClass"]
+                export_manifest = bool(manifested or resources)
+                if export_manifest:
+                    office_forms.require(document["original_sha256"] == hashlib.sha256(original).hexdigest(),
+                                         "form_manifest_original_differs")
+                    expected = {f"{directory.name}/{key}".casefold() for key in declared_forms}
+                    office_forms.require(len(manifested) == len(expected) and set(manifested) == expected,
+                                         "form_manifest_module_set_differs")
+                else:
+                    document = None
+            except office_forms.FormIssue as exc:
+                finding(exc.status, exc.args[0])
+                document = None
+            except (OSError, TypeError, ValueError, KeyError, AttributeError, RecursionError):
+                finding("inconclusive", "unreadable_form_manifest")
+                document = None
         for key in sorted(modules.keys() & files.keys()):
-            relation=_relation(modules[key],files[key].read_bytes(),codec)
+            path=files[key]
+            if key in declared_forms and path.stat().st_size > office_forms.LIMIT:
+                finding("inconclusive", "form_member_size_limit", key)
+                continue
+            data = path.read_bytes()
+            if key in declared_forms and (export_manifest or data.startswith(b"VERSION ")
+                                          or path.with_suffix(".frx").name.casefold() in resources):
+                if document is None or key not in forms:
+                    finding("inconclusive", "form_binding_unavailable", key)
+                    continue
+                try:
+                    office_forms.check_form(root, directory.name, path.name, data, modules[key], codec,
+                                            forms[key], document)
+                    counts["verified_form_export"] += 1
+                except office_forms.FormIssue as exc:
+                    finding(exc.status, exc.args[0], key)
+                except (OSError, TypeError, ValueError, KeyError, IndexError, AttributeError, struct.error):
+                    finding("inconclusive", "unsupported_form_representation", key)
+                continue
+            relation=_relation(modules[key],data,codec)
             counts[relation]+=1
             if relation=="different":
                 finding("fail","editable_module_text_differs",key)

@@ -65,6 +65,40 @@ class SubmittedTargetsTest(unittest.TestCase):
     def rows(self, result):
         return {r["site_rva"]: r for r in result["indirect_call_targets"]["sites"]}
 
+    def test_missing_registration_distinguishes_secondary_only_from_absent(self):
+        self.table("calls.csv", self.header, self.main[:1])
+        self.table("code/indirect.csv", self.header, [self.main[1]])
+        self.set_legacy([self.legacy[0]])
+        result = self.audit()
+        detail = result["missing_transfer_registration"]
+        self.assertEqual(detail["missing_primary_registration_sites"], result["metrics"]["missing_sites"])
+        self.assertEqual(detail["counts"], {"secondary_only": 1, "no_supported_secondary_record": 1, "secondary_unverified": 0})
+        first, second = detail["sites"]
+        self.assertEqual(first["matched_rows"], ["code/indirect.csv#L2", "code/indirect-resolved.csv#L2"])
+        self.assertEqual((second["site_rva"], second["matched_rows"]), ("0x1008", []))
+        self.assertTrue(all(s["original_boundary_confirmed"] for s in detail["sites"]))
+        self.table("calls.csv", self.header, self.main[:2])
+        self.assertEqual(self.audit()["missing_transfer_registration"]["sites"], [second])
+
+    def test_bad_secondary_references_and_partial_inventory_keep_absence_unverified(self):
+        self.table("calls.csv", self.header, self.main[:1])
+        self.set_legacy([])
+        bad = [*self.main[1]]
+        bad[4] = self.main[2][4]  # Its address and listing reference disagree.
+        self.table("code/indirect.csv", self.header, [bad])
+        detail = self.audit()["missing_transfer_registration"]
+        self.assertEqual(detail["counts"]["secondary_unverified"], 2)
+        self.assertTrue(all(s["uncertain_rows"] == ["code/indirect.csv#L2"] for s in detail["sites"]))
+        bad[2], bad[4] = "unknown", "no-line"
+        self.table("code/indirect.csv", self.header, [self.main[1], bad])
+        detail = self.audit()["missing_transfer_registration"]
+        self.assertEqual(detail["counts"], {"secondary_only": 1, "no_supported_secondary_record": 0, "secondary_unverified": 1})
+        self.assertEqual(detail["unassigned_rows"], ["code/indirect.csv#L3"])
+        self.table("code/indirect.csv", ["broken"], [])
+        detail = self.audit()["missing_transfer_registration"]
+        self.assertEqual(detail["counts"]["secondary_unverified"], 2)
+        self.assertEqual(detail["incomplete_tables"], ["code/indirect.csv"])
+
     def test_old_hints_and_blank_rows_are_both_addressed(self):
         result = self.audit()
         rows = self.rows(result)

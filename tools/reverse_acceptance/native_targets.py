@@ -79,7 +79,7 @@ def label(value):
     return None
 
 
-def read_legacy(root, path, by_file, records, managed, report):
+def read_legacy(root, path, by_file, records, managed, report, unassigned=None):
     fields = FIELDS | ({"resolved", "verdict"} if path == LEGACY else set())
     native_rows = managed_rows = False
     for line, row in native_sites.csv_rows(root, path, fields, numbered=True):
@@ -98,6 +98,8 @@ def read_legacy(root, path, by_file, records, managed, report):
         elif in_range and len(set(sites)) == 1:
             site = sites[0]
         else:
+            if unassigned is not None:
+                unassigned.append(where)
             report("inconclusive", "indirect_target_site_unverified", "Cannot identify a unique native transfer site.", line=where)
             continue
         item = {"source": where, "listing": row["listing"], "callee": row["callee"],
@@ -116,6 +118,41 @@ def read_legacy(root, path, by_file, records, managed, report):
             item["observed_listing_rvas"] = [hex(rva) for rva in sorted(set(sites))]
         records[site][path].append(item)
     return native_rows or not managed_rows
+
+
+def missing_registration_report(missing_sites, evidence, proven_starts, incomplete, unassigned):
+    supported = (INDEX, LEGACY)
+    contradicted_references = defaultdict(set)
+    for tables in evidence.values():
+        for path in supported:
+            for row in tables.get(path, ()):
+                for value in row.get("observed_listing_rvas", ()):
+                    contradicted_references[int(value, 16)].add(row["source"])
+    counts = {"secondary_only": 0, "no_supported_secondary_record": 0, "secondary_unverified": 0}
+    sites = []
+    for site in sorted(missing_sites):
+        tables = evidence.get(site, {})
+        rows = [row for path in supported for row in tables.get(path, ())]
+        matched = []
+        uncertain = set(contradicted_references.get(site, ()))
+        for row in rows:
+            if "issue" in row or "reference_issue" in row:
+                uncertain.add(row["source"])
+            else:
+                matched.append(row["source"])
+        if matched:
+            status = "secondary_only"
+        elif uncertain or incomplete or unassigned:
+            status = "secondary_unverified"
+        else:
+            status = "no_supported_secondary_record"
+        counts[status] += 1
+        sites.append({"site_rva": hex(site), "original_boundary_confirmed": site in proven_starts,
+                      "secondary_status": status, "matched_rows": matched, "uncertain_rows": sorted(uncertain)})
+    return {"scope": "Sites with an existing missing_transfer finding. A secondary registration identifies a site "
+                     "through a supported CSV and listing reference. Ownership and target resolution are checked separately.",
+            "supported_tables": list(supported), "incomplete_tables": sorted(incomplete), "unassigned_rows": unassigned,
+            "missing_primary_registration_sites": len(sites), "counts": counts, "sites": sites}
 
 
 def listing_reference_report(evidence, by_file, report):
@@ -223,10 +260,13 @@ def check_registration(site, primary, entries, owner_set, mnemonic, flag):
                  record["source"])
 
 
-def audit(root, original, pe, bits, x86, instructions, owners, main_rows, report, result, proven_starts, by_file):
+def audit(root, original, pe, bits, x86, instructions, owners, main_rows, report, result, proven_starts, by_file,
+          *, missing_sites=None):
     evidence = defaultdict(lambda: defaultdict(list))
     supplied = set()
     managed = []
+    incomplete = set()
+    unassigned = []
     # A separately supplied index preserves sites even if removed from the resolution table or calls.csv.
     for path in (INDEX, LEGACY, CLAIMS):
         if not native_sites.safe_path(root, path).is_file():
@@ -235,11 +275,16 @@ def audit(root, original, pe, bits, x86, instructions, owners, main_rows, report
         try:
             if path == CLAIMS:
                 read_claims(root, original, evidence, report)
-            elif not read_legacy(root, path, by_file, evidence, managed, report):
+            elif not read_legacy(root, path, by_file, evidence, managed, report, unassigned):
                 supplied.remove(path)
         except (ValueError, OSError, RecursionError, native_sites.csv.Error) as exc:
+            if path in (INDEX, LEGACY):
+                incomplete.add(path)
             report("inconclusive" if isinstance(exc, OSError) else "fail", "indirect_target_evidence_unreadable",
                    str(exc), line=path)
+    if missing_sites is not None:
+        result["missing_transfer_registration"] = missing_registration_report(missing_sites, evidence, proven_starts,
+                                                                             incomplete, unassigned)
     result["legacy_indirect_listing_references"] = listing_reference_report(evidence, by_file, report)
     sites = set(evidence) | {site for site, rows in main_rows.items() if any(not r["known_iat"] for r in rows)}
     rows_out = []
