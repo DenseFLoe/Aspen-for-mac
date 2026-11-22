@@ -1,6 +1,6 @@
 # 静态验收通过
 
-已有逐件静态验收记录。运行行为留待 Windows 对照。本次整理共 87 个原件。按产品和原安装路径找到同名文件夹。
+已有逐件静态验收记录。运行行为留待 Windows 对照。本次整理共 88 个原件。按产品和原安装路径找到同名文件夹。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -70,6 +70,7 @@
 | [Microsoft.Extensions.Logging.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseConfiguration/Microsoft.Extensions.Logging.dll/) | Properties | `4330a5efe9d1` |
 | [Microsoft.Extensions.Options.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseConfiguration/Microsoft.Extensions.Options.dll/) | Properties | `5f9b0e589f1c` |
 | [Microsoft.Extensions.Primitives.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseConfiguration/Microsoft.Extensions.Primitives.dll/) | Properties | `446ff16e903e` |
+| [nl2sol.lib](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Lib/nl2sol.lib/) | Plus | `7738ce952d97` |
 | [Npgsql.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseConfiguration/Npgsql.dll/) | Properties | `50e3a31230c9` |
 | [Npgsql.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseSetup/Npgsql.dll/) | Properties | `02ea73194ff5` |
 | [oomfcorelib.lib](Plus/%5BProgramFiles64Folder%5D/AspenTech/OOMF%20V15.0/lib/oomfcorelib.lib/) | Plus | `2e293c417b26` |
