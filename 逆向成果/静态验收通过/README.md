@@ -1,6 +1,6 @@
 # 静态验收通过
 
-已有逐件静态验收记录。运行行为留待 Windows 对照。本次整理共 89 个原件。按产品和原安装路径找到同名文件夹。
+已有逐件静态验收记录。运行行为留待 Windows 对照。本次整理共 90 个原件。按产品和原安装路径找到同名文件夹。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -10,6 +10,7 @@
 | [apdelayload.lib](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Lib/apdelayload.lib/) | Plus | `d8c809c76f20` |
 | [ApedDataProvider.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/PropertiesDatabase/Bin/ApedDataProvider.dll/) | Plus-Properties | `3e9af2a4a310` |
 | [ApedGateway.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/PropertiesDatabase/Bin/ApedGateway.dll/) | Plus-Properties | `f96569b43f1c` |
+| [Aspen Properties.xla](Properties/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Properties%20V15.0/Engine/xeq/Aspen%20Properties.xla/) | Properties | `d124683bb13c` |
 | [AspenDataShareCS.dll](Plus-Properties/%5BCommonFiles64Folder%5D/AspenTech%20Shared/Aspen%20Data%20Share%20V15.0/AspenDataShareCS.dll/) | Plus-Properties | `2edf2cf9ce11` |
 | [AspenPlus.exe](Plus/Program%20Files/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/AspenPlus.exe/) | Plus | `006d17165e43` |
 | [AspenTech.AspenCxs.CxsViewModel.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.AspenCxs.CxsViewModel.dll/) | Plus-Properties | `5c5f2208066a` |
