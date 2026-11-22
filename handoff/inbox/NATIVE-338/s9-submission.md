@@ -26,6 +26,9 @@ python -B tool/native_anchor_inventory.py --binary issue-materials/338/Happ.dll 
 # 下一批如何自动避免
 门禁一条：原生件交付前必须跑锚点枚举脚本，断言 coverage 行覆盖 anchor 全集且每条 listing 行真实存在（工具已内置断言）。
 
+# 本次补丁（2）
+上游复跑报 `evidence lines outside file` 的根因是**取件路径**：contents API 对 >1MB 文件返回空 body，checkout 出来的 code/native.asm 是 0 字节，而 Git blob 本身完整（3,527,701 B / 98,270 行，blob sha 3d9ef9c7）。生成器已把 asm/c 按函数边界切成 <1MB 分片（native-1..4.asm/.c）并同步改写 coverage/calls/indirect 的行号引用，两条取件路径都能核。
+
 ## 本轮实跑指标（脚本生成，非手填）
 
 | 指标 | 值 |
