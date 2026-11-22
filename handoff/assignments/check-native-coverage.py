@@ -13,6 +13,7 @@ from urllib.request import urlopen
 ROOT = Path(__file__).resolve().parents[2]
 BASE = "https://raw.githubusercontent.com/DenseFLoe/Aspen-for-mac/64670801de54e990f975aaeda06e89340c0e4e08/issue-materials"
 INPUTS = {
+    "NATIVE-349": ("349/Ikc2Bkp.dll", "bba17051eb1071e5f48702f685f1d8d5d3b9f5cfd222f357e30fd0545bf00011"),
     "NATIVE-337": ("337/FindComponent.dll", "3b3a8100a0ac587d2707935409fb2a8c5fd71eae659f95edb99c9f604454ff02"),
     "NATIVE-338": ("338/Happ.dll", "7d4964f25cee38127a0b68fd3c0360c79c030f4c6ed24aa2d2e50b68e008936a"),
     "NATIVE-341": ("341/mmstruct.dll", "bb9a2422bffe3a6aaa6c2a533ef7b4ef25d14092560d519bc93b94e216ce4870"),
