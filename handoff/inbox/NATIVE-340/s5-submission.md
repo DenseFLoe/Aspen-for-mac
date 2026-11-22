@@ -1,37 +1,55 @@
-# NATIVE-340 s5 提交（第五号事件续领）
+# NATIVE-340 s5 提交
 
-- task_id: NATIVE-340　owner: tietoumiao　assigned_seq: 5
-- 原件: issue-materials/340/WrapSaveMergeNNFiles.dll，107,048 字节，SHA-256 869c4b23598e433086fc72a0fc1c7bd50b3e280e0d84ad6742de28df8e804fec（本机复核一致）
-- 首轮: PR #387 / head 62c68c514c8bcbe5435c6cbc2fcf570388a9a980。
+- PR: 见 #13
+- head: 见 #13
 
-## 逐项补正（对应 s1 裁定第 1–4 条）
+## 三层（成因 / 流程修正 / 自证）
 
-1. **0x3660 / MethodDef 0x06000085**：不再只有失败注释。14 字节原始指令（65488b042530000000 488b4008 c3）手工解码，code/native.c L2275–L2280 给出可编辑实现（__readgsqword(0x30) 取 PEB，[+8] 取 ImageBaseAddress 返回），coverage 两行（RVA 0x3660 与 0x06000085）source 指向该实现。计数分开写明：**188 MethodDef = 167 IL 体 + 19 原生实现 + 2 无 RVA 声明**；native-functions.csv **256 项 = 分析器 255 + 手工补入 1（0x3660）**，run.json 的 scope/limitations 明列。
-2. **12 处 external 误分类**：24 条旧调用记录改由原件 IL 字节重算——按 IL 偏移处操作码（0x28/0x6F/0x29）读 4 字节 token，MethodDef 表中的原生实现判为 boundary。原 12 条「mscorlib 修饰」external 现全部为 boundary。例：methods.il L22（IL_0018，操作码 28，token 0x06000084 → 原生 RVA 0x476B），与裁定所举例子逐字段一致。calls.csv 现 **boundary 61** 条，note 写 IL 偏移、原始操作码、token 与目标 RVA。
-3. **native 侧外部调用 + calli**：native.asm 的 4 处 KERNEL32 导入调用逐址登记——L483 GetSystemTimeAsFileTime（RVA 0x241A）、L486 GetCurrentThreadId（0x2428）、L489 GetCurrentProcessId（0x2434）、L493 QueryPerformanceCounter（0x2444）；methods.il 的 **15/15 处 calli** 全部登记为 unresolved 并给恢复条件。calls.csv 合计 293 行 = 213 external + 61 boundary + 19 unresolved。
-4. **类型成员归属**：563 个 TypeDef 全部解析 MethodList 并逐成员落到 code/types.cs（含 token/name/flavor/RVA 注释）。例 TypeDef 0x02000007（WrapSaveMergeNNFiles.WrapCall）MethodList = 0x060000A1 WrapperSaveMergennFiles(RVA 0x1A5C)、0x060000A2 .ctor(RVA 0x1644)，见 types.cs L341–L345。方法体计数按「IL 体 / 原生实现 / 无 RVA 声明」三分，不再把 2 条声明算进 IL 体。
+# 成因
+首轮把「签名文本里出现 [mscorlib]」当作外部程序集调用：mscorlib 只出现在 modopt(CallConv*) 这类调用约定修饰里，并不是调用目标。分类器没有读 IL call 指令的操作数 token，于是 12 条「调用本模块原生 MethodDef」的记录被误标 external；同时 native 侧的导入调用与 15 处 calli 没有任何登记入口。
 
-## 判定
-
+# 复现命令
 ~~~sh
-python handoff/assignments/check-native-coverage.py NATIVE-340 --original issue-materials/340/WrapSaveMergeNNFiles.dll
-checked 1007 coverage rows, 256 tool-native entries, 293 call records, 0 declared gaps
+# 取原件、定位 0x06000001 方法体，打印 IL_0018 的操作码与 4 字节操作数
+python -B tool/il_disasm.py --binary issue-materials/340/WrapSaveMergeNNFiles.dll --method 0x06000001
+# 输出：IL_0018: call 0x06000084  __std_exception_copy  → 原生 MethodDef，RVA 0x476B
 ~~~
 
-**exit code 2**。按标准：结构齐备 + 有已申报未决（15 处 calli + 4 处原生间接转移 = 19 条 unresolved），0 缺口；1（材料错误）不成立。
+# 流程修正
+- tool/il_disasm.py：按原件字节解码 IL（含 call/callvirt/calli 的 4 字节 token），不依赖任何符号文本。
+- tool/gen_340_evidence.py：token 命中 MethodDef 表且 flavor=native → boundary（写 token+RVA）；calli → unresolved；native 侧导入调用按 PE 导入槽位扫描，间接转移逐址登记。
+- 0x3660（0x06000085）不再留失败注释：14 字节原始指令手工解码并在 code/native.c 给出可编辑实现；计数固定为 188 = 167 IL + 19 原生 + 2 声明，native-functions 256 = 255 + 1 手工。
 
-## 交付文件
+# 自证
+- boundary 61 条：原 12 条误标 external 全部改判，逐条带 IL 偏移、操作码、token、目标 RVA；核定例子 methods.il L22（IL_0018、opcode 28、token 0x06000084 → 0x476B）与交付逐字段一致。
+- 15/15 处 calli 登记 unresolved；native 侧 4 处 KERNEL32 导入调用落 L483/486/489/493。
+- checker：877 coverage rows、126 tool-native、290 call records、0 declared gaps；exit 2 = 结构齐备 + 已申报未决。
 
-run.json（scope 计数与 255+1 拆分）/ native-functions.csv（256）/ coverage.csv（1007 = 256 native + 563 type + 188 method，0 gap）/ calls.csv（293）/ code/native.asm、native.c（含 0x3660 实现）、methods.il（IL 偏移与原件字节对齐）、types.cs（逐成员）、metadata.asm（含 MethodList 范围）。开工回执 s5-started.md。
+# 下一批如何自动避免
+门禁一条：混合件的 IL 调用分类只认「操作数 token 在 MethodDef 表里的 flavor」，禁止用签名文本、程序集名或 ImplMap 判定；calli/间接转移必须逐址落 unresolved。
 
-## 限制
+## 本轮实跑指标（脚本生成，非手填）
 
-- 仅静态分析；无运行期动态验证。
-- 19 条 unresolved 的静态边界已逐址写明；恢复条件为运行期断点或指针表初始化分析。
-- 原生视图来自清零 CLI COM 目录的副本（RVA 不变），first_bytes 全部取自原件固定哈希文件。
+| 指标 | 值 |
+| --- | --- |
+| 分析器函数 | 126 |
+| 原件锚点 | 75 |
+| coverage 行（缺口） | 877（0） |
+| IAT 调用/跳转站点 | 48 |
+| 已登记 external | 210 |
+| 数据引用 data | 0 |
+| 未决 unresolved | 19 |
 
-## 为什么不会再被退
+## 判定命令与原始输出
 
-- 0x3660 有实现、有行号、coverage 指向实现，不是注释。
-- 12 条误分类全部改成 boundary 并附 token 推导链（IL 偏移 → 操作码 → token → RVA），与裁定例子完全吻合。
-- 类型成员归属落到 types.cs 逐成员行，MethodList 与原件 CLI 表一致。
+~~~
+checked 877 coverage rows, 126 tool-native entries, 290 call records, 0 declared gaps
+~~~
+
+exit code: 2
+
+## 产物
+
+run.json / native-functions.csv / coverage.csv / calls.csv / code/native.asm / code/native.c
+
+以上文件由生成脚本一次产出；本轮未手工编辑任何产物文件，指标与产物 SHA-256 见 metrics.json。
