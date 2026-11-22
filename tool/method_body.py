@@ -111,6 +111,16 @@ def data_sections(data, pe, hdr):
         p = pe.filepos(rva)
         kind = data[p]
         size = data[p + 1] | (data[p + 2] << 8) | (data[p + 3] << 16)
+        # the declared section must lie inside the PE section mapping (raw data or its
+        # virtual zero-fill tail); a clause that pokes past the mapping is an error, not
+        # a partial success.
+        sec_end = sec["rva"] + max(sec["size"], sec.get("vsize", 0))
+        if rva + size > sec_end:
+            raise ValueError("data section at %#x (size %d) overruns section %s (end %#x): "
+                             "%d bytes outside the mapped range"
+                             % (rva, size, sec["name"], sec_end, rva + size - sec_end))
+        if size < 4:
+            raise ValueError("data section at %#x has size %d (< 4)" % (rva, size))
         base = kind & SECT_KIND_MASK
         if base not in SUPPORTED:
             raise UnsupportedSection(rva, kind, size)
