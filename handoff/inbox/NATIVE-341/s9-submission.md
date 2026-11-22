@@ -26,6 +26,9 @@ python -B tool/native_anchor_inventory.py --binary issue-materials/338/Happ.dll 
 # 下一批如何自动避免
 门禁一条：原生件交付前必须跑锚点枚举脚本，断言 coverage 行覆盖 anchor 全集且每条 listing 行真实存在（工具已内置断言）。
 
+# 本次补丁（2）
+上游复跑报 `evidence lines outside file` 的根因是**取件路径**：contents API 对 >1MB 文件返回空 body，而 Git blob 完整（3,015,720 B / 84,757 行，blob sha da555b15）。代码/asm 已按函数边界切成 <1MB 分片并同步改写行号引用。
+
 ## 本轮实跑指标（脚本生成，非手填）
 
 | 指标 | 值 |
