@@ -18,7 +18,8 @@ HERE = Path(__file__).resolve().parent
 APPROVALS = json.loads((HERE / "accepted_archives.json").read_text(encoding="utf-8"))
 EXIT = {"pass": 0, "fail": 1, "inconclusive": 2}
 VERSION = "1.0"
-IMPLEMENTATION = "1.4"
+IMPLEMENTATION = "1.5"
+PPEXEC_SHA256 = "d93227b9a8f77c09fc1294834b6a4d87ba03a0697a680039fdce35cb1ce4549a"
 HEX = re.compile(r"[0-9a-fA-F]{64}")
 SNAPSHOT = "773260c1033e524cebe000699409f5708bebfda0"
 SOURCE_LISTS = {
@@ -137,6 +138,8 @@ def verifier_identity():
     # Bind a CLI report to the verifier inputs present at startup on this machine.
     names = ("verify.py", "accepted_archives.json", "coverage_table.py", "native_sites.py", "native_targets.py",
              "target_witness.py", "native_exports.py", "native_regions.py", "clr_fixups.py", "import_routes.py",
+             "historical_listing.py", "baselines/findcomponent-s5-instructions.csv", "mixed_baseline.py",
+             "baselines/869c4b23598e433086fc72a0fc1c7bd50b3e280e0d84ad6742de28df8e804fec.csv", "callback_paths.py",
              "pe_resources.py", "version_resource.py", "fresh_cs.py", "compile_fresh_cs.ps1", "managed.py",
              "ManagedEvidence.cs", "coff.py", "office_vba.py")
     paths = {name: HERE / name for name in names}
@@ -326,6 +329,10 @@ def evaluate(original, expected, delivery, rebuilt=None, assembler=None, product
         checks.append(component("native_regions", data, delivery, assembler))
     if data.startswith(b"MZ") and "code/vtable-fixups.csv" in files:
         checks.append(component("clr_fixups", data, delivery))
+    if data.startswith(b"MZ") and ("code/newobj.csv" in files or (HERE / "baselines" / f"{expected}.csv").is_file()):
+        checks.append(component("mixed_baseline", data, delivery))
+    if expected == PPEXEC_SHA256 and files.keys() & {"s13/evidence.json", "s13/disposition.csv", "s13-submission.md"}:
+        checks.append(component("callback_paths", data, delivery))
     if data.startswith(b"MZ") and files.keys() & {"resources.csv", "s5/resources.json", "s5-data/version-resource.json",
                                                  "native-functions.csv", "coverage.csv", "calls.csv"}:
         checks.append(component("pe_resources", data, delivery))

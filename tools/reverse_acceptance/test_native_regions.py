@@ -96,3 +96,71 @@ class RegionControls(unittest.TestCase):
                 call.assert_not_called()
                 self.assertEqual("inconclusive", result["status"])
                 self.assertEqual(0, result["metrics"]["matching_bytes"])
+
+    def test_host_data_reference_identity_must_match_at_original_site(self):
+        self.claim.update(external_import_call_sites=0, import_calls_by_dll={}, rip_relative_data_sites=1,
+                          rip_relative_target_regions={"X.dll (IAT)": 1})
+        for identity, status in (("X.dll!#5", "pass"), ("Y.dll!#5", "fail")):
+            with self.subTest(identity=identity):
+                (self.delivery / "calls.csv").write_text(
+                    f"caller,class,callee,note\n0x1000,data,{identity},RVA 0x1000; import slot\n", encoding="utf-8")
+                _, _, result = self.audit(object_file())
+                self.assertEqual(status, result["status"], result["findings"])
+                row, = result["metrics"]["regions"]
+                if status == "pass":
+                    self.assertEqual(1, row["rip_relative_data_sites"])
+                else:
+                    self.assertNotIn("rip_relative_data_sites", row)
+                    self.assertIn("region_host_reference", [item["code"] for item in result["findings"]])
+
+    def test_chunk_encoded_instruction_language(self):
+        import iced_x86 as x86
+        for statement in (r".byte 0x40 # original redundant REX prefix\n        push rbp",
+                          ".byte 0x66,0x90 # alignment NOP"):
+            self.assertTrue(regions._block(f'"{statement}\\n"', x86, chunk=True))
+        for statement in (r".byte 0x40 # original redundant REX prefix\n        .include hidden",
+                          ".byte 0xc3 # alignment NOP", ".byte 0x90,0x90 # alignment NOP"):
+            with self.assertRaises(ValueError):
+                regions._block(f'"{statement}\\n"', x86, chunk=True)
+
+    def test_cumulative_rebuild_compares_source_bytes_before_counting(self):
+        import iced_x86 as x86
+        import pefile
+        data = bytearray(self.original.read_bytes())
+        data[0x208:0x20c] = b"\x90" * 4
+        pe = pefile.PE(data=bytes(data))
+        digest = build._digest(data)
+        paths = ("reassembly.json", "s5/reassembly-delta.json", "s9/reassembly-delta.json", regions.DELTA_MANIFEST)
+        for i, path in enumerate(paths):
+            doc = dict(original_sha256=digest, bodies=1, bytes=1, relocations=0,
+                       matches=[dict(rva=hex(0x1008+i), bytes=1, sha256=build._digest(b"\x90"), relocations=[])])
+            out = self.delivery / path
+            out.parent.mkdir(exist_ok=True)
+            out.write_text(json.dumps(doc), encoding="utf-8")
+        for first_byte, status, count in ((0x90, "pass", 4), (0xcc, "fail", 3)):
+            metrics = {"original_sha256": digest}
+            current = [dict(entry="0x100b", status="pass", relocations=0, source="current",
+                            compiled_input_sha256="current-input")]
+            with (mock.patch.object(regions, "_chunk_source", return_value=("shard", b"", b"body", None)),
+                  mock.patch.object(build, "_build", side_effect=[(bytes([first_byte]), []), (b"\x90", []),
+                                                                  (b"\x90", [])]) as compiler):
+                regions._cumulative(self.delivery.resolve(), pe, x86, (), self.compiler, metrics, (), doc, current)
+            result = metrics["cumulative_rebuild"]
+            self.assertEqual((status, count, 3), (result["status"], result["matching_ranges"], compiler.call_count))
+
+    def test_chunk_index_rejects_uncompiled_wrapper(self):
+        folder = self.delivery / "code"
+        folder.mkdir()
+        unit = folder / "verified.c"
+        unit.write_text('#include "verified-01.h"\n', encoding="ascii")
+        source = ('/* body 0x1000 until 0x1001 */\nBODY void ikc_1000(void) {\n'
+                  '    __asm__(INTEL\n        "ret\\n"\n        END);\n}\n')
+        with mock.patch.object(regions, "CHUNK_PRELUDE", build._digest(b"")):
+            for prefix, suffix in (("", ""), ("#if 0\n", "#endif\n"), ("", "#include \"hidden.h\"\n")):
+                (folder / "verified-01.h").write_text(prefix + source + suffix, encoding="ascii")
+                if prefix or suffix:
+                    with self.assertRaises(ValueError):
+                        regions._chunk_sources(self.delivery.resolve())
+                else:
+                    _, bodies = regions._chunk_sources(self.delivery.resolve())
+                    self.assertEqual(["ikc_1000"], list(bodies))
