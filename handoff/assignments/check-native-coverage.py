@@ -16,6 +16,9 @@ INPUTS = {
     "NATIVE-337": ("337/FindComponent.dll", "3b3a8100a0ac587d2707935409fb2a8c5fd71eae659f95edb99c9f604454ff02"),
     "NATIVE-338": ("338/Happ.dll", "7d4964f25cee38127a0b68fd3c0360c79c030f4c6ed24aa2d2e50b68e008936a"),
     "NATIVE-341": ("341/mmstruct.dll", "bb9a2422bffe3a6aaa6c2a533ef7b4ef25d14092560d519bc93b94e216ce4870"),
+    "NATIVE-342": ("342/ApwnIPShell.dll", "ace0556a2b9da51821c45b2a8c119ac990b51135b8b5b5d5d4f09422e051502b"),
+    "NATIVE-346": ("346/ppexec.dll", "d93227b9a8f77c09fc1294834b6a4d87ba03a0697a680039fdce35cb1ce4549a"),
+    "NATIVE-344": ("344/Simdll.dll", "9b762caf68ad02f296eb3d98d9995af91adbd572f7c00acb88f4afc5fe88d601"),
     "NATIVE-340": ("340/WrapSaveMergeNNFiles.dll", "869c4b23598e433086fc72a0fc1c7bd50b3e280e0d84ad6742de28df8e804fec"),
 }
 
