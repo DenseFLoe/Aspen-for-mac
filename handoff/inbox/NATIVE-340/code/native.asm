@@ -1,4 +1,4 @@
-; NATIVE-340 native disassembly (IDA 9.5, imagebase 0x180000000)
+; NATIVE-340 native disassembly (IDA 9.5 native view, imagebase 0x180000000)
 ; RVA  bytes  instruction
 
 ; FUNC 00001DD8-00001E03 sub_180001DD8 (43 bytes)
@@ -1366,11 +1366,6 @@
 000030F0  0F 95 C0  setnz   al
 000030F3  C3  retn
 
-; FUNC 00003660-0000366E sub_180003660_manual (14 bytes)
-00003660  65 48 8B 04 25 30 00 00 00  mov     rax, gs:[30h]
-00003669  48 8B 40 08  mov     rax, [rax+8]
-0000366D  C3  retn
-
 ; FUNC 0000476B-00004771 __std_exception_copy (6 bytes)
 0000476B  FF 25 87 19 00 00  jmp     cs:__imp___std_exception_copy; VCRUNTIME140
 
@@ -1974,3 +1969,8 @@
 
 ; FUNC 00005794-0000579A sub_180005794 (6 bytes)
 00005794  FF 25 86 40 01 00  jmp     cs:qword_180019820
+
+; FUNC 00003660-0000366E sub_180003660_manual (14 bytes)
+00003660  65 48 8B 04 25 30 00 00 00  mov     rax, gs:[30h]
+00003669  48 8B 40 08  mov     rax, [rax+8]
+0000366D  C3  retn
