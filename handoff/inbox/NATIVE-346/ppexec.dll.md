@@ -1,3 +1,11 @@
+# ppexec.dll 第五轮静态修复
+
+Plus-Properties，原路径为 `[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/Engine/Xeq/ppexec.dll`。版本 41.0.0.605。固定原件提交为 `64670801de54e990f975aaeda06e89340c0e4e08`，SHA-256 为 `d93227b9a8f77c09fc1294834b6a4d87ba03a0697a680039fdce35cb1ce4549a`。
+
+第五轮的 196 段新增实现已回编，首轮与本轮的 532 段源码共逐字节匹配 80,822 字节。剩余 629 字节均解码为对齐或填充，已核完原版 .text 的完整虚拟长度。20 张表的 2,946 个槽位和 34 处索引转移已登记。当前实现仍有 20 处索引域、14 处回调和调度目标，以及导出数据类型与长度需要进一步确认。整件继续等待静态修复。[第五轮提交及复验步骤](s5-submission.md) · [逐址未决项](control-gaps.csv) · [导出和资源](s5-data/README.md)
+
+以下保留首轮提交时的统计和复验范围。当前正式覆盖和调用表见上述第五轮材料。
+
 # ppexec.dll 静态修复第一轮
 
 原路径为 Plus-Properties/[ProgramFiles64Folder]/AspenTech/APrSystem V15.0/Engine/Xeq/ppexec.dll。固定输入在提交 64670801de54e990f975aaeda06e89340c0e4e08 的 issue-materials/346/ppexec.dll。文件 138,280 字节，版本 41.0.0.605，SHA-256 为 d93227b9a8f77c09fc1294834b6a4d87ba03a0697a680039fdce35cb1ce4549a。本轮结论为整件静态验收未通过。
