@@ -79,9 +79,9 @@ def eh_section(data, pe, hdr):
         if fat:
             flags, try_off, try_len, h_off, h_len, tok = struct.unpack_from("<IIIIII", data, q)
         else:
-            flags, try_off, h_off = struct.unpack_from("<HHH", data, q)
-            try_len = h_len = 0
-            tok = struct.unpack_from("<I", data, q + 8)[0]
+            # ECMA-335 II.25.4.6 small clause: Flags u2, TryOffset u2, TryLength u1,
+            # HandlerOffset u2, HandlerLength u1, ClassToken u4 = 12 bytes.
+            flags, try_off, try_len, h_off, h_len, tok = struct.unpack_from("<HHBHB I", data, q)
         clauses.append(dict(index=i, flags=flags, try_offset=try_off, try_length=try_len,
                             handler_offset=h_off, handler_length=h_len, class_token=tok))
     return dict(rva=rva, kind=kind, fat=fat, size=size, entry=entry, count=count), clauses
@@ -114,4 +114,72 @@ def self_test(data, pe, rva_with_eh, rva_without_eh):
         out.append(("non-executable RVA rejected", False))
     except ValueError:
         out.append(("non-executable RVA rejected", True))
+    return out
+
+class _FakePE:
+    """Minimal PE surface for the synthetic small/fat EH tests."""
+
+    def __init__(self, data, sections):
+        self.data = data
+        self.secs = sections
+
+    def filepos(self, rva):
+        for s in self.secs:
+            if s["rva"] <= rva < s["rva"] + max(s["size"], s.get("vsize", 0)):
+                return s["raw"] + rva - s["rva"]
+        raise ValueError("RVA %#x outside" % rva)
+
+
+def _synthetic(kind, clause):
+    data = bytearray(0x3000)
+    sec = dict(rva=0x1000, size=0x1000, raw=0x1000, vsize=0x1000, hdr=0x80, exec=True, name=".text")
+    struct.pack_into("<I", data, 0x80 + 36, 0x60000020)
+    pe = _FakePE(data, [sec])
+    body = 0x1000
+    code = bytes([0x00, 0x2A, 0x00, 0x00])          # nop; ret; padding
+    flags = 0x0B if kind else 0x03                   # MoreSects only when kind is set
+    struct.pack_into("<H", data, body, (3 << 12) | flags)
+    struct.pack_into("<H", data, body + 2, 8)
+    struct.pack_into("<I", data, body + 4, len(code))
+    struct.pack_into("<I", data, body + 8, 0)
+    data[body + 12:body + 12 + len(code)] = code
+    if kind:
+        q = body + 12 + len(code)
+        q = (q + 3) & ~3
+        data[q] = kind                                   # 0x41 fat / 0x01 small
+        size = 4 + (24 if kind & 0x40 else 12)
+        data[q + 1] = size & 0xFF
+        data[q + 2] = (size >> 8) & 0xFF
+        data[q + 3] = (size >> 16) & 0xFF
+        if kind & 0x40:
+            struct.pack_into("<IIIIII", data, q + 4, 2, 0, 4, 4, 1, 0x01000001)
+        else:
+            struct.pack_into("<HHBHB I", data, q + 4, 2, 0, 4, 4, 1, 0x01000001)
+    return bytes(data), pe
+
+
+def synthetic_tests():
+    """Both ECMA-335 EH layouts plus the MoreSects control, on synthetic images."""
+    out = []
+    data, pe = _synthetic(0x41, None)
+    h, info, cl = read(data, pe, 0x1000)
+    out.append(("fat EHTable parsed", info["fat"] and info["count"] == 1 and len(cl) == 1
+                and cl[0]["flags"] == 2 and cl[0]["try_length"] == 4 and cl[0]["handler_length"] == 1))
+    data, pe = _synthetic(0x01, None)
+    h, info, cl = read(data, pe, 0x1000)
+    out.append(("small EHTable parsed", (not info["fat"]) and info["count"] == 1 and len(cl) == 1
+                and cl[0]["flags"] == 2 and cl[0]["try_length"] == 4 and cl[0]["handler_length"] == 1))
+    data, pe = _synthetic(0x00, None)
+    h, info, cl = read(data, pe, 0x1000)
+    out.append(("MoreSects clear -> no EH section", info is None and not cl))
+    data, pe = _synthetic(0x41, None)
+    q = 0x1000 + 12 + 4
+    q = (q + 3) & ~3
+    data = bytearray(data)
+    struct.pack_into("<I", data, q + 1, 16)              # size says 16 but fat needs 28
+    try:
+        read(bytes(data), pe, 0x1000)
+        out.append(("inconsistent EH size rejected", False))
+    except ValueError:
+        out.append(("inconsistent EH size rejected", True))
     return out
