@@ -17,7 +17,7 @@ $sha = 'd8c809c76f202e0df54bbc6315f0b16ce5840771099533988bdde0a5727b8afb'
 python -B $tool item --original $original --sha256 $sha --delivery $delivery --product Plus --original-path $logical
 ```
 
-新环境可用 `python -m pip install -r tools/reverse_acceptance/requirements.txt` 安装 Python 依赖。可选参数 `--rebuilt` 接受已有 CLR 回编件；`--assembler` 接受 COFF 专项核验的 Zig。遇到未覆盖的工具链或格式，查看输出中的 `scope`、`findings` 和 `metrics`。
+新环境可用 `python -m pip install -r tools/reverse_acceptance/requirements.txt` 安装 Python 依赖。`--rebuilt` 接受已有 CLR 回编件。`--assembler` 接受 COFF 及原生导出回编使用的受信 Windows Zig 0.13.0。需要核对导入提供方的导出节时，同时传入 `--provider <原版 DLL> --provider-sha256 <清单指纹>`。未提供时，使用方可见的槽读取、跳板和调用证据仍会列出。
 
 ## 整件通过的依据
 
@@ -50,10 +50,14 @@ Source SHA-256: <这份源码的小写 SHA-256>
 | --- | --- |
 | 原生或混合件的 `coverage.csv` | 对照项目已有 AMD64 原件锚点读取器，核对键、申报缺口、入口字节、逐址或逐 token 的反汇编引用及源码证据区间。检查覆盖表格式、重复键和缺失文件。源码非空仍须单独证明该段实现对应原逻辑。 |
 | 原生 `calls.csv` 与反汇编 | 使用原件回读指令，核对清单内间接转移、可识别 IAT 目标、重复、遗漏及登记类别。保留原件可见入口和清单边界的差距、待解跳转。按具体交付格式检查的范围见子报告。 |
+| 原生 `internal-transfers.csv` 和 `control-gaps.csv` | 兼容旧表的 `owner,site,target,target_owner,instruction` 与新版 RVA 表头。逐址解码直接边，对照间接边的附件和主表。输出的 `unresolved_site_rvas` 保留未决地址，`data_import_evidence` 区分数据读取、导入桩和观测到的调用。 |
+| `s5/business-evidence.json` 与可编辑导出源码 | 对支持的 AMD64 内联汇编 C 交付，从原件导出与异常目录或可确定的直线叶函数确定边界。在临时目录重新编译、处理 COFF 重定位并逐字节对照。`metrics.exports` 按真实导出名列出结论与区间，`findings` 记录差异位置和两侧值。入口缺口在覆盖专项的 `declared_entry_gaps` 中。 |
 | PE `resources.csv` 及 `s5/resources.json` | 核对原件资源树中的键、语言、大小、地址、代码页、指纹及可用的实际交付内容。 |
 | 工作簿的 `VBA/` 或 `vba-src/` | 按模块身份比较原件和交付的可编辑 VBA。记录缺失、多出或改变的模块。宿主表单、公式、XLM、P-code 和运行行为仍需各自的证据。 |
 | `--rebuilt` 的 CLR 程序集 | 比较逐方法签名和实现、IL、有关 token 元数据、局部变量和异常区域。方法体无法证明等价时输出差异。传入同一 DLL 只能验证二进制比较环节。 |
 | `BFDYLD.s` | 对两件固定指纹的 AMD64 COFF，使用已核验的 Zig 在临时目录重组，核对节、数据、符号、辅助记录和重定位。该项可随整体结果保留单独的通过记录。 |
+
+三个固定候选的逐件对照、工具和复跑命令见[原生验收回归记录](native-regression.md)。
 
 ## 全项目分母和批量输入
 
@@ -71,7 +75,7 @@ ConvertTo-Json -InputObject $inputs | Set-Content -Encoding utf8 "$work/inputs.j
 python -B $tool project --inventory "$work/inventory.csv" --inventory-sha256 '116e75d149828855b8dcf398226dbb509f50fe304c017c1a7fb09fcdfb4f1862' --source-scopes $work.FullName --inputs "$work/inputs.json"
 ```
 
-`--inputs` 接受 JSON 数组。每项含 `product`、`path`、`sha256`、`original`、`delivery`，可选 `rebuilt`。前三项共同匹配母表身份。后面几个本地路径可以是绝对路径，或相对于该 JSON 的路径。未提供材料的项也会出现在结果中。重复绑定、未知绑定、空母表或母表指纹不符均无法给出项目通过。
+`--inputs` 接受 JSON 数组。每项含 `product`、`path`、`sha256`、`original`、`delivery`，可选 `rebuilt`，也可同时指定 `provider` 和 `provider_sha256`。前三项共同匹配母表身份。本地路径可以是绝对路径，或相对于该 JSON 的路径。未提供材料的项也会出现在结果中。重复绑定、未知绑定、空母表或母表指纹不符均无法给出项目通过。
 
 指定 `--source-scopes` 时，再核对固定提交的三份“需要逆向”原件清单，目录内分别命名 `plus-scope.csv`、`properties-scope.csv`、`shared-scope.csv`。校验器内固定了三份原始 SHA-256。同一内容保留全部来源记录号；总表之外的原件进入分母，也可以绑定本地材料。以这次快照计，来源记录 8,191 条，去重后 1,397 个原件，公开总表 1,394 件。省略此参数时结论仅覆盖提供的母表，输出的 `scope` 会明确这一点。这三份清单的范围为项目已分类的需要逆向内容，产品整体的安装完备性和 Windows 行为有各自的验收阶段。[Plus 来源](https://github.com/DenseFLoe/Aspen-for-mac/blob/773260c1033e524cebe000699409f5708bebfda0/inventories/2026-11-19/plus/01-needs-reverse/files.csv) · [Properties 来源](https://github.com/DenseFLoe/Aspen-for-mac/blob/773260c1033e524cebe000699409f5708bebfda0/inventories/2026-11-19/properties/01-needs-reverse/files.csv) · [共享来源](https://github.com/DenseFLoe/Aspen-for-mac/blob/773260c1033e524cebe000699409f5708bebfda0/inventories/2026-11-19/shared/01-needs-reverse/files.csv)
 
