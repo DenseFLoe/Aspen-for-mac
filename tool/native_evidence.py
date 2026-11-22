@@ -201,13 +201,13 @@ def build(args):
                 op = 'call' if (b[o + 1] >> 3) == 2 else 'jmp'
                 calls.append(dict(kind='native', caller='0x%X' % own['rva'], callee='%s!%s' % (lib, nm),
                                   **{'class': 'external'}, listing='code/native.asm#L%d-L%d' % (ln, ln),
-                                  note='导入%s；IAT 槽 RVA 0x%X（%s!%s）；指令 RVA 0x%X，按指令末 RVA + 有符号 disp32 定位' % (op, tgt, lib, nm, addr)))
+                                  note='imp %s via IAT 0x%X' % (op, tgt)))
             elif own and not pe.in_code(tgt):
                 s = printable(data, pe, tgt)
                 if s:
                     calls.append(dict(kind='native', caller='0x%X' % own['rva'], callee='0x%X "%s"' % (tgt, s),
                                       **{'class': 'data'}, listing='code/native.asm#L%d-L%d' % (ln, ln),
-                                      note='重要数据引用：指令 RVA 0x%X 取地址 RVA 0x%X（字符串 %s）' % (addr, tgt, s)))
+                                      note='data 0x%X' % tgt))
             continue
         # data reference through a RIP-relative memory operand (LEA/MOV/etc.)
         tgt = mem_target(addr, b)
@@ -217,7 +217,7 @@ def build(args):
             if own and s:
                 calls.append(dict(kind='native', caller='0x%X' % own['rva'], callee='0x%X "%s"' % (tgt, s),
                                   **{'class': 'data'}, listing='code/native.asm#L%d-L%d' % (ln, ln),
-                                  note='重要数据引用：指令 RVA 0x%X 取地址 RVA 0x%X（字符串 %s）' % (addr, tgt, s)))
+                                  note='data 0x%X' % tgt))
         if len(b) >= o + 2 and b[o] == 0xFF:
             mr = b[o + 1]
             ind = ((mr & 0xF8) == 0xD0) or ((mr & 0xC0) != 0xC0 and (mr & 0xC7) != 0x05 and ((mr >> 3) & 7) in (2, 4))
@@ -225,7 +225,7 @@ def build(args):
             if ind and own:
                 calls.append(dict(kind='native', caller='0x%X' % own['rva'], callee='indirect@0x%X' % addr,
                                   **{'class': 'unresolved'}, listing='code/native.asm#L%d-L%d' % (ln, ln),
-                                  note='间接转移：目标不在指令内（%s），指令 RVA 0x%X；恢复条件＝运行期断点或指针表初始化分析' % (text.split(';')[0].strip()[:60], addr)))
+                                  note='indirect; recovery=bp/table-init'))
     direct = [c for c in calls if c['class'] != 'unresolved']
     indirect = [c for c in calls if c['class'] == 'unresolved']
     with open(out / 'calls.csv', 'w', newline='', encoding='utf-8') as fh:
