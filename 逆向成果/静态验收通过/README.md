@@ -1,12 +1,13 @@
 # 静态验收通过
 
-已有逐件静态验收记录。运行行为留待 Windows 对照。本次整理共 84 个原件。按产品和原安装路径找到同名文件夹。
+已有逐件静态验收记录。运行行为留待 Windows 对照。本次整理共 85 个原件。按产品和原安装路径找到同名文件夹。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
 | [AdbDataModel.dll](Plus-Properties/%5BCommonFiles64Folder%5D/AspenTech%20Shared/Aspen%20Data%20Share%20V15.0/AdbDataModel.dll/) | Plus-Properties | `7633ddafb293` |
 | [AdsAccessor.dll](Plus-Properties/%5BCommonFiles64Folder%5D/AspenTech%20Shared/Aspen%20Data%20Share%20V15.0/AdsAccessor.dll/) | Plus-Properties | `0d3d2d8cf2e8` |
 | [AdsDataMap.dll](Plus-Properties/%5BCommonFiles64Folder%5D/AspenTech%20Shared/Aspen%20Data%20Share%20V15.0/AdsDataMap.dll/) | Plus-Properties | `76ed474639f4` |
+| [apdelayload.lib](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Lib/apdelayload.lib/) | Plus | `d8c809c76f20` |
 | [ApedDataProvider.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/PropertiesDatabase/Bin/ApedDataProvider.dll/) | Plus-Properties | `3e9af2a4a310` |
 | [ApedGateway.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/PropertiesDatabase/Bin/ApedGateway.dll/) | Plus-Properties | `f96569b43f1c` |
 | [AspenDataShareCS.dll](Plus-Properties/%5BCommonFiles64Folder%5D/AspenTech%20Shared/Aspen%20Data%20Share%20V15.0/AspenDataShareCS.dll/) | Plus-Properties | `2edf2cf9ce11` |
