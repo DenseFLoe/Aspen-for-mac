@@ -1208,10 +1208,10 @@ bool __scrt_is_ucrt_dll_in_use(void)
 /* ---- FUNC 00003660 FUN_180003660 (14 bytes) ---- */
 
 undefined8 FUN_180003660(void)
-
-{
-  return *(undefined8 *)((longlong)Self + 8);
+{ unsigned char *peb = (unsigned char *)__readgsqword(0x30);  /* 65 48 8B 04 25 30 00 00 00: mov rax, gs:[0x30] */
+  return *(undefined8 *)(peb + 8);                            /* 48 8B 40 08: mov rax, [rax+8] (indirect load) */
 }
+/* 0000366D C3: retne -- 14-byte function, GS-based PEB read then one indirect load */
 
 /* ---- FUNC 0000476B __std_exception_copy (6 bytes) ---- */
 
