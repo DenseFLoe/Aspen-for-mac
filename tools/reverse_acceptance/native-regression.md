@@ -91,3 +91,24 @@ python -B -m unittest discover -s "$NewRoot/tools/reverse_acceptance" -v
 | 仅将旧表 `0x1389` 的基址提示从 RBX 改为 RAX | 0 / 98 / 1 | `indirect_target_base_mismatch` 定位到旧表的具体行与原件操作数。 |
 
 按同一三件试点的固定清单运行 `project`，FindComponent、ppexec、zedstwu 均仍为整件未通过。三个样本的 21 个原有原生转移指标逐项相同，主表漏登数分别为 13、5、10，主表显式未决的转移分别为 99、15、44。上述 8 次单件检查和 1 次项目检查均按预期退出 1。单元测试另覆盖可核实的内部 RVA、只读表、错误寄存器、寄存器局部改写、分支绕过、伪造入口及原件指纹不符。
+
+## 验收器 1.3 的内部函数与 CLR 复验
+
+以固定候选逐件运行 `item`，计算原件及交付指纹。对 5 件原样交付再用相同绑定运行 `project`，每件专项逐项比对一致，整批得到 4 件未通过、1 件待核。5 件为下表中的三件、FindComponent S17 及 ppexec S13。
+
+| 固定候选 | 专项独立核对 | 整件状态 |
+| --- | --- | --- |
+| [zedstwu S13](https://github.com/DenseFLoe/Aspen-for-mac/tree/c57d3a0349dff208bf2a4ef1bd32e9c03ac8a569/handoff/inbox/NATIVE-350) | `[0x1000, 0x1f1e)` 与 `[0xb980, 0xbec3)` 合计 5,217 字节、891 条指令、364 处重定位。四个原有导出另有 13,218 字节回编吻合。 | 未通过，覆盖表申报入口缺口 117，主表显式未决转移 44 处。 |
+| [Ikc2Bkp S13](https://github.com/DenseFLoe/Aspen-for-mac/tree/71af42aa2df54844b0bb73397a747c052e6168b1/handoff/inbox/NATIVE-349) | `[0x24b3c, 0x24bd4)` 与 `[0x24ea4, 0x24eff)` 合计 243 字节、75 条指令、6 处重定位。 | 未通过，覆盖表申报入口缺口 13，主表显式未决转移 15 处。 |
+| [WrapSaveMergeNNFiles S13](https://github.com/DenseFLoe/Aspen-for-mac/tree/b16fc9edf36dd9355e6ff083b3566ea8cbb57fdf/handoff/inbox/NATIVE-340) | 237 个 CLR 描述符、237 个槽、122 个不同 MethodDef 和 9 条附件中申报的原生跳转吻合。旧间接表有 13 个未决 CALL、11 个未决 JMP、15 条托管记录。 | 待核，未决间接转移和资源等仍需证据。 |
+
+逐次用全新交付副本测试一个变化，每个副本都走 `item`。
+
+| 单项改动 | 1.3 的对照结果 |
+| --- | --- |
+| zedstwu 的第一段将 `push r15` 换成 `push r14` | `region_code_byte` 指出首个差异 `0x1001`，原件 `57`，重编 `56`。第二段 1,347 字节仍吻合。 |
+| zedstwu 的 `0x1071` 指令把重定位目标从 `0x24378` 改为 `0x22360` | `region_relocation_target` 定位到字段 `0x1074`，报告两侧目标。第二段仍吻合。 |
+| WrapSaveMergeNNFiles 的表中把槽 `0x19018` 的 token 改为另一个存在的 MethodDef | `clr_fixup_slot_mismatch` 指到第 3 行、描述符 1、槽 0，申报 `0x0600000a`，原件 `0x06000001`，其余 236 槽仍吻合。 |
+| WrapSaveMergeNNFiles 仅把旧表 `0x48b0` 的 `JMP RAX` 写成 `CALL RAX` | `indirect_target_transfer_kind_mismatch` 定位到该址。其余 10 个 JMP 仍是未决。 |
+
+FindComponent S13 另作兼容复验，原 99 个 CALL 均保持未决。S17 的旧附件仍存在行号引用差异。局部回编和 CLR 磁盘槽核验各按自身证据给出结论。

@@ -576,7 +576,7 @@ def _audit(original, root, pe, bits, x86, result, provider):
                 report("fail", "duplicate_data_import", "Repeated import operand registration.", site, row["listing"])
             data_sites[ident][site] = slot
             continue
-        if ins.flow_control == flows.INDIRECT_CALL and raw_owner is not None:
+        if ins.flow_control in indirect and raw_owner is not None:
             dll, sep, symbol = row["callee"].strip().partition("!")
             matched_iat = (cls == "external" and bool(sep) and (dll.casefold(), symbol) == iat.get(slot_of(ins)))
             main_rows[site].append({"owner": owner if owner is not None else raw_owner, "source": f"calls.csv#L{row_index}",

@@ -95,7 +95,7 @@ class NativeSitesTest(unittest.TestCase):
                 trusted = (path, digest or hashlib.sha256(blob).hexdigest())
             return check(original, root, trusted)
 
-    def test_target_audit_receives_proven_calls_and_original_main_rows(self):
+    def test_target_audit_receives_proven_indirect_transfers_and_original_main_rows(self):
         module_name = check.__module__.removesuffix("native_sites") + "native_targets"
         module = types.ModuleType(module_name)
         module.audit = Mock()
@@ -107,7 +107,7 @@ class NativeSitesTest(unittest.TestCase):
                                 tail_asm=["00001006  ff d0  call rax", "00001008  ff e0  jmp rax"])
             args = module.audit.call_args.args
             main, proven, by_file = args[7], args[-2], args[-1]
-            self.assertEqual(set(main), {0x1000, 0x1006})
+            self.assertEqual(set(main), {0x1000, 0x1006, 0x1008})
             self.assertEqual(proven, {0x1000, 0x1006, 0x1008})
             self.assertEqual(by_file["code/native.asm"], ([1, 2, 3], [0x1000, 0x1006, 0x1008], 3))
             self.assertTrue(main[0x1000][0]["known_iat"])
@@ -115,6 +115,7 @@ class NativeSitesTest(unittest.TestCase):
             self.assertFalse(any(row["known_iat"] for row in main[0x1006]))
             self.assertEqual(main[0x1006][2], {"owner": 0x1000, "source": "calls.csv#L5", "listing": "code/native.asm#L2",
                                               "callee": "Y.dll!run", "classification": "external", "known_iat": False})
+            self.assertEqual(main[0x1008][0]["callee"], "jump")
             self.assertEqual(result["metrics"]["explicitly_unresolved_sites"], 2)
             self.audit(tail=b"\xff\xd0\xc3", tail_asm=[])
             args = module.audit.call_args.args

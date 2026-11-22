@@ -78,6 +78,66 @@ class SubmittedTargetsTest(unittest.TestCase):
         self.assertEqual(hint["definition_status"], "no_instruction_address_supplied")
         self.assertEqual(result["indirect_call_targets"]["counts"], {"confirmed": 0, "unresolved": 2, "contradicted": 0})
 
+    def jump_fixture(self):
+        self.original, call = tiny_pe(tail=b"\xff\xd0\xff\xe0")
+        self.digest = hashlib.sha256(self.original).hexdigest()
+        (self.root / "code/native.asm").write_text(
+            f"00001000  {call.hex(' ')}  call qword ptr [slot]\n"
+            "00001006  ff d0  call rax\n00001008  ff e0  jmp rax\n",
+            encoding="utf-8")
+        jump = ["native", "0x1000", "register-indirect (JMP RAX)", "unresolved", "code/native.asm#L3", "JMP RAX"]
+        self.table("calls.csv", self.header, [*self.main[:2], jump])
+        self.set_legacy(self.legacy[:1])
+        return jump
+
+    def test_mixed_index_checks_explicit_jump_mnemonic_against_original(self):
+        jump = self.jump_fixture()
+        method = ["method", "0x6000030", "calli@IL_0041", "indirect", "code/methods.il#L17", ""]
+        for label, decision in [("JMP RAX", "unresolved"), ("CALL RAX", "contradicted")]:
+            with self.subTest(label=label):
+                sidecar_jump = list(jump)
+                sidecar_jump[2] = f"register-indirect ({label})"
+                self.table("code/indirect.csv", self.header, [method, self.main[1], sidecar_jump])
+                result = self.audit()
+                self.assertEqual(result["indirect_call_targets"]["counts"],
+                                 {"confirmed": 0, "unresolved": 1, "contradicted": 0})
+                self.assertEqual(result["managed_indirect_records"]["count"], 1)
+                self.assertEqual(result["managed_indirect_records"]["records"][0]["listing"], method[4])
+                observed, = result["indirect_jump_targets"]["sites"]
+                self.assertEqual((observed["site_rva"], observed["decision"]), ("0x1008", decision))
+                self.assertEqual(observed["original_bytes"], "ff e0")
+                self.assertEqual(observed["operand"], {"kind": "register", "register": "rax"})
+                self.assertEqual((result["metrics"]["indirect_sites"], result["metrics"]["missing_sites"]), (3, 0))
+                findings = {one["code"]: one for one in result["findings"]}
+                self.assertNotIn("indirect_target_site_unverified", findings)
+                self.assertNotIn("indirect_target_not_a_verified_call", findings)
+                code = "indirect_target_transfer_kind_mismatch"
+                if decision == "contradicted":
+                    self.assertEqual(findings[code]["listing"], "code/indirect.csv#L4")
+                    self.assertIn(code, observed["reasons"])
+                else:
+                    self.assertNotIn(code, findings)
+
+    def test_json_call_claim_at_jump_remains_a_conflict(self):
+        jump = self.jump_fixture()
+        self.table("code/indirect.csv", self.header, [self.main[1], jump])
+        self.claims({**self.positive, "site": "0x1008"})
+        result = self.audit()
+        row = self.rows(result)["0x1008"]
+        self.assertEqual(row["decision"], "contradicted")
+        self.assertIn("indirect_target_not_a_verified_call", row["reasons"])
+        self.assertEqual(set(row["evidence"]), {"target-evidence.json"})
+        self.assertEqual(result["indirect_jump_targets"]["counts"], {"unresolved": 1, "contradicted": 0})
+
+    def test_managed_only_index_does_not_require_native_index_rows(self):
+        method = ["method", "0x6000030", "calli@IL_0041", "indirect", "code/methods.il#L17", ""]
+        self.table("code/indirect.csv", self.header, [method])
+        result = self.audit()
+        self.assertEqual(result["managed_indirect_records"]["count"], 1)
+        for row in self.rows(result).values():
+            self.assertEqual(row["missing_legacy_records"], [])
+        self.assertNotIn("indirect_target_site_unverified", [r["code"] for r in result["findings"]])
+
     def test_correct_and_wrong_ordinal_through_item(self):
         for claimed, decision, code in [("#5", "confirmed", "witness_verified"), ("#6", "contradicted", "witness_import")]:
             with self.subTest(claimed=claimed):

@@ -108,6 +108,16 @@ Source SHA-256: <这份源码的小写 SHA-256>
 
 `decision=confirmed` 时读取 `confirmed_target` 及其 `binding_scope`。`unresolved` 保留现有线索，例如只写了基址寄存器、只取到了分派器，或依据超出支持范围。`contradicted` 表示申报的地址、归属、操作数、依据或目标存在可定位的冲突，或同址登记存在冲突。`witness_result.reported` 与 `witness_result.original` 分别记录申报和原件结果。三种状态按地址互斥计数，后两种的 `confirmed_target` 均为空。运行时完整目标集合和整件静态验收各有独立判据。
 
+兼容旧表混列的间接转移。`indirect_jump_targets` 记录原生间接 JMP，明确填错 CALL 或 JMP 的行会报告 `indirect_target_transfer_kind_mismatch`。`managed_indirect_records` 给出旧表中托管记录的位置和申报内容。声明 CALL 目标的 JSON 仍使用上面的格式。
+
+### 内部函数回编与 CLR 跳转槽
+
+交付含 `s13/callee-evidence.json` 或 `s13/reassembly-delta.json` 时，`item` 和 `project` 会增加内部函数回编专项。前者列出函数符号和各自的 `s13/<符号>.c` 源码，后者按 RVA 对应 `code/verified.c` 引用的源码分片。现有两种格式可原样提交。验收器依据原件 PE 异常目录定位函数起止，使用 `--assembler` 指定的受信 Zig 重新编译受支持的内联汇编，并按原件指令核对 COFF 重定位字段、类型、目标、加数及应用重定位后的代码字节。只编译通过语法核对的指令与受信宏。其他源码形式和缺少编译器的结果会保留待核。
+
+`metrics.regions` 每行给出源码出处、原件范围、回编状态和计数。重定位不符时同时显示指令 RVA、重定位字段 RVA、原件目标和重编目标；字节不同则给出首个差异。累计匹配数只计本次独立回编且吻合的范围。
+
+包含 `code/vtable-fixups.csv` 的混合程序集会增加 `clr_vtable_fixups` 专项，需要 PowerShell 7。工具静态读取原件 CLR 描述符、槽宽、槽地址、MethodDef token、名称及方法体 RVA。若提供 `code/indirect-native.csv`，会核对其中可定位的 `vtable-slot` 跳转以及原件指令所读的槽。报告分别给出目录条目、槽、不同方法和已核跳转的计数。程序集加载后的目标、未登记跳转和方法体实现各自需要相应证据。
+
 ## 全项目分母和批量输入
 
 下面的例子沿用上面的原件和交付。把三份来源清单和逐件总表下载到同一工作目录，再提交本机可供核对的材料。首次下载需要联网；验收器会自行核验这些清单的指纹。
