@@ -1,6 +1,6 @@
 # 未成功
 
-共 77 件。每件均有尝试记录，当前交付只有报告。
+共 65 件。每件均有尝试记录，当前交付只有报告。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -12,17 +12,11 @@
 | [APropHtmlHelp.exe](Properties/Program%20Files/AspenTech/Aspen%20Properties%20V15.0/GUI/xeq/APropHtmlHelp.exe/) | Properties | `ad692fbf8e9f` |
 | [ApwnRes.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/ApwnRes.dll/) | Plus | `1ef6c43d2f4f` |
 | [Aspen Properties.xla](Properties/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Properties%20V15.0/Engine/xeq/Aspen%20Properties.xla/) | Properties | `d124683bb13c` |
-| [AspenTech.AspenPlus.Localization.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.AspenPlus.Localization.dll/) | Plus | `5b8b5cfef449` |
 | [AspenTech.Exchange.ExchangeAgent.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.Exchange.ExchangeAgent.dll/) | Plus | `4031e6d551bc` |
-| [AspenTech.NGP.UnitOperationBlock.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/AspenTech.NGP.UnitOperationBlock.dll/) | Plus | `ddd1a2de405c` |
-| [azeotropesearch.lib](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Lib/azeotropesearch.lib/) | Plus | `2d899bf19778` |
 | [BATCHSEP.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/BATCHSEP.dll/) | Plus | `259f7e2d588f` |
-| [Calculation.xlsm](Properties/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Solubility%20Modeler%20V15.0/NRTL-SAC/Calculation.xlsm/) | Properties | `52674742bc3d` |
-| [corn_stover_to_ethanol.xlsm](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Examples/Biofuel%20and%20Biochemicals/Bioethanol%20from%20Corn%20Stover/corn_stover_to_ethanol.xlsm/) | Plus | `3dbc4ad06bbd` |
 | [d3dcompiler_47.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/d3dcompiler_47.dll/) | Plus | `e4bc3420a280` |
 | [DevExpress.Data.v23.2.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/DevExpress.Data.v23.2.dll/) | Plus | `9f7d7c47cc11` |
 | [DevExpress.Docs.v23.2.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/DevExpress.Docs.v23.2.dll/) | Plus | `bceb82bb0e23` |
-| [DevExpress.Images.v23.2.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/DevExpress.Images.v23.2.dll/) | Plus | `569c25ba89a8` |
 | [DevExpress.Pdf.v23.2.Core.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/DevExpress.Pdf.v23.2.Core.dll/) | Plus | `665edb93a772` |
 | [DevExpress.Printing.v23.2.Core.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/DevExpress.Printing.v23.2.Core.dll/) | Plus | `8aa5476b6e43` |
 | [DevExpress.RichEdit.v23.2.Core.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/DevExpress.RichEdit.v23.2.Core.dll/) | Plus | `21fa904d3262` |
@@ -62,7 +56,6 @@
 | [oomfutilslib.lib](Plus/%5BProgramFiles64Folder%5D/AspenTech/OOMF%20V15.0/lib/oomfutilslib.lib/) | Plus | `5b4fdd8b8728` |
 | [Polymer library.acml](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Lib/Polymer%20library.acml/) | Plus | `28b3d58354ba` |
 | [RCSTR3.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/RCSTR3.dll/) | Plus | `de4e7d927e78` |
-| [Regression.xlsm](Properties/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Solubility%20Modeler%20V15.0/NRTL-SAC/Regression.xlsm/) | Properties | `1b7d06872c82` |
 | [Rplugpde.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/Rplugpde.dll/) | Plus | `614e0eb07a0a` |
 | [SystemLibrary.acml](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Lib/SystemLibrary.acml/) | Plus | `8b5f0e8986c5` |
 | [SystemLibrary370_1.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/SystemLibrary370_1.dll/) | Plus | `6b2e7d7f8080` |
@@ -72,11 +65,6 @@
 | [tensorflow.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/OOMF%20V15.0/xeq/tensorflow.dll/) | Plus | `3a34e585ee7f` |
 | [thgceos.dll](Plus/%5BCommonFiles64Folder%5D/Hyprotech/COMThermo/thgceos.dll/) | Plus | `6221c6c2effc` |
 | [Valve.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/Valve.dll/) | Plus | `e0ca6f0784be` |
-| [vba_caller.xlsm](Properties/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Properties%20V15.0/GUI/Examples/Excel%20Properties%20Calculator/vba_caller.xlsm/) | Properties | `10b51a5d9521` |
-| [vbaProject.bin](Properties/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Properties%20V15.0/GUI/Examples/Excel%20Properties%20Calculator/vba_caller.xlsm%21/xl/vbaProject.bin/) | Properties | `4e0bf2a2925b` |
-| [vbaProject.bin](Properties/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Solubility%20Modeler%20V15.0/NRTL-SAC/Calculation.xlsm%21/xl/vbaProject.bin/) | Properties | `2ee31997f860` |
-| [vbaProject.bin](Properties/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Solubility%20Modeler%20V15.0/NRTL-SAC/Regression.xlsm%21/xl/vbaProject.bin/) | Properties | `248e460a2ca9` |
-| [VBEXAMP.xlsm](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/VBDotNetexample/VBEXAMP.xlsm/) | Plus | `8cfb7e1340f3` |
 | [WebExchangeClient.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WebExchangeClient.dll/) | Plus | `5e2235e32e5a` |
 | [WebSearchObjects.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WebSearchObjects.dll/) | Plus | `f82fd74a20a1` |
 | [xprs.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Open%20Solvers%20V15.0/Bin/xprs.dll/) | Plus | `318a8fb5a443` |

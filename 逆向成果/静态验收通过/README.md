@@ -1,6 +1,6 @@
 # 静态验收通过
 
-已有逐件静态验收记录。运行行为留待 Windows 对照。本次整理共 72 个原件。按产品和原安装路径找到同名文件夹。
+已有逐件静态验收记录。运行行为留待 Windows 对照。本次整理共 84 个原件。按产品和原安装路径找到同名文件夹。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -15,6 +15,7 @@
 | [AspenTech.AspenCxs.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.AspenCxs.dll/) | Plus-Properties | `84fdfccb7a92` |
 | [AspenTech.AspenPlus.Engine.Structures.dll](Plus-Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/AspenTech.AspenPlus.Engine.Structures.dll/) | Plus-Properties | `f11a69eb9b44` |
 | [AspenTech.AspenPlus.Infrastructure.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.AspenPlus.Infrastructure.dll/) | Plus-Properties | `052e0a0e54d2` |
+| [AspenTech.AspenPlus.Localization.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.AspenPlus.Localization.dll/) | Plus | `5b8b5cfef449` |
 | [AspenTech.AspenPlus.MMControls.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.AspenPlus.MMControls.dll/) | Plus-Properties | `bd4b5cdf3e6c` |
 | [AspenTech.AspenPlus.MMDialogs.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.AspenPlus.MMDialogs.dll/) | Plus-Properties | `d9fa9a27c589` |
 | [AspenTech.AspenPlus.MMForms.APropSetup.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/WPFForms/AspenTech.AspenPlus.MMForms.APropSetup.dll/) | Plus-Properties | `6287a414f51e` |
@@ -43,15 +44,20 @@
 | [AspenTech.Engineering.Controls.FileMenu.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.Engineering.Controls.FileMenu.dll/) | Plus-Properties | `db81bd19b9a3` |
 | [AspenTech.Engineering.FlowsheetOverlay.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/Modules/AspenTech.Engineering.FlowsheetOverlay.dll/) | Plus-Properties | `7f8a50243d4c` |
 | [AspenTech.NGP.Infrastructure.dll](Plus-Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/AspenTech.NGP.Infrastructure.dll/) | Plus-Properties | `3e360a5dcdf5` |
+| [AspenTech.NGP.UnitOperationBlock.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/AspenTech.NGP.UnitOperationBlock.dll/) | Plus | `ddd1a2de405c` |
 | [AspenTech.Visualisation.Assistant.Run.exe](Plus-Properties/Program%20Files/Common%20Files/AspenTech%20Shared/AspenTech.Visualisation.Assistant.Run.exe/) | Plus-Properties | `59a90e21b8da` |
 | [AspenTech.Visualisation.CommonShell.Wpf.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.Visualisation.CommonShell.Wpf.dll/) | Plus-Properties | `fcc8f69733e5` |
 | [AspenTech.Visualisation.Controls.Assistant.W1.dll](Plus-Properties/Program%20Files/Common%20Files/AspenTech%20Shared/AspenTech.Visualisation.Controls.Assistant.W1.dll/) | Plus-Properties | `8940700237f8` |
 | [AspenTech.Visualisation.Controls.StartPage.Wpf.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.Visualisation.Controls.StartPage.Wpf.dll/) | Plus-Properties | `73193ded5722` |
 | [AxPFSCtrlLib.dll](Plus/Program%20Files/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/AxPFSCtrlLib.dll/) | Plus | `de5a2f3a135b` |
+| [azeotropesearch.lib](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Lib/azeotropesearch.lib/) | Plus | `2d899bf19778` |
 | [BFDYLD.obj](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Examples/Biofuel%20and%20Biochemicals/Bioethanol%20from%20Corn%20Stover/Lignocellulosic%20biomass%20to%20ethanol.apwz%21/BFDYLD.obj/) | Plus | `3caaf37f068d` |
 | [BFDYLD.obj](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Examples/Biofuel%20and%20Biochemicals/Biomass%20characterization/Biofeed%20converter.apwz%21/BFDYLD.obj/) | Plus | `194e88b44801` |
+| [Calculation.xlsm](Properties/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Solubility%20Modeler%20V15.0/NRTL-SAC/Calculation.xlsm/) | Properties | `52674742bc3d` |
+| [corn_stover_to_ethanol.xlsm](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Examples/Biofuel%20and%20Biochemicals/Bioethanol%20from%20Corn%20Stover/corn_stover_to_ethanol.xlsm/) | Plus | `3dbc4ad06bbd` |
 | [DatabaseConfiguration.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseConfiguration/DatabaseConfiguration.dll/) | Properties | `07d23d19b439` |
 | [DatabaseConfiguration.exe](Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseConfiguration/DatabaseConfiguration.exe/) | Properties | `2addbcc2b201` |
+| [DevExpress.Images.v23.2.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/DevExpress.Images.v23.2.dll/) | Plus | `569c25ba89a8` |
 | [FluidFlowInterfaceAndEnum.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Hydraulics%20V15.0/FluidFlowInterfaceAndEnum.dll/) | Plus | `174cc8931a4b` |
 | [Interop.Aosapfs.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/Interop.Aosapfs.dll/) | Plus-Properties | `05f0b74afdc7` |
 | [log4net.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseSetup/log4net.dll/) | Properties | `2af48761d784` |
@@ -67,6 +73,7 @@
 | [Npgsql.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseSetup/Npgsql.dll/) | Properties | `02ea73194ff5` |
 | [oomfhostlib.lib](Plus/%5BProgramFiles64Folder%5D/AspenTech/OOMF%20V15.0/lib/oomfhostlib.lib/) | Plus | `d48d67029ff1` |
 | [PFSCtrlLib.dll](Plus/Program%20Files/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/PFSCtrlLib.dll/) | Plus | `5073b8f277f6` |
+| [Regression.xlsm](Properties/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Solubility%20Modeler%20V15.0/NRTL-SAC/Regression.xlsm/) | Properties | `1b7d06872c82` |
 | [SaveMergeNNFiles.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/SaveMergeNNFiles.dll/) | Plus-Properties | `a610bfe69f5b` |
 | [SetupAPEDPostgreSQLDatabases.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseSetup/SetupAPEDPostgreSQLDatabases.dll/) | Properties | `23b8382cb0cd` |
 | [System.Configuration.ConfigurationManager.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseSetup/System.Configuration.ConfigurationManager.dll/) | Properties | `e814b79f175e` |
@@ -76,3 +83,8 @@
 | [USRAFT.obj](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Examples/Polymers/RAFT%20polymerization.apwz%21/USRAFT.obj/) | Plus | `c6f4bd93d68d` |
 | [usrgel.obj](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Examples/Polymers/SuspensionEPS.apwz%21/usrgel.obj/) | Plus | `e3c4115ceb2c` |
 | [usrny6.obj](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Examples/Polymers/Polyamide/nylon6.apwz%21/usrny6.obj/) | Plus | `92efb7c09dff` |
+| [vba_caller.xlsm](Properties/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Properties%20V15.0/GUI/Examples/Excel%20Properties%20Calculator/vba_caller.xlsm/) | Properties | `10b51a5d9521` |
+| [vbaProject.bin](Properties/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Properties%20V15.0/GUI/Examples/Excel%20Properties%20Calculator/vba_caller.xlsm!/xl/vbaProject.bin/) | Properties | `4e0bf2a2925b` |
+| [vbaProject.bin](Properties/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Solubility%20Modeler%20V15.0/NRTL-SAC/Calculation.xlsm!/xl/vbaProject.bin/) | Properties | `2ee31997f860` |
+| [vbaProject.bin](Properties/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Solubility%20Modeler%20V15.0/NRTL-SAC/Regression.xlsm!/xl/vbaProject.bin/) | Properties | `248e460a2ca9` |
+| [VBEXAMP.xlsm](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/VBDotNetexample/VBEXAMP.xlsm/) | Plus | `8cfb7e1340f3` |

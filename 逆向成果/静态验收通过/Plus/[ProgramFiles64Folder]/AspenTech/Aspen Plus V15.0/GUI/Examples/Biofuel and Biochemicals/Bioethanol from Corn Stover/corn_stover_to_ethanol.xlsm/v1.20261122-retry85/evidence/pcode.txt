@@ -1,0 +1,2334 @@
+Processing file: .local/reverse-unsuccessful-85/items/3dbc4ad06bbdf14932701df606fde36a246148d0f1be00465b815e2a9c0ece55/input/corn_stover_to_ethanol.xlsm
+===============================================================================
+Module streams:
+VBA/ThisWorkbook - 999 bytes
+VBA/Sheet1 - 991 bytes
+VBA/MEBAspenGUI - 20272 bytes
+Line #0:
+	QuoteRem 0x0000 0x0062 " This module handles the interface with Aspen GUI.  Four routines are required for this interface:"
+Line #1:
+	QuoteRem 0x0000 0x0000 ""
+Line #2:
+	QuoteRem 0x0000 0x0033 " PickSimulationFileName( myFileNameRange as Range )"
+Line #3:
+	QuoteRem 0x0000 0x0055 " InitializeSimulatorInterface( myFile as String, Munits as String, Hunits as String )"
+Line #4:
+	QuoteRem 0x0000 0x007F " ExtractStream( myStreamName as String, Munits as String, Hunits as String, StreamType as String, Mass as double, H as double )"
+Line #5:
+	QuoteRem 0x0000 0x001A " CloseSimulatorInterface()"
+Line #6:
+	QuoteRem 0x0000 0x0000 ""
+Line #7:
+	QuoteRem 0x0000 0x0022 " Version 2.0 - Jan. 31, 2006 (TJE)"
+Line #8:
+	QuoteRem 0x0000 0x0063 "   1) Modified code to handle hierarchy and changed unit conversion procedure to speed-up execution"
+Line #9:
+	QuoteRem 0x0000 0x0000 ""
+Line #10:
+	QuoteRem 0x0000 0x0034 " Notes for possible improvements in future releases:"
+Line #11:
+	QuoteRem 0x0000 0x0063 "   1)Try to use index or some other more intelligent method for finding columns for unit conversion"
+Line #12:
+	QuoteRem 0x0000 0x0042 "   2)Look at set-up for the stream class to see if conventional is"
+Line #13:
+	QuoteRem 0x0000 0x006B "     chosen.  If so, then there isn't a $TOTAL stream and the ExtractStream routine fails...modify logic to"
+Line #14:
+	QuoteRem 0x0000 0x0018 "     to handle this case"
+Line #15:
+Line #16:
+	Option  (Explicit)
+Line #17:
+Line #18:
+	Type (Private) AspenStreamInfo
+Line #19:
+	DimImplicit 
+	VarDefn Node
+Line #20:
+	DimImplicit 
+	VarDefn FullName (As String)
+Line #21:
+	EndType 
+Line #22:
+Line #23:
+	Dim (Private) 
+	VarDefn ihAPSim
+Line #24:
+	Dim (Private) 
+	VarDefn Streams
+Line #25:
+	Dim (Private) 
+	VarDefn nStreams (As Integer)
+Line #26:
+	Dim (Private) 
+	VarDefn nRowMassFlow (As Integer)
+Line #27:
+	Dim (Private) 
+	VarDefn nRowEnthalpyFlow (As Integer)
+Line #28:
+	Dim (Private) 
+	VarDefn nRowPower (As Integer)
+Line #29:
+	Dim (Private) 
+	VarDefn iMassFlow (As Integer)
+Line #30:
+	Dim (Private) 
+	VarDefn iEnthalpyFlow (As Integer)
+Line #31:
+	Dim (Private) 
+	VarDefn iPower (As Integer)
+Line #32:
+Line #33:
+	FuncDefn (Public Sub PickSimulationFileName(myFileNameRange As ))
+Line #34:
+Line #35:
+	QuoteRem 0x0000 0x005F " This routine displays the standard Open dialog box with *.apw, *.bkp, and *.* as the available"
+Line #36:
+	QuoteRem 0x0000 0x001B " files for the user to pick"
+Line #37:
+Line #38:
+	Dim 
+	VarDefn FileName (As String)
+Line #39:
+	Dim 
+	VarDefn FileFilter (As String)
+Line #40:
+	Dim 
+	VarDefn Title (As String)
+Line #41:
+Line #42:
+	LitStr 0x005F "Aspen Plus User Interface Files (*.apw; *.bkp; *.apwz),*.apwz; *.apw; *.bkp,All Files (*.*),*.*"
+	St FileFilter 
+Line #43:
+	LitStr 0x001F "Aspen Plus User Interface Files"
+	St Title 
+Line #44:
+Line #45:
+	Ld FileFilter 
+	LitDI2 0x0001 
+	Ld Title 
+	Ld Application 
+	ArgsMemLd GetOpenFilename 0x0003 
+	St FileName 
+Line #46:
+	Ld FileName 
+	LitStr 0x0005 "False"
+	Ne 
+	If 
+	BoSImplicit 
+	Ld FileName 
+	Ld myFileNameRange 
+	MemSt Value 
+	EndIf 
+Line #47:
+Line #48:
+	EndSub 
+Line #49:
+Line #50:
+	FuncDefn (Public Sub InitializeSimulatorInterface(myFile As String))
+Line #51:
+Line #52:
+	QuoteRem 0x0000 0x0036 " This routine sets up the interface with the simulator"
+Line #53:
+Line #54:
+	Dim 
+	VarDefn ihStreams
+Line #55:
+	Dim 
+	VarDefn ihStream
+Line #56:
+Line #57:
+	Dim 
+	VarDefn BaseName (As String)
+Line #58:
+Line #59:
+	Dim 
+	VarDefn Found (As Boolean)
+Line #60:
+	Dim 
+	VarDefn i (As Integer)
+Line #61:
+Line #62:
+	Dim 
+	VarDefn Msg (As String)
+Line #63:
+	Dim 
+	VarDefn Title (As String)
+Line #64:
+	Dim 
+	VarDefn style (As Integer)
+Line #65:
+	Dim 
+	VarDefn reply (As Integer)
+Line #66:
+Line #67:
+	QuoteRem 0x0000 0x0015 " Connect to Aspen GUI"
+Line #68:
+Line #69:
+	LitStr 0x0017 "Connecting to Aspen GUI"
+	Ld Application 
+	MemSt StatusBar 
+Line #70:
+	OnError ErrorTrap 
+Line #71:
+	SetStmt 
+	Ld myFile 
+	ArgsLd GetObject 0x0001 
+	Set ihAPSim 
+Line #72:
+	LitVarSpecial (True)
+	Ld ihAPSim 
+	MemSt Visible 
+Line #73:
+Line #74:
+	QuoteRem 0x0000 0x004C " Store the stream nodes in a modular level array and set-up unit conversions"
+Line #75:
+	QuoteRem 0x0000 0x0043 " ...this cuts down on automation overhead and speeds-up the program"
+Line #76:
+Line #77:
+	LitDI2 0x0000 
+	St nStreams 
+Line #78:
+	LitStr 0x0000 ""
+	St BaseName 
+Line #79:
+Line #80:
+	Ld ihAPSim 
+	MemLd Tree 
+	MemLd Data 
+	Ld BaseName 
+	ArgsCall FillStreams 0x0002 
+Line #81:
+Line #82:
+	QuoteRem 0x0000 0x0021 " find MASS-FLOW in the Unit Table"
+Line #83:
+Line #84:
+	LitVarSpecial (False)
+	St Found 
+Line #85:
+	StartForVariable 
+	Ld i 
+	EndForVariable 
+	LitDI2 0x0001 
+	LitStr 0x000A "Unit Table"
+	Ld ihAPSim 
+	MemLd Tree 
+	ArgsMemLd Elements 0x0001 
+	MemLd Elements 
+	MemLd Count 
+	For 
+Line #86:
+	LitDI2 0x0000 
+	Ld i 
+	LitDI2 0x0001 
+	Sub 
+	LitStr 0x000A "Unit Table"
+	Ld ihAPSim 
+	MemLd Tree 
+	ArgsMemLd Elements 0x0001 
+	MemLd Elements 
+	ArgsMemLd Label 0x0002 
+	LitStr 0x0009 "MASS-FLOW"
+	Eq 
+	IfBlock 
+Line #87:
+	LitVarSpecial (True)
+	St Found 
+Line #88:
+	Ld i 
+	St nRowMassFlow 
+Line #89:
+	ExitFor 
+Line #90:
+	EndIfBlock 
+Line #91:
+	StartForVariable 
+	Ld i 
+	EndForVariable 
+	NextVar 
+Line #92:
+	Ld Found 
+	Not 
+	IfBlock 
+Line #93:
+	LitStr 0x0026 "Could not find MASS-FLOW in Unit Table"
+	St Msg 
+Line #94:
+	Ld vbOKOnly 
+	St style 
+Line #95:
+	LitStr 0x0015 "Data Extraction Error"
+	St Title 
+Line #96:
+	Ld Msg 
+	Ld style 
+	Ld Title 
+	ArgsLd MsgBox 0x0003 
+	St reply 
+Line #97:
+	ArgsCall CloseSimulatorInterface 0x0000 
+Line #98:
+	End 
+Line #99:
+	EndIfBlock 
+Line #100:
+Line #101:
+	QuoteRem 0x0000 0x0024 " find Munit in the MASS-FLOW entries"
+Line #102:
+Line #103:
+	LitVarSpecial (False)
+	St Found 
+Line #104:
+	StartForVariable 
+	Ld i 
+	EndForVariable 
+	LitDI2 0x0001 
+	Ld nRowMassFlow 
+	LitDI2 0x0001 
+	Sub 
+	LitStr 0x000A "Unit Table"
+	Ld ihAPSim 
+	MemLd Tree 
+	ArgsMemLd Elements 0x0001 
+	ArgsMemLd Elements 0x0001 
+	MemLd Elements 
+	MemLd Count 
+	For 
+Line #105:
+	LitDI2 0x0000 
+	Ld i 
+	LitDI2 0x0001 
+	Sub 
+	Ld nRowMassFlow 
+	LitDI2 0x0001 
+	Sub 
+	LitStr 0x000A "Unit Table"
+	Ld ihAPSim 
+	MemLd Tree 
+	ArgsMemLd Elements 0x0001 
+	ArgsMemLd Elements 0x0001 
+	MemLd Elements 
+	ArgsMemLd Label 0x0002 
+	Ld Munits 
+	Eq 
+	IfBlock 
+Line #106:
+	LitVarSpecial (True)
+	St Found 
+Line #107:
+	Ld i 
+	St iMassFlow 
+Line #108:
+	ExitFor 
+Line #109:
+	EndIfBlock 
+Line #110:
+	StartForVariable 
+	Ld i 
+	EndForVariable 
+	NextVar 
+Line #111:
+	Ld Found 
+	Not 
+	IfBlock 
+Line #112:
+	LitStr 0x0028 "Could not convert enthalpy into units : "
+	Ld Munits 
+	Concat 
+	St Msg 
+Line #113:
+	Ld vbOKOnly 
+	St style 
+Line #114:
+	LitStr 0x0015 "Data Extraction Error"
+	St Title 
+Line #115:
+	Ld Msg 
+	Ld style 
+	Ld Title 
+	ArgsLd MsgBox 0x0003 
+	St reply 
+Line #116:
+	ArgsCall CloseSimulatorInterface 0x0000 
+Line #117:
+	End 
+Line #118:
+	EndIfBlock 
+Line #119:
+Line #120:
+	QuoteRem 0x0000 0x0024 " find ENTHALPY-FLO in the Unit Table"
+Line #121:
+Line #122:
+	LitVarSpecial (False)
+	St Found 
+Line #123:
+	StartForVariable 
+	Ld i 
+	EndForVariable 
+	LitDI2 0x0001 
+	LitStr 0x000A "Unit Table"
+	Ld ihAPSim 
+	MemLd Tree 
+	ArgsMemLd Elements 0x0001 
+	MemLd Elements 
+	MemLd Count 
+	For 
+Line #124:
+	LitDI2 0x0000 
+	Ld i 
+	LitDI2 0x0001 
+	Sub 
+	LitStr 0x000A "Unit Table"
+	Ld ihAPSim 
+	MemLd Tree 
+	ArgsMemLd Elements 0x0001 
+	MemLd Elements 
+	ArgsMemLd Label 0x0002 
+	LitStr 0x000C "ENTHALPY-FLO"
+	Eq 
+	IfBlock 
+Line #125:
+	LitVarSpecial (True)
+	St Found 
+Line #126:
+	Ld i 
+	St nRowEnthalpyFlow 
+Line #127:
+	ExitFor 
+Line #128:
+	EndIfBlock 
+Line #129:
+	StartForVariable 
+	Ld i 
+	EndForVariable 
+	NextVar 
+Line #130:
+	Ld Found 
+	Not 
+	IfBlock 
+Line #131:
+	LitStr 0x0029 "Could not find ENTHALPY-FLO in Unit Table"
+	St Msg 
+Line #132:
+	Ld vbOKOnly 
+	St style 
+Line #133:
+	LitStr 0x0015 "Data Extraction Error"
+	St Title 
+Line #134:
+	Ld Msg 
+	Ld style 
+	Ld Title 
+	ArgsLd MsgBox 0x0003 
+	St reply 
+Line #135:
+	ArgsCall CloseSimulatorInterface 0x0000 
+Line #136:
+	End 
+Line #137:
+	EndIfBlock 
+Line #138:
+Line #139:
+	QuoteRem 0x0000 0x0027 " find Hunit in the ENTHALPY-FLO entries"
+Line #140:
+Line #141:
+	LitVarSpecial (False)
+	St Found 
+Line #142:
+	StartForVariable 
+	Ld i 
+	EndForVariable 
+	LitDI2 0x0001 
+	Ld nRowEnthalpyFlow 
+	LitDI2 0x0001 
+	Sub 
+	LitStr 0x000A "Unit Table"
+	Ld ihAPSim 
+	MemLd Tree 
+	ArgsMemLd Elements 0x0001 
+	ArgsMemLd Elements 0x0001 
+	MemLd Elements 
+	MemLd Count 
+	For 
+Line #143:
+	LitDI2 0x0000 
+	Ld i 
+	LitDI2 0x0001 
+	Sub 
+	Ld nRowEnthalpyFlow 
+	LitDI2 0x0001 
+	Sub 
+	LitStr 0x000A "Unit Table"
+	Ld ihAPSim 
+	MemLd Tree 
+	ArgsMemLd Elements 0x0001 
+	ArgsMemLd Elements 0x0001 
+	MemLd Elements 
+	ArgsMemLd Label 0x0002 
+	Ld Hunits 
+	Eq 
+	IfBlock 
+Line #144:
+	LitVarSpecial (True)
+	St Found 
+Line #145:
+	Ld i 
+	St iEnthalpyFlow 
+Line #146:
+	ExitFor 
+Line #147:
+	EndIfBlock 
+Line #148:
+	StartForVariable 
+	Ld i 
+	EndForVariable 
+	NextVar 
+Line #149:
+	Ld Found 
+	Not 
+	IfBlock 
+Line #150:
+	LitStr 0x0028 "Could not convert enthalpy into units : "
+	Ld Hunits 
+	Concat 
+	St Msg 
+Line #151:
+	Ld vbOKOnly 
+	St style 
+Line #152:
+	LitStr 0x0015 "Data Extraction Error"
+	St Title 
+Line #153:
+	Ld Msg 
+	Ld style 
+	Ld Title 
+	ArgsLd MsgBox 0x0003 
+	St reply 
+Line #154:
+	ArgsCall CloseSimulatorInterface 0x0000 
+Line #155:
+	End 
+Line #156:
+	EndIfBlock 
+Line #157:
+Line #158:
+	QuoteRem 0x0000 0x001D " find POWER in the Unit Table"
+Line #159:
+Line #160:
+	LitVarSpecial (False)
+	St Found 
+Line #161:
+	StartForVariable 
+	Ld i 
+	EndForVariable 
+	LitDI2 0x0001 
+	LitStr 0x000A "Unit Table"
+	Ld ihAPSim 
+	MemLd Tree 
+	ArgsMemLd Elements 0x0001 
+	MemLd Elements 
+	MemLd Count 
+	For 
+Line #162:
+	LitDI2 0x0000 
+	Ld i 
+	LitDI2 0x0001 
+	Sub 
+	LitStr 0x000A "Unit Table"
+	Ld ihAPSim 
+	MemLd Tree 
+	ArgsMemLd Elements 0x0001 
+	MemLd Elements 
+	ArgsMemLd Label 0x0002 
+	LitStr 0x0005 "POWER"
+	Eq 
+	IfBlock 
+Line #163:
+	LitVarSpecial (True)
+	St Found 
+Line #164:
+	Ld i 
+	St nRowPower 
+Line #165:
+	ExitFor 
+Line #166:
+	EndIfBlock 
+Line #167:
+	StartForVariable 
+	Ld i 
+	EndForVariable 
+	NextVar 
+Line #168:
+	Ld Found 
+	Not 
+	IfBlock 
+Line #169:
+	LitStr 0x0022 "Could not find POWER in Unit Table"
+	St Msg 
+Line #170:
+	Ld vbOKOnly 
+	St style 
+Line #171:
+	LitStr 0x0015 "Data Extraction Error"
+	St Title 
+Line #172:
+	Ld Msg 
+	Ld style 
+	Ld Title 
+	ArgsLd MsgBox 0x0003 
+	St reply 
+Line #173:
+	ArgsCall CloseSimulatorInterface 0x0000 
+Line #174:
+	End 
+Line #175:
+	EndIfBlock 
+Line #176:
+Line #177:
+	QuoteRem 0x0000 0x0021 " find Hunits in the POWER entries"
+Line #178:
+Line #179:
+	LitVarSpecial (False)
+	St Found 
+Line #180:
+	StartForVariable 
+	Ld i 
+	EndForVariable 
+	LitDI2 0x0001 
+	Ld nRowPower 
+	LitDI2 0x0001 
+	Sub 
+	LitStr 0x000A "Unit Table"
+	Ld ihAPSim 
+	MemLd Tree 
+	ArgsMemLd Elements 0x0001 
+	ArgsMemLd Elements 0x0001 
+	MemLd Elements 
+	MemLd Count 
+	For 
+Line #181:
+	LitDI2 0x0000 
+	Ld i 
+	LitDI2 0x0001 
+	Sub 
+	Ld nRowPower 
+	LitDI2 0x0001 
+	Sub 
+	LitStr 0x000A "Unit Table"
+	Ld ihAPSim 
+	MemLd Tree 
+	ArgsMemLd Elements 0x0001 
+	ArgsMemLd Elements 0x0001 
+	MemLd Elements 
+	ArgsMemLd Label 0x0002 
+	Ld Hunits 
+	Eq 
+	IfBlock 
+Line #182:
+	LitVarSpecial (True)
+	St Found 
+Line #183:
+	Ld i 
+	St iPower 
+Line #184:
+	ExitFor 
+Line #185:
+	EndIfBlock 
+Line #186:
+	StartForVariable 
+	Ld i 
+	EndForVariable 
+	NextVar 
+Line #187:
+	Ld Found 
+	Not 
+	IfBlock 
+Line #188:
+	LitStr 0x0025 "Could not convert power into units : "
+	Ld Hunits 
+	Concat 
+	St Msg 
+Line #189:
+	Ld vbOKOnly 
+	St style 
+Line #190:
+	LitStr 0x0015 "Data Extraction Error"
+	St Title 
+Line #191:
+	Ld Msg 
+	Ld style 
+	Ld Title 
+	ArgsLd MsgBox 0x0003 
+	St reply 
+Line #192:
+	ArgsCall CloseSimulatorInterface 0x0000 
+Line #193:
+	End 
+Line #194:
+	EndIfBlock 
+Line #195:
+Line #196:
+	LitVarSpecial (False)
+	Ld Application 
+	MemSt StatusBar 
+Line #197:
+	ExitSub 
+Line #198:
+Line #199:
+	Label ErrorTrap 
+Line #200:
+	LitStr 0x0036 "The following error occurred while loading Aspen GUI: "
+	Ld Err 
+	MemLd Description 
+	Concat 
+	St Msg 
+Line #201:
+	Ld vbOKOnly 
+	St style 
+Line #202:
+	LitStr 0x0013 "Aspen Loading Error"
+	St Title 
+Line #203:
+	Ld Msg 
+	Ld style 
+	Ld Title 
+	ArgsLd MsgBox 0x0003 
+	St reply 
+Line #204:
+	ArgsCall CloseSimulatorInterface 0x0000 
+Line #205:
+	End 
+Line #206:
+Line #207:
+	EndSub 
+Line #208:
+Line #209:
+	FuncDefn (Sub FillStreams(DataNode As ))
+Line #210:
+Line #211:
+	QuoteRem 0x0000 0x004A " This recursive routine searches through the tree structure for all of the"
+Line #212:
+	QuoteRem 0x0000 0x004C " the streams in each hierarchy level.  Once it finds a stream, it places the"
+Line #213:
+	QuoteRem 0x0000 0x002F " stream info in the Streams modular level array"
+Line #214:
+Line #215:
+	Dim 
+	VarDefn ihStreamList
+Line #216:
+	Dim 
+	VarDefn ihBlockList
+Line #217:
+	Dim 
+	VarDefn ihStream
+Line #218:
+	Dim 
+	VarDefn ihBlock
+Line #219:
+Line #220:
+	SetStmt 
+	Ld DataNode 
+	MemLd Streams 
+	Set ihStreamList 
+Line #221:
+	SetStmt 
+	Ld DataNode 
+	MemLd Blocks 
+	Set ihBlockList 
+Line #222:
+Line #223:
+	QuoteRem 0x0000 0x001E " First do this hierarchy level"
+Line #224:
+Line #225:
+	StartForVariable 
+	Ld ihStream 
+	EndForVariable 
+	Ld ihStreamList 
+	MemLd Elements 
+	ForEach 
+Line #226:
+	Ld nStreams 
+	LitDI2 0x0001 
+	Add 
+	St nStreams 
+Line #227:
+	LitDI2 0x0001 
+	Ld nStreams 
+	RedimAs (Preserve) Streams 0x0001 (As type_00000508)
+Line #228:
+	SetStmt 
+	Ld ihStream 
+	Ld nStreams 
+	ArgsLd Streams 0x0001 
+	Memset Node 
+Line #229:
+	Ld BaseName 
+	Ld ihStream 
+	MemLd Name 
+	Concat 
+	Ld nStreams 
+	ArgsLd Streams 0x0001 
+	MemSt FullName 
+Line #230:
+	StartForVariable 
+	Ld ihStream 
+	EndForVariable 
+	NextVar 
+Line #231:
+Line #232:
+	QuoteRem 0x0000 0x0028 " Now do each of the sub hierarchy levels"
+Line #233:
+Line #234:
+	StartForVariable 
+	Ld ihBlock 
+	EndForVariable 
+	Ld ihBlockList 
+	MemLd Elements 
+	ForEach 
+Line #235:
+	Ld HAP_RECORDTYPE 
+	Ld ihBlock 
+	ArgsMemLd AttributeValue 0x0001 
+	LitStr 0x0009 "Hierarchy"
+	Eq 
+	Ld HAP_RECORDTYPE 
+	Ld ihBlock 
+	ArgsMemLd AttributeValue 0x0001 
+	LitStr 0x0009 "HIERARCHY"
+	Eq 
+	Or 
+	IfBlock 
+Line #236:
+	Ld BaseName 
+	LitStr 0x0000 ""
+	Eq 
+	IfBlock 
+Line #237:
+	Ld ihBlock 
+	MemLd Data 
+	Ld ihBlock 
+	MemLd Name 
+	LitStr 0x0001 "."
+	Concat 
+	ArgsCall FillStreams 0x0002 
+Line #238:
+	ElseBlock 
+Line #239:
+	Ld ihBlock 
+	MemLd Data 
+	Ld BaseName 
+	Ld ihBlock 
+	MemLd Name 
+	Concat 
+	LitStr 0x0001 "."
+	Concat 
+	ArgsCall FillStreams 0x0002 
+Line #240:
+	EndIfBlock 
+Line #241:
+	EndIfBlock 
+Line #242:
+	StartForVariable 
+	Ld ihBlock 
+	EndForVariable 
+	NextVar 
+Line #243:
+Line #244:
+	EndSub 
+Line #245:
+	FuncDefn (Public Sub ExtractStream(myStreamName As String))
+Line #246:
+Line #247:
+	QuoteRem 0x0000 0x0046 " This routine extracts the temperature and enthalpy data from a stream"
+Line #248:
+Line #249:
+	Dim 
+	VarDefn ihStream
+Line #250:
+	Dim 
+	VarDefn ihStreams
+Line #251:
+	Dim 
+	VarDefn ihMVar
+Line #252:
+	Dim 
+	VarDefn ihHVar
+Line #253:
+	Dim 
+	VarDefn ihPhase
+Line #254:
+	Dim 
+	VarDefn Found (As Boolean)
+Line #255:
+	Dim 
+	VarDefn Treport (As Double)
+Line #256:
+	Dim 
+	VarDefn TestVal (As Double)
+Line #257:
+	Dim 
+	VarDefn nRow (As Long)
+Line #258:
+	Dim 
+	VarDefn nCol (As Long)
+Line #259:
+	Dim 
+	VarDefn i (As Integer)
+Line #260:
+Line #261:
+	Dim 
+	VarDefn Msg (As String)
+Line #262:
+	Dim 
+	VarDefn Title (As String)
+Line #263:
+	Dim 
+	VarDefn style (As Integer)
+Line #264:
+	Dim 
+	VarDefn reply (As Integer)
+Line #265:
+Line #266:
+	QuoteRem 0x0000 0x0015 " Get the right stream"
+Line #267:
+Line #268:
+	LitVarSpecial (False)
+	St Found 
+Line #269:
+	StartForVariable 
+	Ld i 
+	EndForVariable 
+	LitDI2 0x0001 
+	Ld nStreams 
+	For 
+Line #270:
+	Ld myStreamName 
+	Ld i 
+	ArgsLd Streams 0x0001 
+	MemLd FullName 
+	Eq 
+	IfBlock 
+Line #271:
+	LitVarSpecial (True)
+	St Found 
+Line #272:
+	SetStmt 
+	Ld i 
+	ArgsLd Streams 0x0001 
+	MemLd Node 
+	Set ihStream 
+Line #273:
+	ExitFor 
+Line #274:
+	EndIfBlock 
+Line #275:
+	StartForVariable 
+	Ld i 
+	EndForVariable 
+	NextVar 
+Line #276:
+Line #277:
+	Ld Found 
+	Not 
+	IfBlock 
+Line #278:
+	LitStr 0x0017 "Could not find stream: "
+	Ld myStreamName 
+	Concat 
+	St Msg 
+Line #279:
+	Ld vbOKOnly 
+	St style 
+Line #280:
+	LitStr 0x0015 "Data Extraction Error"
+	St Title 
+Line #281:
+	Ld Msg 
+	Ld style 
+	Ld Title 
+	ArgsLd MsgBox 0x0003 
+	St reply 
+Line #282:
+	ArgsCall CloseSimulatorInterface 0x0000 
+Line #283:
+	End 
+Line #284:
+	EndIfBlock 
+Line #285:
+Line #286:
+	Ld HAP_RECORDTYPE 
+	Ld ihStream 
+	ArgsMemLd AttributeValue 0x0001 
+	SelectCase 
+Line #287:
+Line #288:
+	LitStr 0x0008 "MATERIAL"
+	Case 
+	CaseDone 
+Line #289:
+Line #290:
+	LitStr 0x0004 "Mass"
+	St StreamType 
+Line #291:
+	SetStmt 
+	Ld ihStream 
+	MemLd Output 
+	MemLd MASSFLMX 
+	Set ihMVar 
+Line #292:
+	LitVarSpecial (False)
+	St Found 
+Line #293:
+	StartForVariable 
+	Ld ihPhase 
+	EndForVariable 
+	Ld ihMVar 
+	MemLd Elements 
+	ForEach 
+Line #294:
+	Ld ihPhase 
+	MemLd Name 
+	LitStr 0x0006 "$TOTAL"
+	Eq 
+	Ld ihPhase 
+	MemLd Value 
+	LitStr 0x0000 ""
+	Ne 
+	And 
+	IfBlock 
+Line #295:
+	Ld nRowMassFlow 
+	Ld iMassFlow 
+	Ld ihPhase 
+	ArgsMemLd ValueForUnit 0x0002 
+	St Mass 
+Line #296:
+	LitVarSpecial (True)
+	St Found 
+Line #297:
+	ExitFor 
+Line #298:
+	EndIfBlock 
+Line #299:
+	StartForVariable 
+	Ld ihPhase 
+	EndForVariable 
+	NextVar 
+Line #300:
+Line #301:
+	Ld Found 
+	Not 
+	IfBlock 
+Line #302:
+	LitStr 0x0025 "Could not find mass flow for stream: "
+	Ld myStreamName 
+	Concat 
+	St Msg 
+Line #303:
+	Ld vbOKOnly 
+	St style 
+Line #304:
+	LitStr 0x0015 "Data Extraction Error"
+	St Title 
+Line #305:
+	Ld Msg 
+	Ld style 
+	Ld Title 
+	ArgsLd MsgBox 0x0003 
+	St reply 
+Line #306:
+	ArgsCall CloseSimulatorInterface 0x0000 
+Line #307:
+	End 
+Line #308:
+	EndIfBlock 
+Line #309:
+Line #310:
+	SetStmt 
+	Ld ihStream 
+	MemLd Output 
+	MemLd HMX_FLOW 
+	Set ihHVar 
+Line #311:
+	LitVarSpecial (False)
+	St Found 
+Line #312:
+	StartForVariable 
+	Ld ihPhase 
+	EndForVariable 
+	Ld ihHVar 
+	MemLd Elements 
+	ForEach 
+Line #313:
+	Ld ihPhase 
+	MemLd Name 
+	LitStr 0x0006 "$TOTAL"
+	Eq 
+	Ld ihPhase 
+	MemLd Value 
+	LitStr 0x0000 ""
+	Ne 
+	And 
+	IfBlock 
+Line #314:
+	Ld nRowEnthalpyFlow 
+	Ld iEnthalpyFlow 
+	Ld ihPhase 
+	ArgsMemLd ValueForUnit 0x0002 
+	St H 
+Line #315:
+	LitVarSpecial (True)
+	St Found 
+Line #316:
+	ExitFor 
+Line #317:
+	EndIfBlock 
+Line #318:
+	StartForVariable 
+	Ld ihPhase 
+	EndForVariable 
+	NextVar 
+Line #319:
+Line #320:
+	Ld Found 
+	Not 
+	IfBlock 
+Line #321:
+	LitStr 0x0024 "Could not find enthalpy for stream: "
+	Ld myStreamName 
+	Concat 
+	St Msg 
+Line #322:
+	Ld vbOKOnly 
+	St style 
+Line #323:
+	LitStr 0x0015 "Data Extraction Error"
+	St Title 
+Line #324:
+	Ld Msg 
+	Ld style 
+	Ld Title 
+	ArgsLd MsgBox 0x0003 
+	St reply 
+Line #325:
+	ArgsCall CloseSimulatorInterface 0x0000 
+Line #326:
+	End 
+Line #327:
+	EndIfBlock 
+Line #328:
+Line #329:
+	LitStr 0x0004 "HEAT"
+	Case 
+	CaseDone 
+Line #330:
+Line #331:
+	LitStr 0x0006 "Energy"
+	St StreamType 
+Line #332:
+	SetStmt 
+	Ld ihStream 
+	MemLd Output 
+	MemLd QCALC 
+	Set ihHVar 
+Line #333:
+	Ld ihHVar 
+	MemLd Value 
+	LitStr 0x0000 ""
+	Ne 
+	IfBlock 
+Line #334:
+	Ld nRowEnthalpyFlow 
+	Ld iEnthalpyFlow 
+	Ld ihHVar 
+	ArgsMemLd ValueForUnit 0x0002 
+	St H 
+Line #335:
+	ElseBlock 
+Line #336:
+	LitStr 0x0024 "Could not find enthalpy for stream: "
+	Ld myStreamName 
+	Concat 
+	St Msg 
+Line #337:
+	Ld vbOKOnly 
+	St style 
+Line #338:
+	LitStr 0x0015 "Data Extraction Error"
+	St Title 
+Line #339:
+	Ld Msg 
+	Ld style 
+	Ld Title 
+	ArgsLd MsgBox 0x0003 
+	St reply 
+Line #340:
+	ArgsCall CloseSimulatorInterface 0x0000 
+Line #341:
+	End 
+Line #342:
+	EndIfBlock 
+Line #343:
+Line #344:
+	LitStr 0x0004 "WORK"
+	Case 
+	CaseDone 
+Line #345:
+Line #346:
+	LitStr 0x0006 "Energy"
+	St StreamType 
+Line #347:
+	SetStmt 
+	Ld ihStream 
+	MemLd Output 
+	MemLd POWER_OUT 
+	Set ihHVar 
+Line #348:
+	Ld ihHVar 
+	MemLd Value 
+	LitStr 0x0000 ""
+	Ne 
+	IfBlock 
+Line #349:
+	Ld nRowPower 
+	Ld iPower 
+	Ld ihHVar 
+	ArgsMemLd ValueForUnit 0x0002 
+	St H 
+Line #350:
+	ElseBlock 
+Line #351:
+	LitStr 0x0024 "Could not find enthalpy for stream: "
+	Ld myStreamName 
+	Concat 
+	St Msg 
+Line #352:
+	Ld vbOKOnly 
+	St style 
+Line #353:
+	LitStr 0x0015 "Data Extraction Error"
+	St Title 
+Line #354:
+	Ld Msg 
+	Ld style 
+	Ld Title 
+	ArgsLd MsgBox 0x0003 
+	St reply 
+Line #355:
+	ArgsCall CloseSimulatorInterface 0x0000 
+Line #356:
+	End 
+Line #357:
+	EndIfBlock 
+Line #358:
+Line #359:
+	CaseElse 
+Line #360:
+Line #361:
+	Ld myStreamName 
+	LitStr 0x0017 "is of unexpected type: "
+	Concat 
+	Ld HAP_RECORDTYPE 
+	Ld ihStream 
+	ArgsMemLd AttributeValue 0x0001 
+	Concat 
+	St Msg 
+Line #362:
+	Ld vbOKOnly 
+	St style 
+Line #363:
+	LitStr 0x0015 "Data Extraction Error"
+	St Title 
+Line #364:
+	Ld Msg 
+	Ld style 
+	Ld Title 
+	ArgsLd MsgBox 0x0003 
+	St reply 
+Line #365:
+	ArgsCall CloseSimulatorInterface 0x0000 
+Line #366:
+	End 
+Line #367:
+Line #368:
+	EndSelect 
+Line #369:
+Line #370:
+Line #371:
+	EndSub 
+Line #372:
+Line #373:
+	FuncDefn (Public Sub CloseSimulatorInterface(Optional Idummy As Integer))
+Line #374:
+Line #375:
+	QuoteRem 0x0000 0x0082 " This routine updates the status bar shuts down the interface with the simulator.  The argument Idummy is not used...it just keeps"
+Line #376:
+	QuoteRem 0x0000 0x004D " this routine from being listed as one of the macros that can be ran by Excel"
+Line #377:
+Line #378:
+	SetStmt 
+	LitNothing 
+	Set ihAPSim 
+Line #379:
+	LitVarSpecial (False)
+	Ld Application 
+	MemSt StatusBar 
+Line #380:
+Line #381:
+	EndSub 
+Line #382:
+Line #383:
+VBA/Sheet3 - 3574 bytes
+Line #0:
+	Option  (Explicit)
+Line #1:
+Line #2:
+	FuncDefn (Sub cmd_UpdateFileName_Click())
+Line #3:
+Line #4:
+	QuoteRem 0x0000 0x0033 " This routine handles the "Update File Name" button"
+Line #5:
+Line #6:
+	Dim 
+	VarDefn InitialRow (As Integer)
+Line #7:
+	Dim 
+	VarDefn InitialCol (As Integer)
+Line #8:
+Line #9:
+	QuoteRem 0x0000 0x0021 " Store the original cell location"
+Line #10:
+Line #11:
+	Ld Selection 
+	MemLd Row 
+	St InitialRow 
+Line #12:
+	Ld Selection 
+	MemLd Column 
+	St InitialCol 
+Line #13:
+Line #14:
+	QuoteRem 0x0000 0x001E " Pick the simulation file name"
+Line #15:
+Line #16:
+	LitStr 0x0002 "B1"
+	Ld ActiveSheet 
+	ArgsMemLd Range 0x0001 
+	ArgsCall PickSimulationFileName 0x0001 
+Line #17:
+Line #18:
+	QuoteRem 0x0000 0x002A " Reset cell focus to the original location"
+Line #19:
+Line #20:
+	Ld InitialRow 
+	Ld InitialCol 
+	ArgsLd Cells 0x0002 
+	ArgsMemCall Select 0x0000 
+Line #21:
+Line #22:
+	EndSub 
+Line #23:
+Line #24:
+	FuncDefn (Sub cmd_RunMEBTool_Click())
+Line #25:
+Line #26:
+	QuoteRem 0x0000 0x002F " This routine handles the "Run MEB Tool" button"
+Line #27:
+Line #28:
+	Dim 
+	VarDefn InitialRow (As Integer)
+Line #29:
+	Dim 
+	VarDefn InitialCol (As Integer)
+Line #30:
+Line #31:
+	QuoteRem 0x0000 0x0021 " Store the original cell location"
+Line #32:
+Line #33:
+	Ld Selection 
+	MemLd Row 
+	St InitialRow 
+Line #34:
+	Ld Selection 
+	MemLd Column 
+	St InitialCol 
+Line #35:
+Line #36:
+	QuoteRem 0x0000 0x000D " Run the tool"
+Line #37:
+Line #38:
+	ArgsCall Run_MEBTool 0x0000 
+Line #39:
+Line #40:
+	QuoteRem 0x0000 0x002A " Reset cell focus to the original location"
+Line #41:
+Line #42:
+	Ld InitialRow 
+	Ld InitialCol 
+	ArgsLd Cells 0x0002 
+	ArgsMemCall Select 0x0000 
+Line #43:
+Line #44:
+	EndSub 
+Line #45:
+VBA/MEBTool - 10912 bytes
+Line #0:
+	QuoteRem 0x0000 0x0022 " Version 2.0 - Jan. 31, 2006 (TJE)"
+Line #1:
+	QuoteRem 0x0000 0x0057 "   1) Modified code so that the "Set-Up" sheet defines which sheets to run the MEB tool"
+Line #2:
+	QuoteRem 0x0000 0x0049 "   2) Updated MEBAspenGUI and MEBAspenSummary modules to handle hierarchy"
+Line #3:
+Line #4:
+	Option  (Explicit)
+Line #5:
+Line #6:
+	Dim 
+	VarDefn myFile (As String)
+Line #7:
+	Dim 
+	VarDefn Munits (As String)
+Line #8:
+	Dim 
+	VarDefn Hunits (As String)
+Line #9:
+Line #10:
+	FuncDefn (Sub Run_MEBTool())
+Line #11:
+Line #12:
+	QuoteRem 0x0000 0x0029 " This routine drives the MEB tool program"
+Line #13:
+Line #14:
+	Dim 
+	VarDefn i (As Integer)
+Line #15:
+Line #16:
+	ArgsCall InitializeCalculations 0x0000 
+Line #17:
+	StartForVariable 
+	Ld i 
+	EndForVariable 
+	LitDI2 0x0001 
+	LitStr 0x0003 "B12"
+	LitStr 0x0006 "Set-Up"
+	ArgsLd Worksheets 0x0001 
+	ArgsMemLd Range 0x0001 
+	MemLd CurrentRegion 
+	MemLd Rows 
+	MemLd Count 
+	For 
+Line #18:
+	Ld i 
+	LitDI2 0x0001 
+	Sub 
+	LitDI2 0x0000 
+	LitStr 0x0003 "B12"
+	LitStr 0x0006 "Set-Up"
+	ArgsLd Worksheets 0x0001 
+	ArgsMemLd Range 0x0001 
+	ArgsMemLd Offset 0x0002 
+	MemLd Value 
+	ArgsCall ExtractMEB 0x0001 
+Line #19:
+	StartForVariable 
+	Ld i 
+	EndForVariable 
+	NextVar 
+Line #20:
+	ArgsCall CleanUp 0x0000 
+Line #21:
+Line #22:
+	EndSub 
+Line #23:
+Line #24:
+	FuncDefn (Sub InitializeCalculations())
+Line #25:
+Line #26:
+	QuoteRem 0x0000 0x0045 " This routine reads the configuration data in the Excel set-up sheet,"
+Line #27:
+	QuoteRem 0x0000 0x002C " and sets up the connection to the simulator"
+Line #28:
+Line #29:
+	Dim 
+	VarDefn myRangeAnchor
+Line #30:
+	Dim 
+	VarDefn i (As Integer)
+Line #31:
+Line #32:
+	LitStr 0x0002 "B1"
+	LitStr 0x0006 "Set-Up"
+	ArgsLd Worksheets 0x0001 
+	ArgsMemLd Range 0x0001 
+	MemLd Value 
+	St myFile 
+Line #33:
+	LitStr 0x0002 "B3"
+	LitStr 0x0006 "Set-Up"
+	ArgsLd Worksheets 0x0001 
+	ArgsMemLd Range 0x0001 
+	MemLd Value 
+	St Munits 
+Line #34:
+	LitStr 0x0002 "B4"
+	LitStr 0x0006 "Set-Up"
+	ArgsLd Worksheets 0x0001 
+	ArgsMemLd Range 0x0001 
+	MemLd Value 
+	St Hunits 
+Line #35:
+Line #36:
+	Ld myFile 
+	Ld Munits 
+	Ld Hunits 
+	ArgsCall InitializeSimulatorInterface 0x0003 
+Line #37:
+Line #38:
+	EndSub 
+Line #39:
+Line #40:
+	FuncDefn (Sub ExtractMEB(mySheetName As String))
+Line #41:
+Line #42:
+	QuoteRem 0x0000 0x003C " This routine processes a single MEB sheet in the work book."
+Line #43:
+Line #44:
+	Dim 
+	VarDefn mySheet
+Line #45:
+	Dim 
+	VarDefn myInAnchor
+Line #46:
+	Dim 
+	VarDefn myOutAnchor
+Line #47:
+	Dim 
+	VarDefn myClosureAnchor
+Line #48:
+	Dim 
+	VarDefn myAnchor
+Line #49:
+	Dim 
+	VarDefn i (As Integer)
+Line #50:
+	Dim 
+	VarDefn nEntries (As Integer)
+Line #51:
+	Dim 
+	VarDefn MassIn (As Double)
+Line #52:
+	Dim 
+	VarDefn MassOut (As Double)
+Line #53:
+	Dim 
+	VarDefn HIn (As Double)
+Line #54:
+	Dim 
+	VarDefn HOut (As Double)
+Line #55:
+	Dim 
+	VarDefn StreamType (As String)
+Line #56:
+	Dim 
+	VarDefn Mass (As Double)
+Line #57:
+	Dim 
+	VarDefn H (As Double)
+Line #58:
+Line #59:
+	Dim (Const) 
+	LitR8 0xED8D 0xA0B5 0xC6F7 0x3EB0 
+	VarDefn EPS
+Line #60:
+Line #61:
+	QuoteRem 0x0000 0x0058 " Set up locations and stamp the sheet with the simulation file name, date/time and units"
+Line #62:
+Line #63:
+	SetStmt 
+	Ld mySheetName 
+	ArgsLd Worksheets 0x0001 
+	Set mySheet 
+Line #64:
+	SetStmt 
+	LitStr 0x0003 "B11"
+	Ld mySheet 
+	ArgsMemLd Range 0x0001 
+	Set myInAnchor 
+Line #65:
+	SetStmt 
+	LitStr 0x0003 "I11"
+	Ld mySheet 
+	ArgsMemLd Range 0x0001 
+	Set myOutAnchor 
+Line #66:
+	SetStmt 
+	LitStr 0x0003 "R11"
+	Ld mySheet 
+	ArgsMemLd Range 0x0001 
+	Set myClosureAnchor 
+Line #67:
+Line #68:
+	Ld myFile 
+	LitStr 0x0002 "K3"
+	Ld mySheet 
+	ArgsMemLd Range 0x0001 
+	MemSt Value 
+Line #69:
+	Ld Date 
+	LitStr 0x0001 " "
+	Concat 
+	Ld Time 
+	Concat 
+	LitStr 0x0002 "J4"
+	Ld mySheet 
+	ArgsMemLd Range 0x0001 
+	MemSt Value 
+Line #70:
+Line #71:
+	Ld Munits 
+	LitDI2 0x0002 
+	UMi 
+	LitDI2 0x0002 
+	Ld myInAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemSt Value 
+Line #72:
+	Ld Hunits 
+	LitDI2 0x0002 
+	UMi 
+	LitDI2 0x0004 
+	Ld myInAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemSt Value 
+Line #73:
+	Ld Munits 
+	LitDI2 0x0002 
+	UMi 
+	LitDI2 0x0002 
+	Ld myOutAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemSt Value 
+Line #74:
+	Ld Hunits 
+	LitDI2 0x0002 
+	UMi 
+	LitDI2 0x0004 
+	Ld myOutAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemSt Value 
+Line #75:
+Line #76:
+	QuoteRem 0x0000 0x001B " Now clear previous entries"
+Line #77:
+Line #78:
+	StartForVariable 
+	Ld i 
+	EndForVariable 
+	LitDI2 0x0001 
+	LitDI2 0x0000 
+	LitDI2 0x0002 
+	Ld myInAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemLd CurrentRegion 
+	MemLd Rows 
+	MemLd Count 
+	For 
+Line #79:
+	LitStr 0x0000 ""
+	Ld i 
+	LitDI2 0x0001 
+	Sub 
+	LitDI2 0x0001 
+	Ld myInAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemSt Value 
+Line #80:
+	LitStr 0x0000 ""
+	Ld i 
+	LitDI2 0x0001 
+	Sub 
+	LitDI2 0x0002 
+	Ld myInAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemSt Value 
+Line #81:
+	Ld xlNone 
+	Ld xlEdgeTop 
+	Ld i 
+	LitDI2 0x0001 
+	Sub 
+	LitDI2 0x0002 
+	Ld myInAnchor 
+	ArgsMemLd Offset 0x0002 
+	ArgsMemLd Borders 0x0001 
+	MemSt LineStyle 
+Line #82:
+	Ld xlNone 
+	Ld xlEdgeBottom 
+	Ld i 
+	LitDI2 0x0001 
+	Sub 
+	LitDI2 0x0002 
+	Ld myInAnchor 
+	ArgsMemLd Offset 0x0002 
+	ArgsMemLd Borders 0x0001 
+	MemSt LineStyle 
+Line #83:
+	LitStr 0x0000 ""
+	Ld i 
+	LitDI2 0x0001 
+	Sub 
+	LitDI2 0x0004 
+	Ld myInAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemSt Value 
+Line #84:
+	Ld xlNone 
+	Ld xlEdgeTop 
+	Ld i 
+	LitDI2 0x0001 
+	Sub 
+	LitDI2 0x0004 
+	Ld myInAnchor 
+	ArgsMemLd Offset 0x0002 
+	ArgsMemLd Borders 0x0001 
+	MemSt LineStyle 
+Line #85:
+	Ld xlNone 
+	Ld xlEdgeBottom 
+	Ld i 
+	LitDI2 0x0001 
+	Sub 
+	LitDI2 0x0004 
+	Ld myInAnchor 
+	ArgsMemLd Offset 0x0002 
+	ArgsMemLd Borders 0x0001 
+	MemSt LineStyle 
+Line #86:
+	StartForVariable 
+	Ld i 
+	EndForVariable 
+	NextVar 
+Line #87:
+Line #88:
+	StartForVariable 
+	Ld i 
+	EndForVariable 
+	LitDI2 0x0001 
+	LitDI2 0x0000 
+	LitDI2 0x0002 
+	Ld myOutAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemLd CurrentRegion 
+	MemLd Rows 
+	MemLd Count 
+	For 
+Line #89:
+	LitStr 0x0000 ""
+	Ld i 
+	LitDI2 0x0001 
+	Sub 
+	LitDI2 0x0001 
+	Ld myOutAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemSt Value 
+Line #90:
+	LitStr 0x0000 ""
+	Ld i 
+	LitDI2 0x0001 
+	Sub 
+	LitDI2 0x0002 
+	Ld myOutAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemSt Value 
+Line #91:
+	Ld xlNone 
+	Ld xlEdgeTop 
+	Ld i 
+	LitDI2 0x0001 
+	Sub 
+	LitDI2 0x0002 
+	Ld myOutAnchor 
+	ArgsMemLd Offset 0x0002 
+	ArgsMemLd Borders 0x0001 
+	MemSt LineStyle 
+Line #92:
+	Ld xlNone 
+	Ld xlEdgeBottom 
+	Ld i 
+	LitDI2 0x0001 
+	Sub 
+	LitDI2 0x0002 
+	Ld myOutAnchor 
+	ArgsMemLd Offset 0x0002 
+	ArgsMemLd Borders 0x0001 
+	MemSt LineStyle 
+Line #93:
+	LitStr 0x0000 ""
+	Ld i 
+	LitDI2 0x0001 
+	Sub 
+	LitDI2 0x0004 
+	Ld myOutAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemSt Value 
+Line #94:
+	Ld xlNone 
+	Ld xlEdgeTop 
+	Ld i 
+	LitDI2 0x0001 
+	Sub 
+	LitDI2 0x0004 
+	Ld myOutAnchor 
+	ArgsMemLd Offset 0x0002 
+	ArgsMemLd Borders 0x0001 
+	MemSt LineStyle 
+Line #95:
+	Ld xlNone 
+	Ld xlEdgeBottom 
+	Ld i 
+	LitDI2 0x0001 
+	Sub 
+	LitDI2 0x0004 
+	Ld myOutAnchor 
+	ArgsMemLd Offset 0x0002 
+	ArgsMemLd Borders 0x0001 
+	MemSt LineStyle 
+Line #96:
+	StartForVariable 
+	Ld i 
+	EndForVariable 
+	NextVar 
+Line #97:
+Line #98:
+	LitStr 0x0000 ""
+	Ld myClosureAnchor 
+	MemSt Value 
+Line #99:
+	LitStr 0x0000 ""
+	LitDI2 0x0000 
+	LitDI2 0x0002 
+	Ld myClosureAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemSt Value 
+Line #100:
+	LitStr 0x0000 ""
+	LitDI2 0x0001 
+	LitDI2 0x0000 
+	Ld myClosureAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemSt Value 
+Line #101:
+	LitStr 0x0000 ""
+	LitDI2 0x0001 
+	LitDI2 0x0002 
+	Ld myClosureAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemSt Value 
+Line #102:
+Line #103:
+	QuoteRem 0x0000 0x0011 " Extract the in's"
+Line #104:
+Line #105:
+	LitDI2 0x0000 
+	St MassIn 
+Line #106:
+	LitDI2 0x0000 
+	St HIn 
+Line #107:
+Line #108:
+	LitDI2 0x0000 
+	St nEntries 
+Line #109:
+	Ld nEntries 
+	LitDI2 0x0000 
+	Ld myInAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemLd Value 
+	LitStr 0x0000 ""
+	Ne 
+	DoWhile 
+Line #110:
+	Ld nEntries 
+	LitDI2 0x0001 
+	Add 
+	St nEntries 
+Line #111:
+	Loop 
+Line #112:
+Line #113:
+	StartForVariable 
+	Ld i 
+	EndForVariable 
+	LitDI2 0x0001 
+	Ld nEntries 
+	For 
+Line #114:
+Line #115:
+	LitStr 0x000B "Extracting "
+	Ld mySheetName 
+	Concat 
+	LitStr 0x0009 " Stream: "
+	Concat 
+	Ld i 
+	LitDI2 0x0001 
+	Sub 
+	LitDI2 0x0000 
+	Ld myInAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemLd Value 
+	Concat 
+	Ld Application 
+	MemSt StatusBar 
+Line #116:
+Line #117:
+	Ld i 
+	LitDI2 0x0001 
+	Sub 
+	LitDI2 0x0000 
+	Ld myInAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemLd Value 
+	Ld Munits 
+	Ld Hunits 
+	Ld StreamType 
+	Ld Mass 
+	Ld H 
+	ArgsCall ExtractStream 0x0006 
+Line #118:
+Line #119:
+	Ld StreamType 
+	LitStr 0x0004 "Mass"
+	Eq 
+	IfBlock 
+Line #120:
+	Ld MassIn 
+	Ld Mass 
+	Add 
+	St MassIn 
+Line #121:
+	Ld HIn 
+	Ld H 
+	Add 
+	St HIn 
+Line #122:
+	Ld Mass 
+	Ld i 
+	LitDI2 0x0001 
+	Sub 
+	LitDI2 0x0002 
+	Ld myInAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemSt Value 
+Line #123:
+	Ld H 
+	Ld i 
+	LitDI2 0x0001 
+	Sub 
+	LitDI2 0x0004 
+	Ld myInAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemSt Value 
+Line #124:
+	Ld StreamType 
+	LitStr 0x0006 "Energy"
+	Eq 
+	ElseIfBlock 
+Line #125:
+	Ld HIn 
+	Ld H 
+	Add 
+	St HIn 
+Line #126:
+	LitStr 0x0001 "-"
+	Ld i 
+	LitDI2 0x0001 
+	Sub 
+	LitDI2 0x0002 
+	Ld myInAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemSt Value 
+Line #127:
+	Ld H 
+	Ld i 
+	LitDI2 0x0001 
+	Sub 
+	LitDI2 0x0004 
+	Ld myInAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemSt Value 
+Line #128:
+	EndIfBlock 
+Line #129:
+Line #130:
+	StartForVariable 
+	Ld i 
+	EndForVariable 
+	NextVar 
+Line #131:
+Line #132:
+	LitStr 0x0005 "Total"
+	Ld nEntries 
+	LitDI2 0x0001 
+	Ld myInAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemSt Value 
+Line #133:
+	Ld xlRight 
+	Ld nEntries 
+	LitDI2 0x0001 
+	Ld myInAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemSt HorizontalAlignment 
+Line #134:
+Line #135:
+	Ld MassIn 
+	Ld nEntries 
+	LitDI2 0x0002 
+	Ld myInAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemSt Value 
+Line #136:
+	StartWithExpr 
+	Ld xlEdgeTop 
+	Ld nEntries 
+	LitDI2 0x0002 
+	Ld myInAnchor 
+	ArgsMemLd Offset 0x0002 
+	ArgsMemLd Borders 0x0001 
+	With 
+Line #137:
+	Ld xlContinuous 
+	MemStWith LineStyle 
+Line #138:
+	Ld xlThin 
+	MemStWith Weight 
+Line #139:
+	Ld xlAutomatic 
+	MemStWith ColorIndex 
+Line #140:
+	EndWith 
+Line #141:
+Line #142:
+	Ld HIn 
+	Ld nEntries 
+	LitDI2 0x0004 
+	Ld myInAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemSt Value 
+Line #143:
+	StartWithExpr 
+	Ld xlEdgeTop 
+	Ld nEntries 
+	LitDI2 0x0004 
+	Ld myInAnchor 
+	ArgsMemLd Offset 0x0002 
+	ArgsMemLd Borders 0x0001 
+	With 
+Line #144:
+	Ld xlContinuous 
+	MemStWith LineStyle 
+Line #145:
+	Ld xlThin 
+	MemStWith Weight 
+Line #146:
+	Ld xlAutomatic 
+	MemStWith ColorIndex 
+Line #147:
+	EndWith 
+Line #148:
+Line #149:
+	QuoteRem 0x0000 0x0012 " Extract the out's"
+Line #150:
+Line #151:
+	LitDI2 0x0000 
+	St MassOut 
+Line #152:
+	LitDI2 0x0000 
+	St HOut 
+Line #153:
+Line #154:
+	LitDI2 0x0000 
+	St nEntries 
+Line #155:
+	Ld nEntries 
+	LitDI2 0x0000 
+	Ld myOutAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemLd Value 
+	LitStr 0x0000 ""
+	Ne 
+	DoWhile 
+Line #156:
+	Ld nEntries 
+	LitDI2 0x0001 
+	Add 
+	St nEntries 
+Line #157:
+	Loop 
+Line #158:
+Line #159:
+	StartForVariable 
+	Ld i 
+	EndForVariable 
+	LitDI2 0x0001 
+	Ld nEntries 
+	For 
+Line #160:
+Line #161:
+	LitStr 0x000B "Extracting "
+	Ld mySheetName 
+	Concat 
+	LitStr 0x0009 " Stream: "
+	Concat 
+	Ld i 
+	LitDI2 0x0001 
+	Sub 
+	LitDI2 0x0000 
+	Ld myOutAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemLd Value 
+	Concat 
+	Ld Application 
+	MemSt StatusBar 
+Line #162:
+Line #163:
+	Ld i 
+	LitDI2 0x0001 
+	Sub 
+	LitDI2 0x0000 
+	Ld myOutAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemLd Value 
+	Ld Munits 
+	Ld Hunits 
+	Ld StreamType 
+	Ld Mass 
+	Ld H 
+	ArgsCall ExtractStream 0x0006 
+Line #164:
+Line #165:
+	Ld StreamType 
+	LitStr 0x0004 "Mass"
+	Eq 
+	IfBlock 
+Line #166:
+	Ld MassOut 
+	Ld Mass 
+	Add 
+	St MassOut 
+Line #167:
+	Ld HOut 
+	Ld H 
+	Add 
+	St HOut 
+Line #168:
+	Ld Mass 
+	Ld i 
+	LitDI2 0x0001 
+	Sub 
+	LitDI2 0x0002 
+	Ld myOutAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemSt Value 
+Line #169:
+	Ld H 
+	Ld i 
+	LitDI2 0x0001 
+	Sub 
+	LitDI2 0x0004 
+	Ld myOutAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemSt Value 
+Line #170:
+	Ld StreamType 
+	LitStr 0x0006 "Energy"
+	Eq 
+	ElseIfBlock 
+Line #171:
+	Ld HOut 
+	Ld H 
+	Add 
+	St HOut 
+Line #172:
+	LitStr 0x0001 "-"
+	Ld i 
+	LitDI2 0x0001 
+	Sub 
+	LitDI2 0x0002 
+	Ld myOutAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemSt Value 
+Line #173:
+	Ld H 
+	Ld i 
+	LitDI2 0x0001 
+	Sub 
+	LitDI2 0x0004 
+	Ld myOutAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemSt Value 
+Line #174:
+	EndIfBlock 
+Line #175:
+Line #176:
+	StartForVariable 
+	Ld i 
+	EndForVariable 
+	NextVar 
+Line #177:
+Line #178:
+	LitStr 0x0005 "Total"
+	Ld nEntries 
+	LitDI2 0x0001 
+	Ld myOutAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemSt Value 
+Line #179:
+	Ld xlRight 
+	Ld nEntries 
+	LitDI2 0x0001 
+	Ld myOutAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemSt HorizontalAlignment 
+Line #180:
+Line #181:
+	Ld MassOut 
+	Ld nEntries 
+	LitDI2 0x0002 
+	Ld myOutAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemSt Value 
+Line #182:
+	StartWithExpr 
+	Ld xlEdgeTop 
+	Ld nEntries 
+	LitDI2 0x0002 
+	Ld myOutAnchor 
+	ArgsMemLd Offset 0x0002 
+	ArgsMemLd Borders 0x0001 
+	With 
+Line #183:
+	Ld xlContinuous 
+	MemStWith LineStyle 
+Line #184:
+	Ld xlThin 
+	MemStWith Weight 
+Line #185:
+	Ld xlAutomatic 
+	MemStWith ColorIndex 
+Line #186:
+	EndWith 
+Line #187:
+Line #188:
+	Ld HOut 
+	Ld nEntries 
+	LitDI2 0x0004 
+	Ld myOutAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemSt Value 
+Line #189:
+	StartWithExpr 
+	Ld xlEdgeTop 
+	Ld nEntries 
+	LitDI2 0x0004 
+	Ld myOutAnchor 
+	ArgsMemLd Offset 0x0002 
+	ArgsMemLd Borders 0x0001 
+	With 
+Line #190:
+	Ld xlContinuous 
+	MemStWith LineStyle 
+Line #191:
+	Ld xlThin 
+	MemStWith Weight 
+Line #192:
+	Ld xlAutomatic 
+	MemStWith ColorIndex 
+Line #193:
+	EndWith 
+Line #194:
+Line #195:
+	QuoteRem 0x0000 0x001D " Fill out the closure entries"
+Line #196:
+Line #197:
+Line #198:
+	Ld MassOut 
+	Ld MassIn 
+	Sub 
+	Ld myClosureAnchor 
+	MemSt Value 
+Line #199:
+	Ld MassIn 
+	FnAbs 
+	Ld EPS 
+	Gt 
+	If 
+	BoSImplicit 
+	Ld MassOut 
+	Ld MassIn 
+	Sub 
+	Paren 
+	Ld MassIn 
+	Div 
+	LitDI2 0x0000 
+	LitDI2 0x0002 
+	Ld myClosureAnchor 
+	ArgsMemLd Offset 0x0002 
+	MemSt Value 
+	EndIf 
+Line #200:
+	Ld HOut 
+	Ld HIn 
+	Sub 
+	LitDI2 0x0001 
+	LitDI2 0x0000 
+	Ld myClosureAnchor 
+	ArgsMemSt Offset 0x0002 
+Line #201:
+	Ld HIn 
+	FnAbs 
+	Ld EPS 
+	Gt 
+	If 
+	BoSImplicit 
+	Ld HOut 
+	Ld HIn 
+	Sub 
+	Paren 
+	Ld HIn 
+	Div 
+	LitDI2 0x0001 
+	LitDI2 0x0002 
+	Ld myClosureAnchor 
+	ArgsMemSt Offset 0x0002 
+	EndIf 
+Line #202:
+Line #203:
+	EndSub 
+Line #204:
+Line #205:
+	FuncDefn (Sub CleanUp())
+Line #206:
+Line #207:
+	QuoteRem 0x0000 0x0031 " This routine cleans up before ending the program"
+Line #208:
+Line #209:
+	ArgsCall CloseSimulatorInterface 0x0000 
+Line #210:
+Line #211:
+	EndSub 
+Line #212:
+VBA/Sheet2 - 991 bytes
+VBA/Sheet4 - 991 bytes
+VBA/Sheet6 - 991 bytes
+VBA/Sheet5 - 991 bytes
+VBA/Sheet7 - 991 bytes
+VBA/Sheet8 - 991 bytes
+VBA/Sheet9 - 991 bytes
+VBA/Sheet10 - 992 bytes
+VBA/Sheet11 - 992 bytes
+VBA/Sheet15 - 992 bytes
+VBA/Sheet13 - 992 bytes
+VBA/Sheet14 - 992 bytes
+VBA/Sheet12 - 992 bytes
+VBA/Sheet16 - 992 bytes
