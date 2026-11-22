@@ -1,6 +1,6 @@
 # 静态验收通过
 
-已有逐件静态验收记录。运行行为留待 Windows 对照。本次整理共 86 个原件。按产品和原安装路径找到同名文件夹。
+已有逐件静态验收记录。运行行为留待 Windows 对照。本次整理共 87 个原件。按产品和原安装路径找到同名文件夹。
 
 | 原文件 | 产品 | 原件指纹 |
 | --- | --- | --- |
@@ -74,6 +74,7 @@
 | [Npgsql.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseSetup/Npgsql.dll/) | Properties | `02ea73194ff5` |
 | [oomfcorelib.lib](Plus/%5BProgramFiles64Folder%5D/AspenTech/OOMF%20V15.0/lib/oomfcorelib.lib/) | Plus | `2e293c417b26` |
 | [oomfhostlib.lib](Plus/%5BProgramFiles64Folder%5D/AspenTech/OOMF%20V15.0/lib/oomfhostlib.lib/) | Plus | `d48d67029ff1` |
+| [oomfutilslib.lib](Plus/%5BProgramFiles64Folder%5D/AspenTech/OOMF%20V15.0/lib/oomfutilslib.lib/) | Plus | `5b4fdd8b8728` |
 | [PFSCtrlLib.dll](Plus/Program%20Files/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/PFSCtrlLib.dll/) | Plus | `5073b8f277f6` |
 | [Regression.xlsm](Properties/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Solubility%20Modeler%20V15.0/NRTL-SAC/Regression.xlsm/) | Properties | `1b7d06872c82` |
 | [SaveMergeNNFiles.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/SaveMergeNNFiles.dll/) | Plus-Properties | `a610bfe69f5b` |
