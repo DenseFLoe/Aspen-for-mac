@@ -33,3 +33,9 @@ Plus-Properties，原路径为 `[ProgramFiles64Folder]/AspenTech/APrSystem V15.0
 ## 第九号复验材料
 
 [本轮回执](s9-submission.md) · [分派索引](s9/selector-evidence.md) · [14 个回调与转发位置](s9/callbacks.json) · [全件导出地址引用](s9/data.json) · [PPROY 的外部使用者](s9/cross-check.json)。当前逐址表保留 15 处待定转移及其恢复条件，源代码与第五轮已有资源共同构成候选。
+
+## 第十三号复验材料
+
+本轮逐址处理前一轮留下的 15 处未决。原件的节属性判据排除可写的 0x22148，正常映像因而不进入 0x11c56。0x121c0 的唯一已定位调用路径把 0x11b24 作为第四入参传入，该内部边已有原件证据。主调用表还保留 13 处未决。
+
+从两处分派入口回查 19 个调用方的 R8 来源。常量和若干元素数乘八的路径已定位，动态计数的完整范围仍需追到声明及生产者。另核对原件中三处 XFG/CF 回退槽和 GuardMemcpy 的导入链。26 个数据导出、已有资源、已回编代码的证据继续适用。[逐址裁定](s13/disposition.csv) · [本轮证据](s13/evidence.json) · [复跑命令](s13-submission.md)
