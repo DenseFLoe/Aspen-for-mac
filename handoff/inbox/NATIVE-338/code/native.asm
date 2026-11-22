@@ -98264,3 +98264,7 @@
 ; FUNC 00060530-0006053E FUN_180060530 (14 bytes)
 00060530  48 8D 0D 21 73 01 00  LEA RCX
 00060537  48 FF 25 CA 0D 00 00  JMP qword ptr [0x180061308]
+
+; ANCHOR MARKERS (addresses that are not instruction boundaries; raw bytes from the original)
+00025B90  48 89 5C 24 08 57 48 83  ; anchor marker (not an instruction boundary)
+0003F478  28 F4 03 00 56 F4 03 00  ; anchor marker (not an instruction boundary)
