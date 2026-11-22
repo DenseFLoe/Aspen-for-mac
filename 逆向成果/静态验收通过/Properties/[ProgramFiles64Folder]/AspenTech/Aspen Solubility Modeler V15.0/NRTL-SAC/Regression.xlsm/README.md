@@ -6,6 +6,4 @@
 
 [本次逐件说明](v1.20261122-retry85/Regression.xlsm.md) · [公开文件及核验证据指纹表](v1.20261122-retry85/%E5%8F%91%E5%B8%83%E6%8C%87%E7%BA%B9%E8%A1%A8.csv) · [历史尝试](README.%E5%8E%86%E5%8F%B2.md)
 
-ZIP 包内可发布成员已按原成员路径展开。
-
-本机保留「完整源码和资源包按原报告留在本机」。公开证据范围逐项列在发布指纹表。
+[下载完整源码和资源包](v1.20261122-retry85/Regression.xlsm.source.local-only.zip)。ZIP 保留原归档文件名，SHA-256 为 `a0acfac67c1db3fb09013cb2cd8ad5f5ea0e530ba859b6171e5830eba017ea75`。
