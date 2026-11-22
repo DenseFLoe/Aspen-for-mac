@@ -308,3 +308,4 @@ __asm__(
 #include "verified-09.h"
 #include "verified-10.h"
 #include "verified-11.h"
+#include "verified-12.h"
