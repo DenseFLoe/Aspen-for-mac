@@ -18,7 +18,9 @@ HERE = Path(__file__).resolve().parent
 APPROVALS = json.loads((HERE / "accepted_archives.json").read_text(encoding="utf-8"))
 EXIT = {"pass": 0, "fail": 1, "inconclusive": 2}
 VERSION = "1.0"
-IMPLEMENTATION = "1.6"
+IMPLEMENTATION = "1.7"
+ARCHIVE_REPLAY_BASIS = "previous_whole_item_static_acceptance_replayed"
+FRESH_BUILD_BASIS = "fresh_source_build_full_file_exact_and_item_evidence"
 HEX = re.compile(r"[0-9a-fA-F]{64}")
 REGION_DELTA = re.compile(r"s[1-9][0-9]*/reassembly-delta\.json")
 REFERENCE_TYPES = {"instruction_listing", "clr_thunks"}
@@ -140,7 +142,7 @@ def verifier_identity():
     names = ("verify.py", "accepted_archives.json", "coverage_table.py", "native_sites.py", "native_targets.py",
              "target_witness.py", "native_exports.py", "native_regions.py", "clr_fixups.py", "import_routes.py",
              "com_call_sites.py",
-             "historical_listing.py", "mixed_baseline.py", "callback_paths.py",
+             "historical_listing.py", "fh4.py", "mixed_baseline.py", "callback_paths.py",
              "pe_resources.py", "version_resource.py", "fresh_cs.py", "compile_fresh_cs.ps1", "managed.py",
              "ManagedEvidence.cs", "coff.py", "office_vba.py")
     paths = {name: HERE / name for name in names}
@@ -404,11 +406,9 @@ def evaluate(original, expected, delivery, rebuilt=None, assembler=None, product
         checks.append(component("office_vba", data, delivery))
     if rebuilt:
         checks.append(component("managed", data, rebuilt))
-    if "BFDYLD.s" in files or (assembler and data.startswith(b"\x64\x86")):
-        if assembler is None:
-            checks.append(section("coff_reassembly", "inconclusive", [finding("assembler_required")]))
-        else:
-            checks.append(component("coff", data, delivery, assembler))
+    if data.startswith(b"\x64\x86") and any(
+            "/" not in name and name.casefold().endswith(".s") for name in files):
+        checks.append(component("coff", data, delivery, assembler))
 
     fresh_pass = False
     if (delivery / "fresh-cs").is_dir():
@@ -423,10 +423,10 @@ def evaluate(original, expected, delivery, rebuilt=None, assembler=None, product
         result["status"] = "fail"
     elif approved_match and all(c["status"] == "pass" for c in checks):
         result["status"] = "pass"
-        result["basis"] = "previous_whole_item_static_acceptance_replayed"
+        result["basis"] = ARCHIVE_REPLAY_BASIS
     elif fresh_pass and all(c["status"] == "pass" or c["scope"] == "unchanged_previously_accepted_archive" for c in checks):
         result["status"] = "pass"
-        result["basis"] = "fresh_source_build_full_file_exact_and_item_evidence"
+        result["basis"] = FRESH_BUILD_BASIS
     else:
         notes.append(finding("whole_item_proof_outstanding",
                              required="original-derived coverage, editable implementation, logic/data/resources and reviewable per-file evidence"))
@@ -540,6 +540,7 @@ def project(inventory_path, inventory_sha, input_path, assembler, source_scopes=
 
     rows = []
     counts = Counter()
+    pass_by_basis = Counter({ARCHIVE_REPLAY_BASIS: 0, FRESH_BUILD_BASIS: 0})
     for (product, path, digest), prior_status in expected.items():
         row = {"product": product, "path": path, "sha256": digest, "inventory_status": prior_status}
         if origins:
@@ -554,6 +555,8 @@ def project(inventory_path, inventory_sha, input_path, assembler, source_scopes=
             proof = item(parent / bound["original"], digest, parent / bound["delivery"], rebuilt, assembler,
                          product, path, provider, delivery_sha256=bound.get("delivery_sha256"), reference_evidence=reference)
             row.update(status=proof["status"], proof=proof)
+            if proof["status"] == "pass":
+                pass_by_basis[proof["basis"]] += 1
         counts[row["status"]] += 1
         rows.append(row)
     status = "fail" if counts["fail"] else "inconclusive" if counts["inconclusive"] else "pass"
@@ -561,7 +564,7 @@ def project(inventory_path, inventory_sha, input_path, assembler, source_scopes=
             "input_inventory_rows": input_inventory_rows, "reconciliation": reconciliation,
             "status": status, "items_expected": len(expected), "items_bound": len(chosen),
             "distinct_originals": len({key[2] for key in expected}),
-            "counts": {key: counts[key] for key in EXIT}, "rows": rows}
+            "counts": {key: counts[key] for key in EXIT}, "pass_by_basis": dict(pass_by_basis), "rows": rows}
 
 
 def main():

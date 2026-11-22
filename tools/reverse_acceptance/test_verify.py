@@ -267,6 +267,10 @@ class WholeItemTests(unittest.TestCase):
             result = verify.project(ledger, digest, inputs, None)
             self.assertEqual(result["status"], "inconclusive")
             self.assertEqual(result["counts"], {"pass": 1, "fail": 0, "inconclusive": 1})
+            self.assertEqual(result["pass_by_basis"], {
+                "previous_whole_item_static_acceptance_replayed": 1,
+                "fresh_source_build_full_file_exact_and_item_evidence": 0,
+            })
             self.assertEqual(result["distinct_originals"], 1)
         with self.assertRaisesRegex(ValueError, "SHA-256"):
             verify.project(ledger, "0"*64, inputs, None)
