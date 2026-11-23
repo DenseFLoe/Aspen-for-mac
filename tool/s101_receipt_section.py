@@ -17,6 +17,7 @@ SCRIPTS = [
     ("tool/s97-site-owners.py", "站点归属 + 正反例"),
     ("tool/s105-site-evidence.py", "站点四样比对（字节/位移/符号/半开区间）"),
     ("tool/s109-l1509-check.py", "L1509 位移/槽/符号 + 单改变体"),
+    ("tool/s109-read-mutate.py", "read() 行步长变体（取值路径覆盖）"),
     ("tool/verify_il_digests.py", "167 条 IL 摘要只读复验"),
 ]
 RUNS = [

@@ -67,6 +67,7 @@
 | tool/s97-site-owners.py | 2,475 B | 3dc305a25b38bde1689d6803476c45a73d44c9dff1d1b199a70b3e74a926ffce | 站点归属 + 正反例 |
 | tool/s105-site-evidence.py | 3,610 B | 600975699de15c7ff150a336ac792726c40383e5229f835acdb727dd0e68c1ed | 站点四样比对（字节/位移/符号/半开区间） |
 | tool/s109-l1509-check.py | 3,647 B | 9c9f5927e14d8949ce297830ef88931a5c5f28398745bee0531fc602fce1e41e | L1509 位移/槽/符号 + 单改变体 |
+| tool/s109-read-mutate.py | 1,472 B | fb24bc6697bc6891f68fb33d46b77328e8df07b897525fb3bb06f77830295b5c | read() 行步长变体（取值路径覆盖） |
 | tool/verify_il_digests.py | 1,958 B | 3693094d52e76e40ba43aee56cbb6d379defde219a43ce10d3a27c654a25aec6 | 167 条 IL 摘要只读复验 |
 
 运行命令（Windows 可直接复制，仓库根执行）：
