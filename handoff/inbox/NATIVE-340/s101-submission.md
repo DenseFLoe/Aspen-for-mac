@@ -1,7 +1,7 @@
 # NATIVE-340 s101 提交
 
 - 分支：tietoumiao/native-340-s33；上轮 `38b6814d`，主干 44c22e3d
-- 本轮 head：9c949d3f2caa5e90a793e1976057418a0cf4f6be
+- 本轮 head：f38c2df80fd991dab0bb23fdbe3e36f7ba864796（本节脚本指纹取自该 head 的分支树）
 
 ## 1b 合流
 
