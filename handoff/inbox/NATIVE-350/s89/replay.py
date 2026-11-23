@@ -1,0 +1,148 @@
+"""Reassemble a scoped AMD64 body and compare its original code and unwind."""
+import argparse
+from hashlib import sha256
+import json
+from pathlib import Path
+import struct
+import subprocess
+from tempfile import TemporaryDirectory
+
+import capstone
+from capstone.x86 import X86_OP_IMM, X86_OP_MEM, X86_REG_RIP
+import pefile
+
+
+def coff_sections(obj):
+    machine, count, _, symbols, n_symbols, optional, _ = struct.unpack_from("<HHIIIHH", obj)
+    assert (machine, optional) == (0x8664, 0)
+    names = {}
+    index = 0
+    while index < n_symbols:
+        pos = symbols + index * 18
+        name = obj[pos:pos + 8]
+        if not any(name[:4]):
+            start = symbols + n_symbols * 18 + struct.unpack_from("<I", name, 4)[0]
+            name = obj[start:obj.index(0, start)]
+        names[index] = name.rstrip(b"\0").decode("ascii")
+        index += 1 + obj[pos + 17]
+    for index in range(count):
+        name, _, _, size, raw, rel, _, n_rel, _, _ = struct.unpack_from("<8sIIIIIIHHI", obj, 20 + index * 40)
+        name = name.rstrip(b"\0").decode("ascii")
+        if name not in (".text", ".pdata", ".xdata"):
+            continue
+        relocations = [struct.unpack_from("<IIH", obj, rel + index * 10) for index in range(n_rel)]
+        yield name, bytearray(obj[raw:raw + size]), [(off, names[symbol], kind) for off, symbol, kind in relocations]
+
+
+def match_sections(obj, image, originals, bases):
+    records = {}
+    for name, data, relocations in coff_sections(obj):
+        matched = {}
+        for off, symbol, kind in relocations:
+            target = int(symbol[4:], 16) if symbol.startswith("rva_") else bases[symbol]
+            addend, = struct.unpack_from("<i", data, off)
+            if name == ".text":
+                assert 4 <= kind <= 9
+                struct.pack_into("<i", data, off, target + addend - (bases[name] + off + kind))
+            else:
+                assert kind == 3
+                struct.pack_into("<I", data, off, target + addend)
+            matched[bases[name] + off] = (target, kind)
+        original = originals[name]
+        if len(data) != len(original):
+            raise ValueError(f"{name} size {len(data)} differs from {len(original)}")
+        for offset, (actual, expected) in enumerate(zip(data, original)):
+            if actual != expected:
+                raise ValueError(f"{name} first difference at {bases[name] + offset:#x}: {actual:#04x} instead of {expected:#04x}")
+        records[name] = {"bytes": len(data), "sha256": sha256(data).hexdigest(), "relocations": matched}
+    assert set(records) == set(originals)
+    return records
+
+
+def rip_refs(pe, image, slot):
+    from iced_x86 import Decoder, InstructionInfoFactory, OpKind
+    factory = InstructionInfoFactory()
+    refs = []
+    for sec in pe.sections:
+        if not sec.Characteristics & 0x20000000:
+            continue
+        base = sec.VirtualAddress
+        raw = image[base:base + min(sec.SizeOfRawData, sec.Misc_VirtualSize)]
+        for off in range(len(raw)):
+            ins = Decoder(64, raw[off:off + 15], ip=base + off).decode()
+            if ins.is_ip_rel_memory_operand and ins.ip_rel_memory_address == slot:
+                operands = [factory.info(ins).op_access(i) for i in range(ins.op_count) if ins.op_kind(i) == OpKind.MEMORY]
+                refs.append({"site": hex(ins.ip), "operand_access": operands, "length": ins.len})
+    return refs
+
+
+def replay(original, zig, listing):
+    here = Path(__file__).resolve().parent
+    spec = json.loads((here / "scope.json").read_bytes())
+    raw = original.read_bytes()
+    assert sha256(raw).hexdigest() == spec["original_sha256"]
+    pe = pefile.PE(data=raw)
+    image = pe.get_memory_mapped_image()
+    start, end, unwind, unwind_size = spec["bounds"]
+    assert sha256(image[start:end]).hexdigest() == spec["range_sha256"]
+    entry, = (e.struct for e in pe.DIRECTORY_ENTRY_EXCEPTION if e.struct.BeginAddress == start)
+    assert (entry.EndAddress, entry.UnwindData) == (end, unwind)
+    pos = entry.get_file_offset()
+    sources = {".text": image[start:end], ".pdata": raw[pos:pos + 12], ".xdata": image[unwind:unwind + unwind_size]}
+    assert sources[".pdata"] == struct.pack("<III", start, end, unwind)
+    with TemporaryDirectory() as temp:
+        obj = Path(temp) / "scope.obj"
+        subprocess.run([str(zig.resolve()), "cc", "-target", "x86_64-windows-gnu", "-O2", "-g0",
+                        "-c", str(here / spec["source"]), "-o", str(obj)], check=True)
+        match = match_sections(obj.read_bytes(), image, sources, {".text": start, ".pdata": pos, ".xdata": unwind})
+    dis = capstone.Cs(capstone.CS_ARCH_X86, capstone.CS_MODE_64)
+    dis.detail = True
+    body = list(dis.disasm(image[start:end], start))
+    assert sum(i.size for i in body) == end - start
+    locations = {}
+    for ins in body:
+        if ins.mnemonic == "call" and ins.operands[0].type == X86_OP_IMM:
+            locations[ins.address + ins.imm_offset] = ins.operands[0].imm
+        for op in ins.operands:
+            if op.type == X86_OP_MEM and op.mem.base == X86_REG_RIP:
+                locations[ins.address + ins.disp_offset] = ins.address + ins.size + op.mem.disp
+    assert {off: entry[0] for off, entry in match[".text"]["relocations"].items()} == locations
+    evidence = {}
+    for address, data in spec["evidence_bytes"].items():
+        at, expected = int(address, 16), bytes.fromhex(data)
+        assert image[at:at + len(expected)] == expected, address
+        evidence[address] = [f"{i.mnemonic} {i.op_str}".strip() for i in dis.disasm(expected, at)]
+    scopes = []
+    if unwind_size > 8:
+        handler, n_scopes = struct.unpack_from("<II", sources[".xdata"], 12)
+        scopes = [tuple(map(hex, row)) for row in struct.iter_unpack("<IIII", sources[".xdata"][20:])]
+        assert handler == 0x362e0 and len(scopes) == n_scopes == 4
+    slot_info = None
+    if spec.get("scan_slot"):
+        slot = spec["scan_slot"]
+        sec = pe.get_section_by_rva(slot)
+        offset = slot - sec.VirtualAddress
+        assert sec.Characteristics & 0x80000000 and sec.SizeOfRawData <= offset < sec.Misc_VirtualSize
+        assert image[slot] == 0
+        assert all(e.rva != slot or not e.type for block in pe.DIRECTORY_ENTRY_BASERELOC for e in block.entries)
+        slot_info = {"rva": hex(slot), "initialization": "loader zero fill", "rip_operand_candidates": rip_refs(pe, image, slot),
+                     "scope": "RIP-relative operands in executable raw bytes; edge-overlap candidates may require boundary review."}
+    if listing:
+        listing.write_text("".join(f"{i.address:#x} {i.bytes.hex()} {i.mnemonic} {i.op_str}".rstrip() + "\n"
+                                   for i in body), encoding="utf-8", newline="\n")
+    return {"original_sha256": spec["original_sha256"], "range_sha256": spec["range_sha256"],
+            "range": list(map(hex, (start, end))), "instruction_count": len(body), "sections": match,
+            "unwind_rva": hex(unwind), "scopes": scopes, "scope_bytes": sources[".xdata"].hex(),
+            "additional_original_instructions": evidence, "data_slot": slot_info}
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("original", type=Path)
+    parser.add_argument("zig", type=Path)
+    parser.add_argument("--listing", type=Path)
+    args = parser.parse_args()
+    try:
+        print(json.dumps(replay(args.original, args.zig, args.listing), indent=2))
+    except (AssertionError, ValueError) as error:
+        parser.exit(1, f"Replay comparison failed: {error}\n")
