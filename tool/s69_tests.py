@@ -14,7 +14,10 @@ def sha(p):
 
 
 def run(cmd):
-    r = subprocess.run(cmd, capture_output=True, text=True)
+    import os
+    env = dict(os.environ)
+    env.setdefault('PYTHONPATH', 'D:/Lib/site-packages')
+    r = subprocess.run(cmd, capture_output=True, text=True, env=env)
     return r.returncode, (r.stdout + r.stderr).strip()
 
 
