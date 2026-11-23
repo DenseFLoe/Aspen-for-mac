@@ -19,7 +19,9 @@ ITEMS = [
     ('invoke', '0x1444', 'CALL qword ptr [RBX+0x30]', 'IDispatch::Invoke params 5..9 (Windows x64 stack args after RCX=this RDX=dispIdMember([RSP+0xC8]) R8=riid(0x82F8) R9=lcid): [RSP+0x20]=wFlags(1 DISPATCH_METHOD) [RSP+0x28]=pDispParams(&[RSP+0x50]) [RSP+0x30]=pVarResult(&[RSP+0x80]) [RSP+0x38]=pExcepInfo(0) [RSP+0x40]=puArgErr(0)'),
     ('dispparams', '0x13A2', 'MOV [RSP+0x58],RSI; MOV [RSP+0x60],R14; LEA RAX,[RSP+0x68]; MOV [RSP+0x50],RAX', 'DISPPARAMS at [RSP+0x50]: rgvarg=&[RSP+0x68], rgdispidNamedArgs=0; [RSP+0x60] holds TWO 32-bit fields written by one qword store: cArgs=1 (low dword), cNamedArgs=0 (high dword)'),
     ('result', '0x1449', 'CMOVNS ESI,[RSP+0x88]', 'on HRESULT >= 0 load success value into ESI; 0x1469 MOV EAX,ESI returns int (only the low 32 bits of RAX are meaningful)'),
-    ('variant-init', '0x13CF', 'CALL qword ptr [0x1800070f0]', 'VariantInit contract: 0x13CF CALL OLEAUT32.dll!#8 over the VARIANT array at [RSP+0x68], stride 0x18, count cArgs([RSP+0x60] low dword) -> 24 bytes set to VT_EMPTY'),
+    ('variant-init', '0x13CF', 'CALL qword ptr [0x1800070f0]', 'VariantInit guarantees ONLY vt=VT_EMPTY for the VARIANT array at [RSP+0x68] (count = cArgs, [RSP+0x60] low dword); it does NOT decide the element type and does NOT decide the stride'),
+    ('variant-stride', '0x13C0', 'LEA RCX,[RAX+RAX*2]; LEA RCX,[RSP+0x68+RCX*8]', 'element stride = 24 bytes (0x18) from the loop arithmetic at 0x13C0-0x13DB (i*3*8); stride is a property of the array walk, not of VariantInit'),
+    ('variant-write', '0x13E2', 'MOV EAX,8; MOV word [RSP+0x68],AX; MOV [RSP+0x70],RBP', 'the CALLER then writes VT_BSTR (vt=8, 0x13DD/0x13E2) and union.bstrVal=RBP (0x13E7); this is caller code, not VariantInit'),
     ('variant-union', '0x13E7', 'MOV qword ptr [RSP+0x70],RBP', 'union after vt: bstrVal = RBP (BSTR built earlier); only vt (2B) + union pointer (8B) are written after VariantInit'),
     ('result-clear', '0x145B', 'LEA RCX,[RSP+0x80]; CALL qword ptr [0x1800070d0]', 'OLEAUT32.dll!#9 = VariantClear on pVarResult at [RSP+0x80], after the final Release and before returning ESI'),
     ('release-fail', '0x1396', 'CALL qword ptr [RAX+0x10]', 'Release() on GetIDsOfNames failure path'),
@@ -70,9 +72,9 @@ def binding_rows(data, pe, asm_path):
         ('calls-riid', '0x%X' % criid_t, criid,
          'riid for GetIDsOfNames/Invoke (all zero = IID_NULL)'),
         ('variant-vt', '0x13DD', 'vt immediate %d' % vt,
-         'VariantInit guarantees ONLY vt=VT_EMPTY (24 bytes at [RSP+0x68], stride 0x18); it does NOT '
-         'decide the type or the stride. The original then writes VT_BSTR at 0x13E2 (vt=8, type tag) and '
-         'the 24-byte stride comes from the loop arithmetic at 0x13C0'),
+         'vt is the TYPE TAG only: 8 = VT_BSTR, read from MOV EAX,imm at 0x13DD and written as a 16-bit '
+         'field at 0x13E2. VariantInit guarantees only VT_EMPTY and determines neither the type nor the '
+         'stride; the 24-byte stride is the loop arithmetic at 0x13C0 (see variant-stride)'),
     ]
 
 

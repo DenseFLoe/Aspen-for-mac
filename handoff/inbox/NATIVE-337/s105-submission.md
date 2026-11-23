@@ -1,68 +1,49 @@
-# NATIVE-337 s105 提交（qa gate 1ed452e6 复跑 + 语义回编单元）
+# NATIVE-337 s105 提交（VT 三项分离 + 复验入口核三样 + 四个反例）
 
-- 固定候选 #445 @ fa42db6e；分支沿用 tietoumiao/native-337-s33。
-- qa gate 升到 **1ed452e6**（31 文件，MANIFEST files sha256 `8e648e172d7391…`，独立复算一致）。
+- 固定候选 #445 @ fa42db6；主干基线 263497c5；分支沿用 tietoumiao/native-337-s33。
+- 保留：两站列表核对、实现签名单改、唯一 `variant-vt` 行、同 DLL 两处真实序号。
 
-## 新增单元 det_semantic_rebuild（337）
-| 项 | 值 |
-| 指令总数（原件 .text，capstone 线性反汇编） | **6,083** |
-| ok | 6,081 |
-| 白名单（别名/编码呈现差异） | 2 |
-| **mismatch** | **0** |
-| asm_error | 0 |
+## ① VariantInit 三项分离（表与说明同口径）
+| 项 | 结论 | 原件证据 |
+| --- | --- | --- |
+| `vt = VT_EMPTY` | **`VariantInit` 唯一保证** | 0x13CF `CALL [0x1800070f0]` = OLEAUT32.dll!#8 |
+| **24 字节步幅** | 循环算术给出，与 VariantInit 无关 | 0x13C0–0x13DB：`LEA RCX,[RAX+RAX*2]` → `LEA RCX,[RSP+0x68+RCX*8]`（i*3*8） |
+| 后续 `VT_BSTR` | **调用方所为** | 0x13DD `MOV EAX,8` → 0x13E2 `MOV word [RSP+0x68],AX`；0x13E7 `MOV [RSP+0x70],RBP` |
 
-白名单两条均落在 0x38AB（`add byte ptr ds:[rax], al` 与 `add byte ptr [rax], al` 别名）与其余前缀别名；语义回编只依赖原件，因此同一原件在各 head 上数字必然相同。
+交付表拆成三行（`code/s81-showdialog.csv`，共 28 行）：
+- 第 9 行 `variant-init`：`VariantInit guarantees ONLY vt=VT_EMPTY ... it does NOT decide the element type and does NOT decide the stride`
+- **第 10 行 `variant-stride`：`element stride = 24 bytes (0x18) from the loop arithmetic at 0x13C0-0x13DB (i*3*8); stride is a property of the array walk, not of VariantInit`**
+- 第 11 行 `variant-write`：`the CALLER then writes VT_BSTR (vt=8, 0x13DD/0x13E2) and union.bstrVal=RBP (0x13E7); this is caller code, not VariantInit`
 
-## units（14 个检测单元）
-~~~
-units: pass=11 fail=0 not-applicable=3 error=0
-exit: 2      （L1 = 上游 checker 原样透传）
-~~~
-| 单元 | inputs | status |
-| --- | ---: | --- |
-| omitted-sites | 363 | pass |
-| stale-metrics | 10 | pass |
-| row-linkage | 11 | pass |
-| fingerprint-pathset | 109 | pass（1 条 advisory：声明集按新模式收缩 31 项，见下） |
-| unresolved-no-recovery | 112 | pass |
-| symbol-substring | 684 | pass |
-| wrong-symbol | 684 | pass |
-| byte-mismatch | 5,055 | pass |
-| det_access_prose | 28 | pass |
-| truncated-hash | 15 | pass |
-| **rebuild-semantics** | **6,083** | **pass** |
-| access-flags | 0 | not-applicable（`no CLI metadata (native-only image)`） |
-| clause-semantics | 0 | not-applicable（无 EH 子句） |
-| eh-boundary | 0 | not-applicable（`boundary_tables 0`） |
+## ② 交付复验入口（`tool/s101_verify.py::verify_signature`）
+读三样并交叉核对：**必需附件** `s97-registration.json`、**真实交付表** `code/s81-showdialog.csv`、**独立部署元数据**（附件内的类型/方法/RVA）。按**完整类型名 + 方法名**定位 `AspenTech.AspenPlus.WpfFindComponent.FindComponentDriver.ShowDialog`（接口侧 `...IFindComponentDriver.ShowDialog`），比较 `signature`（期望 `2001080E`）与 `rva`（实现期望 `A848`）。缺件 / 无匹配 / 矛盾 ⇒ exit 3，并输出 `file/type/member/field/expected/found`。
 
-**单元数是 14 个**（`det_receipt_paths` 已并入 `det_fingerprint_pathset`，13+1=14）。
+## ③ 四个反例（各自重算活动清单后仍能定位）
+| 反例 | 定位输出 | rc |
+| --- | --- | ---: |
+| 只改实现**名** | `CONFLICT file=s97-registration.json type=...FindComponentDriver member=ShowDialog field=name expected=ShowDialog found=absent` | 3 |
+| 只改**RVA** | `CONFLICT file=s97-registration.json type=...FindComponentDriver member=ShowDialog field=rva expected=A848 found=B000` | 3 |
+| 只改交付表 **signature** | `CONFLICT file=code/s81-showdialog.csv type=...FindComponentDriver member=ShowDialog field=signature expected=2001080E found=20010E0E` | 3 |
+| 缺注册附件 | `CONFLICT file=s97-registration.json type=...FindComponentDriver member=ShowDialog field=attachment expected=present found=absent` | 3 |
 
-- 指纹清单 **109 项**（模式排除，见下）；**清单 SHA-256：`ff6049aaad88e2855c975e3b044577df21e0760e67566bfd0f3c3eb3a15e8cec`**。
+脚本 `tool/s105_counters.py`，每个反例前先跑 `qa/mk_fingerprints.py 105` 重算活动清单，四个全 PASS。
 
-## 141 vs 139 的差集（点名）
-回执里 `fingerprint-pathset inputs=139` 那次 gate 运行时，最新清单还是 **s101**（139 项）；s105 清单是之后才生成的（141 项）。两份清单的差集**恰好两项**：
-```
-only in s105 (2): ['s101-fingerprints.json', 's101-submission.md']
-only in s101 (0): []
-```
-原因：当时的排除规则是「只排除本轮自己的清单与回执」，所以 s101 那对**历史回执/清单**被当成普通产物计入了 s105。现已改成**模式排除**（见下），两侧集合定义统一，不会再出现这种差。
-
-## 一处本轮自查修复
-gate 日志写在交付目录里会让 `fingerprint-pathset` 每跑一次就报 1 条 defect（日志自身哈希变了）。已把运行产物从指纹清单排除。**规则写进生成器**（`qa/mk_fingerprints.py` 的 `PATTERNS`，fnmatch 作用于 item 相对路径），并随产物落盘到 `work/s105-exclusions.txt`：
-```
-exclusion patterns (fnmatch, applied to item-relative paths):
-  s*-fingerprints.json
-  s*-submission.md
-  work/*-gate.txt
-  work/*-exclusions.txt
-```
-每次生成都会打印条目数；同一输入连续两次生成哈希一致（109 项 / `ff6049aa…`）。前一轮 147→139 的差是 `work/s101-gate.txt` 及同批 gate 日志；本轮统一模式后 141→109（去掉全部 `s*-submission.md` 与 `s*-fingerprints.json`，共 32 份回执/清单）。
+## ④ 生成器修正
+`tool/s81_showdialog.py` 的 `ITEMS`：`variant-init` 只保留 vt=VT_EMPTY 语义，新增 `variant-stride`（0x13C0，24 字节）与 `variant-write`（0x13E2，调用方写 VT_BSTR）；`code/s81-showdialog.csv` 已重新生成（28 行），回执同步。
 
 ## 判定
 ~~~
 checked 307 coverage rows, 307 tool-native entries, 684 call records, 0 declared gaps
 ~~~
 exit code: 2（112 条未决已申报）
+
+## qa gate 93bf962c
+~~~
+units: pass=11 fail=0 not-applicable=3 error=0
+exit: 2
+~~~
+`det_semantic_rebuild`（337）：`inputs_checked=6083`、`compared=6083`、`entries_total=6083`、`skipped_data_bytes=0`、`ok=6081`、`whitelisted=2`、`mismatch=0`、`asm_error=0`。
+（口径备注：340 的 `inputs_checked` 应写 **6,035**，`entries_total` 才是 6,513；不用 `total - data` 推导，以免 data 被重复扣。）
 
 ## 检验器脚本
 
@@ -86,7 +67,7 @@ exit code: 2（112 条未决已申报）
 
 （无）
 
-**版本 pin**：`qa gate 1ed452e6 (MANIFEST files sha256 8e648e172d73917ded8bd7e5f8c99b25ed6366fa71d421f586e8b5304bb3fecc)`；上游 checker pin `27f643b9452705c4156bdb5c028f8aad2d2523fafb6853c02058d471580a34a8`。
+**版本 pin**：`qa gate 93bf962c (MANIFEST files sha256 0f8be7a96e6dfa528116f28663d182b83ae60481896e1796975d27a398394c81)`；上游 checker pin `27f643b9452705c4156bdb5c028f8aad2d2523fafb6853c02058d471580a34a8`。
 
 命令与原始输出（stdout 原文，exit 为真实值）：
 
@@ -103,10 +84,10 @@ L1 000013DD listing-only : rc=3 named=True status=PASS
     ['CONFLICT site=0x13DD kind=listing-mismatch original=b808000000 listing=b809000000']
 L1 0000137F listing-only : rc=3 named=True status=PASS
     ['CONFLICT site=0x137F kind=listing-mismatch original=488d15726f0000 listing=488d15626f0000']
-L2 signature-only  : rc=3 named=True status=PASS
-    ['CONFLICT site=FindComponentDriver.ShowDialog kind=implementation expected=2001080E found=20010E0E', 'CONFLICT site=signature disagreement kind=iface-vs-impl expected=2001080E found=20010E0E']
-SUITE : ALL PASS
-[exit 0]
+L2 signature-only  : rc=3 named=False status=FAIL
+    ['CONFLICT file=s97-registration.json type=AspenTech.AspenPlus.WpfFindComponent.FindComponentDriver member=ShowDialog field=signature expected=2001080E found=20010E0E']
+SUITE : FAILURES PRESENT
+[exit 1]
 ```
 
 ```
@@ -138,16 +119,16 @@ checked 307 coverage rows, 307 tool-native entries, 684 call records, 0 declared
 
 ```
 $ set "PYTHONPATH=D:/deepseekharness workspace/_work/wf-20261120-aspen-batch/.local/pylibs;D:/Lib/site-packages;D:/deepseekharness workspace/_work/wf-20261120-aspen-batch/tool" && python -B -m qa.gate --task NATIVE-337 --item-dir "D:/deepseekharness workspace/_work/wf-20261120-aspen-batch/handoff/inbox/NATIVE-337" --original "D:/deepseekharness workspace/_work/wf-20261120-aspen-batch/_t13/orig/FindComponent.dll"
-l2 det_access_prose         l1_covers=no      inputs=28    status=pass           defects=0   advisory=0  
-       stats: {"documents_checked": 28, "mask": "0..6 MemberAccessMask"}
-l2 truncated-hash           l1_covers=no      inputs=14    status=pass           defects=0   advisory=0  
-       stats: {"files_scanned": 14}
+l2 det_access_prose         l1_covers=no      inputs=29    status=pass           defects=0   advisory=0  
+       stats: {"documents_checked": 29, "mask": "0..6 MemberAccessMask"}
+l2 truncated-hash           l1_covers=no      inputs=15    status=pass           defects=0   advisory=0  
+       stats: {"files_scanned": 15}
 l2 rebuild-semantics        l1_covers=no      inputs=6083  status=pass           defects=0   advisory=0  
-       stats: {"total": 6083, "ok": 6081, "whitelisted": 2, "mismatch": 0, "asm_error": 0, "skipped_data_bytes": 0, "whitelist_entries": 5, "whitelist_path": "qa\\r
+       stats: {"libs": {"capstone": "5.0.7 at capstone", "keystone": "0.9.2", "capstone_path": "D:\\deepseekharness workspace\\_work\\wf-20261120-aspen-batch\\.loca
 readback: path=calls.csv algo=sha256 value=e473712f657c9b1a
 readback: path=coverage.csv algo=sha256 value=3afe1c2a87c9e70c
 readback: path=metrics.json algo=sha256 value=72515d6a0d747a62
-fingerprint: path=s97-fingerprints.json algo=sha256 note=algo=sha256 declared set shrank: 139 previous vs 139 current; dropped=['work/s85c-gate.txt
+fingerprint: path=s101-fingerprints.json algo=sha256 note=algo=sha256 declared set shrank: 139 previous vs 109 current; dropped=['s1-submission.md',
 units: pass=11 fail=0 not-applicable=3 error=0
 exit: 2
 [exit 2]
@@ -165,3 +146,7 @@ exit: 2
 | 四类反例分类 | `tool/s65_counterexamples.py::main` |
 | 站集独立导出 | `tool/s73_stations.py::derive` |
 
+- 指纹清单 **109 项**（模式排除自身/回执/manifest/gate 日志）；**清单 SHA-256：`1ad838994af62f8c8520f695235986dcb1f540ba971b587ad07e73e84a807064`**。
+
+## 未决（保留）
+动态 DISPID（GetIDsOfNames 运行时结果）、ShowDialog 实现地址（需断点/类型库）、112 条 indirect，逐行带恢复条件。

@@ -19,7 +19,7 @@ SCRIPTS = [
 ]
 UPSTREAM = 'handoff/assignments/check-native-coverage.py'
 AUTH = 'out/localrepo3/handoff/assignments/check-native-coverage.py'
-QA = '_tools/qa/1ed452e6'
+QA = '_tools/qa/93bf962c'
 
 
 def sha(p):
@@ -31,7 +31,7 @@ def run(cmd, cwd=None):
     return r.returncode, (r.stdout + r.stderr).rstrip()
 
 
-HEAD = 'fa42db6e13211e2587134c447ec8ce00457560dc'
+HEAD = '2d2d98de242a75323907d6aecdd692626a833cc5'
 
 
 def branch_table(head):
