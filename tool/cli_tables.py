@@ -141,6 +141,12 @@ def read(data, offset):
                 row[name] = _cstr(data, streams["#Strings"][0] + raw) if kind == "S" else raw
                 off += width
             row["_row"] = r + 1
+            dec = {}
+            for name, kind in TABLES[i][1]:
+                if isinstance(kind, tuple) and kind[0] == "coded" and (i, name) in CODED_COLUMNS:
+                    dec[name] = decode_column(i, name, row[name])
+            if dec:
+                row["_decoded"] = dec
             out.append(row)
         rows[i] = out
     layout = []
@@ -183,6 +189,33 @@ CODED_TAGS = {
     43: {0: 6, 1: 10},                         # MethodDefOrRef
 }
 CODED_BITS = {1: 2, 9: 2, 10: 3, 11: 2, 12: 5, 13: 1, 14: 2, 24: 1, 25: 1, 28: 1, 42: 1, 43: 1}
+
+# Per-COLUMN coding, used by the real parse path.  A table can hold several coded columns
+# with different tag widths (CustomAttribute.Parent is 5 bits, .Type is 3 bits), so keying by
+# table alone is wrong; the parser reads widths from here.
+CODED_COLUMNS = {
+    (1, "ResolutionScope"): (2, {0: 0, 1: 26, 2: 35, 3: 1}),
+    (2, "Extends"): (2, {0: 2, 1: 1, 2: 27}),
+    (9, "Interface"): (2, {0: 2, 1: 1, 2: 27}),
+    (10, "Class"): (3, {0: 2, 1: 1, 2: 26, 3: 6, 4: 27}),
+    (12, "Parent"): (5, {0: 6, 1: 4, 2: 1, 3: 2, 4: 8, 5: 9, 6: 10, 7: 0, 8: 14, 9: 23,
+                         10: 20, 11: 17, 12: 26, 13: 27, 14: 32, 15: 35, 16: 38, 17: 39,
+                         18: 40, 19: 42, 20: 43, 21: 44}),
+    (12, "Type"): (3, {2: 6, 3: 10}),          # CustomAttributeType: 2=MethodDef, 3=MemberRef
+    (25, "MethodBody"): (1, {0: 6, 1: 10}),
+    (25, "MethodDeclaration"): (1, {0: 6, 1: 10}),
+    (28, "MemberForwarded"): (1, {0: 4, 1: 6}),
+}
+
+
+def decode_column(table, column, value):
+    """Decode a coded column from the parse path: returns (target_table, one_based_row)."""
+    entry = CODED_COLUMNS.get((table, column))
+    if entry is None:
+        return None, 0
+    bits, tags = entry
+    tag = value & ((1 << bits) - 1)
+    return tags.get(tag), (value >> bits)
 
 
 def decode_coded(table, value):
