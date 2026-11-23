@@ -18,16 +18,19 @@
 ## ② 交付复验入口（`tool/s101_verify.py::verify_signature`）
 读三样并交叉核对：**必需附件** `s97-registration.json`、**真实交付表** `code/s81-showdialog.csv`、**独立部署元数据**（附件内的类型/方法/RVA）。按**完整类型名 + 方法名**定位 `AspenTech.AspenPlus.WpfFindComponent.FindComponentDriver.ShowDialog`（接口侧 `...IFindComponentDriver.ShowDialog`），比较 `signature`（期望 `2001080E`）与 `rva`（实现期望 `A848`）。缺件 / 无匹配 / 矛盾 ⇒ exit 3，并输出 `file/type/member/field/expected/found`。
 
-## ③ 四个反例（各自重算活动清单后仍能定位）
-| 反例 | 定位输出 | rc |
-| --- | --- | ---: |
-| 只改实现**名** | `CONFLICT file=s97-registration.json type=...FindComponentDriver member=ShowDialog field=name expected=ShowDialog found=absent` | 3 |
-| 只改**RVA** | `CONFLICT file=s97-registration.json type=...FindComponentDriver member=ShowDialog field=rva expected=A848 found=B000` | 3 |
-| 只改交付表 **signature** | `CONFLICT file=code/s81-showdialog.csv type=...FindComponentDriver member=ShowDialog field=signature expected=2001080E found=20010E0E` | 3 |
-| 缺注册附件 | `CONFLICT file=s97-registration.json type=...FindComponentDriver member=ShowDialog field=attachment expected=present found=absent` | 3 |
+## ③ 四个反例（各自独立、干净输入）
+每个用例：复制一份干净基线 → 只改一个字段 → 跑入口 → 记录 → 丢弃；并打印被改文件改动前/后的 sha256。
 
-脚本 `tool/s105_counters.py`，每个反例前先跑 `qa/mk_fingerprints.py 105` 重算活动清单，四个全 PASS。
+基线 `input_manifest_hash` = `07869974edd82b3ec38bf091bdf2bef7eed06419bdf77b22b48ca1fe1d7f88aa`（四个用例完全相同，只有 `mutated_file` / `mutated_field` 不同）。
 
+| 反例 | mutated_file | before/after sha256 | 定位输出 | rc |
+| --- | --- | --- | --- | ---: |
+| 只改实现**名** | `s97-registration.json` | `85cffe1658e99c92` / 同 | `CONFLICT file=s97-registration.json ... member=ShowDialog field=name expected=ShowDialog found=absent` | 3 |
+| 只改 **RVA** | `s97-registration.json` | `78051298bd945e47` / 同 | `CONFLICT ... field=rva expected=A848 found=B000` | 3 |
+| 只改交付表 **signature** | `code/s81-showdialog.csv` | `2b5e85f24c4a702b` / 同 | `CONFLICT file=code/s81-showdialog.csv ... field=signature expected=2001080E found=20010E0E` | 3 |
+| 缺注册附件 | `s97-registration.json`（删除） | – | `CONFLICT ... field=attachment expected=present found=absent` | 3 |
+
+**第三例输出中不再出现 `rva=B000`**（脚本对第三例显式 forbid 该串，出现即判 FAIL）；三例 `input_manifest_hash` 一致、被改文件在运行前后字节不变（`after_sha == before_sha` 为 True）。
 ## ④ 生成器修正
 `tool/s81_showdialog.py` 的 `ITEMS`：`variant-init` 只保留 vt=VT_EMPTY 语义，新增 `variant-stride`（0x13C0，24 字节）与 `variant-write`（0x13E2，调用方写 VT_BSTR）；`code/s81-showdialog.csv` 已重新生成（28 行），回执同步。
 

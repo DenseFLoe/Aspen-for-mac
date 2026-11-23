@@ -1,77 +1,106 @@
 # -*- coding: utf-8 -*-
-"""s105 counterexamples: each recomputes the active manifest, then must still be located."""
-import json, subprocess, sys
+"""s105 counterexamples, isolated: every case starts from a fresh copy of the same baseline.
+
+Each case prints the sha256 of the file it mutates *before* and *after*, and all cases share
+the same input_manifest_hash (the baseline tree hash), so only mutated_file/mutated_field differ.
+"""
+import hashlib, json, shutil, subprocess, sys, tempfile
 from pathlib import Path
 
-ITEM = Path('handoff/inbox/NATIVE-337')
+BASE = Path('handoff/inbox/NATIVE-337')
 BIN = '_t13/orig/FindComponent.dll'
 
 
-def run(args):
-    r = subprocess.run([sys.executable, '-B', 'tool/s101_verify.py'] + args, capture_output=True, text=True)
+def tree_hash(root):
+    h = hashlib.sha256()
+    for p in sorted(Path(root).rglob('*')):
+        if p.is_file():
+            h.update(p.relative_to(root).as_posix().encode())
+            h.update(b'\0')
+            h.update(hashlib.sha256(p.read_bytes()).digest())
+    return h.hexdigest()
+
+
+def fresh(tag):
+    d = Path(tempfile.mkdtemp(prefix='s105-%s-' % tag)) / 'cand'
+    shutil.copytree(BASE, d, ignore=shutil.ignore_patterns('*.prev.csv', 'work', 's*-fingerprints.json'))
+    return d
+
+
+def sha(p):
+    return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+
+
+def verify(folder):
+    r = subprocess.run([sys.executable, '-B', 'tool/s101_verify.py', '--folder', str(folder),
+                        '--binary', BIN, '--signature'], capture_output=True, text=True)
     return r.returncode, (r.stdout + r.stderr).strip()
 
 
-def manifest():
-    subprocess.run([sys.executable, '-B', 'qa/mk_fingerprints.py', '105'], check=True, capture_output=True)
-    return True
-
-
-def case(title, mutate, expect):
-    manifest()
-    rc, txt = run(['--folder', str(ITEM), '--binary', BIN, '--signature'])
-    mutate()
-    manifest()
-    rc2, txt2 = run(['--folder', str(ITEM), '--binary', BIN, '--signature'])
-    hit = expect in txt2 and rc2 != 0
-    print('%-28s rc=%d located=%s status=%s' % (title, rc2, hit, 'PASS' if hit else 'FAIL'))
-    for line in txt2.splitlines():
-        if line.startswith('CONFLICT'):
-            print('   ', line)
-    return hit
-
-
 def main():
-    reg = ITEM / 's97-registration.json'
-    orig = reg.read_bytes()
+    base = fresh('base')
+    base_hash = tree_hash(base)
+    print('baseline input_manifest_hash:', base_hash)
+    hashes = []
     ok = True
 
-    def mutate(path_field, value):
-        def _m():
-            doc = json.loads(orig.decode('utf-8'))
-            doc['FindComponentDriver']['methods'][0][path_field] = value
+    def case(title, mutate, expect_field, forbid=None):
+        nonlocal ok
+        d = fresh(title.replace(' ', '-'))
+        hashes.append((title, tree_hash(d)))
+        target, before = mutate(d)
+        b_sha = sha(target)
+        rc, txt = verify(d)
+        a_sha = sha(target)
+        hit = expect_field in txt and rc != 0
+        bad = forbid and forbid in txt
+        status = 'PASS' if (hit and not bad) else 'FAIL'
+        print('%-18s rc=%d located=%s%s status=%s' % (
+            title, rc, hit, '' if not bad else ' STALE(%s)' % forbid, status))
+        print('   mutated_file=%s before_sha=%s' % (Path(target).relative_to(d).as_posix(), b_sha[:16]))
+        print('   after_sha   =%s (unchanged by the run: %s)' % (a_sha[:16], b_sha == a_sha))
+        for line in txt.splitlines():
+            if line.startswith('CONFLICT'):
+                print('   ', line)
+        ok &= hit and not bad
+
+    def reg_mutate(field, value):
+        def _m(d):
+            reg = d / 's97-registration.json'
+            doc = json.loads(reg.read_text(encoding='utf-8'))
+            doc['FindComponentDriver']['methods'][0][field] = value
             reg.write_text(json.dumps(doc, ensure_ascii=False, indent=2), encoding='utf-8')
+            return reg, value
         return _m
 
-    try:
-        ok &= case('name only', mutate('name', 'ShowDialogX'), 'field=name')
-        ok &= case('rva only', mutate('rva', 'B000'), 'field=rva')
-        tbl = ITEM / 'code' / 's81-showdialog.csv'
-        torig = tbl.read_bytes()
+    def table_mutate(d):
+        tbl = d / 'code' / 's81-showdialog.csv'
+        t = tbl.read_text(encoding='utf-8').replace('id-sig-impl,registration,2001080E', 'id-sig-impl,registration,20010E0E')
+        tbl.write_text(t, encoding='utf-8')
+        return tbl, '20010E0E'
 
-        def mutate_table():
-            t = torig.decode('utf-8').replace('id-sig-impl,registration,2001080E', 'id-sig-impl,registration,20010E0E')
-            tbl.write_text(t, encoding='utf-8')
+    case('name only', reg_mutate('name', 'ShowDialogX'), 'field=name')
+    case('rva only', reg_mutate('rva', 'B000'), 'field=rva')
+    case('table signature', table_mutate, 'field=signature', forbid='rva=B000')
 
-        ok &= case('table signature', mutate_table, 'field=signature')
-    finally:
-        reg.write_bytes(orig)
-        if (ITEM / 'code' / 's81-showdialog.csv').exists():
-            (ITEM / 'code' / 's81-showdialog.csv').write_bytes(torig)
-    manifest()
-
-    # missing attachment
-    reg.rename(reg.with_suffix('.bak'))
-    manifest()
-    rc, txt = run(['--folder', str(ITEM), '--binary', BIN, '--signature'])
-    hit = ('s97-registration.json' in txt) and ('field=attachment' in txt) and rc != 0
-    print('%-28s rc=%d located=%s status=%s' % ('missing attachment', rc, hit, 'PASS' if hit else 'FAIL'))
+    # missing attachment, also from a clean copy
+    d = fresh('no-attachment')
+    hashes.append(('missing attachment', tree_hash(d)))
+    reg = d / 's97-registration.json'
+    reg.unlink()
+    rc, txt = verify(d)
+    hit = 's97-registration.json' in txt and 'field=attachment' in txt and rc != 0
+    print('%-18s rc=%d located=%s status=%s' % ('missing attachment', rc, hit, 'PASS' if hit else 'FAIL'))
     for line in txt.splitlines():
         if line.startswith('CONFLICT'):
             print('   ', line)
-    reg.with_suffix('.bak').rename(reg)
-    manifest()
     ok &= hit
+
+    same = len({h for _, h in hashes}) == 1
+    print('input_manifest_hash identical across cases:', same)
+    for title, h in hashes:
+        print('  %-18s %s' % (title, h))
+    ok &= same
     print('SUITE :', 'ALL PASS' if ok else 'FAILURES PRESENT')
     return 0 if ok else 1
 
