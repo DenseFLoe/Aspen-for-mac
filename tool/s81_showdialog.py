@@ -70,8 +70,9 @@ def binding_rows(data, pe, asm_path):
         ('calls-riid', '0x%X' % criid_t, criid,
          'riid for GetIDsOfNames/Invoke (all zero = IID_NULL)'),
         ('variant-vt', '0x13DD', 'vt immediate %d' % vt,
-         'vt TYPE TAG only (8 = VT_BSTR), derived from the MOV EAX,imm at 0x13DD; '
-         'the 24-byte element stride (0x18) is a separate property from the VariantInit loop at 0x13C0'),
+         'VariantInit guarantees ONLY vt=VT_EMPTY (24 bytes at [RSP+0x68], stride 0x18); it does NOT '
+         'decide the type or the stride. The original then writes VT_BSTR at 0x13E2 (vt=8, type tag) and '
+         'the 24-byte stride comes from the loop arithmetic at 0x13C0'),
     ]
 
 
@@ -120,6 +121,20 @@ def main():
             dict(item='deploy-assembly-sha256', rva='registration', instruction=pe_info.get('sha256', ''),
                  bytes='', asm='', evidence='s97-registration.json PE.sha256',
                  meaning='deployed assembly %s; version %s' % (r64.get('assembly', ''), pe_info.get('assemblyVersion', ''))),
+            dict(item='id-pe-assembly-sha256', rva='registration', instruction=pe_info.get('sha256', ''),
+                 bytes='', asm='', evidence='s97-registration.json PE.sha256',
+                 meaning='PE identity fingerprint of the deployed assembly'),
+            dict(item='id-strong-name', rva='registration', instruction='PublicKeyToken=null',
+                 bytes='', asm='', evidence='Registry64.assembly',
+                 meaning='strong-name field: assembly is not strong-name signed'),
+            dict(item='id-sig-interface', rva='registration',
+                 instruction=(reg.get('IFindComponentDriver', {}).get('methods') or [{}])[0].get('signature', ''),
+                 bytes='', asm='', evidence='IFindComponentDriver.ShowDialog',
+                 meaning='interface method signature int32 ShowDialog(string), rva 0 (abstract)'),
+            dict(item='id-sig-impl', rva='registration',
+                 instruction=(reg.get('FindComponentDriver', {}).get('methods') or [{}])[0].get('signature', ''),
+                 bytes='', asm='', evidence='FindComponentDriver.ShowDialog',
+                 meaning='implementation signature int32 ShowDialog(string), rva 0xA848'),
             dict(item='deploy-signature', rva='registration', instruction='PublicKeyToken=null',
                  bytes='', asm='', evidence='s97-registration.json Registry64.assembly',
                  meaning='assembly is not strong-name signed (PublicKeyToken=null); PE sha256 above is the deployment signature'),
