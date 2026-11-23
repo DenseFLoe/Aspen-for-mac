@@ -3,21 +3,32 @@
 - 分支：tietoumiao/native-340-s33（前移 #450，不新开 PR）
 - 上轮固定 head：#450 @ 5ca17f4987251f32be4772955c8b9be3185b9c62
 - 本轮 head：见 #13
+- cause：流程修正（打回类别 access-flags / 字段解码错；L1 只校验 schema 与计数、不读 Flags →
+  `l1_covers: no`；已在 `tool/preflight.py` 增 `det_access_flags` 的表检查：读候选访问表 → 回原件 MethodDef Flags → 比对；
+  反背题三项：行序/RVA 打乱、文件名改、未见 head 均通过）
 
 ## 1. 更正：Flags / ImplFlags / 访问级别
 
 | token | 名称 | Flags | ImplFlags | 访问 | Static | HasSecurity |
 | --- | --- | --- | --- | --- | --- | --- |
-| 0x06000056 | `___CxxCallUnwindDtor` | **0x4013** | **0x0** | **assembly** | 是 | 是 |
-| 0x06000057 | `___CxxCallUnwindDelDtor` | **0x4013** | **0x0** | **assembly** | 是 | 是 |
+| 0x06000056 | `___CxxCallUnwindDtor` | **0x4013** | **0x0** | **Assembly** | 是 | 是 |
+| 0x06000057 | `___CxxCallUnwindDelDtor` | **0x4013** | **0x0** | **Assembly** | 是 | 是 |
+
+（flags=0x4013 时 flags&0x7=3 → Assembly；这条推导也写进审计页与访问表。）
+
+两方法原始整数：flags=0x4013、impl_flags=0x0，`flags & 0x7 = 3` → Assembly（0x0010 置位 = static，
+0x4000 置位 = has_security；全部由整数推导，不写常量）。
 
 根因：`md_reader` 之前完全没有解析 MethodDef 的 Flags/ImplFlags，审计里 `m.get("flags",0)` 取到默认 0 →
 被误读成 privatescope。现按行布局（RVA、ImplFlags、Flags、Name、Signature、ParamList）读取，
-`0x4013 & 7 = 3 = Assembly`。三处（访问表、主表、报告）已同步。
+访问级别一律 `ACCESS[flags & 0x7]` 推导。三处（访问表、主表、报告）已同步，并加断言：报告字面量必须等于推导值，
+否则审计退出非 0。
 
 ## 2. IL SHA-256（完整 64 字符）
 
-两方法 IL 体相同：`cf6b47445b3281297d160b230f3d5a4c08006679b0b937098c432073b5ee0b0d`（28 字节）。
+两方法 IL 体相同（28 字节），完整 64 位 SHA-256：
+`cf6b47445b3281297d160b230f3d5a4c08006679b0b937098c432073b5ee0b0d`
+（该值即交付文件 `code/s73-il-bodies.bin` 的 SHA-256；`code/s73-method-access.csv` 的 `il_sha256` 列同值）。
 
 ## 3. 元数据编码解码
 

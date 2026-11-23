@@ -9,7 +9,7 @@
 - 哈希：SHA-256，按路径字典序；路径相对 `--unit`。
 - `code/README.md` 属于常规文件，两套都在集内。
 
-## 纳入路径（115 个，set=round，base_head=5ca17f4987251f32be4772955c8b9be3185b9c62）
+## 纳入路径（116 个，set=round，base_head=5ca17f4987251f32be4772955c8b9be3185b9c62）
 
 | 路径 | SHA-256 |
 | --- | --- |
@@ -76,18 +76,19 @@
 | `code/s69-audit.md` | `10575d434cec773a17dcd3bb6c24206a03f172be3573f094d1b6604aadc8c6dd` |
 | `code/s69-calli-sites.csv` | `7e84e184b3d030993620cb6aea1f9f10ea63188c272364ef384d8c0da2894cf1` |
 | `code/s69-evidence.json` | `3a71a2f946423343b4321ffb4a0e8bcf69f528a10627e48bd3c732b72a0ca7e8` |
-| `code/s69-method-access.csv` | `c2acb0eabb3864a715c4b25213ef5ab3c756e51719484ebf786a53b322682527` |
-| `code/s73-audit.md` | `e49e6bc57454f2845d1910486e4de217234c33a74274b21432f06b4261e0e5f0` |
-| `code/s73-binding-pairs.csv` | `f17cdb73e1f92ca67b01bc4a4a8828aaafc41ae6bfd0adb45e5f73432ba5f2cf` |
+| `code/s69-method-access.csv` | `b5a7e35b7d8b5ae8418a9844280d95fbb7bf4ce4862a1a1ec381a438527cf3a4` |
+| `code/s73-audit.md` | `1276b30414d026a4b85eabc0597ff379619e803d45c974e3dde61c66346e720d` |
+| `code/s73-binding-pairs.csv` | `937d995158836b81d7864ba1e13fe6124f3fee4be3dec24e2db93018253e8b95` |
 | `code/s73-entry-trace.csv` | `522a181271c315255f50b6f3e90aaeef549db0acc9027a5add6b17cfc38c6096` |
 | `code/s73-evidence.json` | `a318daa642d88477ea2ad7d8788916f38ac13b48a2b4c61c80d076e4211e7fb1` |
+| `code/s73-il-bodies.bin` | `cf6b47445b3281297d160b230f3d5a4c08006679b0b937098c432073b5ee0b0d` |
 | `code/s73-metadata-decode.csv` | `9daf27311b3bf0a35fc1a93b1689f0276577a1b36af6668f93942b6516573d79` |
-| `code/s73-method-access.csv` | `07ff0b5ba1438c72f1ca01baaba658273c44d6070e47c2f9219cddc326396a88` |
+| `code/s73-method-access.csv` | `b5a7e35b7d8b5ae8418a9844280d95fbb7bf4ce4862a1a1ec381a438527cf3a4` |
 | `code/typedef-ranges.csv` | `e5b4e4399c140675ea5568f671aff867beec5427f6fc1dbe1f8c608db19399ff` |
 | `code/types.cs` | `900e984b8c18ed6f8ba736d1065f578f479a78779c68d9e568cfb552e17c76f8` |
 | `code/vtable-fixups.csv` | `7478ec22978224ab7a47ab8aabea87389ff6b9b5901a96442b5e2183ad9f4a44` |
 | `coverage.csv` | `fd5d2d3946b876117fd59fe7a91829730fdd9a19e7ed58fd69d7dc941a7885a0` |
-| `metrics.json` | `38e4b7b33554e6b7e7d46d61baa8ff6d5070ad78d035a16e428b80c0843ba512` |
+| `metrics.json` | `fd49ee90ad80eb8534c9a79d47cdc9557329c7b95af58c836cdfafcde5bb897f` |
 | `native-functions.csv` | `737e83da0c37379bb178b5920445a239e6d0ed757f465bd9581f681ff3548ccd` |
 | `run.json` | `e11c510de87f8d72df400739fbdee8b4a73c39361d876edfcb0ce11f05e66d7f` |
 | `s1-started.md` | `778ed3b8ace013fe3a434a1c20971288291ddacd1d9719edc8a0a113a88ff4aa` |
@@ -125,6 +126,6 @@
 | `s69-started.md` | `099b797fdfc86216d4c9761e1a982ab9f7adf8e80750c14cf644526b072e8169` |
 | `s69-submission.md` | `8050e5e142df500b50e8eadc2b1acc36bc188ed7bb5beae1525a383fe111b5f6` |
 | `s73-started.md` | `da95b14d1564f937103f0b0a5ff0500ecf41de5a38b2ef58e62036ee9da0e368` |
-| `s73-submission.md` | `42c76830ff053678d03d564d9e16b24349c00a3aec3974c7a192b353b613deef` |
+| `s73-submission.md` | `1881243a8463316b97f69bfb1bbf38f2a79ba280eb75cf64c87002bbeaf8888b` |
 | `s9-started.md` | `c45ec3ac2a5a345d96cc7bd71e36ed837b1ddbdec1ee1b0316a5844bddd347ba` |
 | `s9-submission.md` | `d828df979f3f9cf493af754f95481e2cb432fe61d7782a582d7f4860b45f61e1` |

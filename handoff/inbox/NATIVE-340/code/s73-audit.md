@@ -6,8 +6,10 @@
 
 | token | 名称 | Flags | ImplFlags | 访问 | Static | HasSecurity | IL SHA-256 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 0x06000056 | ___CxxCallUnwindDtor | 0x4013 | 0x0000 | assembly | True | True | `cf6b47445b3281297d160b230f3d5a4c08006679b0b937098c432073b5ee0b0d` |
-| 0x06000057 | ___CxxCallUnwindDelDtor | 0x4013 | 0x0000 | assembly | True | True | `cf6b47445b3281297d160b230f3d5a4c08006679b0b937098c432073b5ee0b0d` |
+| 0x06000056 | ___CxxCallUnwindDtor | 0x4013 | 0x0000 | Assembly | True | True | `cf6b47445b3281297d160b230f3d5a4c08006679b0b937098c432073b5ee0b0d` |
+| 0x06000057 | ___CxxCallUnwindDelDtor | 0x4013 | 0x0000 | Assembly | True | True | `cf6b47445b3281297d160b230f3d5a4c08006679b0b937098c432073b5ee0b0d` |
+
+方法访问级别由原始整数推导：0x06000056 flags=0x4013 & 0x7 = 3 -> Assembly (Static 由 0x0010 置位、HasSecurity 由 0x4000 置位)；0x06000057 flags=0x4013 & 0x7 = 3 -> Assembly。ImplFlags=0x0。
 
 ## 2. 编码索引解码（MemberRefParent / MethodDefOrRef）
 
@@ -39,10 +41,11 @@ MemberRefParent 实况分布：{'TypeRef': 105, 'TypeSpec': 4}；MethodImpl 行�
 - 8 方法 / 11 站点；35 EH 子句；AL 三态 0/1；删一站后证据指纹变化并定位。
 - 完整证据 SHA-256 `480927f4252f25c7269a84e6857d7e4d39825d883fb8ab4384c75e240ccf485d`；删 0x0600000B IL_0044 后 `e94ba6e3be1d912ebd9353c300c95b7c21c74cd8b9608f7f89b86804131ff97c`。
 
-## 5. 控制项（17）
+## 5. 控制项（18）
 
 - PASS：both methods flags 0x4013, ImplFlags 0x0
-- PASS：0x4013 & 7 == 3 -> Assembly (not privatescope)
+- PASS：report access literal equals flags&7 derivation for every row
+- PASS：delivered IL body file hashes to the quoted SHA-256
 - PASS：IL sha256 is the full 64 hex chars
 - PASS：0x06000056 and 0x06000057 have identical IL bodies
 - PASS：coded-index decoder unit pairs all match

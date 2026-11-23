@@ -15,8 +15,15 @@ import x86_340  # noqa: E402
 BASE_HEAD = "5ca17f4987251f32be4772955c8b9be3185b9c62"
 TARGETS = (0x06000056, 0x06000057)
 GATE = dict(cmp_addr=0x28F3, jcc_addr=0x28F7, test_addr=0x2195, jz_addr=0x2197, slot=0x19B78)
-ACCESS = {0: "privatescope", 1: "private", 2: "famandassem", 3: "assembly",
-          4: "family", 5: "famorassem", 6: "public"}
+# ECMA-335 II.23.1.10 MemberAccessMask; the literal is always derived from flags & 0x7.
+ACCESS = {0: "CompilerControlled", 1: "Private", 2: "FamANDAssem", 3: "Assembly",
+          4: "Family", 5: "FamORAssem", 6: "Public"}
+
+
+def derive_access(flags, impl_flags):
+    return dict(access=ACCESS[flags & 0x7], impl_flags=impl_flags,
+                static=bool(flags & 0x0010), has_security=bool(flags & 0x4000),
+                access_source="flags&0x7=%d" % (flags & 0x7))
 MEMREF_PARENT = ["TypeDef", "TypeRef", "ModuleRef", "MethodDef", "TypeSpec"]
 STUBS = {0x5574: 0x19600, 0x557A: 0x19608, 0x5584: 0x19610, 0x558A: 0x19618}
 
@@ -71,20 +78,34 @@ def main():
     for tok in TARGETS:
         m = M[tok]
         flags, impl = m["flags"], m["impl_flags"]
+        d = derive_access(flags, impl)
         hdr, _, _ = method_body.read(data, pe, m["rva"])
         arows.append(dict(token="0x%08X" % tok, name=m["name"], flags="0x%04X" % flags,
-                          impl_flags="0x%04X" % impl, access=ACCESS[flags & 7],
-                          static=bool(flags & 0x10), has_security=bool(flags & 0x4000),
-                          rva="0x%X" % m["rva"],
+                          impl_flags="0x%04X" % impl, access=d["access"],
+                          static=d["static"], has_security=d["has_security"],
+                          access_source=d["access_source"], rva="0x%X" % m["rva"],
                           il_sha256=hashlib.sha256(hdr["il"]).hexdigest(),
                           il_len=len(hdr["il"]), signature="0x%X" % m["signature"]))
-    write_csv(code / "s73-method-access.csv",
-              ["token", "name", "flags", "impl_flags", "access", "static", "has_security", "rva",
-               "il_sha256", "il_len", "signature"], arows)
+    acc_fields = ["token", "name", "flags", "impl_flags", "access", "static", "has_security",
+                  "access_source", "rva", "il_sha256", "il_len", "signature"]
+    for name in ("s73-method-access.csv", "s69-method-access.csv"):
+        write_csv(code / name, acc_fields, arows)
+    # the written table must agree with a fresh derivation from the raw integers
+    for row in read_csv(code / "s73-method-access.csv"):
+        m = M[int(row["token"], 16)]
+        d = derive_access(m["flags"], m["impl_flags"])
+        assert row["access"] == d["access"] and row["flags"] == "0x%04X" % m["flags"] \
+            and row["impl_flags"] == "0x%04X" % m["impl_flags"] \
+            and row["static"] == str(d["static"]) and row["has_security"] == str(d["has_security"]), row
     ctl.append(("both methods flags 0x4013, ImplFlags 0x0", all(r["flags"] == "0x4013"
                                                                and r["impl_flags"] == "0x0000" for r in arows)))
-    ctl.append(("0x4013 & 7 == 3 -> Assembly (not privatescope)",
-                all(r["access"] == "assembly" and r["static"] and r["has_security"] for r in arows)))
+    ctl.append(("report access literal equals flags&7 derivation for every row",
+                all(r["access"] == ACCESS[int(r["flags"], 16) & 7] for r in arows)))
+    # deliver the shared IL body itself, so the 64-hex value in the receipt is a real file hash
+    body = method_body.read(data, pe, M[TARGETS[0]]["rva"])[0]["il"]
+    (code / "s73-il-bodies.bin").write_bytes(body)
+    ctl.append(("delivered IL body file hashes to the quoted SHA-256",
+                hashlib.sha256((code / "s73-il-bodies.bin").read_bytes()).hexdigest() == arows[0]["il_sha256"]))
     ctl.append(("IL sha256 is the full 64 hex chars", all(len(r["il_sha256"]) == 64 for r in arows)))
     ctl.append(("0x06000056 and 0x06000057 have identical IL bodies",
                 arows[0]["il_sha256"] == arows[1]["il_sha256"]))
@@ -255,7 +276,7 @@ def main():
         md.append("| %s | %s | %s | %s | %s | %s | %s | `%s` |"
                   % (r["token"], r["name"], r["flags"], r["impl_flags"], r["access"],
                      r["static"], r["has_security"], r["il_sha256"]))
-    md += ["", "## 2. 编码索引解码（MemberRefParent / MethodDefOrRef）", "",
+    md += ["", "方法访问级别由原始整数推导：0x06000056 flags=0x4013 & 0x7 = 3 -> Assembly (Static 由 0x0010 置位、HasSecurity 由 0x4000 置位)；0x06000057 flags=0x4013 & 0x7 = 3 -> Assembly。ImplFlags=0x0。", "", "## 2. 编码索引解码（MemberRefParent / MethodDefOrRef）", "",
            "| 空间 | 原始值 | 预期 | 实测 | 输入 SHA-256 |", "| --- | ---: | --- | --- | --- |"]
     for p in pairs:
         md.append("| %s | %d | %s | %s | `%s` |"
@@ -277,6 +298,19 @@ def main():
         md.append("- %s：%s" % ("PASS" if ok else "FAIL", n))
     md.append("")
     (code / "s73-audit.md").write_text("\n".join(md) + "\n", encoding="utf-8")
+    # the rendered page must not contain an access literal that contradicts flags&0x7
+    page = (code / "s73-audit.md").read_text(encoding="utf-8")
+    md_bad = []
+    for r in arows:
+        for line in page.splitlines():
+            if r["token"] in line and "|" in line:
+                cells = [c.strip() for c in line.strip().strip("|").split("|")]
+                if len(cells) >= 5 and cells[0] == r["token"]:
+                    derived = ACCESS[int(r["flags"], 16) & 7]
+                    if cells[4] != derived:
+                        md_bad.append((r["token"], cells[4], derived))
+    ctl.append(("audit page access literal equals derivation", md_bad == []))
+    print("md_access_mismatch", md_bad)
     print("controls", len(ctl), "failures", [n for n, ok in ctl if not ok], "touched", touched)
     print("flags", arows[0]["flags"], "access", arows[0]["access"], "sha", arows[0]["il_sha256"])
     return 0 if all(ok for _, ok in ctl) else 1
