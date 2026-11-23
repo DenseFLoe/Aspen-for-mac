@@ -28,6 +28,6 @@ exit code: 2
 ## 指纹
 - tool/s37_two_hop.py 604bb62d2b47a2c87e1b16ad14b820cd31a1d019e65cd5a668b4ce573e853bce
 - tool/s45_tests.py 4e5a3401d1048b525016aaa13283d3db416e43746fbcd7d4108aaec8f22c0371
-- tool/s65_counterexamples.py (本轮精确判等版)
-- tool/s69_tests.py (本轮)
+- tool/s65_counterexamples.py 89ceca2e4d32a812875f6ef4901551c2d79530021172192ce26dda7a97fffb0d
+- tool/s69_tests.py 0f8e1c939ad14e201ba9807727e27062336c364671d1431ed4aa35e9b85b5e99
 - tool/pe_reader.py c0efbbffc93a0331b86dab66f93564a846890c479edad58e1ac59247053c8037
