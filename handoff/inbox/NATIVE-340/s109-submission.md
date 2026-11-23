@@ -59,7 +59,7 @@
 
 | 脚本 | 字节 | sha256 | 用途 |
 | --- | ---: | --- | --- |
-| tool/cli_tables.py | 15,890 B | 64dfbcd80bf771871a8c1e423b3feb5bdc6d44d11ddf950283890b8e65b37035 | 解析（read 调 layout_for，ImplMap 1 位） |
+| tool/cli_tables.py | 16,051 B | 6c15fc62f524ed30cbdadacc1070ad0bb2fe5c20fd7dcf923641cf2475fc9959 | 解析（read 调 layout_for，ImplMap 1 位） |
 | tool/s101_width_fixtures.py | 3,215 B | 85145a458b4c4f1c9ff8dc3d0eeadadca2d81b5b2254e27af90027958b095a95 | 夹具 A/B/C/D + 双负向 |
 | tool/s101_layout_check.py | 1,949 B | 35835a05362b4ba5b851970bb0ef6f95e86dcba35b83ddec7238a4054353b523 | 1c/1d 逐键比对 |
 | tool/s101_layout_baseline.py | 2,777 B | 5492909e8428993e051ede50e97ccab968420aebc8aeb281e3f80bc445560e72 | 基线重生成 |
