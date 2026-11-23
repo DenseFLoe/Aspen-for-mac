@@ -60,8 +60,10 @@ def parse(data, off):
     methods = []
     for k, pos in enumerate(rows(6)):
         rva = int.from_bytes(data[pos:pos+4], "little")
-        impl = int.from_bytes(data[pos+4:pos+6], "little") & 3
+        impl_flags = int.from_bytes(data[pos+4:pos+6], "little")   # ImplFlags (2 bytes)
+        flags = int.from_bytes(data[pos+6:pos+8], "little")        # Flags (2 bytes)
         name = _cs(data, sstart + int.from_bytes(data[pos+8:pos+8+s], "little"))
-        methods.append(dict(token=0x06000001+k, rva=rva,
-                            flavor=("IL","native","OPTIL","runtime")[impl], name=name))
+        methods.append(dict(token=0x06000001+k, rva=rva, flags=flags, impl_flags=impl_flags,
+                            flavor=("IL","native","OPTIL","runtime")[impl_flags & 3], name=name,
+                            signature=int.from_bytes(data[pos+10:pos+10+2], "little")))
     return dict(types=types, methods=methods)
