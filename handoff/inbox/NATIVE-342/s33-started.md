@@ -1,0 +1,3 @@
+# NATIVE-342 s33 开工
+
+upstream 于 2026-11-23T00:00:51Z 核对原件指纹 `ace0556a2b9da51821c45b2a8c119ac990b51135b8b5b5d5d4f09422e051502b` 并开工，按卡恢复 0x33c33–0x33cac。固定基线 `2d13d4e28bffd770252e8e0c4bb491bdf256a4f6`。
