@@ -63,4 +63,4 @@ qa gate 3517b5ed 三档计数与逐条 defect 见 #13。
 
 复核：`rva=0x4711` 原件为 `ff 25 e9 18 00 00`（jmp qword [riprel] -> IAT 0x6000 = KERNEL32!QueryPerformanceCounter），`code/native.asm` 中无该地址行、`calls.csv` 无该 RVA 行 -> 19 条同源。
 
-gate 读数：inputs=319（native 67 期望/48 已登记/19 缺失；VTableFixups 237/237；托管 calli 15/15），`units pass=12 fail=1(omitted-sites, 19) not-applicable=0 error=0`，L1 exit 2。
+gate 读数（27007e5a，MANIFEST 3779de81…，29 文件）：inputs=319，prefixed_thunks=2（native 67/48/19，vtablefixups 237/237，calli 15/15）；（native 67 期望/48 已登记/19 缺失；VTableFixups 237/237；托管 calli 15/15），`units pass=12 fail=1(omitted-sites, 19) not-applicable=0 error=0`，L1 exit 2。
