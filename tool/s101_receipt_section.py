@@ -1,134 +1,101 @@
 # -*- coding: utf-8 -*-
-"""s101/s105 receipt section: emit the verifier-script block with live sha256 and raw stdout."""
-import hashlib, subprocess, sys
+"""Generate the verifier-script section from the head tree (not local files)."""
+import argparse, base64, hashlib, subprocess, sys
 from pathlib import Path
 
-ITEM = Path('handoff/inbox/NATIVE-337')
-BIN = '_t13/orig/FindComponent.dll'
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "tool"))
+FENCE = chr(96) * 3
+
 SCRIPTS = [
-    ('tool/s101_verify.py', '交付校验入口：拒绝矛盾列表/签名'),
-    ('tool/s101_counters.py', '回归脚本：列表单改 + 签名单改反例'),
-    ('tool/s97_regressions.py', '列表单改回归（s97 口径）'),
-    ('tool/s93_counters.py', '字节单改反例（二进制口径）'),
-    ('tool/s81_showdialog.py', 'ShowDialog 绑定/参数表生成器'),
-    ('tool/s37_two_hop.py', '161 条二跳表生成器'),
-    ('tool/s65_counterexamples.py', '四类反例分类器（FF /4 判型入口）'),
-    ('tool/s73_stations.py', '原件独立站集导出'),
-    ('tool/s69_tests.py', 'T1–T6 回归（s65 入口）'),
-    ('tool/s45_tests.py', '六场景 + 三布局回归'),
+    ("tool/cli_tables.py", "解析（read 调 layout_for，ImplMap 1 位）"),
+    ("tool/s101_width_fixtures.py", "夹具 A/B/C/D + 双负向"),
+    ("tool/s101_layout_check.py", "1c/1d 逐键比对"),
+    ("tool/s101_layout_baseline.py", "基线重生成"),
+    ("tool/s93-width-controls.py", "列宽 + 紧邻列控制"),
+    ("tool/s97-site-owners.py", "站点归属 + 正反例"),
+    ("tool/verify_il_digests.py", "167 条 IL 摘要只读复验"),
 ]
-UPSTREAM = 'handoff/assignments/check-native-coverage.py'
-AUTH = 'out/localrepo3/handoff/assignments/check-native-coverage.py'
-QA = '_tools/qa/93bf962c'
+RUNS = [
+    ("python -B tool/s101_width_fixtures.py", "夹具与双负向"),
+    ("python -B tool/s101_layout_check.py", "1c/1d 逐键（1d 唯一差异已解释）"),
+    ("python -B tool/s97-site-owners.py .", "站点归属"),
+    ("python -B tool/verify_il_digests.py --binary _t13/orig/WrapSaveMergeNNFiles.dll "
+     "--table handoff/inbox/NATIVE-340/code/s89-il-digests.csv", "167 条摘要"),
+]
+GATE = ("cd _t14/qa/93bf962c && set PYTHONPATH=%CD%/../../.local/pylibs && python -B -m qa.gate "
+        "--task NATIVE-340 --item-dir %CD%/../../handoff/inbox/NATIVE-340 "
+        "--original %CD%/../../_t13/orig/WrapSaveMergeNNFiles.dll")
 
 
-def sha(p):
-    return hashlib.sha256(Path(p).read_bytes()).hexdigest()
-
-
-def run(cmd, cwd=None):
-    r = subprocess.run(cmd, shell=True, capture_output=True, text=True, cwd=cwd)
-    return r.returncode, (r.stdout + r.stderr).rstrip()
-
-
-HEAD = '2d2d98de242a75323907d6aecdd692626a833cc5'
-
-
-def branch_table(head):
-    """Path -> sha256 for every blob in the branch tree at <head>."""
-    import base64
+def tree_map(head):
     import gh
-    t = gh.call('GET', '/repos/DenseFLoe/Aspen-for-mac/git/trees/' + head + '?recursive=1')
-    table = {}
-    for e in t['tree']:
-        if e['type'] == 'blob':
-            table[e['path']] = None
-    return table, t
+    tree = gh.call("GET", "/repos/%s/git/trees/%s?recursive=1" % (gh.REPO, head))
+    want = {path for path, _ in SCRIPTS}
+    out = {}
+    for t in tree["tree"]:
+        if t["type"] != "blob" or t["path"] not in want:
+            continue
+        bl = gh.call("GET", "/repos/%s/git/blobs/%s" % (gh.REPO, t["sha"]))
+        raw = base64.b64decode(bl["content"])
+        out[t["path"]] = (len(raw), hashlib.sha256(raw).hexdigest())
+    return out
+
+
+def run(cmd):
+    p = subprocess.run(cmd, shell=True, cwd=str(ROOT), capture_output=True, text=True,
+                       encoding="utf-8", errors="replace")
+    return ((p.stdout or "") + (p.stderr or "")).strip(), p.returncode
 
 
 def main():
-    out = []
-    out.append('## 检验器脚本')
-    out.append('')
-    in_branch = {}
-    try:
-        import base64
-        import gh
-        t = gh.call('GET', '/repos/DenseFLoe/Aspen-for-mac/git/trees/' + HEAD + '?recursive=1')
-        blobs = {e['path']: e['sha'] for e in t['tree'] if e['type'] == 'blob'}
-        for rel in list(blobs):
-            if rel in dict(SCRIPTS) or rel == UPSTREAM:
-                b = gh.call('GET', '/repos/DenseFLoe/Aspen-for-mac/git/blobs/' + blobs[rel])
-                data = base64.b64decode(b['content'])
-                in_branch[rel] = (len(data), hashlib.sha256(data).hexdigest())
-    except Exception as exc:
-        print('warning: cannot read branch tree: %s' % exc)
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--head", required=True)
+    ap.add_argument("--receipt", default="handoff/inbox/NATIVE-340/s101-submission.md")
+    a = ap.parse_args()
+    tm = tree_map(a.head)
+    lines = ["## 检验器脚本", "", "| 脚本 | 字节 | sha256 | 用途 |", "| --- | ---: | --- | --- |"]
     local_only = []
-    out.append('分支树内（该 head 可读到，可作证据）：')
-    out.append('')
-    out.append('| 脚本 | 字节 | sha256 | 作用 |')
-    out.append('| --- | ---: | --- | --- |')
-    for rel, role in SCRIPTS:
-        if rel in in_branch:
-            n, h = in_branch[rel]
-            out.append('| `%s` | %d | `%s` | %s |' % (rel, n, h, role))
+    for path, use in SCRIPTS:
+        if path in tm:
+            size, sha = tm[path]
+            lines.append("| %s | %s B | %s | %s |" % (path, format(size, ","), sha, use))
         else:
-            local_only.append((rel, role))
-    if UPSTREAM in in_branch:
-        n, h = in_branch[UPSTREAM]
-        out.append('| `%s` | %d | `%s` | 上游覆盖检查器（分支内副本） |' % (UPSTREAM, n, h))
-    up = Path(UPSTREAM)
-    auth = Path(AUTH)
-    pin_src = auth if auth.exists() else up
-    out.append('')
-    out.append('本地未入库（只在本机工作区出现，**不参与判据**）：')
-    out.append('')
+            local_only.append((path, use))
     if local_only:
-        out.append('| 脚本 | 字节 | sha256 | 说明 |')
-        out.append('| --- | ---: | --- | --- |')
-        for rel, role in local_only:
-            p = Path(rel)
-            out.append('| `%s` | %d | `%s` | %s（本地工作副本） |' % (rel, p.stat().st_size, sha(p), role))
-    else:
-        out.append('（无）')
-    out.append('')
-    out.append('**版本 pin**：`qa gate 27007e5a (MANIFEST files sha256 3779de81a322579c91adfbf5b960f8a16543973d87ca97e92eca117d67b65089)`；上游 checker pin `%s`。' % sha(pin_src))
-    out.append('')
-    out.append('命令与原始输出（stdout 原文，exit 为真实值）：')
-    cmds = [
-        ('python -B tool/s101_verify.py --listing --signature', None),
-        ('python -B tool/s101_counters.py', None),
-        ('python -B tool/s97_regressions.py', None),
-        ('set PYTHONPATH=D:/Lib/site-packages && python -B tool/s65_counterexamples.py', None),
-        ('python -B tool/s37_two_hop.py --folder handoff/inbox/NATIVE-337 --binary %s --out work/s101-two-hop.csv' % BIN, None),
-        ('python -B %s NATIVE-337 --original %s --submission handoff/inbox/NATIVE-337' % (UPSTREAM, BIN), None),
-        ('set "PYTHONPATH=%s/.local/pylibs;D:/Lib/site-packages;%s/tool" && python -B -m qa.gate --task NATIVE-337 --item-dir "%s/handoff/inbox/NATIVE-337" --original "%s/%s"' % tuple([str(Path.cwd()).replace(chr(92),'/')] * 4 + [BIN]), QA),
-    ]
-    for cmd, cwd in cmds:
-        rc, txt = run(cmd, cwd=cwd)
-        out.append('')
-        out.append('```')
-        out.append('$ ' + cmd)
-        out.extend(txt.splitlines()[-12:] if len(txt.splitlines()) > 12 else txt.splitlines())
-        out.append('[exit %d]' % rc)
-        out.append('```')
-    out.append('')
-    out.append('**判据 → 脚本位置**')
-    out.append('')
-    out.append('| 判据 | 脚本/函数 |')
-    out.append('| --- | --- |')
-    out.append('| 列表与原件逐字节一致（0x13DD / 0x137F） | `tool/s101_verify.py::verify_listing` |')
-    out.append('| 接口/实现/声明签名一致（2001080E） | `tool/s101_verify.py::verify_signature` |')
-    out.append('| 绑定依据来自字节（ProgID/名字/IID/vt） | `tool/s81_showdialog.py::binding_rows` |')
-    out.append('| 唯一 `variant-vt` 行 + stride 与 vt 分离 | `tool/s81_showdialog.py` 表行 `variant-vt` |')
-    out.append('| 161 站与 calls_row 关联 | `tool/s37_two_hop.py::main`（row_for） |')
-    out.append('| 四类反例分类 | `tool/s65_counterexamples.py::main` |')
-    out.append('| 站集独立导出 | `tool/s73_stations.py::derive` |')
-    text = chr(10).join(out) + chr(10)
-    Path('work/s101-verifier-section.md').write_text(text, encoding='utf-8')
-    print(text[:400])
-    print('...written', len(text), 'bytes')
+        lines += ["", "### 本地未入库（不参与判据）", ""]
+        for path, use in local_only:
+            lines.append("- %s：%s" % (path, use))
+    lines += ["", "运行命令（Windows 可直接复制，仓库根执行）：", "", FENCE]
+    lines += [c for c, _ in RUNS] + [GATE]
+    lines += [FENCE, "", "原始输出与真实 exit：", "", FENCE]
+    for cmd, _ in RUNS:
+        out, rc = run(cmd)
+        lines.append("> " + cmd)
+        lines += [l for l in out.splitlines() if l.strip()]
+        lines.append("exit %d" % rc)
+        lines.append("")
+    out, rc = run(GATE)
+    lines += [l for l in out.splitlines() if l.strip()][-40:]
+    lines.append("exit %d" % rc)
+    lines += [FENCE, "", "判据映射：", "", "| 判据 | 脚本位置 |", "| --- | --- |",
+              "| 夹具 A/B/C/D 两列逐格 | tool/s101_width_fixtures.py main() 的 cases |",
+              "| 破坏取宽必非零 | 同文件 ct.coded_width = lambda *a: 2 段 |",
+              "| read == layout_for | tool/s101_layout_check.py 的 keyed() 1c 段 |",
+              "| 新版 == 基线 | 同文件 1d 段（按键名比对） |",
+              "| 站点/owner/listing | tool/s97-site-owners.py 的 site 比较 |",
+              "| 167 条摘要 | tool/verify_il_digests.py 的 truth/bad |", "",
+              "版本 pin：qa gate 93bf962c (MANIFEST files sha256 "
+              "0f8be7a96e6dfa528116f28663d182b83ae60481896e1796975d27a398394c81)。", ""]
+    section = "\n".join(lines)
+    p = Path(a.receipt)
+    t = p.read_text(encoding="utf-8")
+    body = t.split("## 检验器脚本")[0].rstrip()
+    body = body.replace("本轮 head：见 #13", "本轮 head：%s" % a.head)
+    p.write_text(body + "\n\n" + section, encoding="utf-8")
+    print("section bytes", len(section), "local_only", len(local_only))
 
 
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+    sys.exit(main())

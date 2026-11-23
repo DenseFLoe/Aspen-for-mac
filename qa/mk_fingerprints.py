@@ -17,8 +17,21 @@ def sha(p):
     return hashlib.sha256(p.read_bytes()).hexdigest()
 
 
-PATTERNS = ['s*-fingerprints.json', 's*-submission.md', 'work/*-gate.txt',
-            'work/*-exclusions.txt', 'tool/*', 's*-audit.md']  # receipts/manifests/logs and the tool tree never join the table
+RULES = [
+    ('s*-fingerprints.json', 'the manifest cannot contain itself',
+     'the receipt states the manifest sha256 in plain text'),
+    ('s*-submission.md', 'the receipt is the carrier, not the payload',
+     'each receipt pins the manifest sha256 (reverse fixation)'),
+    ('s*-audit.md', 'audit pages are conclusions that cite other files',
+     'work/s<seq>-audit-pins.txt lists every audit page sha256 and is itself in the manifest'),
+    ('work/*-gate.txt', 'gate logs change on every run',
+     'explicitly NOT covered - run artifacts, reproduced by the command in the receipt'),
+    ('work/*-exclusions.txt', 'the exclusion record describes the rule, not the payload',
+     'explicitly NOT covered - the rule itself is in qa/mk_fingerprints.py'),
+    ('tool/*', 'tool/ lives outside the item walk',
+     'the receipt (section: verifier scripts) pins every tool script sha256 from the branch tree'),
+]
+PATTERNS = [r[0] for r in RULES]
 
 
 def main():
@@ -42,9 +55,15 @@ def main():
     OUT.write_text(json.dumps(table, ensure_ascii=False, indent=1, sort_keys=True) + '\n', encoding='utf-8')
     side = ITEM / 'work' / ('s%s-exclusions.txt' % (sys.argv[1] if len(sys.argv) > 1 else '85'))
     side.parent.mkdir(parents=True, exist_ok=True)
-    side.write_text('exclusion patterns (fnmatch, applied to item-relative paths):\n' +
-                    '\n'.join('  ' + x for x in PATTERNS) + '\n\nmanifest: %s\nentries: %d\n' % (OUT.name, len(table)),
-                    encoding='utf-8')
+    lines = ['exclusion rules (fnmatch, item-relative), each with its compensation control:', '']
+    for pat, why, comp in RULES:
+        lines.append('  pattern : %s' % pat)
+        lines.append('    reason: %s' % why)
+        lines.append('    compens: %s' % comp)
+    lines.append('')
+    lines.append('manifest: %s' % OUT.name)
+    lines.append('entries: %d' % len(table))
+    side.write_text(chr(10).join(lines) + chr(10), encoding='utf-8')
     print('fingerprints %d -> %s' % (len(table), OUT))
 
 

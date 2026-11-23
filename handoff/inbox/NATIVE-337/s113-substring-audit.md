@@ -36,3 +36,28 @@ SUITE : PASS
   s*-audit.md
 ~~~
 清单因此从 110 项收敛到 **108 项**（并新增 `s*-audit.md` 排除，避免本说明自身引起抖动），两次生成哈希一致：`012053f5c8213585a18f0a5e16958652ec1121bb487e30c66557e373c20e5c9a`。
+
+## ④ 排除项补偿控制（X1/X2/X3）
+`s*-audit.md` 之前排除后既不在清单、也无反向固定——已补方案 1：
+- `work/s109-audit-pins.txt` 逐个列出本轮 audit 页的 **sha256 + 字节数**，而该 pins 文件**本身在清单里**（109 项）；
+- 因此改 audit 页会让 pins 与清单不一致，可被发现。
+
+本轮 audit 页的 sha256 与字节数见 `work/s109-audit-pins.txt`（由脚本对文件现算，避免自引用）。
+
+全部六条排除项现均在 `work/s109-exclusions.txt` 里写明 **pattern / reason / compensation**（X3），其中两条运行产物明确标注「不覆盖，理由：运行日志，可由回执命令复现」。
+
+## ⑤ `tool/ident.py` 判等语义（文首）
+```
+SEMANTICS (read before comparing anything by hand):
+  same_ident(a, b)
+    * compares the WHOLE value; no substring, prefix or suffix logic;
+    * hex-ish values ("A848", "0xA848", 0xA848) are parsed as integers and compared numerically,
+      so a leading "0x" is insignificant and "A848" != "A8480";
+    * non-hex strings (symbols such as "mfc140.dll!#2344") are compared case-insensitively
+      after stripping surrounding whitespace: "mfc140.dll!#2344" == "MFC140.DLL!#2344";
+    * an int and a string are never equal unless both normalise to an int;
+    * paths are NOT handled here: compare them as-is (case-sensitive) after os.path.normpath.
+
+DO NOT compare identifiers with ==, in, startswith or endswith anywhere else: call this module.
+tool/s113_substring_audit.py fails the build when a substring comparison on an identifier reappears.
+```
