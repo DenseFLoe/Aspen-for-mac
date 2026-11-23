@@ -19,7 +19,7 @@ SCRIPTS = [
 ]
 UPSTREAM = 'handoff/assignments/check-native-coverage.py'
 AUTH = 'out/localrepo3/handoff/assignments/check-native-coverage.py'
-QA = '_tools/qa/27007e5a'
+QA = '_tools/qa/1ed452e6'
 
 
 def sha(p):
@@ -31,7 +31,7 @@ def run(cmd, cwd=None):
     return r.returncode, (r.stdout + r.stderr).rstrip()
 
 
-HEAD = 'da7db56a61f78fcd63695ca5948a46718efe54d4'
+HEAD = 'fa42db6e13211e2587134c447ec8ce00457560dc'
 
 
 def branch_table(head):
@@ -102,7 +102,7 @@ def main():
         ('set PYTHONPATH=D:/Lib/site-packages && python -B tool/s65_counterexamples.py', None),
         ('python -B tool/s37_two_hop.py --folder handoff/inbox/NATIVE-337 --binary %s --out work/s101-two-hop.csv' % BIN, None),
         ('python -B %s NATIVE-337 --original %s --submission handoff/inbox/NATIVE-337' % (UPSTREAM, BIN), None),
-        ('set "PYTHONPATH=D:/Lib/site-packages;%s/tool" && python -B -m qa.gate --task NATIVE-337 --item-dir "%s/handoff/inbox/NATIVE-337" --original "%s/%s"' % tuple([str(Path.cwd()).replace(chr(92),'/')] * 3 + [BIN]), QA),
+        ('set "PYTHONPATH=%s/.local/pylibs;D:/Lib/site-packages;%s/tool" && python -B -m qa.gate --task NATIVE-337 --item-dir "%s/handoff/inbox/NATIVE-337" --original "%s/%s"' % tuple([str(Path.cwd()).replace(chr(92),'/')] * 4 + [BIN]), QA),
     ]
     for cmd, cwd in cmds:
         rc, txt = run(cmd, cwd=cwd)
