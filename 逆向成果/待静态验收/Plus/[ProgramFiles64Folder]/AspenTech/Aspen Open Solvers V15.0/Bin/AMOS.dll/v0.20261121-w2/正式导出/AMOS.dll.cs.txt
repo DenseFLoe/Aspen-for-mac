@@ -1,26 +1,316 @@
 using System;
 using System.Collections;
+using System.ComponentModel;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Windows.Forms;
 using AMOS;
 
 [assembly: CompilationRelaxations(8)]
 [assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]
 [assembly: Debuggable(DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
-[assembly: TargetFramework(".NETStandard,Version=v2.0", FrameworkDisplayName = ".NET Standard 2.0")]
-[assembly: AssemblyCompany("AMOS")]
-[assembly: AssemblyConfiguration("Release")]
-[assembly: AssemblyFileVersion("1.0.0.0")]
-[assembly: AssemblyInformationalVersion("1.0.0")]
-[assembly: AssemblyProduct("AMOS")]
-[assembly: AssemblyTitle("AMOS")]
-[assembly: AssemblyVersion("1.0.0.0")]
+[assembly: AssemblyTitle("")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("")]
+[assembly: AssemblyProduct("")]
+[assembly: AssemblyCopyright("")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyDelaySign(false)]
+[assembly: AssemblyKeyFile("")]
+[assembly: AssemblyKeyName("")]
+[assembly: TargetFramework(".NETFramework,Version=v4.5.1", FrameworkDisplayName = ".NET Framework 4.5.1")]
+[assembly: AssemblyVersion("41.0.0.1")]
 namespace AMOSCommon
 {
+	public class AMOSParamDialog : Form
+	{
+		private int X;
+
+		private int Y;
+
+		private ListViewItem m_EditedItem;
+
+		private ListView m_paramList;
+
+		private Button m_OKButton;
+
+		private Label statuslabel;
+
+		private TextBox m_ValueEditor;
+
+		private ComboBox m_stringOptionsCombo;
+
+		private bool running;
+
+		private IAMOSParameterTable m_table;
+
+		private Container components;
+
+		public AMOSParamDialog(IAMOSParameterTable aTable)
+		{
+			InitializeComponent();
+			m_table = aTable;
+			base.Closing += AMOSParamDialog_Closing;
+			m_ValueEditor.KeyPress += EditOver;
+			m_paramList.DoubleClick += ListDoubleClicked;
+			m_paramList.MouseDown += ListMouseDown;
+			InitParams();
+		}
+
+		public void Execute()
+		{
+			running = true;
+			Show();
+			while (running)
+			{
+				Application.DoEvents();
+			}
+			Hide();
+		}
+
+		protected override void Dispose(bool disposing)
+		{
+			if (disposing && components != null)
+			{
+				components.Dispose();
+			}
+			base.Dispose(disposing);
+		}
+
+		private void InitializeComponent()
+		{
+			this.m_paramList = new System.Windows.Forms.ListView();
+			this.m_OKButton = new System.Windows.Forms.Button();
+			this.statuslabel = new System.Windows.Forms.Label();
+			this.m_ValueEditor = new System.Windows.Forms.TextBox();
+			this.m_stringOptionsCombo = new System.Windows.Forms.ComboBox();
+			base.SuspendLayout();
+			this.m_paramList.GridLines = true;
+			this.m_paramList.Location = new System.Drawing.Point(0, 0);
+			this.m_paramList.Name = "m_paramList";
+			this.m_paramList.Size = new System.Drawing.Size(864, 360);
+			this.m_paramList.TabIndex = 1;
+			this.m_paramList.View = System.Windows.Forms.View.Details;
+			this.m_OKButton.Location = new System.Drawing.Point(16, 376);
+			this.m_OKButton.Name = "m_OKButton";
+			this.m_OKButton.Size = new System.Drawing.Size(75, 25);
+			this.m_OKButton.TabIndex = 0;
+			this.m_OKButton.Text = "OK";
+			this.m_OKButton.Click += new System.EventHandler(m_OKButton_Click);
+			this.statuslabel.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
+			this.statuslabel.ForeColor = System.Drawing.SystemColors.WindowText;
+			this.statuslabel.Location = new System.Drawing.Point(152, 384);
+			this.statuslabel.Name = "statuslabel";
+			this.statuslabel.Size = new System.Drawing.Size(488, 16);
+			this.statuslabel.TabIndex = 3;
+			this.statuslabel.Text = "Ready";
+			this.statuslabel.Click += new System.EventHandler(label1_Click);
+			this.m_ValueEditor.BackColor = System.Drawing.SystemColors.ControlLight;
+			this.m_ValueEditor.Location = new System.Drawing.Point(664, 376);
+			this.m_ValueEditor.Name = "m_ValueEditor";
+			this.m_ValueEditor.TabIndex = 2;
+			this.m_ValueEditor.Text = "textBox1";
+			this.m_ValueEditor.Visible = false;
+			this.m_stringOptionsCombo.Location = new System.Drawing.Point(776, 376);
+			this.m_stringOptionsCombo.Name = "m_stringOptionsCombo";
+			this.m_stringOptionsCombo.Size = new System.Drawing.Size(121, 21);
+			this.m_stringOptionsCombo.TabIndex = 4;
+			this.m_stringOptionsCombo.Text = "Options";
+			this.m_stringOptionsCombo.Visible = false;
+			this.m_stringOptionsCombo.SelectedIndexChanged += new System.EventHandler(m_stringOptionsCombo_SelectedIndexChanged);
+			this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
+			base.ClientSize = new System.Drawing.Size(912, 414);
+			base.Controls.Add(this.m_stringOptionsCombo);
+			base.Controls.Add(this.m_ValueEditor);
+			base.Controls.Add(this.statuslabel);
+			base.Controls.Add(this.m_OKButton);
+			base.Controls.Add(this.m_paramList);
+			base.Name = "AMOSParamDialog";
+			this.Text = "AMOSParamDialog";
+			base.Load += new System.EventHandler(AMOSParamDialog_Load);
+			base.ResumeLayout(false);
+		}
+
+		private void AMOSParamDialog_Load(object sender, EventArgs e)
+		{
+		}
+
+		private void label1_Click(object sender, EventArgs e)
+		{
+		}
+
+		private void m_OKButton_Click(object sender, EventArgs e)
+		{
+			running = false;
+		}
+
+		public void InitParams()
+		{
+			m_paramList.Columns.Add("ParamName", -2, HorizontalAlignment.Left);
+			m_paramList.Columns.Add("ParamValue", -2, HorizontalAlignment.Right);
+			m_paramList.Columns.Add("Description", -2, HorizontalAlignment.Left);
+			ArrayList arrayList = new ArrayList();
+			ArrayList arrayList2 = new ArrayList();
+			m_table.GetParameterNames(arrayList);
+			for (int i = 0; i < arrayList.Count; i++)
+			{
+				arrayList2.Clear();
+				m_table.GetParameterInfo(arrayList[i].ToString(), arrayList2);
+				ListViewItem listViewItem = new ListViewItem(arrayList[i].ToString());
+				listViewItem.SubItems.Add(arrayList2[1].ToString());
+				listViewItem.SubItems.Add(arrayList2[0].ToString());
+				m_paramList.Items.Add(listViewItem);
+			}
+		}
+
+		public void AMOSParamDialog_Closing(object sender, CancelEventArgs e)
+		{
+			running = false;
+		}
+
+		public void ListDoubleClicked(object sender, EventArgs e)
+		{
+			m_EditedItem = m_paramList.GetItemAt(X, Y);
+			m_ValueEditor.Text = m_EditedItem.SubItems[1].Text;
+			int num = m_paramList.Columns[0].Width + 2;
+			int num2 = num + m_paramList.Columns[1].Width;
+			Size size = new Size(num2 - num, m_EditedItem.Bounds.Height);
+			Point location = new Point(num, m_EditedItem.Bounds.Y);
+			ArrayList arrayList = new ArrayList();
+			m_table.GetParameterInfo(m_EditedItem.SubItems[0].Text, arrayList);
+			if (arrayList[1] is string)
+			{
+				StatusMessage(Color.Blue, "Enter value for " + m_EditedItem.SubItems[0].Text + " valid values are " + arrayList[2]);
+				string[] array = arrayList[2].ToString().Split(';');
+				m_stringOptionsCombo.Items.Clear();
+				int num3 = 0;
+				for (int i = 0; i < array.Length; i++)
+				{
+					if (array[i].Length > 0)
+					{
+						m_stringOptionsCombo.Items.Add(array[i]);
+						if (array[i] == m_EditedItem.SubItems[1].Text)
+						{
+							num3 = i;
+						}
+					}
+				}
+				m_stringOptionsCombo.Text = array[num3];
+				m_stringOptionsCombo.Size = size;
+				m_stringOptionsCombo.Location = location;
+				m_stringOptionsCombo.SelectedIndex = num3;
+				m_stringOptionsCombo.Show();
+			}
+			else
+			{
+				StatusMessage(Color.Blue, "Enter value for " + m_EditedItem.SubItems[0].Text + " in range [" + arrayList[2]?.ToString() + "-" + arrayList[3].ToString() + "]");
+				m_ValueEditor.Size = size;
+				m_ValueEditor.Location = location;
+				m_ValueEditor.Show();
+				m_ValueEditor.SelectAll();
+				m_ValueEditor.Focus();
+			}
+		}
+
+		public void ListMouseDown(object sender, MouseEventArgs e)
+		{
+			X = e.X;
+			Y = e.Y;
+		}
+
+		private void StatusMessage(Color color, string message)
+		{
+			statuslabel.ForeColor = color;
+			statuslabel.Text = message;
+		}
+
+		private void EditOver(object sender, KeyPressEventArgs e)
+		{
+			if (e.KeyChar == '\r')
+			{
+				m_ValueEditor.Hide();
+				if (UpdateSolver(m_EditedItem.SubItems[0].Text, m_ValueEditor.Text) == AMOSretcode.AMSuccess)
+				{
+					m_EditedItem.SubItems[1].Text = m_ValueEditor.Text;
+					StatusMessage(Color.Green, "Parameter " + m_EditedItem.SubItems[0].Text + " successfully changed to " + m_ValueEditor.Text);
+				}
+			}
+			if (e.KeyChar == '\u001b')
+			{
+				m_ValueEditor.Hide();
+				StatusMessage(Color.Black, "Cancelled");
+			}
+		}
+
+		private AMOSretcode UpdateSolver(string paramName, string paramValue)
+		{
+			AMOSretcode aMOSretcode = AMOSretcode.AMError;
+			ArrayList arrayList = new ArrayList();
+			m_table.GetParameterInfo(paramName, arrayList);
+			try
+			{
+				if (arrayList[1] is int)
+				{
+					int num = Convert.ToInt32(paramValue);
+					aMOSretcode = m_table.SetParameter(paramName, num);
+				}
+				else if (arrayList[1] is double)
+				{
+					double num2 = Convert.ToDouble(paramValue);
+					aMOSretcode = m_table.SetParameter(paramName, num2);
+				}
+				else if (arrayList[1] is string)
+				{
+					aMOSretcode = m_table.SetParameter(paramName, paramValue);
+				}
+				switch (aMOSretcode)
+				{
+				case AMOSretcode.AMSuccess:
+					statuslabel.Text = "Param val successfully changed :-)";
+					break;
+				case AMOSretcode.AMParamOutOfBounds:
+					statuslabel.ForeColor = Color.Red;
+					if (arrayList[1] is int)
+					{
+						statuslabel.Text = $"Int param out of range [{arrayList[2]}-{arrayList[3]}]";
+					}
+					else if (arrayList[2] is double)
+					{
+						statuslabel.Text = $"Dbl param out of range [{arrayList[2]}-{arrayList[3]}]";
+					}
+					else
+					{
+						statuslabel.Text = $"String arg invalid; valid values: {arrayList[2]}";
+					}
+					break;
+				default:
+					statuslabel.Text = "Unexpected failure setting param - AOS didn't like it :-(";
+					break;
+				}
+			}
+			catch (FormatException)
+			{
+				StatusMessage(Color.Red, "Data entered in incorrect format - ignored");
+			}
+			return aMOSretcode;
+		}
+
+		private void m_stringOptionsCombo_SelectedIndexChanged(object sender, EventArgs e)
+		{
+			if (UpdateSolver(m_EditedItem.SubItems[0].Text, m_stringOptionsCombo.Text) == AMOSretcode.AMSuccess)
+			{
+				m_EditedItem.SubItems[1].Text = m_stringOptionsCombo.Text;
+				StatusMessage(Color.Green, "Parameter " + m_EditedItem.SubItems[0].Text + " successfully changed to " + m_stringOptionsCombo.Text);
+			}
+			m_stringOptionsCombo.Hide();
+		}
+	}
 	[ComVisible(false)]
 	public sealed class StopWatch
 	{
@@ -312,7 +602,7 @@ namespace AMOSCommon
 			int num = 0;
 			while (num < nvals)
 			{
-				string[] array2 = f.ReadLine().Split(new char[1] { ' ' });
+				string[] array2 = f.ReadLine().Split(' ');
 				for (int i = 0; i < array2.Length; i++)
 				{
 					if (array2[i].Length > 0)
@@ -331,7 +621,7 @@ namespace AMOSCommon
 			int num = 0;
 			while (num < nvals)
 			{
-				string[] array2 = f.ReadLine().Split(new char[1] { ' ' });
+				string[] array2 = f.ReadLine().Split(' ');
 				for (int i = 0; i < array2.Length; i++)
 				{
 					if (array2[i].Length > 0)
@@ -817,5 +1107,3 @@ namespace AMOS
 		}
 	}
 }
-You are not using the latest version of the tool, please update.
-Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

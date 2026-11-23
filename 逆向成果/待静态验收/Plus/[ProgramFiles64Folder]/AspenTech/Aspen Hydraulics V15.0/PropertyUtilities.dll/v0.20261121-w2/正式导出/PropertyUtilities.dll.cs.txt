@@ -5724,7 +5724,9 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 
 		public override double CalculateProperty(IFlowStream Stream, PropertyType RT, PhaseType PT, FlashType FT, double data1, double data2)
 		{
-			IEnumeratedPropertyContainer enumeratedPropertyContainer = null;
+			//IL_00a5: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00ab: Invalid comparison between Unknown and I4
+			IEnumeratedPropertyContainer val = null;
 			int num = -32767;
 			double num2 = -32767.0;
 			int num3 = -32767;
@@ -5748,12 +5750,15 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 				num3 = mPhaseCollection.NumberOfActivePhases;
 				for (num = 0; num < num3; num++)
 				{
-					mBasicPhase = mPhaseCollection.GetActivePhase(num) as COTHPhase;
-					if (mBasicPhase.PhaseType != (AspenTech.Interop.ThContainers.tagPhaseTypeEnum)PT)
+					ref IBasicPhase reference = ref mBasicPhase;
+					object activePhase = mPhaseCollection.GetActivePhase(num);
+					reference = (IBasicPhase)((activePhase is COTHPhase) ? activePhase : null);
+					if ((int)mBasicPhase.PhaseType != (int)PT)
 					{
 						continue;
 					}
-					enumeratedPropertyContainer = mBasicPhase as IEnumeratedPropertyContainer;
+					IBasicPhase obj = mBasicPhase;
+					val = (IEnumeratedPropertyContainer)(object)((obj is IEnumeratedPropertyContainer) ? obj : null);
 					switch (RT)
 					{
 					case PropertyType.Pressure:
@@ -5766,13 +5771,13 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 						result = num2;
 						break;
 					case PropertyType.Density:
-						result = (double)enumeratedPropertyContainer.GetPropertyValue(mID_MassDensity);
+						result = (double)val.GetPropertyValue(mID_MassDensity);
 						break;
 					case PropertyType.Enthalpy:
 						result = mBasicPhase.Enthalpy * 1000.0;
 						break;
 					case PropertyType.InternalEnergy:
-						result = mBasicPhase.Enthalpy - mBasicPhase.Pressure / (double)enumeratedPropertyContainer.GetPropertyValue(mID_MassDensity);
+						result = mBasicPhase.Enthalpy - mBasicPhase.Pressure / (double)val.GetPropertyValue(mID_MassDensity);
 						break;
 					case PropertyType.Cp:
 						result = mBasicPhase.Cp * 1000.0;
@@ -5780,19 +5785,19 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 					case PropertyType.Cv:
 						try
 						{
-							result = mBasicPhase.Cp * 1000.0 / (double)enumeratedPropertyContainer.GetPropertyValue(mID_HeatCapacityRatio);
+							result = mBasicPhase.Cp * 1000.0 / (double)val.GetPropertyValue(mID_HeatCapacityRatio);
 						}
 						catch (Exception)
 						{
-							mThermoProperty.EvaluatePhaseProperty(mID_Cp, mBasicPhase);
-							result = ((double)enumeratedPropertyContainer.GetPropertyValue(mID_Cp) - 8314.34) / num2 * 1000.0;
+							mThermoProperty.EvaluatePhaseProperty(mID_Cp, (object)mBasicPhase);
+							result = ((double)val.GetPropertyValue(mID_Cp) - 8314.34) / num2 * 1000.0;
 						}
 						break;
 					case PropertyType.Conductivity:
-						result = (double)enumeratedPropertyContainer.GetPropertyValue(mID_ThermalConductivity);
+						result = (double)val.GetPropertyValue(mID_ThermalConductivity);
 						break;
 					case PropertyType.Viscosity:
-						result = (double)enumeratedPropertyContainer.GetPropertyValue(mID_Viscosity);
+						result = (double)val.GetPropertyValue(mID_Viscosity);
 						break;
 					default:
 						throw new Exception("Property Not Supported");
@@ -5819,6 +5824,7 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 
 		public override double CalculateSurfaceTension(IFlowStream Stream, PhaseType PT, FlashType FT, double data1, double data2)
 		{
+			//IL_006f: Unknown result type (might be due to invalid IL or missing references)
 			if (Stream.StreamID != mLastStreamID)
 			{
 				mReady = false;
@@ -5833,18 +5839,27 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 			}
 			DoFlash(FT, data1, data2);
 			mLastStreamID = Stream.StreamID;
-			mBasicPhase = mPhaseCollection.LocatePhase(AspenTech.Interop.ThContainers.tagPhaseTypeEnum.xptOverall, 0) as COTHPhase;
+			ref IBasicPhase reference = ref mBasicPhase;
+			object obj = mPhaseCollection.LocatePhase((tagPhaseTypeEnum)1, 0);
+			reference = (IBasicPhase)((obj is COTHPhase) ? obj : null);
 			return (double)((IEnumeratedPropertyContainer)mBasicPhase).GetPropertyValue(mID_SurfaceTension);
 		}
 
 		protected override void EvaluatePhaseProperties(IFlowStream Stream, int PhaseID, bool isFullSet)
 		{
-			IEnumeratedPropertyContainer enumeratedPropertyContainer = null;
+			//IL_0318: Unknown result type (might be due to invalid IL or missing references)
+			//IL_031e: Invalid comparison between Unknown and I4
+			//IL_0326: Unknown result type (might be due to invalid IL or missing references)
+			//IL_032c: Invalid comparison between Unknown and I4
+			//IL_00a7: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00b1: Expected I4, but got Unknown
+			IEnumeratedPropertyContainer val = null;
 			IPhase phase = null;
 			try
 			{
 				phase = Stream.GetPhaseByID(PhaseID);
-				enumeratedPropertyContainer = mBasicPhase as IEnumeratedPropertyContainer;
+				IBasicPhase obj = mBasicPhase;
+				val = (IEnumeratedPropertyContainer)(object)((obj is IEnumeratedPropertyContainer) ? obj : null);
 				if (mBasicPhase.Pressure != RealValue.FEMPTY)
 				{
 					phase.Pressure.Value = mBasicPhase.Pressure * 1000.0;
@@ -5885,7 +5900,7 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 				{
 					phase.Enthalpy.Value = RealValue.FEMPTY;
 				}
-				phase.Density.Value = (double)enumeratedPropertyContainer.GetPropertyValue(mID_MassDensity);
+				phase.Density.Value = (double)val.GetPropertyValue(mID_MassDensity);
 				if (!phase.Density.IsUnknown && phase.Enthalpy.Value != RealValue.FEMPTY)
 				{
 					phase.InternalEnergy.Value = phase.Enthalpy.Value - phase.Pressure.Value / phase.Density.Value;
@@ -5895,8 +5910,8 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 				{
 					try
 					{
-						mThermoProperty.EvaluatePhaseProperty(mID_Cv, mBasicPhase);
-						phase.Cv.Value = (double)enumeratedPropertyContainer.GetPropertyValue(mID_Cv) * 1000.0;
+						mThermoProperty.EvaluatePhaseProperty(mID_Cv, (object)mBasicPhase);
+						phase.Cv.Value = (double)val.GetPropertyValue(mID_Cv) * 1000.0;
 						if (phase.Cv.Value > phase.Cp.Value || phase.Cv.Value < 0.0)
 						{
 							string message = "Cv = " + phase.Cv.Value;
@@ -5911,26 +5926,26 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 				}
 				else if (phase.PhaseType == PhaseType.Vapour)
 				{
-					phase.Cv.Value = mBasicPhase.Cp * 1000.0 / (double)enumeratedPropertyContainer.GetPropertyValue(mID_HeatCapacityRatio);
+					phase.Cv.Value = mBasicPhase.Cp * 1000.0 / (double)val.GetPropertyValue(mID_HeatCapacityRatio);
 				}
 				else
 				{
 					phase.Cv.Value = RealValue.FEMPTY;
 				}
-				if (mBasicPhase.PhaseType == AspenTech.Interop.ThContainers.tagPhaseTypeEnum.xptLiquid || mBasicPhase.PhaseType == AspenTech.Interop.ThContainers.tagPhaseTypeEnum.xptAqueous)
+				if ((int)mBasicPhase.PhaseType == 4 || (int)mBasicPhase.PhaseType == 5)
 				{
-					mThermoProperty.EvaluatePhaseProperty(mID_SurfaceTension, mBasicPhase);
-					phase.SurfaceTension.Value = (double)enumeratedPropertyContainer.GetPropertyValue(mID_SurfaceTension) / 1000.0;
+					mThermoProperty.EvaluatePhaseProperty(mID_SurfaceTension, (object)mBasicPhase);
+					phase.SurfaceTension.Value = (double)val.GetPropertyValue(mID_SurfaceTension) / 1000.0;
 				}
 				if (flashLevel >= FlashCalculationLevelEnum.ThermalAndTransport)
 				{
-					phase.Conductivity.Value = (double)enumeratedPropertyContainer.GetPropertyValue(mID_ThermalConductivity) * 1000.0;
-					phase.Viscosity.Value = (double)enumeratedPropertyContainer.GetPropertyValue(mID_Viscosity) * 0.001;
+					phase.Conductivity.Value = (double)val.GetPropertyValue(mID_ThermalConductivity) * 1000.0;
+					phase.Viscosity.Value = (double)val.GetPropertyValue(mID_Viscosity) * 0.001;
 				}
 				if (flashLevel >= FlashCalculationLevelEnum.PlusSonicVelocity && mID_SV > 0)
 				{
-					mThermoProperty.EvaluatePhaseProperty(mID_SV, mBasicPhase);
-					phase.SonicVelocity.Value = (double)enumeratedPropertyContainer.GetPropertyValue(mID_SV);
+					mThermoProperty.EvaluatePhaseProperty(mID_SV, (object)mBasicPhase);
+					phase.SonicVelocity.Value = (double)val.GetPropertyValue(mID_SV);
 				}
 				if (flashLevel >= FlashCalculationLevelEnum.PlusDerivertive)
 				{
@@ -6003,52 +6018,58 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 		protected override void GetPropertyID()
 		{
 			base.GetPropertyID();
-			mID_SpecificGravity = mPER.AddPropertyByName("Specific Gravity");
-			mID_MassFlow = mPER.AddPropertyByName("Mass Flow");
-			mID_HeComp = mPER.AddPropertyByName("Limited Composition - He");
-			mID_O2Comp = mPER.AddPropertyByName("Limited Composition - 02");
-			mID_N2Comp = mPER.AddPropertyByName("Limited Composition - N2");
-			mID_CO2Comp = mPER.AddPropertyByName("Limited Composition - C02");
-			mID_H2SComp = mPER.AddPropertyByName("Limited Composition - H2S");
-			mID_C1Comp = mPER.AddPropertyByName("Limited Composition - C1");
-			mID_C2Comp = mPER.AddPropertyByName("Limited Composition - C2");
-			mID_C3Comp = mPER.AddPropertyByName("Limited Composition - C3");
-			mID_IC4Comp = mPER.AddPropertyByName("Limited Composition - IC4");
-			mID_NC4Comp = mPER.AddPropertyByName("Limited Composition - NC4");
-			mID_IC5Comp = mPER.AddPropertyByName("Limited Composition - IC5");
-			mID_NC5Comp = mPER.AddPropertyByName("Limited Composition - NC5");
-			mID_NC6Comp = mPER.AddPropertyByName("Limited Composition - NC6");
-			mID_C7_plusComp = mPER.AddPropertyByName("Limited Composition - C7+");
-			mID_C7_plusMoleWeight = mPER.AddPropertyByName("Molecular Weight - C7+");
-			mID_C7_plusSpecificGravity = mPER.AddPropertyByName("Specific Gravity - C7+");
-			mID_GasPropertySelection = mPER.AddPropertyByName("Gas Property Selection");
-			mID_DeadOilViscosityCorrelation = mPER.AddPropertyByName("Dead Oil Viscosity Correlation");
-			mID_CoeffA = mPER.AddPropertyByName("CoefficientA");
-			mID_CoeffB = mPER.AddPropertyByName("CoefficientB");
-			mID_ViscTempMatrixSize = mPER.AddPropertyByName("Viscosity/Temperature Matrix Size");
-			mID_ViscTempMatrix = mPER.AddPropertyByName("Viscosity/Temperature Matrix");
-			mID_WatsonK = mPER.AddPropertyByName("Watson K Factor");
-			mID_SurfaceTension = mPER.AddPropertyByName("Surface Tension");
-			mID_BubblePressure = mPER.AddPropertyByName("Bubble Point Pressure");
-			mID_BubbleTemperature = mPER.AddPropertyByName("Bubble Point Temperature");
-			mID_SolutionGOR = mPER.AddPropertyByName("Solution Gas Oil Ratio");
-			mID_MassDensity = mPER.AddPropertyByName("Mass Density");
-			mID_Viscosity = mPER.AddPropertyByName("Viscosity");
-			mID_ThermalCondMassBlend = mPER.AddPropertyByName("ThermalConductivityMassBlend");
-			mID_ThermalConductivity = mPER.AddPropertyByName("ThermalConductivity");
-			mID_HeatCapacityRatio = mPER.AddPropertyByName("HeatCapacityRatio");
-			mID_CritTemp = mPER.AddPropertyByName("Gas Critical Temperature");
-			mID_CritPressure = mPER.AddPropertyByName("Gas Critical Pressure");
-			mID_OilFormationVolumeFactor = mPER.AddPropertyByName("Oil Formation Volume Factor");
-			mID_ProducedGOR = mPER.AddPropertyByName("Produced GOR");
-			mID_WaterCut = mPER.AddPropertyByName("Water Cut");
-			mID_WOR = mPER.AddPropertyByName("Water Oil Ratio");
+			mID_SpecificGravity = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("Specific Gravity");
+			mID_MassFlow = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("Mass Flow");
+			mID_HeComp = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("Limited Composition - He");
+			mID_O2Comp = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("Limited Composition - 02");
+			mID_N2Comp = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("Limited Composition - N2");
+			mID_CO2Comp = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("Limited Composition - C02");
+			mID_H2SComp = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("Limited Composition - H2S");
+			mID_C1Comp = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("Limited Composition - C1");
+			mID_C2Comp = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("Limited Composition - C2");
+			mID_C3Comp = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("Limited Composition - C3");
+			mID_IC4Comp = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("Limited Composition - IC4");
+			mID_NC4Comp = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("Limited Composition - NC4");
+			mID_IC5Comp = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("Limited Composition - IC5");
+			mID_NC5Comp = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("Limited Composition - NC5");
+			mID_NC6Comp = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("Limited Composition - NC6");
+			mID_C7_plusComp = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("Limited Composition - C7+");
+			mID_C7_plusMoleWeight = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("Molecular Weight - C7+");
+			mID_C7_plusSpecificGravity = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("Specific Gravity - C7+");
+			mID_GasPropertySelection = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("Gas Property Selection");
+			mID_DeadOilViscosityCorrelation = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("Dead Oil Viscosity Correlation");
+			mID_CoeffA = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("CoefficientA");
+			mID_CoeffB = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("CoefficientB");
+			mID_ViscTempMatrixSize = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("Viscosity/Temperature Matrix Size");
+			mID_ViscTempMatrix = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("Viscosity/Temperature Matrix");
+			mID_WatsonK = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("Watson K Factor");
+			mID_SurfaceTension = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("Surface Tension");
+			mID_BubblePressure = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("Bubble Point Pressure");
+			mID_BubbleTemperature = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("Bubble Point Temperature");
+			mID_SolutionGOR = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("Solution Gas Oil Ratio");
+			mID_MassDensity = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("Mass Density");
+			mID_Viscosity = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("Viscosity");
+			mID_ThermalCondMassBlend = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("ThermalConductivityMassBlend");
+			mID_ThermalConductivity = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("ThermalConductivity");
+			mID_HeatCapacityRatio = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("HeatCapacityRatio");
+			mID_CritTemp = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("Gas Critical Temperature");
+			mID_CritPressure = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("Gas Critical Pressure");
+			mID_OilFormationVolumeFactor = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("Oil Formation Volume Factor");
+			mID_ProducedGOR = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("Produced GOR");
+			mID_WaterCut = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("Water Cut");
+			mID_WOR = ((IPropertyEnumerationRegistry)mPER).AddPropertyByName("Water Oil Ratio");
 		}
 
 		public override bool Validate(IFlowStream stream)
 		{
+			//IL_0061: Unknown result type (might be due to invalid IL or missing references)
+			//IL_006b: Expected O, but got Unknown
+			//IL_0181: Unknown result type (might be due to invalid IL or missing references)
+			//IL_018b: Expected O, but got Unknown
+			//IL_02e5: Unknown result type (might be due to invalid IL or missing references)
+			//IL_02ef: Expected O, but got Unknown
 			IBlackOilStream blackOilStream = null;
-			IEnumeratedPropertyContainer enumeratedPropertyContainer = null;
+			IEnumeratedPropertyContainer val = null;
 			double num = 0.0;
 			double num2 = 0.0;
 			double num3 = 0.0;
@@ -6062,9 +6083,10 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 					for (int i = 0; i < 3; i++)
 					{
 						mBasicPhase = (IBasicPhase)mPhaseCollection.GetEquilibriumPhase(i);
-						enumeratedPropertyContainer = mBasicPhase as IEnumeratedPropertyContainer;
-						num = (double)enumeratedPropertyContainer.GetPropertyValue(mID_MassFlow);
-						num3 = (double)enumeratedPropertyContainer.GetPropertyValue(mID_SpecificGravity);
+						IBasicPhase obj = mBasicPhase;
+						val = (IEnumeratedPropertyContainer)(object)((obj is IEnumeratedPropertyContainer) ? obj : null);
+						num = (double)val.GetPropertyValue(mID_MassFlow);
+						num3 = (double)val.GetPropertyValue(mID_SpecificGravity);
 						switch (i)
 						{
 						case 0:
@@ -6089,40 +6111,42 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 							return false;
 						}
 					}
-					mBasicPhase = (IBasicPhase)mPhaseCollection.LocatePhase(AspenTech.Interop.ThContainers.tagPhaseTypeEnum.xptOverall, 0);
-					enumeratedPropertyContainer = mBasicPhase as IEnumeratedPropertyContainer;
+					mBasicPhase = (IBasicPhase)mPhaseCollection.LocatePhase((tagPhaseTypeEnum)1, 0);
+					IBasicPhase obj2 = mBasicPhase;
+					val = (IEnumeratedPropertyContainer)(object)((obj2 is IEnumeratedPropertyContainer) ? obj2 : null);
 					num5 = blackOilStream.OilViscosityParamA.Value;
-					if (num5 != 0.0 && Math.Abs(1.0 - (double)enumeratedPropertyContainer.GetPropertyValue(mID_CoeffA) / num5) > 0.001)
+					if (num5 != 0.0 && Math.Abs(1.0 - (double)val.GetPropertyValue(mID_CoeffA) / num5) > 0.001)
 					{
 						return false;
 					}
 					num5 = blackOilStream.OilViscosityParamB.Value;
-					if (num5 != 0.0 && Math.Abs(1.0 - (double)enumeratedPropertyContainer.GetPropertyValue(mID_CoeffB) / num5) > 0.001)
+					if (num5 != 0.0 && Math.Abs(1.0 - (double)val.GetPropertyValue(mID_CoeffB) / num5) > 0.001)
 					{
 						return false;
 					}
 					num5 = blackOilStream.OilWatsonK.Value;
-					if (num5 != 0.0 && Math.Abs(1.0 - (double)enumeratedPropertyContainer.GetPropertyValue(mID_WatsonK) / num5) > 0.001)
+					if (num5 != 0.0 && Math.Abs(1.0 - (double)val.GetPropertyValue(mID_WatsonK) / num5) > 0.001)
 					{
 						return false;
 					}
 					num5 = blackOilStream.UserSpecifiedSurfaceTension.Value;
-					if (num5 != 0.0 && Math.Abs(1.0 - (double)enumeratedPropertyContainer.GetPropertyValue(mID_SurfaceTension) / num5) > 0.001)
+					if (num5 != 0.0 && Math.Abs(1.0 - (double)val.GetPropertyValue(mID_SurfaceTension) / num5) > 0.001)
 					{
 						return false;
 					}
-					mBasicPhase = (IBasicPhase)mPhaseCollection.LocatePhase(AspenTech.Interop.ThContainers.tagPhaseTypeEnum.xptVapour, 0);
+					mBasicPhase = (IBasicPhase)mPhaseCollection.LocatePhase((tagPhaseTypeEnum)3, 0);
 					int numberOfCompounds = mBasicPhase.NumberOfCompounds;
 					if (numberOfCompounds != blackOilStream.GetPhaseByID(0).NumberOfCompounds)
 					{
 						return false;
 					}
 					IPhase phaseByID = blackOilStream.GetPhaseByID(0);
-					AspenTech.Interop.ThUtility.IRealArrayDisp realArrayDisp = mBasicPhase.MolarComposition as AspenTech.Interop.ThUtility.IRealArrayDisp;
+					object molarComposition = mBasicPhase.MolarComposition;
+					IRealArrayDisp val2 = (IRealArrayDisp)((molarComposition is IRealArrayDisp) ? molarComposition : null);
 					for (int j = 0; j < numberOfCompounds; j++)
 					{
 						num2 = phaseByID.ComponentMoleFractions[j].Value;
-						num5 = realArrayDisp.get_IthValue(j);
+						num5 = val2[j];
 						if (Math.Abs(num2 - num5) > 0.0001)
 						{
 							return false;
@@ -6229,7 +6253,9 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 				{
 					throw new Exception("Temperature can not be set less than zero. ");
 				}
-				mBasicPhase = mPhaseCollection.LocatePhase(AspenTech.Interop.ThContainers.tagPhaseTypeEnum.xptOverall, 0) as IBasicPhase;
+				ref IBasicPhase reference = ref mBasicPhase;
+				object obj = mPhaseCollection.LocatePhase((tagPhaseTypeEnum)1, 0);
+				reference = (IBasicPhase)((obj is IBasicPhase) ? obj : null);
 				switch (FT)
 				{
 				case FlashType.PHFlash:
@@ -6263,7 +6289,9 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 				num2 = 0;
 				for (num = 0; num < num3; num++)
 				{
-					mBasicPhase = mPhaseCollection.GetEquilibriumPhase(num) as COTHPhase;
+					ref IBasicPhase reference = ref mBasicPhase;
+					object equilibriumPhase = mPhaseCollection.GetEquilibriumPhase(num);
+					reference = (IBasicPhase)((equilibriumPhase is COTHPhase) ? equilibriumPhase : null);
 					if (mBasicPhase.Pressure == RealValue.FEMPTY && mBasicPhase.PhaseMassFraction <= 0.0 && mCM != CombinationMethodForLiquidPhases.DoNotCombine)
 					{
 						Stream.NumberOfPhases--;
@@ -6283,13 +6311,16 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 		protected override void UpdateOverallPhase(IFlowStream Stream, int ActiveCount)
 		{
 			IPhase phase = null;
-			IEnumeratedPropertyContainer enumeratedPropertyContainer = null;
+			IEnumeratedPropertyContainer val = null;
 			IRealValue realValue = new RealValue();
 			try
 			{
 				phase = Stream.GetPhaseByID(0);
-				mBasicPhase = mPhaseCollection.LocatePhase(AspenTech.Interop.ThContainers.tagPhaseTypeEnum.xptOverall, 0) as COTHPhase;
-				enumeratedPropertyContainer = mBasicPhase as IEnumeratedPropertyContainer;
+				ref IBasicPhase reference = ref mBasicPhase;
+				object obj = mPhaseCollection.LocatePhase((tagPhaseTypeEnum)1, 0);
+				reference = (IBasicPhase)((obj is COTHPhase) ? obj : null);
+				IBasicPhase obj2 = mBasicPhase;
+				val = (IEnumeratedPropertyContainer)(object)((obj2 is IEnumeratedPropertyContainer) ? obj2 : null);
 				if (mBasicPhase.Temperature == RealValue.FEMPTY || mBasicPhase.Pressure == RealValue.FEMPTY)
 				{
 					double num = RealValue.FEMPTY;
@@ -6320,32 +6351,32 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 				phase.Enthalpy.Value = mBasicPhase.Enthalpy * 1000.0;
 				phase.Entropy.Value = mBasicPhase.Entropy * 1000.0;
 				phase.Cp.Value = mBasicPhase.Cp * 1000.0;
-				phase.Density.Value = (double)enumeratedPropertyContainer.GetPropertyValue(mID_MassDensity);
-				phase.Viscosity.Value = (double)enumeratedPropertyContainer.GetPropertyValue(mID_Viscosity) * 0.001;
-				phase.Conductivity.Value = (double)enumeratedPropertyContainer.GetPropertyValue(mID_ThermalCondMassBlend) * 1000.0;
-				phase.SurfaceTension.Value = (double)enumeratedPropertyContainer.GetPropertyValue(mID_SurfaceTension) * 0.001;
+				phase.Density.Value = (double)val.GetPropertyValue(mID_MassDensity);
+				phase.Viscosity.Value = (double)val.GetPropertyValue(mID_Viscosity) * 0.001;
+				phase.Conductivity.Value = (double)val.GetPropertyValue(mID_ThermalCondMassBlend) * 1000.0;
+				phase.SurfaceTension.Value = (double)val.GetPropertyValue(mID_SurfaceTension) * 0.001;
 				phase.MassFraction.Value = 1.0;
 				(Stream as IBlackOilStream).UserSpecifiedSurfaceTension.Value = phase.SurfaceTension.Value;
 				realValue.Value = (Stream as IBlackOilStream).OilWatsonK.Value;
 				if (realValue.Value == 0.0 || realValue.Value == RealValue.FEMPTY)
 				{
-					(Stream as IBlackOilStream).OilWatsonK.Value = (double)enumeratedPropertyContainer.GetPropertyValue(mID_WatsonK);
+					(Stream as IBlackOilStream).OilWatsonK.Value = (double)val.GetPropertyValue(mID_WatsonK);
 				}
 				try
 				{
-					(Stream as IBlackOilStream).GasTc.Value = (double)enumeratedPropertyContainer.GetPropertyValue(mID_CritTemp) + 273.15;
-					(Stream as IBlackOilStream).GasPc.Value = (double)enumeratedPropertyContainer.GetPropertyValue(mID_CritPressure) * 1000.0;
+					(Stream as IBlackOilStream).GasTc.Value = (double)val.GetPropertyValue(mID_CritTemp) + 273.15;
+					(Stream as IBlackOilStream).GasPc.Value = (double)val.GetPropertyValue(mID_CritPressure) * 1000.0;
 				}
 				catch (Exception ex)
 				{
 					ex.ToString();
 				}
-				(Stream as IBlackOilStream).OilBubblePtCalSolnGor.Value = (double)enumeratedPropertyContainer.GetPropertyValue(mID_SolutionGOR);
-				(Stream as IBlackOilStream).OilBubblePtCalFvf.Value = (double)enumeratedPropertyContainer.GetPropertyValue(mID_OilFormationVolumeFactor);
+				(Stream as IBlackOilStream).OilBubblePtCalSolnGor.Value = (double)val.GetPropertyValue(mID_SolutionGOR);
+				(Stream as IBlackOilStream).OilBubblePtCalFvf.Value = (double)val.GetPropertyValue(mID_OilFormationVolumeFactor);
 				if ((Stream as IBlackOilStream).OilViscosityParamA.Value == RealValue.FEMPTY || (Stream as IBlackOilStream).OilViscosityParamB.Value == RealValue.FEMPTY || ((Stream as IBlackOilStream).OilViscosityParamA.Value != RealValue.FEMPTY && (Stream as IBlackOilStream).DeadOilViscosityCorrelation != "Specify Coefficients"))
 				{
-					(Stream as IBlackOilStream).OilViscosityParamA.Value = (double)enumeratedPropertyContainer.GetPropertyValue(mID_CoeffA);
-					(Stream as IBlackOilStream).OilViscosityParamB.Value = (double)enumeratedPropertyContainer.GetPropertyValue(mID_CoeffB);
+					(Stream as IBlackOilStream).OilViscosityParamA.Value = (double)val.GetPropertyValue(mID_CoeffA);
+					(Stream as IBlackOilStream).OilViscosityParamB.Value = (double)val.GetPropertyValue(mID_CoeffB);
 				}
 				if (mCM != CombinationMethodForLiquidPhases.DoNotCombine)
 				{
@@ -6389,14 +6420,21 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 
 		private void setupPhaseCollection(IBlackOilStream stream)
 		{
-			IEnumeratedPropertyContainer enumeratedPropertyContainer = null;
+			//IL_0023: Unknown result type (might be due to invalid IL or missing references)
+			//IL_002d: Expected O, but got Unknown
+			//IL_00c8: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00ce: Expected O, but got Unknown
+			//IL_033f: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0349: Expected O, but got Unknown
+			IEnumeratedPropertyContainer val = null;
 			int numberOfViscosityPoints = stream.NumberOfViscosityPoints;
 			try
 			{
 				mPhaseCollection.ResetCollection(0);
-				mBasicPhase = (IBasicPhase)mPhaseCollection.LocatePhase(AspenTech.Interop.ThContainers.tagPhaseTypeEnum.xptOverall, 0);
+				mBasicPhase = (IBasicPhase)mPhaseCollection.LocatePhase((tagPhaseTypeEnum)1, 0);
 				mBasicPhase.ResetProperties(0);
-				enumeratedPropertyContainer = mBasicPhase as IEnumeratedPropertyContainer;
+				IBasicPhase obj = mBasicPhase;
+				val = (IEnumeratedPropertyContainer)(object)((obj is IEnumeratedPropertyContainer) ? obj : null);
 				double value = stream.OilViscosityParamA.Value;
 				double value2 = stream.OilViscosityParamB.Value;
 				string deadOilViscosityCorrelation = stream.DeadOilViscosityCorrelation;
@@ -6409,52 +6447,53 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 					case "Specify Coefficients":
 						throw new ArgumentNullException("Viscosity correlation or coefficients has not been set properly. ");
 					}
-					enumeratedPropertyContainer.PutPropertyValue(mID_DeadOilViscosityCorrelation, deadOilViscosityCorrelation);
-					enumeratedPropertyContainer.PutPropertyValue(mID_ViscTempMatrixSize, numberOfViscosityPoints);
-					IRealMatrix realMatrix = new COTHRealMatrixClass();
-					realMatrix.NumberOfColumns = 2;
-					realMatrix.NumberOfRows = numberOfViscosityPoints;
+					val.PutPropertyValue(mID_DeadOilViscosityCorrelation, (object)deadOilViscosityCorrelation);
+					val.PutPropertyValue(mID_ViscTempMatrixSize, (object)numberOfViscosityPoints);
+					IRealMatrix val2 = (IRealMatrix)new COTHRealMatrixClass();
+					val2.NumberOfColumns = 2;
+					val2.NumberOfRows = numberOfViscosityPoints;
 					for (int i = 0; i < numberOfViscosityPoints; i++)
 					{
-						realMatrix.set_IJthValue(i, 0, stream.ViscosityPointValue(i).Value);
-						realMatrix.set_IJthValue(i, 1, stream.TemperatureAtViscosityPoint(i).Value);
+						val2[i, 0] = stream.ViscosityPointValue(i).Value;
+						val2[i, 1] = stream.TemperatureAtViscosityPoint(i).Value;
 					}
-					enumeratedPropertyContainer.PutPropertyValue(mID_ViscTempMatrix, realMatrix);
+					val.PutPropertyValue(mID_ViscTempMatrix, (object)val2);
 				}
 				else
 				{
 					deadOilViscosityCorrelation = "Specify Coefficients";
-					enumeratedPropertyContainer.PutPropertyValue(mID_DeadOilViscosityCorrelation, deadOilViscosityCorrelation);
-					enumeratedPropertyContainer.PutPropertyValue(mID_CoeffA, value);
-					enumeratedPropertyContainer.PutPropertyValue(mID_CoeffB, value2);
+					val.PutPropertyValue(mID_DeadOilViscosityCorrelation, (object)deadOilViscosityCorrelation);
+					val.PutPropertyValue(mID_CoeffA, (object)value);
+					val.PutPropertyValue(mID_CoeffB, (object)value2);
 				}
-				enumeratedPropertyContainer.PutPropertyValue(mID_WatsonK, stream.OilWatsonK.Value);
-				enumeratedPropertyContainer.PutPropertyValue(mID_SurfaceTension, stream.UserSpecifiedSurfaceTension.Value);
-				enumeratedPropertyContainer.PutPropertyValue(mID_BubblePressure, stream.OilBubblePtCalPressure.Value);
-				enumeratedPropertyContainer.PutPropertyValue(mID_BubbleTemperature, stream.OilBubblePtCalTemperature.Value);
+				val.PutPropertyValue(mID_WatsonK, (object)stream.OilWatsonK.Value);
+				val.PutPropertyValue(mID_SurfaceTension, (object)stream.UserSpecifiedSurfaceTension.Value);
+				val.PutPropertyValue(mID_BubblePressure, (object)stream.OilBubblePtCalPressure.Value);
+				val.PutPropertyValue(mID_BubbleTemperature, (object)stream.OilBubblePtCalTemperature.Value);
 				double num = ((stream.OilGravity.Value > 0.0) ? (stream.OilMassFlowrate.Value / stream.OilGravity.Value) : RealValue.FEMPTY);
 				double num2 = ((stream.WaterGravity.Value > 0.0) ? (stream.WaterMassFlowrate.Value / stream.WaterGravity.Value) : RealValue.FEMPTY);
-				enumeratedPropertyContainer.PutPropertyValue(mID_SolutionGOR, stream.OilBubblePtCalSolnGor.Value);
-				enumeratedPropertyContainer.PutPropertyValue(mID_OilFormationVolumeFactor, stream.OilBubblePtCalFvf.Value);
-				enumeratedPropertyContainer.PutPropertyValue(mID_Viscosity, stream.OilBubblePtCalLiveViscosity.Value);
-				enumeratedPropertyContainer.PutPropertyValue(mID_ProducedGOR, stream.ProducedGOR.Value);
+				val.PutPropertyValue(mID_SolutionGOR, (object)stream.OilBubblePtCalSolnGor.Value);
+				val.PutPropertyValue(mID_OilFormationVolumeFactor, (object)stream.OilBubblePtCalFvf.Value);
+				val.PutPropertyValue(mID_Viscosity, (object)stream.OilBubblePtCalLiveViscosity.Value);
+				val.PutPropertyValue(mID_ProducedGOR, (object)stream.ProducedGOR.Value);
 				double num3 = ((num2 != RealValue.FEMPTY && num != RealValue.FEMPTY) ? (100.0 * num2 / (num2 + num)) : RealValue.FEMPTY);
-				enumeratedPropertyContainer.PutPropertyValue(mID_WaterCut, num3);
+				val.PutPropertyValue(mID_WaterCut, (object)num3);
 				double num4 = ((num2 != RealValue.FEMPTY && num != RealValue.FEMPTY) ? (num2 / num) : RealValue.FEMPTY);
-				enumeratedPropertyContainer.PutPropertyValue(mID_WOR, num4);
+				val.PutPropertyValue(mID_WOR, (object)num4);
 				for (int j = 0; j < 3; j++)
 				{
-					enumeratedPropertyContainer = null;
+					val = null;
 					mBasicPhase = null;
 					mBasicPhase = (IBasicPhase)mPhaseCollection.GetEquilibriumPhase(j);
 					mBasicPhase.ResetProperties(0);
-					enumeratedPropertyContainer = mBasicPhase as IEnumeratedPropertyContainer;
+					IBasicPhase obj2 = mBasicPhase;
+					val = (IEnumeratedPropertyContainer)(object)((obj2 is IEnumeratedPropertyContainer) ? obj2 : null);
 					switch (j)
 					{
 					case 0:
-						mBasicPhase.PhaseType = AspenTech.Interop.ThContainers.tagPhaseTypeEnum.xptVapour;
-						enumeratedPropertyContainer.PutPropertyValue(mID_SpecificGravity, stream.GasGravity.Value);
-						enumeratedPropertyContainer.PutPropertyValue(mID_GasPropertySelection, 1.0);
+						mBasicPhase.PhaseType = (tagPhaseTypeEnum)3;
+						val.PutPropertyValue(mID_SpecificGravity, (object)stream.GasGravity.Value);
+						val.PutPropertyValue(mID_GasPropertySelection, (object)1.0);
 						if (stream.IsUsingLimitedComposition)
 						{
 							IPhase phaseByType = stream.GetPhaseByType(PhaseType.Overall);
@@ -6468,98 +6507,98 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 								case 0:
 									if (component.Name == "Helium")
 									{
-										enumeratedPropertyContainer.PutPropertyValue(mID_HeComp, value3);
+										val.PutPropertyValue(mID_HeComp, (object)value3);
 										break;
 									}
 									throw new Exception("Vapour phase composition mis-macthed");
 								case 1:
 									if (component.Name == "Oxygen")
 									{
-										enumeratedPropertyContainer.PutPropertyValue(mID_O2Comp, value3);
+										val.PutPropertyValue(mID_O2Comp, (object)value3);
 										break;
 									}
 									throw new Exception("Vapour phase composition mis-macthed");
 								case 2:
 									if (component.Name == "Nitrogen")
 									{
-										enumeratedPropertyContainer.PutPropertyValue(mID_N2Comp, value3);
+										val.PutPropertyValue(mID_N2Comp, (object)value3);
 										break;
 									}
 									throw new Exception("Vapour phase composition mis-macthed");
 								case 3:
 									if (component.Name == "CarbonDioxide")
 									{
-										enumeratedPropertyContainer.PutPropertyValue(mID_CO2Comp, value3);
+										val.PutPropertyValue(mID_CO2Comp, (object)value3);
 										break;
 									}
 									throw new Exception("Vapour phase composition mis-macthed");
 								case 4:
 									if (component.Name == "HydrogenSulfide")
 									{
-										enumeratedPropertyContainer.PutPropertyValue(mID_H2SComp, value3);
+										val.PutPropertyValue(mID_H2SComp, (object)value3);
 										break;
 									}
 									throw new Exception("Vapour phase composition mis-macthed");
 								case 5:
 									if (component.Name == "Methane")
 									{
-										enumeratedPropertyContainer.PutPropertyValue(mID_C1Comp, value3);
+										val.PutPropertyValue(mID_C1Comp, (object)value3);
 										break;
 									}
 									throw new Exception("Vapour phase composition mis-macthed");
 								case 6:
 									if (component.Name == "Ethane")
 									{
-										enumeratedPropertyContainer.PutPropertyValue(mID_C2Comp, value3);
+										val.PutPropertyValue(mID_C2Comp, (object)value3);
 										break;
 									}
 									throw new Exception("Vapour phase composition mis-macthed");
 								case 7:
 									if (component.Name == "Propane")
 									{
-										enumeratedPropertyContainer.PutPropertyValue(mID_C3Comp, value3);
+										val.PutPropertyValue(mID_C3Comp, (object)value3);
 										break;
 									}
 									throw new Exception("Vapour phase composition mis-macthed");
 								case 8:
 									if (component.Name == "I-Butane")
 									{
-										enumeratedPropertyContainer.PutPropertyValue(mID_IC4Comp, value3);
+										val.PutPropertyValue(mID_IC4Comp, (object)value3);
 										break;
 									}
 									throw new Exception("Vapour phase composition mis-macthed");
 								case 9:
 									if (component.Name == "n-Butane")
 									{
-										enumeratedPropertyContainer.PutPropertyValue(mID_NC4Comp, value3);
+										val.PutPropertyValue(mID_NC4Comp, (object)value3);
 										break;
 									}
 									throw new Exception("Vapour phase composition mis-macthed");
 								case 10:
 									if (component.Name == "I-Pentane")
 									{
-										enumeratedPropertyContainer.PutPropertyValue(mID_IC5Comp, value3);
+										val.PutPropertyValue(mID_IC5Comp, (object)value3);
 										break;
 									}
 									throw new Exception("Vapour phase composition mis-macthed");
 								case 11:
 									if (component.Name == "n-Pentane")
 									{
-										enumeratedPropertyContainer.PutPropertyValue(mID_NC5Comp, value3);
+										val.PutPropertyValue(mID_NC5Comp, (object)value3);
 										break;
 									}
 									throw new Exception("Vapour phase composition mis-macthed");
 								case 12:
 									if (component.Name == "n-Hexane")
 									{
-										enumeratedPropertyContainer.PutPropertyValue(mID_NC6Comp, value3);
+										val.PutPropertyValue(mID_NC6Comp, (object)value3);
 										break;
 									}
 									throw new Exception("Vapour phase composition mis-macthed");
 								case 13:
 									if (component.Name == "C7+")
 									{
-										enumeratedPropertyContainer.PutPropertyValue(mID_C7_plusComp, value3);
+										val.PutPropertyValue(mID_C7_plusComp, (object)value3);
 										break;
 									}
 									throw new Exception("Vapour phase composition mis-macthed");
@@ -6567,22 +6606,22 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 									throw new Exception("Should never be here");
 								}
 							}
-							enumeratedPropertyContainer.PutPropertyValue(mID_C7_plusMoleWeight, phaseByType.GetComponent(numberOfCompounds - 1).MolecularWeight.Value);
+							val.PutPropertyValue(mID_C7_plusMoleWeight, (object)phaseByType.GetComponent(numberOfCompounds - 1).MolecularWeight.Value);
 							double num5 = stream.C7PlusDensity.Value / 998.94;
-							enumeratedPropertyContainer.PutPropertyValue(mID_C7_plusSpecificGravity, num5);
-							enumeratedPropertyContainer.PutPropertyValue(mID_GasPropertySelection, 2.0);
+							val.PutPropertyValue(mID_C7_plusSpecificGravity, (object)num5);
+							val.PutPropertyValue(mID_GasPropertySelection, (object)2.0);
 						}
-						enumeratedPropertyContainer.PutPropertyValue(mID_MassFlow, stream.GasMassFlowrate.Value);
+						val.PutPropertyValue(mID_MassFlow, (object)stream.GasMassFlowrate.Value);
 						break;
 					case 1:
-						mBasicPhase.PhaseType = AspenTech.Interop.ThContainers.tagPhaseTypeEnum.xptLiquid;
-						enumeratedPropertyContainer.PutPropertyValue(mID_SpecificGravity, stream.OilGravity.Value);
-						enumeratedPropertyContainer.PutPropertyValue(mID_MassFlow, stream.OilMassFlowrate.Value);
+						mBasicPhase.PhaseType = (tagPhaseTypeEnum)4;
+						val.PutPropertyValue(mID_SpecificGravity, (object)stream.OilGravity.Value);
+						val.PutPropertyValue(mID_MassFlow, (object)stream.OilMassFlowrate.Value);
 						break;
 					case 2:
-						mBasicPhase.PhaseType = AspenTech.Interop.ThContainers.tagPhaseTypeEnum.xptAqueous;
-						enumeratedPropertyContainer.PutPropertyValue(mID_SpecificGravity, stream.WaterGravity.Value);
-						enumeratedPropertyContainer.PutPropertyValue(mID_MassFlow, stream.WaterMassFlowrate.Value);
+						mBasicPhase.PhaseType = (tagPhaseTypeEnum)5;
+						val.PutPropertyValue(mID_SpecificGravity, (object)stream.WaterGravity.Value);
+						val.PutPropertyValue(mID_MassFlow, (object)stream.WaterMassFlowrate.Value);
 						break;
 					}
 				}
@@ -10908,7 +10947,7 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 
 		protected IIPManager mIPM;
 
-		protected COTHPropertyEnumerationRegistry mPER = new COTHPropertyEnumerationRegistryClass();
+		protected COTHPropertyEnumerationRegistry mPER = (COTHPropertyEnumerationRegistry)new COTHPropertyEnumerationRegistryClass();
 
 		protected IPhaseCollection mPhaseCollection;
 
@@ -10920,7 +10959,7 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 
 		protected string mDatabasePath;
 
-		protected AspenTech.Interop.ThPropManager.IThermoProperty mThermoProperty;
+		protected IThermoProperty mThermoProperty;
 
 		protected IFlashProperties mFlashProperties;
 
@@ -10956,10 +10995,14 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 
 		public ImpIPPPWithCOMThermoBase()
 		{
-		}
+		}//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+		//IL_000b: Expected O, but got Unknown
+
 
 		internal ImpIPPPWithCOMThermoBase(bool master)
 		{
+			//IL_0001: Unknown result type (might be due to invalid IL or missing references)
+			//IL_000b: Expected O, but got Unknown
 			mIsMaster = master;
 			if (mIsMaster)
 			{
@@ -11049,68 +11092,72 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 
 		public virtual void InitFromStrings(string sPropertyMgr, string sCompoundCollection, string sExtPackageDef, string sExtFlashDef, IFlowStream stream)
 		{
+			//IL_000c: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0012: Expected O, but got Unknown
 			try
 			{
 				nullify();
 				InitComThermoObjects();
-				XMLParser xMLParser = new HyprotechStreamingXMLParserClass();
-				ICOMExtensionHandler iCOMExtensionHandler = mPropertyManager;
+				XMLParser val = (XMLParser)new HyprotechStreamingXMLParserClass();
+				ICOMExtensionHandler val2 = (ICOMExtensionHandler)(object)mPropertyManager;
 				if (sPropertyMgr != "")
 				{
-					AspenTech.Interop.HyprotechXML.XMLParserClient client = mPropertyManager as AspenTech.Interop.HyprotechXML.XMLParserClient;
-					xMLParser.ReadText(sPropertyMgr, client, includeWhitespace: false, includeComments: false);
-					client = null;
+					COTHPropertyManagerClass obj = mPropertyManager;
+					XMLParserClient val3 = (XMLParserClient)(object)((obj is XMLParserClient) ? obj : null);
+					val.ReadText(sPropertyMgr, val3, false, false);
+					val3 = null;
 				}
 				if (sCompoundCollection != "")
 				{
-					AspenTech.Interop.HyprotechXML.XMLParserClient client = mCompoundCollection as AspenTech.Interop.HyprotechXML.XMLParserClient;
-					xMLParser.ReadText(sCompoundCollection, client, includeWhitespace: false, includeComments: false);
-					client = null;
+					COTHCompoundCollectionClass obj2 = mCompoundCollection;
+					XMLParserClient val3 = (XMLParserClient)(object)((obj2 is XMLParserClient) ? obj2 : null);
+					val.ReadText(sCompoundCollection, val3, false, false);
+					val3 = null;
 					ccPopulated = true;
-					mPhaseCollection.Finalize(mCompoundCollection, 3, 1);
+					mPhaseCollection.Finalize((object)mCompoundCollection, 3, 1);
 				}
 				if (sExtPackageDef != "" && sExtPackageDef != "Empty")
 				{
-					bool BaseChanged = false;
-					iCOMExtensionHandler.PkgRecall(sExtPackageDef, ref BaseChanged);
+					bool flag = false;
+					val2.PkgRecall(sExtPackageDef, ref flag);
 				}
 				if (sExtFlashDef != "" && sExtFlashDef != "Empty")
 				{
-					iCOMExtensionHandler.FlashRecall(sExtFlashDef);
+					val2.FlashRecall(sExtFlashDef);
 				}
 				mIsInitFromStrings = true;
 				if ((sExtPackageDef != "" && sExtPackageDef != "Empty") || (sExtFlashDef != "" && sExtFlashDef != "Empty"))
 				{
 					((ICOTHHysysSecurity)mPropertyManager).PutApplicationInterface(mHysysSecurity);
-					byte IsUsed = 0;
-					byte IsUsed2 = 0;
-					iCOMExtensionHandler.UseExtendedPropPkg(ref IsUsed);
-					iCOMExtensionHandler.UseExtendedFlash(ref IsUsed2);
-					bool num = IsUsed == 1;
-					bool flag = IsUsed2 == 1;
+					byte b = 0;
+					byte b2 = 0;
+					val2.UseExtendedPropPkg(ref b);
+					val2.UseExtendedFlash(ref b2);
+					bool num = b == 1;
+					bool flag2 = b2 == 1;
 					if (num)
 					{
-						int status = 0;
-						iCOMExtensionHandler.IsPkgSetup(ref status);
-						if (status != 0)
+						int num2 = 0;
+						val2.IsPkgSetup(ref num2);
+						if (num2 != 0)
 						{
 							throw new Exception("Property package not properly set up");
 						}
 					}
-					if (flag)
+					if (flag2)
 					{
-						object pExtFlash = new object();
-						iCOMExtensionHandler.GetExtendedFlash(ref pExtFlash);
-						IExtendedFlash obj = pExtFlash as IExtendedFlash;
-						int status2 = 0;
-						obj.SetupFlash(0, null, ref status2);
-						if (status2 != 0)
+						object obj3 = new object();
+						val2.GetExtendedFlash(ref obj3);
+						object obj4 = ((obj3 is IExtendedFlash) ? obj3 : null);
+						int num3 = 0;
+						((IExtendedFlash)obj4).SetupFlash(0, (object)null, ref num3);
+						if (num3 != 0)
 						{
 							throw new Exception("Error in setting up flash.");
 						}
-						int status3 = 0;
-						iCOMExtensionHandler.IsFlashSetup(ref status3);
-						if (status3 != 0)
+						int num4 = 0;
+						val2.IsFlashSetup(ref num4);
+						if (num4 != 0)
 						{
 							throw new Exception("Flash not properly set up");
 						}
@@ -11127,30 +11174,30 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 
 		public void GetCOMThermoStrings(out string sPropertyMgr, out string sCompoundCollection, out string sExtPackageDef, out string sExtFlashDef)
 		{
-			ICOMExtensionHandler iCOMExtensionHandler = null;
-			AspenTech.Interop.ThPropManager.IXMLStore iXMLStore = null;
-			AspenTech.Interop.ThContainers.IXMLStore iXMLStore2 = null;
+			ICOMExtensionHandler val = null;
+			IXMLStore val2 = null;
+			IXMLStore val3 = null;
 			try
 			{
-				iXMLStore = mPropertyManager;
-				sPropertyMgr = iXMLStore.StoreAsXML();
-				iXMLStore2 = mCompoundCollection;
-				sCompoundCollection = iXMLStore2.StoreAsXML();
+				val2 = (IXMLStore)(object)mPropertyManager;
+				sPropertyMgr = val2.StoreAsXML();
+				val3 = (IXMLStore)(object)mCompoundCollection;
+				sCompoundCollection = val3.StoreAsXML();
 				try
 				{
-					iCOMExtensionHandler = mPropertyManager;
+					val = (ICOMExtensionHandler)(object)mPropertyManager;
 				}
 				catch (Exception ex)
 				{
 					LogMessage(MessageLogType.Note, "PP is not extensioned. " + ex.Message);
-					iCOMExtensionHandler = null;
+					val = null;
 				}
 				sExtPackageDef = "Empty";
 				sExtFlashDef = "Empty";
-				if (iCOMExtensionHandler != null)
+				if (val != null)
 				{
-					iCOMExtensionHandler.PkgSave(ref sExtPackageDef);
-					iCOMExtensionHandler.FlashSave(ref sExtFlashDef);
+					val.PkgSave(ref sExtPackageDef);
+					val.FlashSave(ref sExtFlashDef);
 				}
 			}
 			catch (Exception innerException)
@@ -11195,7 +11242,9 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 
 		public override double CalculateProperty(IFlowStream Stream, PropertyType RT, PhaseType PT, FlashType FT, double data1, double data2)
 		{
-			IEnumeratedPropertyContainer enumeratedPropertyContainer = null;
+			//IL_009b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00a1: Invalid comparison between Unknown and I4
+			IEnumeratedPropertyContainer val = null;
 			int num = -32767;
 			double num2 = -32767.0;
 			int num3 = -32767;
@@ -11213,15 +11262,18 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 				num3 = mPhaseCollection.NumberOfActivePhases;
 				for (num = 0; num < num3; num++)
 				{
-					mBasicPhase = mPhaseCollection.GetActivePhase(num) as COTHPhase;
-					if (mBasicPhase.PhaseType != (AspenTech.Interop.ThContainers.tagPhaseTypeEnum)PT)
+					ref IBasicPhase reference = ref mBasicPhase;
+					object activePhase = mPhaseCollection.GetActivePhase(num);
+					reference = (IBasicPhase)((activePhase is COTHPhase) ? activePhase : null);
+					if ((int)mBasicPhase.PhaseType != (int)PT)
 					{
 						continue;
 					}
-					enumeratedPropertyContainer = mBasicPhase as IEnumeratedPropertyContainer;
+					IBasicPhase obj = mBasicPhase;
+					val = (IEnumeratedPropertyContainer)(object)((obj is IEnumeratedPropertyContainer) ? obj : null);
 					if (mBasicPhase.NumberOfCompounds == 1)
 					{
-						enumeratedPropertyContainer.GetPropertyValue(mID_MW);
+						val.GetPropertyValue(mID_MW);
 					}
 					else
 					{
@@ -11231,66 +11283,66 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 					switch (RT)
 					{
 					case PropertyType.Pressure:
-						mThermoProperty.EvaluatePhaseProperty(mID_P, mBasicPhase);
+						mThermoProperty.EvaluatePhaseProperty(mID_P, (object)mBasicPhase);
 						result = mBasicPhase.Pressure * 1000.0;
 						break;
 					case PropertyType.Temperature:
-						mThermoProperty.EvaluatePhaseProperty(mID_T, mBasicPhase);
+						mThermoProperty.EvaluatePhaseProperty(mID_T, (object)mBasicPhase);
 						result = mBasicPhase.Temperature;
 						break;
 					case PropertyType.MolecularWeight:
 						result = num2;
 						break;
 					case PropertyType.Density:
-						mThermoProperty.EvaluatePhaseProperty(mID_MV, mBasicPhase);
-						result = num2 / (double)enumeratedPropertyContainer.GetPropertyValue(mID_MV);
+						mThermoProperty.EvaluatePhaseProperty(mID_MV, (object)mBasicPhase);
+						result = num2 / (double)val.GetPropertyValue(mID_MV);
 						break;
 					case PropertyType.Enthalpy:
-						mThermoProperty.EvaluatePhaseProperty(mID_H, mBasicPhase);
+						mThermoProperty.EvaluatePhaseProperty(mID_H, (object)mBasicPhase);
 						result = mBasicPhase.Enthalpy / num2 * 1000.0;
 						break;
 					case PropertyType.Entropy:
-						mThermoProperty.EvaluatePhaseProperty(mID_S, mBasicPhase);
+						mThermoProperty.EvaluatePhaseProperty(mID_S, (object)mBasicPhase);
 						result = mBasicPhase.Entropy / num2 * 1000.0;
 						break;
 					case PropertyType.InternalEnergy:
-						mThermoProperty.EvaluatePhaseProperty(mID_MV, mBasicPhase);
-						num4 = num2 / (double)enumeratedPropertyContainer.GetPropertyValue(mID_MV);
-						mThermoProperty.EvaluatePhaseProperty(mID_P, mBasicPhase);
+						mThermoProperty.EvaluatePhaseProperty(mID_MV, (object)mBasicPhase);
+						num4 = num2 / (double)val.GetPropertyValue(mID_MV);
+						mThermoProperty.EvaluatePhaseProperty(mID_P, (object)mBasicPhase);
 						num5 = mBasicPhase.Pressure * 1000.0;
-						mThermoProperty.EvaluatePhaseProperty(mID_H, mBasicPhase);
+						mThermoProperty.EvaluatePhaseProperty(mID_H, (object)mBasicPhase);
 						num6 = mBasicPhase.Enthalpy / num2 * 1000.0;
 						result = ((num4 != -32767.0 && num6 != -32767.0 && num6 != -32767.0) ? (-32767.0) : (num6 - num4 * num5));
 						break;
 					case PropertyType.Cp:
-						mThermoProperty.EvaluatePhaseProperty(mID_Cp, mBasicPhase);
+						mThermoProperty.EvaluatePhaseProperty(mID_Cp, (object)mBasicPhase);
 						result = mBasicPhase.Cp / num2 * 1000.0;
 						break;
 					case PropertyType.Cv:
 						try
 						{
-							mThermoProperty.EvaluatePhaseProperty(mID_Cv, mBasicPhase);
-							result = (double)enumeratedPropertyContainer.GetPropertyValue(mID_Cv) / num2 * 1000.0;
+							mThermoProperty.EvaluatePhaseProperty(mID_Cv, (object)mBasicPhase);
+							result = (double)val.GetPropertyValue(mID_Cv) / num2 * 1000.0;
 						}
 						catch (Exception)
 						{
-							mThermoProperty.EvaluatePhaseProperty(mID_Cp, mBasicPhase);
-							result = ((double)enumeratedPropertyContainer.GetPropertyValue(mID_Cp) - 8314.34) / num2 * 1000.0;
+							mThermoProperty.EvaluatePhaseProperty(mID_Cp, (object)mBasicPhase);
+							result = ((double)val.GetPropertyValue(mID_Cp) - 8314.34) / num2 * 1000.0;
 						}
 						break;
 					case PropertyType.Conductivity:
-						mThermoProperty.EvaluatePhaseProperty(mID_TC, mBasicPhase);
-						result = (double)enumeratedPropertyContainer.GetPropertyValue(mID_TC);
+						mThermoProperty.EvaluatePhaseProperty(mID_TC, (object)mBasicPhase);
+						result = (double)val.GetPropertyValue(mID_TC);
 						break;
 					case PropertyType.Viscosity:
-						mThermoProperty.EvaluatePhaseProperty(mID_VIS, mBasicPhase);
-						result = (double)enumeratedPropertyContainer.GetPropertyValue(mID_VIS);
+						mThermoProperty.EvaluatePhaseProperty(mID_VIS, (object)mBasicPhase);
+						result = (double)val.GetPropertyValue(mID_VIS);
 						break;
 					case PropertyType.SonicVelocity:
 						if (mID_SV > 0)
 						{
-							mThermoProperty.EvaluatePhaseProperty(mID_SV, mBasicPhase);
-							result = (double)enumeratedPropertyContainer.GetPropertyValue(mID_SV);
+							mThermoProperty.EvaluatePhaseProperty(mID_SV, (object)mBasicPhase);
+							result = (double)val.GetPropertyValue(mID_SV);
 							break;
 						}
 						throw new Exception("Sonic velocity is not Supported");
@@ -11309,6 +11361,8 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 
 		public override double CalculateSurfaceTension(IFlowStream Stream, PhaseType PT, FlashType FT, double data1, double data2)
 		{
+			//IL_006a: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0070: Invalid comparison between Unknown and I4
 			int num = -32767;
 			IPhase phase = null;
 			int num2 = -32767;
@@ -11324,11 +11378,14 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 					num2 = mPhaseCollection.NumberOfActivePhases;
 					for (num = 0; num < num2; num++)
 					{
-						mBasicPhase = mPhaseCollection.GetActivePhase(num) as COTHPhase;
-						if (mBasicPhase.PhaseType == (AspenTech.Interop.ThContainers.tagPhaseTypeEnum)PT)
+						ref IBasicPhase reference = ref mBasicPhase;
+						object activePhase = mPhaseCollection.GetActivePhase(num);
+						reference = (IBasicPhase)((activePhase is COTHPhase) ? activePhase : null);
+						if ((int)mBasicPhase.PhaseType == (int)PT)
 						{
-							mThermoProperty.EvaluatePhaseProperty(mID_ST, mBasicPhase);
-							result = (double)(mBasicPhase as IEnumeratedPropertyContainer).GetPropertyValue(mID_ST);
+							mThermoProperty.EvaluatePhaseProperty(mID_ST, (object)mBasicPhase);
+							IBasicPhase obj = mBasicPhase;
+							result = (double)((IEnumeratedPropertyContainer)((obj is IEnumeratedPropertyContainer) ? obj : null)).GetPropertyValue(mID_ST);
 							break;
 						}
 					}
@@ -11475,28 +11532,29 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 
 		protected void setCompoundInfo(IFlowStream s)
 		{
-			COTHCompound cOTHCompound = null;
-			int pDependencies = 0;
+			COTHCompound val = null;
+			int num = 0;
 			int numberOfCompounds = mCompoundCollection.NumberOfCompounds;
 			if (mComponents == null)
 			{
 				mComponents = new IComponent[numberOfCompounds];
 			}
-			double num = 0.0;
+			double num2 = 0.0;
 			try
 			{
 				IPhase phaseByType = s.GetPhaseByType(PhaseType.Overall);
 				for (int i = 0; i < numberOfCompounds; i++)
 				{
-					cOTHCompound = mCompoundCollection.get_Compound(i) as COTHCompound;
-					num = ((IBasicCompound)cOTHCompound).get_MW(273.15, 101325.0, tagExtrapolationEnum.eNoExtrapolation, out pDependencies);
-					phaseByType.GetComponent(i).MolecularWeight.Value = num;
+					object obj = mCompoundCollection[i];
+					val = (COTHCompound)((obj is COTHCompound) ? obj : null);
+					num2 = ((IBasicCompound)val)[273.15, 101325.0, (tagExtrapolationEnum)0, ref num];
+					phaseByType.GetComponent(i).MolecularWeight.Value = num2;
 					if (mComponents[i] == null)
 					{
 						mComponents[i] = new Component();
 					}
-					mComponents[i].MolecularWeight.Value = num;
-					if (phaseByType.GetComponent(i).ID != cOTHCompound.HyprotechID)
+					mComponents[i].MolecularWeight.Value = num2;
+					if (phaseByType.GetComponent(i).ID != ((IBasicCompound)val).HyprotechID)
 					{
 						throw new Exception("Components in flow stream do not match those in stored compound collection.");
 					}
@@ -11560,13 +11618,13 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 			int num = -32767;
 			double num2 = -32767.0;
 			int num3 = -32767;
-			AspenTech.Interop.ThUtility.IRealArrayDisp realArrayDisp = null;
+			IRealArrayDisp val = null;
 			try
 			{
 				if (mReady)
 				{
 					SetParameters(FT, data1, data2);
-					mFlashManager.Flash(mPhaseCollection);
+					mFlashManager.Flash((object)mPhaseCollection);
 					return;
 				}
 				throw new Exception("Composition Not Ready");
@@ -11582,11 +11640,12 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 					LogMessage(MessageLogType.Error, aMessage);
 					aMessage = "Data2 = " + data2.ToString("0.000");
 					LogMessage(MessageLogType.Error, aMessage);
-					realArrayDisp = mBasicPhase.MolarComposition as AspenTech.Interop.ThUtility.IRealArrayDisp;
-					num3 = realArrayDisp.Size;
+					object molarComposition = mBasicPhase.MolarComposition;
+					val = (IRealArrayDisp)((molarComposition is IRealArrayDisp) ? molarComposition : null);
+					num3 = val.Size;
 					for (num = 0; num < num3; num++)
 					{
-						num2 = realArrayDisp.get_IthValue(num);
+						num2 = val[num];
 						aMessage = "Comp = " + (num + 1) + " : Mole Fraction = " + num2.ToString("0.000000000");
 						LogMessage(MessageLogType.Error, aMessage);
 					}
@@ -11597,24 +11656,30 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 
 		protected virtual void EvaluatePhaseProperties(IFlowStream Stream, int PhaseID, bool isFullSet)
 		{
-			IEnumeratedPropertyContainer enumeratedPropertyContainer = null;
+			//IL_0463: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0469: Invalid comparison between Unknown and I4
+			//IL_00f1: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00fb: Expected I4, but got Unknown
+			IEnumeratedPropertyContainer val = null;
 			int num = -32767;
 			double num2 = -32767.0;
 			double num3 = -32767.0;
 			int num4 = -32767;
 			IPhase phase = null;
-			AspenTech.Interop.ThUtility.IRealArrayDisp realArrayDisp = null;
+			IRealArrayDisp val2 = null;
 			double num5 = -32767.0;
 			double num6 = 0.0;
 			try
 			{
 				phase = Stream.GetPhaseByID(PhaseID);
-				enumeratedPropertyContainer = mBasicPhase as IEnumeratedPropertyContainer;
-				realArrayDisp = mBasicPhase.MolarComposition as AspenTech.Interop.ThUtility.IRealArrayDisp;
+				IBasicPhase obj = mBasicPhase;
+				val = (IEnumeratedPropertyContainer)(object)((obj is IEnumeratedPropertyContainer) ? obj : null);
+				object molarComposition = mBasicPhase.MolarComposition;
+				val2 = (IRealArrayDisp)((molarComposition is IRealArrayDisp) ? molarComposition : null);
 				num4 = phase.NumberOfCompounds;
 				for (num = 0; num < num4; num++)
 				{
-					num2 = realArrayDisp.get_IthValue(num);
+					num2 = val2[num];
 					phase.ComponentMoleFractions[num].Value = num2;
 				}
 				num3 = phase.MolecularWeight.Value;
@@ -11635,8 +11700,8 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 				{
 					return;
 				}
-				mThermoProperty.EvaluatePhaseProperty(mID_MV, mBasicPhase);
-				num5 = (double)enumeratedPropertyContainer.GetPropertyValue(mID_MV);
+				mThermoProperty.EvaluatePhaseProperty(mID_MV, (object)mBasicPhase);
+				num5 = (double)val.GetPropertyValue(mID_MV);
 				if (num5 != -32767.0)
 				{
 					phase.Density.Value = num3 / num5;
@@ -11650,7 +11715,7 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 				{
 					for (num = 0; num < num4; num++)
 					{
-						num2 = realArrayDisp.get_IthValue(num);
+						num2 = val2[num];
 						num6 += num2 * hfArray[num];
 					}
 				}
@@ -11658,7 +11723,7 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 				{
 					num6 = 0.0;
 				}
-				mThermoProperty.EvaluatePhaseProperty(mID_H, mBasicPhase);
+				mThermoProperty.EvaluatePhaseProperty(mID_H, (object)mBasicPhase);
 				if (base.ThermoBase == ThermoBaseEnum.NotIncludeHF && whatBase != 0)
 				{
 					phase.Enthalpy.Value = (mBasicPhase.Enthalpy - num6) / num3 * 1000.0;
@@ -11671,20 +11736,20 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 				{
 					phase.Enthalpy.Value = mBasicPhase.Enthalpy / num3 * 1000.0;
 				}
-				mThermoProperty.EvaluatePhaseProperty(mID_S, mBasicPhase);
+				mThermoProperty.EvaluatePhaseProperty(mID_S, (object)mBasicPhase);
 				phase.Entropy.Value = mBasicPhase.Entropy / num3 * 1000.0;
 				if (!phase.Density.IsUnknown)
 				{
 					phase.InternalEnergy.Value = phase.Enthalpy.Value - phase.Pressure.Value / phase.Density.Value;
 				}
-				mThermoProperty.EvaluatePhaseProperty(mID_Cp, mBasicPhase);
+				mThermoProperty.EvaluatePhaseProperty(mID_Cp, (object)mBasicPhase);
 				phase.Cp.Value = mBasicPhase.Cp / num3 * 1000.0;
 				if (mCvSupported && flashLevel < FlashCalculationLevelEnum.PlusDerivertive)
 				{
 					try
 					{
-						mThermoProperty.EvaluatePhaseProperty(mID_Cv, mBasicPhase);
-						phase.Cv.Value = (double)enumeratedPropertyContainer.GetPropertyValue(mID_Cv) / num3 * 1000.0;
+						mThermoProperty.EvaluatePhaseProperty(mID_Cv, (object)mBasicPhase);
+						phase.Cv.Value = (double)val.GetPropertyValue(mID_Cv) / num3 * 1000.0;
 						if (phase.Cv.Value > phase.Cp.Value || phase.Cv.Value < 0.0)
 						{
 							string message = "Cv = " + phase.Cv.Value;
@@ -11705,22 +11770,22 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 				{
 					phase.Cv.Value = phase.Cp.Value - 8314.34 / num3;
 				}
-				if (mBasicPhase.PhaseType == AspenTech.Interop.ThContainers.tagPhaseTypeEnum.xptLiquid)
+				if ((int)mBasicPhase.PhaseType == 4)
 				{
-					mThermoProperty.EvaluatePhaseProperty(mID_ST, mBasicPhase);
-					phase.SurfaceTension.Value = (double)enumeratedPropertyContainer.GetPropertyValue(mID_ST) / 1000.0;
+					mThermoProperty.EvaluatePhaseProperty(mID_ST, (object)mBasicPhase);
+					phase.SurfaceTension.Value = (double)val.GetPropertyValue(mID_ST) / 1000.0;
 				}
 				if (flashLevel >= FlashCalculationLevelEnum.ThermalAndTransport)
 				{
-					mThermoProperty.EvaluatePhaseProperty(mID_TC, mBasicPhase);
-					phase.Conductivity.Value = (double)enumeratedPropertyContainer.GetPropertyValue(mID_TC);
-					mThermoProperty.EvaluatePhaseProperty(mID_VIS, mBasicPhase);
-					phase.Viscosity.Value = (double)enumeratedPropertyContainer.GetPropertyValue(mID_VIS) / 1000.0;
+					mThermoProperty.EvaluatePhaseProperty(mID_TC, (object)mBasicPhase);
+					phase.Conductivity.Value = (double)val.GetPropertyValue(mID_TC);
+					mThermoProperty.EvaluatePhaseProperty(mID_VIS, (object)mBasicPhase);
+					phase.Viscosity.Value = (double)val.GetPropertyValue(mID_VIS) / 1000.0;
 				}
 				if (flashLevel >= FlashCalculationLevelEnum.PlusSonicVelocity && mID_SV > 0)
 				{
-					mThermoProperty.EvaluatePhaseProperty(mID_SV, mBasicPhase);
-					phase.SonicVelocity.Value = (double)enumeratedPropertyContainer.GetPropertyValue(mID_SV);
+					mThermoProperty.EvaluatePhaseProperty(mID_SV, (object)mBasicPhase);
+					phase.SonicVelocity.Value = (double)val.GetPropertyValue(mID_SV);
 				}
 				if (flashLevel >= FlashCalculationLevelEnum.PlusDerivertive)
 				{
@@ -11735,52 +11800,53 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 
 		protected virtual void getDerivatives(IPhase phs)
 		{
-			IDerivativeHandler derivativeHandler = mPropertyManager;
-			IDerivativeProp derivativeProp = mBasicPhase as IDerivativeProp;
-			int nIdx = 0;
-			int nIdx2 = 0;
-			int nIdx3 = 0;
-			int nIdx4 = 0;
-			double dVal = 0.0;
-			double dVal2 = 0.0;
-			double dVal3 = 0.0;
-			double dVal4 = 0.0;
-			double num = 0.0;
-			double num2 = 0.0;
+			IDerivativeHandler val = (IDerivativeHandler)(object)mPropertyManager;
+			IBasicPhase obj = mBasicPhase;
+			IDerivativeProp val2 = (IDerivativeProp)(object)((obj is IDerivativeProp) ? obj : null);
+			int num = 0;
+			int num2 = 0;
+			int num3 = 0;
+			int num4 = 0;
+			double num5 = 0.0;
+			double num6 = 0.0;
+			double num7 = 0.0;
+			double num8 = 0.0;
+			double num9 = 0.0;
+			double num10 = 0.0;
 			try
 			{
-				derivativeHandler.TurnOnDerivative(1);
-				derivativeProp.ClearDerivativesProps();
-				derivativeProp.AddDerivativeProp(mID_MV, mID_dPressure, AspenTech.Interop.ThContainers.tagResultTypeEnum.RealPoint, AspenTech.Interop.ThContainers.tagResultTypeEnum.RealPoint, ref nIdx);
-				derivativeProp.AddDerivativeProp(mID_MV, mID_dTemperature, AspenTech.Interop.ThContainers.tagResultTypeEnum.RealPoint, AspenTech.Interop.ThContainers.tagResultTypeEnum.RealPoint, ref nIdx2);
-				derivativeProp.AddDerivativeProp(mID_H, mID_dPressure, AspenTech.Interop.ThContainers.tagResultTypeEnum.RealPoint, AspenTech.Interop.ThContainers.tagResultTypeEnum.RealPoint, ref nIdx3);
-				derivativeProp.AddDerivativeProp(mID_H, mID_dTemperature, AspenTech.Interop.ThContainers.tagResultTypeEnum.RealPoint, AspenTech.Interop.ThContainers.tagResultTypeEnum.RealPoint, ref nIdx4);
-				derivativeProp.SetNeedDerivative(nIdx, 0);
-				derivativeProp.SetNeedDerivative(nIdx2, 0);
-				derivativeProp.SetNeedDerivative(nIdx3, 0);
-				derivativeProp.SetNeedDerivative(nIdx4, 0);
-				derivativeProp.SetNeedDerivative(nIdx, 1);
-				derivativeProp.SetNeedDerivative(nIdx2, 1);
-				mThermoProperty.EvaluatePhaseProperty(mID_MV, mBasicPhase);
-				derivativeProp.GetPointDerivative(nIdx, ref dVal);
-				derivativeProp.GetPointDerivative(nIdx2, ref dVal2);
-				derivativeProp.SetNeedDerivative(nIdx, 0);
-				derivativeProp.SetNeedDerivative(nIdx2, 0);
-				derivativeProp.SetNeedDerivative(nIdx3, 1);
-				derivativeProp.SetNeedDerivative(nIdx4, 1);
-				mThermoProperty.EvaluatePhaseProperty(mID_H, mBasicPhase);
-				derivativeProp.GetPointDerivative(nIdx3, ref dVal3);
-				derivativeProp.GetPointDerivative(nIdx4, ref dVal4);
-				derivativeProp.SetNeedDerivative(nIdx3, 0);
-				derivativeProp.SetNeedDerivative(nIdx4, 0);
-				num = mBasicPhase.MolecularWeight;
-				num2 = mBasicPhase.MolarVolume;
-				phs.DerivativeOfDensityToPressure.Value = (0.0 - num) * dVal / (1000.0 * num2 * num2);
-				phs.DerivativeOfDensityToTemperature.Value = (0.0 - num) * dVal2 / (num2 * num2);
-				phs.DerivativeOfInternalEnergyToPressure.Value = (dVal3 - mBasicPhase.Pressure * dVal - num2) / num;
+				val.TurnOnDerivative((byte)1);
+				val2.ClearDerivativesProps();
+				val2.AddDerivativeProp(mID_MV, mID_dPressure, (tagResultTypeEnum)1, (tagResultTypeEnum)1, ref num);
+				val2.AddDerivativeProp(mID_MV, mID_dTemperature, (tagResultTypeEnum)1, (tagResultTypeEnum)1, ref num2);
+				val2.AddDerivativeProp(mID_H, mID_dPressure, (tagResultTypeEnum)1, (tagResultTypeEnum)1, ref num3);
+				val2.AddDerivativeProp(mID_H, mID_dTemperature, (tagResultTypeEnum)1, (tagResultTypeEnum)1, ref num4);
+				val2.SetNeedDerivative(num, (byte)0);
+				val2.SetNeedDerivative(num2, (byte)0);
+				val2.SetNeedDerivative(num3, (byte)0);
+				val2.SetNeedDerivative(num4, (byte)0);
+				val2.SetNeedDerivative(num, (byte)1);
+				val2.SetNeedDerivative(num2, (byte)1);
+				mThermoProperty.EvaluatePhaseProperty(mID_MV, (object)mBasicPhase);
+				val2.GetPointDerivative(num, ref num5);
+				val2.GetPointDerivative(num2, ref num6);
+				val2.SetNeedDerivative(num, (byte)0);
+				val2.SetNeedDerivative(num2, (byte)0);
+				val2.SetNeedDerivative(num3, (byte)1);
+				val2.SetNeedDerivative(num4, (byte)1);
+				mThermoProperty.EvaluatePhaseProperty(mID_H, (object)mBasicPhase);
+				val2.GetPointDerivative(num3, ref num7);
+				val2.GetPointDerivative(num4, ref num8);
+				val2.SetNeedDerivative(num3, (byte)0);
+				val2.SetNeedDerivative(num4, (byte)0);
+				num9 = mBasicPhase.MolecularWeight;
+				num10 = mBasicPhase.MolarVolume;
+				phs.DerivativeOfDensityToPressure.Value = (0.0 - num9) * num5 / (1000.0 * num10 * num10);
+				phs.DerivativeOfDensityToTemperature.Value = (0.0 - num9) * num6 / (num10 * num10);
+				phs.DerivativeOfInternalEnergyToPressure.Value = (num7 - mBasicPhase.Pressure * num5 - num10) / num9;
 				if (phs.Cp.Value == RealValue.FEMPTY)
 				{
-					phs.Cp.Value = dVal4 * 1000.0 / num;
+					phs.Cp.Value = num8 * 1000.0 / num9;
 				}
 				if (phs.Cv.Value == RealValue.FEMPTY || !mCvSupported)
 				{
@@ -11796,41 +11862,56 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 
 		protected double GetPhaseMolWt()
 		{
+			//IL_0023: Unknown result type (might be due to invalid IL or missing references)
+			//IL_002a: Expected O, but got Unknown
 			IComponent component = null;
 			double num = -32767.0;
 			int num2 = -32767;
 			int num3 = -32767;
-			AspenTech.Interop.ThUtility.IRealArrayDisp realArrayDisp = (AspenTech.Interop.ThUtility.IRealArrayDisp)mBasicPhase.MolarComposition;
+			IRealArrayDisp val = (IRealArrayDisp)mBasicPhase.MolarComposition;
 			num3 = mComponents.GetUpperBound(0) + 1;
 			num = 0.0;
 			for (num2 = 0; num2 < num3; num2++)
 			{
 				component = mComponents[num2];
-				num += realArrayDisp.get_IthValue(num2) * component.MolecularWeight.Value;
+				num += val[num2] * component.MolecularWeight.Value;
 			}
 			return num;
 		}
 
 		protected virtual void GetPropertyID()
 		{
-			mID_T = mPER.GetPropertyIDByName("Temperature");
-			mID_P = mPER.GetPropertyIDByName("Pressure");
-			mID_H = mPER.GetPropertyIDByName("Enthalpy");
-			mID_S = mPER.GetPropertyIDByName("Entropy");
-			mID_Cp = mPER.GetPropertyIDByName("Cp");
-			mID_Cv = mPER.GetPropertyIDByName("Cv");
-			mID_MV = mPER.GetPropertyIDByName("MolarVolume");
-			mID_MW = mPER.GetPropertyIDByName("MolecularWeight");
-			mID_VIS = mPER.GetPropertyIDByName("Viscosity");
-			mID_TC = mPER.GetPropertyIDByName("ThermalConductivity");
-			mID_ST = mPER.GetPropertyIDByName("SurfaceTension");
-			mID_SV = mPER.GetPropertyIDByName("SonicVelocity");
-			mID_dTemperature = mPER.GetPropertyIDByName("dT");
-			mID_dPressure = mPER.GetPropertyIDByName("dP");
+			mID_T = ((IPropertyEnumerationRegistry)mPER).GetPropertyIDByName("Temperature");
+			mID_P = ((IPropertyEnumerationRegistry)mPER).GetPropertyIDByName("Pressure");
+			mID_H = ((IPropertyEnumerationRegistry)mPER).GetPropertyIDByName("Enthalpy");
+			mID_S = ((IPropertyEnumerationRegistry)mPER).GetPropertyIDByName("Entropy");
+			mID_Cp = ((IPropertyEnumerationRegistry)mPER).GetPropertyIDByName("Cp");
+			mID_Cv = ((IPropertyEnumerationRegistry)mPER).GetPropertyIDByName("Cv");
+			mID_MV = ((IPropertyEnumerationRegistry)mPER).GetPropertyIDByName("MolarVolume");
+			mID_MW = ((IPropertyEnumerationRegistry)mPER).GetPropertyIDByName("MolecularWeight");
+			mID_VIS = ((IPropertyEnumerationRegistry)mPER).GetPropertyIDByName("Viscosity");
+			mID_TC = ((IPropertyEnumerationRegistry)mPER).GetPropertyIDByName("ThermalConductivity");
+			mID_ST = ((IPropertyEnumerationRegistry)mPER).GetPropertyIDByName("SurfaceTension");
+			mID_SV = ((IPropertyEnumerationRegistry)mPER).GetPropertyIDByName("SonicVelocity");
+			mID_dTemperature = ((IPropertyEnumerationRegistry)mPER).GetPropertyIDByName("dT");
+			mID_dPressure = ((IPropertyEnumerationRegistry)mPER).GetPropertyIDByName("dP");
 		}
 
 		protected void InitComThermoObjects()
 		{
+			//IL_0038: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0042: Expected O, but got Unknown
+			//IL_0055: Unknown result type (might be due to invalid IL or missing references)
+			//IL_005f: Expected O, but got Unknown
+			//IL_0072: Unknown result type (might be due to invalid IL or missing references)
+			//IL_007c: Expected O, but got Unknown
+			//IL_008f: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0099: Expected O, but got Unknown
+			//IL_00b4: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00be: Expected O, but got Unknown
+			//IL_0101: Unknown result type (might be due to invalid IL or missing references)
+			//IL_010b: Expected O, but got Unknown
+			//IL_0131: Unknown result type (might be due to invalid IL or missing references)
 			StringBuilder stringBuilder = null;
 			try
 			{
@@ -11844,24 +11925,24 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 				{
 					Trace.WriteLine("Failed To Create Compound Collection");
 				}
-				mPhaseCollection = new COTHPhaseCollectionClass();
+				mPhaseCollection = (IPhaseCollection)new COTHPhaseCollectionClass();
 				if (mPhaseCollection == null)
 				{
 					Trace.WriteLine("Failed To Create Phase Collection");
 				}
-				mFlashManager = new COTHFlashManagerClass();
+				mFlashManager = (IFlashManager)new COTHFlashManagerClass();
 				if (mFlashManager == null)
 				{
 					Trace.WriteLine("Failed To Create Flash Manager");
 				}
-				mIPM = new COTHIPManagerClass();
+				mIPM = (IIPManager)new COTHIPManagerClass();
 				if (mIPM == null)
 				{
 					Trace.WriteLine("Failed To Create IP Manager");
 				}
 				if (mPER == null)
 				{
-					mPER = new COTHPropertyEnumerationRegistryClass();
+					mPER = (COTHPropertyEnumerationRegistry)new COTHPropertyEnumerationRegistryClass();
 					if (mPER == null)
 					{
 						Trace.WriteLine("Failed To Create Property Enumerator");
@@ -11883,24 +11964,24 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 				{
 					throw new Exception("Unable To Create Property Manager. Check SLM");
 				}
-				((IRegisterableObject)mPhaseCollection).RegisterProperties(mPER);
-				mPropertyManager.SetPropertyEnumerationRegistry(mPER);
-				mIPM.SetPropertyManager(mPropertyManager);
-				mFlashManager.Initialize(mPropertyManager);
-				mThermoProperty = mPropertyManager;
-				mFlashProperties = mPropertyManager;
+				((IRegisterableObject)mPhaseCollection).RegisterProperties((object)mPER);
+				mPropertyManager.SetPropertyEnumerationRegistry((object)mPER);
+				mIPM.SetPropertyManager((object)mPropertyManager);
+				mFlashManager.Initialize((object)mPropertyManager);
+				mThermoProperty = (IThermoProperty)(object)mPropertyManager;
+				mFlashProperties = (IFlashProperties)(object)mPropertyManager;
 				mFlashControl = mFlashProperties.GetFlashControl() as IFlashControl;
 				if (mFlashControl == null)
 				{
 					Trace.WriteLine("Failed Cast Flash Properties To IFlashControl");
 				}
-				mPropertyManager.UseNotifyChange(1);
+				mPropertyManager.UseNotifyChange((byte)1);
 				stringBuilder = new StringBuilder(Environment.GetFolderPath(Environment.SpecialFolder.CommonProgramFiles));
 				mThermoPath = stringBuilder.Append("\\Hyprotech\\ComThermo\\").ToString() + "models\\";
 				mDatabasePath = stringBuilder.ToString() + "Databases";
 				stringBuilder = new StringBuilder(mThermoPath);
 				mFlashOptions = mThermoPath + "hysysflash.xml";
-				mPropertyManager.SetPropModelCreatePropObjects(mFlashOptions, 1);
+				mPropertyManager.SetPropModelCreatePropObjects(mFlashOptions, (byte)1);
 			}
 			catch (Exception innerException)
 			{
@@ -11910,21 +11991,36 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 
 		protected void InitComponents(IFlowStream Stream)
 		{
-			COTHCompound cOTHCompound = null;
-			ICompoundID compoundID = null;
+			//IL_00cf: Unknown result type (might be due to invalid IL or missing references)
+			//IL_00d5: Expected O, but got Unknown
+			//IL_0138: Unknown result type (might be due to invalid IL or missing references)
+			//IL_013e: Expected O, but got Unknown
+			//IL_06ac: Unknown result type (might be due to invalid IL or missing references)
+			//IL_06b3: Expected O, but got Unknown
+			//IL_078b: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0795: Expected O, but got Unknown
+			//IL_086a: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0874: Expected O, but got Unknown
+			//IL_089d: Unknown result type (might be due to invalid IL or missing references)
+			//IL_08a7: Expected O, but got Unknown
+			//IL_08d0: Unknown result type (might be due to invalid IL or missing references)
+			//IL_08da: Expected O, but got Unknown
+			//IL_08ee: Unknown result type (might be due to invalid IL or missing references)
+			COTHCompound val = null;
+			ICompoundID val2 = null;
 			IComponent component = null;
 			IComponent component2 = null;
 			int num = -32767;
-			int pDependencies = -32767;
 			int num2 = -32767;
+			int num3 = -32767;
 			IPhase phase = null;
-			ICompoundPropPut compoundPropPut = null;
-			AspenTech.Interop.ThUtility.IRealArrayDisp realArrayDisp = null;
-			byte @fixed = 0;
-			byte find = 0;
+			ICompoundPropPut val3 = null;
+			IRealArrayDisp val4 = null;
+			byte b = 0;
+			byte b2 = 0;
 			bool flag = false;
-			double num3 = 0.0;
-			int Status = -32767;
+			double num4 = 0.0;
+			int num5 = -32767;
 			try
 			{
 				if (!ccPopulated || mIsInitFromStrings)
@@ -11938,17 +12034,17 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 						mCompoundCollection.Reset();
 					}
 					phase = Stream.GetPhaseByID(0);
-					num2 = phase.NumberOfCompounds;
-					mComponents = new IComponent[num2];
-					for (num = 0; num < num2; num++)
+					num3 = phase.NumberOfCompounds;
+					mComponents = new IComponent[num3];
+					for (num = 0; num < num3; num++)
 					{
 						component = phase.GetComponent(num);
 						mComponents[num] = new Component();
 						mComponents[num].UpdateByValue(component);
 					}
-					for (num = 0; num < num2; num++)
+					for (num = 0; num < num3; num++)
 					{
-						cOTHCompound = new COTHCompoundClass();
+						val = (COTHCompound)new COTHCompoundClass();
 						component = phase.GetComponent(num);
 						component2 = mComponents[num];
 						if (component.ID == -32767)
@@ -11957,14 +12053,14 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 						}
 						if (!component.IsHypothetical)
 						{
-							(cOTHCompound as ICompoundInitFromHypDB).Init(mDatabasePath, component.ID);
+							((ICompoundInitFromHypDB)((val is ICompoundInitFromHypDB) ? val : null)).Init(mDatabasePath, component.ID);
 							if (!mIsInitFromStrings)
 							{
-								mCompoundCollection.AddCompound(cOTHCompound);
+								mCompoundCollection.AddCompound((object)val);
 							}
-							compoundID = (ICompoundID)cOTHCompound;
-							component2.Name = compoundID.Name;
-							component2.MolecularWeight.Value = ((IBasicCompound)cOTHCompound).get_MW(273.15, 100000.0, tagExtrapolationEnum.eNoExtrapolation, out pDependencies);
+							val2 = (ICompoundID)val;
+							component2.Name = val2.Name;
+							component2.MolecularWeight.Value = ((IBasicCompound)val)[273.15, 100000.0, (tagExtrapolationEnum)0, ref num2];
 							component.MolecularWeight.Value = component2.MolecularWeight.Value;
 							if (component.Name.Length == 0)
 							{
@@ -11976,151 +12072,151 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 						{
 							throw new Exception("A minimum three data (MW, LDN, and NPP) of " + "a hypothetical component must be set up.");
 						}
-						(cOTHCompound as ICompoundIDPut).HyprotechID = component.ID;
-						(cOTHCompound as ICompoundFamilyPut).NonCondensable = false;
-						compoundPropPut = cOTHCompound as ICompoundPropPut;
-						compoundPropPut.FindProperty("MW", out find, out @fixed);
-						compoundPropPut.SetPointProperty("MW", @fixed, component.MolecularWeight.Value);
+						((ICompoundIDPut)((val is ICompoundIDPut) ? val : null)).HyprotechID = component.ID;
+						((ICompoundFamilyPut)((val is ICompoundFamilyPut) ? val : null)).NonCondensable = false;
+						val3 = (ICompoundPropPut)(object)((val is ICompoundPropPut) ? val : null);
+						val3.FindProperty("MW", ref b2, ref b);
+						val3.SetPointProperty("MW", b, component.MolecularWeight.Value);
 						component2.MolecularWeight.Value = component.MolecularWeight.Value;
-						compoundPropPut.FindProperty("SLDN", out find, out @fixed);
-						compoundPropPut.SetPointProperty("SLDN", @fixed, component.LiquidDensity.Value);
+						val3.FindProperty("SLDN", ref b2, ref b);
+						val3.SetPointProperty("SLDN", b, component.LiquidDensity.Value);
 						component2.LiquidDensity.Value = component.LiquidDensity.Value;
-						compoundPropPut.FindProperty("NBP", out find, out @fixed);
-						compoundPropPut.SetPointProperty("NBP", @fixed, component.NormalBoilingPoint.Value);
+						val3.FindProperty("NBP", ref b2, ref b);
+						val3.SetPointProperty("NBP", b, component.NormalBoilingPoint.Value);
 						component2.NormalBoilingPoint.Value = component.NormalBoilingPoint.Value;
 						if (component.CriticalPressure.Value != RealValue.FEMPTY && Math.Abs(component.CriticalPressure.Value) > 1E-10)
 						{
-							compoundPropPut.FindProperty("PC", out find, out @fixed);
-							compoundPropPut.SetPointProperty("PC", @fixed, component.CriticalPressure.Value);
+							val3.FindProperty("PC", ref b2, ref b);
+							val3.SetPointProperty("PC", b, component.CriticalPressure.Value);
 							component2.CriticalPressure.Value = component.CriticalPressure.Value;
 						}
 						if (component.CriticalTemperature.Value != RealValue.FEMPTY && Math.Abs(component.CriticalTemperature.Value) > 1E-10)
 						{
-							compoundPropPut.FindProperty("TC", out find, out @fixed);
-							compoundPropPut.SetPointProperty("TC", @fixed, component.CriticalTemperature.Value);
+							val3.FindProperty("TC", ref b2, ref b);
+							val3.SetPointProperty("TC", b, component.CriticalTemperature.Value);
 							component2.CriticalTemperature.Value = component.CriticalTemperature.Value;
 						}
 						if (component.CriticalVolume.Value != RealValue.FEMPTY && Math.Abs(component.CriticalVolume.Value) > 1E-10)
 						{
-							compoundPropPut.FindProperty("VC", out find, out @fixed);
-							compoundPropPut.SetPointProperty("VC", @fixed, component.CriticalVolume.Value);
+							val3.FindProperty("VC", ref b2, ref b);
+							val3.SetPointProperty("VC", b, component.CriticalVolume.Value);
 							component2.CriticalVolume.Value = component.CriticalVolume.Value;
 						}
 						if (component.Acentricity.Value != RealValue.FEMPTY && Math.Abs(component.Acentricity.Value) > 1E-10)
 						{
-							compoundPropPut.FindProperty("ACEN", out find, out @fixed);
-							compoundPropPut.SetPointProperty("ACEN", @fixed, component.Acentricity.Value);
+							val3.FindProperty("ACEN", ref b2, ref b);
+							val3.SetPointProperty("ACEN", b, component.Acentricity.Value);
 							component2.Acentricity.Value = component.Acentricity.Value;
 						}
 						if (component.CostaldAcentricity.Value != RealValue.FEMPTY && Math.Abs(component.CostaldAcentricity.Value) > 1E-10)
 						{
-							compoundPropPut.FindProperty("COSTALDACEN", out find, out @fixed);
-							compoundPropPut.SetPointProperty("COSTALDACEN", @fixed, component.CostaldAcentricity.Value);
+							val3.FindProperty("COSTALDACEN", ref b2, ref b);
+							val3.SetPointProperty("COSTALDACEN", b, component.CostaldAcentricity.Value);
 							component2.CostaldAcentricity.Value = component.CostaldAcentricity.Value;
 						}
 						if (component.CostaldVolume.Value != RealValue.FEMPTY && Math.Abs(component.CostaldVolume.Value) > 1E-10)
 						{
-							compoundPropPut.FindProperty("COSTALDVCHAR", out find, out @fixed);
-							compoundPropPut.SetPointProperty("COSTALDVCHAR", @fixed, component.CostaldVolume.Value);
+							val3.FindProperty("COSTALDVCHAR", ref b2, ref b);
+							val3.SetPointProperty("COSTALDVCHAR", b, component.CostaldVolume.Value);
 							component2.CostaldVolume.Value = component.CostaldVolume.Value;
 						}
 						if (component.HeatOfFormation.Value != RealValue.FEMPTY && Math.Abs(component.HeatOfFormation.Value) > 1E-10)
 						{
-							compoundPropPut.FindProperty("IGHF25", out find, out @fixed);
-							compoundPropPut.SetPointProperty("IGHF25", @fixed, component.HeatOfFormation.Value);
+							val3.FindProperty("IGHF25", ref b2, ref b);
+							val3.SetPointProperty("IGHF25", b, component.HeatOfFormation.Value);
 							component2.HeatOfFormation.Value = component.HeatOfFormation.Value;
 						}
 						if (component.ViscosityThetaA.Value != RealValue.FEMPTY && Math.Abs(component.ViscosityThetaA.Value) > 1E-10)
 						{
-							compoundPropPut.FindProperty("THETAA", out find, out @fixed);
-							compoundPropPut.SetPointProperty("THETAA", @fixed, component.ViscosityThetaA.Value);
+							val3.FindProperty("THETAA", ref b2, ref b);
+							val3.SetPointProperty("THETAA", b, component.ViscosityThetaA.Value);
 							component2.ViscosityThetaA.Value = component.ViscosityThetaA.Value;
 						}
 						if (component.ViscosityThetaB.Value != RealValue.FEMPTY && Math.Abs(component.ViscosityThetaB.Value) > 1E-10)
 						{
-							compoundPropPut.FindProperty("THETAB", out find, out @fixed);
-							compoundPropPut.SetPointProperty("THETAB", @fixed, component.ViscosityThetaB.Value);
+							val3.FindProperty("THETAB", ref b2, ref b);
+							val3.SetPointProperty("THETAB", b, component.ViscosityThetaB.Value);
 							component2.ViscosityThetaB.Value = component.ViscosityThetaB.Value;
 						}
-						realArrayDisp = new COTHRealArrayClass();
-						realArrayDisp.Size = 10;
-						for (int i = 0; i < realArrayDisp.Size; i++)
+						val4 = (IRealArrayDisp)new COTHRealArrayClass();
+						val4.Size = 10;
+						for (int i = 0; i < val4.Size; i++)
 						{
-							num3 = component.VapourPressureCoeff(i).Value;
-							if (num3 != RealValue.FEMPTY && num3 != 0.0)
+							num4 = component.VapourPressureCoeff(i).Value;
+							if (num4 != RealValue.FEMPTY && num4 != 0.0)
 							{
 								flag = true;
 								break;
 							}
 						}
-						for (int j = 0; j < realArrayDisp.Size; j++)
+						for (int j = 0; j < val4.Size; j++)
 						{
-							num3 = component.VapourPressureCoeff(j).Value;
+							num4 = component.VapourPressureCoeff(j).Value;
 							if (flag)
 							{
-								realArrayDisp.set_IthValue(j, num3);
+								val4[j] = num4;
 							}
 							else
 							{
-								realArrayDisp.set_IthValue(j, RealValue.FEMPTY);
+								val4[j] = RealValue.FEMPTY;
 							}
-							component2.VapourPressureCoeff(j).Value = num3;
+							component2.VapourPressureCoeff(j).Value = num4;
 						}
 						if (flag)
 						{
-							compoundPropPut.FindProperty("VAPS", out find, out @fixed);
-							compoundPropPut.SetEquationProperty("VAPS", @fixed, tagEquationShapeEnum.PropCurveHYPDB5, 2.0, 5000.0, RealValue.FEMPTY, RealValue.FEMPTY, (AspenTech.Interop.ThContainers.IRealArrayDisp)realArrayDisp);
+							val3.FindProperty("VAPS", ref b2, ref b);
+							val3.SetEquationProperty("VAPS", b, (tagEquationShapeEnum)4, 2.0, 5000.0, RealValue.FEMPTY, RealValue.FEMPTY, (IRealArrayDisp)val4);
 						}
 						flag = false;
-						for (int k = 0; k < realArrayDisp.Size; k++)
+						for (int k = 0; k < val4.Size; k++)
 						{
-							num3 = component.VapourEnthalpyCoeff(k).Value;
-							if (num3 != RealValue.FEMPTY && num3 != 0.0)
+							num4 = component.VapourEnthalpyCoeff(k).Value;
+							if (num4 != RealValue.FEMPTY && num4 != 0.0)
 							{
 								flag = true;
 								break;
 							}
 						}
-						for (int l = 0; l < realArrayDisp.Size; l++)
+						for (int l = 0; l < val4.Size; l++)
 						{
-							num3 = component.VapourEnthalpyCoeff(l).Value;
+							num4 = component.VapourEnthalpyCoeff(l).Value;
 							if (flag)
 							{
-								realArrayDisp.set_IthValue(l, num3);
+								val4[l] = num4;
 							}
 							else
 							{
-								realArrayDisp.set_IthValue(l, RealValue.FEMPTY);
+								val4[l] = RealValue.FEMPTY;
 							}
-							component2.VapourEnthalpyCoeff(l).Value = num3;
+							component2.VapourEnthalpyCoeff(l).Value = num4;
 						}
 						if (flag)
 						{
-							compoundPropPut.FindProperty("IGH", out find, out @fixed);
-							compoundPropPut.SetEquationProperty("IGH", @fixed, tagEquationShapeEnum.PropCurveHYPDB3, 2.0, 5000.0, RealValue.FEMPTY, RealValue.FEMPTY, (AspenTech.Interop.ThContainers.IRealArrayDisp)realArrayDisp);
-							compoundPropPut.SetEquationProperty("IGCP", @fixed, tagEquationShapeEnum.PropCurveHYPDB9, 2.0, 5000.0, RealValue.FEMPTY, RealValue.FEMPTY, (AspenTech.Interop.ThContainers.IRealArrayDisp)realArrayDisp);
-							compoundPropPut.SetEquationProperty("IGS", @fixed, tagEquationShapeEnum.PropCurveHYPDB10, 2.0, 5000.0, RealValue.FEMPTY, RealValue.FEMPTY, (AspenTech.Interop.ThContainers.IRealArrayDisp)realArrayDisp);
+							val3.FindProperty("IGH", ref b2, ref b);
+							val3.SetEquationProperty("IGH", b, (tagEquationShapeEnum)2, 2.0, 5000.0, RealValue.FEMPTY, RealValue.FEMPTY, (IRealArrayDisp)val4);
+							val3.SetEquationProperty("IGCP", b, (tagEquationShapeEnum)9, 2.0, 5000.0, RealValue.FEMPTY, RealValue.FEMPTY, (IRealArrayDisp)val4);
+							val3.SetEquationProperty("IGS", b, (tagEquationShapeEnum)10, 2.0, 5000.0, RealValue.FEMPTY, RealValue.FEMPTY, (IRealArrayDisp)val4);
 						}
 						if (!mIsInitFromStrings)
 						{
-							mCompoundCollection.AddCompound(cOTHCompound);
-							HyprotechEstimatorClass hyprotechEstimatorClass = new HyprotechEstimatorClass();
-							object specProps = new object();
-							object specMethods = new object();
-							object errorLog = new object();
-							((AspenTech.Interop.HyprotechEstimator.IPurePropEstimator)hyprotechEstimatorClass).EstUnknownProps((object)cOTHCompound, 0, specProps, specMethods, errorLog, ref Status);
+							mCompoundCollection.AddCompound((object)val);
+							HyprotechEstimatorClass val5 = new HyprotechEstimatorClass();
+							object obj = new object();
+							object obj2 = new object();
+							object obj3 = new object();
+							((IPurePropEstimator)val5).EstUnknownProps((object)val, 0, obj, obj2, obj3, ref num5);
 						}
 						component2.Name = component.Name;
 						component2.ID = component.ID;
 					}
 				}
-				mPhaseCollection.Finalize(mCompoundCollection, 3, 1);
+				mPhaseCollection.Finalize((object)mCompoundCollection, 3, 1);
 				if (!mIsInitFromStrings)
 				{
-					mIPM.CreateIPs(mCompoundCollection, mDatabasePath);
-					mIPM.LoadIPObjects(mCompoundCollection);
+					mIPM.CreateIPs((object)mCompoundCollection, mDatabasePath);
+					mIPM.LoadIPObjects((object)mCompoundCollection);
 				}
-				mPropertyManager.HasModified(NotifyChange.CompColChanged);
+				mPropertyManager.HasModified((NotifyChange)1);
 				mReady = false;
 				mLastStreamID = Stream.StreamID;
 			}
@@ -12154,31 +12250,33 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 
 		protected void PropertyPackageSetup()
 		{
+			//IL_000c: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0016: Expected O, but got Unknown
 			try
 			{
 				if (mPropPkgSet)
 				{
 					mPropertyManager = new COTHPropertyManagerClass();
-					mPropertyManager.SetPropertyEnumerationRegistry(mPER);
-					mIPM.SetPropertyManager(mPropertyManager);
-					mFlashManager.Initialize(mPropertyManager);
-					mThermoProperty = mPropertyManager;
-					mPropertyManager.SetPropertyModel(mVapourPkg, 1);
-					mPropertyManager.SetPropertyModel(mLiquidPkg, 0);
-					mPropertyManager.SetPropModelCreatePropObjects(mFlashOptions, 0);
+					mPropertyManager.SetPropertyEnumerationRegistry((object)mPER);
+					mIPM.SetPropertyManager((object)mPropertyManager);
+					mFlashManager.Initialize((object)mPropertyManager);
+					mThermoProperty = (IThermoProperty)(object)mPropertyManager;
+					mPropertyManager.SetPropertyModel(mVapourPkg, (byte)1);
+					mPropertyManager.SetPropertyModel(mLiquidPkg, (byte)0);
+					mPropertyManager.SetPropModelCreatePropObjects(mFlashOptions, (byte)0);
 					if (mCompoundCollection.NumberOfCompounds > 0)
 					{
-						mIPM.CreateIPs(mCompoundCollection, mDatabasePath);
-						mIPM.LoadIPObjects(mCompoundCollection);
+						mIPM.CreateIPs((object)mCompoundCollection, mDatabasePath);
+						mIPM.LoadIPObjects((object)mCompoundCollection);
 					}
 				}
 				else
 				{
-					mPropertyManager.SetPropModelCreatePropObjects(mLiquidPkg, 1);
-					mPropertyManager.SetPropModelCreatePropObjects(mVapourPkg, 0);
+					mPropertyManager.SetPropModelCreatePropObjects(mLiquidPkg, (byte)1);
+					mPropertyManager.SetPropModelCreatePropObjects(mVapourPkg, (byte)0);
 				}
 				GetPropertyID();
-				mPropertyManager.HasModified(NotifyChange.CompColChanged);
+				mPropertyManager.HasModified((NotifyChange)1);
 				mPropPkgSet = true;
 			}
 			catch (Exception innerException)
@@ -12192,19 +12290,21 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 			int num = -32767;
 			double num2 = -32767.0;
 			int num3 = -32767;
-			AspenTech.Interop.ThUtility.IRealArrayDisp realArrayDisp = null;
+			IRealArrayDisp val = null;
 			double num4 = -32767.0;
 			try
 			{
-				mBasicPhase = mPhaseCollection.LocatePhase(AspenTech.Interop.ThContainers.tagPhaseTypeEnum.xptOverall, 0) as IBasicPhase;
+				ref IBasicPhase reference = ref mBasicPhase;
+				object obj = mPhaseCollection.LocatePhase((tagPhaseTypeEnum)1, 0);
+				reference = (IBasicPhase)((obj is IBasicPhase) ? obj : null);
 				mBasicPhase.ResetProperties(127);
-				realArrayDisp = mBasicPhase.MolarComposition as AspenTech.Interop.ThUtility.IRealArrayDisp;
+				object molarComposition = mBasicPhase.MolarComposition;
+				val = (IRealArrayDisp)((molarComposition is IRealArrayDisp) ? molarComposition : null);
 				num3 = Phs.NumberOfCompounds;
 				num4 = 0.0;
 				for (num = 0; num < num3; num++)
 				{
-					num2 = Phs.ComponentMoleFractions[num].Value;
-					realArrayDisp.set_IthValue(num, num2);
+					num2 = (val[num] = Phs.ComponentMoleFractions[num].Value);
 					num4 += num2;
 					if (Math.Abs(Phs.GetComponent(num).MolecularWeight.Value - 18.016) < 0.001)
 					{
@@ -12213,32 +12313,33 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 				}
 				if (Math.Abs(num4 - 1.0) < 0.001)
 				{
-					mBasicPhase.MolarComposition = realArrayDisp;
+					mBasicPhase.MolarComposition = val;
 					mReady = true;
 					if (checkHBase != BooleanSwitchEnum.On)
 					{
 						return;
 					}
-					ICOMExtensionHandler iCOMExtensionHandler = null;
+					ICOMExtensionHandler val2 = null;
 					try
 					{
-						iCOMExtensionHandler = mPropertyManager;
+						val2 = (ICOMExtensionHandler)(object)mPropertyManager;
 					}
 					catch (Exception ex)
 					{
 						LogMessage(MessageLogType.Note, "PP is not extensioned. " + ex.Message);
-						iCOMExtensionHandler = null;
+						val2 = null;
 					}
-					if (iCOMExtensionHandler != null)
+					if (val2 != null)
 					{
-						iCOMExtensionHandler.GetPropCalcBase("Enthalpy", ref whatBase);
+						val2.GetPropCalcBase("Enthalpy", ref whatBase);
 						hfArray = new double[num3];
 						hf = 0.0;
-						COTHCompound pVal = null;
+						COTHCompound val3 = null;
+						int num5 = default(int);
 						for (num = 0; num < num3; num++)
 						{
-							mCompoundCollection.GetBasicCompound(num, out pVal);
-							hfArray[num] = ((IBasicCompound)pVal).get_IGHF25(298.15, 101.3, tagExtrapolationEnum.eNoExtrapolation, out int _);
+							mCompoundCollection.GetBasicCompound(num, ref val3);
+							hfArray[num] = ((IBasicCompound)val3)[298.15, 101.3, (tagExtrapolationEnum)0, ref num5];
 							hf += hfArray[num] * Phs.ComponentMoleFractions[num].Value;
 						}
 					}
@@ -12254,7 +12355,7 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 					num3 = Phs.NumberOfCompounds;
 					for (num = 0; num < num3; num++)
 					{
-						num2 = realArrayDisp.get_IthValue(num);
+						num2 = val[num];
 						string aMessage = "Comp = " + (num + 1) + " : Mole Fraction = " + Phs.ComponentMoleFractions[num].Value.ToString("0.000000000");
 						LogMessage(MessageLogType.Error, aMessage);
 					}
@@ -12271,7 +12372,7 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 				if (mReady)
 				{
 					mPhaseCollection.ResetCollection(0);
-					mFlashManager.Flash(mPhaseCollection);
+					mFlashManager.Flash((object)mPhaseCollection);
 					return;
 				}
 				throw new Exception("Composition Not Ready");
@@ -12314,7 +12415,9 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 				{
 					throw new Exception("Temperature can not be set less than zero. ");
 				}
-				mBasicPhase = mPhaseCollection.LocatePhase(AspenTech.Interop.ThContainers.tagPhaseTypeEnum.xptOverall, 0) as IBasicPhase;
+				ref IBasicPhase reference = ref mBasicPhase;
+				object obj = mPhaseCollection.LocatePhase((tagPhaseTypeEnum)1, 0);
+				reference = (IBasicPhase)((obj is IBasicPhase) ? obj : null);
 				mBasicPhase.ResetProperties(128);
 				if (FT != FlashType.PTFlash)
 				{
@@ -12357,7 +12460,8 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 				}
 				if (checkHBase == BooleanSwitchEnum.On && whatBase == 0 && (FT == FlashType.PHFlash || FT == FlashType.THFlash || FT == FlashType.HVFlash))
 				{
-					mBasicPhase.Enthalpy -= hf;
+					IBasicPhase obj2 = mBasicPhase;
+					obj2.Enthalpy -= hf;
 				}
 			}
 			catch (Exception innerException)
@@ -12622,6 +12726,8 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 
 		protected virtual void UpdateStream(IFlowStream Stream, bool IsFullSet)
 		{
+			//IL_0084: Unknown result type (might be due to invalid IL or missing references)
+			//IL_008a: Invalid comparison between Unknown and I4
 			int num = -32767;
 			int num2 = -32767;
 			int num3 = -32767;
@@ -12642,8 +12748,10 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 				num2 = 0;
 				for (num = 0; num < num6; num++)
 				{
-					mBasicPhase = mPhaseCollection.GetEquilibriumPhase(num) as COTHPhase;
-					if (mBasicPhase.PhaseStatus == tagPhaseStatusEnum.xpsActivePhase)
+					ref IBasicPhase reference = ref mBasicPhase;
+					object equilibriumPhase = mPhaseCollection.GetEquilibriumPhase(num);
+					reference = (IBasicPhase)((equilibriumPhase is COTHPhase) ? equilibriumPhase : null);
+					if ((int)mBasicPhase.PhaseStatus == 1)
 					{
 						num2++;
 						phase2 = Stream.GetPhaseByID(num2);
@@ -12730,11 +12838,11 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 		{
 			IPhase phase = null;
 			int num = 0;
-			COTHCompound pVal = null;
+			COTHCompound val = null;
 			int num2 = -32726;
 			string text = null;
 			double num3 = -32767.0;
-			int pDependencies = -32767;
+			int num4 = -32767;
 			string text2 = null;
 			try
 			{
@@ -12751,10 +12859,10 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 				}
 				for (int i = 0; i < num; i++)
 				{
-					mCompoundCollection.GetBasicCompound(i, out pVal);
-					text = (pVal as COTHCompoundClass).Name;
-					num2 = pVal.HyprotechID;
-					num3 = ((IBasicCompound)pVal).get_MW(273.15, 100000.0, tagExtrapolationEnum.eNoExtrapolation, out pDependencies);
+					mCompoundCollection.GetBasicCompound(i, ref val);
+					text = ((COTHCompoundClass)((val is COTHCompoundClass) ? val : null)).Name;
+					num2 = ((IBasicCompound)val).HyprotechID;
+					num3 = ((IBasicCompound)val)[273.15, 100000.0, (tagExtrapolationEnum)0, ref num4];
 					text2 = ((num2 != 19 && !(Math.Abs(num3 - 18.016) < 0.001)) ? "" : "Water");
 					mComponents[i] = new Component(text, num2, num3, text2);
 					phase.GetComponent(i).UpdateByValue(mComponents[i]);
@@ -12878,23 +12986,25 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 			}
 			set
 			{
+				//IL_0039: Unknown result type (might be due to invalid IL or missing references)
+				//IL_0043: Expected O, but got Unknown
 				if (File.Exists(value) || checkFileNameFromFileList(mFlashFileList, value))
 				{
 					mFlashOptions = mThermoPath + getFileNameFromFileList(mFlashFileList, value);
 					mPropertyManager = new COTHPropertyManagerClass();
-					mPropertyManager.SetPropertyEnumerationRegistry(mPER);
-					mIPM.SetPropertyManager(mPropertyManager);
-					mFlashManager.Initialize(mPropertyManager);
-					mThermoProperty = mPropertyManager;
-					mPropertyManager.SetPropertyModel(mVapourPkg, 1);
-					mPropertyManager.SetPropertyModel(mLiquidPkg, 0);
-					mPropertyManager.SetPropModelCreatePropObjects(mFlashOptions, 0);
+					mPropertyManager.SetPropertyEnumerationRegistry((object)mPER);
+					mIPM.SetPropertyManager((object)mPropertyManager);
+					mFlashManager.Initialize((object)mPropertyManager);
+					mThermoProperty = (IThermoProperty)(object)mPropertyManager;
+					mPropertyManager.SetPropertyModel(mVapourPkg, (byte)1);
+					mPropertyManager.SetPropertyModel(mLiquidPkg, (byte)0);
+					mPropertyManager.SetPropModelCreatePropObjects(mFlashOptions, (byte)0);
 					if (mCompoundCollection.NumberOfCompounds > 0)
 					{
-						mIPM.CreateIPs(mCompoundCollection, AppendToThermoPath("databases"));
-						mIPM.LoadIPObjects(mCompoundCollection);
+						mIPM.CreateIPs((object)mCompoundCollection, AppendToThermoPath("databases"));
+						mIPM.LoadIPObjects((object)mCompoundCollection);
 					}
-					mPropertyManager.HasModified(NotifyChange.CompColChanged);
+					mPropertyManager.HasModified((NotifyChange)1);
 					return;
 				}
 				throw new FileNotFoundException("Flash Definition Does Not Exist");
@@ -13041,9 +13151,9 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 					mVapourPkg = mThermoPath + mVapourFileList[0];
 					if (mFlashControl != null)
 					{
-						num = mPER.GetPropertyIDByName("Pressure");
+						num = ((IPropertyEnumerationRegistry)mPER).GetPropertyIDByName("Pressure");
 						mFlashControl.GetVariable(num, out mDefPressureEstimate, out min, out max, out mDefPressureStep, out mDefPressureTol);
-						num = mPER.GetPropertyIDByName("Temperature");
+						num = ((IPropertyEnumerationRegistry)mPER).GetPropertyIDByName("Temperature");
 						mFlashControl.GetVariable(num, out mDefTemperatureEstimate, out min, out max, out mDefTemperatureStep, out mDefTemperatureTol);
 						mPressureEstimate = mDefPressureEstimate;
 						mPressureStep = mDefPressureStep;
@@ -13352,7 +13462,7 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 		{
 			bool flag = false;
 			ArrayList arrayList = new ArrayList();
-			string strPropertyName = "";
+			string text = "";
 			try
 			{
 				ArrayList modelOption = GetModelOption(phsType, propType, arrayList);
@@ -13364,7 +13474,7 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 				{
 					if ((string)modelOption[i] == optionName)
 					{
-						strPropertyName = (string)arrayList[i];
+						text = (string)arrayList[i];
 						flag = true;
 						break;
 					}
@@ -13372,16 +13482,16 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 				if (flag)
 				{
 					int propertyIDByType = getPropertyIDByType(propType);
-					IThermoPropertyManager1 thermoPropertyManager = mPropertyManager;
+					IThermoPropertyManager1 val = (IThermoPropertyManager1)(object)mPropertyManager;
 					if (phsType == PhaseType.Liquid)
 					{
-						thermoPropertyManager.SetDefaultPropertyMethodCreateObject(propertyIDByType, 4, strPropertyName, mCompoundCollection, mDatabasePath, mIPM);
+						val.SetDefaultPropertyMethodCreateObject(propertyIDByType, 4, text, (object)mCompoundCollection, mDatabasePath, (object)mIPM);
 					}
 					else
 					{
-						thermoPropertyManager.SetDefaultPropertyMethodCreateObject(propertyIDByType, 3, strPropertyName, mCompoundCollection, mDatabasePath, mIPM);
+						val.SetDefaultPropertyMethodCreateObject(propertyIDByType, 3, text, (object)mCompoundCollection, mDatabasePath, (object)mIPM);
 					}
-					mPropertyManager.HasModified(NotifyChange.CompColChanged);
+					mPropertyManager.HasModified((NotifyChange)1);
 					return;
 				}
 				throw new Exception("The option name specified is not available.");
@@ -13394,7 +13504,9 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 
 		public void PassBinaryInteractionParameters(double[,] bipArray)
 		{
-			COTHInteractionParametersClass cOTHInteractionParametersClass = null;
+			//IL_0048: Unknown result type (might be due to invalid IL or missing references)
+			//IL_004e: Expected O, but got Unknown
+			COTHInteractionParametersClass val = null;
 			int num = 0;
 			try
 			{
@@ -13405,21 +13517,21 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 					{
 						throw new ArgumentException("Array length is mismatched", "bipArray");
 					}
-					cOTHInteractionParametersClass = new COTHInteractionParametersClass();
-					cOTHInteractionParametersClass.ISetupInteractionParameters_ModelName = HysysPPName;
-					cOTHInteractionParametersClass.ISetupInteractionParameters_NumberOfPanes = nPanes;
-					cOTHInteractionParametersClass.ISetupInteractionParameters_Dimension = num;
+					val = new COTHInteractionParametersClass();
+					val.ModelName = HysysPPName;
+					val.NumberOfPanes = nPanes;
+					val.Dimension = num;
 					for (int i = 0; i < nPanes; i++)
 					{
 						for (int j = 0; j < num; j++)
 						{
 							for (int k = 0; k < num; k++)
 							{
-								cOTHInteractionParametersClass.set_value(i, j, k, bipArray[j, k]);
+								val[i, j, k] = bipArray[j, k];
 							}
 						}
 					}
-					mCompoundCollection.ICompoundCollectionSetup_InteractionParameters = cOTHInteractionParametersClass;
+					mCompoundCollection.InteractionParameters = val;
 					return;
 				}
 				throw new Exception("Unsupported Property Package model for this method. ");
@@ -13449,75 +13561,79 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 
 		private void initFromFiles(object hysysSecurity, string propMgrPath, string compCollPath, string extPkgPath, string extFlashPath)
 		{
-			XMLParser xMLParser = new HyprotechStreamingXMLParserClass();
-			ICOMExtensionHandler iCOMExtensionHandler = mPropertyManager;
+			//IL_0000: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0006: Expected O, but got Unknown
+			XMLParser val = (XMLParser)new HyprotechStreamingXMLParserClass();
+			ICOMExtensionHandler val2 = (ICOMExtensionHandler)(object)mPropertyManager;
 			try
 			{
 				nullify();
 				InitComThermoObjects();
 				if (propMgrPath != "")
 				{
-					AspenTech.Interop.HyprotechXML.XMLParserClient client = mPropertyManager as AspenTech.Interop.HyprotechXML.XMLParserClient;
-					xMLParser.ReadFile(propMgrPath, client, includeWhitespace: false, includeComments: false);
-					client = null;
+					COTHPropertyManagerClass obj = mPropertyManager;
+					XMLParserClient val3 = (XMLParserClient)(object)((obj is XMLParserClient) ? obj : null);
+					val.ReadFile(propMgrPath, val3, false, false);
+					val3 = null;
 				}
 				ccPopulated = false;
 				if (compCollPath != "")
 				{
-					AspenTech.Interop.HyprotechXML.XMLParserClient client = mCompoundCollection as AspenTech.Interop.HyprotechXML.XMLParserClient;
-					xMLParser.ReadFile(compCollPath, client, includeWhitespace: false, includeComments: false);
-					client = null;
+					COTHCompoundCollectionClass obj2 = mCompoundCollection;
+					XMLParserClient val3 = (XMLParserClient)(object)((obj2 is XMLParserClient) ? obj2 : null);
+					val.ReadFile(compCollPath, val3, false, false);
+					val3 = null;
 					ccPopulated = true;
 				}
 				if (extPkgPath != "")
 				{
-					bool BaseChanged = false;
-					string saveinfo;
+					bool flag = false;
+					string text;
 					using (StreamReader streamReader = new StreamReader(extPkgPath))
 					{
-						saveinfo = streamReader.ReadToEnd();
+						text = streamReader.ReadToEnd();
 					}
-					iCOMExtensionHandler.PkgRecall(saveinfo, ref BaseChanged);
+					val2.PkgRecall(text, ref flag);
 				}
 				if (extFlashPath != "")
 				{
-					string saveinfo2;
+					string text2;
 					using (StreamReader streamReader2 = new StreamReader(extFlashPath))
 					{
-						saveinfo2 = streamReader2.ReadToEnd();
+						text2 = streamReader2.ReadToEnd();
 					}
-					iCOMExtensionHandler.FlashRecall(saveinfo2);
+					val2.FlashRecall(text2);
 				}
 				((ICOTHHysysSecurity)mPropertyManager).PutApplicationInterface(hysysSecurity);
-				byte IsUsed = 0;
-				byte IsUsed2 = 0;
-				iCOMExtensionHandler.UseExtendedPropPkg(ref IsUsed);
-				iCOMExtensionHandler.UseExtendedFlash(ref IsUsed2);
-				bool num = IsUsed == 1;
-				bool flag = IsUsed2 == 1;
+				byte b = 0;
+				byte b2 = 0;
+				val2.UseExtendedPropPkg(ref b);
+				val2.UseExtendedFlash(ref b2);
+				bool num = b == 1;
+				bool flag2 = b2 == 1;
 				if (num)
 				{
-					int status = 0;
-					iCOMExtensionHandler.IsPkgSetup(ref status);
-					if (status != 0)
+					int num2 = 0;
+					val2.IsPkgSetup(ref num2);
+					if (num2 != 0)
 					{
 						throw new Exception("Property package not properly set up");
 					}
 				}
-				if (flag)
+				if (flag2)
 				{
-					object pExtFlash = new object();
-					iCOMExtensionHandler.GetExtendedFlash(ref pExtFlash);
-					IExtendedFlash obj = pExtFlash as IExtendedFlash;
-					int status2 = 0;
-					obj.SetupFlash(0, null, ref status2);
-					if (status2 != 0)
+					object obj3 = new object();
+					val2.GetExtendedFlash(ref obj3);
+					object obj4 = ((obj3 is IExtendedFlash) ? obj3 : null);
+					int num3 = 0;
+					((IExtendedFlash)obj4).SetupFlash(0, (object)null, ref num3);
+					if (num3 != 0)
 					{
 						throw new Exception("Error in setting up flash.");
 					}
-					int status3 = 0;
-					iCOMExtensionHandler.IsFlashSetup(ref status3);
-					if (status3 != 0)
+					int num4 = 0;
+					val2.IsFlashSetup(ref num4);
+					if (num4 != 0)
 					{
 						throw new Exception("Flash not properly set up");
 					}
@@ -13583,7 +13699,7 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 			double tol = -32767.0;
 			try
 			{
-				mPER.GetPropertyIDByName("Pressure");
+				((IPropertyEnumerationRegistry)mPER).GetPropertyIDByName("Pressure");
 				mFlashControl.GetVariable(mID_P, out defaultValue, out min, out max, out maxInc, out tol);
 				mFlashControl.PutVariable(mID_P, Pstart, min, max, Pstep, Ptol);
 			}
@@ -13602,7 +13718,7 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 			double tol = -32767.0;
 			try
 			{
-				mPER.GetPropertyIDByName("Temperature");
+				((IPropertyEnumerationRegistry)mPER).GetPropertyIDByName("Temperature");
 				mFlashControl.GetVariable(mID_T, out defaultValue, out min, out max, out maxInc, out tol);
 				mFlashControl.PutVariable(mID_T, Tstart, min, max, Tstep, Ttol);
 			}
@@ -13905,52 +14021,52 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 			string text2 = "";
 			string text3 = "";
 			string text4 = "";
-			AspenTech.Interop.ThPropManager.IXMLStore iXMLStore = propertyManager as AspenTech.Interop.ThPropManager.IXMLStore;
+			IXMLStore val = (IXMLStore)((propertyManager is IXMLStore) ? propertyManager : null);
 			try
 			{
 				StreamWriter streamWriter = new StreamWriter(text, append: false);
-				streamWriter.Write(iXMLStore.StoreAsXML());
+				streamWriter.Write(val.StoreAsXML());
 				streamWriter.Flush();
 				streamWriter.Close();
 				if (compoundCollection != null)
 				{
-					AspenTech.Interop.ThContainers.IXMLStore iXMLStore2 = compoundCollection as AspenTech.Interop.ThContainers.IXMLStore;
+					IXMLStore val2 = (IXMLStore)((compoundCollection is IXMLStore) ? compoundCollection : null);
 					text2 = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
 					StreamWriter streamWriter2 = new StreamWriter(text2, append: false);
-					streamWriter2.Write(iXMLStore2.StoreAsXML());
+					streamWriter2.Write(val2.StoreAsXML());
 					streamWriter2.Flush();
 					streamWriter2.Close();
 				}
-				ICOMExtensionHandler iCOMExtensionHandler = propertyManager as ICOMExtensionHandler;
-				byte IsUsed = 0;
-				byte IsUsed2 = 0;
-				iCOMExtensionHandler.UseExtendedPropPkg(ref IsUsed);
-				iCOMExtensionHandler.UseExtendedFlash(ref IsUsed2);
-				int num = ((IsUsed != 0) ? 1 : 0);
-				bool flag = ((IsUsed2 != 0) ? true : false);
+				ICOMExtensionHandler val3 = (ICOMExtensionHandler)((propertyManager is ICOMExtensionHandler) ? propertyManager : null);
+				byte b = 0;
+				byte b2 = 0;
+				val3.UseExtendedPropPkg(ref b);
+				val3.UseExtendedFlash(ref b2);
+				int num = ((b != 0) ? 1 : 0);
+				bool flag = ((b2 != 0) ? true : false);
 				if (num != 0)
 				{
 					text3 = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-					object pPropPkg = new object();
-					iCOMExtensionHandler.GetExtendedPropPkg(ref pPropPkg);
-					IExtendedPropPackage obj = pPropPkg as IExtendedPropPackage;
-					string saveinfo = "";
-					obj.PkgSave(ref saveinfo);
+					object obj = new object();
+					val3.GetExtendedPropPkg(ref obj);
+					object obj2 = ((obj is IExtendedPropPackage) ? obj : null);
+					string value = "";
+					((IExtendedPropPackage)obj2).PkgSave(ref value);
 					StreamWriter streamWriter3 = new StreamWriter(text3, append: false);
-					streamWriter3.Write(saveinfo);
+					streamWriter3.Write(value);
 					streamWriter3.Flush();
 					streamWriter3.Close();
 				}
 				if (flag)
 				{
 					text4 = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-					object pExtFlash = new object();
-					iCOMExtensionHandler.GetExtendedFlash(ref pExtFlash);
-					IExtendedFlash obj2 = pExtFlash as IExtendedFlash;
-					string saveinfo2 = "";
-					obj2.FlashSave(ref saveinfo2);
+					object obj3 = new object();
+					val3.GetExtendedFlash(ref obj3);
+					object obj4 = ((obj3 is IExtendedFlash) ? obj3 : null);
+					string value2 = "";
+					((IExtendedFlash)obj4).FlashSave(ref value2);
 					StreamWriter streamWriter4 = new StreamWriter(text4, append: false);
-					streamWriter4.Write(saveinfo2);
+					streamWriter4.Write(value2);
 					streamWriter4.Flush();
 					streamWriter4.Close();
 				}
@@ -13998,75 +14114,79 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 
 		private void initFromFiles(object hysysSecurity, string propMgrPath, string compCollPath, string extPkgPath, string extFlashPath)
 		{
-			XMLParser xMLParser = new HyprotechStreamingXMLParserClass();
-			ICOMExtensionHandler iCOMExtensionHandler = mPropertyManager;
+			//IL_0000: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0006: Expected O, but got Unknown
+			XMLParser val = (XMLParser)new HyprotechStreamingXMLParserClass();
+			ICOMExtensionHandler val2 = (ICOMExtensionHandler)(object)mPropertyManager;
 			try
 			{
 				nullify();
 				InitComThermoObjects();
 				if (propMgrPath != "")
 				{
-					AspenTech.Interop.HyprotechXML.XMLParserClient client = mPropertyManager as AspenTech.Interop.HyprotechXML.XMLParserClient;
-					xMLParser.ReadFile(propMgrPath, client, includeWhitespace: false, includeComments: false);
-					client = null;
+					COTHPropertyManagerClass obj = mPropertyManager;
+					XMLParserClient val3 = (XMLParserClient)(object)((obj is XMLParserClient) ? obj : null);
+					val.ReadFile(propMgrPath, val3, false, false);
+					val3 = null;
 				}
 				ccPopulated = false;
 				if (compCollPath != "")
 				{
-					AspenTech.Interop.HyprotechXML.XMLParserClient client = mCompoundCollection as AspenTech.Interop.HyprotechXML.XMLParserClient;
-					xMLParser.ReadFile(compCollPath, client, includeWhitespace: false, includeComments: false);
-					client = null;
+					COTHCompoundCollectionClass obj2 = mCompoundCollection;
+					XMLParserClient val3 = (XMLParserClient)(object)((obj2 is XMLParserClient) ? obj2 : null);
+					val.ReadFile(compCollPath, val3, false, false);
+					val3 = null;
 					ccPopulated = true;
 				}
 				if (extPkgPath != "")
 				{
-					bool BaseChanged = false;
-					string saveinfo;
+					bool flag = false;
+					string text;
 					using (StreamReader streamReader = new StreamReader(extPkgPath))
 					{
-						saveinfo = streamReader.ReadToEnd();
+						text = streamReader.ReadToEnd();
 					}
-					iCOMExtensionHandler.PkgRecall(saveinfo, ref BaseChanged);
+					val2.PkgRecall(text, ref flag);
 				}
 				if (extFlashPath != "")
 				{
-					string saveinfo2;
+					string text2;
 					using (StreamReader streamReader2 = new StreamReader(extFlashPath))
 					{
-						saveinfo2 = streamReader2.ReadToEnd();
+						text2 = streamReader2.ReadToEnd();
 					}
-					iCOMExtensionHandler.FlashRecall(saveinfo2);
+					val2.FlashRecall(text2);
 				}
 				((ICOTHHysysSecurity)mPropertyManager).PutApplicationInterface(hysysSecurity);
-				byte IsUsed = 0;
-				byte IsUsed2 = 0;
-				iCOMExtensionHandler.UseExtendedPropPkg(ref IsUsed);
-				iCOMExtensionHandler.UseExtendedFlash(ref IsUsed2);
-				bool num = IsUsed == 1;
-				bool flag = IsUsed2 == 1;
+				byte b = 0;
+				byte b2 = 0;
+				val2.UseExtendedPropPkg(ref b);
+				val2.UseExtendedFlash(ref b2);
+				bool num = b == 1;
+				bool flag2 = b2 == 1;
 				if (num)
 				{
-					int status = 0;
-					iCOMExtensionHandler.IsPkgSetup(ref status);
-					if (status != 0)
+					int num2 = 0;
+					val2.IsPkgSetup(ref num2);
+					if (num2 != 0)
 					{
 						throw new Exception("Property package not properly set up");
 					}
 				}
-				if (flag)
+				if (flag2)
 				{
-					object pExtFlash = new object();
-					iCOMExtensionHandler.GetExtendedFlash(ref pExtFlash);
-					IExtendedFlash obj = pExtFlash as IExtendedFlash;
-					int status2 = 0;
-					obj.SetupFlash(0, null, ref status2);
-					if (status2 != 0)
+					object obj3 = new object();
+					val2.GetExtendedFlash(ref obj3);
+					object obj4 = ((obj3 is IExtendedFlash) ? obj3 : null);
+					int num3 = 0;
+					((IExtendedFlash)obj4).SetupFlash(0, (object)null, ref num3);
+					if (num3 != 0)
 					{
 						throw new Exception("Error in setting up flash.");
 					}
-					int status3 = 0;
-					iCOMExtensionHandler.IsFlashSetup(ref status3);
-					if (status3 != 0)
+					int num4 = 0;
+					val2.IsFlashSetup(ref num4);
+					if (num4 != 0)
 					{
 						throw new Exception("Flash not properly set up");
 					}
@@ -14080,7 +14200,9 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 
 		private void initMultiflash(IFlowStream myStream)
 		{
-			XMLParser xMLParser = new HyprotechStreamingXMLParserClass();
+			//IL_0000: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0006: Expected O, but got Unknown
+			XMLParser val = (XMLParser)new HyprotechStreamingXMLParserClass();
 			string text = "\r\n";
 			string text2 = "<PropManagerSettings VERSION=\"2\">" + text;
 			text2 = text2 + "<FlashSettings>" + text;
@@ -14119,15 +14241,16 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 				nullify();
 				InitComThermoObjects();
 				InitDefaults();
-				AspenTech.Interop.HyprotechXML.XMLParserClient client = mPropertyManager as AspenTech.Interop.HyprotechXML.XMLParserClient;
-				xMLParser.ReadText(text2, client, includeWhitespace: false, includeComments: false);
-				client = null;
-				ICOMExtensionHandler iCOMExtensionHandler = mPropertyManager;
+				COTHPropertyManagerClass obj = mPropertyManager;
+				XMLParserClient val2 = (XMLParserClient)(object)((obj is XMLParserClient) ? obj : null);
+				val.ReadText(text2, val2, false, false);
+				val2 = null;
+				ICOMExtensionHandler val3 = (ICOMExtensionHandler)(object)mPropertyManager;
 				try
 				{
-					object pPropPkg = null;
-					iCOMExtensionHandler.GetExtendedPropPkg(ref pPropPkg);
-					if (pPropPkg is ICOTHHydraulicsSecurity iCOTHHydraulicsSecurity)
+					object obj2 = null;
+					val3.GetExtendedPropPkg(ref obj2);
+					if (obj2 is ICOTHHydraulicsSecurity iCOTHHydraulicsSecurity)
 					{
 						if (mHysysSecurity == null && server == null)
 						{
@@ -14140,9 +14263,9 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 				catch
 				{
 				}
-				bool BaseChanged = false;
-				iCOMExtensionHandler.PkgRecall(mfProps(myStream), ref BaseChanged);
-				iCOMExtensionHandler.FlashRecall(mfFlash());
+				bool flag = false;
+				val3.PkgRecall(mfProps(myStream), ref flag);
+				val3.FlashRecall(mfFlash());
 				try
 				{
 					((ICOTHHysysSecurity)mPropertyManager).PutApplicationInterface(mHysysSecurity);
@@ -14151,35 +14274,35 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 				{
 					throw new Exception("Failed to set COMThermo security.", innerException);
 				}
-				byte IsUsed = 0;
-				byte IsUsed2 = 0;
-				iCOMExtensionHandler.UseExtendedPropPkg(ref IsUsed);
-				iCOMExtensionHandler.UseExtendedFlash(ref IsUsed2);
-				bool num = IsUsed == 1;
-				bool flag = IsUsed2 == 1;
+				byte b = 0;
+				byte b2 = 0;
+				val3.UseExtendedPropPkg(ref b);
+				val3.UseExtendedFlash(ref b2);
+				bool num = b == 1;
+				bool flag2 = b2 == 1;
 				if (num)
 				{
-					int status = 0;
-					iCOMExtensionHandler.IsPkgSetup(ref status);
-					if (status != 0)
+					int num2 = 0;
+					val3.IsPkgSetup(ref num2);
+					if (num2 != 0)
 					{
 						throw new Exception("Property package not properly set up");
 					}
 				}
-				if (flag)
+				if (flag2)
 				{
-					object pExtFlash = new object();
-					iCOMExtensionHandler.GetExtendedFlash(ref pExtFlash);
-					IExtendedFlash obj2 = pExtFlash as IExtendedFlash;
-					int status2 = 0;
-					obj2.SetupFlash(0, null, ref status2);
-					if (status2 != 0)
+					object obj4 = new object();
+					val3.GetExtendedFlash(ref obj4);
+					object obj5 = ((obj4 is IExtendedFlash) ? obj4 : null);
+					int num3 = 0;
+					((IExtendedFlash)obj5).SetupFlash(0, (object)null, ref num3);
+					if (num3 != 0)
 					{
 						throw new Exception("Error in setting up flash.");
 					}
-					int status3 = 0;
-					iCOMExtensionHandler.IsFlashSetup(ref status3);
-					if (status3 != 0)
+					int num4 = 0;
+					val3.IsFlashSetup(ref num4);
+					if (num4 != 0)
 					{
 						throw new Exception("Flash not properly set up");
 					}
@@ -14193,22 +14316,24 @@ namespace AspenTech.Hydraulics.PropertyUtilities
 
 		private string mfProps(IFlowStream myStream)
 		{
+			//IL_0042: Unknown result type (might be due to invalid IL or missing references)
+			//IL_0048: Expected O, but got Unknown
 			string text = "";
 			try
 			{
 				text += getMFLFileFirstPart();
 				string text2 = "puredata INFODATA ; components ";
 				IPhase phaseByID = myStream.GetPhaseByID(0);
-				COTHCompound cOTHCompound = null;
+				COTHCompound val = null;
 				int num = 0;
 				while (num < phaseByID.NumberOfCompounds)
 				{
 					num++;
 					if (!phaseByID.GetComponent(num - 1).IsHypothetical)
 					{
-						cOTHCompound = new COTHCompoundClass();
-						(cOTHCompound as ICompoundInitFromHypDB).Init(mDatabasePath, phaseByID.GetComponent(num - 1).ID);
-						text2 = text2 + num + " " + (cOTHCompound as ICompoundID).CASN + " ";
+						val = (COTHCompound)new COTHCompoundClass();
+						((ICompoundInitFromHypDB)((val is ICompoundInitFromHypDB) ? val : null)).Init(mDatabasePath, phaseByID.GetComponent(num - 1).ID);
+						text2 = text2 + num + " " + ((ICompoundID)((val is ICompoundID) ? val : null)).CASN + " ";
 						text = text + text2 + "\r\r\n";
 						text2 = " ; puredata INFODATA ; components ";
 						continue;
@@ -20641,5 +20766,3 @@ namespace AspenTech.Interop.ThMultiflashExtPkg
 		void SetAsHydraulics([In] byte bYes);
 	}
 }
-You are not using the latest version of the tool, please update.
-Latest version is '11.2.0.10050' (yours is '9.1.0.7988')

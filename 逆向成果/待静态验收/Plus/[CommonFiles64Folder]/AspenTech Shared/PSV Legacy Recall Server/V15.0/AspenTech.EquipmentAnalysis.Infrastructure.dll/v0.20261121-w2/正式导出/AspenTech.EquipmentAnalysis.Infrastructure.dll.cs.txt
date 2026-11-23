@@ -52,7 +52,7 @@ namespace AspenTech.EquipmentAnalysis.Infrastructure
 				string[] array = childPaths;
 				foreach (string text in array)
 				{
-					string item = CxsConverter.ValueToString(currentcase.BatchGet(text, "type", null));
+					string item = CxsConverter.ValueToString(currentcase.BatchGet(text, "type", (string)null));
 					if (Common.PSVColFlowshtTypeList.Contains(item))
 					{
 						string key = CxsPath.LeafId(text).Trim();
@@ -78,7 +78,7 @@ namespace AspenTech.EquipmentAnalysis.Infrastructure
 			string[] childPaths = currentcase.GetChildPaths(datapath);
 			foreach (string text in childPaths)
 			{
-				if (CxsConverter.ValueToString(currentcase.BatchGet(text, "type", null)) != "MaterialStreamObject")
+				if (CxsConverter.ValueToString(currentcase.BatchGet(text, "type", (string)null)) != "MaterialStreamObject")
 				{
 					continue;
 				}
@@ -90,7 +90,7 @@ namespace AspenTech.EquipmentAnalysis.Infrastructure
 				}
 				if (childPaths2.Count() == 1)
 				{
-					string text2 = CxsConverter.ValueToString(currentcase.BatchGet(childPaths2[0], "display_name", null));
+					string text2 = CxsConverter.ValueToString(currentcase.BatchGet(childPaths2[0], "display_name", (string)null));
 					if (!string.IsNullOrEmpty(text2) && text2.ToLower().StartsWith("feederblock"))
 					{
 						string[] childPaths3 = currentcase.GetChildPaths(string.Format("{0}.{1}", text, "Downstream Unit Operations"));
@@ -100,7 +100,7 @@ namespace AspenTech.EquipmentAnalysis.Infrastructure
 						}
 						else if (childPaths3.Count() == 1)
 						{
-							string text3 = CxsConverter.ValueToString(currentcase.BatchGet(childPaths3[0], "display_name", null));
+							string text3 = CxsConverter.ValueToString(currentcase.BatchGet(childPaths3[0], "display_name", (string)null));
 							if (!string.IsNullOrEmpty(text3) && !text3.ToLower().StartsWith("productblock"))
 							{
 								value = true;
@@ -126,12 +126,22 @@ namespace AspenTech.EquipmentAnalysis.Infrastructure
 			{
 				datapath = datapath.Substring(4);
 			}
-			return currentcase.TopNode?.ResolveNode(datapath);
+			CxsNode topNode = currentcase.TopNode;
+			if (topNode != null)
+			{
+				return topNode.ResolveNode(datapath);
+			}
+			return null;
 		}
 
 		private static List<CxsNode> GetChildren(string datapath, CxsCase currentcase)
 		{
-			return GetNodeByPath(datapath, currentcase)?.ChildNodes.ToList();
+			CxsNode nodeByPath = GetNodeByPath(datapath, currentcase);
+			if (nodeByPath != null)
+			{
+				return ((IEnumerable<CxsNode>)nodeByPath.ChildNodes).ToList();
+			}
+			return null;
 		}
 
 		public static List<CxsNodeInfo> BuildNodeInfo(string datapath, CxsCase currentcase)
@@ -199,19 +209,21 @@ namespace AspenTech.EquipmentAnalysis.Infrastructure
 							containertype = item.ContainerType
 						};
 						_ = item.Id;
-						CxsNode cxsNode = item.ResolveNode("Upstream Unit Operations");
-						if (cxsNode != null && cxsNode.HasChildren)
+						CxsNode val = item.ResolveNode("Upstream Unit Operations");
+						if (val != null && val.HasChildren)
 						{
-							value.upstreamUo = cxsNode.ChildNodes.FirstOrDefault()?.Id ?? string.Empty;
+							CxsNode val2 = ((IEnumerable<CxsNode>)val.ChildNodes).FirstOrDefault();
+							value.upstreamUo = ((val2 != null) ? val2.Id : null) ?? string.Empty;
 						}
 						else
 						{
 							value.upstreamUo = string.Empty;
 						}
-						CxsNode cxsNode2 = item.ResolveNode("Downstream Unit Operations");
-						if (cxsNode2 != null && cxsNode2.HasChildren)
+						CxsNode val3 = item.ResolveNode("Downstream Unit Operations");
+						if (val3 != null && val3.HasChildren)
 						{
-							value.downstreamUo = cxsNode2.ChildNodes.FirstOrDefault()?.Id ?? string.Empty;
+							CxsNode val4 = ((IEnumerable<CxsNode>)val3.ChildNodes).FirstOrDefault();
+							value.downstreamUo = ((val4 != null) ? val4.Id : null) ?? string.Empty;
 						}
 						else
 						{
@@ -229,12 +241,22 @@ namespace AspenTech.EquipmentAnalysis.Infrastructure
 
 		public static CxsNode GetPSVSizingNode(CxsCase currentcase, string path)
 		{
-			return GetNodeByPath(path, currentcase)?.ResolveNode("PSV Sizing Calculation");
+			CxsNode nodeByPath = GetNodeByPath(path, currentcase);
+			if (nodeByPath == null)
+			{
+				return null;
+			}
+			return nodeByPath.ResolveNode("PSV Sizing Calculation");
 		}
 
 		public static CxsNode GetEmergencyScenarioNode(CxsCase currentcase, string path)
 		{
-			return GetNodeByPath(path, currentcase)?.ResolveNode("Emergency Scenario");
+			CxsNode nodeByPath = GetNodeByPath(path, currentcase);
+			if (nodeByPath == null)
+			{
+				return null;
+			}
+			return nodeByPath.ResolveNode("Emergency Scenario");
 		}
 
 		private static string GetChildDataType(CxsCase currentcase, string path)
@@ -261,23 +283,23 @@ namespace AspenTech.EquipmentAnalysis.Infrastructure
 	{
 		public static CxsNodeInfo GetValveNodeInfo(CxsCase currentcase, string path)
 		{
-			CxsNode cxsNode = null;
+			CxsNode val = null;
 			CxsNodeInfo result = default(CxsNodeInfo);
-			cxsNode = AspenCaseDataRequest.GetPSVSizingNode(currentcase, path);
-			if (cxsNode != null && !string.IsNullOrEmpty(cxsNode.DisplayValue))
+			val = AspenCaseDataRequest.GetPSVSizingNode(currentcase, path);
+			if (val != null && !string.IsNullOrEmpty(val.DisplayValue))
 			{
-				result.id = cxsNode.DisplayValue;
-				result.path = cxsNode.Path;
-				result.type = cxsNode.NodeType;
-				result.isleaf = cxsNode.IsLeaf;
-				result.containertype = cxsNode.ContainerType;
-				if (cxsNode.ChildNodes.Count > 0)
+				result.id = val.DisplayValue;
+				result.path = val.Path;
+				result.type = val.NodeType;
+				result.isleaf = val.IsLeaf;
+				result.containertype = val.ContainerType;
+				if (((Collection<CxsNode>)(object)val.ChildNodes).Count > 0)
 				{
-					for (int i = 0; i < cxsNode.ChildNodes.Count; i++)
+					for (int i = 0; i < ((Collection<CxsNode>)(object)val.ChildNodes).Count; i++)
 					{
-						if (cxsNode.ChildNodes[i].Id.Trim() == "PRD Type")
+						if (((Collection<CxsNode>)(object)val.ChildNodes)[i].Id.Trim() == "PRD Type")
 						{
-							string text = cxsNode.ChildNodes[i].DisplayValue.Trim();
+							string text = ((Collection<CxsNode>)(object)val.ChildNodes)[i].DisplayValue.Trim();
 							result.prdType = ((text == "Rupture Disk") ? ReliefDeviceType.RuptureDisk : ReliefDeviceType.Psv);
 							break;
 						}
@@ -289,13 +311,13 @@ namespace AspenTech.EquipmentAnalysis.Infrastructure
 
 		public static CxsNodeInfo GetScenarioNodeInfo(CxsCase currentcase, string path, int index)
 		{
-			CxsNode cxsNode = null;
+			CxsNode val = null;
 			CxsNodeInfo result = default(CxsNodeInfo);
-			cxsNode = AspenCaseDataRequest.GetEmergencyScenarioNode(currentcase, path);
-			if (cxsNode != null && cxsNode.ChildNodes.Count != 0)
+			val = AspenCaseDataRequest.GetEmergencyScenarioNode(currentcase, path);
+			if (val != null && ((Collection<CxsNode>)(object)val.ChildNodes).Count != 0)
 			{
 				string[] array = CxsConverter.ValueToStringArray(currentcase.BatchGet(string.Format("{0}.{1}", path, "Emergency Scenario"), "child_ids"));
-				if (array != null && array.Count() > 0 && array.Count() != cxsNode.ChildNodes.Count)
+				if (array != null && array.Count() > 0 && array.Count() != ((Collection<CxsNode>)(object)val.ChildNodes).Count)
 				{
 					string path2 = CxsPath.CombinePathAndId(string.Format("{0}.{1}", path, "Emergency Scenario"), array[index]);
 					result.id = array[index];
@@ -304,16 +326,16 @@ namespace AspenTech.EquipmentAnalysis.Infrastructure
 					result.isleaf = true;
 					result.containertype = "";
 				}
-				else if (index < cxsNode.ChildNodes.Count)
+				else if (index < ((Collection<CxsNode>)(object)val.ChildNodes).Count)
 				{
-					CxsNode cxsNode2 = cxsNode.ChildNodes[index];
-					if (!string.IsNullOrEmpty(cxsNode2.DisplayValue))
+					CxsNode val2 = ((Collection<CxsNode>)(object)val.ChildNodes)[index];
+					if (!string.IsNullOrEmpty(val2.DisplayValue))
 					{
-						result.id = cxsNode2.DisplayValue;
-						result.path = cxsNode2.Path;
-						result.type = cxsNode2.NodeType;
-						result.isleaf = cxsNode2.IsLeaf;
-						result.containertype = cxsNode2.ContainerType;
+						result.id = val2.DisplayValue;
+						result.path = val2.Path;
+						result.type = val2.NodeType;
+						result.isleaf = val2.IsLeaf;
+						result.containertype = val2.ContainerType;
 					}
 				}
 			}
@@ -322,13 +344,13 @@ namespace AspenTech.EquipmentAnalysis.Infrastructure
 
 		public static List<CxsNodeInfo> GetScenarioNodesInfo(CxsCase currentcase, string path)
 		{
-			CxsNode cxsNode = null;
-			cxsNode = AspenCaseDataRequest.GetEmergencyScenarioNode(currentcase, path);
+			CxsNode val = null;
+			val = AspenCaseDataRequest.GetEmergencyScenarioNode(currentcase, path);
 			List<CxsNodeInfo> list = new List<CxsNodeInfo>();
-			if (cxsNode != null && cxsNode.ChildNodes.Count != 0)
+			if (val != null && ((Collection<CxsNode>)(object)val.ChildNodes).Count != 0)
 			{
 				string[] array = CxsConverter.ValueToStringArray(currentcase.BatchGet(string.Format("{0}.{1}", path, "Emergency Scenario"), "child_ids"));
-				if (array != null && array.Count() > 0 && array.Count() != cxsNode.ChildNodes.Count)
+				if (array != null && array.Count() > 0 && array.Count() != ((Collection<CxsNode>)(object)val.ChildNodes).Count)
 				{
 					for (int i = 0; i < array.Count(); i++)
 					{
@@ -344,17 +366,17 @@ namespace AspenTech.EquipmentAnalysis.Infrastructure
 				}
 				else
 				{
-					foreach (CxsNode childNode in cxsNode.ChildNodes)
+					foreach (CxsNode item3 in (Collection<CxsNode>)(object)val.ChildNodes)
 					{
-						if (childNode != null)
+						if (item3 != null)
 						{
 							CxsNodeInfo item2 = new CxsNodeInfo
 							{
-								id = childNode.DisplayValue,
-								path = childNode.Path,
-								type = childNode.NodeType,
-								isleaf = childNode.IsLeaf,
-								containertype = childNode.ContainerType
+								id = item3.DisplayValue,
+								path = item3.Path,
+								type = item3.NodeType,
+								isleaf = item3.IsLeaf,
+								containertype = item3.ContainerType
 							};
 							list.Add(item2);
 						}
@@ -457,6 +479,8 @@ namespace AspenTech.EquipmentAnalysis.Infrastructure
 		{
 			private get
 			{
+				//IL_0016: Unknown result type (might be due to invalid IL or missing references)
+				//IL_001c: Expected O, but got Unknown
 				if (uContainerReference.IsAlive)
 				{
 					return (IUnityContainer)uContainerReference.Target;
@@ -475,7 +499,7 @@ namespace AspenTech.EquipmentAnalysis.Infrastructure
 			{
 				try
 				{
-					return Container.Resolve<CxsCase>(Array.Empty<ResolverOverride>());
+					return UnityContainerExtensions.Resolve<CxsCase>(Container, Array.Empty<ResolverOverride>());
 				}
 				catch
 				{
@@ -490,9 +514,9 @@ namespace AspenTech.EquipmentAnalysis.Infrastructure
 			{
 				try
 				{
-					CxsDataProvider cxsDataProvider = Container.Resolve<CxsDataProvider>(Array.Empty<ResolverOverride>());
-					cxsDataProvider.Case = MyCase;
-					return cxsDataProvider;
+					CxsDataProvider obj = UnityContainerExtensions.Resolve<CxsDataProvider>(Container, Array.Empty<ResolverOverride>());
+					obj.Case = MyCase;
+					return obj;
 				}
 				catch
 				{
@@ -1781,7 +1805,7 @@ namespace AspenTech.EquipmentAnalysis.Infrastructure
 			{
 				throw new ArgumentNullException("unityContainer");
 			}
-			unityContainer.TryResolve<IEquipmentAnalysisInContextGuidanceAgent>()?.SetHelpId(element, helpId);
+			CxvUnityContainerExtensions.TryResolve<IEquipmentAnalysisInContextGuidanceAgent>(unityContainer)?.SetHelpId(element, helpId);
 		}
 
 		public static UIElement CreateInContextGuidanceButtonForTabControl(this IUnityContainer unityContainer, TabControl target)
@@ -1790,7 +1814,7 @@ namespace AspenTech.EquipmentAnalysis.Infrastructure
 			{
 				throw new ArgumentNullException("unityContainer");
 			}
-			return unityContainer.TryResolve<IEquipmentAnalysisInContextGuidanceAgent>()?.CreateInContextGuidanceButtonForTabControl(target);
+			return CxvUnityContainerExtensions.TryResolve<IEquipmentAnalysisInContextGuidanceAgent>(unityContainer)?.CreateInContextGuidanceButtonForTabControl(target);
 		}
 	}
 	public interface INotifyInvalidValueEntered
@@ -2990,7 +3014,7 @@ namespace AspenTech.EquipmentAnalysis.Infrastructure.Events
 	{
 		public AddValveNodeEvent()
 		{
-			base.RoutingStrategy = CompositeEventRoutingStrategy.ChildrenThenParents;
+			base.RoutingStrategy = (CompositeEventRoutingStrategy)2;
 		}
 	}
 	public class AddValveNodeEventArgs : EventArgs
@@ -3023,7 +3047,7 @@ namespace AspenTech.EquipmentAnalysis.Infrastructure.Events
 	{
 		public AddEmergencyScenarioNodeEvent()
 		{
-			base.RoutingStrategy = CompositeEventRoutingStrategy.ChildrenThenParents;
+			base.RoutingStrategy = (CompositeEventRoutingStrategy)2;
 		}
 	}
 	public class ViewEmergencyScenarioNodeEventArgs : EventArgs
@@ -3040,7 +3064,7 @@ namespace AspenTech.EquipmentAnalysis.Infrastructure.Events
 	{
 		public ViewEmergencyScenarioNodeEvent()
 		{
-			base.RoutingStrategy = CompositeEventRoutingStrategy.ChildrenThenParents;
+			base.RoutingStrategy = (CompositeEventRoutingStrategy)2;
 		}
 	}
 	public class DeleteValveNodeEventArgs : EventArgs
@@ -3051,7 +3075,7 @@ namespace AspenTech.EquipmentAnalysis.Infrastructure.Events
 	{
 		public DeleteValveNodeEvent()
 		{
-			base.RoutingStrategy = CompositeEventRoutingStrategy.ChildrenThenParents;
+			base.RoutingStrategy = (CompositeEventRoutingStrategy)2;
 		}
 	}
 	public class PasteNodeEventArgs : EventArgs
@@ -3066,7 +3090,7 @@ namespace AspenTech.EquipmentAnalysis.Infrastructure.Events
 	{
 		public PasteNodeEvent()
 		{
-			base.RoutingStrategy = CompositeEventRoutingStrategy.ChildrenThenParents;
+			base.RoutingStrategy = (CompositeEventRoutingStrategy)2;
 		}
 	}
 	public class DeleteScenarioEventArgs : EventArgs
@@ -3077,7 +3101,7 @@ namespace AspenTech.EquipmentAnalysis.Infrastructure.Events
 	{
 		public DeleteScenarioNodeEvent()
 		{
-			base.RoutingStrategy = CompositeEventRoutingStrategy.ChildrenThenParents;
+			base.RoutingStrategy = (CompositeEventRoutingStrategy)2;
 		}
 	}
 	public class SafetyScreenCreatedEventArgs : EventArgs
@@ -3138,7 +3162,7 @@ namespace AspenTech.EquipmentAnalysis.Infrastructure.Events
 	{
 		public PSVDesignCodeChangedEvent()
 		{
-			base.RoutingStrategy = CompositeEventRoutingStrategy.ParentsThenChildren;
+			base.RoutingStrategy = (CompositeEventRoutingStrategy)3;
 		}
 	}
 	public enum InvalidValueErrorType
@@ -3197,7 +3221,7 @@ namespace AspenTech.EquipmentAnalysis.Infrastructure.Events
 	{
 		public NavigateToFormTabEvent()
 		{
-			base.RoutingStrategy = CompositeEventRoutingStrategy.FirstOfParentsThenChildren;
+			base.RoutingStrategy = (CompositeEventRoutingStrategy)4;
 		}
 	}
 	public class NavigateToFormTabEventArgs : EventArgs
@@ -3238,7 +3262,7 @@ namespace AspenTech.EquipmentAnalysis.Infrastructure.Events
 	{
 		public PSVOwnerStreamChangedEvent()
 		{
-			base.RoutingStrategy = CompositeEventRoutingStrategy.ChildrenThenParents;
+			base.RoutingStrategy = (CompositeEventRoutingStrategy)2;
 		}
 	}
 	public class PSVOwnerStreamChangedEventArgs : EventArgs
@@ -3260,7 +3284,7 @@ namespace AspenTech.EquipmentAnalysis.Infrastructure.Events
 	{
 		public PSVUnitSetChangedEvent()
 		{
-			base.RoutingStrategy = CompositeEventRoutingStrategy.ParentsThenChildren;
+			base.RoutingStrategy = (CompositeEventRoutingStrategy)3;
 		}
 	}
 	public class RenameEvent : RoutedCompositePresentationEvent<RenameEventArgs>
@@ -3458,7 +3482,7 @@ namespace AspenTech.EquipmentAnalysis.Infrastructure.Events
 	{
 		public UpdatePSVSummaryEvent()
 		{
-			base.RoutingStrategy = CompositeEventRoutingStrategy.ChildrenThenParents;
+			base.RoutingStrategy = (CompositeEventRoutingStrategy)2;
 		}
 	}
 	public class UpdatePSVSummaryEventArgs : EventArgs
@@ -3497,14 +3521,14 @@ namespace AspenTech.EquipmentAnalysis.Infrastructure.Events
 	{
 		public UpdateOrificeSizesEvent()
 		{
-			base.RoutingStrategy = CompositeEventRoutingStrategy.ChildrenThenParents;
+			base.RoutingStrategy = (CompositeEventRoutingStrategy)2;
 		}
 	}
 	public class UpdatePSVTreeNavigatorViewEvent : RoutedCompositePresentationEvent<UpdatePSVTreeNavigatorViewEventArgs>
 	{
 		public UpdatePSVTreeNavigatorViewEvent()
 		{
-			base.RoutingStrategy = CompositeEventRoutingStrategy.FirstOfChildrenThenParents;
+			base.RoutingStrategy = (CompositeEventRoutingStrategy)5;
 		}
 	}
 	public class UpdatePSVTreeNavigatorViewEventArgs : EventArgs
@@ -3534,7 +3558,7 @@ namespace AspenTech.EquipmentAnalysis.Infrastructure.Events
 	{
 		public ViewStorageTankEvent()
 		{
-			base.RoutingStrategy = CompositeEventRoutingStrategy.ChildrenThenParents;
+			base.RoutingStrategy = (CompositeEventRoutingStrategy)2;
 		}
 	}
 	public class ViewStorageTankEventArgs : EventArgs
@@ -3549,14 +3573,14 @@ namespace AspenTech.EquipmentAnalysis.Infrastructure.Events
 	{
 		public UpdateTankManagerGridEvent()
 		{
-			base.RoutingStrategy = CompositeEventRoutingStrategy.ChildrenThenParents;
+			base.RoutingStrategy = (CompositeEventRoutingStrategy)2;
 		}
 	}
 	public class OpenCaseEvent : RoutedCompositePresentationEvent<OpenCaseEventArgs>
 	{
 		public OpenCaseEvent()
 		{
-			base.RoutingStrategy = CompositeEventRoutingStrategy.ChildrenThenParents;
+			base.RoutingStrategy = (CompositeEventRoutingStrategy)2;
 		}
 	}
 	public class OpenCaseEventArgs : EventArgs
@@ -3571,7 +3595,7 @@ namespace AspenTech.EquipmentAnalysis.Infrastructure.Events
 	{
 		public UpdatePSVTreeViewEvent()
 		{
-			base.RoutingStrategy = CompositeEventRoutingStrategy.ChildrenThenParents;
+			base.RoutingStrategy = (CompositeEventRoutingStrategy)2;
 		}
 	}
 	public class UpdatePSVTreeViewEventArgs : EventArgs
@@ -3607,9 +3631,7 @@ namespace AspenTech.EquipmentAnalysis.Infrastructure.Events
 	{
 		public DatabaseConnectedEvent()
 		{
-			base.RoutingStrategy = CompositeEventRoutingStrategy.ChildrenThenParents;
+			base.RoutingStrategy = (CompositeEventRoutingStrategy)2;
 		}
 	}
 }
-You are not using the latest version of the tool, please update.
-Latest version is '11.2.0.10050' (yours is '9.1.0.7988')
