@@ -41,7 +41,7 @@
 
 ## ④ 三种编码边界 + 四类 token 差异
 
-`code/s85-column-widths.csv` 逐列计算（HeapSizes 从 `#~` 流头读，非代码常量）：本件 HeapSizes=0x01（仅 #Strings 4 字节），coded 阈值 8192/16384/32768，全部 2 字节。
+`code/s85-column-widths.csv` 逐列计算（HeapSizes 从 `#~` 流头读，非代码常量）：本件 HeapSizes=0x00（全部堆 2 字节；s89 更正），coded 阈值 8192/16384/32768，全部 2 字节。
 
 | 空间 | 本侧行数 | PEReader 行数 | 额外 | 缺失 | 重复 | 摘要不符 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |

@@ -83,11 +83,14 @@ def read(data, offset):
         name = _cstr(data, pos + 8)
         streams[name] = (offset + rel, size)
         pos += 8 + ((len(name) + 4) // 4) * 4
-    heap = data[streams["#~"][0] + 6]
-    ssize = 4 if heap & 1 else 2
-    gsize = 4 if heap & 2 else 2
-    bsize = 4 if heap & 4 else 2
-    t = streams["#~"][0]
+    # both compressed (#~) and uncompressed (#-) streams share this header layout; read the
+    # HeapSizes byte from the stream header, never from a constant.
+    tname = "#~" if "#~" in streams else "#-"
+    t = streams[tname][0]
+    heap = data[t + 6]
+    ssize = 4 if (heap & 1 or tname == "#-") else 2
+    gsize = 4 if (heap & 2 or tname == "#-") else 2
+    bsize = 4 if (heap & 4 or tname == "#-") else 2
     valid = int.from_bytes(data[t + 8:t + 16], "little")
     counts = [0] * 64
     p = t + 24
@@ -140,7 +143,28 @@ def read(data, offset):
             row["_row"] = r + 1
             out.append(row)
         rows[i] = out
-    return dict(counts=counts, rows=rows, streams=streams)
+    layout = []
+    for i in sorted(starts):
+        base, size = starts[i]
+        for name, kind in TABLES[i][1]:
+            if isinstance(kind, int):
+                rule = "fixed %d" % kind
+            elif kind in ("S", "G", "B"):
+                rule = "heap %s -> %d (HeapSizes 0x%02X)" % (kind, fsize(kind), heap)
+            elif kind[0] == "idx":
+                rule = "table %d rows %d < 65536 -> %d" % (kind[1], counts[kind[1]], fsize(kind))
+            else:
+                rule = "coded tag %d bits, max rows %d < 2**%d -> %d" % (
+                    kind[1], max(counts[x] for x in kind[2]), 16 - kind[1], fsize(kind))
+            layout.append(dict(table=TABLES[i][0], column=name, width=fsize(kind),
+                               rule=rule, row_size=size, rows=counts[i]))
+    return dict(counts=counts, rows=rows, streams=streams, heap_sizes=heap,
+                stream=tname, layout=layout)
+
+
+def coded_width(bits, max_rows):
+    """2 bytes while max_rows < 2**(16-bits); the single rule used by the parser."""
+    return 2 if max_rows < (1 << (16 - bits)) else 4
 
 
 CODED_TAGS = {
