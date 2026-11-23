@@ -93,3 +93,11 @@ ApwnIPShell.dll 41.0.0.614，来源 `issue-materials/342/ApwnIPShell.dll`，原�
 68 字节、20 条指令、3 处 REL32、.pdata 12 字节和 .xdata 8 字节逐字节吻合。 0x34e96 取虚表 0x42a90 并写回对象头。对象 +0x10 非空时取其虚表的 +0x10 槽，经 0x3ac20 调度。对象 +0x18 非空时恢复栈及 RBX，并在 0x34ec7 尾跳至 KERNEL32.dll!LocalFree 的 IAT 槽 0x3a2f0。按这些指令将本函数记为对象清理。
 
 1,005 个入口中 719 个有覆盖、286 个缺口，7,433 条引用中 636 条未决。0x34eb3 的实时接收对象和虚调用目标待核。整件静态验收未通过。 [回执](s45-submission.md) · [复验](s45/reassembly.json)
+
+## s49 局部回编
+
+ApwnIPShell.dll 41.0.0.614，来源 `issue-materials/342/ApwnIPShell.dll`，原件 SHA-256 `ace0556a2b9da51821c45b2a8c119ac990b51135b8b5b5d5d4f09422e051502b`。 范围 `[0x34ee0,0x34f3f)`，片段 SHA-256 `5605be7ff7427d7b14a0069c4176e9090765233cb7fbffbdee14555282bd0bcc`。
+
+95 字节、27 条指令、4 处 REL32、.pdata 12 字节和 .xdata 12 字节逐字节吻合。 例程写入对象首槽 0x42a90。0x34f09 经 0x3ac20 GuardCF 槽调度 [对象+0x10] 的虚表 +0x10，0x34f18 在缓冲指针非零时用 LocalFree 释放 [对象+0x18]。0x34f22 检查 DIL 位 0，位为 1 时用 RCX 传对象、EDX 传 0x20，经 0x35134 和 0x34f80 到 IAT 0x3a9e0 对应的 mfc140.dll!#1487。
+
+1,005 个入口中 720 个有覆盖、285 个缺口，7,433 条引用中 636 条未决。0x34f09 的实机接收者和最终虚调用目标仍待 Windows 对照。整件静态验收未通过。 [回执](s49-submission.md) · [复验](s49/reassembly.json)
