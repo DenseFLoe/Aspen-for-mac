@@ -143,6 +143,18 @@ def main():
                           il_len=len(hdr["il"]),
                           il_sha256=hashlib.sha256(hdr["il"]).hexdigest()))
     irows.sort(key=lambda r: r["token"])
+    # the access table must cover every IL token, so the access-flags unit checks 167 rows
+    write_csv(code / "s77-method-access.csv",
+              ["token", "name", "flags", "impl_flags", "access", "static", "has_security",
+               "access_source", "rva", "il_sha256", "il_len", "signature"],
+              [dict(token=r["token"], name=r["name"], flags=r["flags"],
+                    impl_flags="0x%04X" % M[int(r["token"], 16)]["impl_flags"],
+                    access=r["access"],
+                    static=bool(int(r["flags"], 16) & 0x0010),
+                    has_security=bool(int(r["flags"], 16) & 0x4000),
+                    access_source="flags&0x7=%d" % (int(r["flags"], 16) & 7),
+                    rva=r["rva"], il_sha256=r["il_sha256"], il_len=r["il_len"],
+                    signature="0x%X" % M[int(r["token"], 16)]["signature"]) for r in irows])
     write_csv(code / "s77-il-fingerprints.csv",
               ["token", "name", "rva", "access", "flags", "il_len", "il_sha256"], irows)
     by_tok = {r["token"]: r for r in irows}

@@ -55,5 +55,11 @@ CLI header VTableFixups 目录 = **0x16600 / 0x768**，共 **237** 条 `{RVA, Co
 ```
 check-native-coverage.py  exit 2   1105 / 354 / 559 / 0（未决 13 托管 + 15 原生）
 pwsh check-s29-446.ps1    exit 0
-preflight（L1+L2）        exit 2（L1）+ 0 defects
+qa gate（L1+L2）        exit 2（L1）+ 0 defects
 ```
+
+## 工装与门禁
+
+- 交付分支不含 QA 工装（§30 P1）："tool/preflight.py" 与 "tool/det_*.py" 已从本分支删除；
+权威门禁在 orphan 分支 "tietoumiao/preflight"（head 13fe04a5，qa/ 28 文件），回执统一称 "qa gate"。
+- 门禁结果按单元报「检查了 N 项，0 缺陷」；inputs=0 记 not-applicable，不记 pass。
