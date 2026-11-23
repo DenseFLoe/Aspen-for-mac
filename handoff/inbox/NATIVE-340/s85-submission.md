@@ -56,3 +56,11 @@
 ## 判定
 
 qa gate 3517b5ed 三档计数与逐条 defect 见 #13。
+
+## qa gate 5ea02b3e（新版，29 文件 / MANIFEST 93f33962…）
+
+`omitted-sites` 报 19 条清单缺失，属**历史遗留**（原件有 thunk、清单无边），本轮未新增；修复需补反汇编而非改 calls.csv。
+
+复核：`rva=0x4711` 原件为 `ff 25 e9 18 00 00`（jmp qword [riprel] -> IAT 0x6000 = KERNEL32!QueryPerformanceCounter），`code/native.asm` 中无该地址行、`calls.csv` 无该 RVA 行 -> 19 条同源。
+
+gate 读数：inputs=319（native 67 期望/48 已登记/19 缺失；VTableFixups 237/237；托管 calli 15/15），`units pass=12 fail=1(omitted-sites, 19) not-applicable=0 error=0`，L1 exit 2。
