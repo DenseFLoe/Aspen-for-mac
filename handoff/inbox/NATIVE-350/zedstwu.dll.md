@@ -95,3 +95,7 @@ RVA `[0x15180,0x15220)`，160 字节，范围 SHA-256 `3a7e60ad7c37883a4c047ccd6
 ## s53 诊断消息选择
 
 RVA `[0x15000,0x15176)`，374 字节，范围 SHA-256 `e3a5b4ddb8c8dd30d9e7899520b6e29e574c73d09882bf8de1d72dfb7737ca58`。83 条指令、24 处文本重定位、15 条直接转移、12 字节 .pdata 和 12 字节 .xdata 均匹配。另核对 62 条默认消息记录和指针、7 个导入调用点及 536 字节初始零填充。 [逐址说明](s53/select-diagnostic-message.c.md) · [回执](s53-submission.md)
+
+## s57 资源路径格式化
+
+RVA `[0x18550,0x185a6)`，86 字节，片段 SHA-256 `48838f1e44a19a9df9b6312e94bc9c7a4fc6acaaac53037e3a59289946d53351`。86 字节、23 条指令、3 处 REL32、2 处直接调用及 .pdata 12B／.xdata 8B 回编一致。 整件覆盖 155/255 个入口，仍缺 100 个入口和 26 条引用，静态验收未通过。 [逐址说明](s57/format-resource-path.c.md) · [回执](s57-submission.md)
