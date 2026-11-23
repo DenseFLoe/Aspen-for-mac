@@ -177,3 +177,13 @@ zedstwu.dll 41.0.0.609，原件 SHA-256 `09b4491feeb7389b072b9de06b86a6d978dbb61
 255 个入口中 165 个覆盖、90 个缺口，3572 条引用中 26 条未决。整件静态验收未通过。
 
 [回执](s93-submission.md) · [复验](s93/reassembly.json)
+
+## s97 局部回编
+
+zedstwu.dll 41.0.0.609，原件 SHA-256 `09b4491feeb7389b072b9de06b86a6d978dbb61527ad821e181b072bc5b9a59b`。 范围 `[0x15d20,0x15d37)`，片段 SHA-256 `466a3aba93bfca3396f9f06a0f569bb63706ec4dd0de519a65abb600b8700147`。
+
+回编 23 字节、8 条解码指令、1 处 REL32、12 字节 .pdata、8 字节 .xdata 均匹配。0x15d24 用原 RCX 调用已回编的 0x15cc4。NEG RAX 的进位区分空指针与非空，SBB/NEG/DEC 将非空映射为 0，将空映射为 -1。0x28 栈空间和共享展开记录均已核。
+
+255 个入口中 166 个覆盖、89 个缺口，3572 条引用中 26 条未决。整件静态验收未通过。
+
+[回执](s97-submission.md) · [复验](s97/reassembly.json)
