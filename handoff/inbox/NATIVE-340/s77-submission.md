@@ -32,7 +32,7 @@
 
 `code/s77-il-fingerprints.csv`：**167 个 IL token** 全部重算完整 64 位 SHA-256（不是抽样），同表带
 `access = ACCESS[flags & 0x7]`。0x06000056 与 0x06000057 指纹相同：
-`cf6b47445b3281297d160b230f3d5a4c08006679b0b937098c432073b5ee0b0d`。
+cf6b47445b3281297d160b230f3d5a4c08006679b0b937098c432073b5ee0b0d。
 
 ## ④ VTableFixups 四个修补槽
 

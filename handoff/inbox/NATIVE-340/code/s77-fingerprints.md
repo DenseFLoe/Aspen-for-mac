@@ -9,7 +9,7 @@
 - 哈希：SHA-256，按路径字典序；路径相对 `--unit`。
 - `code/README.md` 属于常规文件，两套都在集内。
 
-## 纳入路径（123 个，set=round，base_head=3b440bf0a4bf207d479eccc148232062a7f1a6a0）
+## 纳入路径（124 个，set=round，base_head=3b440bf0a4bf207d479eccc148232062a7f1a6a0）
 
 | 路径 | SHA-256 |
 | --- | --- |
@@ -84,7 +84,8 @@
 | `code/s73-il-bodies.bin` | `cf6b47445b3281297d160b230f3d5a4c08006679b0b937098c432073b5ee0b0d` |
 | `code/s73-metadata-decode.csv` | `9daf27311b3bf0a35fc1a93b1689f0276577a1b36af6668f93942b6516573d79` |
 | `code/s73-method-access.csv` | `b5a7e35b7d8b5ae8418a9844280d95fbb7bf4ce4862a1a1ec381a438527cf3a4` |
-| `code/s77-audit.md` | `5b5f23f4a6a1620702d3013e890255eaff9e06a5a71d3477c3952ded82780ea9` |
+| `code/s77-audit.md` | `a63024be86489b418a33413563729efdaf1d980e6dad1ec2e16c13dc361939d6` |
+| `code/s77-clauses.csv` | `810ac9fa19bb467c2c4eeacc98f71d2e1040abff2eca19dbe2b392cd2059c037` |
 | `code/s77-column-widths.csv` | `c0ee5bbeea56db49f69fd839944825af8c596547999635c5d1ed3f9555f5e722` |
 | `code/s77-methodimpl-pair.csv` | `72f2499709061da95ef55189f3cf32c88b4c8e68f26b7b55764d1289905e7fc6` |
 | `code/s77-real-widths.csv` | `3a2930d6f7a54cb2360ed9d32f9fb65ea55d0060a92099f6f044373ed7810e93` |
@@ -133,6 +134,6 @@
 | `s73-started.md` | `da95b14d1564f937103f0b0a5ff0500ecf41de5a38b2ef58e62036ee9da0e368` |
 | `s73-submission.md` | `1881243a8463316b97f69bfb1bbf38f2a79ba280eb75cf64c87002bbeaf8888b` |
 | `s77-started.md` | `d011fb37d4a701f1dd644c967ea08c07a2361706fe27f4e828464d4ae58093b4` |
-| `s77-submission.md` | `b592971f4ab29ace2038c4cd3c69f28335c53cd45d0387b03667c527ce2b7cf7` |
+| `s77-submission.md` | `8bc524e11308b386700e989ddb544cf765e943332336b172d277d07b7fa67fce` |
 | `s9-started.md` | `c45ec3ac2a5a345d96cc7bd71e36ed837b1ddbdec1ee1b0316a5844bddd347ba` |
 | `s9-submission.md` | `d828df979f3f9cf493af754f95481e2cb432fe61d7782a582d7f4860b45f61e1` |

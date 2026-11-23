@@ -20,6 +20,8 @@
 
 真件各空间取 2 字节：MemberRefParent(max 563, tag 3 -> 2), TypeDefOrRef(max 563, tag 2 -> 2), MethodDefOrRef(max 188, tag 1 -> 2)。
 
+访问级别推导（原始整数）：0x06000056 flags=0x4013 & 0x7 = 3 -> Assembly；0x06000057 flags=0x4013 & 0x7 = 3 -> Assembly（ImplFlags=0x0）。
+
 ## 2. MethodImpl 正负绑定（同型两方法）
 
 | 方法 | 形状 | 绑定 |

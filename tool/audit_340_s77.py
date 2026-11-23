@@ -180,6 +180,30 @@ def main():
          [r["method"] for r in erows] == ["0x06000056", "0x06000056", "0x06000057", "0x06000057"]),
     ]
 
+    # this round's clause table (same parser as s65), so the clause-semantics unit has rows
+    import audit_340_s65 as s65
+    crow = []
+    for m in meta["methods"]:
+        if not m["rva"] or m["flavor"] != "IL":
+            continue
+        p = pe.filepos(m["rva"])
+        word = struct.unpack_from("<H", data, p)[0]
+        if word & 3 != 3 or not word & 0x8:
+            continue
+        code_size = struct.unpack_from("<I", data, p + 4)[0]
+        for c in s65.raw_eh_clauses(data, pe, m["rva"], word, code_size):
+            r, purpose = s65.role(c["flags"])
+            crow.append(dict(method="0x%08X" % m["token"], kind=s65.KINDS.get(c["flags"], "0x%X" % c["flags"]),
+                             flags="0x%X" % c["flags"], try_offset=c["try_offset"],
+                             try_length=c["try_length"], handler_offset=c["handler_offset"],
+                             handler_length=c["handler_length"], last_field_raw="0x%X" % c["last"],
+                             last_field_role=r,
+                             last_field_value=("0x%08X" % c["last"]) if r == "type_token"
+                             else (("IL_%04X" % c["last"]) if r == "filter_offset" else "raw")))
+    write_csv(code / "s77-clauses.csv",
+              ["method", "kind", "flags", "try_offset", "try_length", "handler_offset",
+               "handler_length", "last_field_raw", "last_field_role", "last_field_value"], crow)
+
     # ---- 5. preserved: 11 sites / 35 EH clauses ---------------------------
     sites = 0
     for m in meta["methods"]:
@@ -212,6 +236,7 @@ def main():
     md += ["", "真件各空间取 2 字节：%s。" % ", ".join("%s(max %d, tag %d -> %d)"
                                                        % (r["space"], r["max_rows"], r["tag_bits"], r["width"])
                                                        for r in real), "",
+           "访问级别推导（原始整数）：0x06000056 flags=0x4013 & 0x7 = 3 -> Assembly；0x06000057 flags=0x4013 & 0x7 = 3 -> Assembly（ImplFlags=0x0）。", "",
            "## 2. MethodImpl 正负绑定（同型两方法）", "",
            "| 方法 | 形状 | 绑定 |", "| --- | --- | --- |"]
     for r in pair:
