@@ -23,7 +23,11 @@ ALLOW = {
     'det_wrong_symbol.py': 're.match(^0x) only decides whether a value is a plain RVA literal, not identity',
     'ident.py': 'defines the whole-value comparison helpers',
 }
-PATTERN = re.compile(r"(?:startswith|endswith)\(\s*[^)]*(?:rva|token|sym|callee|ordinal|disp|slot)", re.I)
+PATTERN = re.compile((
+    r"(?:startswith|endswith)\(\s*[^)]*(?:rva|token|sym|callee|ordinal|disp|slot)"
+    r"|\b(?:rva|token|sym|callee|symbol|ordinal|disp|slot)\s+in\s+str\("
+    r"|\bin\s+str\([^)]*(?:callee|symbol|iface|type|rva)"
+), re.I)
 
 
 def behaviour():

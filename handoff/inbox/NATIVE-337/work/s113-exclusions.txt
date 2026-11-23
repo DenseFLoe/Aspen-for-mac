@@ -1,0 +1,23 @@
+exclusion rules (fnmatch, item-relative), each with its compensation control:
+
+  pattern : s*-fingerprints.json
+    reason: the manifest cannot contain itself
+    compens: the receipt states the manifest sha256 in plain text
+  pattern : s*-submission.md
+    reason: the receipt is the carrier, not the payload
+    compens: each receipt pins the manifest sha256 (reverse fixation)
+  pattern : s*-audit.md
+    reason: audit pages are conclusions that cite other files
+    compens: work/s<seq>-audit-pins.txt lists every audit page sha256 and is itself in the manifest
+  pattern : work/*-gate.txt
+    reason: gate logs change on every run
+    compens: explicitly NOT covered - run artifacts, reproduced by the command in the receipt
+  pattern : work/*-exclusions.txt
+    reason: the exclusion record describes the rule, not the payload
+    compens: explicitly NOT covered - the rule itself is in qa/mk_fingerprints.py
+  pattern : tool/*
+    reason: tool/ lives outside the item walk
+    compens: the receipt (section: verifier scripts) pins every tool script sha256 from the branch tree
+
+manifest: s113-fingerprints.json
+entries: 109
