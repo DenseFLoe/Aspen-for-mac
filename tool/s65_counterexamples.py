@@ -49,6 +49,7 @@ def main():
     ap.add_argument('--binary', default='_t13/orig/FindComponent.dll')
     ap.add_argument('--out', default='handoff/inbox/NATIVE-337/code/s65-counterexamples.csv')
     ap.add_argument('--reference', default='handoff/inbox/NATIVE-337/code/s37-two-hop.csv')
+    ap.add_argument('--stations', default='handoff/inbox/NATIVE-337/code/s73-stations.csv')
     a = ap.parse_args()
     folder, data = Path(a.folder), open(a.binary, 'rb').read()
     pe = PE(data)
@@ -71,6 +72,11 @@ def main():
         hits = [lo for lo, hi in owner_ranges if lo <= rva < hi]
         return max(hits) if hits else 0
 
+    by_addr_bytes = {}
+    for fn in sorted((folder / 'code').rglob('native*.asm')):
+        _, insns = parse_asm(str(fn))
+        for (ln, addr, b, text, raw) in insns:
+            by_addr_bytes[addr] = b.hex()
     calls = list(csv.DictReader(open(folder / 'calls.csv', encoding='utf-8')))
     by_key = {}
     for idx, r in enumerate(calls, start=2):
@@ -82,6 +88,7 @@ def main():
 
     seen_sites = set()
     rows = []
+    orig_bytes = {}
     for addr in sorted(addr2line):
         seen_sites.add(addr)
         try:
@@ -112,23 +119,29 @@ def main():
             chosen = calls[cands[0] - 2]
             category = 'contradiction'
             detail = 'declared=%r note=%r; original=%s' % (chosen.get('callee', ''), chosen.get('note', '')[:60], sym)
+        cand_bytes = by_addr_bytes.get(addr)
+        orig_hex = data[pe.filepos(addr):pe.filepos(addr) + 5].hex()
+        if not category and cand_bytes is not None and cand_bytes != orig_hex:
+            category = 'byte-mismatch'
+            detail = 'candidate %s != original %s' % (cand_bytes, orig_hex)
         rows.append(dict(category=category or 'ok', site='0x%X' % addr, first_hop='0x%X' % hop,
                          iat_slot='0x%X' % slot, import_symbol=sym,
                          asm='%s#L%d' % (asm[0], asm[1]),
                          calls_row=(ok[0] if len(ok) == 1 else (cands[0] if len(cands) == 1 else '')),
                          candidates=','.join(str(i) for i in cands), detail=detail))
-    # stations present in the fixed reference but absent from the current listing
-    ref = Path(a.reference)
-    if ref.exists():
-        for r in csv.DictReader(open(ref, encoding='utf-8')):
-            if r.get('site'):
-                addr = int(r['site'], 16)
-                if addr not in seen_sites:
-                    rows.append(dict(category='missing-listing', site='0x%X' % addr,
-                                     first_hop=r.get('first_hop', ''), iat_slot=r.get('iat_slot', ''),
-                                     import_symbol=r.get('import_symbol', ''), asm=r.get('asm', ''),
-                                     calls_row='', candidates='',
-                                     detail='reference site absent from current listing (instruction removed?)'))
+    # stations derived from the original binary: any station absent from the candidate listing
+    # (or present with different instruction bytes) is reported, independently of any old table.
+    station_file = Path(a.stations)
+    if not station_file.exists():
+        raise SystemExit('missing verifiable baseline input: %s (run tool/s73_stations.py)' % station_file)
+    for r in csv.DictReader(open(station_file, encoding='utf-8')):
+        addr = int(r['site'], 16)
+        if addr not in seen_sites:
+            rows.append(dict(category='missing-listing', site='0x%X' % addr,
+                             first_hop=r.get('first_hop', ''), iat_slot=r.get('iat_slot', ''),
+                             import_symbol=r.get('import_symbol', ''), asm='',
+                             calls_row='', candidates='',
+                             detail='station derived from original is absent from the candidate listing'))
     out = Path(a.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     with open(out, 'w', newline='', encoding='utf-8') as fh:

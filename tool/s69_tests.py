@@ -75,6 +75,38 @@ def main():
         len(miss), '0x106C' if miss else '-', 'PASS' if t2 else 'FAIL'))
     print('T3 coverage refuse : exit=%d msg=%r status=%s' % (cov_rc, cov_txt.splitlines()[-1][:80], 'PASS' if t3 else 'FAIL'))
     ok &= t2 and t3
+    # T4: single byte displacement change must be reported as byte-mismatch at 0x106C
+    d4 = copy('t4')
+    p4 = d4 / 'code' / 'native.asm'
+    l4 = p4.read_text(encoding='utf-8').splitlines()
+    i4 = next(i for i, ln in enumerate(l4) if ln.startswith('0000106C'))
+    l4[i4] = l4[i4].replace('E8 32 3A 00 00', 'E8 33 3A 00 00')
+    p4.write_text(chr(10).join(l4) + chr(10), encoding='utf-8')
+    rc4, txt4, res4, cats4 = classify(d4)
+    bytes_hit = [r for r in res4 if r['category'] == 'byte-mismatch' and r['site'].upper() == '0X106C']
+    t4 = rc4 == 0 and len(bytes_hit) == 1
+    print('T4 byte-mismatch  : hits=%d site=%s status=%s' % (
+        len(bytes_hit), bytes_hit[0]['site'] if bytes_hit else '-', 'PASS' if t4 else 'FAIL'))
+    ok &= t4
+
+    # T5: drop instruction AND no usable old table -> still must report the station (baseline from original)
+    d5 = copy('t5')
+    p5 = d5 / 'code' / 'native.asm'
+    l5 = p5.read_text(encoding='utf-8').splitlines()
+    i5 = next(i for i, ln in enumerate(l5) if ln.startswith('0000106C'))
+    l5[i5] = '; dropped-marker 0000106C'
+    p5.write_text(chr(10).join(l5) + chr(10), encoding='utf-8')
+    out5 = d5 / 'x5.csv'
+    rc5 = subprocess.run([sys.executable, '-B', 'tool/s65_counterexamples.py', '--folder', str(d5),
+                          '--reference', str(d5 / 'no-such-old-table.csv'), '--out', str(out5)],
+                         capture_output=True, text=True)
+    res5 = list(csv.DictReader(open(out5, encoding='utf-8'))) if out5.exists() else []
+    miss5 = [r for r in res5 if r['category'] == 'missing-listing' and r['site'].upper() == '0X106C']
+    t5 = rc5.returncode == 0 and len(miss5) == 1
+    print('T5 no-old-table   : hits=%d site=%s status=%s' % (
+        len(miss5), miss5[0]['site'] if miss5 else '-', 'PASS' if t5 else 'FAIL'))
+    ok &= t5
+
     print('SUITE :', 'ALL PASS' if ok else 'FAILURES PRESENT')
     return 0 if ok else 1
 
