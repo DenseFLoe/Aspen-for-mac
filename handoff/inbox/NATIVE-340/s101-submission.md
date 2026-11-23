@@ -1,7 +1,7 @@
 # NATIVE-340 s101 提交
 
 - 分支：tietoumiao/native-340-s33；上轮 `38b6814d`，主干 44c22e3d
-- 本轮 head：见 #13
+- 本轮 head：9c949d3f2caa5e90a793e1976057418a0cf4f6be
 
 ## 1b 合流
 
@@ -56,5 +56,71 @@
 167 条只读摘要、PEReader 工程（`tool/pereader_340/`）、`0x06000057` arg0 外部指针恢复条件、28 条未决。
 
 ## 检验器脚本
+
+| 脚本 | 字节 | sha256 | 用途 |
+| --- | ---: | --- | --- |
+| tool/cli_tables.py | 15,890 B | 64dfbcd80bf771871a8c1e423b3feb5bdc6d44d11ddf950283890b8e65b37035 | 解析（read 调 layout_for，ImplMap 1 位） |
+| tool/s101_width_fixtures.py | 3,215 B | 85145a458b4c4f1c9ff8dc3d0eeadadca2d81b5b2254e27af90027958b095a95 | 夹具 A/B/C/D + 双负向 |
+| tool/s101_layout_check.py | 1,949 B | 35835a05362b4ba5b851970bb0ef6f95e86dcba35b83ddec7238a4054353b523 | 1c/1d 逐键比对 |
+| tool/s101_layout_baseline.py | 2,777 B | 5492909e8428993e051ede50e97ccab968420aebc8aeb281e3f80bc445560e72 | 基线重生成 |
+| tool/s93-width-controls.py | 3,134 B | 8374898c760cce153ca2b5ab541a6a261c3a9d848ae230544dfb79aa4635e551 | 列宽 + 紧邻列控制 |
+| tool/s97-site-owners.py | 2,475 B | 3dc305a25b38bde1689d6803476c45a73d44c9dff1d1b199a70b3e74a926ffce | 站点归属 + 正反例 |
+| tool/verify_il_digests.py | 1,958 B | 3693094d52e76e40ba43aee56cbb6d379defde219a43ce10d3a27c654a25aec6 | 167 条 IL 摘要只读复验 |
+
+运行命令（Windows 可直接复制，仓库根执行）：
+
+```
+python -B tool/s101_width_fixtures.py
+python -B tool/s101_layout_check.py
+python -B tool/s97-site-owners.py .
+python -B tool/verify_il_digests.py --binary _t13/orig/WrapSaveMergeNNFiles.dll --table handoff/inbox/NATIVE-340/code/s89-il-digests.csv
+cd _t14/qa/93bf962c && set PYTHONPATH=%CD%/../../.local/pylibs && python -B -m qa.gate --task NATIVE-340 --item-dir %CD%/../../handoff/inbox/NATIVE-340 --original %CD%/../../_t13/orig/WrapSaveMergeNNFiles.dll
+```
+
+原始输出与真实 exit：
+
+```
+> python -B tool/s101_width_fixtures.py
+fixture A: MemberRefParent=2 MethodDefOrRef=2
+fixture B: MemberRefParent=4 MethodDefOrRef=4
+fixture C: MemberRefParent=4 MethodDefOrRef=2
+fixture D: MemberRefParent=4 MethodDefOrRef=2
+NEGATIVE detected: MemberRefParent expected 4 got 2
+NEGATIVE(D) detected: MemberRefParent expected 4 got 2
+width-fixtures: cases=4 failures=0
+exit 0
+
+> python -B tool/s101_layout_check.py
+1d MISMATCH ImplMap.MemberForwarded baseline={'table': 'ImplMap', 'column': 'MemberForwarded', 'width': 2, 'rule': 'coded tag 2 bits, max rows 698 < 2**14 -> 2', 'row_size': 8, 'rows': 15} new={'table': 'ImplMap', 'column': 'MemberForwarded', 'width': 2, 'rule': 'coded tag 1 bits, max rows 698 < 2**15 -> 2', 'row_size': 8, 'rows': 15}
+layout-check: columns=85 1c_diffs=0 1d_diffs=1
+exit 1
+
+> python -B tool/s97-site-owners.py .
+attribution: checked=67 mismatches=0
+exit 0
+
+> python -B tool/verify_il_digests.py --binary _t13/orig/WrapSaveMergeNNFiles.dll --table handoff/inbox/NATIVE-340/code/s89-il-digests.csv
+checked 167 rows, mismatches 0
+exit 0
+
+usage: gate.py [-h] [--task {NATIVE-337,NATIVE-340}] [--item-dir ITEM_DIR]
+               [--folder FOLDER] [--head HEAD] [--repo REPO] [--cache CACHE]
+               [--original ORIGINAL] [--binary BINARY] [--l1-path L1_PATH]
+               [--against-head AGAINST_HEAD] [--skip-l1] [--json JSON]
+               [--quiet]
+gate.py: error: unrecognized arguments: workspace\_work\wf-20261120-aspen-batch/../../handoff/inbox/NATIVE-340 workspace\_work\wf-20261120-aspen-batch/../../_t13/orig/WrapSaveMergeNNFiles.dll
+exit 2
+```
+
+判据映射：
+
+| 判据 | 脚本位置 |
+| --- | --- |
+| 夹具 A/B/C/D 两列逐格 | tool/s101_width_fixtures.py main() 的 cases |
+| 破坏取宽必非零 | 同文件 ct.coded_width = lambda *a: 2 段 |
+| read == layout_for | tool/s101_layout_check.py 的 keyed() 1c 段 |
+| 新版 == 基线 | 同文件 1d 段（按键名比对） |
+| 站点/owner/listing | tool/s97-site-owners.py 的 site 比较 |
+| 167 条摘要 | tool/verify_il_digests.py 的 truth/bad |
 
 版本 pin：qa gate 93bf962c (MANIFEST files sha256 0f8be7a96e6dfa528116f28663d182b83ae60481896e1796975d27a398394c81)。
