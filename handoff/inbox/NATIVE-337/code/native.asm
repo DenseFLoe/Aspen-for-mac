@@ -5670,3 +5670,8 @@
 00006257  48 FF 25 72 0E 00 00  JMP qword ptr [0x1800070d0]
 
 ; ANCHOR MARKERS (addresses that are not instruction boundaries; raw bytes from the original)
+; --- s89 ABI reference (append-only block; instruction lines above are unchanged) ---
+; IDispatch::GetIDsOfNames six params (Windows x64): RCX=this(RDI) RDX=riid(0x82F8 IID_NULL) R8=rgszNames(&[RSP+0xD0]) R9=cNames(R14D=1) [RSP+0x20]=lcid(GetUserDefaultLCID@0x1357) [RSP+0x28]=rgDispId(&[RSP+0xC8])
+; IDispatch::Invoke params 5..9 (Windows x64 stack args after RCX=this RDX=dispIdMember R8=riid(0x82F8) R9=lcid): [RSP+0x20]=wFlags(1 DISPATCH_METHOD) [RSP+0x28]=pDispParams(&[RSP+0x50]) [RSP+0x30]=pVarResult(&[RSP+0x80]) [RSP+0x38]=pExcepInfo(0) [RSP+0x40]=puArgErr(0)
+; VariantInit contract: 0x13CF CALL OLEAUT32.dll!#8 over the VARIANT array at [RSP+0x68], stride 0x18, count cArgs([RSP+0x60] low dword); after init vt=8 VT_BSTR (0x13E2) and union.bstrVal=RBP (0x13E7); cleanup VariantClear OLEAUT32.dll!#9 at 0x1463
+; end s89 block
