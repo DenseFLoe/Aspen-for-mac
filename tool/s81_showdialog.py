@@ -19,7 +19,6 @@ ITEMS = [
     ('invoke', '0x1444', 'CALL qword ptr [RBX+0x30]', 'IDispatch::Invoke params 5..9 (Windows x64 stack args after RCX=this RDX=dispIdMember([RSP+0xC8]) R8=riid(0x82F8) R9=lcid): [RSP+0x20]=wFlags(1 DISPATCH_METHOD) [RSP+0x28]=pDispParams(&[RSP+0x50]) [RSP+0x30]=pVarResult(&[RSP+0x80]) [RSP+0x38]=pExcepInfo(0) [RSP+0x40]=puArgErr(0)'),
     ('dispparams', '0x13A2', 'MOV [RSP+0x58],RSI; MOV [RSP+0x60],R14; LEA RAX,[RSP+0x68]; MOV [RSP+0x50],RAX', 'DISPPARAMS at [RSP+0x50]: rgvarg=&[RSP+0x68], rgdispidNamedArgs=0; [RSP+0x60] holds TWO 32-bit fields written by one qword store: cArgs=1 (low dword), cNamedArgs=0 (high dword)'),
     ('result', '0x1449', 'CMOVNS ESI,[RSP+0x88]', 'on HRESULT >= 0 load success value into ESI; 0x1469 MOV EAX,ESI returns int (only the low 32 bits of RAX are meaningful)'),
-    ('variant-vt', '0x13DD', 'MOV EAX,8; MOV word [RSP+0x68],AX', 'VARIANT at [RSP+0x68]: vt = 8 (VT_BSTR), written as a 16-bit field'),
     ('variant-init', '0x13CF', 'CALL qword ptr [0x1800070f0]', 'VariantInit contract: 0x13CF CALL OLEAUT32.dll!#8 over the VARIANT array at [RSP+0x68], stride 0x18, count cArgs([RSP+0x60] low dword) -> 24 bytes set to VT_EMPTY'),
     ('variant-union', '0x13E7', 'MOV qword ptr [RSP+0x70],RBP', 'union after vt: bstrVal = RBP (BSTR built earlier); only vt (2B) + union pointer (8B) are written after VariantInit'),
     ('result-clear', '0x145B', 'LEA RCX,[RSP+0x80]; CALL qword ptr [0x1800070d0]', 'OLEAUT32.dll!#9 = VariantClear on pVarResult at [RSP+0x80], after the final Release and before returning ESI'),
@@ -38,7 +37,18 @@ def _lea_target(data, pe, rva):
     return rva + 7 + struct.unpack_from('<i', b, 3)[0]
 
 
-def binding_rows(data, pe):
+def _listing(asm_path, rva):
+    from pe_reader import parse_asm
+    if not asm_path.exists():
+        return None, None
+    _, ins = parse_asm(str(asm_path))
+    for (ln, addr, b, text, raw) in ins:
+        if addr == rva:
+            return b.hex(), ln
+    return None, None
+
+
+def binding_rows(data, pe, asm_path):
     """Binding evidence derived from bytes: ProgID, dispatch name, IID, call riid, vt."""
     import struct
     prog = _lea_target(data, pe, 0x2375)
@@ -60,7 +70,8 @@ def binding_rows(data, pe):
         ('calls-riid', '0x%X' % criid_t, criid,
          'riid for GetIDsOfNames/Invoke (all zero = IID_NULL)'),
         ('variant-vt', '0x13DD', 'vt immediate %d' % vt,
-         'VARIANT vt derived from the MOV EAX,imm at 0x13DD (8 = VT_BSTR); stride 0x18'),
+         'vt TYPE TAG only (8 = VT_BSTR), derived from the MOV EAX,imm at 0x13DD; '
+         'the 24-byte element stride (0x18) is a separate property from the VariantInit loop at 0x13C0'),
     ]
 
 
@@ -83,12 +94,36 @@ def main():
         rows.append(dict(item=item, rva=rva, instruction=t, bytes=b.hex(),
                          asm='code/native.asm#L%d' % ln if ln else '',
                          evidence=evidence, meaning=meaning))
-    for item, rva, derived, meaning in binding_rows(data, pe):
+    for item, rva, derived, meaning in binding_rows(data, pe, folder / 'code' / 'native.asm'):
         a = int(rva, 16) if rva.startswith('0x') and len(rva) <= 6 else 0
         ln, b, t = by.get(a, (0, b'', ''))
+        site = {'variant-vt': 0x13DD, 'calls-riid': 0x137F}.get(item)
+        if site:
+            n = 7 if item == 'calls-riid' else 5
+            lb, _ln = _listing(folder / 'code' / 'native.asm', site)
+            ob = data[pe.filepos(site):pe.filepos(site) + n].hex()
+            meaning = meaning + '; listing=%s original=%s listing_matches=%s' % (
+                lb or '-', ob, 'yes' if lb and lb == ob else 'no')
         rows.append(dict(item=item, rva=rva, instruction=derived, bytes=b.hex(),
                          asm='code/native.asm#L%d' % ln if ln else '', evidence='derived from bytes',
                          meaning=meaning))
+    reg_path = folder / 's97-registration.json'
+    if reg_path.exists():
+        import json as _json
+        reg = _json.loads(reg_path.read_text(encoding='utf-8'))
+        r64 = reg.get('Registry64', {})
+        pe_info = reg.get('PE', {})
+        rows.extend([
+            dict(item='deploy-clsid', rva='registration', instruction=r64.get('CLSID', ''),
+                 bytes='', asm='', evidence='s97-registration.json Registry64.CLSID',
+                 meaning='CLSID for ProgID %s (server %s)' % (r64.get('ProgID', ''), r64.get('server', ''))),
+            dict(item='deploy-assembly-sha256', rva='registration', instruction=pe_info.get('sha256', ''),
+                 bytes='', asm='', evidence='s97-registration.json PE.sha256',
+                 meaning='deployed assembly %s; version %s' % (r64.get('assembly', ''), pe_info.get('assemblyVersion', ''))),
+            dict(item='deploy-signature', rva='registration', instruction='PublicKeyToken=null',
+                 bytes='', asm='', evidence='s97-registration.json Registry64.assembly',
+                 meaning='assembly is not strong-name signed (PublicKeyToken=null); PE sha256 above is the deployment signature'),
+        ])
     out_path = Path(args.out) if args.out else OUT
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, 'w', newline='', encoding='utf-8') as fh:
