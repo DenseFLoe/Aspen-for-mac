@@ -21,11 +21,12 @@ TABLES = {
     7: ("ParamPtr", [("Param", ("idx", 8))]),
     8: ("Param", [("Flags", 2), ("Sequence", 2), ("Name", "S")]),
     9: ("InterfaceImpl", [("Class", ("idx", 2)), ("Interface", ("coded", 2, [2, 1, 27]))]),
-    10: ("MemberRef", [("Class", ("coded", 2, [2, 1, 26, 6, 27])), ("Name", "S"), ("Signature", "B")]),
+    10: ("MemberRef", [("Class", ("coded", 3, [2, 1, 26, 6, 27])), ("Name", "S"), ("Signature", "B")]),
     11: ("Constant", [("Type", 1), ("Padding", 1), ("Parent", ("coded", 2, [4, 8, 23])), ("Value", "B")]),
     12: ("CustomAttribute", [("Parent", ("coded", 5, [6, 4, 1, 2, 8, 9, 10, 0, 14, 23, 20, 17, 26, 27, 32, 35, 38,
                                                    39, 40, 42, 43, 44])),
-                             ("Type", ("coded", 2, [6, 10])), ("Value", "B")]),
+                             # CustomAttributeType: tags 2/3 only -> tag_offset 2
+                             ("Type", ("coded", 3, [6, 10], 2)), ("Value", "B")]),
     13: ("FieldMarshal", [("Parent", ("coded", 2, [4, 8])), ("NativeType", "B")]),
     14: ("DeclSecurity", [("Action", 2), ("Parent", ("coded", 2, [2, 6, 32])), ("PermissionSet", "B")]),
     15: ("ClassLayout", [("PackingSize", 2), ("ClassSize", 4), ("Parent", ("idx", 2))]),
@@ -38,8 +39,8 @@ TABLES = {
     22: ("PropertyPtr", [("Property", ("idx", 23))]),
     23: ("Property", [("Flags", 2), ("Name", "S"), ("Type", "B")]),
     24: ("MethodSemantics", [("Semantics", 2), ("Method", ("idx", 6)), ("Association", ("coded", 2, [20, 23]))]),
-    25: ("MethodImpl", [("Class", ("idx", 2)), ("MethodBody", ("coded", 2, [6, 10])),
-                        ("MethodDeclaration", ("coded", 2, [6, 10]))]),
+    25: ("MethodImpl", [("Class", ("idx", 2)), ("MethodBody", ("coded", 1, [6, 10])),
+                        ("MethodDeclaration", ("coded", 1, [6, 10]))]),
     26: ("ModuleRef", [("Name", "S")]),
     27: ("TypeSpec", [("Signature", "B")]),
     28: ("ImplMap", [("MappingFlags", 2), ("MemberForwarded", ("coded", 2, [4, 6])), ("ImportName", "S"),
@@ -116,7 +117,7 @@ def read(data, offset):
             return kind
         if kind[0] == "idx":
             return idxsize(kind[1])
-        return codedsize(kind[1], kind[2])
+        return codedsize(kind[1], kind[2])   # bits, ordered targets (offset does not change width)
 
     starts = {}
     p = t + 24 + 4 * bin(valid).count("1")
@@ -143,7 +144,7 @@ def read(data, offset):
             row["_row"] = r + 1
             dec = {}
             for name, kind in TABLES[i][1]:
-                if isinstance(kind, tuple) and kind[0] == "coded" and (i, name) in CODED_COLUMNS:
+                if isinstance(kind, tuple) and kind[0] == "coded":
                     dec[name] = decode_column(i, name, row[name])
             if dec:
                 row["_decoded"] = dec
@@ -208,14 +209,26 @@ CODED_COLUMNS = {
 }
 
 
+def column_spec(table, column):
+    """The single per-column definition used by row sizing, field reads and decoding."""
+    for name, kind in TABLES[table][1]:
+        if name == column:
+            return kind
+    return None
+
+
 def decode_column(table, column, value):
-    """Decode a coded column from the parse path: returns (target_table, one_based_row)."""
-    entry = CODED_COLUMNS.get((table, column))
-    if entry is None:
+    """Decode a coded column: (target_table, one_based_row), derived from TABLES only."""
+    kind = column_spec(table, column)
+    if not isinstance(kind, tuple) or kind[0] != "coded":
         return None, 0
-    bits, tags = entry
+    bits, targets = kind[1], kind[2]
+    offset = kind[3] if len(kind) > 3 else 0
     tag = value & ((1 << bits) - 1)
-    return tags.get(tag), (value >> bits)
+    idx = tag - offset
+    if idx < 0 or idx >= len(targets):
+        return None, 0
+    return targets[idx], (value >> bits)
 
 
 def decode_coded(table, value):
