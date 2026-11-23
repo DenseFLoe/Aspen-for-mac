@@ -32,8 +32,8 @@ def main():
         rows.append(dict(site=site, instruction=t, bytes=b.hex(), asm='code/native.asm#L%d' % ln,
                          receiver_reg=reg, vtable_load='%s (%s)' % (load, by[int(load, 16)][2]),
                          slot='0x%02X' % slot, member=SLOT_MEMBER[slot],
-                         init_path='factory 0x180002330 (CoCreateInstance import at 0x2388) -> RDI',
-                         init_evidence=init,
+                         init_path='factory 0x180002330: MultiByteToWideChar@0x2388 -> CLSIDFromProgID@0x23A0 -> CoCreateInstance@0x23C8(IID 00020400-0000-0000-C000-000000000046, out=[RBP]) -> return *[RBP]',
+                         init_evidence=init + ';0x133D MOV RDI,RAX (RAX = factory return; 0 on failure, tested at 0x1340/JZ 0x1399)',
                          target_status='unresolved: object created at runtime; slot/member proven, implementation address needs a breakpoint or type library',
                          recovery='breakpoint at 0x1354/0x1390/0x1400/0x1451 to read the vtable pointer, or load the type library for the CLSID used at 0x2330'))
     OUT.parent.mkdir(parents=True, exist_ok=True)

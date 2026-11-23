@@ -33,14 +33,7 @@ def thunk_slot(data, pe, rva):
     return None
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument('--binary', default='_t13/orig/FindComponent.dll')
-    ap.add_argument('--json', default='work/s73-stations.json')
-    ap.add_argument('--csv', default='handoff/inbox/NATIVE-337/code/s73-stations.csv')
-    a = ap.parse_args()
-    data = Path(a.binary).read_bytes()
-    pe = PE(data)
+def derive(data, pe):
     iat = pe.iat()
     md = capstone.Cs(capstone.CS_ARCH_X86, capstone.CS_MODE_64)
     md.detail = False
@@ -67,7 +60,20 @@ def main():
     for site in sorted(sites):
         hop, slot, lib, nm = sites[site]
         rows.append(dict(site='0x%X' % site, first_hop='0x%X' % hop, iat_slot='0x%X' % slot,
-                         import_symbol='%s!%s' % (lib, nm), site_bytes=data[pe.filepos(site):pe.filepos(site) + 5].hex()))
+                         import_symbol='%s!%s' % (lib, nm),
+                         site_bytes=data[pe.filepos(site):pe.filepos(site) + 5].hex()))
+    return rows
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--binary', default='_t13/orig/FindComponent.dll')
+    ap.add_argument('--json', default='work/s73-stations.json')
+    ap.add_argument('--csv', default='handoff/inbox/NATIVE-337/code/s73-stations.csv')
+    a = ap.parse_args()
+    data = Path(a.binary).read_bytes()
+    pe = PE(data)
+    rows = derive(data, pe)
     out = Path(a.csv)
     out.parent.mkdir(parents=True, exist_ok=True)
     import csv as _csv

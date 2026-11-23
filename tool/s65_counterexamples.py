@@ -12,6 +12,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / 'tool'))
 from pe_reader import PE, parse_asm  # noqa: E402
+import s73_stations  # noqa: E402
 
 
 def same_symbol(declared, symbol):
@@ -49,7 +50,7 @@ def main():
     ap.add_argument('--binary', default='_t13/orig/FindComponent.dll')
     ap.add_argument('--out', default='handoff/inbox/NATIVE-337/code/s65-counterexamples.csv')
     ap.add_argument('--reference', default='handoff/inbox/NATIVE-337/code/s37-two-hop.csv')
-    ap.add_argument('--stations', default='handoff/inbox/NATIVE-337/code/s73-stations.csv')
+    ap.add_argument('--stations', default='', help='optional cached table; the station set is always re-derived from --binary')
     a = ap.parse_args()
     folder, data = Path(a.folder), open(a.binary, 'rb').read()
     pe = PE(data)
@@ -129,12 +130,22 @@ def main():
                          asm='%s#L%d' % (asm[0], asm[1]),
                          calls_row=(ok[0] if len(ok) == 1 else (cands[0] if len(cands) == 1 else '')),
                          candidates=','.join(str(i) for i in cands), detail=detail))
-    # stations derived from the original binary: any station absent from the candidate listing
-    # (or present with different instruction bytes) is reported, independently of any old table.
-    station_file = Path(a.stations)
-    if not station_file.exists():
-        raise SystemExit('missing verifiable baseline input: %s (run tool/s73_stations.py)' % station_file)
-    for r in csv.DictReader(open(station_file, encoding='utf-8')):
+    # the station set is re-derived from the original binary on every run; a cached table is
+    # only accepted when it matches the fresh derivation byte for byte.
+    try:
+        derived = s73_stations.derive(data, pe)
+    except Exception as exc:
+        raise SystemExit('cannot establish verifiable baseline input: %s' % exc)
+    if not derived:
+        raise SystemExit('cannot establish verifiable baseline input: empty station set')
+    station_file = Path(a.stations) if a.stations else None
+    if station_file is not None:
+        if not station_file.exists():
+            raise SystemExit('missing verifiable baseline input: %s' % station_file)
+        cached = list(csv.DictReader(open(station_file, encoding='utf-8')))
+        if cached != derived:
+            raise SystemExit('cached station table does not match the fresh derivation from the original')
+    for r in derived:
         addr = int(r['site'], 16)
         if addr not in seen_sites:
             rows.append(dict(category='missing-listing', site='0x%X' % addr,
