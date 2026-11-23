@@ -109,12 +109,23 @@ def data_sections(data, pe, hdr):
         if sec is None:
             raise ValueError("data section RVA %#x is outside every section" % rva)
         p = pe.filepos(rva)
-        kind = data[p]
-        size = data[p + 1] | (data[p + 2] << 8) | (data[p + 3] << 16)
-        # three independent checks: raw-backed range, virtual range, physical file bytes.
-        # each reports the first invalid RVA instead of failing later in struct.unpack.
+        # ORDER MATTERS: the 4-byte section header is validated against the raw /
+        # virtual / file boundaries BEFORE it is read, so a truncated file yields a
+        # located FILE error instead of IndexError.  The declared length is checked
+        # afterwards (second pass over the same three boundaries).
         raw_end = sec["rva"] + sec["size"]                       # SizeOfRawData
         virt_end = sec["rva"] + sec.get("vsize", sec["size"])    # VirtualSize
+        if rva + 4 > raw_end:
+            raise ValueError("EH section header at %#x (4 bytes) overruns the RAW range of %s "
+                             "(raw end %#x): first invalid RVA %#x" % (rva, sec["name"], raw_end, raw_end))
+        if rva + 4 > virt_end:
+            raise ValueError("EH section header at %#x (4 bytes) overruns the VIRTUAL range of %s "
+                             "(virtual end %#x): first invalid RVA %#x" % (rva, sec["name"], virt_end, virt_end))
+        if p + 4 > len(data):
+            raise ValueError("EH section header at %#x (4 bytes) overruns the FILE bytes "
+                             "(file length %#x): first invalid offset %#x" % (rva, len(data), len(data)))
+        kind = data[p]
+        size = data[p + 1] | (data[p + 2] << 8) | (data[p + 3] << 16)
         if size < 4:
             raise ValueError("data section at %#x has size %d (< 4)" % (rva, size))
         if rva + size > raw_end:
