@@ -1,0 +1,3 @@
+# NATIVE-342 s73 开工
+
+upstream 于 2026-11-23T05:29:51Z 开工。基线 `39be673b1ba7376b9987ed501c9387b5860ed422`。ApwnIPShell.dll 41.0.0.614，原件 SHA-256 `ace0556a2b9da51821c45b2a8c119ac990b51135b8b5b5d5d4f09422e051502b`。 [分派卡](../../assignments/NATIVE-342-s73.md) SHA-256 `8c42a722da85e97b825cbe362b0a62c0a72a9dbcdcc9e614c2e427b47b1a846f`。
