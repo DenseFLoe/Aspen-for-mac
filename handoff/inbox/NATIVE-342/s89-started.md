@@ -1,0 +1,3 @@
+# NATIVE-342 s89 开工
+
+upstream 于 2026-11-23T09:01:37Z 开工。基线 `44c22e3daac712802e8a7e865a42c301f70b714b`。ApwnIPShell.dll 41.0.0.614，原件 SHA-256 `ace0556a2b9da51821c45b2a8c119ac990b51135b8b5b5d5d4f09422e051502b`。 [分派卡](../../assignments/NATIVE-342-s89.md) SHA-256 `f712b120e053c9a9261c30b71db6506df0d029c8ee9068e2faab3b0bd5308c5f`。
