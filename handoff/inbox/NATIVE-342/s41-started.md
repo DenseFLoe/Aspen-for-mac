@@ -1,0 +1,3 @@
+# NATIVE-342 s41 开工
+
+upstream 于 2026-11-23T00:59:32Z 核对固定原件并开工。基线 `7281447e6a58328cb914f9d91dd0b9f16f0b0aad`。ApwnIPShell.dll 41.0.0.614，原件 SHA-256 `ace0556a2b9da51821c45b2a8c119ac990b51135b8b5b5d5d4f09422e051502b`。 范围 `[0x34e40,0x34e85)`，片段 SHA-256 `dfeaea0ef12e23a31c55b931d22c4df503a8cbdc067c31c4d5f1434aff37af51`。
