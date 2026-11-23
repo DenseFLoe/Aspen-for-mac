@@ -43,7 +43,7 @@ TABLES = {
                         ("MethodDeclaration", ("coded", 1, [6, 10]))]),
     26: ("ModuleRef", [("Name", "S")]),
     27: ("TypeSpec", [("Signature", "B")]),
-    28: ("ImplMap", [("MappingFlags", 2), ("MemberForwarded", ("coded", 2, [4, 6])), ("ImportName", "S"),
+    28: ("ImplMap", [("MappingFlags", 2), ("MemberForwarded", ("coded", 1, [4, 6])), ("ImportName", "S"),
                      ("ImportScope", ("idx", 26))]),
     29: ("FieldRVA", [("RVA", 4), ("Field", ("idx", 4))]),
     30: ("ENCLog", [("Token", 4), ("FuncCode", 4)]),
@@ -72,20 +72,18 @@ def _cstr(data, start):
     return data[start:data.index(b"\0", start)].decode("utf-8", "replace")
 
 
-def read(data, offset):
-    """Return {counts, rows, streams}; rows[table] is a list of dicts with _row."""
-    assert data[offset:offset + 4] == b"BSJB", "CLI metadata signature"
+def layout_for(data, offset):
+    """Header + per-column widths + table offsets + the layout rows. No row decoding."""
+    assert data[offset:offset + 4] == b"BSJB"
     pos = offset + 16 + int.from_bytes(data[offset + 12:offset + 16], "little")
-    n = int.from_bytes(data[pos + 2:pos + 4], "little")
+    nstreams = int.from_bytes(data[pos + 2:pos + 4], "little")
     pos += 4
     streams = {}
-    for _ in range(n):
+    for _ in range(nstreams):
         rel, size = struct.unpack_from("<II", data, pos)
         name = _cstr(data, pos + 8)
         streams[name] = (offset + rel, size)
         pos += 8 + ((len(name) + 4) // 4) * 4
-    # both compressed (#~) and uncompressed (#-) streams share this header layout; read the
-    # HeapSizes byte from the stream header, never from a constant.
     tname = "#~" if "#~" in streams else "#-"
     t = streams[tname][0]
     heap = data[t + 6]
@@ -94,17 +92,14 @@ def read(data, offset):
     bsize = 4 if (heap & 4 or tname == "#-") else 2
     valid = int.from_bytes(data[t + 8:t + 16], "little")
     counts = [0] * 64
-    p = t + 24
+    q = t + 24
     for i in range(64):
         if valid & (1 << i):
-            counts[i] = int.from_bytes(data[p:p + 4], "little")
-            p += 4
+            counts[i] = int.from_bytes(data[q:q + 4], "little")
+            q += 4
 
     def idxsize(table):
         return 4 if counts[table] >= 65536 else 2
-
-    def codedsize(bits, tables):
-        return 4 if max(counts[x] for x in tables) >= (1 << (16 - bits)) else 2
 
     def fsize(kind):
         if kind == "S":
@@ -117,39 +112,25 @@ def read(data, offset):
             return kind
         if kind[0] == "idx":
             return idxsize(kind[1])
-        return codedsize(kind[1], kind[2])   # bits, ordered targets (offset does not change width)
+        return coded_width(kind[1], max(counts[x] for x in kind[2]))
 
-    starts = {}
-    p = t + 24 + 4 * bin(valid).count("1")
+    columns = {}
+    size_of = {}
     for i in range(64):
         if not counts[i]:
             continue
         if i not in TABLES:
             raise ValueError("table %d has rows but no schema" % i)
-        size = sum(fsize(k) for _, k in TABLES[i][1])
-        starts[i] = (p, size)
-        p += counts[i] * size
-    rows = {}
-    for i in sorted(starts):
-        base, size = starts[i]
-        out = []
-        for r in range(counts[i]):
-            off = base + r * size
-            row = {}
-            for name, kind in TABLES[i][1]:
-                width = fsize(kind)
-                raw = int.from_bytes(data[off:off + width], "little")
-                row[name] = _cstr(data, streams["#Strings"][0] + raw) if kind == "S" else raw
-                off += width
-            row["_row"] = r + 1
-            dec = {}
-            for name, kind in TABLES[i][1]:
-                if isinstance(kind, tuple) and kind[0] == "coded":
-                    dec[name] = decode_column(i, name, row[name])
-            if dec:
-                row["_decoded"] = dec
-            out.append(row)
-        rows[i] = out
+        cols = [(name, fsize(kind)) for name, kind in TABLES[i][1]]
+        columns[i] = cols
+        size_of[i] = sum(w for _, w in cols)
+    starts = {}
+    q = t + 24 + 4 * bin(valid).count("1")
+    for i in range(64):
+        if not counts[i]:
+            continue
+        starts[i] = (q, size_of[i])
+        q += counts[i] * size_of[i]
     layout = []
     for i in sorted(starts):
         base, size = starts[i]
@@ -161,12 +142,41 @@ def read(data, offset):
             elif kind[0] == "idx":
                 rule = "table %d rows %d < 65536 -> %d" % (kind[1], counts[kind[1]], fsize(kind))
             else:
-                rule = "coded tag %d bits, max rows %d < 2**%d -> %d" % (
-                    kind[1], max(counts[x] for x in kind[2]), 16 - kind[1], fsize(kind))
+                rule = ("coded tag %d bits, max rows %d < 2**%d -> %d"
+                        % (kind[1], max(counts[x] for x in kind[2]), 16 - kind[1], fsize(kind)))
             layout.append(dict(table=TABLES[i][0], column=name, width=fsize(kind),
                                rule=rule, row_size=size, rows=counts[i]))
-    return dict(counts=counts, rows=rows, streams=streams, heap_sizes=heap,
-                stream=tname, layout=layout)
+    return dict(streams=streams, stream=tname, heap=heap, valid=valid, counts=counts,
+                columns=columns, size_of=size_of, starts=starts, layout=layout)
+
+
+def read(data, offset):
+    """Decode rows; widths come from layout_for() so parsing and layout cannot diverge."""
+    L = layout_for(data, offset)
+    streams, counts, starts, columns = L["streams"], L["counts"], L["starts"], L["columns"]
+    rows = {}
+    for i in sorted(starts):
+        base, size = starts[i]
+        out = []
+        for r in range(counts[i]):
+            off = base + r * size
+            row = {}
+            for name, width in columns[i]:
+                raw = int.from_bytes(data[off:off + width], "little")
+                kind = column_spec(i, name)
+                row[name] = _cstr(data, streams["#Strings"][0] + raw) if kind == "S" else raw
+                off += width
+            row["_row"] = r + 1
+            dec = {}
+            for name, kind in TABLES[i][1]:
+                if isinstance(kind, tuple) and kind[0] == "coded":
+                    dec[name] = decode_column(i, name, row[name])
+            if dec:
+                row["_decoded"] = dec
+            out.append(row)
+        rows[i] = out
+    return dict(counts=counts, rows=rows, streams=streams, heap_sizes=L["heap"],
+                stream=L["stream"], layout=L["layout"])
 
 
 def coded_width(bits, max_rows):
