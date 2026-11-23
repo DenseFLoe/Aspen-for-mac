@@ -18,7 +18,7 @@ HERE = Path(__file__).resolve().parent
 APPROVALS = json.loads((HERE / "accepted_archives.json").read_text(encoding="utf-8"))
 EXIT = {"pass": 0, "fail": 1, "inconclusive": 2}
 VERSION = "1.0"
-IMPLEMENTATION = "1.8"
+IMPLEMENTATION = "1.9"
 ARCHIVE_REPLAY_BASIS = "previous_whole_item_static_acceptance_replayed"
 FRESH_BUILD_BASIS = "fresh_source_build_full_file_exact_and_item_evidence"
 CFB_MAGIC = bytes.fromhex("d0cf11e0a1b11ae1")
@@ -146,7 +146,7 @@ def verifier_identity():
              "historical_listing.py", "fh4.py", "mixed_baseline.py", "callback_paths.py",
              "pe_resources.py", "version_resource.py", "fresh_cs.py", "compile_fresh_cs.ps1", "managed.py",
              "ManagedEvidence.cs", "coff.py", "office_vba.py", "office_forms.py", "biff_workbook.py",
-             "office_project.py")
+             "office_project.py", "office_pcode.py")
     paths = {name: HERE / name for name in names}
     helper = "handoff/assignments/check-native-coverage.py"
     paths[helper] = HERE.parents[1] / helper
@@ -411,6 +411,7 @@ def evaluate(original, expected, delivery, rebuilt=None, assembler=None, product
             checks.append(component("biff_workbook", data, delivery))
         if "project.json" in files and any(name.startswith("project/") for name in files):
             checks.append(component("office_project", data, delivery))
+            checks.append(component("office_pcode", data, delivery))
     if rebuilt:
         checks.append(component("managed", data, rebuilt))
     if data.startswith(b"\x64\x86") and any(
