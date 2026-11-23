@@ -1,0 +1,45 @@
+# out/review9 · T9 1,000 件机检预审
+
+> **2026-11-22 第二轮更正**：455 件 .cs.txt 尾部残留 ilspycmd 升级提示（未注释、非合法 C#），当时 A6/B4 只匹配行首工具名，漏检。结论已按台账重算：**pass 530 / fail 470 / partial 0 / blocked 0**（原报 978/15/7 失效）。同轮修正：产品矩阵（旧 510/448、23/0 ⇒ 台账 519/439、7/16）、fail_code 表（补 tool_nag_tail 455）、失败明细 verdict、validation R3 与本文件限制说明。修复见 handoff/fixes/nag-tail/ 与分支 tietoumiao/nagfix-cs-tail。
+
+## 这是什么
+
+对 1,000 件未评审逆向成果（待静态验收 916 + 静态验收未通过 84）出的**逐件机检预审台账**。机器可读重算见 reconciliation.json。
+
+> **这不是上游 P0–P3 终判。** 原因：原件二进制不在仓库（逆向成果/ 下 0 个二进制 blob），语义层（类型用途、调用约定、逻辑等价、运行期行为）未复核。本批只证明「结构自洽 + 我方产物与报告声称值一致」。
+
+## 判据（两层）
+
+- **Tier A（1,000 件全做）**：A1 归档说明存在；A2 归档说明与制作者报告的 原件 SHA-256 逐字符相同（64 hex）；A3 制作者报告存在非空；A4 必填字段（sha256/tool/统计数/dumps 绑定）；A5 dumps 资产名在我方 assets 清单且本件有导出 txt；A6 报告无未替换占位符。
+- **Tier B（CLR + native）**：B1 .il.txt 的 ^MD 0x 行数（排除页脚 MD (none) 哨兵行）与报告 methods= 比对；B2 .asm.txt 的 ^FUNC 行数与 functions= 比对；B3 占位符扫描（观察项，不判 fail）；B4 未注释工具横幅 ⇒ fail。
+
+合并：A 任一 fail ⇒ fail；Tier B 出现未注释工具横幅（B4，tool_nag_tail）⇒ fail（本轮新增的判定路径，作用于 455 件）；其余沿用 A 过 + 非 PE ⇒ partial、A 过 + Tier B 无输入 ⇒ blocked、两层全过 ⇒ pass 的旧口径，但本轮已无 partial / blocked 行。
+
+## 文件
+
+| 文件 | 内容 |
+| --- | --- |
+| selection.csv | 1,000 件选件（idx/shard/state/product/item_dir/name/kind_hint/各 blob 路径） |
+| ledger-1000.csv | 逐件结论（idx,shard,state,product,name,item_dir,relative_path,sha256,kind,tier_a,tier_b,verdict,fail_codes,evidence,evidence_level） |
+| shard-<n>.csv / .jsonl | 12 个 worker 的分片原始结果（合并前落盘；jsonl 带逐件 fail 明细） |
+| shard-<n>.check.md / .summary.md | worker 自抽 5 行复核 + 分片小结 |
+| failures.md | 按 fail_code 分组的失败清单（含全部 455 件 tool_nag_tail）+ 逐件复跑命令 |
+| stats.md | 分产品×结论矩阵、分归档状态矩阵、Tier A/B 覆盖率实数、fail_code 独立行数、blocked 原因 |
+| review_shard.py / merge_ledger.py / verify_item.py / gen_reports.py | 扫描 / 合并 / 单件复跑 / 报告生成 |
+| validation.md | R1–R6 逐条自检 + 分片一致性 + 已知异常（裸波浪号 404、代理、并行写坏片） |
+| reconciliation.json | 本轮独立重算的固定结果（产品/状态矩阵、原因独立行数、反例对象） |
+
+## 复现
+
+    cd _work/wf-20261120-aspen-batch
+    PYTHONIOENCODING=utf-8 python out/review9/review_shard.py --shard 3 --concurrency 3   # 单分片重跑
+    PYTHONIOENCODING=utf-8 python out/review9/merge_ledger.py                              # 合并 + R1/R2/R6 断言
+    PYTHONIOENCODING=utf-8 python out/review9/verify_item.py --idx 42 --fresh              # 单件复跑
+
+## 限制（明写）
+
+1. 原件不在仓库：A1/A2 比的是「归档说明登记值 vs 制作者报告登记值」，不是重新计算原件 sha256。
+2. Tier B 是产物自证：数的是导出 txt 的条目行数，不是 dnfile/pefile 从原件重算 TypeDef/节/导入。
+3. B3 命中只登记：NotImplementedException 可能是原版行为，无法区分，故不判 fail（本轮命中 135 件）。
+4. 失败构成（独立行数，允许一行多码）：tool_nag_tail **455** 件（尾部工具提示，全部 fail）、a2_sha_missing 15、a3_report_missing 15、tier_b_incomplete 6、analyze_failed 1；原因占用 492 次，重叠 22 行 ⇒ 去重后 fail 470 行。Tier B 原始字段仍为 PASS 978 件；6 件 partial: tier_b_incomplete（CLR 缺 il.txt）；1 件 partial: analyze_failed；15 件 NOT_RUN，但其中 6+1 件同时带 tool_nag_tail，最终 verdict 为 fail，最终 partial 记 0。旧「7 件 partial」的表述作废。
+5. 证据三档逐行单一值：本批全为〔已实测〕（数的是仓内 blob 原文），无〔未验证〕/〔无法判定〕行，故 blocked 0。
