@@ -1,8 +1,8 @@
 # NATIVE-337 s101 提交（产品路径拒绝矛盾列表 + 身份字段三类 + 签名单改反例）
 
 - 固定候选 #445 @ ff5aa8a；主干基线 54d8dd1d；同一分支 head 前移。
-- 保留：两站 `listing_matches`、唯一 `variant-vt` 行、同 DLL 两条真实序号；指纹清单本轮 **146 项**（同类口径，仍排除自身与本回执）。
-- **清单 SHA-256：`def7e61f26a3db44635177fc9fcf5f0eaeedbcf5b4de6447fdd525a3fe2c4642`**
+- 保留：两站 `listing_matches`、唯一 `variant-vt` 行、同 DLL 两条真实序号；指纹清单本轮 **147 项**（同类口径，仍排除自身与本回执）。
+- **清单 SHA-256：`8fb74634766478e0eeb52621f75c3af3dc36e7a266d0c454a9a6ed9b97d75667`**
 
 ## ① 产品路径拒绝矛盾列表（不是测试脚本）
 新增正式复验入口 **`tool/s101_verify.py`**（交付产物用它校验，`s97_regressions.py` 只是回归脚本）：
@@ -55,9 +55,13 @@ exit code: 2（112 条未决已申报）
 units: pass=10 fail=0 not-applicable=3 error=0
 exit: 2
 ~~~
-逐条 defect 0；`omitted-sites 363（prefixed_thunks 10）`；`fingerprint-pathset 146`；无 advisory。
+逐条 defect 0；`omitted-sites 363（prefixed_thunks 10）`；`fingerprint-pathset 147`；无 advisory。
 
 ## 检验器脚本
+
+> 路径分两类：**分支树内（该 head 可读到）可作证据**；**本地工作区（未入库）不得作证据**，只能作复现说明。本节由 `tool/s101_receipt_section.py` 逐文件向分支树校验后生成，并已删掉此前误列的 12,416 B 本地旧副本（该副本已被分支版替换，本地现为 15,884 B / `27f643b9…`）。
+
+分支树内（该 head 可读到，可作证据）：
 
 | 脚本 | 字节 | sha256 | 作用 |
 | --- | ---: | --- | --- |
@@ -71,8 +75,11 @@ exit: 2
 | `tool/s73_stations.py` | 3200 | `0bc2d114e359ba8d3557071ac10f053be93220eaee2929f2e1af4a239cc8e319` | 原件独立站集导出 |
 | `tool/s69_tests.py` | 5828 | `68e6140848e2c9acd73556cbb16e6f7f4bbfc443fa713a5d101e0be29bdc3743` | T1–T6 回归（s65 入口） |
 | `tool/s45_tests.py` | 8496 | `4e5a3401d1048b525016aaa13283d3db416e43746fbcd7d4108aaec8f22c0371` | 六场景 + 三布局回归 |
-| `handoff/assignments/check-native-coverage.py` | 12416 | `62b06e0a1987cfe9806d83b4e57d2097f0c39b5fc8b4e7298fb7c44c47457426` | 上游覆盖检查器（本仓副本） |
-| `out/localrepo3/handoff/assignments/check-native-coverage.py` | 15884 | `27f643b9452705c4156bdb5c028f8aad2d2523fafb6853c02058d471580a34a8` | 上游覆盖检查器（权威 pin 源） |
+| `handoff/assignments/check-native-coverage.py` | 15884 | `27f643b9452705c4156bdb5c028f8aad2d2523fafb6853c02058d471580a34a8` | 上游覆盖检查器（分支内副本） |
+
+本地未入库（只在本机工作区出现，**不参与判据**）：
+
+（无）
 
 **版本 pin**：`qa gate 27007e5a (MANIFEST files sha256 3779de81a322579c91adfbf5b960f8a16543973d87ca97e92eca117d67b65089)`；上游 checker pin `27f643b9452705c4156bdb5c028f8aad2d2523fafb6853c02058d471580a34a8`。
 
