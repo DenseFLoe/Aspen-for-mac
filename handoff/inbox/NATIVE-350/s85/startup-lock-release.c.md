@@ -1,0 +1,7 @@
+# startup-lock-release.c
+
+可编辑 Windows AMD64 CRT 锁释放实现，包含 COFF 展开指令。
+
+zedstwu.dll 41.0.0.609，原件 SHA-256 `09b4491feeb7389b072b9de06b86a6d978dbb61527ad821e181b072bc5b9a59b`，范围 `[0x15c74,0x15c98)`，片段 SHA-256 `601c3b9783b84859e5612bf54a500539f69f2005c8e71d70ba2fdb20992f42cc`。
+
+255 个入口中 163 个有覆盖、92 个缺口，3,572 条引用中 26 条未决。整件静态验收未通过。 [交付回执](../s85-submission.md)
