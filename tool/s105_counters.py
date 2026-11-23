@@ -62,7 +62,7 @@ def main():
         for line in txt.splitlines():
             if line.startswith('CONFLICT'):
                 print('   ', line)
-        ok &= hit and not bad
+        ok &= hit and not bad and (b_sha == a_sha)
 
     def reg_mutate(field, value):
         def _m(d):

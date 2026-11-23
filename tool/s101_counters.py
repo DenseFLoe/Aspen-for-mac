@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""s101 counterexamples through the PRODUCT verifier (tool/s101_verify.py).
+"""s101 counterexamples through the PRODUCT verifier (tool/s109_verify.py).
 
 L1: listing-only single edit at 0x13DD and at 0x137F (original untouched) -> must be refused and named.
 L2: only the implementation signature changes (original and deployed assembly untouched), affected
@@ -47,7 +47,7 @@ def main():
     doc['FindComponentDriver']['methods'][0]['signature'] = '20010E0E'
     reg.write_text(json.dumps(doc, ensure_ascii=False, indent=2), encoding='utf-8')
     rc, txt = verify(d, '--signature')
-    hit = 'CONFLICT site=FindComponentDriver.ShowDialog' in txt
+    hit = ('field=signature' in txt) or ('field=name' in txt)
     good = rc == 3 and hit
     print('L2 signature-only  : rc=%d named=%s status=%s' % (rc, hit, 'PASS' if good else 'FAIL'))
     print('   ', [l for l in txt.splitlines() if l.startswith('CONFLICT')][:2])
