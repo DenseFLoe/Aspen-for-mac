@@ -32,14 +32,14 @@
 
 ## 3. 每 token 完整 IL 指纹（167 条）
 
-| token | 访问 | IL 长度 | IL SHA-256 |
-| --- | --- | ---: | --- |
-| 0x06000001 | Assembly | 31 | `c9ba162154efe7085c62fbaa707d1b181e0510c16334332d11751c1c6c7221c2` |
-| 0x06000002 | Assembly | 17 | `f410721af38809bb4f94bbb58a5ba651d0ede1dd96948f21b253ea70e86c5af0` |
-| 0x06000003 | Assembly | 20 | `07c0186459cbff3d345696ce11e88879c5154cb72a85d88bc9f98a4482c35176` |
-| 0x06000004 | Assembly | 81 | `5a67c37ad90ac23faac3f57e7962e0d6c284eafb02e3cc0b2fe47c481e4fe9a6` |
-| 0x06000005 | Assembly | 81 | `2aee9f7e60a49258d73650d8ff776704ac439ec5d837a72cbc05fa5c8c804419` |
-| 0x06000006 | Assembly | 17 | `f410721af38809bb4f94bbb58a5ba651d0ede1dd96948f21b253ea70e86c5af0` |
+| token | 访问 | flags | IL 长度 | IL SHA-256 |
+| --- | --- | --- | ---: | --- |
+| 0x06000001 | Assembly | 0x0813 | 31 | `c9ba162154efe7085c62fbaa707d1b181e0510c16334332d11751c1c6c7221c2` |
+| 0x06000002 | Assembly | 0x0013 | 17 | `f410721af38809bb4f94bbb58a5ba651d0ede1dd96948f21b253ea70e86c5af0` |
+| 0x06000003 | Assembly | 0x0013 | 20 | `07c0186459cbff3d345696ce11e88879c5154cb72a85d88bc9f98a4482c35176` |
+| 0x06000004 | Assembly | 0x0013 | 81 | `5a67c37ad90ac23faac3f57e7962e0d6c284eafb02e3cc0b2fe47c481e4fe9a6` |
+| 0x06000005 | Assembly | 0x0013 | 81 | `2aee9f7e60a49258d73650d8ff776704ac439ec5d837a72cbc05fa5c8c804419` |
+| 0x06000006 | Assembly | 0x0013 | 17 | `f410721af38809bb4f94bbb58a5ba651d0ede1dd96948f21b253ea70e86c5af0` |
 | … | … | … | 全表见 code/s77-il-fingerprints.csv |
 
 ## 4. VTableFixups 与四个修补槽

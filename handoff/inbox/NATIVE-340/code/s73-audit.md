@@ -4,10 +4,10 @@
 
 ## 1. 更正后的方法属性
 
-| token | 名称 | Flags | ImplFlags | 访问 | Static | HasSecurity | IL SHA-256 |
+| token | 名称 | ImplFlags | Flags | 访问 | Static | HasSecurity | IL SHA-256 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 0x06000056 | ___CxxCallUnwindDtor | 0x4013 | 0x0000 | Assembly | True | True | `cf6b47445b3281297d160b230f3d5a4c08006679b0b937098c432073b5ee0b0d` |
-| 0x06000057 | ___CxxCallUnwindDelDtor | 0x4013 | 0x0000 | Assembly | True | True | `cf6b47445b3281297d160b230f3d5a4c08006679b0b937098c432073b5ee0b0d` |
+| 0x06000056 | ___CxxCallUnwindDtor | 0x0000 | 0x4013 | Assembly | True | True | `cf6b47445b3281297d160b230f3d5a4c08006679b0b937098c432073b5ee0b0d` |
+| 0x06000057 | ___CxxCallUnwindDelDtor | 0x0000 | 0x4013 | Assembly | True | True | `cf6b47445b3281297d160b230f3d5a4c08006679b0b937098c432073b5ee0b0d` |
 
 方法访问级别由原始整数推导：0x06000056 flags=0x4013 & 0x7 = 3 -> Assembly (Static 由 0x0010 置位、HasSecurity 由 0x4000 置位)；0x06000057 flags=0x4013 & 0x7 = 3 -> Assembly。ImplFlags=0x0。
 

@@ -77,14 +77,14 @@
 | `code/s69-calli-sites.csv` | `7e84e184b3d030993620cb6aea1f9f10ea63188c272364ef384d8c0da2894cf1` |
 | `code/s69-evidence.json` | `3a71a2f946423343b4321ffb4a0e8bcf69f528a10627e48bd3c732b72a0ca7e8` |
 | `code/s69-method-access.csv` | `b5a7e35b7d8b5ae8418a9844280d95fbb7bf4ce4862a1a1ec381a438527cf3a4` |
-| `code/s73-audit.md` | `1276b30414d026a4b85eabc0597ff379619e803d45c974e3dde61c66346e720d` |
+| `code/s73-audit.md` | `ae3ae9f70bf86c04ff2a00971cccd85b060db4a1fc86ec5538b2e9a4a5d18415` |
 | `code/s73-binding-pairs.csv` | `937d995158836b81d7864ba1e13fe6124f3fee4be3dec24e2db93018253e8b95` |
 | `code/s73-entry-trace.csv` | `522a181271c315255f50b6f3e90aaeef549db0acc9027a5add6b17cfc38c6096` |
 | `code/s73-evidence.json` | `a318daa642d88477ea2ad7d8788916f38ac13b48a2b4c61c80d076e4211e7fb1` |
 | `code/s73-il-bodies.bin` | `cf6b47445b3281297d160b230f3d5a4c08006679b0b937098c432073b5ee0b0d` |
 | `code/s73-metadata-decode.csv` | `9daf27311b3bf0a35fc1a93b1689f0276577a1b36af6668f93942b6516573d79` |
 | `code/s73-method-access.csv` | `b5a7e35b7d8b5ae8418a9844280d95fbb7bf4ce4862a1a1ec381a438527cf3a4` |
-| `code/s77-audit.md` | `ffdf50b011660693b3fd503ab2dbfd922e781557d5fbe047afa9d7e7abfaed2e` |
+| `code/s77-audit.md` | `5b5f23f4a6a1620702d3013e890255eaff9e06a5a71d3477c3952ded82780ea9` |
 | `code/s77-column-widths.csv` | `c0ee5bbeea56db49f69fd839944825af8c596547999635c5d1ed3f9555f5e722` |
 | `code/s77-methodimpl-pair.csv` | `72f2499709061da95ef55189f3cf32c88b4c8e68f26b7b55764d1289905e7fc6` |
 | `code/s77-real-widths.csv` | `3a2930d6f7a54cb2360ed9d32f9fb65ea55d0060a92099f6f044373ed7810e93` |

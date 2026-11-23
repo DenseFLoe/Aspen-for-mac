@@ -3,32 +3,27 @@
 # -*- coding: utf-8 -*-
 """Local preflight for NATIVE-337 / NATIVE-340.
 
-Two layers, on purpose:
+Layer contract:
 
   L1  the upstream checker, invoked verbatim and pinned by sha256.  Its exit code is
       authoritative: nothing here may reinterpret or override it.
-  L2  our own detectors.  Each declares, in its docstring, whether L1 already covers
-      the same defect category:
+  L2  our own detectors, one module per category under tool/det_*.py.  Each module
+      declares, in its docstring and as L1_COVERS:
 
-         l1_covers: yes      L1 covers it fully  -> cross-check only, never changes exit
-         l1_covers: partial  L1 covers it partly -> cross-check; disagreement is a warning
-         l1_covers: no       L1 does not cover it -> may contribute to the aggregate exit
+        yes      L1 covers the category fully  -> cross-check only, never changes exit
+        partial  L1 covers it partly           -> cross-check; disagreement is a warning
+        no       L1 does not cover it          -> may contribute to the aggregate exit
 
-Detection inputs are only the pinned original binary and the candidate item directory.
-No upstream decision text, no issue comments, no sample sha256, no round-number branches.
-
-Usage:
-  python -B tool/preflight.py --task NATIVE-337 --item-dir handoff/inbox/NATIVE-337
-  python -B tool/preflight.py --task NATIVE-337 --folder handoff/inbox/NATIVE-337 \
-      --binary _t13/orig/FindComponent.dll      (compatibility with the s27 CLI)
+This file holds only the L1 segment, the registry loader, the aggregation rule and the
+CLI, so contributors add a tool/det_*.py plus one REGISTRY line instead of editing shared
+code.  Detection inputs are the pinned original binary and the candidate item directory;
+no upstream decision text, issue comment, sample sha256 or round-number branch is read.
 """
 import argparse
-import csv
-import glob
 import hashlib
+import importlib
 import json
 import os
-import re
 import subprocess
 import sys
 
@@ -45,24 +40,8 @@ TASKS = {
     "NATIVE-340": {"original": "_t13/orig/WrapSaveMergeNNFiles.dll",
                    "original_sha256": "869c4b23598e433086fc72a0fc1c7bd50b3e280e0d84ad6742de28df8e804fec"},
 }
-# ECMA-335 II.23.1.10 MemberAccessMask: 0 CompilerControlled (privatescope), 1 Private,
-# 2 FamANDAssem, 3 Assembly, 4 Family, 5 FamORAssem, 6 Public.  Never reorder by guesswork.
-ACCESS = {0: "CompilerControlled", 1: "Private", 2: "FamANDAssem", 3: "Assembly", 4: "Family",
-          5: "FamORAssem", 6: "Public"}
-ACCESS_WORDS = ("public", "private", "assembly", "family", "privatescope", "compilercontrolled")
-
-ACCESS_ALIASES = {"privatescope": "CompilerControlled", "compilercontrolled": "CompilerControlled",
-                  "famandassem": "FamANDAssem", "famorassem": "FamORAssem"}
 
 
-def derive_method_access(flags, impl_flags):
-    """Every access fact is derived from the raw integers (ECMA-335 II.23.1.10)."""
-    return {"access": ACCESS[flags & 0x7], "impl_flags": impl_flags,
-            "static": bool(flags & 0x0010), "has_security": bool(flags & 0x4000),
-            "access_source": "flags&0x7=%d" % (flags & 0x7)}
-
-
-# ------------------------------------------------------------------ utilities
 def sha256_file(path):
     h = hashlib.sha256()
     with open(path, "rb") as f:
@@ -71,85 +50,42 @@ def sha256_file(path):
     return h.hexdigest()
 
 
-def read_text(path):
-    with open(path, encoding="utf-8-sig", errors="replace") as f:
-        return f.read()
-
-
-def read_csv(path):
-    with open(path, encoding="utf-8-sig", newline="") as f:
-        return list(csv.DictReader(f))
-
-
-def find_one(item_dir, *names):
-    for n in names:
-        p = os.path.join(item_dir, n)
-        if os.path.isfile(p):
-            return p
-    return None
-
-
-def round_of(name):
-    m = re.search(r"(?:^|[^0-9a-z])s(\d+)[-_]", name, re.I)
-    return int(m.group(1)) if m else None
-
-
-def current_round(item_dir):
-    top = 0
-    for dirpath, _dirs, fns in os.walk(item_dir):
-        for fn in fns:
-            top = max(top, round_of(fn) or 0)
-    return top
-
-
-def is_current(item_dir, path):
-    """Historical per-round evidence is kept by convention; only the newest round's
-    files describe the current submission, so frozen receipts must not be re-judged."""
-    r = round_of(os.path.relpath(path, item_dir))
-    return r is None or r >= current_round(item_dir)
-
-
-def resolve_ref(item_dir, ref):
-    m = re.fullmatch(r"(.+?)#L(\d+)(?:-L?(\d+))?", (ref or "").strip())
-    if not m:
-        return None
-    name, first, last = m.group(1), int(m.group(2)), int(m.group(3) or m.group(2))
-    path = os.path.normpath(os.path.join(item_dir, name))
-    if not path.startswith(os.path.normpath(item_dir)):
-        return None
-    return path, first, last
-
-
-def asm_line_rva(asm_path):
-    out = {}
-    if not asm_path or not os.path.isfile(asm_path):
-        return out
-    for i, line in enumerate(read_text(asm_path).splitlines(), 1):
-        m = re.match(r"\s*(?:0x)?([0-9A-Fa-f]{6,16})\s+((?:[0-9A-Fa-f]{2}\s){1,})", line)
-        if m:
-            out[i] = int(m.group(1), 16)
-    return out
-
-
-def candidate_site_rvas(item_dir, calls, cache):
-    out = {}
-    for row in calls:
-        if (row.get("class") or "").strip() == "data":
+def load_detectors():
+    """Import every module named in tool/det_registry.py, dedupe by module name."""
+    reg = importlib.import_module("det_registry")
+    seen, mods = set(), []
+    for name in reg.REGISTRY:
+        if name in seen:
             continue
-        ref = resolve_ref(item_dir, row.get("listing", ""))
-        if not ref:
+        seen.add(name)
+        try:
+            mod = importlib.import_module(name)
+        except Exception as exc:
+            mods.append(type("Broken", (), {"__name__": name, "detect": None,
+                                            "L1_COVERS": "no", "CATEGORY": name,
+                                            "SOURCE": "?", "IMPORT_ERROR": "%s: %s" % (type(exc).__name__, exc)})())
             continue
-        path, first, last = ref
-        if path not in cache:
-            cache[path] = asm_line_rva(path)
-        for i in range(first, last + 1):
-            if i in cache[path]:
-                out.setdefault(cache[path][i], row)
-    return out
+        if callable(getattr(mod, "detect", None)):
+            mods.append(mod)
+            continue
+        # fragment contract: a module may instead export REGISTRY = {name: fn}
+        reg_map = getattr(mod, "REGISTRY", None)
+        if isinstance(reg_map, dict):
+            for name, fn in reg_map.items():
+                if not callable(fn):
+                    continue
+                shim = type("Fragment", (), {})()
+                shim.__name__ = "%s:%s" % (mod.__name__, name)
+                shim.detect = fn
+                shim.L1_COVERS = getattr(mod, "L1_COVERS", "no")
+                shim.CATEGORY = name
+                shim.SOURCE = getattr(mod, "SOURCE", "?")
+                mods.append(shim)
+    return mods
 
 
-# ---------------------------------------------------------------- L1 segment
 def run_l1(task, item_dir, original, l1_path=None):
+    """Invoke the pinned upstream checker verbatim.  Its exit code is authoritative."""
     path = l1_path or os.path.join(ROOT, L1_PIN["path"])
     seg = {"path": L1_PIN["path"], "sha256": None, "pin_ok": False, "argv": None,
            "exit": None, "stdout": "", "stderr": "", "authoritative": True}
@@ -167,616 +103,39 @@ def run_l1(task, item_dir, original, l1_path=None):
     return seg
 
 
-# ---------------------------------------------------------------- PE helpers
-def prepared_pe(data):
-    import pefile
-    pe = pefile.PE(data=data, fast_load=True)
-    pe.parse_data_directories(directories=[pefile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_IMPORT"]])
-    return pe
+def git_blob_sha1(data):
+    h = hashlib.sha1()
+    h.update(b"blob %d\0" % len(data))
+    h.update(data)
+    return h.hexdigest()
 
 
-def iat_slots(pe):
-    slots = {}
-    for entry in getattr(pe, "DIRECTORY_ENTRY_IMPORT", []) or []:
-        dll = entry.dll.decode("ascii", "replace")
-        for imp in entry.imports:
-            if imp.address is None:
-                continue
-            rva = imp.address - pe.OPTIONAL_HEADER.ImageBase
-            name = imp.name.decode("ascii", "replace") if imp.name else "#%s" % imp.ordinal
-            slots[rva] = "%s!%s" % (dll, name)
-    return slots
-
-
-def executable_ranges(pe):
-    out = []
-    for s in pe.sections:
-        if s.Characteristics & 0x20000000:
-            out.append((s.VirtualAddress,
-                        s.VirtualAddress + max(s.Misc_VirtualSize, s.SizeOfRawData),
-                        s.PointerToRawData, s.SizeOfRawData))
-    return out
-
-
-def iat_call_sites(data, pe, slots):
-    from capstone import Cs, CS_ARCH_X86, CS_MODE_64
-    md = Cs(CS_ARCH_X86, CS_MODE_64)
-    md.detail = True
-    sites = {}
-    for va, vend, raw, rawsize in executable_ranges(pe):
-        chunk = data[raw:raw + min(rawsize, vend - va)]
-        for insn in md.disasm(chunk, va):
-            if insn.mnemonic not in ("call", "jmp") or not insn.operands:
-                continue
-            op = insn.operands[0]
-            if op.type != 3 or op.mem.base != 0x29 or op.mem.index:  # X86_OP_MEM, RIP
-                continue
-            target = insn.address + insn.size + op.mem.disp
-            if target in slots:
-                sites.setdefault(insn.address, {"rva": insn.address, "slot": target,
-                                                "symbol": slots[target]})
-    return [sites[k] for k in sorted(sites)]
-
-
-# ---------------------------------------------------------------- L2 detectors
-def detector(fn):
-    m = re.search(r"l1_covers:\s*(yes|no|partial)", fn.__doc__ or "")
-    fn.l1_covers = m.group(1) if m else "no"
-    return fn
-
-
-@detector
-def det_omitted_sites(task, item_dir, original, ctx):
-    """l1_covers: no
-
-    L1 validates only the rows a submission declares; it never enumerates the sites
-    the original binary actually contains.  Census = every direct RIP-relative call/jmp
-    landing on an import slot.  Hits = census minus declared sites.
-    NATIVE-340 (mixed-mode) census is not implemented yet.
-    """
-    hits = []
-    if task != "NATIVE-337":
-        return hits, {"skipped": "native x64 census only; mixed-mode census not implemented"}
-    data = open(original, "rb").read()
-    pe = prepared_pe(data)
-    slots = iat_slots(pe)
-    expected = iat_call_sites(data, pe, slots)
-    cpath = find_one(item_dir, "calls.csv")
-    calls = read_csv(cpath) if cpath else []
-    declared = candidate_site_rvas(item_dir, calls, {})
-    structural = sum(1 for r in calls if (r.get("class") or "").strip() != "data")
-    if structural and not declared:
-        return [{"severity": "advisory", "locator": "calls.csv",
-                 "evidence": "%d non-data rows but none of their listing refs resolve to an address; "
-                             "the census cannot be compared on this tree" % structural}], {
-            "census": len(expected), "declared_matched": None, "iat_slots": len(slots),
-            "skipped": "listing refs unresolvable"}
-    for site in expected:
-        if site["rva"] in declared:
-            continue
-        hits.append({"severity": "defect",
-                     "locator": "rva=0x%X" % site["rva"],
-                     "evidence": "original calls %s through IAT slot 0x%X; calls.csv declares no row at this RVA"
-                                 % (site["symbol"], site["slot"]),
-                     "symbol": site["symbol"], "slot": "0x%X" % site["slot"]})
-    return hits, {"census": len(expected), "declared_matched": len(expected) - len(hits),
-                  "iat_slots": len(slots)}
-
-
-@detector
-def det_stale_metrics(task, item_dir, original, ctx):
-    """l1_covers: no
-
-    L1 reads run.json only and never recomputes metrics.json.  Numeric disagreements
-    are defects; stale file hashes are advisory because some rounds pin a baseline.
-    """
-    hits = []
-    mpath = find_one(item_dir, "metrics.json")
-    cpath = find_one(item_dir, "calls.csv")
-    covpath = find_one(item_dir, "coverage.csv")
-    npath = find_one(item_dir, "native-functions.csv")
-    if not mpath or not cpath:
-        return hits, {"skipped": "metrics.json or calls.csv missing"}
-    metrics = json.loads(read_text(mpath))
-    calls = read_csv(cpath)
-    actual = {"calls": len(calls), "calls_total": len(calls)}
-    for cls in ("external", "boundary", "data", "unresolved"):
-        actual[cls] = sum(1 for r in calls if (r.get("class") or "").strip() == cls)
-    if covpath:
-        cov = read_csv(covpath)
-        actual["coverage_rows"] = len(cov)
-        actual["rows"] = len(cov)
-        actual["gaps"] = sum(1 for r in cov if (r.get("state") or "").strip() == "gap")
-    if npath:
-        actual["funcs"] = len(read_csv(npath))
-    for key, want in sorted(actual.items()):
-        if key not in metrics or isinstance(metrics[key], bool):
-            continue
-        got = metrics[key]
-        if not isinstance(got, (int, float)) or int(got) == int(want):
-            continue
-        hits.append({"severity": "defect",
-                     "locator": "metrics.json:%s" % key,
-                     "evidence": "metrics declares %s=%s; the tables on disk recompute to %d" % (key, got, want),
-                     "l1_said": "L1 does not read metrics.json", "we_said": "%s=%d" % (key, want)})
-    for key in sorted(metrics):
-        if not key.endswith("_sha256"):
-            continue
-        rel = key[:-7]
-        cand = [os.path.join(item_dir, rel + ext) for ext in (".csv", ".json", ".md")]
-        cand += [os.path.join(item_dir, "code", rel + ext) for ext in (".csv", ".json", ".md")]
-        target = next((p for p in cand if os.path.isfile(p)), None)
-        if not target:
-            continue
-        real = sha256_file(target)
-        if real != str(metrics[key]).lower():
-            rel = os.path.relpath(target, item_dir).replace("\\", "/")
-            certified = False
-            for dirpath, _dirs, fns in os.walk(item_dir):
-                for fn in fns:
-                    if not (re.search(r"fingerprint", fn, re.I) and fn.endswith(".json")):
-                        continue
-                    p = os.path.join(dirpath, fn)
-                    if not is_current(item_dir, p):
-                        continue
-                    try:
-                        body = json.loads(read_text(p))
-                    except Exception:
-                        continue
-                    stack = [body]
-                    while stack:
-                        node = stack.pop()
-                        if isinstance(node, dict):
-                            for k, v in node.items():
-                                if k.replace("\\", "/") == rel and isinstance(v, str) and v.lower() == real:
-                                    certified = True
-                                else:
-                                    stack.append(v)
-                        elif isinstance(node, list):
-                            stack.extend(node)
-            hits.append({"severity": "advisory" if certified else "defect",
-                         "locator": "metrics.json:%s" % key,
-                         "evidence": "declares %s..., disk has %s...%s" % (
-                             str(metrics[key])[:16], real[:16],
-                             " (superseded by this round's fingerprint table)" if certified else ""),
-                         "l1_said": "L1 does not read metrics.json", "we_said": real})
-    return hits, {"numeric_keys": len(actual)}
-
-
-@detector
-def det_row_linkage(task, item_dir, original, ctx):
-    """l1_covers: partial
-
-    L1 resolves listing refs and cross-checks indirect.csv as a subset, but never
-    checks that appendix row references point at the table they claim, nor that a
-    per-site column actually varies per site.
-    """
-    hits = []
-    cpath = find_one(item_dir, "calls.csv")
-    calls = read_csv(cpath) if cpath else []
-    row_col = re.compile(r"^(calls_row|calls_line|main_row|calls_row_no)$", re.I)
-    site_col = re.compile(r"^(site|rva|address)$", re.I)
-    addr_col = re.compile(r"(first_hop|thunk|target|iat_slot|calls_row|candidate_owner|original_host)$", re.I)
-    files = []
-    for dirpath, _dirs, fns in os.walk(item_dir):
-        for fn in fns:
-            if fn.endswith(".csv"):
-                p = os.path.join(dirpath, fn)
-                if cpath and os.path.normpath(p) == os.path.normpath(cpath):
-                    continue
-                if not is_current(item_dir, p):
-                    continue
-                try:
-                    rows = read_csv(p)
-                except Exception:
-                    continue
-                if rows:
-                    files.append((p, rows))
-    for path, rows in files:
-        rel = os.path.relpath(path, item_dir)
-        cols = list(rows[0].keys())
-        for col in cols:
-            vals = [(r.get(col) or "").strip() for r in rows]
-            nonempty = [v for v in vals if v]
-            if row_col.match(col) and not nonempty:
-                hits.append({"severity": "defect", "locator": "%s:%s" % (rel, col),
-                             "evidence": "column is empty for all %d rows; row linkage undelivered" % len(rows)})
-                continue
-            if not nonempty:
-                continue
-            if col.lower() in ("main_table_line", "main_row"):
-                asm_like = [v for v in nonempty if re.search(r"\.(asm|il|txt)#L", v, re.I)]
-                numeric = [c for c in cols if c != col and any((r.get(c) or "").strip().isdigit() for r in rows)]
-                if asm_like and not numeric:
-                    hits.append({"severity": "defect", "locator": "%s:%s" % (rel, col),
-                                 "evidence": "%d/%d values point at an assembly listing (%s); the column claims a "
-                                             "main-table row and the file carries no numeric row column"
-                                             % (len(asm_like), len(nonempty), asm_like[0])})
-                    continue
-            if addr_col.search(col) and len(rows) >= 20 and len(set(nonempty)) == 1 and "0x" in nonempty[0].lower():
-                hits.append({"severity": "defect", "locator": "%s:%s" % (rel, col),
-                             "evidence": "all %d rows carry the same address-valued placeholder %s; the column "
-                                         "cannot be per-site linkage" % (len(rows), nonempty[0])})
-        if calls and row_col.search(" ".join(cols)):
-            for col in cols:
-                if not row_col.match(col):
-                    continue
-                for r in rows:
-                    v = (r.get(col) or "").strip()
-                    if not v.isdigit():
-                        continue
-                    n = int(v)
-                    if n < 1 or n > len(calls):
-                        hits.append({"severity": "defect", "locator": "%s:%s=%s" % (rel, col, v),
-                                     "evidence": "calls.csv has %d rows; referenced row is out of range" % len(calls)})
-    return hits, {"appendix_files": len(files)}
-
-
-@detector
-def det_fingerprint_pathset(task, item_dir, original, ctx):
-    """l1_covers: no
-
-    L1 has no notion of declared deliverable/fingerprint path sets.  Only the newest
-    round's fingerprint table and receipt are judged; frozen historical ones are kept
-    by convention and must not be re-flagged.
-    """
-    hits = []
-    jfiles, mdfiles = [], []
+def check_head(item_dir, head):
+    """Compare the delivery directory with a committed head (git blob identity, not mtime)."""
+    sys.path.insert(0, str(ROOT))
+    import gh
+    tree = gh.call("GET", "/repos/%s/git/trees/%s?recursive=1" % (gh.REPO, head))
+    prefix = "handoff/inbox/" + os.path.basename(os.path.abspath(item_dir)) + "/"
+    want = {t["path"][len(prefix):]: t["sha"] for t in tree["tree"]
+            if t["type"] == "blob" and t["path"].startswith(prefix)}
+    have = {}
     for dirpath, _dirs, fns in os.walk(item_dir):
         for fn in fns:
             p = os.path.join(dirpath, fn)
-            if re.search(r"fingerprint|receipt|blobs", fn, re.I) and fn.endswith(".json"):
-                jfiles.append(p)
-            elif re.search(r"submission|receipt", fn, re.I) and fn.endswith(".md"):
-                mdfiles.append(p)
-    jfiles = [p for p in jfiles if is_current(item_dir, p)]
-    mdfiles = [p for p in mdfiles if is_current(item_dir, p)]
-    declared = {}
-
-    def judge(where, key, digest):
-        if len(digest) != 64:
-            hits.append({"severity": "defect", "locator": "%s:%s" % (where, key),
-                         "evidence": "declared digest has %d chars; a full sha256 has 64" % len(digest)})
-            return
-        target = os.path.normpath(os.path.join(item_dir, key))
-        if not target.startswith(os.path.normpath(item_dir)) or not os.path.isfile(target):
-            hits.append({"severity": "defect", "locator": "%s:%s" % (where, key),
-                         "evidence": "declared path is absent from the submission tree",
-                         "l1_said": "L1 never reads fingerprint files", "we_said": "file absent"})
-            return
-        real = sha256_file(target)
-        if real != digest.lower():
-            # a report is normally finalised after the fingerprint table is generated, so a
-            # markdown target that drifted is an ordering artifact, not evidence of a lie
-            sev = "advisory" if target.lower().endswith(".md") else "defect"
-            hits.append({"severity": sev, "locator": "%s:%s" % (where, key),
-                         "evidence": "declared %s..., disk %s..." % (digest[:16], real[:16]),
-                         "l1_said": "L1 never reads fingerprint files", "we_said": real})
-        declared[key] = digest
-
-    for p in jfiles:
-        rel = os.path.relpath(p, item_dir)
-        try:
-            doc = json.loads(read_text(p))
-        except Exception:
-            continue
-        pairs = []
-        def walk(node):
-            if isinstance(node, dict):
-                for k, v in node.items():
-                    if isinstance(v, str) and re.fullmatch(r"[0-9a-fA-F]{8,64}", v) and ("/" in k or "." in k):
-                        pairs.append((k, v))
-                    else:
-                        walk(v)
-        walk(doc)
-        for key, digest in pairs:
-            judge(rel, key, digest)
-    md_rows = 0
-    for p in mdfiles:
-        rel = os.path.relpath(p, item_dir)
-        for line in read_text(p).splitlines():
-            m = re.match(r"\s*\|\s*([^|]+?)\s*\|\s*([0-9a-fA-F]{64})\s*\|", line)
-            if not m:
-                continue
-            label = m.group(1).replace(chr(96), "").strip()
-            digest = m.group(2).lower()
-            md_rows += 1
-            if not re.search(r"[/\\]|\.(csv|json|asm|c|il|md|ps1|py|txt)$", label):
-                continue
-            judge(rel, label, digest)
-    return hits, {"fingerprint_files": len(jfiles), "receipts": len(mdfiles),
-                  "declared_paths": len(declared), "receipt_rows": md_rows}
-
-
-@detector
-def det_unresolved_no_recovery(task, item_dir, original, ctx):
-    """l1_covers: no
-
-    L1 requires a note only for coverage state=gap rows, never for class=unresolved
-    call rows, and never checks that the note is site-specific.
-    """
+            rel = os.path.relpath(p, item_dir).replace(os.sep, "/")
+            have[rel] = git_blob_sha1(open(p, "rb").read())
     hits = []
-    cpath = find_one(item_dir, "calls.csv")
-    if not cpath:
-        return hits, {"skipped": "calls.csv missing"}
-    calls = read_csv(cpath)
-    total = sum(1 for r in calls if (r.get("class") or "").strip() == "unresolved")
-    groups = {}
-    for i, r in enumerate(calls, 2):
-        if (r.get("class") or "").strip() != "unresolved":
-            continue
-        note = (r.get("note") or "").strip()
-        if not note:
-            hits.append({"severity": "defect", "locator": "calls.csv:L%d" % i,
-                         "evidence": "unresolved row without recovery text"})
-            continue
-        groups.setdefault(note, []).append(i)
-    for note, rows in groups.items():
-        if len(rows) < 5 or len(rows) < 0.5 * max(total, 1):
-            continue
-        hits.append({"severity": "defect", "locator": "calls.csv:L%d-L%d" % (rows[0], rows[-1]),
-                     "evidence": "%d/%d unresolved rows share one identical recovery sentence starting '%s'"
-                                 % (len(rows), total, note[:48])})
-    return hits, {"unresolved_rows": total, "distinct_notes": len(groups)}
-
-
-@detector
-def det_symbol_substring(task, item_dir, original, ctx):
-    """l1_covers: partial
-
-    L1 checks that the listing contains the address, not that the symbol bound to a
-    site is the exact imported identity.  Two symbols where one is a prefix of the
-    other bound to the same site are a conflation risk.
-    """
-    hits = []
-    cpath = find_one(item_dir, "calls.csv")
-    if not cpath:
-        return hits, {}
-    rows = read_csv(cpath)
-    by_site = {}
-    for r in rows:
-        key = tuple((r.get("listing") or "").split("#")[0:2])
-        by_site.setdefault(key, []).append((r.get("callee") or "").strip())
-    for site, callees in by_site.items():
-        callees = [c for c in callees if c]
-        for i, a in enumerate(callees):
-            for b in callees[i + 1:]:
-                if a != b and (a.startswith(b) or b.startswith(a)):
-                    hits.append({"severity": "defect", "locator": "calls.csv:%s" % (site[0] or "-"),
-                                 "evidence": "same site binds two prefix-relative symbols %r and %r" % (a, b)})
-    for r in rows:
-        callee, note = (r.get("callee") or "").strip(), r.get("note") or ""
-        for m in re.finditer(r"([A-Za-z0-9_.\-]+!(?:#[0-9]+|[A-Za-z0-9_@?$.]+)|#[0-9]+)", note):
-            sym = m.group(1)
-            if callee and sym != callee and (sym.startswith(callee) or callee.startswith(sym)):
-                hits.append({"severity": "defect", "locator": "calls.csv:%s" % (r.get("listing") or "-"),
-                             "evidence": "note symbol %r is a prefix-relative variant of callee %r" % (sym, callee)})
-    return hits, {"rows": len(rows)}
-
-
-@detector
-def det_wrong_symbol(task, item_dir, original, ctx):
-    """l1_covers: no
-
-    L1 never resolves an IAT slot to an import name, so a callee naming an API the
-    original does not import there is invisible to it.
-    """
-    hits = []
-    cpath = find_one(item_dir, "calls.csv")
-    if not cpath:
-        return hits, {}
-    data = open(original, "rb").read()
-    pe = prepared_pe(data)
-    names, ordinals = {}, {}
-    import pefile
-    for entry in getattr(pe, "DIRECTORY_ENTRY_IMPORT", []) or []:
-        dll = entry.dll.decode("ascii", "replace").lower()
-        for imp in entry.imports:
-            if imp.name:
-                names.setdefault(dll, set()).add(imp.name.decode("ascii", "replace"))
-            if imp.ordinal is not None:
-                ordinals.setdefault(dll, set()).add(int(imp.ordinal))
-    rows = read_csv(cpath)
-    for r in rows:
-        callee = (r.get("callee") or "").strip()
-        if not callee or "!" not in callee or re.match(r"^0x", callee):
-            continue
-        dll, member = callee.split("!", 1)
-        dll = dll.lower()
-        if member.startswith("#"):
-            try:
-                ordv = int(member[1:])
-            except ValueError:
-                continue
-            if ordv in ordinals.get(dll, ()) or member in names.get(dll, ()):
-                continue
-        elif member in names.get(dll, ()):
-            continue
-        elif dll in names and any(member.startswith(n) or n.startswith(member)
-                                  for n in names[dll]):
-            continue  # prefix variants are a separate category
-        hits.append({"severity": "defect", "locator": "calls.csv:%s" % (r.get("listing") or "-"),
-                     "evidence": "declares %r, which is not an import of the pinned original" % callee})
-    return hits, {"iat_dlls": len(names), "rows": len(rows)}
-
-
-@detector
-def det_byte_mismatch(task, item_dir, original, ctx):
-    """l1_covers: partial
-
-    L1 compares first_bytes only at coverage entry points.  A listing line that claims
-    bytes differing from the original at the same RVA is invisible to it.
-    """
-    hits = []
-    code = os.path.join(item_dir, "code")
-    if not os.path.isdir(code):
-        return hits, {"skipped": "no code/ directory"}
-    try:
-        from pe_reader import PE, parse_asm
-    except Exception as exc:
-        return hits, {"skipped": "pe_reader unavailable: %s" % exc}
-    data = open(original, "rb").read()
-    pe = PE(data)
-    checked = 0
-    for dirpath, _dirs, fns in os.walk(code):
-        for fn in sorted(fns):
-            if not re.search(r"native.*\.asm$", fn, re.I):
-                continue
-            if not is_current(item_dir, os.path.join(dirpath, fn)):
-                continue
-            try:
-                _meta, ins = parse_asm(os.path.join(dirpath, fn))
-            except Exception:
-                continue
-            for (ln, addr, blob, _text, _raw) in ins:
-                try:
-                    start = pe.filepos(addr)
-                except Exception:
-                    continue
-                orig = data[start:start + len(blob)].hex()
-                checked += 1
-                if blob.hex() != orig:
-                    hits.append({"severity": "defect",
-                                 "locator": "%s#L%d" % (os.path.relpath(os.path.join(dirpath, fn), item_dir), ln),
-                                 "evidence": "0x%X candidate bytes %s, original %s" % (addr, blob.hex(), orig)})
-    return hits, {"instructions_checked": checked}
-
-
-@detector
-def det_access_flags(task, item_dir, original, ctx):
-    """l1_covers: no
-
-    L1 never reads method access properties.  A claimed access level must come with the
-    raw Flags value, and flags&7 must map to the claimed level.
-    """
-    hits = []
-    cpath = find_one(item_dir, "calls.csv")
-    files = []
-    for dirpath, _dirs, fns in os.walk(item_dir):
-        for fn in fns:
-            if fn.endswith(".md") and re.search(r"submission|audit|notes", fn, re.I):
-                p = os.path.join(dirpath, fn)
-                if is_current(item_dir, p):
-                    files.append(p)
-    for p in files:
-        rel = os.path.relpath(p, item_dir)
-        low = read_text(p).lower()
-        claimed = [w for w in ACCESS_WORDS if w in low]
-        if claimed and not re.search(r"flags\s*[=:]\s*(0x)?[0-9a-f]+", low):
-            hits.append({"severity": "defect", "locator": rel,
-                         "evidence": "claims access level %s without the raw Flags value" % ",".join(claimed)})
-        for m in re.finditer(r"flags\s*[=:]\s*(0x)?([0-9a-fA-F]+)[^\n]*?(public|private|assembly|family|privatescope)", low):
-            flags = int(m.group(2), 16)
-            claimed_word = m.group(3)
-            truth = ACCESS.get(flags & 7, "?").lower()
-            if truth != claimed_word:
-                hits.append({"severity": "defect", "locator": rel,
-                             "evidence": "flags=%#x maps to %s but the text says %s" % (flags, truth, claimed_word)})
-    # data tables: a claimed access literal must equal ACCESS[original Flags & 0x7].  The
-    # original MethodDef is re-read from the binary, so a stale or hand-written literal fails.
-    tables = []
-    code_dir = os.path.join(item_dir, "code")
-    if os.path.isdir(code_dir):
-        tables = sorted(glob.glob(os.path.join(code_dir, "s*-method-access.csv")))
-    try:
-        import struct
-        from md_reader import parse as md_parse
-        from pe_reader import PE
-        data = open(original, "rb").read()
-        pe = PE(data)
-        cli = pe.directory(14)[0]
-        md_off = pe.filepos(struct.unpack_from("<I", data, pe.filepos(cli) + 8)[0])
-        methods = {m["token"]: m for m in md_parse(data, md_off)["methods"]}
-    except Exception as exc:
-        return hits, {"documents_checked": len(files), "tables_checked": 0,
-                      "skipped": "methoddef reader unavailable: %s" % exc}
-    table_rows = 0
-    for path in tables:
-        if not is_current(item_dir, path):
-            continue
-        for row in csv.DictReader(open(path, encoding="utf-8")):
-            table_rows += 1
-            rel = os.path.relpath(path, item_dir)
-            try:
-                tok = int(row["token"], 16)
-            except Exception:
-                hits.append({"severity": "defect", "locator": rel,
-                             "evidence": "unparseable token %r" % row.get("token")})
-                continue
-            m = methods.get(tok)
-            if m is None:
-                hits.append({"severity": "defect", "locator": rel,
-                             "evidence": "token %s is not a MethodDef of the original" % row["token"]})
-                continue
-            truth = derive_method_access(m["flags"], m["impl_flags"])
-            if "flags" in row and int(row["flags"], 16) != m["flags"]:
-                hits.append({"severity": "defect", "locator": rel,
-                             "evidence": "%s flags %s but original 0x%04X" % (row["token"], row["flags"], m["flags"])})
-            claimed = (row.get("access") or "").strip()
-            if ACCESS_ALIASES.get(claimed.lower(), claimed).lower() != truth["access"].lower():
-                hits.append({"severity": "defect", "locator": rel,
-                             "evidence": "%s claims %r but flags&0x7=%d -> %s"
-                                         % (row["token"], claimed, m["flags"] & 7, truth["access"])})
-            if "impl_flags" in row and int(row["impl_flags"], 16) != m["impl_flags"]:
-                hits.append({"severity": "defect", "locator": rel,
-                             "evidence": "%s impl_flags %s but original 0x%04X"
-                                         % (row["token"], row["impl_flags"], m["impl_flags"])})
-            for key, want in (("static", truth["static"]), ("has_security", truth["has_security"])):
-                if key in row and str(row[key]).strip().lower() != str(want).lower():
-                    hits.append({"severity": "defect", "locator": rel,
-                                 "evidence": "%s %s=%s but derived %s" % (row["token"], key, row[key], want)})
-            sha = (row.get("il_sha256") or "").strip()
-            if sha and len(sha) != 64:
-                hits.append({"severity": "defect", "locator": rel,
-                             "evidence": "%s il_sha256 has %d chars, need 64" % (row["token"], len(sha))})
-    return hits, {"documents_checked": len(files), "tables_checked": len(tables),
-                  "table_rows": table_rows}
-
-
-@detector
-def det_receipt_paths(task, item_dir, original, ctx):
-    """l1_covers: no
-
-    L1 never reads the submissions.  Every code/... path and every sha256 named by the latest
-    receipt must exist in the delivery or in tool/.
-    """
-    import hashlib
-    hits = []
-    root = os.path.dirname(os.path.dirname(os.path.abspath(item_dir)))
-    mds = []
-    for dirpath, _dirs, fns in os.walk(item_dir):
-        for fn in fns:
-            if re.match(r"s\d+-submission\.md$", fn):
-                mds.append(os.path.join(dirpath, fn))
-    if not mds:
-        return hits, {"skipped": "no submission receipts"}
-    mds.sort(key=lambda p: int(re.match(r"s(\d+)", os.path.basename(p)).group(1)))
-    text = read_text(mds[-1])
-    for rel in re.findall(r"code/[A-Za-z0-9_./-]+\.(?:csv|asm|json)", text):
-        if not os.path.exists(os.path.join(item_dir, rel)):
-            hits.append({"severity": "defect", "locator": os.path.basename(mds[-1]),
-                         "evidence": "receipt names missing file %s" % rel})
-    pool = []
-    for base in (item_dir, os.path.join(root, "tool")):
-        for dirpath, _dirs, fns in os.walk(base):
-            for fn in fns:
-                pool.append(os.path.join(dirpath, fn))
-    have = set()
-    for p in pool:
-        try:
-            have.add(hashlib.sha256(open(p, "rb").read()).hexdigest())
-        except OSError:
-            pass
-    for sha in set(re.findall(r"\b[0-9a-f]{64}\b", text)):
-        if sha not in have:
-            hits.append({"severity": "defect", "locator": os.path.basename(mds[-1]),
-                         "evidence": "receipt lists sha256 %s not found in delivery or tool/" % sha[:16]})
-    return hits, {"receipt": os.path.basename(mds[-1])}
-
-
-DETECTORS = [det_receipt_paths, det_omitted_sites, det_stale_metrics, det_row_linkage, det_fingerprint_pathset,
-             det_unresolved_no_recovery, det_symbol_substring, det_wrong_symbol,
-             det_byte_mismatch, det_access_flags]
+    for rel in sorted(set(want) - set(have)):
+        hits.append({"severity": "defect", "locator": rel, "origin": "t14",
+                     "evidence": "declared in head %s but missing on disk" % head[:8]})
+    for rel in sorted(set(have) - set(want)):
+        hits.append({"severity": "defect", "locator": rel, "origin": "t14",
+                     "evidence": "on disk but not in head %s" % head[:8]})
+    for rel in sorted(set(want) & set(have)):
+        if want[rel] != have[rel]:
+            hits.append({"severity": "defect", "locator": rel, "origin": "t14",
+                         "evidence": "blob differs from head %s" % head[:8]})
+    return hits, {"head": head, "declared": len(want), "on_disk": len(have)}
 
 
 def aggregate(task, item_dir, original, l1_path=None, skip_l1=False):
@@ -784,49 +143,78 @@ def aggregate(task, item_dir, original, l1_path=None, skip_l1=False):
     if not skip_l1:
         l1seg = run_l1(task, item_dir, original, l1_path)
     reports, warnings, l2_exit, ctx = {}, [], 0, {}
-    for fn in DETECTORS:
-        try:
-            hits, stats = fn(task, item_dir, original, ctx)
-        except Exception as exc:
-            reports[fn.__name__] = {"category": fn.__name__[4:], "l1_covers": fn.l1_covers,
-                                    "error": "%s: %s" % (type(exc).__name__, exc), "hits": []}
+    for mod in load_detectors():
+        name = mod.__name__
+        if getattr(mod, "detect", None) is None:
+            reports[name] = {"category": getattr(mod, "CATEGORY", name), "l1_covers": "no",
+                             "error": getattr(mod, "IMPORT_ERROR", "import failed"), "hits": []}
             continue
+        try:
+            hits, stats = mod.detect(task, item_dir, original, ctx)
+        except Exception as exc:
+            reports[name] = {"category": getattr(mod, "CATEGORY", name),
+                             "l1_covers": getattr(mod, "L1_COVERS", "no"),
+                             "error": "%s: %s" % (type(exc).__name__, exc), "hits": []}
+            continue
+        origin = getattr(mod, "SOURCE", "t16")
+        for h in hits:
+            h.setdefault("origin", origin)
         defects = [h for h in hits if h.get("severity") == "defect"]
-        reports[fn.__name__] = {"category": fn.__name__[4:], "l1_covers": fn.l1_covers,
-                                "hits": hits, "defects": len(defects),
-                                "advisory": len(hits) - len(defects), "stats": stats}
-        if fn.l1_covers in ("yes", "partial") and defects:
-            warnings.append({"detector": fn.__name__, "l1_covers": fn.l1_covers,
+        covers = getattr(mod, "L1_COVERS", "no")
+        reports[name] = {"category": getattr(mod, "CATEGORY", name), "l1_covers": covers,
+                         "origin": origin, "hits": hits, "defects": len(defects),
+                         "advisory": len(hits) - len(defects), "stats": stats}
+        if covers in ("yes", "partial") and defects:
+            warnings.append({"detector": name, "l1_covers": covers,
                              "l1_said": "L1 accepts this submission (exit %s)" % l1seg.get("exit"),
-                             "we_said": "%d defects" % len(defects),
-                             "hits": defects})
-        elif fn.l1_covers == "no" and defects:
+                             "we_said": "%d defects" % len(defects), "hits": defects})
+        elif covers == "no" and defects:
             l2_exit = max(l2_exit, 2)
-    out = {"task": task, "item_dir": os.path.abspath(item_dir),
-           "original": os.path.abspath(original), "original_sha256": sha256_file(original),
-           "l1": l1seg, "l2": reports, "l2_exit": l2_exit, "warnings": warnings,
-           "exit": l1seg.get("exit") if l1seg.get("exit") not in (None, 0) else l2_exit,
-           "l1_authoritative": True}
-    return out
+    return {"task": task, "item_dir": os.path.abspath(item_dir),
+            "original": os.path.abspath(original), "original_sha256": sha256_file(original),
+            "l1": l1seg, "l2": reports, "l2_exit": l2_exit, "warnings": warnings,
+            "exit": l1seg.get("exit") if l1seg.get("exit") not in (None, 0) else l2_exit,
+            "l1_authoritative": True}
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description="L1 (upstream, pinned) + L2 (ours) preflight")
+    ap = argparse.ArgumentParser(description="L1 (upstream, pinned) + L2 (tool/det_*.py)")
     ap.add_argument("--task", choices=sorted(TASKS), default="NATIVE-337")
     ap.add_argument("--item-dir")
-    ap.add_argument("--folder", help="alias of --item-dir (s27 CLI)")
+    ap.add_argument("--folder", help="alias of --item-dir")
+    ap.add_argument("--head", help="repository head sha; the task inbox is fetched to a cache "
+                                  "directory first (see tool/preflight_fetch.py)")
+    ap.add_argument("--repo", default=None, help="owner/name, default DenseFLoe/Aspen-for-mac")
+    ap.add_argument("--cache", default=None, help="where --head materialises the tree")
     ap.add_argument("--original")
-    ap.add_argument("--binary", help="alias of --original (s27 CLI)")
+    ap.add_argument("--binary", help="alias of --original")
     ap.add_argument("--l1-path")
+    ap.add_argument("--against-head", help="committed head SHA; the local item tree is compared "
+                                             "with it by git blob identity before any detection")
     ap.add_argument("--skip-l1", action="store_true")
     ap.add_argument("--json")
     ap.add_argument("--quiet", action="store_true")
     a = ap.parse_args(argv)
-    item_dir = a.item_dir or a.folder
-    if not item_dir:
-        ap.error("--item-dir is required")
+    item_dir = a.item_dir or a.folder or os.path.join("handoff", "inbox", a.task)
+    fetched = None
+    if a.head:
+        import preflight_fetch
+        cache = a.cache or os.path.join(ROOT, "_tools", "preflight", "cache")
+        dest = os.path.join(cache, "%s-%s" % (a.task.lower(), a.head[:8]))
+        item_dir = preflight_fetch.fetch_head(a.head, a.task, dest,
+                                              repo=a.repo or preflight_fetch.DEFAULT_REPO)
+        fetched = {"head": a.head, "cache": os.path.abspath(dest)}
+    head_hits, head_stats = ([], {})
+    if a.against_head:
+        head_hits, head_stats = check_head(item_dir, a.against_head)
     original = a.original or a.binary or os.path.join(ROOT, TASKS[a.task]["original"])
     rep = aggregate(a.task, item_dir, original, a.l1_path, a.skip_l1)
+    if fetched:
+        rep["fetched"] = fetched
+    if a.against_head:
+        rep["against_head"] = dict(stats=head_stats, hits=head_hits, defects=len(head_hits))
+        if head_hits:
+            rep["exit"] = 2
     if a.json:
         with open(a.json, "w", encoding="utf-8") as f:
             json.dump(rep, f, ensure_ascii=False, indent=2)
@@ -834,14 +222,20 @@ def main(argv=None):
         print("l1 pin_ok=%s exit=%s :: %s" % (rep["l1"].get("pin_ok"), rep["l1"].get("exit"),
                                               (rep["l1"].get("stdout") or "")[:150]))
         for name, r in rep["l2"].items():
-            print("l2 %-28s l1_covers=%-7s defects=%-3d advisory=%-3d"
-                  % (name[4:], r["l1_covers"], r.get("defects", 0), r.get("advisory", 0)))
+            print("l2 %-24s l1_covers=%-7s defects=%-3d advisory=%-3d"
+                  % (r.get("category", name), r["l1_covers"], r.get("defects", 0), r.get("advisory", 0)))
             if r.get("stats"):
-                print("       stats: %s" % json.dumps(r["stats"], ensure_ascii=False)[:180])
-            for h in r.get("hits", [])[:4]:
-                print("     - [%s] %s :: %s" % (h.get("severity"), h["locator"], h["evidence"][:130]))
+                print("       stats: %s" % json.dumps(r["stats"], ensure_ascii=False)[:150])
+            for h in r.get("hits", [])[:3]:
+                print("     - [%s] %s :: %s" % (h.get("severity"), h["locator"], h["evidence"][:120]))
         if rep["warnings"]:
             print("warnings: %d (L1 says accepted, we say defect)" % len(rep["warnings"]))
+        if rep.get("head"):
+            print("head %s: declared=%d on_disk=%d defects=%d"
+                  % (rep["head"]["stats"].get("head", "")[:8], rep["head"]["stats"].get("declared", 0),
+                     rep["head"]["stats"].get("on_disk", 0), rep["head"]["defects"]))
+            for h in rep["head"]["hits"][:5]:
+                print("     - [%s] %s :: %s" % (h["severity"], h["locator"], h["evidence"]))
         print("exit:", rep["exit"])
     return rep["exit"]
 

@@ -219,9 +219,9 @@ def main():
     md += ["", "声明/实现列解码：%s[%d] / %s[%d]；真件 MethodImpl 行数 %d。"
            % (decl[0], decl[1], body[0], body[1], len(impl_rows)), "",
            "## 3. 每 token 完整 IL 指纹（%d 条）" % len(irows), "",
-           "| token | 访问 | IL 长度 | IL SHA-256 |", "| --- | --- | ---: | --- |"]
+           "| token | 访问 | flags | IL 长度 | IL SHA-256 |", "| --- | --- | --- | ---: | --- |"]
     for r in irows[:6]:
-        md.append("| %s | %s | %d | `%s` |" % (r["token"], r["access"], r["il_len"], r["il_sha256"]))
+        md.append("| %s | %s | %s | %d | `%s` |" % (r["token"], r["access"], r["flags"], r["il_len"], r["il_sha256"]))
     md.append("| … | … | … | 全表见 code/s77-il-fingerprints.csv |")
     md += ["", "## 4. VTableFixups 与四个修补槽", "",
            "目录 0x%X / 0x%X，共 %d 条；四条槽位：" % (rva, size, len(entries)), "",
