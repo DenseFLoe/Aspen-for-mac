@@ -1,7 +1,9 @@
 # NATIVE-340 s101 提交
 
 - 分支：tietoumiao/native-340-s33；上轮 `38b6814d`，主干 44c22e3d
-- 本轮 head：f38c2df80fd991dab0bb23fdbe3e36f7ba864796（本节脚本指纹取自该 head 的分支树）
+- 本轮 head：4bc40c68ab7f501e2062c49c037adadc5d9f6808
+脚本指纹来源树：f38c2df80fd991dab0bb23fdbe3e36f7ba864796
+说明：回执无法记录自身所在提交的哈希（自指）；两棵树仅本行不同，全部脚本指纹与交付表内容在前者上完全一致，已逐条复算。
 
 ## 1b 合流
 
