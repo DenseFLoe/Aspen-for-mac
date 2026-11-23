@@ -111,16 +111,24 @@ def data_sections(data, pe, hdr):
         p = pe.filepos(rva)
         kind = data[p]
         size = data[p + 1] | (data[p + 2] << 8) | (data[p + 3] << 16)
-        # the declared section must lie inside the PE section mapping (raw data or its
-        # virtual zero-fill tail); a clause that pokes past the mapping is an error, not
-        # a partial success.
-        sec_end = sec["rva"] + max(sec["size"], sec.get("vsize", 0))
-        if rva + size > sec_end:
-            raise ValueError("data section at %#x (size %d) overruns section %s (end %#x): "
-                             "%d bytes outside the mapped range"
-                             % (rva, size, sec["name"], sec_end, rva + size - sec_end))
+        # three independent checks: raw-backed range, virtual range, physical file bytes.
+        # each reports the first invalid RVA instead of failing later in struct.unpack.
+        raw_end = sec["rva"] + sec["size"]                       # SizeOfRawData
+        virt_end = sec["rva"] + sec.get("vsize", sec["size"])    # VirtualSize
         if size < 4:
             raise ValueError("data section at %#x has size %d (< 4)" % (rva, size))
+        if rva + size > raw_end:
+            raise ValueError("data section at %#x (size %d) overruns the RAW range of %s "
+                             "(raw end %#x): first invalid RVA %#x"
+                             % (rva, size, sec["name"], raw_end, raw_end))
+        if rva + size > virt_end:
+            raise ValueError("data section at %#x (size %d) overruns the VIRTUAL range of %s "
+                             "(virtual end %#x): first invalid RVA %#x"
+                             % (rva, size, sec["name"], virt_end, virt_end))
+        if pe.filepos(rva) + size > len(data):
+            raise ValueError("data section at %#x (size %d) overruns the FILE bytes "
+                             "(file length %#x): first invalid offset %#x"
+                             % (rva, size, len(data), len(data)))
         base = kind & SECT_KIND_MASK
         if base not in SUPPORTED:
             raise UnsupportedSection(rva, kind, size)
@@ -174,7 +182,7 @@ def _synthetic(kind1, kind2=None, clause=None, try_len=4, handler_off=3, handler
     struct.pack_into("<I", data, 0x80 + 36, 0x60000020)
     pe = _FakePE(data, [sec])
     body = 0x1000
-    code = bytes([0x00, 0x2A, 0x00, 0x00])
+    code = bytes([0x00, 0x2A, 0x00, 0x00]) * 4      # 16 bytes: room for try offsets 0 and 4
     flags = hdr_flags if hdr_flags is not None else (0x0B if kind1 else 0x03)
     struct.pack_into("<H", data, body, (3 << 12) | flags)
     struct.pack_into("<H", data, body + 2, 8)
@@ -182,7 +190,7 @@ def _synthetic(kind1, kind2=None, clause=None, try_len=4, handler_off=3, handler
     struct.pack_into("<I", data, body + 8, 0)
     data[body + 12:body + 12 + len(code)] = code
     q = (body + 12 + len(code) + 3) & ~3
-    for kind in (kind1, kind2):
+    for index, kind in enumerate((kind1, kind2)):
         if not kind:
             break
         entry = 24 if kind & 0x40 else 12
@@ -191,9 +199,9 @@ def _synthetic(kind1, kind2=None, clause=None, try_len=4, handler_off=3, handler
         data[q + 1:q + 4] = bytes([size & 0xFF, (size >> 8) & 0xFF, (size >> 16) & 0xFF])
         if kind & 0x3F == EHTABLE:
             if kind & 0x40:
-                struct.pack_into("<IIIIII", data, q + 4, 2, 0, try_len, handler_off, handler_len, 0x01000001)
+                struct.pack_into("<IIIIII", data, q + 4, 2, index * 4, try_len, handler_off, handler_len, 0x01000001)
             else:
-                struct.pack_into("<HHBHB I", data, q + 4, 2, 0, try_len, handler_off, handler_len, 0x01000001)
+                struct.pack_into("<HHBHB I", data, q + 4, 2, index * 4, try_len, handler_off, handler_len, 0x01000001)
         q += size
     return bytes(data), pe
 
@@ -204,11 +212,16 @@ def synthetic_tests():
                          ("fat|0x80 + small", 0xC1, 0x01), ("small|0x80 + fat", 0x81, 0x41)):
         data, pe = _synthetic(k1, k2)
         h, eh, cl = read(data, pe, 0x1000)
-        ok = eh is not None and len(cl) == 1 and cl[0]["flags"] == 2 and cl[0]["try_length"] == 4
+        want_clauses = 2 if k2 else 1
+        ok = (eh is not None and len(cl) == want_clauses
+              and [c["flags"] for c in cl] == [2] * want_clauses
+              and [c["try_offset"] for c in cl] == ([0, 4] if k2 else [0]))
         if k2:
             secs = data_sections(data, pe, h)
+            widths = [s["size"] - 4 for s in secs]
             ok = ok and len(secs) == 2 and secs[1]["base"] == (k2 & 0x3F)
-        out.append(("EH %s parsed (chained=%s)" % (name, bool(k2)), ok))
+            ok = ok and widths == [24 if k1 & 0x40 else 12, 24 if k2 & 0x40 else 12]
+        out.append(("EH %s parsed (chained=%s, clauses=%d)" % (name, bool(k2), want_clauses), ok))
     data, pe = _synthetic(0x00)
     h, eh, cl = read(data, pe, 0x1000)
     out.append(("MoreSects clear -> no data section", eh is None and not cl and h["more_sections"] is False))
@@ -222,6 +235,19 @@ def synthetic_tests():
     h, eh, cl = read(data, pe, 0x1000)
     secs = data_sections(data, pe, h)
     out.append(("section chain stops when kind lacks 0x80", len(secs) == 1 and secs[0]["more"] is False))
+    # successor boundary: first section declares a successor that has no mapping
+    data, pe = _synthetic(0xC1, 0x01)
+    data = bytearray(data)
+    first = (0x1000 + 12 + 16 + 3) & ~3
+    pe2 = _FakePE(data, [dict(rva=0x1000, size=(first - 0x1000) + 28, raw=0x1000,
+                              vsize=(first - 0x1000) + 28, hdr=0x80, exec=True, name=".text")])
+    try:
+        data_sections(bytes(data), pe2, header(bytes(data), pe2, 0x1000))
+        out.append(("successor boundary reports the unmapped RVA", False))
+    except ValueError as exc:
+        msg = str(exc)
+        out.append(("successor boundary reports the unmapped RVA",
+                    "successor" in msg and "0x" in msg.lower()))
     data, pe = _synthetic(0x41, try_len=0x40)
     try:
         read(data, pe, 0x1000)
@@ -239,14 +265,13 @@ def synthetic_tests():
         read(data, pe, 0x1000)
         out.append(("unsupported kind reported with its range", False))
     except UnsupportedSection as exc:
-        want = (0x1000 + 12 + 4 + 3) & ~3
+        want = (0x1000 + 12 + 16 + 3) & ~3
         msg = str(exc).upper()
         out.append(("unsupported kind reported with its range",
                     exc.rva == want and exc.kind == 0x43 and "0X%X" % want in msg
                     and "0X43" in msg and "SIZE %d" % exc.size in msg))
     data, pe = _synthetic(0x41)
-    q = 0x1000 + 12 + 4
-    q = (q + 3) & ~3
+    q = (0x1000 + 12 + 16 + 3) & ~3
     data = bytearray(data)
     struct.pack_into("<I", data, q + 1, 16)           # size says 16, fat needs 28
     try:
