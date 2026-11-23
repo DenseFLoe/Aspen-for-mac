@@ -150,13 +150,16 @@ def layout_for(data, offset):
                 columns=columns, size_of=size_of, starts=starts, layout=layout)
 
 
-def read(data, offset):
-    """Decode rows; widths come from layout_for() so parsing and layout cannot diverge."""
+def read(data, offset, _mutate_row_size=False):
+    """Decode rows; widths come from layout_for(). _mutate_row_size is a test hook that
+    corrupts the row stride inside the value-reading path (not the width function)."""
     L = layout_for(data, offset)
     streams, counts, starts, columns = L["streams"], L["counts"], L["starts"], L["columns"]
     rows = {}
     for i in sorted(starts):
         base, size = starts[i]
+        if _mutate_row_size:
+            size = 2
         out = []
         for r in range(counts[i]):
             off = base + r * size

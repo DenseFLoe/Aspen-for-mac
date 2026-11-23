@@ -20,6 +20,17 @@
 
 缺引用时报缺：跳板块 15 条 note 原先没有 IAT 槽与符号，本轮补为 `；IAT 槽 0x60xx = DLL!symbol` 后基线才为 0。
 
+
+## ①b read() 行取值路径变体
+
+`read(data, offset, _mutate_row_size=True)` 把行步长改成常量 2（只动取值路径，不动宽度函数）。
+
+    LOCATED MemberRef[3].Name: normal='.ctor' mutated='bute'
+    LOCATED MethodDef[5].Flags: normal=19 mutated=4300
+    read-mutate: fields=5 changed=5                     exit 0
+
+测试通过 = 5 个字段全部被观测到变化；若取值路径未被覆盖（changed=0）则 exit 1。
+
 ## ② 三站点区间冲突（双标注，待核）
 
     asm  ; FUNC 00004777-000047D   → 半开区间 [0x4777,0x477D)，0x477D 在区间外
