@@ -22,7 +22,7 @@ python -B tool/scan_iat_audit.py --asm <首轮 native.asm> --dll issue-materials
 # 自证
 - 同一 listing 重扫：363 个站点 363 条登记（0 漏）。
 - 本轮新 listing（280 个函数）：355 个站点 355 条登记（0 漏），data 48 条，含裁定点名的 0x3C44→0x7A88 "ReorderComp" 与 0x2601→0x7780 "ShowOpenMessageBox"。
-- 判定命令 python handoff/assignments/check-native-coverage.py NATIVE-337 输出见下；机械检查 0 缺口、0 unresolved（99 处寄存器/指针表间接转移逐址列入 code/indirect.csv），exit 0。
+- 判定命令 python handoff/assignments/check-native-coverage.py NATIVE-337 输出见下；机械检查 0 缺口；99 处寄存器/指针表间接转移按上游 2026-11-22 口径留在 calls.csv 的 class=unresolved，note 指向 code/indirect.csv 行号、已查路径与恢复条件；checker exit 2 = 带已申报缺口的有效交付。
 
 # 下一批如何自动避免
 门禁一条：原生件 calls 必须由 PE 导入槽位数得出，并断言 distinct IAT 站点 == external 行数，不等即构建失败。
@@ -42,10 +42,10 @@ python -B tool/scan_iat_audit.py --asm <首轮 native.asm> --dll issue-materials
 ## 判定命令与原始输出
 
 ~~~
-checked 280 coverage rows, 280 tool-native entries, 403 call records, 0 declared gaps
+checked 280 coverage rows, 280 tool-native entries, 502 call records, 0 declared gaps
 ~~~
 
-exit code: 0
+exit code: 2
 
 ## 产物
 
