@@ -134,7 +134,7 @@ def verify_listing(folder, binary):
     for site, n in SITES.items():
         orig = data[pe.filepos(site):pe.filepos(site) + n].hex()
         got = listing.get(site)
-        if got is None or not got.startswith(orig):
+        if got is None or got != orig:  # exact bytes for this instruction, not a prefix
             print('CONFLICT site=0x%X kind=listing-mismatch original=%s listing=%s' % (site, orig, got or '-'))
             bad += 1
     print('listing-check: sites=%d conflicts=%d' % (len(SITES), bad))
