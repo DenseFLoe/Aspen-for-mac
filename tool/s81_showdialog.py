@@ -29,10 +29,52 @@ ITEMS = [
 ]
 
 
+def _lea_target(data, pe, rva):
+    import struct
+    p = pe.filepos(rva)
+    b = data[p:p + 7]
+    if len(b) < 7 or b[0] not in (0x48, 0x4C) or b[1] != 0x8D:
+        return None
+    return rva + 7 + struct.unpack_from('<i', b, 3)[0]
+
+
+def binding_rows(data, pe):
+    """Binding evidence derived from bytes: ProgID, dispatch name, IID, call riid, vt."""
+    import struct
+    prog = _lea_target(data, pe, 0x2375)
+    progid = data[pe.filepos(prog):].split(b'\x00')[0].decode('latin-1')
+    nm = _lea_target(data, pe, 0x1345)
+    name = data[pe.filepos(nm):pe.filepos(nm) + 40].decode('utf-16-le', 'replace').split('\x00')[0]
+    iid_t = _lea_target(data, pe, 0x23B4)
+    iid = data[pe.filepos(iid_t):pe.filepos(iid_t) + 16].hex()
+    criid_t = _lea_target(data, pe, 0x137F)
+    criid = data[pe.filepos(criid_t):pe.filepos(criid_t) + 16].hex()
+    vt = struct.unpack_from('<I', data, pe.filepos(0x13DD) + 1)[0]
+    return [
+        ('binding-progid', '0x%X' % prog, 'ASCII ProgID %s' % progid,
+         'registration key for CLSIDFromProgID at 0x23A0; external binding = HKCR\\%s\\CLSID' % progid),
+        ('binding-name', '0x%X' % nm, 'UTF-16LE %s' % name,
+         'dispatch name resolved through GetIDsOfNames at 0x1389'),
+        ('binding-iid', '0x%X' % iid_t, iid,
+         'IID for CoCreateInstance at 0x23C8 = IID_IDispatch {00020400-...-46}'),
+        ('calls-riid', '0x%X' % criid_t, criid,
+         'riid for GetIDsOfNames/Invoke (all zero = IID_NULL)'),
+        ('variant-vt', '0x13DD', 'vt immediate %d' % vt,
+         'VARIANT vt derived from the MOV EAX,imm at 0x13DD (8 = VT_BSTR); stride 0x18'),
+    ]
+
+
 def main():
-    data = DLL.read_bytes()
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--folder', default='handoff/inbox/NATIVE-337')
+    ap.add_argument('--binary', default=str(DLL))
+    ap.add_argument('--out', default='')
+    args = ap.parse_args()
+    folder = Path(args.folder)
+    data = Path(args.binary).read_bytes()
     pe = PE(data)
-    _, ins = parse_asm(str(ASM))
+    _, ins = parse_asm(str(folder / 'code' / 'native.asm'))
     by = {a: (l, b, t) for (l, a, b, t, r) in ins}
     rows = []
     for item, rva, evidence, meaning in ITEMS:
@@ -41,8 +83,15 @@ def main():
         rows.append(dict(item=item, rva=rva, instruction=t, bytes=b.hex(),
                          asm='code/native.asm#L%d' % ln if ln else '',
                          evidence=evidence, meaning=meaning))
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    with open(OUT, 'w', newline='', encoding='utf-8') as fh:
+    for item, rva, derived, meaning in binding_rows(data, pe):
+        a = int(rva, 16) if rva.startswith('0x') and len(rva) <= 6 else 0
+        ln, b, t = by.get(a, (0, b'', ''))
+        rows.append(dict(item=item, rva=rva, instruction=derived, bytes=b.hex(),
+                         asm='code/native.asm#L%d' % ln if ln else '', evidence='derived from bytes',
+                         meaning=meaning))
+    out_path = Path(args.out) if args.out else OUT
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(out_path, 'w', newline='', encoding='utf-8') as fh:
         w = csv.DictWriter(fh, fieldnames=list(rows[0].keys()))
         w.writeheader(); w.writerows(rows)
     for r in rows:

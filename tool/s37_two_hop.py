@@ -124,7 +124,13 @@ def main():
         lib, nm = iat[slot]
         asm = addr2line.get(site)
         owner = '0x%X' % owner_of(site)
-        row = row_for(asm[0], asm[1], '%s!%s' % (lib, nm)) if asm else None
+        symbol = '%s!%s' % (lib, nm)
+        row = row_for(asm[0], asm[1], symbol) if asm else None
+        if row is not None:
+            declared = (calls[row - 2].get('callee') or '').strip()
+            if declared.lower() != symbol.lower():
+                # exact identity only: #2344 / #2345 / #23440 are different imports
+                row = None
         if asm and row is None:
             ambiguous += 1
         if not asm:
