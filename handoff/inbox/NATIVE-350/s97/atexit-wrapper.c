@@ -1,0 +1,21 @@
+/* Map a nonnull _onexit return pointer to success, and null to -1. */
+__asm__(
+    ".intel_syntax noprefix\n"
+    ".text\n"
+    ".globl zed_15d20\n"
+    ".def zed_15d20; .scl 2; .type 32; .endef\n"
+    ".seh_proc zed_15d20\n"
+    "zed_15d20:\n"
+    "sub rsp, 0x28\n"
+    ".seh_stackalloc 0x28\n"
+    ".seh_endprologue\n"
+    "call rva_15cc4\n"
+    "neg rax\n"
+    ".byte 0x1b, 0xc0 # sbb eax, eax\n"
+    "neg eax\n"
+    "dec eax\n"
+    "add rsp, 0x28\n"
+    "ret\n"
+    ".seh_endproc\n"
+    ".att_syntax prefix\n"
+);
