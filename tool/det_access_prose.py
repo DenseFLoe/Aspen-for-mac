@@ -35,6 +35,10 @@ def scan(text):
     for line in text.splitlines():
         for num, word in MAP_RE.findall(line):
             value = int(num, 16) if num.lower().startswith("0x") else int(num, 10)
+            # only values in the MemberAccessMask narrowing range can be access claims; flags
+            # words (0x4013) and MethodDef tokens (0x0600xxxx) are not claims and are skipped.
+            if value > 0xFF:
+                continue
             if value not in ACCESS:
                 hits.append("mapping value %s is outside MemberAccessMask (0..6)" % num)
                 continue

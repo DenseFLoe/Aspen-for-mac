@@ -23,6 +23,8 @@
 | det_access_prose | no | 0 | 0 | documents_checked 23 |
 | truncated-hash | no | 0 | 0 | files_scanned 14 |
 
+原始 stdout 已落盘：`handoff/inbox/NATIVE-337/work/s85b-preflight.txt`（25 行：L1 一行 + 14 个 L2 单元 + exit）。
+
 L1 原文：`checked 307 coverage rows, 307 tool-native entries, 684 call records, 0 declared gaps`（exit 2，112 条未决已申报）。
 
 ## latent 类（我们检出、上游当轮没提）
