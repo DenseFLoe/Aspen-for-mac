@@ -14,6 +14,11 @@ sys.path.insert(0, str(ROOT / 'tool'))
 from pe_reader import PE, parse_asm  # noqa: E402
 
 
+def same_symbol(declared, symbol):
+    """Exact identity: full library name + name/ordinal (no substring matching)."""
+    return (declared or '').strip().lower() == (symbol or '').strip().lower()
+
+
 def pdata_hosts(data, pe):
     out = []
     uw, usz = pe.directory(3)
@@ -43,6 +48,7 @@ def main():
     ap.add_argument('--folder', default='handoff/inbox/NATIVE-337')
     ap.add_argument('--binary', default='_t13/orig/FindComponent.dll')
     ap.add_argument('--out', default='handoff/inbox/NATIVE-337/code/s65-counterexamples.csv')
+    ap.add_argument('--reference', default='handoff/inbox/NATIVE-337/code/s37-two-hop.csv')
     a = ap.parse_args()
     folder, data = Path(a.folder), open(a.binary, 'rb').read()
     pe = PE(data)
@@ -74,8 +80,10 @@ def main():
         fpart, lpart = ref.split('#L', 1)
         by_key.setdefault((fpart, int(lpart.split('-')[0])), []).append(idx)
 
+    seen_sites = set()
     rows = []
     for addr in sorted(addr2line):
+        seen_sites.add(addr)
         try:
             p = pe.filepos(addr)
         except ValueError:
@@ -91,7 +99,7 @@ def main():
         sym = '%s!%s' % (lib, nm)
         asm = addr2line[addr]
         cands = by_key.get((asm[0], asm[1]), [])
-        ok = [i for i in cands if sym in calls[i - 2].get('callee', '')]
+        ok = [i for i in cands if same_symbol(calls[i - 2].get('callee', ''), sym)]
         category = ''
         detail = ''
         if not cands:
@@ -109,6 +117,18 @@ def main():
                          asm='%s#L%d' % (asm[0], asm[1]),
                          calls_row=(ok[0] if len(ok) == 1 else (cands[0] if len(cands) == 1 else '')),
                          candidates=','.join(str(i) for i in cands), detail=detail))
+    # stations present in the fixed reference but absent from the current listing
+    ref = Path(a.reference)
+    if ref.exists():
+        for r in csv.DictReader(open(ref, encoding='utf-8')):
+            if r.get('site'):
+                addr = int(r['site'], 16)
+                if addr not in seen_sites:
+                    rows.append(dict(category='missing-listing', site='0x%X' % addr,
+                                     first_hop=r.get('first_hop', ''), iat_slot=r.get('iat_slot', ''),
+                                     import_symbol=r.get('import_symbol', ''), asm=r.get('asm', ''),
+                                     calls_row='', candidates='',
+                                     detail='reference site absent from current listing (instruction removed?)'))
     out = Path(a.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     with open(out, 'w', newline='', encoding='utf-8') as fh:

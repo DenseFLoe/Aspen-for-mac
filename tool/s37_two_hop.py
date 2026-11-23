@@ -96,7 +96,7 @@ def main():
             return cands[0]
         # ambiguous line: disambiguate with the main-table callee/note, else report none
         hits = [i for i in cands
-                if symbol and (symbol in calls[i - 2].get('callee', '') or symbol in calls[i - 2].get('note', ''))]
+                if symbol and (calls[i - 2].get('callee', '').strip().lower() == symbol.strip().lower())]
         if len(hits) == 1:
             return hits[0]
         return None
