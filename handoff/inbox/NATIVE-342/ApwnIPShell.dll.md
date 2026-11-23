@@ -101,3 +101,11 @@ ApwnIPShell.dll 41.0.0.614，来源 `issue-materials/342/ApwnIPShell.dll`，原�
 95 字节、27 条指令、4 处 REL32、.pdata 12 字节和 .xdata 12 字节逐字节吻合。 例程写入对象首槽 0x42a90。0x34f09 经 0x3ac20 GuardCF 槽调度 [对象+0x10] 的虚表 +0x10，0x34f18 在缓冲指针非零时用 LocalFree 释放 [对象+0x18]。0x34f22 检查 DIL 位 0，位为 1 时用 RCX 传对象、EDX 传 0x20，经 0x35134 和 0x34f80 到 IAT 0x3a9e0 对应的 mfc140.dll!#1487。
 
 1,005 个入口中 720 个有覆盖、285 个缺口，7,433 条引用中 636 条未决。0x34f09 的实机接收者和最终虚调用目标仍待 Windows 对照。整件静态验收未通过。 [回执](s49-submission.md) · [复验](s49/reassembly.json)
+
+## s53 局部回编
+
+ApwnIPShell.dll 41.0.0.614，来源 `issue-materials/342/ApwnIPShell.dll`，原件 SHA-256 `ace0556a2b9da51821c45b2a8c119ac990b51135b8b5b5d5d4f09422e051502b`。 范围 `[0x34f40,0x34f68)`，片段 SHA-256 `bc67b3c5c586198379f3f21e843c88a1850124f1e5d5b9eeabe133f2e1ae75b0`。
+
+40 字节、9 条调用路径指令与 1 条 INT3、3 处 REL32、.pdata 12 字节和 .xdata 8 字节吻合。 0x34f51 用 RSP+0x20 上的对象地址、入口 ECX 与 RDX 以及零值 R9D 调用 0x34e40。构造函数在此参数下跳过引用计数增加。0x34f62 以同一对象地址和 0x492b0 ThrowInfo 经 0x362c2 与 IAT 0x3a640 调用 VCRUNTIME140.dll!_CxxThrowException。异常元数据给出 _com_error、32 字节、复制 0x34df0 和析构 0x34e90。
+
+1,005 个入口中 721 个有覆盖、284 个缺口，7,433 条引用中 636 条未决。整件静态验收未通过。 [回执](s53-submission.md) · [复验](s53/reassembly.json)
