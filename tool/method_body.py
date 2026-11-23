@@ -54,14 +54,16 @@ def header(data, pe, rva):
     if sec is None or not sec["exec"]:
         raise ValueError("MethodDef RVA %#x is not inside an executable section" % rva)
     p = pe.filepos(rva)
-    h = struct.unpack_from("<H", data, p)[0]
-    fmt = h & 3
-    if fmt == 2:                                     # tiny
+    first = data[p]
+    fmt = first & 3
+    if fmt == 2:                                     # tiny: one-byte header
+        h = first
         return dict(rva=rva, kind="tiny", header_size=1, code_size=h >> 2,
                     flags=0, maxstack=8, local_var=0, more_sections=False,
                     il=data[p + 1:p + 1 + (h >> 2)])
     if fmt != 3:
         raise ValueError("bad IL method header format %d at RVA %#x" % (fmt, rva))
+    h = struct.unpack_from("<H", data, p)[0]
     flags = h & 0xFFF
     header_size = ((h >> 12) & 0xF) * 4
     maxstack = struct.unpack_from("<H", data, p + 2)[0]
