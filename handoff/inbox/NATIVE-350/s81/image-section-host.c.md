@@ -1,0 +1,7 @@
+# image-section-host.c
+
+可编辑 Windows AMD64 实现，含 PE 节判断、栈展开和 SEH 范围记录。
+
+zedstwu.dll 41.0.0.609，原件 SHA-256 `09b4491feeb7389b072b9de06b86a6d978dbb61527ad821e181b072bc5b9a59b`。范围 `[0x15bdc,0x15c74)`，片段 SHA-256 `81780160b17c32a33bbbc2558815727294f8c1e334451a70b9c2bfeec2c823e7`。
+
+255 个入口中 162 个有覆盖、93 个缺口，3,572 条引用中 26 条未决。整件静态验收未通过。 [交付回执](../s81-submission.md)
