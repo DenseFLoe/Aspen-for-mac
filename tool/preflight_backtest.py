@@ -104,33 +104,78 @@ HEXRE = re.compile(r"0x[0-9A-Fa-f]{3,16}")
 
 
 def remap_tree(src, dst, delta, rename_asm=False):
-    """Copy a candidate item dir, shifting every hex locator by delta consistently and
-    optionally renaming the listing file.  Structure must stay identical."""
+    """Copy a candidate item dir, shifting every hex locator by delta consistently.
+
+    The fixture must change *locators only*: declared digests are recomputed afterwards,
+    otherwise a hash-consistency detector would fire for a reason unrelated to the shift.
+    With rename_asm the listing files get unique new names and every reference follows.
+    """
     if os.path.isdir(dst):
         shutil.rmtree(dst)
     shutil.copytree(src, dst)
-    mapping = {}
+    renames = {}
+    if rename_asm:
+        n = 0
+        for dirpath, _dirs, fns in os.walk(dst):
+            for fn in sorted(fns):
+                if re.fullmatch(r"native[^/\\]*\.asm", fn, re.I):
+                    n += 1
+                    new = "x%d.asm" % n
+                    os.replace(os.path.join(dirpath, fn), os.path.join(dirpath, new))
+                    renames[fn] = new
     for dirpath, _dirs, fns in os.walk(dst):
         for fn in fns:
-            old = os.path.join(dirpath, fn)
-            new_name = fn
-            if rename_asm and re.fullmatch(r"native.*\.asm", fn, re.I):
-                new_name = "x.asm"
-                new = os.path.join(dirpath, new_name)
-                os.replace(old, new)
-                mapping[fn] = new_name
-            if new_name.lower().endswith((".csv", ".asm", ".md")):
-                p = os.path.join(dirpath, new_name)
+            if not fn.lower().endswith((".csv", ".asm", ".md")):
+                continue
+            p = os.path.join(dirpath, fn)
+            try:
+                text = pf.read_text(p)
+            except Exception:
+                continue
+            text = HEXRE.sub(lambda m: "0x%X" % (int(m.group(0), 16) + delta), text)
+            for a, b in renames.items():
+                text = text.replace(a, b)
+            with open(p, "w", encoding="utf-8", newline="") as f:
+                f.write(text)
+    # re-certify declared digests so only locators differ from the original tree.
+    # metrics.json is itself a declared target, so digest rewriting needs a few passes to
+    # converge: rewriting a declared file changes its own digest.
+    for _round in range(4):
+        fresh = {}
+        for dirpath, _dirs, fns in os.walk(dst):
+            for fn in fns:
+                p = os.path.join(dirpath, fn)
+                fresh[os.path.relpath(p, dst).replace("\\", "/")] = pf.sha256_file(p)
+        changed = False
+        for dirpath, _dirs, fns in os.walk(dst):
+            for fn in fns:
+                if not (fn.endswith(".json") and ("fingerprint" in fn.lower() or fn == "metrics.json")):
+                    continue
+                p = os.path.join(dirpath, fn)
                 try:
-                    text = pf.read_text(p)
+                    doc = json.loads(pf.read_text(p))
                 except Exception:
                     continue
-                text = HEXRE.sub(lambda m: "0x%X" % (int(m.group(0), 16) + delta), text)
-                if rename_asm and mapping:
-                    for a, b in mapping.items():
-                        text = text.replace(a, b)
-                with open(p, "w", encoding="utf-8", newline="") as f:
-                    f.write(text)
+                def fix(node, key=""):
+                    if isinstance(node, dict):
+                        return {k: fix(v, k) for k, v in node.items()}
+                    if isinstance(node, list):
+                        return [fix(v, key) for v in node]
+                    if isinstance(node, str) and re.fullmatch(r"[0-9a-fA-F]{64}", node):
+                        rel = key[:-7].replace("\\", "/") if key.endswith("_sha256") else key.replace("\\", "/")
+                        cand = [rel] + [prefix + rel + ext for ext in (".csv", ".json", ".md")
+                                        for prefix in ("", "code/")]
+                        for c in cand:
+                            if c in fresh and fresh[c] != node:
+                                return fresh[c]
+                    return node
+                new = fix(doc)
+                if new != doc:
+                    changed = True
+                    with open(p, "w", encoding="utf-8") as f:
+                        json.dump(new, f, ensure_ascii=False, indent=1)
+        if not changed:
+            break
     return dst
 
 
@@ -187,6 +232,14 @@ def main(argv=None):
             rows.append({"task": task, "round": rnd, "error": "%s: %s" % (type(exc).__name__, exc)})
             continue
         truth_cats = truth.get((task, rnd), set())
+        # L1 exits only 0 (accept) or 2 (declared gaps/unresolved).  Anything else means the
+        # checker could not even read the tree, so the snapshot is not a submission and must
+        # not be scored as a detector false positive.
+        if rep["l1"].get("exit") not in (0, 2):
+            rows.append({"task": task, "round": rnd, "split": "excluded",
+                         "path": row["path"], "reason": "l1 exit %s" % rep["l1"].get("exit"),
+                         "l1_stdout": (rep["l1"].get("stdout") or "")[:200]})
+            continue
         rows.append({"task": task, "round": rnd,
                      "split": "train" if rnd <= TRAIN_MAX else "test",
                      "path": row["path"], "predicted": sorted(cats), "truth": sorted(truth_cats),
