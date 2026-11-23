@@ -39,7 +39,8 @@ def thunk_slot(data, pe, rva):
         return None
     b = data[p:p + 8]
     o = 1 if b and 0x40 <= b[0] <= 0x4F else 0
-    if len(b) >= o + 6 and b[o] == 0xFF and (b[o + 1] & 0xC7) == 0x05:
+    # FF /4 mod=00 rm=101 is jmp [rip+disp32]; FF /0 with the same rm is INC, not a thunk
+    if len(b) >= o + 6 and b[o] == 0xFF and (b[o + 1] & 0xC7) == 0x05 and ((b[o + 1] >> 3) & 7) == 4:
         disp = struct.unpack_from('<i', b, o + 2)[0]
         return rva + o + 6 + disp
     return None

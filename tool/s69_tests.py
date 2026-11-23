@@ -110,6 +110,19 @@ def main():
         len(miss5), miss5[0]['site'] if miss5 else '-', 'PASS' if t5 else 'FAIL'))
     ok &= t5
 
+    # T6: same DLL, wrong ordinal (#2345 vs #2344) must not be treated as equal
+    d6 = copy('t6')
+    rows6 = rows_of(d6)
+    hit6 = next(r for r in rows6 if r['listing'].startswith('code/native.asm#L28-'))
+    hit6['callee'] = 'mfc140.dll!#2345'
+    write_rows(d6, rows6)
+    rc6, txt6, res6, cats6 = classify(d6)
+    c6 = [r for r in res6 if r['category'] == 'contradiction' and r['site'].upper() == '0X106C']
+    t6 = rc6 == 0 and len(c6) == 1
+    print('T6 same-dll-ordinal: contradiction=%d site=%s status=%s' % (
+        len(c6), c6[0]['site'] if c6 else '-', 'PASS' if t6 else 'FAIL'))
+    ok &= t6
+
     print('SUITE :', 'ALL PASS' if ok else 'FAILURES PRESENT')
     return 0 if ok else 1
 

@@ -37,6 +37,9 @@ DET_CATEGORY = {
     "det_wrong_symbol": ["wrong-symbol"],
     "det_byte_mismatch": ["byte-mismatch"],
     "det_access_flags": ["access-flags"],
+    "det_receipt_paths": ["receipt-misstatement"],
+    "det_eh_clause": ["clause-semantics"],
+    "det_eh_boundary": ["eh-boundary"],
 }
 # detectors whose verdict depends on addresses inside the *original*, so a candidate-side
 # locator shuffle cannot be required to preserve them
@@ -123,20 +126,53 @@ def remap_tree(src, dst, delta, rename_asm=False):
                     new = "x%d.asm" % n
                     os.replace(os.path.join(dirpath, fn), os.path.join(dirpath, new))
                     renames[fn] = new
+    CELL = re.compile(r"^0x[0-9a-fA-F]{3,16}$")
+    def shifted(text):
+        # only whole-token cells are locators; rewriting hex inside file names such as
+        # s25-verdict-0x06000030.json would invent paths that do not exist
+        out = []
+        for line in text.splitlines(keepends=True):
+            body = line.rstrip("\r\n")
+            if "/" in body or re.search(r"\.(json|csv|asm|md)\b", body):
+                out.append(line)
+                continue
+            out.append(HEXRE.sub(lambda m: "0x%X" % (int(m.group(0), 16) + delta), line))
+        return "".join(out)
     for dirpath, _dirs, fns in os.walk(dst):
         for fn in fns:
-            if not fn.lower().endswith((".csv", ".asm", ".md")):
-                continue
+            low = fn.lower()
             p = os.path.join(dirpath, fn)
+            if low.endswith(".csv"):
+                try:
+                    rows = pf.read_csv(p)
+                    fields = list(rows[0].keys()) if rows else []
+                except Exception:
+                    rows, fields = [], []
+                if rows:
+                    for r in rows:
+                        for k in fields:
+                            v = (r.get(k) or "").strip()
+                            if CELL.match(v):
+                                v = "0x%X" % (int(v, 16) + delta)
+                            for a, b in renames.items():
+                                v = v.replace(a, b)
+                            r[k] = v
+                    with open(p, "w", encoding="utf-8", newline="") as f:
+                        w = csv.DictWriter(f, fieldnames=fields)
+                        w.writeheader()
+                        w.writerows(rows)
+            if not low.endswith((".asm", ".md", ".json")):
+                continue
             try:
                 text = pf.read_text(p)
             except Exception:
                 continue
-            text = HEXRE.sub(lambda m: "0x%X" % (int(m.group(0), 16) + delta), text)
+            new = shifted(text)
             for a, b in renames.items():
-                text = text.replace(a, b)
-            with open(p, "w", encoding="utf-8", newline="") as f:
-                f.write(text)
+                new = new.replace(a, b)
+            if new != text:
+                with open(p, "w", encoding="utf-8", newline="") as f:
+                    f.write(new)
     # re-certify declared digests so only locators differ from the original tree.
     # metrics.json is itself a declared target, so digest rewriting needs a few passes to
     # converge: rewriting a declared file changes its own digest.
@@ -179,6 +215,37 @@ def remap_tree(src, dst, delta, rename_asm=False):
     return dst
 
 
+def fixture_problems(item_dir):
+    """A fixture is only meaningful if its own references resolve.  If they do not, the
+    anti-memorization verdict must be fixture-invalid, never 'stable'."""
+    problems = []
+    cpath = pf.find_one(item_dir, "calls.csv") if hasattr(pf, "find_one") else None
+    if cpath is None:
+        import preflight_common as C
+        cpath = C.find_one(item_dir, "calls.csv")
+    import preflight_common as C
+    if not cpath:
+        return ["no calls.csv in fixture"]
+    rows = C.read_csv(cpath)
+    if not rows:
+        return ["empty calls.csv in fixture"]
+    bad = 0
+    for r in rows:
+        if (r.get("class") or "").strip() == "data":
+            continue
+        ref = C.resolve_ref(item_dir, r.get("listing", ""))
+        if not ref or not os.path.isfile(ref[0]):
+            bad += 1
+    if bad:
+        problems.append("%d/%d non-data listing refs do not resolve to a file" % (bad, len(rows)))
+    # every asm listing referenced must yield at least one address
+    refs = {(C.resolve_ref(item_dir, r.get("listing", "")) or (None,))[0] for r in rows}
+    for path in [p for p in refs if p]:
+        if not C.asm_line_rva(path):
+            problems.append("%s yields no parseable addresses" % os.path.relpath(path, item_dir))
+    return problems
+
+
 def anti_memorization(task, item_dir, original, rename=False):
     """Same structural defects must survive locator shuffling and file renaming."""
     base_cats, base_detail, _ = predict(task, item_dir, original)
@@ -186,10 +253,15 @@ def anti_memorization(task, item_dir, original, rename=False):
     with tempfile.TemporaryDirectory() as tmp:
         copy = os.path.join(tmp, "remapped")
         remap_tree(item_dir, copy, delta, rename_asm=rename)
+        problems = fixture_problems(copy)
+        if problems:
+            return {"status": "fixture-invalid", "problems": problems,
+                    "baseline": sorted(base_cats), "after": None,
+                    "stable": None, "excluded_detectors": sorted(ORIGINAL_ANCHORED)}
         cats, detail, _ = predict(task, copy, original)
     dropped = sorted(base_cats - cats)
     added = sorted(cats - base_cats)
-    return {"baseline": sorted(base_cats), "after": sorted(cats),
+    return {"status": "checked", "baseline": sorted(base_cats), "after": sorted(cats),
             "dropped": dropped, "added": added,
             "stable": not dropped and not added,
             "excluded_detectors": sorted(ORIGINAL_ANCHORED)}
@@ -249,12 +321,29 @@ def main(argv=None):
     train = [(set(r["predicted"]), set(r["truth"]), 1) for r in rows if r.get("split") == "train"]
     test = [(set(r["predicted"]), set(r["truth"]), 1) for r in rows if r.get("split") == "test"]
     st, sx = score(train), score(test)
+    # second口径: every dataset test instance counts, and a round we have no snapshot for
+    # contributes a false negative for each of its categories (the honest lower bound)
+    scored_test = {(r["task"], r["round"]) for r in rows if r.get("split") == "test"}
+    uncovered = [(t, rnd, cats) for (t, rnd), cats in truth.items()
+                 if rnd > TRAIN_MAX and (t, rnd) not in scored_test]
+    full = {k: v for k, v in sx.items() if k != "per_category"}
+    full["per_category"] = {c: dict(v) for c, v in sx["per_category"].items()}
+    for _t, _r, cats in uncovered:
+        for c in cats:
+            full["fn"] += 1
+            per = full["per_category"].setdefault(c, {"tp": 0, "fp": 0, "fn": 0})
+            per["fn"] += 1
+    full["recall"] = full["tp"] / (full["tp"] + full["fn"]) if full["tp"] + full["fn"] else None
+    full["precision"] = full["tp"] / (full["tp"] + full["fp"]) if full["tp"] + full["fp"] else None
     gap = None
     if st["recall"] is not None and sx["recall"] is not None:
         gap = st["recall"] - sx["recall"]
     # anti-memorization on a snapshot that carries several defect classes
-    picks = [r for r in rows if r.get("split") == "test" and len(r.get("truth", [])) >= 2][:1] or \
-            [r for r in rows if len(r.get("truth", [])) >= 2][:1]
+    # the fixture subject must actually have findings, otherwise a "stable" verdict is vacuous
+    graded = [r for r in rows if r.get("split") in ("train", "test")]
+    picks = ([r for r in graded if r.get("split") == "test" and len(r.get("predicted", [])) >= 2][:1]
+             or [r for r in graded if len(r.get("predicted", [])) >= 1][:1]
+             or graded[:1])
     anti = {}
     if picks:
         p = picks[0]
@@ -271,7 +360,12 @@ def main(argv=None):
         cats, detail, rep = predict(task, os.path.join(ROOT, d), original)
         blind.append({"task": task, "path": d, "predicted": sorted(cats), "detail": detail,
                       "l1_exit": rep["l1"].get("exit")})
-    doc = {"train": st, "test": sx, "generalization_gap": gap, "rows": rows,
+    doc = {"train": st, "test": sx, "test_full": full,
+           "uncovered_test_rounds": [{"task": t, "round": r, "categories": sorted(c)}
+                                     for t, r, c in uncovered],
+           "generalization_gap": gap, "generalization_gap_full":
+               (st["recall"] - full["recall"]) if (st["recall"] is not None and full["recall"] is not None) else None,
+           "rows": rows,
            "anti_memorization": anti, "blind": blind,
            "train_rounds": sorted({r["round"] for r in rows if r.get("split") == "train"}),
            "test_rounds": sorted({r["round"] for r in rows if r.get("split") == "test"})}
@@ -281,8 +375,11 @@ def main(argv=None):
           % (len(rows), len(train), len(test)))
     print("train  recall=%s precision=%s  tp=%d fp=%d fn=%d"
           % (fmt(st["recall"]), fmt(st["precision"]), st["tp"], st["fp"], st["fn"]))
-    print("test   recall=%s precision=%s  tp=%d fp=%d fn=%d"
+    print("test   recall=%s precision=%s  tp=%d fp=%d fn=%d   (有快照口径)"
           % (fmt(sx["recall"]), fmt(sx["precision"]), sx["tp"], sx["fp"], sx["fn"]))
+    print("test   recall=%s precision=%s  tp=%d fp=%d fn=%d   (全 test 段口径, %d 轮无快照计 FN)"
+          % (fmt(full["recall"]), fmt(full["precision"]), full["tp"], full["fp"], full["fn"],
+             len(uncovered)))
     print("generalization gap (train_recall - test_recall):", fmt(gap))
     cats = sorted(set(list(st["per_category"]) + list(sx["per_category"])))
     print("%-24s %-18s %-18s" % ("category", "train tp/fp/fn", "test tp/fp/fn"))
@@ -294,7 +391,9 @@ def main(argv=None):
     for key in ("locator_shuffle", "file_rename"):
         if key in anti:
             v = anti[key]
-            print("%s stable=%s dropped=%s added=%s" % (key, v["stable"], v["dropped"], v["added"]))
+            print("%s status=%s stable=%s dropped=%s added=%s problems=%s"
+                  % (key, v.get("status"), v.get("stable"), v.get("dropped"), v.get("added"),
+                     v.get("problems")))
     print("cross_original:", json.dumps(anti["cross_original"], ensure_ascii=False))
     for b in blind:
         print("blind %-44s predicted=%s l1_exit=%s" % (b["path"][-44:], b["predicted"], b["l1_exit"]))
