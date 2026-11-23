@@ -24,6 +24,7 @@ Usage:
 """
 import argparse
 import csv
+import glob
 import hashlib
 import json
 import os
@@ -44,9 +45,21 @@ TASKS = {
     "NATIVE-340": {"original": "_t13/orig/WrapSaveMergeNNFiles.dll",
                    "original_sha256": "869c4b23598e433086fc72a0fc1c7bd50b3e280e0d84ad6742de28df8e804fec"},
 }
-ACCESS = {0: "CompilerControlled", 1: "Public", 2: "Private", 3: "Assembly", 4: "Family",
-          5: "FamANDAssem", 6: "FamORAssem"}
+# ECMA-335 II.23.1.10 MemberAccessMask: 0 CompilerControlled (privatescope), 1 Private,
+# 2 FamANDAssem, 3 Assembly, 4 Family, 5 FamORAssem, 6 Public.  Never reorder by guesswork.
+ACCESS = {0: "CompilerControlled", 1: "Private", 2: "FamANDAssem", 3: "Assembly", 4: "Family",
+          5: "FamORAssem", 6: "Public"}
 ACCESS_WORDS = ("public", "private", "assembly", "family", "privatescope", "compilercontrolled")
+
+ACCESS_ALIASES = {"privatescope": "CompilerControlled", "compilercontrolled": "CompilerControlled",
+                  "famandassem": "FamANDAssem", "famorassem": "FamORAssem"}
+
+
+def derive_method_access(flags, impl_flags):
+    """Every access fact is derived from the raw integers (ECMA-335 II.23.1.10)."""
+    return {"access": ACCESS[flags & 0x7], "impl_flags": impl_flags,
+            "static": bool(flags & 0x0010), "has_security": bool(flags & 0x4000),
+            "access_source": "flags&0x7=%d" % (flags & 0x7)}
 
 
 # ------------------------------------------------------------------ utilities
@@ -231,6 +244,13 @@ def det_omitted_sites(task, item_dir, original, ctx):
     cpath = find_one(item_dir, "calls.csv")
     calls = read_csv(cpath) if cpath else []
     declared = candidate_site_rvas(item_dir, calls, {})
+    structural = sum(1 for r in calls if (r.get("class") or "").strip() != "data")
+    if structural and not declared:
+        return [{"severity": "advisory", "locator": "calls.csv",
+                 "evidence": "%d non-data rows but none of their listing refs resolve to an address; "
+                             "the census cannot be compared on this tree" % structural}], {
+            "census": len(expected), "declared_matched": None, "iat_slots": len(slots),
+            "skipped": "listing refs unresolvable"}
     for site in expected:
         if site["rva"] in declared:
             continue
@@ -290,9 +310,35 @@ def det_stale_metrics(task, item_dir, original, ctx):
             continue
         real = sha256_file(target)
         if real != str(metrics[key]).lower():
-            hits.append({"severity": "advisory",
+            rel = os.path.relpath(target, item_dir).replace("\\", "/")
+            certified = False
+            for dirpath, _dirs, fns in os.walk(item_dir):
+                for fn in fns:
+                    if not (re.search(r"fingerprint", fn, re.I) and fn.endswith(".json")):
+                        continue
+                    p = os.path.join(dirpath, fn)
+                    if not is_current(item_dir, p):
+                        continue
+                    try:
+                        body = json.loads(read_text(p))
+                    except Exception:
+                        continue
+                    stack = [body]
+                    while stack:
+                        node = stack.pop()
+                        if isinstance(node, dict):
+                            for k, v in node.items():
+                                if k.replace("\\", "/") == rel and isinstance(v, str) and v.lower() == real:
+                                    certified = True
+                                else:
+                                    stack.append(v)
+                        elif isinstance(node, list):
+                            stack.extend(node)
+            hits.append({"severity": "advisory" if certified else "defect",
                          "locator": "metrics.json:%s" % key,
-                         "evidence": "declares %s..., disk has %s..." % (str(metrics[key])[:16], real[:16]),
+                         "evidence": "declares %s..., disk has %s...%s" % (
+                             str(metrics[key])[:16], real[:16],
+                             " (superseded by this round's fingerprint table)" if certified else ""),
                          "l1_said": "L1 does not read metrics.json", "we_said": real})
     return hits, {"numeric_keys": len(actual)}
 
@@ -400,7 +446,10 @@ def det_fingerprint_pathset(task, item_dir, original, ctx):
             return
         real = sha256_file(target)
         if real != digest.lower():
-            hits.append({"severity": "defect", "locator": "%s:%s" % (where, key),
+            # a report is normally finalised after the fingerprint table is generated, so a
+            # markdown target that drifted is an ordering artifact, not evidence of a lie
+            sev = "advisory" if target.lower().endswith(".md") else "defect"
+            hits.append({"severity": sev, "locator": "%s:%s" % (where, key),
                          "evidence": "declared %s..., disk %s..." % (digest[:16], real[:16]),
                          "l1_said": "L1 never reads fingerprint files", "we_said": real})
         declared[key] = digest
@@ -623,10 +672,109 @@ def det_access_flags(task, item_dir, original, ctx):
             if truth != claimed_word:
                 hits.append({"severity": "defect", "locator": rel,
                              "evidence": "flags=%#x maps to %s but the text says %s" % (flags, truth, claimed_word)})
-    return hits, {"documents_checked": len(files)}
+    # data tables: a claimed access literal must equal ACCESS[original Flags & 0x7].  The
+    # original MethodDef is re-read from the binary, so a stale or hand-written literal fails.
+    tables = []
+    code_dir = os.path.join(item_dir, "code")
+    if os.path.isdir(code_dir):
+        tables = sorted(glob.glob(os.path.join(code_dir, "s*-method-access.csv")))
+    try:
+        import struct
+        from md_reader import parse as md_parse
+        from pe_reader import PE
+        data = open(original, "rb").read()
+        pe = PE(data)
+        cli = pe.directory(14)[0]
+        md_off = pe.filepos(struct.unpack_from("<I", data, pe.filepos(cli) + 8)[0])
+        methods = {m["token"]: m for m in md_parse(data, md_off)["methods"]}
+    except Exception as exc:
+        return hits, {"documents_checked": len(files), "tables_checked": 0,
+                      "skipped": "methoddef reader unavailable: %s" % exc}
+    table_rows = 0
+    for path in tables:
+        if not is_current(item_dir, path):
+            continue
+        for row in csv.DictReader(open(path, encoding="utf-8")):
+            table_rows += 1
+            rel = os.path.relpath(path, item_dir)
+            try:
+                tok = int(row["token"], 16)
+            except Exception:
+                hits.append({"severity": "defect", "locator": rel,
+                             "evidence": "unparseable token %r" % row.get("token")})
+                continue
+            m = methods.get(tok)
+            if m is None:
+                hits.append({"severity": "defect", "locator": rel,
+                             "evidence": "token %s is not a MethodDef of the original" % row["token"]})
+                continue
+            truth = derive_method_access(m["flags"], m["impl_flags"])
+            if "flags" in row and int(row["flags"], 16) != m["flags"]:
+                hits.append({"severity": "defect", "locator": rel,
+                             "evidence": "%s flags %s but original 0x%04X" % (row["token"], row["flags"], m["flags"])})
+            claimed = (row.get("access") or "").strip()
+            if ACCESS_ALIASES.get(claimed.lower(), claimed).lower() != truth["access"].lower():
+                hits.append({"severity": "defect", "locator": rel,
+                             "evidence": "%s claims %r but flags&0x7=%d -> %s"
+                                         % (row["token"], claimed, m["flags"] & 7, truth["access"])})
+            if "impl_flags" in row and int(row["impl_flags"], 16) != m["impl_flags"]:
+                hits.append({"severity": "defect", "locator": rel,
+                             "evidence": "%s impl_flags %s but original 0x%04X"
+                                         % (row["token"], row["impl_flags"], m["impl_flags"])})
+            for key, want in (("static", truth["static"]), ("has_security", truth["has_security"])):
+                if key in row and str(row[key]).strip().lower() != str(want).lower():
+                    hits.append({"severity": "defect", "locator": rel,
+                                 "evidence": "%s %s=%s but derived %s" % (row["token"], key, row[key], want)})
+            sha = (row.get("il_sha256") or "").strip()
+            if sha and len(sha) != 64:
+                hits.append({"severity": "defect", "locator": rel,
+                             "evidence": "%s il_sha256 has %d chars, need 64" % (row["token"], len(sha))})
+    return hits, {"documents_checked": len(files), "tables_checked": len(tables),
+                  "table_rows": table_rows}
 
 
-DETECTORS = [det_omitted_sites, det_stale_metrics, det_row_linkage, det_fingerprint_pathset,
+@detector
+def det_receipt_paths(task, item_dir, original, ctx):
+    """l1_covers: no
+
+    L1 never reads the submissions.  Every code/... path and every sha256 named by the latest
+    receipt must exist in the delivery or in tool/.
+    """
+    import hashlib
+    hits = []
+    root = os.path.dirname(os.path.dirname(os.path.abspath(item_dir)))
+    mds = []
+    for dirpath, _dirs, fns in os.walk(item_dir):
+        for fn in fns:
+            if re.match(r"s\d+-submission\.md$", fn):
+                mds.append(os.path.join(dirpath, fn))
+    if not mds:
+        return hits, {"skipped": "no submission receipts"}
+    mds.sort(key=lambda p: int(re.match(r"s(\d+)", os.path.basename(p)).group(1)))
+    text = read_text(mds[-1])
+    for rel in re.findall(r"code/[A-Za-z0-9_./-]+\.(?:csv|asm|json)", text):
+        if not os.path.exists(os.path.join(item_dir, rel)):
+            hits.append({"severity": "defect", "locator": os.path.basename(mds[-1]),
+                         "evidence": "receipt names missing file %s" % rel})
+    pool = []
+    for base in (item_dir, os.path.join(root, "tool")):
+        for dirpath, _dirs, fns in os.walk(base):
+            for fn in fns:
+                pool.append(os.path.join(dirpath, fn))
+    have = set()
+    for p in pool:
+        try:
+            have.add(hashlib.sha256(open(p, "rb").read()).hexdigest())
+        except OSError:
+            pass
+    for sha in set(re.findall(r"\b[0-9a-f]{64}\b", text)):
+        if sha not in have:
+            hits.append({"severity": "defect", "locator": os.path.basename(mds[-1]),
+                         "evidence": "receipt lists sha256 %s not found in delivery or tool/" % sha[:16]})
+    return hits, {"receipt": os.path.basename(mds[-1])}
+
+
+DETECTORS = [det_receipt_paths, det_omitted_sites, det_stale_metrics, det_row_linkage, det_fingerprint_pathset,
              det_unresolved_no_recovery, det_symbol_substring, det_wrong_symbol,
              det_byte_mismatch, det_access_flags]
 
