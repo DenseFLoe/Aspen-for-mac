@@ -1,0 +1,3 @@
+# NATIVE-350 s125 开工
+
+upstream 于 2026-11-23T12:00:26Z 开工。基线 `bf56228e572bc5656e4b526750a0f6f9ac95eda9`。zedstwu.dll 41.0.0.609，原件 SHA-256 `09b4491feeb7389b072b9de06b86a6d978dbb61527ad821e181b072bc5b9a59b`。 [分配卡](../../assignments/NATIVE-350-s125.md) SHA-256 `f7ad9d11bdf44c73510159c1e301bb1cdd4d5faf860888d2e0eb517d92004c38`。
