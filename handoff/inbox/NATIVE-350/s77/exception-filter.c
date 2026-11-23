@@ -1,0 +1,26 @@
+/* Windows AMD64 exception filter referenced by the scope record at RVA 0x1c1bc. */
+__asm__(
+    ".intel_syntax noprefix\n"
+    ".text\n"
+    ".globl image_section_exception_filter\n"
+    ".equ accepted_exception_status, 0xc0000005\n"
+    ".seh_proc image_section_exception_filter\n"
+    "image_section_exception_filter:\n"
+    /* Preserve the original REX prefix and the original MOV encoding. */
+    "    .byte 0x40\n"
+    "    push rbp\n"
+    "    .seh_pushreg rbp\n"
+    "    .seh_endprologue\n"
+    "    .byte 0x48, 0x8b, 0xea\n"
+    "    mov rax, qword ptr [rcx]\n"
+    "    .byte 0x33, 0xc9\n"
+    "    cmp dword ptr [rax], accepted_exception_status\n"
+    "    sete cl\n"
+    "    .byte 0x8b, 0xc1\n"
+    "    pop rbp\n"
+    "    ret\n"
+    "image_section_exception_filter_padding:\n"
+    "    int3\n"
+    "image_section_exception_filter_end:\n"
+    "    .seh_endproc\n"
+);

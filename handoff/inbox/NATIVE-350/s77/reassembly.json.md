@@ -1,0 +1,7 @@
+# reassembly.json
+
+24 字节逐字节吻合。9 条可执行指令与 0x1870a 的单字节 INT3，代码无重定位，.pdata 12 字节与 0x1c1cc 的 .xdata 8 字节吻合。0x186f8 经 RCX 取异常记录指针，0x186fd 比较记录开头的 DWORD 与 0xc0000005。ECX 先清零，SETZ 写 CL，EAX 在相等时返回 1，其余返回 0。0x15bdc 宿主的 0x1c1bc 范围记录指向该过滤器，0x15c6d 为接续地址，展开处理经 0x18066 绑定 VCRUNTIME140.dll!__C_specific_handler。
+
+zedstwu.dll 41.0.0.609，原件 SHA-256 `09b4491feeb7389b072b9de06b86a6d978dbb61527ad821e181b072bc5b9a59b`。范围 `[0x186f3,0x1870b)`，片段 SHA-256 `515c04e0ba3bb82e249e1f52765ba9c74cf63305116d4e5c2393eb92ba558686`。
+
+255 个入口中 161 个有覆盖、94 个缺口，3,568 条引用中 26 条未决。整件静态验收未通过。 [交付回执](../s77-submission.md)
