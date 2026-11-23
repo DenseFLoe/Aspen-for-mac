@@ -23,7 +23,7 @@ exit: 2      （L1 = 上游 checker 原样透传）
 | omitted-sites | 363 | pass |
 | stale-metrics | 10 | pass |
 | row-linkage | 11 | pass |
-| fingerprint-pathset | 139 | pass |
+| fingerprint-pathset | 109 | pass（1 条 advisory：声明集按新模式收缩 31 项，见下） |
 | unresolved-no-recovery | 112 | pass |
 | symbol-substring | 684 | pass |
 | wrong-symbol | 684 | pass |
@@ -37,10 +37,26 @@ exit: 2      （L1 = 上游 checker 原样透传）
 
 **单元数是 14 个**（`det_receipt_paths` 已并入 `det_fingerprint_pathset`，13+1=14）。
 
-- 指纹清单 **141 项**（排除自身、本回执与 gate 日志）；**清单 SHA-256：`20b48f4c2842b0513f112dbc0788da6c8fe038359d9c8c3243cc6d4faee0b4e6`**。
+- 指纹清单 **109 项**（模式排除，见下）；**清单 SHA-256：`ff6049aaad88e2855c975e3b044577df21e0760e67566bfd0f3c3eb3a15e8cec`**。
+
+## 141 vs 139 的差集（点名）
+回执里 `fingerprint-pathset inputs=139` 那次 gate 运行时，最新清单还是 **s101**（139 项）；s105 清单是之后才生成的（141 项）。两份清单的差集**恰好两项**：
+```
+only in s105 (2): ['s101-fingerprints.json', 's101-submission.md']
+only in s101 (0): []
+```
+原因：当时的排除规则是「只排除本轮自己的清单与回执」，所以 s101 那对**历史回执/清单**被当成普通产物计入了 s105。现已改成**模式排除**（见下），两侧集合定义统一，不会再出现这种差。
 
 ## 一处本轮自查修复
-gate 日志写在交付目录里会让 `fingerprint-pathset` 每跑一次就报 1 条 defect（日志自身哈希变了）。已把 `work/*-gate.txt` 从指纹清单排除（gate 日志是运行产物，不是交付证据），清单从 147 项降到 139 项后重新稳定，重跑 gate 无 defect。
+gate 日志写在交付目录里会让 `fingerprint-pathset` 每跑一次就报 1 条 defect（日志自身哈希变了）。已把运行产物从指纹清单排除。**规则写进生成器**（`qa/mk_fingerprints.py` 的 `PATTERNS`，fnmatch 作用于 item 相对路径），并随产物落盘到 `work/s105-exclusions.txt`：
+```
+exclusion patterns (fnmatch, applied to item-relative paths):
+  s*-fingerprints.json
+  s*-submission.md
+  work/*-gate.txt
+  work/*-exclusions.txt
+```
+每次生成都会打印条目数；同一输入连续两次生成哈希一致（109 项 / `ff6049aa…`）。前一轮 147→139 的差是 `work/s101-gate.txt` 及同批 gate 日志；本轮统一模式后 141→109（去掉全部 `s*-submission.md` 与 `s*-fingerprints.json`，共 32 份回执/清单）。
 
 ## 判定
 ~~~
