@@ -1,21 +1,12 @@
 # Aspen V15 源码研究
 
-[按原文件名查逆向成果](逆向成果/README.md) · [查逐件总表](逆向成果/逐件总表.csv) · [工作计划、研究报告、工具与原件清单](项目资料/README.md)
+[本机已安装文件统一清单](docs/installed-baseline.md) · [四份验收清单](逆向成果/README.md) · [本机逐件总表](逆向成果/本机逐件总表.csv) · [工作计划、研究报告、工具与原件清单](项目资料/README.md)
 
 逐文件任务从[项目核心指令](AGENTS.md)、[精简执行规则](docs/reverse-execution-workflow.md)和[当前工作状态](docs/reverse-work-status.md)开始；总纲、详细规则和历史证据按需查阅，避免每轮全文重复读取。
 
-开发基准为本机已安装的 **Aspen Plus 和 Aspen Properties V15**。两个产品合并盘点，按文件 SHA-256 去重并保留实际路径与产品归属。[本机安装统一清单入口](docs/installed-baseline.md) · [2026-11-19 历史分类快照](inventories/2026-11-19/README.md)
+开发基准为本机已安装的 **Aspen Plus 和 Aspen Properties V15**。两个产品合并盘点，按文件 SHA-256 去重并保留实际路径与产品归属。
 
-当前工作按原版文件逐个核对反编译源码。已确认来源的两类代码各有独立的本地目录和说明。
-
-后续按[逐文件逆向执行规则](docs/reverse-execution-workflow.md)从“需要逆向”清单选取起点，判断孤立或连锁处理，验收归档后同步完成状态。下表是既有归档快照，首次衔接按新规则复核；后续完成标记通过新台账及清单视图关联，历史分类不覆盖。
-
-| 分类 | 原版文件 | 本地目录 |
-| --- | ---: | --- |
-| 第一类，反编译已完成 | 4 | `.local/source-classification-20261118/01-completed/` |
-| 第二类，反编译未完成 | 35 | `.local/source-classification-20261118/02-incomplete/` |
-
-第一类目录的 `README.md` 记录整份反编译的完成依据。四件历史成果已在后续轮次复验，和其他已验收成果一起发布到[已完成逆向目录](reverse/01-completed/README.md)。第二类每份 `.cs` 都有同目录的同名 `.md`，逐份记录来源、范围和缺口。未完成成果和原版二进制仅存本机。 [归档和证据说明](docs/step-2-source-attribution.md#当前源码归档)
+从[本机统一清单](docs/installed-baseline.md)选取需要逆向的文件，按[逐文件逆向执行规则](docs/reverse-execution-workflow.md)逐件核验和归档。[静态验收通过](逆向成果/静态验收通过/) · [静态验收未通过](逆向成果/静态验收未通过/) · [待静态验收](逆向成果/待静态验收/) · [未成功](逆向成果/未成功/)
 
 当前分支已移除归入第三类的 45 个 Qt 应用源文件，Windows 和 macOS 的应用构建及 Qt 集成测试暂停。旧工程的功能、构建和测试记录仍可从清理前的提交查阅。 [旧 Qt 工程 README](https://github.com/DenseFLoe/Aspen-for-mac/blob/02c9f6f6aa75faf3efd39b217b00c39184c51678/README.md)
 
