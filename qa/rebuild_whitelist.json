@@ -1,0 +1,52 @@
+{
+ "schema": 1,
+ "note": "Explicit allow-list for capstone->keystone semantic round-trip. Each entry is a literal 'orig => new' pattern with the reason it is not a semantic change. Anything not listed here is a defect; there is no catch-all rule.",
+ "entries": [
+  {
+   "pattern": "add byte ptr ds:[rax], al => add byte ptr [rax], al",
+   "why": "default ds: segment override is implicit; keystone prints the operand without it",
+   "sample_rva": "0x38AB",
+   "count": 2,
+   "seen_in": [
+    "WrapSaveMergeNNFiles.dll"
+   ]
+  },
+  {
+   "pattern": "mov r11, qword ptr gs:[0x10] => mov r11, qword ptr gs:[rip + 0x10]",
+   "why": "keystone re-encodes a gs:[disp] operand as rip-relative and drops the segment override; operand value preserved, presentation differs",
+   "sample_rva": "0x525C",
+   "count": 1,
+   "seen_in": [
+    "FindComponent.dll"
+   ]
+  },
+  {
+   "pattern": "mov rax, qword ptr gs:[0x30] => movabs rax, qword ptr gs:[0x30]",
+   "why": "capstone names the 64-bit absolute form movabs where the source was a segment-relative mov; same instruction, alias only",
+   "sample_rva": "0x4DC1",
+   "count": 4,
+   "seen_in": [
+    "FindComponent.dll",
+    "WrapSaveMergeNNFiles.dll"
+   ]
+  },
+  {
+   "pattern": "sal byte ptr [rax], 1 => shl byte ptr [rax], 1",
+   "why": "sal and shl share the same opcode (d0/d1); capstone prints sal for shl 1",
+   "sample_rva": "0x32C4",
+   "count": 1,
+   "seen_in": [
+    "WrapSaveMergeNNFiles.dll"
+   ]
+  },
+  {
+   "pattern": "sysret => sysretq",
+   "why": "sysret and sysretq are the same opcode, presented with a REX.W suffix",
+   "sample_rva": "0x3554",
+   "count": 1,
+   "seen_in": [
+    "WrapSaveMergeNNFiles.dll"
+   ]
+  }
+ ]
+}
