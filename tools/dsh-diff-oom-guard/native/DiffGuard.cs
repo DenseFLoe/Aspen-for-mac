@@ -14,7 +14,7 @@ internal static class DiffGuard
     private const uint MaximumProcessMemory = 768 * 1024 * 1024;
 
     [StructLayout(LayoutKind.Sequential)]
-    private struct BasicLimits
+    internal struct BasicLimits
     {
         public long PerProcessUserTimeLimit, PerJobUserTimeLimit;
         public uint LimitFlags;
@@ -25,14 +25,14 @@ internal static class DiffGuard
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    private struct IoCounters
+    internal struct IoCounters
     {
         public ulong ReadOperations, WriteOperations, OtherOperations;
         public ulong ReadBytes, WriteBytes, OtherBytes;
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    private struct JobLimits
+    internal struct JobLimits
     {
         public BasicLimits BasicLimitInformation;
         public IoCounters IoInfo;
@@ -41,7 +41,7 @@ internal static class DiffGuard
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    private struct StartupInfo
+    internal struct StartupInfo
     {
         public int Size;
         public IntPtr Reserved, Desktop, Title;
@@ -51,23 +51,23 @@ internal static class DiffGuard
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    private struct ProcessInfo
+    internal struct ProcessInfo
     {
         public IntPtr Process, Thread;
         public uint ProcessId, ThreadId;
     }
 
     [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-    private static extern IntPtr CreateJobObject(IntPtr attributes, string name);
+    internal static extern IntPtr CreateJobObject(IntPtr attributes, string name);
 
     [DllImport("kernel32.dll", SetLastError = true)]
-    private static extern bool SetInformationJobObject(IntPtr job, int kind, ref JobLimits limits, int size);
+    internal static extern bool SetInformationJobObject(IntPtr job, int kind, ref JobLimits limits, int size);
 
     [DllImport("kernel32.dll", SetLastError = true)]
-    private static extern bool AssignProcessToJobObject(IntPtr job, IntPtr process);
+    internal static extern bool AssignProcessToJobObject(IntPtr job, IntPtr process);
 
     [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-    private static extern bool CreateProcess(
+    internal static extern bool CreateProcess(
         string application, StringBuilder command, IntPtr processAttributes,
         IntPtr threadAttributes, bool inheritHandles, uint flags, IntPtr environment,
         string directory, ref StartupInfo startup, out ProcessInfo process);
@@ -79,16 +79,16 @@ internal static class DiffGuard
     private static extern uint ResumeThread(IntPtr thread);
 
     [DllImport("kernel32.dll", SetLastError = true)]
-    private static extern uint WaitForSingleObject(IntPtr handle, uint milliseconds);
+    internal static extern uint WaitForSingleObject(IntPtr handle, uint milliseconds);
 
     [DllImport("kernel32.dll", SetLastError = true)]
     private static extern bool GetExitCodeProcess(IntPtr process, out uint exitCode);
 
     [DllImport("kernel32.dll", SetLastError = true)]
-    private static extern bool TerminateProcess(IntPtr process, uint exitCode);
+    internal static extern bool TerminateProcess(IntPtr process, uint exitCode);
 
     [DllImport("kernel32.dll", SetLastError = true)]
-    private static extern bool CloseHandle(IntPtr handle);
+    internal static extern bool CloseHandle(IntPtr handle);
 
     private static int Main(string[] arguments)
     {
@@ -98,21 +98,32 @@ internal static class DiffGuard
 
         try
         {
+            if (arguments.Length == 1 && arguments[0] == "--dsh-admit-shell")
+                return ToolBudget.AdmitShell();
+            if (arguments.Length == 3 && arguments[0] == "--dsh-keep-slot")
+                return ToolBudget.KeepSlot(arguments[1], arguments[2]);
+
+            bool budgetedCommand = arguments.Length >= 2 && arguments[0] == "--dsh-run-bounded";
             string home = AppDomain.CurrentDomain.BaseDirectory;
-            string executable = File.ReadAllText(Path.Combine(home, "gnu-diff.txt"));
-            if (!Path.IsPathRooted(executable) ||
-                !string.Equals(Path.GetFileName(executable), "diff.exe", StringComparison.OrdinalIgnoreCase))
+            string executable = budgetedCommand ? arguments[1] :
+                File.ReadAllText(Path.Combine(home, "gnu-diff.txt"));
+            if (!Path.IsPathRooted(executable) || (!budgetedCommand &&
+                !string.Equals(Path.GetFileName(executable), "diff.exe", StringComparison.OrdinalIgnoreCase)))
                 throw new InvalidDataException("GNU diff must be configured as an absolute diff.exe path.");
             if (!File.Exists(executable))
-                throw new FileNotFoundException("The configured GNU diff no longer exists.", executable);
+                throw new FileNotFoundException("The requested executable does not exist.", executable);
 
             job = CreateJobObject(IntPtr.Zero, null);
             Require(job != IntPtr.Zero, "create job");
             JobLimits limits = new JobLimits();
-            limits.BasicLimitInformation.LimitFlags = ProcessMemoryLimit | KillOnJobClose;
-            limits.ProcessMemoryLimit = new UIntPtr(MaximumProcessMemory);
+            limits.BasicLimitInformation.LimitFlags = KillOnJobClose;
+            if (!budgetedCommand)
+            {
+                limits.BasicLimitInformation.LimitFlags |= ProcessMemoryLimit;
+                limits.ProcessMemoryLimit = new UIntPtr(MaximumProcessMemory);
+            }
             Require(SetInformationJobObject(job, ExtendedLimitInformation, ref limits, Marshal.SizeOf(limits)),
-                "set 768 MiB process limit");
+                "set process lifetime and memory limits");
 
             StartupInfo startup = new StartupInfo();
             startup.Size = Marshal.SizeOf(startup);
@@ -123,26 +134,32 @@ internal static class DiffGuard
 
             StringBuilder command = new StringBuilder();
             AppendArgument(command, executable);
-            foreach (string argument in arguments)
+            for (int i = budgetedCommand ? 2 : 0; i < arguments.Length; i++)
             {
                 command.Append(' ');
-                AppendArgument(command, argument);
+                AppendArgument(command, arguments[i]);
             }
 
             Require(CreateProcess(executable, command, IntPtr.Zero, IntPtr.Zero, true,
-                CreateSuspended, IntPtr.Zero, null, ref startup, out child), "start GNU diff");
-            Require(AssignProcessToJobObject(job, child.Process), "attach GNU diff to its memory-limited job");
-            Require(ResumeThread(child.Thread) != uint.MaxValue, "resume GNU diff");
-            Require(WaitForSingleObject(child.Process, uint.MaxValue) == 0, "wait for GNU diff");
+                CreateSuspended, IntPtr.Zero, null, ref startup, out child), "create suspended tool process");
+            if (budgetedCommand) ToolBudget.Admit(child.Process);
+            Require(AssignProcessToJobObject(job, child.Process), "attach the tool process to its closing job");
+            Require(ResumeThread(child.Thread) != uint.MaxValue, "resume the tool process");
+            Require(WaitForSingleObject(child.Process, uint.MaxValue) == 0, "wait for the tool process");
             childExited = true;
 
             uint result;
-            Require(GetExitCodeProcess(child.Process, out result), "read GNU diff exit code");
+            Require(GetExitCodeProcess(child.Process, out result), "read tool exit code");
             return unchecked((int)result);
+        }
+        catch (TimeoutException error)
+        {
+            Console.Error.WriteLine("DSH memory budget: " + error.Message);
+            return 75;
         }
         catch (Exception error)
         {
-            Console.Error.WriteLine("DSH diff: " + error.Message);
+            Console.Error.WriteLine("DSH tool guard: " + error.Message);
             return 2;
         }
         finally
@@ -160,7 +177,7 @@ internal static class DiffGuard
         }
     }
 
-    private static void Require(bool succeeded, string operation)
+    internal static void Require(bool succeeded, string operation)
     {
         if (!succeeded)
         {
@@ -169,7 +186,7 @@ internal static class DiffGuard
         }
     }
 
-    private static void AppendArgument(StringBuilder command, string argument)
+    internal static void AppendArgument(StringBuilder command, string argument)
     {
         command.Append('"');
         int slashes = 0;

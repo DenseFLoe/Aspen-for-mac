@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 export const name = 'dsh-diff-oom-guard';
 
 const sourceFile = fileURLToPath(new URL('./native/DiffGuard.cs', import.meta.url));
+const budgetSourceFile = fileURLToPath(new URL('./native/ToolBudget.cs', import.meta.url));
 
 function gnuDiffPath(explicitPath) {
   if (explicitPath !== undefined && (typeof explicitPath !== 'string' || !path.isAbsolute(explicitPath))) {
@@ -47,8 +48,12 @@ function toNiubashPath(absolutePath) {
 
 function startupScript(directory, inheritedStartup) {
   const startup = inheritedStartup ? `. ${bashQuote(inheritedStartup)}\n` : '';
-  return startup + [
-    'if [ "${DSH_SHELL-}" = 1 ] && [ "${NIU_SKIP_WINUXCMD_ACTIVATION-}" = 1 ] && [ -n "${NIU_ROOT-}" ]; then',
+  const managedShell = 'if [ "${DSH_SHELL-}" = 1 ] && [ "${NIU_SKIP_WINUXCMD_ACTIVATION-}" = 1 ] && [ -n "${NIU_ROOT-}" ]; then';
+  return [
+    managedShell,
+    `  ${bashQuote(toNiubashPath(path.join(directory, 'diff.exe')))} --dsh-admit-shell || exit $?`,
+    'fi',
+    startup + managedShell,
     `  export PATH=${bashQuote(toNiubashPath(directory))}:"$PATH"`,
     '  hash -r',
     'fi',
@@ -59,7 +64,8 @@ function startupScript(directory, inheritedStartup) {
 function buildGuard(root, gnuDiff, inheritedStartup) {
   const source = readFileSync(sourceFile);
   const key = createHash('sha256')
-    .update(source).update(readFileSync(fileURLToPath(import.meta.url)))
+    .update(source).update(readFileSync(budgetSourceFile))
+    .update(readFileSync(fileURLToPath(import.meta.url)))
     .update('\0' + gnuDiff + '\0' + (inheritedStartup ?? ''))
     .digest('hex').slice(0, 24);
   const directory = path.join(root, key);
@@ -83,7 +89,8 @@ function buildGuard(root, gnuDiff, inheritedStartup) {
   const stagedStartup = path.join(stage, 'bash-env.sh');
   try {
     const result = spawnSync(compiler, [
-      '/nologo', '/optimize+', '/platform:x64', '/target:exe', '/out:' + stagedExe, sourceFile,
+      '/nologo', '/optimize+', '/platform:x64', '/target:exe', '/out:' + stagedExe,
+      sourceFile, budgetSourceFile,
     ], { encoding: 'utf8', windowsHide: true, timeout: 30_000, maxBuffer: 65_536 });
     if (result.status !== 0) {
       throw new Error('Could not build Diff Guard: ' +
@@ -121,4 +128,17 @@ export function apply(ctx, config = {}) {
     else process.env.BASH_ENV = inheritedStartup;
   });
   process.env.BASH_ENV = bootstrap;
+  if (typeof ctx.inject === 'function') {
+    ctx.inject(['systemPrompt'], scope => {
+      scope.systemPrompt.section({
+        name: 'dsh-tool-memory-budget',
+        order: 3265,
+        text: () => 'Use DSH Ops Bash for memory-intensive Windows commands, including decompilers, ' +
+          'JVMs, compilers and large Python or Node programs. Command trees share four 2 GiB Windows ' +
+          'memory slots. A tool exit status of 75 means the memory queue timed out. Preserve the ' +
+          'checkpoint and requeue the tool when a slot is free. Keep lightweight supervision and ' +
+          'small file inspection separate from the memory-intensive commands.',
+      });
+    });
+  }
 }
