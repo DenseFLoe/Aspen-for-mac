@@ -12,9 +12,9 @@
 
 - **资产永久保留、仅本地保存：** `.local/property-database/`（含 `plaintext-export/`、`archives/`、`DO_NOT_DELETE.md`）、`.local/formula-extraction-20261116/`、`.local/extraction-archives-20261117/` 中全部 `aspen-v15-formulas-*` 归档及校验/核验记录。保留原目录、元数据、恢复工具、公式图文与原始十进制数值；新增处理用新路径，禁止删除、清空、覆盖或损坏。只有用户针对具体路径明确授权才可例外。
 - `.local/` 被忽略、已有压缩包或常规清理要求均不授权删除；禁止 `git clean -fdx`、`git clean -ffdx` 及递归清理整个 `.local/` 或 `.local/property-database/`。清理脚本明确排除保护路径。详见[数据库](docs/database-preservation.md)及[公式](docs/formula-extraction.md)。
-- **范围：** Aspen Plus、独立的 Aspen Properties；Properties Enterprise Database Server 单列。各自原版安装包优先，已安装文件补缺、版本及运行证据；共享组件须有归属/依赖/调用证据。HYSYS、EDR、Energy Analyzer、Adsorption、Chromatography 等其他产品自身文件暂不调查或计入验收。
+- **范围：** 以本机已安装的 Aspen Plus 和独立 Aspen Properties 为一个整体盘点、分类和研究，保留产品归属。Properties Enterprise Database Server 仅纳入已有实际安装或依赖证据的文件，并单列组件来源。已安装原件优先，安装介质用于核对来源、版本或补取已确认属于本机范围的文件；共享组件须有归属、依赖或调用证据。HYSYS、EDR、Energy Analyzer、Adsorption、Chromatography 等其他产品自身文件暂不调查或计入验收。
 - **当前阶段：** 原版逐文件逆向归档。顺序为盘点 → 逆向归档 → Windows 重建及对照验收 → 从已验证基准复制独立 Mac 工程 → macOS 构建与实机复验。Windows 原源码保留，当前不自动启动重建。数值单位与容差在比较前确定。详见[总纲](docs/development-requirements.md)。
-- **分类与完成分开：** Plus 既有分类冻结；Properties 五份清单为需要/不需要逆向、对应两份重复子集、尚未确定，类内按末级后缀排序。证据核实后才能确认分类，不能只凭后缀；内层代码单列。读取限制、路径定位和分类分别记录。双归属内容在双方及共用索引关联，同哈希共用 `analysis_key` 并保留来源，同名异哈希分开。历史清单与证据保留，新完成状态另建台账/视图。
+- **分类与完成分开：** 以[本机安装统一清单](docs/installed-baseline.md)为当前分类入口，分为需要逆向、不需要逆向、待核实，类内按末级后缀排序。分类依据为内容结构、可核实用途或与已确认原件一致的完整 SHA-256。内层代码单列，读取限制和路径定位单独记录。同哈希共用 `analysis_key`，保留全部实际路径及产品归属，同名异哈希分开。旧 Plus 分类、Properties 五份清单和共用证据原样保留，完成状态另建台账或视图。
 - **每轮成果：** 验收通过放 `01-completed/`，局部、失败或未验收放 `02-incomplete/`；新归档保留产品、原路径/文件名，每份成果配同目录同名 `.md`，写来源/版本/哈希、范围、状态、验收证据、缺口和下一步。目录汇总、工具成功或编译成功不能替代逐文件完整性验收。
 - **逆向工具：** 按实际格式选择。纯 .NET 延续 ILSpy 和 IL 核验。需要恢复的原生实现（含混合程序集的原生部分）优先用本机 `.local/reverse-tools/` 中的 Ghidra。Windows 对照阶段需要追踪原生运行行为时，使用同目录的 x64dbg 或 x32dbg。入口和用法见[执行规则](docs/reverse-execution-workflow.md#本机工具)。
 - **子智能体：** 本类任务均允许按需调用，由模型决定数量及分工，无需逐轮确认；传递核心约束及必要上下文，分开写入路径，主智能体核验并统一同步完成状态。主模型可根据分派任务的难度，自行选择子智能体的模型和推理档位。
