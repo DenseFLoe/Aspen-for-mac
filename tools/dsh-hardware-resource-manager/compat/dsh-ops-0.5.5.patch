@@ -1,0 +1,525 @@
+diff --git a/lib/execution/files.js b/lib/execution/files.js
+index 186ce81a9685d2327eb5bf997129eb79f4483a68..63d10849fe12c2e493cbebeda6682cb792b7b6c2 100644
+--- a/lib/execution/files.js
++++ b/lib/execution/files.js
+@@ -16,6 +16,7 @@ import { withResultSession } from '../kernel/result-lifecycle.js';
+ import { resultStorage } from '../kernel/result-storage.js';
+ import { resolveSessionDirectory } from '../adapter/dsh/working-directory.js';
+ import { tryWslRead } from './wsl-worker.js';
++import { prepareWorkerResources } from './hardware.js';
+ export { resolveWorker };
+ export function failure(code, message, phase = 'preflight', effectState = 'none') {
+     return { status: code === 'POLICY_DENIED' ? 'rejected' : 'error', phase,
+@@ -194,6 +195,7 @@ async function invokeTrusted(ctx, file, tool, args, exec, signal, cwd, config) {
+             ? 'write_file content makes the request exceed the 2 MiB byte budget; split it into smaller writes.'
+             : 'Request exceeds the 2 MiB byte budget.');
+     let spawned = false;
++    let resource;
+     try {
+         // Trusted, fixed file operations follow DSH fs-sandbox's policy fence,
+         // not an arbitrary-code runner. The worker accepts data, never shell/code.
+@@ -218,6 +220,8 @@ async function invokeTrusted(ctx, file, tool, args, exec, signal, cwd, config) {
+             const latest = policyService.resolve({ session });
+             return sameAuthority(latest, policy);
+         }, config);
++        if (!delegated.handled)
++            resource = await prepareWorkerResources(ctx, argv, signal, tool === 'stat' ? 'stat' : undefined);
+         let transportInput = input;
+         if (signal.aborted)
+             return failure('CANCELLED', 'The file call was cancelled before backend admission or result publication.');
+@@ -235,12 +239,13 @@ async function invokeTrusted(ctx, file, tool, args, exec, signal, cwd, config) {
+                 return failure('TIMEOUT', 'The original call budget expired during WSL preparation; no replay was attempted.');
+             transportInput = JSON.stringify({ ...envelope, budget: { ...envelope.budget, timeoutMs: delegated.remainingMs } });
+         }
++        const worker = resource?.execute(delegated.remainingMs) ?? { argv, signal };
+         const result = delegated.handled ? { readers: true, interrupted: false, lossy: false, exitCode: 0, stderr: '', value: delegated.value, invalid: undefined }
+-            : await exchange(subprocess, { argv, cwd, stdio: { stdin: { data: transportInput }, stdout: { maxBytes: envelope.budget.maxBytes }, stderr: { maxBytes: 16 * 1024 } }, graceMs: 1000, signal }, () => { spawned = true; });
++            : await exchange(subprocess, { ...worker, cwd, stdio: { stdin: { data: transportInput }, stdout: { maxBytes: envelope.budget.maxBytes }, stderr: { maxBytes: 16 * 1024 } }, graceMs: 1000 }, () => { spawned = true; });
+         if (!result.readers)
+             return failure('RESULT_UNKNOWN', mutates ? 'Worker output readers are unavailable; inspect postconditions.' : 'Read-only worker output readers are unavailable; no files were changed.', 'verify', mutates ? 'unknown' : 'none');
+         if (result.interrupted) {
+-            const code = mutates ? 'RESULT_UNKNOWN' : signal.reason instanceof InvocationDeadlineError ? 'TIMEOUT' : signal.aborted ? 'ABORTED' : 'RESULT_UNKNOWN';
++            const code = mutates ? 'RESULT_UNKNOWN' : worker.signal.reason instanceof InvocationDeadlineError ? 'TIMEOUT' : worker.signal.aborted ? 'ABORTED' : 'RESULT_UNKNOWN';
+             const message = mutates ? 'Worker interrupted; inspect postconditions.' : code === 'TIMEOUT' ? 'Read-only worker deadline expired; no files were changed.'
+                 : code === 'ABORTED' ? 'Read-only worker was cancelled; no files were changed.' : 'Read-only worker was interrupted; no files were changed.';
+             return failure(code, message, 'execute', mutates ? 'unknown' : 'none');
+@@ -269,6 +274,11 @@ async function invokeTrusted(ctx, file, tool, args, exec, signal, cwd, config) {
+         return { ...normalized, sandbox: { mode: policy.mode, enforcement: 'policy', boundary: 'trusted-native-file-operations' } };
+     }
+     catch (error) {
++        if (!spawned && signal.aborted)
++            return failure(signal.reason instanceof InvocationDeadlineError ? 'TIMEOUT' : 'ABORTED', 'The file call ended before worker launch.');
+         return failure(spawned && mutates ? 'RESULT_UNKNOWN' : 'EXECUTOR_UNAVAILABLE', `DSH trusted file executor failed; this is not a user authorization denial. ${errorText(error)}`, 'execute', spawned && mutates ? 'unknown' : 'none');
+     }
++    finally {
++        resource?.release();
++    }
+ }
+diff --git a/lib/execution/hardware.js b/lib/execution/hardware.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..ddda263c9b0a300743d424e5e9bf542cf4dbc5c9
+--- /dev/null
++++ b/lib/execution/hardware.js
+@@ -0,0 +1,39 @@
++import { InvocationDeadlineError } from '../lifecycle/invocations.js';
++
++export function workerResourceManager(ctx) {
++    if (process.platform !== 'win32') return undefined;
++    const manager = ctx.get('dshHardwareResourceManager');
++    return typeof manager?.wrapWorker === 'function' ? manager : undefined;
++}
++
++export async function prepareWorkerResources(ctx, argv, signal, operation) {
++    const manager = workerResourceManager(ctx);
++    if (!manager) return undefined;
++    const permit = await manager.acquire(signal, operation);
++    let timer;
++    try {
++        const deadline = new AbortController();
++        const combined = AbortSignal.any([signal, permit.signal, deadline.signal]);
++        combined.throwIfAborted();
++        const options = { argv: manager.wrapWorker(argv, permit), signal: combined };
++        if (process.versions.electron && argv[0].toLowerCase() === process.execPath.toLowerCase())
++            options.env = { ELECTRON_RUN_AS_NODE: '1' };
++        return {
++            signal: combined,
++            execute(timeoutMs) {
++                combined.throwIfAborted();
++                timer = setTimeout(() => deadline.abort(new InvocationDeadlineError()), timeoutMs);
++                timer.unref?.();
++                return options;
++            },
++            release() {
++                clearTimeout(timer);
++                permit.release();
++            },
++        };
++    }
++    catch (error) {
++        permit.release();
++        throw error;
++    }
++}
+diff --git a/lib/execution/jobs.js b/lib/execution/jobs.js
+index 9e8f11c10e3fd5caad50fb5bf0f53c14172a3409..2f517a75317f013208b14632a6b944ff57417121 100644
+--- a/lib/execution/jobs.js
++++ b/lib/execution/jobs.js
+@@ -1,5 +1,6 @@
+ import { record, errorText } from './boundary.js';
+ import { exchange } from './transport.js';
++import { prepareWorkerResources } from './hardware.js';
+ import { indexCacheRequest, workerEnvelope } from './protocol.js';
+ import { withCallBudget, CallBudgetError } from '../kernel/call-budget.js';
+ import { InvocationDeadlineError } from '../lifecycle/invocations.js';
+@@ -30,6 +31,38 @@ function rejectedBeforeAudit(value) {
+         && typeof error.code === 'string' && BEFORE_AUDIT_ERRORS.has(error.code);
+ }
+ const publicationDenied = () => failure('PUBLICATION_DENIED', 'PTC admission changed during preparation; no worker was started.');
++const workspaceStores = new Map();
++async function acquireWorkspaceStore(root, signal) {
++    signal.throwIfAborted();
++    const anchor = canonicalAnchor(root);
++    const key = process.platform === 'win32' ? anchor.toLowerCase() : anchor;
++    const waiting = workspaceStores.get(key);
++    if (!waiting) {
++        workspaceStores.set(key, []);
++        return () => releaseWorkspaceStore(key);
++    }
++    return new Promise((resolve, reject) => {
++        const ticket = {
++            grant() {
++                signal.removeEventListener('abort', abort);
++                resolve(() => releaseWorkspaceStore(key));
++            },
++        };
++        function abort() {
++            waiting.splice(waiting.indexOf(ticket), 1);
++            reject(signal.reason);
++        }
++        waiting.push(ticket);
++        signal.addEventListener('abort', abort, { once: true });
++    });
++}
++function releaseWorkspaceStore(key) {
++    const next = workspaceStores.get(key).shift();
++    if (next)
++        next.grant();
++    else
++        workspaceStores.delete(key);
++}
+ export async function invoke(ctx, file, tool, args, exec, signal, config, admission) {
+     try {
+         if (admission && !admission())
+@@ -65,7 +98,7 @@ async function invokeTrusted(ctx, file, tool, args, exec, signal, config, admiss
+     const newJob = tool === 'batch' && (args.action === 'run' || args.action === 'plan');
+     const mutates = tool !== 'result' || args.action !== 'page';
+     const jobId = tool === 'batch' ? (newJob ? `j-${randomUUID()}` : args.id) : undefined;
+-    let confined, spawned = false;
++    let confined, resource, releaseStore, spawned = false;
+     const errorResult = (code, message, effect = 'none') => {
+         const value = failure(code, message, effect);
+         return { ...value, error: { ...value.error, ...(spawned ? { phase: 'execute' } : {}) },
+@@ -97,12 +130,38 @@ async function invokeTrusted(ctx, file, tool, args, exec, signal, config, admiss
+         // Comparison only: never rewrite the selected root passed to the native worker.
+         const requiredMode = (current) => [current.workspaceRoot, ...(current.additionalWritableRoots ?? []), sessionTempDir(session.id)]
+             .some(root => inside(canonicalAnchor(root), fs.realpathSync.native(operationRoot))) ? 'workspace-write' : 'danger-full-access';
++        const authorityRefusal = () => {
++            const current = policyService.resolve({ session });
++            if (sameAuthority(current, policy))
++                return;
++            if (!['read-only', 'workspace-write', 'danger-full-access'].includes(current?.mode) || !path.isAbsolute(current?.workspaceRoot ?? ''))
++                return failure('EXECUTOR_UNAVAILABLE', 'Invalid authoritative DSH policy after preparation.');
++            const operation = `${tool} ${args?.action ?? ''}`.trim();
++            const required = requiredMode(current);
++            if ((current.mode === 'read-only' && !(tool === 'result' && args?.action === 'page')) || (current.mode === 'workspace-write' && required === 'danger-full-access'))
++                return denied(current, operation, required);
++            return authorityChanged(current, operation);
++        };
+         if (policy.mode === 'workspace-write' && requiredMode(policy) === 'danger-full-access') {
+             return denied(policy, `${tool} outside the workspace and session temporary directory`, 'danger-full-access', 'The selected root is outside the user-authorized workspace.');
+         }
+         const denyRoots = (config?.denyCredentialReads ?? true) !== false ? credentialRoots() : [];
+         if (Buffer.byteLength(JSON.stringify(workerArgs)) > 2 * 1024 * 1024)
+             return failure('OUTPUT_LIMIT', 'Request exceeds the 2 MiB byte budget.');
++        // The native worker holds an exclusive .dsh-ops lock during a batch.
++        // Serialize callers in this host before taking a hardware permit.
++        const usesWorkspaceStore = tool === 'batch' || (tool === 'result'
++            && (args.action === 'page' || args.action === 'release')
++            && typeof args.id === 'string' && !args.id.startsWith('ref://'));
++        if (usesWorkspaceStore) {
++            releaseStore = await acquireWorkspaceStore(operationRoot, signal);
++            signal.throwIfAborted();
++            if (admission && !admission())
++                return publicationDenied();
++            const refusal = authorityRefusal();
++            if (refusal)
++                return refusal;
++        }
+         let argv = [file];
+         if (policy.mode !== 'danger-full-access') {
+             const sandbox = ctx.get('sandbox');
+@@ -134,26 +193,20 @@ async function invokeTrusted(ctx, file, tool, args, exec, signal, config, admiss
+         if (Buffer.byteLength(input) > 2 * 1024 * 1024)
+             return failure('OUTPUT_LIMIT', 'Request exceeds the 2 MiB byte budget.');
+         signal?.throwIfAborted?.();
+-        // Authority may change during asynchronous sandbox preparation.
+-        const current = policyService.resolve({ session });
+-        if (!sameAuthority(current, policy)) {
+-            if (!['read-only', 'workspace-write', 'danger-full-access'].includes(current?.mode) || !path.isAbsolute(current?.workspaceRoot ?? ''))
+-                return failure('EXECUTOR_UNAVAILABLE', 'Invalid authoritative DSH policy after preparation.');
+-            const operation = `${tool} ${args?.action ?? ''}`.trim();
+-            const required = requiredMode(current);
+-            if ((current.mode === 'read-only' && !(tool === 'result' && args?.action === 'page')) || (current.mode === 'workspace-write' && required === 'danger-full-access'))
+-                return denied(current, operation, required);
+-            return authorityChanged(current, operation);
+-        }
++        resource = await prepareWorkerResources(ctx, argv, signal);
++        const refusal = authorityRefusal();
++        if (refusal)
++            return refusal;
+         if (admission && !admission())
+             return publicationDenied();
+-        const result = await exchange(subprocess, { argv, cwd: policy.workspaceRoot,
++        const worker = resource?.execute(envelope.budget.timeoutMs) ?? { argv, signal };
++        const result = await exchange(subprocess, { ...worker, cwd: policy.workspaceRoot,
+             stdio: { stdin: { data: input }, stdout: { maxBytes: envelope.budget.maxBytes }, stderr: { maxBytes: 16 * 1024 } },
+-            graceMs: 1000, signal }, () => { spawned = true; });
++            graceMs: 1000 }, () => { spawned = true; });
+         if (!result.readers)
+             return errorResult('RESULT_UNKNOWN', mutates ? 'Worker output readers are unavailable; inspect audit records.' : 'Read-only worker output readers are unavailable; no data was changed.', mutates ? 'unknown' : 'none');
+         if (result.interrupted) {
+-            const code = mutates ? 'RESULT_UNKNOWN' : signal.reason instanceof InvocationDeadlineError ? 'TIMEOUT' : signal.aborted ? 'ABORTED' : 'RESULT_UNKNOWN';
++            const code = mutates ? 'RESULT_UNKNOWN' : worker.signal.reason instanceof InvocationDeadlineError ? 'TIMEOUT' : worker.signal.aborted ? 'ABORTED' : 'RESULT_UNKNOWN';
+             const message = mutates ? 'Worker interrupted; durable write-ahead records preserve possible effects.'
+                 : code === 'TIMEOUT' ? 'Read-only worker deadline expired; no data was changed.'
+                     : code === 'ABORTED' ? 'Read-only worker was cancelled; no data was changed.' : 'Read-only worker was interrupted; no data was changed.';
+@@ -185,8 +238,14 @@ async function invokeTrusted(ctx, file, tool, args, exec, signal, config, admiss
+     catch (error) {
+         if (!spawned && admission && !admission())
+             return publicationDenied();
++        if (!spawned && signal.aborted)
++            return failure(signal.reason instanceof InvocationDeadlineError ? 'TIMEOUT' : 'ABORTED', 'The PTC call ended before worker launch.');
+         return errorResult(spawned && mutates ? 'RESULT_UNKNOWN' : 'EXECUTOR_UNAVAILABLE', `DSH execution infrastructure failed, not a user authorization denial: ${errorText(error)}`, spawned && mutates ? 'unknown' : 'none');
+     }
++    finally {
++        releaseStore?.();
++        resource?.release();
++    }
+ }
+ function runnerFailure(exitCode, stderr, rules) {
+     if (exitCode === 0 || exitCode == null)
+diff --git a/lib/kernel/result-storage.js b/lib/kernel/result-storage.js
+index 01fb557591dc007c9512b7fe1d166c129bf4c4ae..d00c98cdbd01e887bb6fd43d599c00c399352123 100644
+--- a/lib/kernel/result-storage.js
++++ b/lib/kernel/result-storage.js	
+@@ -10,6 +10,7 @@ import { sameAuthority } from '../authority-paths.js';
+ import { prepareWorkspace } from '../workspace-preparation.js';
+ import { resultSessionNonce, registerResultCleanup } from './result-lifecycle.js';
+ import { markCleanupRootLive, registerCleanupRoot, releaseCleanupRootLive } from './result-cleanup-registry.js';
++import { prepareWorkerResources } from '../execution/hardware.js';
+ const locations = new WeakMap();
+ const digest = (value) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
+ /** Parse only the runner's pre-separator contract, not the wrapped program's arguments. */
+@@ -76,6 +77,7 @@ async function purge(ctx, session, file, storage, original) {
+         throw new Error('Cleanup authority unavailable');
+     const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 5000);
+     timer.unref?.();
++    let resource;
+     try {
+         let argv = [file];
+         if (policy.mode !== 'danger-full-access') {
+@@ -92,12 +94,14 @@ async function purge(ctx, session, file, storage, original) {
+             }
+             argv = exposePosixCache(confined.argv, storage);
+         }
++        resource = await prepareWorkerResources(ctx, argv, controller.signal);
+         const latest = policyService?.resolve({ session });
+         if (!latest || !sameAuthority(latest, policy)
+             || (process.platform === 'win32' && latest?.sessionId !== session.id))
+             throw new Error('Cleanup authority changed');
+         const envelope = workerEnvelope('ptc', { root: policy.workspaceRoot, scope: session.id, tool: 'result', args: { action: 'purge' }, read_only: false }, 5000, storage);
+-        const handle = subprocess.spawn({ argv, cwd: policy.workspaceRoot, stdio: { stdin: { data: JSON.stringify(envelope) }, stdout: { maxBytes: 4096 }, stderr: { maxBytes: 4096 } }, graceMs: 1000, signal: controller.signal });
++        const worker = resource?.execute(envelope.budget.timeoutMs) ?? { argv, signal: controller.signal };
++        const handle = subprocess.spawn({ ...worker, cwd: policy.workspaceRoot, stdio: { stdin: { data: JSON.stringify(envelope) }, stdout: { maxBytes: 4096 }, stderr: { maxBytes: 4096 } }, graceMs: 1000 });
+         const outcome = await handle.done, output = handle.collected.stdout.readFrom(0);
+         const value = JSON.parse(output.text);
+         if (outcome.exitCode !== 0 || outcome.signal || output.lossy || !value || typeof value !== 'object'
+@@ -105,6 +109,7 @@ async function purge(ctx, session, file, storage, original) {
+             throw new Error('Cache purge did not complete');
+     }
+     finally {
++        resource?.release();
+         clearTimeout(timer);
+     }
+ }
+diff --git a/lib/projections/native/runtime.js b/lib/projections/native/runtime.js
+index 4acc71b0618e768c2c95935f244ccb3609c7f513..ccedb4adc256c9580b88687559d4b14f1aae068f 100644
+--- a/lib/projections/native/runtime.js
++++ b/lib/projections/native/runtime.js	
+@@ -12,6 +12,7 @@ import { canonicalOutput } from '../canonical-output.js';
+ import { canonicalOutput as canonicalSchema } from '../ptc/canonical-schema.js';
+ import { acquireResultAdmission } from '../../publication/result-admission.js';
+ import { createNativeReadDedup } from './read-dedup.js';
++import { workerResourceManager } from '../../execution/hardware.js';
+ export class NativeFileTools {
+     ctx;
+     config;
+@@ -61,10 +62,11 @@ export class NativeFileTools {
+             return failure('POLICY_DENIED', 'Native file component is disposed.');
+         if (!this.file)
+             return failure('EXECUTOR_UNAVAILABLE', 'Native file worker path is unavailable.');
++        const timeoutMs = workerResourceManager(this.ctx) ? undefined : Math.min(this.config.toolCallTimeoutMs ?? WORKER_TIMEOUT_MS, WORKER_TIMEOUT_MS);
+         try {
+             return await this.calls.run(exec?.signal, signal => tool === 'result'
+                 ? invokeResult(this.ctx, this.file, args, exec, signal, this.config, () => this.resultAdmission.authorize({ ...exec, signal }).catch(() => undefined))
+-                : invoke(this.ctx, this.file, tool, args, exec, signal, this.config), undefined, Math.min(this.config.toolCallTimeoutMs ?? WORKER_TIMEOUT_MS, WORKER_TIMEOUT_MS));
++                : invoke(this.ctx, this.file, tool, args, exec, signal, this.config), undefined, timeoutMs);
+         }
+         catch (error) {
+             if (error instanceof InvocationNotStarted)
+diff --git a/lib/projections/ptc/contract.js b/lib/projections/ptc/contract.js
+index 369ffe82bd345ab4ae5ba83306ada63f8c4b6205..9fdcda4011092c112c378d707ceaa12f0bf9c1de 100644
+--- a/lib/projections/ptc/contract.js
++++ b/lib/projections/ptc/contract.js	
+@@ -15,7 +15,7 @@ export function definition(tool, execute) {
+     const description = entry.description.replace(/ Failures resolve as .*?they are not thrown\./, '');
+     return { name: publicToolName(tool), description: description +
+             ' PTC returns Outcome: completed.data; partial.data, coverage and continuation; failures use error.code/effectState/retry. Check status before reading data; never blindly retry a possible write.',
+-        parameters: entry.parameters, timeoutMs: WORKER_TIMEOUT_MS + 2000,
++        parameters: entry.parameters, ...(process.platform === 'win32' ? {} : { timeoutMs: WORKER_TIMEOUT_MS + 2000 }),
+         ...(entry.concurrencySafe ? { isConcurrencySafe: () => true } : {}),
+         output: { schema: outcomeSchema(canonicalOutput(tool)), render: (_args, value) => [{ type: 'text', text: JSON.stringify(value) }] },
+         async execute(args, exec) {
+diff --git a/lib/publication/ptc.js b/lib/publication/ptc.js
+index 639fb8edd7cb327bc073339cd53b72ac11677c11..9eddeb66717972c4e4b19d2228e32657f65c009f 100644
+--- a/lib/publication/ptc.js
++++ b/lib/publication/ptc.js	
+@@ -12,6 +12,7 @@ import { BATCHING_GUIDANCE_ID, BATCHING_GUIDANCE_REVISION, createProgramLatch, l
+ import { InvocationLifetime, InvocationNotStarted } from '../lifecycle/invocations.js';
+ import { monitoredInvoke } from '../execution/monitored.js';
+ import { failure, resolveWorker } from '../execution/jobs.js';
++import { workerResourceManager } from '../execution/hardware.js';
+ import { WORKER_TIMEOUT_MS } from '../execution/protocol.js';
+ import { registerStepTailProvider } from '../prompt-injection/index.js';
+ import { mountWorkspacePreparation } from '../workspace-preparation.js';
+@@ -100,7 +101,8 @@ export function mountPtc(root, rawConfig, gate = { allows: () => true }) {
+                 return { status: 'completed', tools: requested, nextTurn: true };
+             }
+             try {
+-                const result = await entry.calls.run(exec.signal, (_signal, controller) => monitoredInvoke(ctx, file, api, args, exec, controller, config), undefined, WORKER_TIMEOUT_MS);
++                const timeoutMs = workerResourceManager(ctx) ? undefined : WORKER_TIMEOUT_MS;
++                const result = await entry.calls.run(exec.signal, (_signal, controller) => monitoredInvoke(ctx, file, api, args, exec, controller, config), undefined, timeoutMs);
+                 // Shared file APIs are monitored by the wrapped dispatch the lease
+                 // grants; this publication branch only sees non-shared APIs.
+                 return result;
+diff --git a/lib/session-shells.js b/lib/session-shells.js
+index 1841ca34fbb8ddcd876e3fe1b81b37193f836829..a071619a80ee1da15f860b24b3cf37ccc9fd3816 100644
+--- a/lib/session-shells.js
++++ b/lib/session-shells.js	
+@@ -149,6 +149,7 @@ export function mountSessionBash(ctx, config, shells, gate = { allows: () => tru
+     // Bound once by the jobs injection below; the host's registry is a tracked service, so every
+     // `ctx.get('jobs')` hands out a fresh traceable proxy and cannot be compared by identity.
+     let jobs;
++    let resourceManager;
+     const allowed = (agent) => {
+         if (!ready || stopped || !agent?.session)
+             return false;
+@@ -222,7 +223,7 @@ export function mountSessionBash(ctx, config, shells, gate = { allows: () => tru
+             if (!publishable)
+                 continue;
+             const base = bashToolDefinition({ file: bash.file, source: bash.source, subprocess: ctx.get('subprocess') });
+-            const definition = hostBashDefinition(ctx, base, (args, exec, standing, policy, dshEnv, options) => startSessionBash({ ctx, bash, active: () => entry.published === true && entry.definition === definition
++            const definition = hostBashDefinition(ctx, base, (args, exec, standing, policy, dshEnv, options) => startSessionBash({ ctx, bash, resourceManager, active: () => entry.published === true && entry.definition === definition
+                     && exec.agent !== undefined && entries.has(exec.agent) && allowed(exec.agent) }, args, exec, standing, policy, dshEnv, options), async (args, session, exec) => {
+                 const basis = await resolveSessionDirectory(ctx, exec.agent, exec.signal);
+                 return { workdir: sessionWorkdir(args, { header: { cwd: basis.cwd } }), basis };
+@@ -344,6 +345,11 @@ export function mountSessionBash(ctx, config, shells, gate = { allows: () => tru
+     if (gate.watch)
+         ctx.effect(() => gate.watch(() => { void scheduleReconcile(true); }), 'dsh-ops: bash mode observer');
+     ctx.inject(['sandbox'], () => { scheduleReconcile(); });
++    ctx.inject(['dshHardwareResourceManager'], scope => {
++        const manager = scope.get('dshHardwareResourceManager');
++        resourceManager = manager;
++        scope.effect(() => () => { if (resourceManager === manager) resourceManager = undefined; });
++    });
+     ctx.inject(['jobs'], jobsCtx => {
+         jobs = jobsCtx.get('jobs');
+         scheduleReconcile(true);
+diff --git a/lib/shells/execution.js b/lib/shells/execution.js
+index ea0b9a0b17e5d62f4f0d5f973c841c056da5bb93..b7b662fa249efac4ae08f7a9bdba7e044df30062 100644
+--- a/lib/shells/execution.js
++++ b/lib/shells/execution.js	
+@@ -64,13 +64,15 @@ function recordSettledStreams(streams, exec) {
+  * process containment, collection and disposal. A job can observe output without consuming it.
+  * `onExpiry: none` disables only this executor's deadline, never caller cancellation.
+  */
+-export function startBashExecution({ file, source, subprocess, prepareArgv, env = {}, projectResult }, spec, exec = {}) {
++export function startBashExecution({ file, source, subprocess, prepareArgv, resourceManager, env = {}, projectResult }, spec, exec = {}) {
+     const controller = new AbortController();
+     const callerSignal = exec.signal;
+     const startedAt = performance.now();
+     let cause;
+     let handle;
+     let timer;
++    let resourcePending = false;
++    let permit;
+     const stop = (kind, reason) => {
+         if (controller.signal.aborted)
+             return;
+@@ -78,6 +80,7 @@ export function startBashExecution({ file, source, subprocess, prepareArgv, env
+         controller.abort(reason);
+     };
+     const onCallerAbort = () => stop('cancelled', callerSignal?.reason);
++    const onPermitAbort = () => stop('resource', permit.signal.reason);
+     if (callerSignal?.aborted)
+         onCallerAbort();
+     else
+@@ -90,6 +93,7 @@ export function startBashExecution({ file, source, subprocess, prepareArgv, env
+     const process = {
+         status: 'running',
+         get started() { return handle !== undefined; },
++        get resourcePending() { return resourcePending; },
+         observed: { stdout: reader('stdout'), stderr: reader('stderr') },
+         kill: reason => stop('cancelled', new Error(reason ?? 'bash execution cancelled')),
+         result: () => result,
+@@ -117,6 +121,13 @@ export function startBashExecution({ file, source, subprocess, prepareArgv, env
+         let phase = 'preparation';
+         try {
+             assertRunning();
++            if (resourceManager) {
++                resourcePending = true;
++                permit = await resourceManager.acquire(controller.signal);
++                permit.signal.addEventListener('abort', onPermitAbort, { once: true });
++                if (permit.signal.aborted) onPermitAbort();
++                assertRunning();
++            }
+             const argv = spec.command === undefined ? [file, spec.scriptPath] : [file, '-c', spec.command];
+             // Race preparation so an unavailable provider cannot strand a cancelled job.
+             let preparedArgv = argv;
+@@ -138,6 +149,10 @@ export function startBashExecution({ file, source, subprocess, prepareArgv, env
+             if (!subprocess)
+                 throw new Error('Host subprocess service is unavailable');
+             const childEnv = shellEnvOverrides(globalThis.process.env, env);
++            if (permit) {
++                childEnv.DSH_RESOURCE_PERMIT = permit.token;
++                if (permit.bootstrap) childEnv.BASH_ENV = permit.bootstrap;
++            }
+             assertRunning();
+             handle = subprocess.spawn({
+                 argv: preparedArgv,
+@@ -153,6 +168,7 @@ export function startBashExecution({ file, source, subprocess, prepareArgv, env
+                 signal: controller.signal,
+                 env: prepareArgv ? adaptElectronRunner(preparedArgv, childEnv) : childEnv,
+             });
++            resourcePending = false;
+             const outcome = await handle.done;
+             streams = [collectStream(handle.collected?.stdout, spec.includeDiagnostics), collectStream(handle.collected?.stderr, spec.includeDiagnostics)];
+             value = {
+@@ -175,6 +191,11 @@ export function startBashExecution({ file, source, subprocess, prepareArgv, env
+             };
+         }
+         finally {
++            resourcePending = false;
++            if (permit) {
++                permit.signal.removeEventListener('abort', onPermitAbort);
++                permit.release();
++            }
+             // Settlement is the one place the plugin learns a spill path exists, so the
+             // ownership ledger and the bounded retention counter are updated here.
+             try {
+diff --git a/lib/shells/jobs.js b/lib/shells/jobs.js
+index 4418ff33064f74423e5ee9514ca762daf575ef8a..d938c107649f106e684b65d8c91036600cb000a0 100644
+--- a/lib/shells/jobs.js
++++ b/lib/shells/jobs.js	
+@@ -70,7 +70,7 @@ export async function waitOnBashJob(jobs, attached, exec, timeoutMs) {
+         throw error;
+     }
+     if (running(view)) {
+-        if (!attached.process()?.started) {
++        if (!attached.process()?.started && !attached.process()?.resourcePending) {
+             await stop('timed out during preparation');
+             return hostForeground({ timedOut: true, timeoutMs,
+                 stdout: { text: '', truncated: false }, stderr: { text: '', truncated: false } }, attached.effects());
+diff --git a/lib/shells/session-execution.js b/lib/shells/session-execution.js
+index 8c80cccf5e7a7f31b189192b9b8285893c891816..cd31c77ccf1c2ab08df2998638ec0bfb55fe03d1 100644
+--- a/lib/shells/session-execution.js
++++ b/lib/shells/session-execution.js	
+@@ -7,7 +7,7 @@ import { executorUnavailableMessage } from '../bash-runtime-failure.js';
+ import { prepareWorkspace } from '../workspace-preparation.js';
+ import { executionRestriction } from '../permissions.js';
+ import { isNiubashExecutable, prepareNiubash } from '../niubash/runtime.js';
+-export function startSessionBash({ ctx, bash, active }, args, exec, standing, policy, dshEnv, options) {
++export function startSessionBash({ ctx, bash, active, resourceManager }, args, exec, standing, policy, dshEnv, options) {
+     if (!exec.agent?.session)
+         throw new Error('EXECUTOR_UNAVAILABLE: an authoritative session is required.');
+     const session = exec.agent.session;
+@@ -25,6 +25,7 @@ export function startSessionBash({ ctx, bash, active }, args, exec, standing, po
+     let confinement;
+     const definition = bashToolDefinition({ file: bash.file, source: bash.source,
+         env, subprocess: ctx.get('subprocess'),
++        resourceManager: native ? resourceManager : undefined,
+         prepareArgv: async (argv, signal) => {
+             signal.throwIfAborted();
+             assertAuthority();
+diff --git a/lib/shells/tool.js b/lib/shells/tool.js
+index 449faa7fbb56d04ab859fd8b9d6b0cfb394ec67b..52dd71a2914dc7c9227f898c97ff4bfab1fc8543 100644
+--- a/lib/shells/tool.js
++++ b/lib/shells/tool.js	
+@@ -210,7 +210,7 @@ export function bashToolDescription() {
+  * @param {import('./types.js').ShellExecutorOptions} options - the typed host executor inputs.
+  * @returns {import('./types.js').LegacyShellDefinition} the legacy executor definition wrapped by the host projection.
+  */
+-export function bashToolDefinition({ file, source, subprocess, prepareArgv, env = {}, projectResult = withBashStatus }) {
++export function bashToolDefinition({ file, source, subprocess, prepareArgv, resourceManager, env = {}, projectResult = withBashStatus }) {
+     const definition = {
+         name: BASH_TOOL_NAME,
+         description: bashToolDescription(),
+@@ -331,7 +331,7 @@ export function bashToolDefinition({ file, source, subprocess, prepareArgv, env
+         },
+         start(args, exec = {}, { onExpiry } = {}) {
+             const spec = definition.resolve(args);
+-            return startBashExecution({ file, source, subprocess, prepareArgv, env, projectResult }, { ...spec, onExpiry }, exec);
++            return startBashExecution({ file, source, subprocess, prepareArgv, resourceManager, env, projectResult }, { ...spec, onExpiry }, exec);
+         },
+         async execute(args, exec) { return definition.start(args, exec).result(); },
+     };
