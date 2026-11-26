@@ -7,3 +7,4 @@
 | 复核数据和界面的测试程序 | [测试目录](../../tests/) |
 | 项目工具加载配置 | [项目配置](../../.codex/config.toml) |
 | 界面资料、图标和恢复资源 | [界面资源](../../ui/) |
+| 为 DSH 工具提供 Windows FIFO 调度和资源限额 | [DSH 硬件资源管理器](dsh-hardware-resource-manager/) |
