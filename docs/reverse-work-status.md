@@ -1,5 +1,7 @@
 # 逐文件逆向当前状态
 
+2026-11-26 接手续跑，AspenTech.Dashboard.Contracts.dll 和 AxASCGridLib410.dll 通过逐件静态验收。两件均从源码复编并按原件布局重放，回放 PE 与各自安装原件逐字节相同。主干本机逐件总表累计 152 项通过。[逐件结论与指纹](../reverse/01-completed/20261126-codex-resume/README.md)。
+
 2026-11-26 新增 74 个本机 .NET 原件的逐件静态验收归档。主干本机逐件总表累计 150 项通过。见[本轮说明](../reverse/01-completed/20261126-static-source/README.md)。
 
 **现阶段核心工作**为[批量静态验收、修复与复验](static-acceptance.md)。以 GitHub 主干的[逆向成果目录](../逆向成果/)与[逐件总表](../逆向成果/逐件总表.csv)为准。

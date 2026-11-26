@@ -1,6 +1,6 @@
 # 静态验收通过｜本机 Aspen Plus 与 Aspen Properties
 
-150 件，其中独立文件 140 件，已核实的内层原件 10 件。
+152 件，其中独立文件 142 件，已核实的内层原件 10 件。
 
 [本机分类与验收清单](../README.md) · [本机逐件总表](../本机逐件总表.csv)
 
@@ -63,6 +63,7 @@
 | [AspenTech.CommonShell.Controls.Startup.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.CommonShell.Controls.Startup.dll/) | Plus / Properties | 独立文件 | 6476bbd3d220 |
 | [AspenTech.Components.Utilities.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Hydraulics%20V15.0/AspenTech.Components.Utilities.dll/) | Plus | 独立文件 | b36ae4a4f6ee |
 | [AspenTech.Components.Utilities.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/PSV%20Legacy%20Recall%20Server/V15.0/AspenTech.Components.Utilities.dll/) | Plus | 独立文件 | ddd385d09d33 |
+| [AspenTech.Dashboard.Contracts.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.Dashboard.Contracts.dll/) | Plus / Properties | 独立文件 | d91c7a160927 |
 | [AspenTech.Engineering.Controls.FileMenu.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.Engineering.Controls.FileMenu.dll/) | Plus / Properties | 独立文件 | db81bd19b9a3 |
 | [AspenTech.Engineering.FlowsheetOverlay.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/Modules/AspenTech.Engineering.FlowsheetOverlay.dll/) | Plus / Properties | 独立文件 | 7f8a50243d4c |
 | [Aspentech.Exchange.EquipmentSelection.dll](Plus/%5BTARGETDIR%5D/Aspentech.Exchange.EquipmentSelection.dll/) | Plus | 独立文件 | 7be4816ebce1 |
@@ -87,6 +88,7 @@
 | [AspenTech.Visualisation.CommonShell.Wpf.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.Visualisation.CommonShell.Wpf.dll/) | Plus / Properties | 独立文件 | fcc8f69733e5 |
 | [AspenTech.Visualisation.Controls.Assistant.W1.dll](Plus-Properties/Program%20Files/Common%20Files/AspenTech%20Shared/AspenTech.Visualisation.Controls.Assistant.W1.dll/) | Plus / Properties | 独立文件 | 8940700237f8 |
 | [AspenTech.Visualisation.Controls.StartPage.Wpf.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.Visualisation.Controls.StartPage.Wpf.dll/) | Plus / Properties | 独立文件 | 73193ded5722 |
+| [AxASCGridLib410.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/OOMF%20V15.0/xeq/AxASCGridLib410.dll/) | Plus / Properties | 独立文件 | c6e0de222bc0 |
 | [AxPFSCtrlLib.dll](Plus/Program%20Files/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/AxPFSCtrlLib.dll/) | Plus | 独立文件 | de5a2f3a135b |
 | [azeotropesearch.lib](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Lib/azeotropesearch.lib/) | Plus / Properties | 独立文件 | 2d899bf19778 |
 | [BFDYLD.obj](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Examples/Biofuel%20and%20Biochemicals/Biomass%20characterization/Biofeed%20converter.apwz%21/BFDYLD.obj/) | Plus | 内层原件 | 194e88b44801 |
