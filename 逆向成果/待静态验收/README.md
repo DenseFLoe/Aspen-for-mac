@@ -1,6 +1,6 @@
 # 待静态验收｜本机 Aspen Plus 与 Aspen Properties
 
-834 件，其中独立文件 807 件，已核实的内层原件 27 件。
+832 件，其中独立文件 805 件，已核实的内层原件 27 件。
 
 [本机分类与验收清单](../README.md) · [本机逐件总表](../本机逐件总表.csv)
 
@@ -189,7 +189,6 @@
 | [AspenTech.AspenPlus.WpfAzeoAnalysisGUI.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.AspenPlus.WpfAzeoAnalysisGUI.dll/) | Plus / Properties | 独立文件 | 84915983df0d |
 | [AspenTech.ColumnAnalysis.UserInterfaces.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/Modules/AspenTech.ColumnAnalysis.UserInterfaces.dll/) | Plus / Properties | 独立文件 | edc7cf35382d |
 | [AspenTech.CompositeDoc.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/AspenTech.CompositeDoc.dll/) | Plus / Properties | 独立文件 | 773b0ead2567 |
-| [AspenTech.Dashboard.Contracts.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.Dashboard.Contracts.dll/) | Plus / Properties | 独立文件 | d91c7a160927 |
 | [AspenTech.EconomicsAnalysis.Overlays.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.EconomicsAnalysis.Overlays.dll/) | Plus / Properties | 独立文件 | 0f123c1bc6bc |
 | [Aspentech.EnergyAnalysis.ClassLibrary.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/Aspentech.EnergyAnalysis.ClassLibrary.dll/) | Plus / Properties | 独立文件 | cbc68d2c8e13 |
 | [Aspentech.EnergyAnalysis.Integration.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/Aspentech.EnergyAnalysis.Integration.dll/) | Plus / Properties | 独立文件 | 5ae8f18a8b04 |
@@ -276,7 +275,6 @@
 | [atxc.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/atxc.dll/) | Plus / Properties | 独立文件 | a065d18f3f37 |
 | [atxc.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/atxc.dll/) | Plus | 独立文件 | bfc4b42ebee1 |
 | [AxAdvancedFileDialogLib.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AxAdvancedFileDialogLib.dll/) | Plus / Properties | 独立文件 | 69334416181b |
-| [AxASCGridLib410.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/OOMF%20V15.0/xeq/AxASCGridLib410.dll/) | Plus / Properties | 独立文件 | c6e0de222bc0 |
 | [AxEditorCtrlLib.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/AxEditorCtrlLib.dll/) | Plus | 独立文件 | 5ca67d4970c4 |
 | [AxIconEditorAxLib.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/AxIconEditorAxLib.dll/) | Plus | 独立文件 | b28e3ef28845 |
 | [AxInterop.MOLESTRUCTLib.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/AxInterop.MOLESTRUCTLib.dll/) | Plus / Properties | 独立文件 | df5c39b29daa |
