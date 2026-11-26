@@ -1,6 +1,6 @@
 # 待静态验收｜本机 Aspen Plus 与 Aspen Properties
 
-832 件，其中独立文件 805 件，已核实的内层原件 27 件。
+831 件，其中独立文件 804 件，已核实的内层原件 27 件。
 
 [本机分类与验收清单](../README.md) · [本机逐件总表](../本机逐件总表.csv)
 
@@ -550,7 +550,6 @@
 | [PetroleumProps.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/PetroleumProps.dll/) | Plus / Properties | 独立文件 | 182d1f950436 |
 | [PetroPropCalculator.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/PetroPropCalculator.dll/) | Plus / Properties | 独立文件 | c771d6ae532c |
 | [pfsctrl.ocx](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/pfsctrl.ocx/) | Plus | 独立文件 | bcc65eb75cb0 |
-| [PfsDotNetActiveXCtrl.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/PfsDotNetActiveXCtrl.dll/) | Plus | 独立文件 | 4bb238de3a44 |
 | [pfsplot.ocx](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/pfsplot.ocx/) | Plus / Properties | 独立文件 | ce100e16bdf9 |
 | [PFSPlotLib.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/PFSPlotLib.dll/) | Plus / Properties | 独立文件 | 41d9fc23d8c0 |
 | [PipeFittingServer.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/PSV%20Legacy%20Recall%20Server/V15.0/PipeFittingServer.dll/) | Plus | 独立文件 | 31d79f7040e9 |
