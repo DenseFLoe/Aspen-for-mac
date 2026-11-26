@@ -1,5 +1,7 @@
 # 逐文件逆向当前状态
 
+2026-11-26 新增 74 个本机 .NET 原件的逐件静态验收归档。主干本机逐件总表累计 150 项通过。见[本轮说明](../reverse/01-completed/20261126-static-source/README.md)。
+
 **现阶段核心工作**为[批量静态验收、修复与复验](static-acceptance.md)。以 GitHub 主干的[逆向成果目录](../逆向成果/)与[逐件总表](../逆向成果/逐件总表.csv)为准。
 
 自 2026-11-24 起，新件以本机安装的 Aspen Plus 和 Aspen Properties 为共同基准。当前分类见[本机安装统一清单](installed-baseline.md)。下方保留历史状态。
