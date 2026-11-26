@@ -1,6 +1,6 @@
 # 静态验收通过｜本机 Aspen Plus 与 Aspen Properties
 
-152 件，其中独立文件 142 件，已核实的内层原件 10 件。
+153 件，其中独立文件 143 件，已核实的内层原件 10 件。
 
 [本机分类与验收清单](../README.md) · [本机逐件总表](../本机逐件总表.csv)
 
@@ -127,6 +127,7 @@
 | [P2DataMapResult.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Converter%20V15.0/P2DataMapResult.dll/) | Plus | 独立文件 | 718690d2b156 |
 | [P2InputParser.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Converter%20V15.0/P2InputParser.dll/) | Plus | 独立文件 | 7e7164d95584 |
 | [PFSCtrlLib.dll](Plus/Program%20Files/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/PFSCtrlLib.dll/) | Plus | 独立文件 | 5073b8f277f6 |
+| [PfsDotNetActiveXCtrl.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/PfsDotNetActiveXCtrl.dll/) | Plus | 独立文件 | 4bb238de3a44 |
 | [PipeFlowMethodLib.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/PSV%20Legacy%20Recall%20Server/V15.0/PipeFlowMethodLib.dll/) | Plus | 独立文件 | bc8f035ea34e |
 | [PipeFlowMethodLib.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Hydraulics%20V15.0/PipeFlowMethodLib.dll/) | Plus | 独立文件 | d66ac44debb9 |
 | [PluginsSupport.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/PSV%20Legacy%20Recall%20Server/V15.0/PluginsSupport.dll/) | Plus | 独立文件 | 60fd8dcad05b |
