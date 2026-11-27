@@ -1,6 +1,6 @@
 # 静态验收通过｜本机 Aspen Plus 与 Aspen Properties
 
-231 件，其中独立文件 221 件，已核实的内层原件 10 件。
+232 件，其中独立文件 222 件，已核实的内层原件 10 件。
 
 [本机分类与验收清单](../README.md) · [本机逐件总表](../本机逐件总表.csv)
 
@@ -167,6 +167,7 @@
 | [Interop.ASCclasslib.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/Interop.ASCclasslib.dll/) | Plus / Properties | 独立文件 | f34a1c76f088 |
 | [Interop.BPCOMPRESSORLib.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/Interop.BPCOMPRESSORLib.dll/) | Plus / Properties | 独立文件 | 8f6170db6d38 |
 | [Interop.Happ.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/Interop.Happ.dll/) | Plus / Properties | 独立文件 | c21b432f0d04 |
+| [Interop.MMLocal.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/Interop.MMLocal.dll/) | Plus / Properties | 独立文件 | c839a5f398b4 |
 | [Interop.MOLESTRUCTLib.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/Interop.MOLESTRUCTLib.dll/) | Plus / Properties | 独立文件 | 84fc107094ef |
 | [Interop.MSHierarchicalFlexGridLib.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/Interop.MSHierarchicalFlexGridLib.dll/) | Plus / Properties | 独立文件 | c9130abc82d5 |
 | [Interop.SLMErrorDialogLib.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/Aspen%20CXS%20V15.0/Interop.SLMErrorDialogLib.dll/) | Plus | 独立文件 | 13e1b4bac960 |

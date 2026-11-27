@@ -1,6 +1,6 @@
 # 待静态验收｜本机 Aspen Plus 与 Aspen Properties
 
-756 件，其中独立文件 729 件，已核实的内层原件 27 件。
+755 件，其中独立文件 728 件，已核实的内层原件 27 件。
 
 [本机分类与验收清单](../README.md) · [本机逐件总表](../本机逐件总表.csv)
 
@@ -422,7 +422,6 @@
 | [InfragisticsWPF.Ribbon.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/InfragisticsWPF.Ribbon.dll/) | Plus / Properties | 独立文件 | 2ca07d030acf |
 | [InfragisticsWPF.Undo.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/InfragisticsWPF.Undo.dll/) | Plus / Properties | 独立文件 | ace67b345e89 |
 | [IntegratorServer.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Open%20Solvers%20V15.0/Bin/IntegratorServer.dll/) | Plus / Properties | 独立文件 | 7cbe58bf8ae8 |
-| [Interop.MMLocal.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/Interop.MMLocal.dll/) | Plus / Properties | 独立文件 | c839a5f398b4 |
 | [Interop.SECSERVEROBJECTLib.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/Aspen%20CXS%20V15.0/SummaryGrid/Interop.SECSERVEROBJECTLib.dll/) | Plus | 独立文件 | a1b19af66ce6 |
 | [isom.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/isom.dll/) | Plus | 独立文件 | 9f00a602503f |
 | [libbz2.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/libbz2.dll/) | Plus / Properties | 独立文件 | 9912b86d24df |
