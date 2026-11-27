@@ -1,6 +1,6 @@
 # 静态验收未通过｜本机 Aspen Plus 与 Aspen Properties
 
-265 件，其中独立文件 264 件，已核实的内层原件 1 件。
+264 件，其中独立文件 263 件，已核实的内层原件 1 件。
 
 [本机分类与验收清单](../README.md) · [本机逐件总表](../本机逐件总表.csv)
 
@@ -195,7 +195,6 @@
 | [vsflex8u.ocx](Plus/%5BTARGETDIR%5D/SystemFolder/vsflex8u.ocx/) | Plus | 独立文件 | 66bc92806d73 |
 | [webcheck.dll](Plus/Windows/SysWOW64/webcheck.dll/) | Plus | 独立文件 | 45fc4530d44f |
 | [WpfPLAnalysis.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WpfPlotWizards/WpfPLAnalysis.dll/) | Plus / Properties | 独立文件 | 02d2245cc40a |
-| [WpfPLSolid.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WpfPlotWizards/WpfPLSolid.dll/) | Plus / Properties | 独立文件 | 071fbfbce7fb |
 | [WrapSaveMergeNNFiles.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/WrapSaveMergeNNFiles.dll/) | Plus / Properties | 独立文件 | 869c4b23598e |
 | [XPOPT32.DLL](Plus/%5BSystemFolder%5D/XPOPT32.DLL/) | Plus | 独立文件 | 18d4a63c272d |
 | [xprl.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Open%20Solvers%20V15.0/Bin/xprl.dll/) | Plus / Properties | 独立文件 | 86fa79e5f0f8 |
