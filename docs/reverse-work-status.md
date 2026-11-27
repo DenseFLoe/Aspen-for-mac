@@ -1,5 +1,7 @@
 # 逐文件逆向当前状态
 
+2026-11-27，ApwnRes.dll 的完整 x64 汇编、PE 元数据和 232 项资源通过静态验收。主干累计 249 件通过，本机安装范围累计 235 项通过。见[本轮归档](../reverse/01-completed/20261127-apwnres-native/README.md)。
+
 2026-11-27，Mollier-01.xls 的 BIFF8/VBA 源码通过整件静态复验。从交付包重建的工作簿与安装原件逐字节一致。主干累计 248 件通过，本机安装范围累计 234 项通过。见[本轮归档](../reverse/01-completed/20261127-mollier-biff8/README.md)。
 
 2026-11-27，AspenTech.AspenPlus.MMForms.SummaryGrid.dll 以完整 IL 和原件资源通过方法实现、COM 声明和资源核对。主干累计 247 件通过，本机安装范围累计 233 项通过。见[本轮归档](../reverse/01-completed/20261127-summarygrid-il/README.md)。

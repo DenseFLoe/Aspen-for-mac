@@ -169,3 +169,5 @@
 - [AspenTech.AspenPlus.MMForms.SummaryGrid.dll IL 静态验收](20261127-summarygrid-il/README.md)。
 
 - [Mollier-01.xls 源码静态验收](20261127-mollier-biff8/README.md)。
+
+- [ApwnRes.dll 原生源码静态验收](20261127-apwnres-native/README.md)。
