@@ -171,3 +171,5 @@
 - [Mollier-01.xls 源码静态验收](20261127-mollier-biff8/README.md)。
 
 - [ApwnRes.dll 原生源码静态验收](20261127-apwnres-native/README.md)。
+
+- [EntityFramework.dll IL 源码静态验收](20261127-entityframework-il/README.md)。

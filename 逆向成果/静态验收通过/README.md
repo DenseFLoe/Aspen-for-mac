@@ -1,6 +1,6 @@
 # 静态验收通过｜本机 Aspen Plus 与 Aspen Properties
 
-235 件，其中独立文件 224 件，已核实的内层原件 11 件。
+236 件，其中独立文件 225 件，已核实的内层原件 11 件。
 
 [本机分类与验收清单](../README.md) · [本机逐件总表](../本机逐件总表.csv)
 
@@ -156,6 +156,7 @@
 | [Data.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Hydraulics%20V15.0/Data.dll/) | Plus | 独立文件 | a98aafc96c94 |
 | [DevExpress.DataVisualization.v23.2.Core.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/DevExpress.DataVisualization.v23.2.Core.dll/) | Plus / Properties | 独立文件 | 1e3f6ded3eab |
 | [DevExpress.Images.v23.2.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/DevExpress.Images.v23.2.dll/) | Plus / Properties | 独立文件 | 569c25ba89a8 |
+| [EntityFramework.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/EntityFramework.dll/) | Plus / Properties | 独立文件 | ff42bca70460 |
 | [FluidFlowInterfaceAndEnum.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Hydraulics%20V15.0/FluidFlowInterfaceAndEnum.dll/) | Plus | 独立文件 | 174cc8931a4b |
 | [FluidFlowInterfaceAndEnum.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/PSV%20Legacy%20Recall%20Server/V15.0/FluidFlowInterfaceAndEnum.dll/) | Plus | 独立文件 | fb9671fb0be2 |
 | [HeatExchangeConverter.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/HeatExchangeConverter.dll/) | Plus / Properties | 独立文件 | e964653c2cd0 |

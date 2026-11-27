@@ -1,6 +1,6 @@
 # 未成功｜本机 Aspen Plus 与 Aspen Properties
 
-57 件，其中独立文件 57 件。主干登记了逆向尝试，归档只有说明或报告。
+56 件，其中独立文件 56 件。主干登记了逆向尝试，归档只有说明或报告。
 
 [本机分类与验收清单](../README.md) · [本机逐件总表](../本机逐件总表.csv)
 
@@ -28,7 +28,6 @@
 | [Dynamics390_1.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/Dynamics390_1.dll/) | Plus | 独立文件 | `1743dcb739e3` |
 | [Dynamics400_1.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/Dynamics400_1.dll/) | Plus | 独立文件 | `8f63af8e78a0` |
 | [Dynamics410_1.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/Dynamics410_1.dll/) | Plus | 独立文件 | `bbd85bc5485e` |
-| [EntityFramework.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/EntityFramework.dll/) | Plus / Properties | 独立文件 | `ff42bca70460` |
 | [g_routines.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/g_routines.dll/) | Plus / Properties | 独立文件 | `4c2a9c592fac` |
 | [Infragistics4.Win.v15.1.Design.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/Infragistics4.Win.v15.1.Design.dll/) | Plus | 独立文件 | `e6c8fc013e21` |
 | [Infragistics4.Win.v15.1.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/Infragistics4.Win.v15.1.dll/) | Plus | 独立文件 | `76e9bdd056f1` |
