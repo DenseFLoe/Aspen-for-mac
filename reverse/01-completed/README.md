@@ -165,3 +165,5 @@
 - [2026-11-27 托管成果静态验收](20261127-managed-source/README.md) · 78 件。
 
 - [Interop.MMLocal.dll IL 静态验收](20261127-mmlocal-il/README.md)。
+
+- [AspenTech.AspenPlus.MMForms.SummaryGrid.dll IL 静态验收](20261127-summarygrid-il/README.md)。

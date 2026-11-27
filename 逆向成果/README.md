@@ -6,9 +6,9 @@
 
 | 本机结果 | 独立文件 | 已核实的内层原件 | 合计 |
 | --- | ---: | ---: | ---: |
-| [静态验收通过](%E9%9D%99%E6%80%81%E9%AA%8C%E6%94%B6%E9%80%9A%E8%BF%87/) | 222 | 10 | 232 |
+| [静态验收通过](%E9%9D%99%E6%80%81%E9%AA%8C%E6%94%B6%E9%80%9A%E8%BF%87/) | 223 | 10 | 233 |
 | [静态验收未通过](%E9%9D%99%E6%80%81%E9%AA%8C%E6%94%B6%E6%9C%AA%E9%80%9A%E8%BF%87/) | 263 | 1 | 264 |
-| [待静态验收](%E5%BE%85%E9%9D%99%E6%80%81%E9%AA%8C%E6%94%B6/) | 728 | 27 | 755 |
+| [待静态验收](%E5%BE%85%E9%9D%99%E6%80%81%E9%AA%8C%E6%94%B6/) | 727 | 27 | 754 |
 | [未成功](%E6%9C%AA%E6%88%90%E5%8A%9F/) | 58 | 0 | 58 |
 | [尚无交付](%E5%BE%85%E9%9D%99%E6%80%81%E9%AA%8C%E6%94%B6/README.md#尚无交付的本机原件) | 7 | 0 | 7 |
 | 合计 | 1,278 | 38 | 1,316 |
@@ -22,3 +22,5 @@
 [2026-11-27 托管成果逐件归档](../reverse/01-completed/20261127-managed-source/README.md)。
 
 [Interop.MMLocal.dll IL 静态验收](../reverse/01-completed/20261127-mmlocal-il/README.md)。
+
+[AspenTech.AspenPlus.MMForms.SummaryGrid.dll IL 静态验收](../reverse/01-completed/20261127-summarygrid-il/README.md)。
