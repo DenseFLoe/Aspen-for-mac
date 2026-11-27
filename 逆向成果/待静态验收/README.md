@@ -1,6 +1,6 @@
 # 待静态验收｜本机 Aspen Plus 与 Aspen Properties
 
-755 件，其中独立文件 728 件，已核实的内层原件 27 件。
+754 件，其中独立文件 727 件，已核实的内层原件 27 件。
 
 [本机分类与验收清单](../README.md) · [本机逐件总表](../本机逐件总表.csv)
 
@@ -170,7 +170,6 @@
 | [AspenTech.AspenPlus.MMForms.ModelAnalysis.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WPFForms/AspenTech.AspenPlus.MMForms.ModelAnalysis.dll/) | Plus / Properties | 独立文件 | 6a6cd32ef16a |
 | [AspenTech.AspenPlus.MMForms.OperatingSteps.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WPFForms/AspenTech.AspenPlus.MMForms.OperatingSteps.dll/) | Plus / Properties | 独立文件 | a4faa0f9c740 |
 | [AspenTech.AspenPlus.MMForms.PlotForms.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WPFForms/AspenTech.AspenPlus.MMForms.PlotForms.dll/) | Plus / Properties | 独立文件 | 99b3839a67de |
-| [AspenTech.AspenPlus.MMForms.SummaryGrid.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.AspenPlus.MMForms.SummaryGrid.dll/) | Plus / Properties | 独立文件 | 8f38412515bc |
 | [AspenTech.AspenPlus.MolecularDrawing.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.AspenPlus.MolecularDrawing.dll/) | Plus / Properties | 独立文件 | bc70c509fa67 |
 | [AspenTech.AspenPlus.Tools.VariableExplorer.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/Modules/AspenTech.AspenPlus.Tools.VariableExplorer.dll/) | Plus / Properties | 独立文件 | 47f1050bd5e9 |
 | [AspenTech.AspenPlus.WpfAzeoAnalysisGUI.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.AspenPlus.WpfAzeoAnalysisGUI.dll/) | Plus / Properties | 独立文件 | 84915983df0d |
