@@ -1,6 +1,6 @@
 # 未成功｜本机 Aspen Plus 与 Aspen Properties
 
-58 件，其中独立文件 58 件。主干登记了逆向尝试，归档只有说明或报告。
+57 件，其中独立文件 57 件。主干登记了逆向尝试，归档只有说明或报告。
 
 [本机分类与验收清单](../README.md) · [本机逐件总表](../本机逐件总表.csv)
 
@@ -11,7 +11,6 @@
 | [aphier.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/aphier.dll/) | Plus / Properties | 独立文件 | `ba15509092d7` |
 | [APlusHtmlHelp.exe](Plus/Program%20Files/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/APlusHtmlHelp.exe/) | Plus | 独立文件 | `ed8de8c0525a` |
 | [APropHtmlHelp.exe](Properties/Program%20Files/AspenTech/Aspen%20Properties%20V15.0/GUI/xeq/APropHtmlHelp.exe/) | Properties | 独立文件 | `ad692fbf8e9f` |
-| [ApwnRes.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/ApwnRes.dll/) | Plus / Properties | 独立文件 | `1ef6c43d2f4f` |
 | [AspenTech.Exchange.ExchangeAgent.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AspenTech.Exchange.ExchangeAgent.dll/) | Plus / Properties | 独立文件 | `4031e6d551bc` |
 | [BATCHSEP.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/BATCHSEP.dll/) | Plus | 独立文件 | `259f7e2d588f` |
 | [d3dcompiler_47.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/d3dcompiler_47.dll/) | Plus / Properties | 独立文件 | `e4bc3420a280` |

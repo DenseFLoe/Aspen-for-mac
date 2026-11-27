@@ -1,6 +1,6 @@
 # 静态验收通过｜本机 Aspen Plus 与 Aspen Properties
 
-234 件，其中独立文件 223 件，已核实的内层原件 11 件。
+235 件，其中独立文件 224 件，已核实的内层原件 11 件。
 
 [本机分类与验收清单](../README.md) · [本机逐件总表](../本机逐件总表.csv)
 
@@ -23,6 +23,7 @@
 | [ApedDataProvider.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/PropertiesDatabase/Bin/ApedDataProvider.dll/) | Plus / Properties | 独立文件 | 3e9af2a4a310 |
 | [ApedGateway.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/PropertiesDatabase/Bin/ApedGateway.dll/) | Plus / Properties | 独立文件 | f96569b43f1c |
 | [APlusRegUtl.exe](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/APlusRegUtl.exe/) | Plus / Properties | 独立文件 | 79f8cdeb147a |
+| [ApwnRes.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/ApwnRes.dll/) | Plus / Properties | 独立文件 | 1ef6c43d2f4f |
 | [Aspen Excel Add-in Manager 64 Bit.exe](Properties/%5BCommonFiles64Folder%5D/AspenTech%20Shared/Aspen%20Excel%20Add-in%20Manager%2064%20Bit.exe/) | Properties | 独立文件 | 475a64753322 |
 | [Aspen Properties.xla](Properties/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Properties%20V15.0/Engine/xeq/Aspen%20Properties.xla/) | Properties | 独立文件 | d124683bb13c |
 | [AspenCustomModelManager.exe](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/AspenCustomModelManager.exe/) | Plus | 独立文件 | 7566a80383a6 |
