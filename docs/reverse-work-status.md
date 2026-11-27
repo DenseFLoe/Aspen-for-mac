@@ -1,5 +1,7 @@
 # 逐文件逆向当前状态
 
+2026-11-27，Interop.MMLocal.dll 以完整 IL 和原件资源通过 COM 声明及编组核对。主干累计 246 件通过，本机安装范围累计 232 项通过。见[本轮归档](../reverse/01-completed/20261127-mmlocal-il/README.md)。
+
 2026-11-27 从本地回编成果新增 78 件托管静态验收归档。主干累计 245 件通过，本机安装范围视图累计 231 项通过。见[本轮归档](../reverse/01-completed/20261127-managed-source/README.md)。
 
 2026-11-26，PfsDotNetActiveXCtrl.dll 通过逐件静态验收。复核覆盖 67 个方法定义、界面布局及两项资源，归档回放复现安装原件。主干本机逐件总表累计 153 项通过。[逐件证据与指纹](../reverse/01-completed/20261126-codex-resume-wpf/README.md)。
