@@ -1,6 +1,6 @@
 # 静态验收未通过｜本机 Aspen Plus 与 Aspen Properties
 
-264 件，其中独立文件 263 件，已核实的内层原件 1 件。
+263 件，其中独立文件 263 件，已核实的内层原件 0 件。
 
 [本机分类与验收清单](../README.md) · [本机逐件总表](../本机逐件总表.csv)
 
@@ -99,7 +99,6 @@
 | [mmstruct.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/mmstruct.dll/) | Plus / Properties | 独立文件 | bb9a2422bffe |
 | [ModelEquations.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/ModelEquations.dll/) | Plus | 独立文件 | 0a48d0cf1b6f |
 | [MoleStruct.ocx](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/MoleStruct.ocx/) | Plus / Properties | 独立文件 | f37d6f71050a |
-| [Mollier/Mollier-01.xls](Properties/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Properties%20V15.0/GUI/Examples/Excel%20Properties%20Calculator/Mollier.zip%21/Mollier/Mollier-01.xls/) | Properties | 内层原件 | 69f437799ed1 |
 | [MolStructure.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/MolStructure.dll/) | Plus / Properties | 独立文件 | 46217077ae7b |
 | [MSCHART.OCX](Plus/%5BSystemFolder%5D/MSCHART.OCX/) | Plus | 独立文件 | bf0c5c9705b9 |
 | [mscomct2.ocx](Plus/%5BSystemFolder%5D/mscomct2.ocx/) | Plus | 独立文件 | 3f9deb6597ef |
