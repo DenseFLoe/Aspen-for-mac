@@ -1,6 +1,6 @@
 # 静态验收通过｜本机 Aspen Plus 与 Aspen Properties
 
-233 件，其中独立文件 223 件，已核实的内层原件 10 件。
+234 件，其中独立文件 223 件，已核实的内层原件 11 件。
 
 [本机分类与验收清单](../README.md) · [本机逐件总表](../本机逐件总表.csv)
 
@@ -177,6 +177,7 @@
 | [Microsoft.Extensions.DependencyInjection.Abstractions.dll](Plus-Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseConfiguration/Microsoft.Extensions.DependencyInjection.Abstractions.dll/) | Plus | 独立文件 | a0106a638fac |
 | [Microsoft.Extensions.Logging.Abstractions.dll](Plus-Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseConfiguration/Microsoft.Extensions.Logging.Abstractions.dll/) | Plus | 独立文件 | 29e6bfaf5ce0 |
 | [Microsoft.VisualStudio.Imaging.Interop.14.0.DesignTime.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Properties%20V15.0/Engine/xeq/Microsoft.VisualStudio.Imaging.Interop.14.0.DesignTime.dll/) | Properties | 独立文件 | 21e938896014 |
+| [Mollier/Mollier-01.xls](Properties/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Properties%20V15.0/GUI/Examples/Excel%20Properties%20Calculator/Mollier.zip%21/Mollier/Mollier-01.xls/) | Properties | 内层原件 | 69f437799ed1 |
 | [NETExtnLoader.dll](Plus/%5BCommonFiles64Folder%5D/Hyprotech/CAPE-OPEN/NETExtnLoader.dll/) | Plus | 独立文件 | 531c4d2bb30f |
 | [NetworkPlugins.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/PSV%20Legacy%20Recall%20Server/V15.0/NetworkPlugins.dll/) | Plus | 独立文件 | 05431d80d932 |
 | [NetworkPlugins.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Hydraulics%20V15.0/NetworkPlugins.dll/) | Plus | 独立文件 | 6d90299ffed0 |
