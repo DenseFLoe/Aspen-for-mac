@@ -1,6 +1,6 @@
 # 静态验收通过｜本机 Aspen Plus 与 Aspen Properties
 
-235 件，其中独立文件 224 件，已核实的内层原件 11 件。
+240 件，其中独立文件 229 件，已核实的内层原件 11 件。
 
 [本机分类与验收清单](../README.md) · [本机逐件总表](../本机逐件总表.csv)
 
@@ -15,6 +15,7 @@
 | [AdbDataModel.dll](Plus-Properties/%5BCommonFiles64Folder%5D/AspenTech%20Shared/Aspen%20Data%20Share%20V15.0/AdbDataModel.dll/) | Plus / Properties | 独立文件 | 7633ddafb293 |
 | [AdsAccessor.dll](Plus-Properties/%5BCommonFiles64Folder%5D/AspenTech%20Shared/Aspen%20Data%20Share%20V15.0/AdsAccessor.dll/) | Plus / Properties | 独立文件 | 0d3d2d8cf2e8 |
 | [AdsDataMap.dll](Plus-Properties/%5BCommonFiles64Folder%5D/AspenTech%20Shared/Aspen%20Data%20Share%20V15.0/AdsDataMap.dll/) | Plus / Properties | 独立文件 | 76ed474639f4 |
+| [AdvancedFileDialogLib.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AdvancedFileDialogLib.dll/) | Plus / Properties | 独立文件 | dc459f335bfd |
 | [AMOS.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Open%20Solvers%20V15.0/Bin/AMOS.dll/) | Plus / Properties | 独立文件 | 9d602765bc10 |
 | [AMOS.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Hydraulics%20V15.0/AMOS.dll/) | Plus | 独立文件 | d8881da5ed8e |
 | [apdelayload.lib](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Lib/apdelayload.lib/) | Plus / Properties | 独立文件 | d8c809c76f20 |
@@ -172,6 +173,7 @@
 | [Interop.MMLocal.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/Interop.MMLocal.dll/) | Plus / Properties | 独立文件 | c839a5f398b4 |
 | [Interop.MOLESTRUCTLib.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/Interop.MOLESTRUCTLib.dll/) | Plus / Properties | 独立文件 | 84fc107094ef |
 | [Interop.MSHierarchicalFlexGridLib.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/Interop.MSHierarchicalFlexGridLib.dll/) | Plus / Properties | 独立文件 | c9130abc82d5 |
+| [Interop.SECSERVEROBJECTLib.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/Aspen%20CXS%20V15.0/SummaryGrid/Interop.SECSERVEROBJECTLib.dll/) | Plus | 独立文件 | a1b19af66ce6 |
 | [Interop.SLMErrorDialogLib.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/Aspen%20CXS%20V15.0/Interop.SLMErrorDialogLib.dll/) | Plus | 独立文件 | 13e1b4bac960 |
 | [Interop.SLMErrorDialogLib.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/Aspen%20CXS%20V15.0/SummaryGrid/Interop.SLMErrorDialogLib.dll/) | Plus | 独立文件 | c06395a49818 |
 | [libatdll.lib](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/procedures/libatdll.lib/) | Plus | 独立文件 | aa423ce85b3c |
@@ -220,6 +222,7 @@
 | [vba_caller.xlsm](Properties/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Properties%20V15.0/GUI/Examples/Excel%20Properties%20Calculator/vba_caller.xlsm/) | Properties | 独立文件 | 10b51a5d9521 |
 | [VBEXAMP.xlsm](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/VBDotNetexample/VBEXAMP.xlsm/) | Plus | 独立文件 | 8cfb7e1340f3 |
 | [WPFHierarchyComboBox.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WPFHierarchyComboBox.dll/) | Plus / Properties | 独立文件 | bdba187f71ea |
+| [WpfPLBatchSep.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WpfPlotWizards/WpfPLBatchSep.dll/) | Plus / Properties | 独立文件 | d6ba3b3848dc |
 | [WpfPLBlend.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WpfPlotWizards/WpfPLBlend.dll/) | Plus / Properties | 独立文件 | 1cad5712072e |
 | [WpfPLCfuge.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WpfPlotWizards/WpfPLCfuge.dll/) | Plus / Properties | 独立文件 | af1c7e8935ae |
 | [WpfPLClassifier.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WpfPlotWizards/WpfPLClassifier.dll/) | Plus / Properties | 独立文件 | d40361e71091 |
@@ -227,6 +230,7 @@
 | [WpfPLConSep.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WpfPlotWizards/WpfPLConSep.dll/) | Plus / Properties | 独立文件 | 6ed5e6a7bf0f |
 | [WpfPLControllers.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WpfPlotWizards/WpfPLControllers.dll/) | Plus / Properties | 独立文件 | 9f4984813e32 |
 | [WpfPLCyclone.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WpfPlotWizards/WpfPLCyclone.dll/) | Plus / Properties | 独立文件 | 3f2d559aa429 |
+| [WpfPLData.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WpfPlotWizards/WpfPLData.dll/) | Plus / Properties | 独立文件 | bf01baee8339 |
 | [WpfPLFilter.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WpfPlotWizards/WpfPLFilter.dll/) | Plus / Properties | 独立文件 | e8ddb8342935 |
 | [WpfPLFluidBed.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WpfPlotWizards/WpfPLFluidBed.dll/) | Plus / Properties | 独立文件 | 9a00b4058e29 |
 | [WpfPLHeatx.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WpfPlotWizards/WpfPLHeatx.dll/) | Plus / Properties | 独立文件 | c13186067b12 |
@@ -236,6 +240,7 @@
 | [WpfPLPipeline.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WpfPlotWizards/WpfPLPipeline.dll/) | Plus / Properties | 独立文件 | 0b8d8ab2bae0 |
 | [WpfPLRCSTR.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WpfPlotWizards/WpfPLRCSTR.dll/) | Plus / Properties | 独立文件 | 821164b29087 |
 | [WpfPLResults.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WpfPlotWizards/WpfPLResults.dll/) | Plus / Properties | 独立文件 | 94ec87c919f7 |
+| [WpfPLRPlug.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WpfPlotWizards/WpfPLRPlug.dll/) | Plus / Properties | 独立文件 | f706516819aa |
 | [WpfPLScreen.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WpfPlotWizards/WpfPLScreen.dll/) | Plus / Properties | 独立文件 | 465e11453dd8 |
 | [WpfPLSensitivity.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WpfPlotWizards/WpfPLSensitivity.dll/) | Plus / Properties | 独立文件 | 7096fdddaf31 |
 | [WpfPLSolid.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/WpfPlotWizards/WpfPLSolid.dll/) | Plus / Properties | 独立文件 | 071fbfbce7fb |
