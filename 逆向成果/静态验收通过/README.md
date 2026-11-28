@@ -1,6 +1,6 @@
 # 静态验收通过｜本机 Aspen Plus 与 Aspen Properties
 
-240 件，其中独立文件 229 件，已核实的内层原件 11 件。
+245 件，其中独立文件 234 件，已核实的内层原件 11 件。
 
 [本机分类与验收清单](../README.md) · [本机逐件总表](../本机逐件总表.csv)
 
@@ -8,6 +8,7 @@
 
 | 原件 | 本机产品归属 | 原件层级 | SHA-256 前 12 位 |
 | --- | --- | --- | --- |
+| [ACMDotNetWrapper.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/ACMDotNetWrapper.dll/) | Plus | 独立文件 | 8fa9d484b3d3 |
 | [AdbComInterfaces.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/Aspen%20Data%20Share%20V15.0/AdbComInterfaces.dll/) | Plus / Properties | 独立文件 | 96d0f54b0b75 |
 | [AdbComInterfaces.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/PSV%20Legacy%20Recall%20Server/V15.0/AdbComInterfaces.dll/) | Plus | 独立文件 | ac9f22c325f8 |
 | [AdbComInterfaces.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/AdbComInterfaces.dll/) | Plus / Properties | 独立文件 | b1950b8a1a73 |
@@ -157,11 +158,14 @@
 | [Data.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Hydraulics%20V15.0/Data.dll/) | Plus | 独立文件 | a98aafc96c94 |
 | [DevExpress.DataVisualization.v23.2.Core.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/DevExpress.DataVisualization.v23.2.Core.dll/) | Plus / Properties | 独立文件 | 1e3f6ded3eab |
 | [DevExpress.Images.v23.2.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/DevExpress.Images.v23.2.dll/) | Plus / Properties | 独立文件 | 569c25ba89a8 |
+| [DevExpress.TreeMap.v23.2.Core.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/DevExpress.TreeMap.v23.2.Core.dll/) | Plus / Properties | 独立文件 | 6b2379f21a1c |
 | [FluidFlowInterfaceAndEnum.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Hydraulics%20V15.0/FluidFlowInterfaceAndEnum.dll/) | Plus | 独立文件 | 174cc8931a4b |
 | [FluidFlowInterfaceAndEnum.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/PSV%20Legacy%20Recall%20Server/V15.0/FluidFlowInterfaceAndEnum.dll/) | Plus | 独立文件 | fb9671fb0be2 |
 | [HeatExchangeConverter.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/HeatExchangeConverter.dll/) | Plus / Properties | 独立文件 | e964653c2cd0 |
+| [HMManagedXLP.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/HMManagedXLP.dll/) | Plus | 独立文件 | 3186d51b396c |
 | [HydraulicMethods.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Hydraulics%20V15.0/HydraulicMethods.dll/) | Plus | 独立文件 | 1fc4df5b74f6 |
 | [HYSYSObjects.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Converter%20V15.0/HYSYSObjects.dll/) | Plus | 独立文件 | a1631abcbf55 |
+| [InfragisticsWPF.Persistence.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/InfragisticsWPF.Persistence.dll/) | Plus / Properties | 独立文件 | dd19c93a74c4 |
 | [InterfacesForSteadyStateUnitOp.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Hydraulics%20V15.0/InterfacesForSteadyStateUnitOp.dll/) | Plus | 独立文件 | b7d28c53b367 |
 | [Interop.Aosapfs.dll](Plus-Properties/Program%20Files/AspenTech/AprSystem%20V15.0/GUI/Xeq/Interop.Aosapfs.dll/) | Plus / Properties | 独立文件 | 05f0b74afdc7 |
 | [Interop.appinitLib.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/Aspen%20CXS%20V15.0/SummaryGrid/Interop.appinitLib.dll/) | Plus | 独立文件 | c8cbc427d232 |
@@ -179,6 +183,7 @@
 | [libatdll.lib](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/procedures/libatdll.lib/) | Plus | 独立文件 | aa423ce85b3c |
 | [Microsoft.Extensions.DependencyInjection.Abstractions.dll](Plus-Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseConfiguration/Microsoft.Extensions.DependencyInjection.Abstractions.dll/) | Plus | 独立文件 | a0106a638fac |
 | [Microsoft.Extensions.Logging.Abstractions.dll](Plus-Properties/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/PropertiesDatabase/DatabaseConfiguration/Microsoft.Extensions.Logging.Abstractions.dll/) | Plus | 独立文件 | 29e6bfaf5ce0 |
+| [Microsoft.Practices.ServiceLocation.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/PSV%20Legacy%20Recall%20Server/V15.0/Microsoft.Practices.ServiceLocation.dll/) | Plus / Properties | 独立文件 | 78ac70411c71 |
 | [Microsoft.VisualStudio.Imaging.Interop.14.0.DesignTime.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Properties%20V15.0/Engine/xeq/Microsoft.VisualStudio.Imaging.Interop.14.0.DesignTime.dll/) | Properties | 独立文件 | 21e938896014 |
 | [Mollier/Mollier-01.xls](Properties/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Properties%20V15.0/GUI/Examples/Excel%20Properties%20Calculator/Mollier.zip%21/Mollier/Mollier-01.xls/) | Properties | 内层原件 | 69f437799ed1 |
 | [NETExtnLoader.dll](Plus/%5BCommonFiles64Folder%5D/Hyprotech/CAPE-OPEN/NETExtnLoader.dll/) | Plus | 独立文件 | 531c4d2bb30f |
