@@ -1,6 +1,6 @@
 # 待静态验收｜本机 Aspen Plus 与 Aspen Properties
 
-749 件，其中独立文件 722 件，已核实的内层原件 27 件。
+744 件，其中独立文件 717 件，已核实的内层原件 27 件。
 
 [本机分类与验收清单](../README.md) · [本机逐件总表](../本机逐件总表.csv)
 
@@ -8,7 +8,6 @@
 
 | 原件 | 本机产品归属 | 原件层级 | SHA-256 前 12 位 |
 | --- | --- | --- | --- |
-| [ACMDotNetWrapper.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/ACMDotNetWrapper.dll/) | Plus | 独立文件 | 8fa9d484b3d3 |
 | [acmexp.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/acmexp.dll/) | Plus | 独立文件 | 71900898b31f |
 | [acmexputls.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/Engine/Xeq/acmexputls.dll/) | Plus | 独立文件 | bb7d063219d5 |
 | [ACMOtfReader.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AMSystem%20V15.0/Bin/ACMOtfReader.dll/) | Plus | 独立文件 | c96fc3a3e08f |
@@ -283,7 +282,6 @@
 | [DevExpress.Pdf.v23.2.Drawing.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/DevExpress.Pdf.v23.2.Drawing.dll/) | Plus / Properties | 独立文件 | 5930c182b1aa |
 | [DevExpress.Snap.v23.2.Core.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/DevExpress.Snap.v23.2.Core.dll/) | Plus / Properties | 独立文件 | 978f3c56497a |
 | [DevExpress.Sparkline.v23.2.Core.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/DevExpress.Sparkline.v23.2.Core.dll/) | Plus / Properties | 独立文件 | a0b79f6bbe51 |
-| [DevExpress.TreeMap.v23.2.Core.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/DevExpress.TreeMap.v23.2.Core.dll/) | Plus / Properties | 独立文件 | 6b2379f21a1c |
 | [DevExpress.Xpf.Charts.v23.2.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/DevExpress.Xpf.Charts.v23.2.dll/) | Plus / Properties | 独立文件 | 69798ba8c952 |
 | [DevExpress.Xpf.Controls.v23.2.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/DevExpress.Xpf.Controls.v23.2.dll/) | Plus / Properties | 独立文件 | 8d962f6b02a1 |
 | [DevExpress.Xpf.Docking.v23.2.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/DevExpress.Xpf.Docking.v23.2.dll/) | Plus / Properties | 独立文件 | e674d281c3c9 |
@@ -340,7 +338,6 @@
 | [getridof.exe](Plus/%5BProgramFiles64Folder%5D/AspenTech/APrSystem%20V15.0/Engine/Xeq/getridof.exe/) | Plus / Properties | 独立文件 | 95e272a4e7e5 |
 | [HFUM.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Examples/Getting%20Started/Custom/hfum.apwz%21/HFUM.dll/) | Plus | 内层原件 | c0ea2215cb2a |
 | [HFUM.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Examples/Getting%20Started/Custom/hfum_cf.apwz%21/HFUM.dll/) | Plus | 内层原件 | d0f6c3a3d4ce |
-| [HMManagedXLP.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/HMManagedXLP.dll/) | Plus | 独立文件 | 3186d51b396c |
 | [hmxlpxmps.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Plus%20V15.0/GUI/Xeq/hmxlpxmps.dll/) | Plus | 独立文件 | 9c3bb9b814fd |
 | [HTFSMethodLib.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/PSV%20Legacy%20Recall%20Server/V15.0/HTFSMethodLib.dll/) | Plus | 独立文件 | d48bcc5949cb |
 | [HTFSMethodLib.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Hydraulics%20V15.0/HTFSMethodLib.dll/) | Plus | 独立文件 | e7cbb2b0d717 |
@@ -414,7 +411,6 @@
 | [InfragisticsWPF.Editors.dll](Plus/%5BCommonFilesFolder%5D/AspenTech%20Shared/Aspen%20CXS%20V15.0/SummaryGrid/InfragisticsWPF.Editors.dll/) | Plus | 独立文件 | 7d5e1d140495 |
 | [InfragisticsWPF.Editors.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/InfragisticsWPF.Editors.dll/) | Plus / Properties | 独立文件 | be24b6a20aae |
 | [InfragisticsWPF.OutlookBar.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/InfragisticsWPF.OutlookBar.dll/) | Plus / Properties | 独立文件 | c2c396815537 |
-| [InfragisticsWPF.Persistence.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/InfragisticsWPF.Persistence.dll/) | Plus / Properties | 独立文件 | dd19c93a74c4 |
 | [InfragisticsWPF.Reporting.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/InfragisticsWPF.Reporting.dll/) | Plus / Properties | 独立文件 | ecc5721faa67 |
 | [InfragisticsWPF.Ribbon.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/PSV%20Legacy%20Recall%20Server/V15.0/InfragisticsWPF.Ribbon.dll/) | Plus | 独立文件 | 1f9b18fd7fc9 |
 | [InfragisticsWPF.Ribbon.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/InfragisticsWPF.Ribbon.dll/) | Plus / Properties | 独立文件 | 2ca07d030acf |
@@ -446,7 +442,6 @@
 | [Microsoft.Practices.Composite.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/Microsoft.Practices.Composite.dll/) | Plus / Properties | 独立文件 | b21a45c372fc |
 | [Microsoft.Practices.Composite.Presentation.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/Microsoft.Practices.Composite.Presentation.dll/) | Plus / Properties | 独立文件 | 3d6947dd06ae |
 | [Microsoft.Practices.Composite.UnityExtensions.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/Microsoft.Practices.Composite.UnityExtensions.dll/) | Plus / Properties | 独立文件 | 521985e1ce68 |
-| [Microsoft.Practices.ServiceLocation.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/PSV%20Legacy%20Recall%20Server/V15.0/Microsoft.Practices.ServiceLocation.dll/) | Plus / Properties | 独立文件 | 78ac70411c71 |
 | [Microsoft.Practices.Unity.dll](Plus/%5BCommonFiles64Folder%5D/AspenTech%20Shared/PSV%20Legacy%20Recall%20Server/V15.0/Microsoft.Practices.Unity.dll/) | Plus / Properties | 独立文件 | 96bd7984fbbc |
 | [Microsoft.ServiceBus.dll](Plus/%5BProgramFiles64Folder%5D/AspenTech/AprSystem%20V15.0/GUI/Xeq/Microsoft.ServiceBus.dll/) | Plus / Properties | 独立文件 | e6dd3c6eef76 |
 | [Microsoft.VisualStudio.Interop.dll](Properties/%5BProgramFiles64Folder%5D/AspenTech/Aspen%20Properties%20V15.0/Engine/xeq/Microsoft.VisualStudio.Interop.dll/) | Properties | 独立文件 | 7626172b2ed5 |
